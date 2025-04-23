@@ -1,0 +1,199 @@
+<div class="card">
+    <div class="card card-primary">
+        <div class="card-header">
+            <h3 class="card-title">Location</h3>
+            <div class="card-tools">
+                <!-- <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-info">Create New</a> -->
+            </div>
+        </div>
+        <div class="card-body">
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul class="list-unstyled">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form class="needs-validation" novalidate action="{{ route('admin.tour.location_update', $data->id) }}" method="POST"
+            enctype="multipart/form-data">
+            @csrf
+            <div class="card-body">
+                <div class="row">
+                    
+                    
+                    <div class="col-lg-8">
+                        <div class="form-group">
+                            <label for="country" class="form-label">Country *</label>
+                            @php $countries = \App\Models\Country::where('status',1)->get(); @endphp
+                            <select name="country" id="country_id" class="form-control aiz-selectpicker" data-live-search="true" >
+                                <option value="">{{translate('Select One')}}</option>
+                                @foreach ($countries as $country)
+                                    <option value="{{ $country->id }}"
+                                    {{ old('country')==$country->id || $data->country==$country->id ? 'selected':'' }}>{{ strtoupper($country->name) }}</option>
+                                @endforeach
+                            </select>
+                            @error('country')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8">
+                        <div class="form-group">
+                            <label for="state" class="form-label">State *</label>
+                            <select name="state" id="state_id" class="form-control aiz-selectpicker" data-live-search="true" >
+
+                            </select>
+                            @error('state')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8">
+                        <div class="form-group">
+                            <label for="city" class="form-label">City *</label>
+                            <select name="city" id="city_id" class="form-control aiz-selectpicker" data-live-search="true" >
+
+                            </select>
+                            @error('city')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8">
+                        <div class="form-group">
+                            <label for="destination" class="form-label">Tourism destination*</label>
+                            <input type="text" name="destination" id="destination" value="{{ old('destination') ? : $data->destination }}"
+                                class="form-control" >
+                                
+                            @error('destination')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="form-group">
+                            <label for="address" class="form-label">Address *</label>
+                            <input type="text" name="address" id="address" value="{{ old('address') ? old('address') : $data->address }}"
+                                class="form-control" >
+                                
+                            @error('address')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div> 
+
+                    <div class="col-lg-2">
+                        <div class="form-group">
+                            <label for="postal_code" class="form-label">Postal/ZIP code*</label>
+                            <input type="text" name="postal_code" id="postal_code" value="{{ old('postal_code') ? old('postal_code') : $data->postal_code }}"
+                                class="form-control" >
+                                
+                            @error('postal_code')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div> 
+
+                </div>
+            </div>
+            <div class="card-footer">
+                <button type="submit" id="submit" class="btn btn-primary">Save location</button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section('js')
+@parent
+<script>
+// Get Countries and States
+function get_states_by_country() {
+    @if(old('country'))
+    var country_id = {{ old('country') }}
+    @elseif( $data->country )
+    var country_id = {{ $data->country }}
+    @else
+    var country_id = $('#country_id').val();
+    @endif
+
+    $.post('{{ route('states.get_state_by_country') }}', {
+        _token: '{{ csrf_token() }}',
+        country_id: country_id
+    }, function(data) {
+        $('#state_id').html(null);
+        $('#state_id').append($('<option>', {
+            value: '',
+            text: 'Choose One'
+        }));
+        for (var i = 0; i < data.length; i++) {
+            $('#state_id').append($('<option>', {
+                value: data[i].id,
+                text: data[i].name.toUpperCase()
+            }));
+        }
+        $("#state_id > option").each(function() {
+
+            if (this.value == '{{ old('state', $data->state ?? '') }}' ) {
+                $("#state_id").val(this.value).change();
+            }
+        });
+
+        TB.plugins.bootstrapSelect('refresh');
+
+        get_cities_by_state();
+    });
+}
+
+function get_cities_by_state() {
+
+    @if(old('state'))
+    var state_id = {{ old('state') }}
+    @elseif( $data->state )
+    var state_id = {{ $data->state }}
+    @else
+    var state_id = $('#state_id').val();
+    @endif
+
+    $.post('{{ route('cities.get_cities_by_state') }}', {
+        _token: '{{ csrf_token() }}',
+        state_id: state_id
+    }, function(data) {
+        $('#city_id').html(null);
+        $('#city_id').append($('<option>', {
+            value: '',
+            text: 'Choose One'
+        }));
+        for (var i = 0; i < data.length; i++) {
+            $('#city_id').append($('<option>', {
+                value: data[i].id,
+                text: data[i].name.toUpperCase()
+            }));
+        }
+        $("#city_id > option").each(function() {
+            if (this.value == '{{ old('city', $data->city ?? '') }}' ) {
+                $("#city_id").val(this.value).change();
+            }
+        });
+        TB.plugins.bootstrapSelect('refresh');
+    });
+}
+
+get_states_by_country();
+get_cities_by_state();
+
+$('#country_id').on('change', function() {
+    get_states_by_country();
+});
+
+$('#state_id').on('change', function() {
+    get_cities_by_state();
+});
+</script>
+@endsection
