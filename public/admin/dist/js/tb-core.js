@@ -892,13 +892,13 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
 
                 buttons = !buttons
                     ? [
-                          ["font", ["bold", "underline", "italic", "clear"]],
-                          ["para", ["ul", "ol", "paragraph"]],
+                          ["font",  ["bold", "underline", "italic", "clear"]],
+                          ["para",  ["ul", "ol", "paragraph"]],
                           ["style", ["style"]],
                           ["color", ["color"]],
                           ["table", ["table"]],
-                          ["insert", ["link", "picture", "video"]],
-                          ["view", ["fullscreen", "undo", "redo"]],
+                          ["insert",["link", "picture", "video"]],
+                          ["view",  ["codeview", "fullscreen", "undo", "redo"]],
                       ]
                     : buttons;
                 placeholder = !placeholder ? "" : placeholder;

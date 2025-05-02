@@ -2,10 +2,13 @@
 
 namespace App\View\Components;
 
+use App\Models\Addon;
 use App\Models\Category;
 use App\Models\Collection;
+use App\Models\Pickup;
 use App\Models\Product;
 use App\Models\SubCategory;
+use App\Models\TaxesFee;
 use App\Models\Tour;
 use App\Models\Tourtype;
 use App\Models\User;
@@ -37,17 +40,20 @@ class Sidebar extends Component
         $TourTypeCount = Tourtype::count();
         view()->share('TourTypeCount',$TourTypeCount);
         
-        $SubCategoryCount = SubCategory::count();
-        view()->share('SubCategoryCount',$SubCategoryCount);
+        $AddonCount = Addon::count();
+        view()->share('AddonCount',$AddonCount);
         
-        $CollectionCount = Collection::count();
-        view()->share('CollectionCount',$CollectionCount);
+        $PickupCount = Pickup::count();
+        view()->share('PickupCount',$PickupCount);
         
-        $ProductCount = Product::count();
-        view()->share('ProductCount',$ProductCount);
+        // $ProductCount = Product::count();
+        // view()->share('ProductCount',$ProductCount);
 
         $TourCount = Tour::count();
         view()->share('TourCount',$TourCount);
+
+        $TaxesCount = TaxesFee::count();
+        view()->share('TaxesCount',$TaxesCount);
     }
 
     /**

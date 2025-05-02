@@ -5035,8 +5035,8 @@ input[type="number"] {
     left: 8px;
 }
 [data-selected="true"] .aiz-uploader-select {
-    border-color: #007bff;
-    background: rgba(0, 123, 255, 0.05);
+    border: 2px solid #007bff;
+    background: rgb(255 225 134);
 }
 .modal-adaptive {
     height: calc(100vh - 60px);

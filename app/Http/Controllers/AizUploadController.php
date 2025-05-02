@@ -7,7 +7,10 @@ use App\Upload;
 use Response;
 use Auth;
 use Storage;
-use Image;
+//use Image;
+use Illuminate\Support\Str;
+use Intervention\Image\Laravel\Facades\Image;
+
 
 class AizUploadController extends Controller
 {
@@ -56,7 +59,6 @@ class AizUploadController extends Controller
         return view('admin.uploaded_files.create');
     }
 
-
     public function show_uploader(Request $request){
         return view('uploader.aiz-uploader');
     }
@@ -102,55 +104,76 @@ class AizUploadController extends Controller
             $upload = new Upload;
             $extension = strtolower($request->file('aiz_file')->getClientOriginalExtension());
 
-            if(isset($type[$extension])){
-                $upload->file_original_name = null;
-                $arr = explode('.', $request->file('aiz_file')->getClientOriginalName());
-                for($i=0; $i < count($arr)-1; $i++){
-                    if($i == 0){
-                        $upload->file_original_name .= $arr[$i];
-                    }
-                    else{
-                        $upload->file_original_name .= ".".$arr[$i];
-                    }
-                }
+            if(isset($type[$extension])) {
+                try {
 
-                $path = $request->file('aiz_file')->store('uploads/all', 'local');
-                $size = $request->file('aiz_file')->getSize();
+                    $file = $request->file('aiz_file');
+                    //$path = $file->store('uploads/all', 'local');
+                    $size = $file->getSize();
+                    $originalName = Str::slug( pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) );
 
-                if($type[$extension] == 'image' && get_setting('disable_image_optimization') != 1){
-                    try {
-                        $img = Image::make($request->file('aiz_file')->getRealPath())->encode();
-                        $height = $img->height();
-                        $width = $img->width();
-                        if($width > $height && $width > 2000){
-                            $img->resize(2000, null, function ($constraint) {
-                                $constraint->aspectRatio();
-                            });
-                        }elseif ($height > 1500) {
-                            $img->resize(null, 800, function ($constraint) {
-                                $constraint->aspectRatio();
-                            });
+                    $uniqueSlug = $originalName;
+                    $counter = 1;
+                    while (Upload::where('file_name', $uniqueSlug)->exists()) {
+                        $uniqueSlug = $originalName . '-' . $counter;
+                        $counter++;
+                    }
+                    $originalName = $uniqueSlug;
+
+                    $upload->file_original_name = $originalName;
+
+                    if($type[$extension] == 'image' ) {
+                        try {
+
+                            $image = Image::read($file);
+                            $filename = $originalName . '.' . $extension;
+                            $path = 'uploads/all/' . $filename;
+                            $image->save(base_path('public/' . $path));
+
+                            // // Save medium size
+                            $mediumImage = (clone $image)->scale(height: 600);
+                            $mediumFilename = $originalName . '-600x600.' . $extension;
+                            $mediumPath = 'uploads/all/' . $mediumFilename;
+                            $mediumImage->save(base_path('public/' . $mediumPath));
+
+                            // // Save thumbnail
+                            $thumbImage = (clone $image)->scale(height: 200);                 
+                            $thumbFilename = $originalName . '-200x200.' . $extension;
+                            $thumbPath = 'uploads/all/' . $thumbFilename;
+                            $thumbImage->save(base_path('public/' . $thumbPath));
+
+                            clearstatcache();
+                            
+
+                        } catch (\Exception $e) {
+                            dd($e);
                         }
-                        $img->save(base_path('public/').$path);
-                        clearstatcache();
-                        $size = $img->filesize();
-
-                    } catch (\Exception $e) {
-                        //dd($e);
                     }
-                }
 
-                if (env('FILESYSTEM_DRIVER') == 's3') {
-                    Storage::disk('s3')->put($path, file_get_contents(base_path('public/').$path));
-                    unlink(base_path('public/').$path);
-                }
+                    if (env('FILESYSTEM_DRIVER') == 's3') {
+                        Storage::disk('s3')->put($path, file_get_contents(base_path('public/' . $path)));
+                        Storage::disk('s3')->put($mediumPath, file_get_contents(base_path('public/' . $mediumPath)));
+                        Storage::disk('s3')->put($thumbPath, file_get_contents(base_path('public/' . $thumbPath)));
 
-                $upload->extension = $extension;
-                $upload->file_name = $path;
-                $upload->user_id = Auth::user()->id;
-                $upload->type = $type[$upload->extension];
-                $upload->file_size = $size;
-                $upload->save();
+                        unlink(base_path('public/' . $path));
+                        unlink(base_path('public/' . $mediumPath));
+                        unlink(base_path('public/' . $thumbPath));
+
+                        //Storage::disk('s3')->put($path, file_get_contents(base_path('public/').$path));
+                        //unlink(base_path('public/').$path);
+                    }
+
+                    $upload->extension  = $extension;
+                    $upload->file_name  = $path;
+                    $upload->medium_name  = $mediumPath ?? null;
+                    $upload->thumb_name  = $thumbPath ?? null;
+                    $upload->user_id    = Auth::user()->id;
+                    $upload->type       = $type[$upload->extension];
+                    $upload->file_size  = $size;
+                    $upload->save();
+                } catch (\Exception $e) {
+                    dd($e);
+                }
             }
             return '{}';
         }

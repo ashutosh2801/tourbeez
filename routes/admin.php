@@ -5,10 +5,14 @@ use App\Http\Controllers\AizUploadController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\FaqController;
+use App\Http\Controllers\FeatureController;
+use App\Http\Controllers\ItineraryController;
 use App\Http\Controllers\PickupController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
 use App\Http\Controllers\UserController;
@@ -49,11 +53,36 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified']
         Route::post('/tour/addon_update/{id}', [TourController::class, 'addon_update'])->name('tour.addon_update');
         Route::post('/tour/location_update/{id}', [TourController::class, 'location_update'])->name('tour.location_update');
         Route::post('/tour/pickup_update/{id}', [TourController::class, 'pickup_update'])->name('tour.pickup_update');
+        Route::put('/tour/seo_update/{id}', [TourController::class, 'seo_update'])->name('tour.seo_update');
+        Route::put('/tour/schedule_update/{id}', [TourController::class, 'schedule_update'])->name('tour.schedule_update');
+        Route::put('/tour/itinerary_update/{id}', [TourController::class, 'itinerary_update'])->name('tour.itinerary_update');
+        Route::put('/tour/faq_update/{id}', [TourController::class, 'faq_update'])->name('tour.faq_update');
+        Route::put('/tour/inclusion_update/{id}', [TourController::class, 'inclusion_update'])->name('tour.inclusion_update');
+        Route::put('/tour/exclusion_update/{id}', [TourController::class, 'exclusion_update'])->name('tour.exclusion_update');
+        Route::put('/tour/taxfee_update/{id}', [TourController::class, 'taxfee_update'])->name('tour.taxfee_update');
+        Route::put('/tour/gallery_update/{id}', [TourController::class, 'gallery_update'])->name('tour.gallery_update');
+
+        Route::resource('itineraries',ItineraryController::class);
+        Route::post('/itinerary/single', [ItineraryController::class, 'single'])->name('itinerary.single');
+
+        Route::resource('faqs',FaqController::class);
+        Route::post('/faq/single', [FaqController::class, 'single'])->name('faq.single');
+
+        Route::resource('features',FeatureController::class);
+        Route::post('/feature/single', [FeatureController::class, 'single'])->name('feature.single');
 
         // Product
         Route::get('/get/subcategory',[ProductController::class,'getsubcategory'])->name('getsubcategory');
         Route::get('/remove-external-img/{id}',[ProductController::class,'removeImage'])->name('remove.image');
         
+        Route::resource('taxes',TaxesFeeController::class);
+        Route::get('/taxes/destroy/{id}', [TaxesFeeController::class, 'destroy'])->name('taxes.destroy');
+        Route::post('/taxes/sort-order', [TaxesFeeController::class, 'updateOrder'])->name('taxes.order');
+
+        // uploaded files
+        Route::resource('/uploaded-files', AizUploadController::class);
+        Route::any('/uploaded-files/file-info', [AizUploadController::class, 'file_info'])->name('uploaded-files.info');
+        Route::get('/uploaded-files/destroy/{id}', [AizUploadController::class, 'destroy'])->name('uploaded-files.destroy');
     });
 
 

@@ -31,8 +31,8 @@
                         <a href="{{ route('admin.addon.index') }}"
                             class="aiz-side-nav-link nav-link {{ Route::is('admin.addon.index') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-list-alt"></i>
-                            <p>{{  translate('Addons') }}
-                                <span class="badge badge-warning right">{{ $CategoryCount }}</span>
+                            <p>{{  translate('Extra ') }}
+                                <span class="badge badge-warning right">{{ $AddonCount }}</span>
                             </p>
                         </a>
                     </li>
@@ -50,7 +50,7 @@
                             class="aiz-side-nav-link nav-link {{ Route::is('admin.pickups.index') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-list"></i>
                             <p>{{  translate('Pickups') }}
-                                <span class="badge badge-warning right">{{ $TourTypeCount }}</span>
+                                <span class="badge badge-warning right">{{ $PickupCount }}</span>
                             </p>
                         </a>
                     </li>
@@ -96,12 +96,19 @@
                         <a href="{{ route('admin.permission.index') }}"
                             class="aiz-side-nav-link nav-link {{ Route::is('admin.permission.index') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-hat-cowboy"></i>
-                            <p>Permission
+                            <p>{{ translate('Permission') }}
                                 <span class="badge badge-danger right">{{ $PermissionCount }}</span>
                             </p>
                         </a>
                     </li>
                 </ul>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.uploaded-files.index') }}"
+                    class="nav-link {{ areActiveRoutes(['uploaded-files.create']) }}">
+                    <i class="nav-icon fas fa-file"></i>
+                    <p>{{ translate('Media') }}</p>
+                </a>
             </li>
             <li class="nav-item">
                 <a href="javascript:void(0);" class="nav-link">
@@ -128,6 +135,15 @@
                         <a href="{{ route('admin.email-templates.index') }}" class="aiz-side-nav-link">
                             <i class="nav-icon fas fa-envelope-open-text"></i>
                             <span class="aiz-side-nav-text">{{ translate('Email Templates') }}</span>
+                        </a>
+                    </li>
+                    <li class="aiz-side-nav-item">
+                        <a href="{{ route('admin.taxes.index') }}"
+                            class="aiz-side-nav-link nav-link {{ Route::is('admin.taxes.index') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-list"></i>
+                            <p>{{  translate('Taxes and Fees') }}
+                                <span class="badge badge-warning right">{{ $TaxesCount }}</span>
+                            </p>
                         </a>
                     </li>
                 </ul>

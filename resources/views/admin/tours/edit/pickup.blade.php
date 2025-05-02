@@ -15,23 +15,42 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
         <div class="card-body">
             <form class="needs-validation" novalidate action="{{ route('admin.tour.pickup_update', $data->id) }}" method="POST"
             enctype="multipart/form-data">
+            @method('PUT')
             @csrf
             <table class="table table-striped align-middle" id="pickupTable">
                 <tbody>
+                  <!-- <tr draggable="true">
+                        <th><input  type="radio" class="check_all" name="pickups[]" value="0" style="width: 20px;height: 20px;" /></th>
+                        <td colspan="2">
+                            <a href="javascript:void(0)" class="text-info">No Pickups</a>
+                            <p class="m-0 text-sm text-gray-100">I do not offer pickups for this product</p>
+                        </td>
+                    </tr> -->
                     @php
                     $i=1;
                     $existing_pickups = $data->pickups->pluck('id')->toArray();
                     @endphp
                     @foreach ($pickups as $item)
                         <tr draggable="true" data-id="{{ $item->id }}">
-                            <th><input {{ (is_array($existing_pickups) && in_array($item->id, $existing_pickups)) ? 'checked' : '' }} type="checkbox" class="check_all" name="pickup_id" value="{{ $item->id }}" style="width: 20px;height: 20px;" /></th>
+                            <th><input type="radio" class="check_all" name="pickups[]" value="{{ $item->id }}" style="width: 20px;height: 20px;"
+                            {{ (is_array($existing_pickups) && in_array($item->id, $existing_pickups)) ? 'checked' : '' }} /></th>
+
+                            @if (strtolower($item->name) !== 'no pickups')
                             <td>
-                                <a href="{{ route('admin.pickups.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a>
+                                <a target="_blank" href="{{ route('admin.pickups.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a>
                                 @foreach ($item->locations as $location)
                                     <p class="m-0 text-sm text-gray-100">{{ $location->location }}, {{ $location->address }}</p>
                                 @endforeach
                             </td>
-                            <td>2 {{ translate('Locations') }}</td>                                                  
+                            <td>{{ count($item->locations)  }} <span></span>{{ translate('Locations') }}</td>                                                  
+                            @else
+                            <td colspan="2">
+                                <a href="#" class="text-info">{{ $item->name }}</a>
+                                @foreach ($item->locations as $location)
+                                    <p class="m-0 text-sm text-gray-100">{{ $location->address }}</p>
+                                @endforeach
+                            </td>
+                            @endif
                         </tr>
                     @endforeach
                 </tbody>
@@ -57,11 +76,11 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 <script>
-  let draggedRow;
-  const tbody = document.querySelector("#pickupTable tbody");
+  let draggedRow_;
+  const tbody_ = document.querySelector("#pickupTable tbody");
 
   function updateOrderAndSend() {
-    const rows = tbody.querySelectorAll("tr");
+    const rows = tbody_.querySelectorAll("tr");
     const data = [];
 
     rows.forEach((row, index) => {
@@ -94,7 +113,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   document.querySelectorAll("#pickupTable tbody tr").forEach(row => {
     row.addEventListener("dragstart", (e) => {
-      draggedRow = row;
+      draggedRow_ = row;
       e.dataTransfer.effectAllowed = "move";
       row.classList.add("dragging");
     });
@@ -123,12 +142,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
       row.classList.remove("drag-over-top", "drag-over-bottom");
 
-      if (draggedRow === row) return;
+      if (draggedRow_ === row) return;
 
       if (offset < bounding.height / 2) {
-        tbody.insertBefore(draggedRow, row);
+        tbody_.insertBefore(draggedRow_, row);
       } else {
-        tbody.insertBefore(draggedRow, row.nextSibling);
+        tbody_.insertBefore(draggedRow_, row.nextSibling);
       }
 
       updateOrderAndSend();

@@ -313,6 +313,19 @@
 
                                 <div class="col-lg-6">
                                     <div class="form-group">
+                                        <label class="form-label">{{translate('Featured Image')}}</label>
+                                        <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
+                                            <div class="input-group-prepend">
+                                                <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
+                                            </div>
+                                            <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
+                                            <input type="hidden" name="image" class="selected-files" >
+                                        </div>
+                                        <div class="file-preview box"></div>
+                                    </div>
+                                </div>
+                                <!-- <div class="col-lg-6">
+                                    <div class="form-group">
                                         <label for="image" class="form-label">Image</label>
                                         <input type="file" name="image" id="image" class="form-control" accept="image/*"
                                             >
@@ -320,7 +333,7 @@
                                             <small class="form-text text-danger">{{ $message }}</small>
                                         @enderror
                                     </div>
-                                </div>
+                                </div> -->
                                 <!-- <div class="col-lg-6">
                                     <div class="form-group">
                                         <label for="slider-images" class="form-label">Tour Slider Images</label>

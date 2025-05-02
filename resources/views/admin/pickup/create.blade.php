@@ -34,7 +34,7 @@
                             
                             <div id="pickupLocationContainer">
                             @php
-                                $pickupOptions = old('Pickup', [ ['location' => '', 'address' => '', 'time' => '', 'additional_information' => ''] ]);
+                                $pickupOptions = old('PickupLocations', [ ['location' => '', 'address' => '', 'time' => '', 'additional_information' => ''] ]);
                                 $count = count($pickupOptions);
                             @endphp
                             @foreach ($pickupOptions as $index => $option)  
@@ -43,7 +43,7 @@
                                     <div class="row">
                                         <div class="col-md-5">
                                             <label for="pickup_location">Pickup location</label>
-                                            <input type="text" class="form-control" id="pickup_location" name="Pickup[{{ $index }}][location]"
+                                            <input type="text" class="form-control" id="pickup_location" name="PickupLocations[{{ $index }}][location]"
                                                 placeholder="Enter pickup location" required value="{{ old('pickup_location') }}">
                                             @error('pickup_location')
                                                 <small class="form-text text-danger">{{ $message }}</small>
@@ -51,12 +51,12 @@
                                         </div>
                                         <div class="col-md-5">
                                             <label for="pickup_address">Pickup address</label>
-                                            <input type="text"  class="form-control autocomplete" id="pickup_address" name="Pickup[{{ $index }}][address]"
+                                            <input type="text"  class="form-control autocomplete" id="pickup_address" name="PickupLocations[{{ $index }}][address]"
                                                 placeholder="Enter pickup address" required value="{{ old('pickup_address') }}">
                                         </div>
                                         <div class="col-md-2">
                                             <label for="pickup_time">Pickup time</label>
-                                            <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="Pickup[{{ $index }}][time]">
+                                            <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="PickupLocations[{{ $index }}][time]">
                                                 <option value="">Select one</option>
                                                 @for ($hour = 0; $hour <= 12; $hour++)
                                                     @foreach ([0, 30] as $minute)
@@ -76,7 +76,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="additional_information">Additional information</label>
-                                    <textarea type="text" class="form-control" rows="3" id="additional_information" name="Pickup[{{ $index }}][additional_information]"
+                                    <textarea type="text" class="form-control" rows="3" id="additional_information" name="PickupLocations[{{ $index }}][additional_information]"
                                         placeholder="Enter additional information">{{ old('additional_information') }}</textarea>
                                 </div>
                                 @error('additional_information')
@@ -102,7 +102,7 @@
 
 @section('js')
 <script>
-let pickupLocationCount = {{ old('Pickup') ? count(old('Pickup')) : 1 }}
+let pickupLocationCount = {{ old('PickupLocations') ? count(old('PickupLocations')) : 1 }}
 
 function addPickupLocation() {
     const container = document.getElementById('pickupLocationContainer');
@@ -117,12 +117,12 @@ function addPickupLocation() {
                 <div class="row">
                     <div class="col-md-5">
                         <label for="pickup_location">Pickup location</label>
-                        <input type="text" class="form-control" id="pickup_location" name="Pickup[${pickupLocationCount}][location]"
+                        <input type="text" class="form-control" id="pickup_location" name="PickupLocations[${pickupLocationCount}][location]"
                             placeholder="Enter pickup location" required value="">
                     </div>
                     <div class="col-md-5">
                         <label for="pickup_address">Pickup address</label>
-                        <input type="text"  class="form-control autocomplete" id="pickup_address" name="Pickup[${pickupLocationCount}][address]"
+                        <input type="text"  class="form-control autocomplete" id="pickup_address" name="PickupLocations[${pickupLocationCount}][address]"
                             placeholder="Enter pickup address" required value="">
                     </div>
                     <div class="col-md-2">
@@ -144,8 +144,8 @@ function addPickupLocation() {
             </div>
             <div class="form-group">
                 <label for="additional_information">Additional information</label>
-                <textarea type="text" class="form-control" rows="3" id="additional_information" name="Pickup[${pickupLocationCount}][additional_information]"
-                    placeholder="Enter additional information">{{ old('additional_information') }}</textarea>
+                <textarea type="text" class="form-control" rows="3" id="additional_information" name="PickupLocations[${pickupLocationCount}][additional]"
+                    placeholder="Enter additional information">{{ old('additional') }}</textarea>
             </div>
             <button type="button" class="btn btn-sm btn-danger text-right" onclick="removePickupLocation(${pickupLocationCount})"><i class="fa fa-minus"></i></button>
             </div>  

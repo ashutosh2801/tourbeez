@@ -1,11 +1,11 @@
 <x-admin>
-    @section('title','Update Addon')
+    @section('title','Update Extra')
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-primary">
                     <div class="card-header">
-                        <h3 class="card-title">Update Addon</h3>
+                        <h3 class="card-title">Update Extra</h3>
                         <div class="card-tools">
                             <a href="{{ route('admin.addon.index') }}" class="btn btn-info btn-sm">Back</a>
                         </div>

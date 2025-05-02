@@ -3,32 +3,32 @@
     <h2 class="text-lg">Performance</h2>
     <p>Last 7 Days</p>
     <div class="py-2 d-flex bd-highlight text-center border-bottom">
-        <div class="pt-3 flex-fill bd-highlight border">
+        <div class="pt-3 flex-fill bd-highlight border bg-white">
             <p>Number of ordes</p>
             <h2>0</h2>
             <p>0</p>
         </div>
-        <div class="pt-3 flex-fill bd-highlight border">
+        <div class="pt-3 flex-fill bd-highlight border bg-white">
             <p>Value of ordes</p>
             <h2>0</h2>
             <p>$0.00</p>
         </div>
-        <div class="pt-3 flex-fill bd-highlight border">
+        <div class="pt-3 flex-fill bd-highlight border bg-white">
             <p>Total paid</p>
             <h2>0</h2>
             <p>$0.00</p>
         </div>
-        <div class="pt-3 flex-fill bd-highlight border">
+        <div class="pt-3 flex-fill bd-highlight border bg-white">
             <p>Total refund</p>
             <h2>0</h2>
             <p>$0.00</p>
         </div>
-        <div class="pt-3 flex-fill bd-highlight border">
+        <div class="pt-3 flex-fill bd-highlight border bg-white">
             <p>Total discount</p>
             <h2>0</h2>
             <p>$0.00</p>
         </div>
-        <div class="pt-3 flex-fill bd-highlight border">
+        <div class="pt-3 flex-fill bd-highlight border bg-white">
             <p>Total owed</p>
             <h2>0</h2>
             <p>$0.00</p>

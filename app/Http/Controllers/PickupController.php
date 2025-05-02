@@ -13,7 +13,7 @@ class PickupController extends Controller
      */
     public function index()
     {
-        $data = Pickup::orderBy('id','DESC')->get();
+        $data = Pickup::orderBy('sort_order','ASC')->get();
         return view('admin.pickup.index',compact('data'));
     }
 

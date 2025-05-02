@@ -7,7 +7,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 <div class="card">
     <div class="card card-primary">
         <div class="card-header">
-            <h3 class="card-title">Addons</h3>
+            <h3 class="card-title">Extra</h3>
             <div class="card-tools">
                 <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-info">Create New</a>
             </div>
@@ -45,7 +45,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                     @endforeach
                 </tbody>
             </table>
-            <button type="submit" id="submit" class="btn btn-primary">Save addon</button>
+            <button type="submit" id="submit" class="btn btn-primary">Save</button>
             </form>
         </div>
     </div>

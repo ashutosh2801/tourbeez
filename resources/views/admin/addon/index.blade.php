@@ -1,8 +1,8 @@
 <x-admin>
-    @section('title','Addons')
+    @section('title','Extra')
     <div class="card card-primary">
         <div class="card-header">
-            <h3 class="card-title">Addons</h3>
+            <h3 class="card-title">Extra</h3>
             <div class="card-tools">
                 <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-info">Create New</a>
             </div>
