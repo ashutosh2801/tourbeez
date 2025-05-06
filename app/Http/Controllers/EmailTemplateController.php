@@ -81,6 +81,22 @@ class EmailTemplateController extends Controller
         //
     }
 
+    public function preview(Request $request, $id)
+    {
+        $str='<table width="100%" bgcolor="#ecf0f1" cellpadding="0" cellspacing="0" border="0" id="background_table">
+        <tbody><tr><td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; padding-top: 0px;">';
+        $preview = EmailTemplate::where('identifier', $id)->first();
+        if($preview) {
+            $str = $preview->header;
+            $str.= $preview->body;
+            $str.= $preview->footer;
+        }
+
+        $str.= '</td></tr></tbody></table>';
+
+        return $str;
+    }
+
     /**
      * Update the specified resource in storage.
      *
@@ -95,13 +111,16 @@ class EmailTemplateController extends Controller
         $validator  = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
-            flash(translate('Something went wrong'))->error();
-            return Redirect::back()->withErrors($validator);
+            //flash(translate('Something went wrong'))->error();
+            return Redirect::back()->withInput()->withErrors($validator)->with('error', translate('Something went wrong'));
         }
 
         $email_template             = EmailTemplate::where('identifier', $request->identifier)->first();
         $email_template->subject    = $request->subject;
+        $email_template->header     = $request->header;
         $email_template->body       = $request->body;
+        $email_template->footer     = $request->footer;
+        $email_template->parameters = $request->parameters;
         if ($request->status == 1) {
             $email_template->status = 1;
         }
@@ -110,11 +129,11 @@ class EmailTemplateController extends Controller
         }
 
         if($email_template->save()){
-            flash(translate('Email Template has been updated successfully'))->success();
-            return back();
+            //flash(translate('Email Template has been updated successfully'))->success();
+            return back()->with( 'success', translate('Email Template has been updated successfully') );
         } else {
-            flash(translate('Sorry! Something went wrong.'))->error();
-            return back();
+            //flash(translate('Sorry! Something went wrong.'))->error();
+            return back()->with( 'error', translate('Sorry! Something went wrong.') );
         }
 
     }

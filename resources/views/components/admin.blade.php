@@ -1,8 +1,8 @@
 <!--
 /*!
  *   AdminLTE With Laravel
- *   Author: Nihir Zala
- *   Website: https://nihirz.netlify.app
+ *   Author: Ashutosh Sharma
+ *   Website: https://github.com/ashutosh2801/
  *   License: Open source - MIT <https://opensource.org/licenses/MIT>
  */
 -->
@@ -119,6 +119,8 @@
         <strong>Copyright © {{ date('Y') }} TourBeez.</strong> All rights reserved.
     </footer>
     <!-- ./wrapper -->
+
+    @yield('modal')
 
     <!-- jQuery -->
     <script src="{{ asset('admin/plugins/jquery/jquery.min.js') }}"></script>

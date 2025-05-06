@@ -132,6 +132,46 @@
         </div>
     </div>
 
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h5 class="mb-0 h6">{{__('Default Email')}}</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('admin.settings.update') }}" method="POST">
+                        @csrf
+                        <div class="form-group row">
+                            <label class="col-md-12 col-form-label">{{translate('Default Email Header')}}</label>
+                            <div class="col-md-12">
+                                <input type="hidden" name="types[]" value="default_email_header">
+                                <textarea name="default_email_header" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ get_setting('default_email_header') }}</textarea>
+                                @error('default_email_header')
+                                    <small class="form-text text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>                            
+                        </div>
+
+                        <div class="form-group row">
+                            <label class="col-md-12 col-form-label">{{translate('Default Email Footer')}}</label>
+                            <div class="col-md-12">
+                                <input type="hidden" name="types[]" value="default_email_footer">
+                                <textarea name="default_email_footer" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ get_setting('default_email_footer') }}</textarea>
+                                @error('default_email_footer')
+                                    <small class="form-text text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>                            
+                        </div>
+
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @section('js')
     <script type="text/javascript">
         function updateSettings(el, type) {

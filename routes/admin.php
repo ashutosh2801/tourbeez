@@ -61,6 +61,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified']
         Route::put('/tour/exclusion_update/{id}', [TourController::class, 'exclusion_update'])->name('tour.exclusion_update');
         Route::put('/tour/taxfee_update/{id}', [TourController::class, 'taxfee_update'])->name('tour.taxfee_update');
         Route::put('/tour/gallery_update/{id}', [TourController::class, 'gallery_update'])->name('tour.gallery_update');
+        Route::put('/tour/notification_update/{id}', [TourController::class, 'notification_update'])->name('tour.notification_update');
+        Route::put('/tour/reminders_update/{id}', [TourController::class, 'reminders_update'])->name('tour.reminders_update');
+        Route::put('/tour/followup_update/{id}', [TourController::class, 'followup_update'])->name('tour.followup_update');
+        Route::put('/tour/payment_request_update/{id}', [TourController::class, 'payment_request_update'])->name('tour.payment_request_update');
 
         Route::resource('itineraries',ItineraryController::class);
         Route::post('/itinerary/single', [ItineraryController::class, 'single'])->name('itinerary.single');
@@ -113,6 +117,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified']
     // Email Templates
     Route::resource('/email-templates', EmailTemplateController::class);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
+    Route::post('/email-templates/preview/{id}', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
     
     // Route::get('/payment-methods-settings', 'SettingController@payment_method_settings')->name('payment_method_settings');
     // Route::post('/payment_method_update', 'SettingController@payment_method_update')->name('payment_method.update');

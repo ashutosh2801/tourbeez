@@ -166,8 +166,8 @@ class SettingController extends Controller
 
         Artisan::call('cache:clear');
 
-        flash(translate("Settings updated successfully"))->success();
-        return back();
+        //flash(translate("Settings updated successfully"))->success();
+        return back()->with('success', translate("Settings updated successfully"));
      }
 
 

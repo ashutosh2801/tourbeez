@@ -22,8 +22,8 @@
                 <tbody>
                     @foreach ($data as $tour)
                         <tr>
-                            <td>{{ $tour->main_image_html(150) }}</td>
-                            <td><a class="text-info" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a></td>
+                            <td>{!! main_image_html($tour->main_image?->id) !!}</td>
+                            <td><a class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a></td>
                             <td>{{ price_format($tour->price) }}</td>
                             <td>{{ $tour->unique_code }}</td>
                             <td>{{ $tour->category_names ?: 'No categories' }}</td>
@@ -45,7 +45,8 @@
         </div>
     </div>
 
-        <!-- delete Modal -->
+@section('modal')
+<!-- delete Modal -->
 <div id="delete-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content">
@@ -61,16 +62,17 @@
         </div>
     </div>
 </div><!-- /.modal -->
-    @section('js')
-        <script>
-            $(function() {
-                $('#productTable').DataTable({
-                    "paging": true,
-                    "searching": true,
-                    "ordering": true,
-                    "responsive": true,
-                });
+@endsection
+@section('js')
+    <script>
+        $(function() {
+            $('#productTable').DataTable({
+                "paging": true,
+                "searching": true,
+                "ordering": true,
+                "responsive": true,
             });
-        </script>
-    @endsection
+        });
+    </script>
+@endsection
 </x-admin>

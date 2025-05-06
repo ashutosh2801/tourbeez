@@ -204,10 +204,9 @@ class TourController extends Controller
         $data       = Tour::where('id', decrypt($id))->first();
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
-        //echo $data->id;
-        //echo '<pre>'; print_r($schedule); exit;
-        //$tourImages = TourImage::where('tour_id', $data->id)->get();
-        return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule'));
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+
+        return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule', 'metaData'));
     }
 
     /**
@@ -216,6 +215,7 @@ class TourController extends Controller
     public function update(Request $request, $id)
     {
     }
+
     public function basic_detail_update(Request $request, $id)
     {
 
@@ -337,11 +337,22 @@ class TourController extends Controller
 
             $tourId = $tour->id;
             if( $request->has('image') ) { 
+
+                // Check if the requested image is already attached to the tour
+                if ($tour->galleries->contains($request->image)) {
+                    // Just update pivot
+                    $tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
+                } else {
+                    // Attach and set is_main = 1
+                    $tour->galleries()->attach($request->image, ['is_main' => 1]);
+                }
+
                 // Unset is_main for all current pivot rows
-                $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
+                // $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
 
                 // Set is_main = 1 for the selected image
-                $tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
+                // $tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
+
                 // $tour_image = TourUpload::where('tour_id', $tourId)->where('is_main', 1)->first();
                 // if( !$tour_image ) {
                 //     $tour_image = new TourUpload();
@@ -742,31 +753,118 @@ class TourController extends Controller
         return back()->withInput()->with('error','OOPs! something went wrong!');
     }
 
+    public function notification_update(Request $request, $id) 
+    {
+        $tour = Tour::findOrFail($id);
+
+        $allMetaKeys = ['email_info', 'email_info_text', 'email_attachment', 'email_attachment_file', 'email_notification', 'email_notification_emails', 'sms_send_me', 'sms_send_customer'];
+
+        // Validate incoming request if needed
+        $validated = $request->validate([
+            'Meta' => 'array',
+            'Meta.*' => 'nullable|string', // customize validation as needed
+        ]);
+
+        $submittedMeta = $request->input('Meta', []);
+        foreach ($allMetaKeys as $key) {
+            //if (array_key_exists($key, $submittedMeta)) {
+                $value = @$submittedMeta[$key];
+                
+                // Normalize checkbox value to boolean or string
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                } elseif (is_bool($value)) {
+                    $value = $value ? '1' : '0';
+                }
+        
+                $tour->meta()->updateOrCreate(
+                    ['tour_id' => $tour->id, 'meta_key' => $key],
+                    ['meta_value' => $value]
+                );
+            //} else {
+                // If key not in request, delete it (e.g., checkbox was unchecked)
+                //$tour->meta()->where('meta_key', $key)->delete();
+            //}
+        }
+
+        //print_r($submittedMeta); exit;
+
+        // foreach ($submittedMeta as $key => $value) {
+        //     $tour->meta()->updateOrCreate(
+        //         ['tour_id' => $tour->id, 'meta_key' => $key],
+        //         ['meta_value' => $value]
+        //     );
+        // }
+
+        return redirect()->back()->with('success', 'Tour notification updated successfully!');
+    }
+
+    public function reminders_update(Request $request, $id) 
+    {
+        $tour = Tour::findOrFail($id);
+
+        $allMetaKeys = [
+            'email1_reminder', 'email1_reminder_delay', 'email1_reminder_delayUnit', 'email1_reminder_text',
+            'email2_reminder', 'email2_reminder_delay', 'email2_reminder_delayUnit', 'email2_reminder_text',
+            'email3_reminder', 'email3_reminder_delay', 'email3_reminder_delayUnit', 'email3_reminder_text',
+            'sms_reminder_customer', 'sms_reminder_delay', 'sms_reminder_delayUnit'
+        ];
+
+        // Validate incoming request if needed
+        $validated = $request->validate([
+            'Meta' => 'array',
+            'Meta.*' => 'nullable|string', // customize validation as needed
+        ]);
+
+        $submittedMeta = $request->input('Meta', []);
+        foreach ($allMetaKeys as $key) {
+            //if (array_key_exists($key, $submittedMeta)) {
+                $value = @$submittedMeta[$key];
+                
+                // Normalize checkbox value to boolean or string
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                } elseif (is_bool($value)) {
+                    $value = $value ? '1' : '0';
+                }
+        
+                $tour->meta()->updateOrCreate(
+                    ['tour_id' => $tour->id, 'meta_key' => $key],
+                    ['meta_value' => $value]
+                );
+            //} else {
+                // If key not in request, delete it (e.g., checkbox was unchecked)
+                //$tour->meta()->where('meta_key', $key)->delete();
+            //}
+        }
+
+        //print_r($submittedMeta); exit;
+
+        // foreach ($submittedMeta as $key => $value) {
+        //     $tour->meta()->updateOrCreate(
+        //         ['tour_id' => $tour->id, 'meta_key' => $key],
+        //         ['meta_value' => $value]
+        //     );
+        // }
+
+        return redirect()->back()->with('success', 'Tour reminder updated successfully!');
+    }
+
     /**
      * Remove the specified resource from storage.
      */
     public function destroy($id)
     {
         $tour = Tour::where('id', decrypt($id))->first();
-        $tour->delete();
-        // if ($tour) {
-        //     $image_path = public_path('tour-image/' . $tour->image);
-        //     if (file_exists($image_path)) {
-        //         unlink($image_path);
-        //         $tour->delete();
-        //     }
-        // }
-        // $tourCollectionId = decrypt($id);
-        // $imagesToDelete = T_BOOLEAN_ORourImage::where('tour_id', $tourCollectionId)->get();
-        // foreach ($imagesToDelete as $image) {
-        //     $imagePath = public_path('tour-slider-images/' . $image->image);
-        //     // Delete the record from the database
-        //     $image->delete();
-        //     // Unlink (delete) the image from storage
-        //     if (file_exists($imagePath)) {
-        //         unlink($imagePath);
-        //     }
-        // }
-        return redirect()->route('admin.tour.index')->with('error', 'Tour deleted successfully.');
+        if ($tour->delete()) {
+            flash(translate('Tour info has been deleted successfully'))->success();
+            return redirect()->route('admin.tour.index');
+        } else {
+            flash(translate('Sorry! Something went wrong.'))->error();
+            return back();
+        }
+
+        
+        //return redirect()->route('admin.tour.index')->with('error', 'Tour deleted successfully.');
     }
 }

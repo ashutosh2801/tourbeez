@@ -1,10 +1,13 @@
 <x-admin>
     @section('title','Edit Tour')
+    @section('css')
+    
+    @endsection
     <div class="row">
         <div class="col-lg-12">
             <div class="card card-primary">
                 <div class="card-header">
-                    <h5 class="mb-0 h6">{{translate('Tour Update')}}</h5>
+                    <h5 class="mb-0 h6">{{ $data->title }}</h5>
                     <div class="card-tools">
                         <a href="#" class="btn btn-primary btn-sm">{{translate('View Tour Online')}}</a>
                         <a href="{{ route('admin.tour.index') }}" class="btn btn-info btn-sm">Back</a>
@@ -14,7 +17,7 @@
                     <div class="row">
                         <div class="col-2">
                             <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-                                <a class="nav-link  active" id="v-pills-tab-1" data-toggle="pill" href="#basic_information" role="tab" aria-controls="v-pills-profile" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Basic Details')}}</a>
+                                <a class="nav-link  " id="v-pills-tab-1" data-toggle="pill" href="#basic_information" role="tab" aria-controls="v-pills-profile" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Basic Details')}}</a>
                                 <a class="nav-link" id="v-pills-tab-2" data-toggle="pill" href="#addon" role="tab" aria-controls="v-pills-messages" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Extra')}}</a>
                                 <a class="nav-link" id="v-pills-tab-3" data-toggle="pill" href="#schduling" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Scheduling
 ')}}</a>
@@ -26,13 +29,14 @@
                                 <a class="nav-link" id="v-pills-tab-7" data-toggle="pill" href="#excludes" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Exclusions')}}</a>
                                 <a class="nav-link" id="v-pills-tab-8" data-toggle="pill" href="#taxes_nd_fees" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Taxes & Fees')}}</a>
                                 <a class="nav-link" id="v-pills-tab-9" data-toggle="pill" href="#gallery" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Gallery')}}</a>
+                                <a class="nav-link active" id="v-pills-tab-9" data-toggle="pill" href="#message" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Message')}}</a>
                                 <a class="nav-link" id="v-pills-tab-10" data-toggle="pill" href="#meta_information" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('SEO')}}</a>
                                
                             </div>
                         </div>
                         <div class="col-10">
                             <div class="tab-content" id="v-pills-tabContent">
-                                <div class="tab-pane fade show active" id="basic_information" role="tabpanel" aria-labelledby="v-pills-tab-1">
+                                <div class="tab-pane fade " id="basic_information" role="tabpanel" aria-labelledby="v-pills-tab-1">
                                     <div class="card">
                                         @include('admin.tours.edit.basic_detail')
                                     </div>
@@ -85,6 +89,11 @@
                                 <div class="tab-pane fade" id="gallery" role="tabpanel" aria-labelledby="v-pills-messages-tab-5">
                                     <div class="card">
                                         @include('admin.tours.edit.gallery')
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade show active" id="message" role="tabpanel" aria-labelledby="v-pills-messages-tab-5">
+                                    <div class="card">
+                                        @include('admin.tours.edit.message')
                                     </div>
                                 </div>
                                 <div class="tab-pane fade" id="meta_information" role="tabpanel" aria-labelledby="v-pills-messages-tab">

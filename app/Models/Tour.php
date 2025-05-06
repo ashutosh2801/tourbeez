@@ -19,9 +19,14 @@ class Tour extends Model
     }
 
     public function getMainImageAttribute()
-{
-    return $this->galleries()->wherePivot('is_main', 1)->first();
-}
+    {
+        return $this->galleries()->wherePivot('is_main', 1)->first();
+    }
+
+    public function meta()
+    {
+        return $this->hasMany(TourMeta::class);
+    }
 
     // public function main_image()
     // {
@@ -114,17 +119,7 @@ class Tour extends Model
     public function schedule()
     {
         return $this->hasOne(TourSchedule::class);
-    }
-
-    public function main_image_html($width='')
-    {
-        $data = $this->hasOne(TourImage::class)->where('is_main', 1);
-        if(isset($data->image) && public_path('tour/' . $data->image) ) {
-            $image_file = asset('tour/'.$data->image);
-            return '<img src="'.$image_file.'" alt="'.$this->title.'" width="'.$width.'" />';
-        }
-        return 'NO IMAGE';
-    }
+    }    
 
     public function pricings()
     {
