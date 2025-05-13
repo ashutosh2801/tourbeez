@@ -328,7 +328,7 @@
                                     <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
                                 </div>
                                 <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
-                                <input type="hidden" name="image" class="selected-files" value="{{ $data->main_image?->image }}">
+                                <input type="hidden" name="image" class="selected-files" value="{{ $data->main_image?->id }}">
                             </div>
                             <div class="file-preview box sm"></div>
                         </div>
@@ -358,7 +358,7 @@
             
 
             <div class="card-footer">
-                <button type="submit" id="submit" class="btn btn-primary">Save tour</button>
+                <button type="submit" id="submit" class="btn btn-primary">Save</button>
                 <a href="{{ route('admin.tour.index') }}" class="btn btn-secondary">Cancel</a>
             </div>
         </form>

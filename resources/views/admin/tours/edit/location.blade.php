@@ -103,7 +103,7 @@
                 </div>
             </div>
             <div class="card-footer">
-                <button type="submit" id="submit" class="btn btn-primary">Save location</button>
+                <button type="submit" id="submit" class="btn btn-primary">Save</button>
             </div>
             </form>
         </div>
@@ -195,5 +195,25 @@ $('#country_id').on('change', function() {
 $('#state_id').on('change', function() {
     get_cities_by_state();
 });
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_API_KEY') }}&libraries=places"></script>
+<script>
+    function initAllAutocompletes() {
+        const inputs = document.querySelectorAll('.autocomplete');
+
+        inputs.forEach((input) => {
+            const autocomplete = new google.maps.places.Autocomplete(input, {
+                types: ['geocode'],
+                componentRestrictions: { country: "ca" }, // optional
+            });
+
+            autocomplete.addListener("place_changed", function () {
+                const place = autocomplete.getPlace();
+                console.log("Selected address:", place.formatted_address);
+            });
+        });
+    }
+
+    window.onload = initAllAutocompletes;
+</script>
 </script>
 @endsection

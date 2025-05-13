@@ -55,7 +55,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                     @endforeach
                 </tbody>
             </table>
-            <button type="submit" id="submit" class="btn btn-primary">Save pickup</button>
+            <button type="submit" id="submit" class="btn btn-primary">Save</button>
             </form>
         </div>
     </div>

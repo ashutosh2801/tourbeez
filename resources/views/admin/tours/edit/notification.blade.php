@@ -25,7 +25,7 @@
                                 <div class="form-group">
                                     <label style="font-weight:400"><input type="checkbox" name="Meta[email_info]" id="email_info" {{ old('meta.email_info', !empty($metaData['email_info']) ? 'checked' : '') }} /> Add information to confirmation emails</label>
                                     <div id="emailinfotext" class="hidden">
-                                        <textarea name="Meta[email_info_text]" id="email_info_text" class="form-control  aiz-text-editor" >{{ old('meta.email_info_text', !empty($metaData['email_info_text']) ?? '') }}</textarea>
+                                        <textarea name="Meta[email_info_text]" id="email_info_text" class="form-control  aiz-text-editor" >{{ old('meta.email_info_text', $metaData['email_info_text'] ?? '') }}</textarea>
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -36,7 +36,7 @@
                                                 <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
                                             </div>
                                             <div class="form-control file-amount">{{translate('Choose File')}}</div>
-                                            <input type="hidden" name="Meta[email_attachment_file]" class="selected-files" value="{{ old('meta.email_attachment_file', !empty($metaData['email_attachment_file']) ?? '') }}">
+                                            <input type="hidden" name="Meta[email_attachment_file]" class="selected-files" value="{{ old('meta.email_attachment_file', $metaData['email_attachment_file'] ?? '') }}">
                                         </div>
                                         <div class="file-preview box sm"></div>
                                     </div>
@@ -44,7 +44,7 @@
                                 <div class="form-group">
                                     <label style="font-weight:400"><input type="checkbox" name="Meta[email_notification]" id="email_notification" {{ old('meta.email_notification', !empty($metaData['email_notification']) ? 'checked' : '') }} /> Also send supplier notification email to these recipient(s)</label>
                                     <div id="emailnotification" class="hidden">
-                                        <input type="text" name="Meta[email_notification_emails]" class="form-control" value="{{ old('meta.email_notification_emails', !empty($metaData['email_notification_emails']) ?? '') }}" placeholder="john@doe.com; tony@doe.com">
+                                        <input type="text" name="Meta[email_notification_emails]" class="form-control" value="{{ old('meta.email_notification_emails', $metaData['email_notification_emails'] ?? '') }}" placeholder="john@doe.com; tony@doe.com">
                                     </div>
                                 </div>
                             </div>

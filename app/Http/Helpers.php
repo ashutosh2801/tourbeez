@@ -54,7 +54,7 @@ if (!function_exists('uploaded_asset')) {
         if (($asset = Upload::find($id)) != null) {
             return static_asset($asset->file_name);
         }
-        return null;
+        return static_asset('placeholder.jpg');
     }
 }
 

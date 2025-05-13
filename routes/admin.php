@@ -1,12 +1,15 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AddonController;
 use App\Http\Controllers\AizUploadController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\ExclusionController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeatureController;
+use App\Http\Controllers\InclusionController;
 use App\Http\Controllers\ItineraryController;
 use App\Http\Controllers\PickupController;
 use App\Http\Controllers\ProfileController;
@@ -52,7 +55,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified']
         Route::post('/tour/basic_detail_update/{id}', [TourController::class, 'basic_detail_update'])->name('tour.basic_detail_update');
         Route::post('/tour/addon_update/{id}', [TourController::class, 'addon_update'])->name('tour.addon_update');
         Route::post('/tour/location_update/{id}', [TourController::class, 'location_update'])->name('tour.location_update');
-        Route::post('/tour/pickup_update/{id}', [TourController::class, 'pickup_update'])->name('tour.pickup_update');
+        Route::put('/tour/pickup_update/{id}', [TourController::class, 'pickup_update'])->name('tour.pickup_update');
         Route::put('/tour/seo_update/{id}', [TourController::class, 'seo_update'])->name('tour.seo_update');
         Route::put('/tour/schedule_update/{id}', [TourController::class, 'schedule_update'])->name('tour.schedule_update');
         Route::put('/tour/itinerary_update/{id}', [TourController::class, 'itinerary_update'])->name('tour.itinerary_update');
@@ -75,6 +78,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified']
         Route::resource('features',FeatureController::class);
         Route::post('/feature/single', [FeatureController::class, 'single'])->name('feature.single');
 
+        Route::resource('exclusions',ExclusionController::class);
+        Route::post('/exclusions/single', [ExclusionController::class, 'single'])->name('exclusion.single');
+
+        Route::resource('inclusions',InclusionController::class);
+        Route::post('/inclusions/single', [InclusionController::class, 'single'])->name('inclusion.single');
+
         // Product
         Route::get('/get/subcategory',[ProductController::class,'getsubcategory'])->name('getsubcategory');
         Route::get('/remove-external-img/{id}',[ProductController::class,'removeImage'])->name('remove.image');
@@ -87,6 +96,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified']
         Route::resource('/uploaded-files', AizUploadController::class);
         Route::any('/uploaded-files/file-info', [AizUploadController::class, 'file_info'])->name('uploaded-files.info');
         Route::get('/uploaded-files/destroy/{id}', [AizUploadController::class, 'destroy'])->name('uploaded-files.destroy');
+
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity.logs');
     });
 
 

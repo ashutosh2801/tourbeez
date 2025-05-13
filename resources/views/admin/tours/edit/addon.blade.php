@@ -35,7 +35,9 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                     @foreach ($addons as $item)
                         <tr draggable="true" data-id="{{ $item->id }}" data-order="{{ $item->order ? $item->order : $i++  }}">
                             <th><input {{ (is_array($existing_addons) && in_array($item->id, $existing_addons)) ? 'checked' : '' }} type="checkbox" class="check_all" name="addons[]" value="{{ $item->id }}" style="width: 20px;height: 20px;" /></th>
-                            <td><img src="{{ asset('addon/'.$item->image) }}" alt="{{ $item->name }}" width="50" /></td>
+                            <td>
+                                <img class="img-md" src="{{ uploaded_asset($item->image) }}" height="150"  alt="{{translate('photo')}}">
+                            </td>
                             <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
                             <td>{{ substr($item->description,0,150) }}...</td>
                             <td>{{ price_format($item->price) }}</td>

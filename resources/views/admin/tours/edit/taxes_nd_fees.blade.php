@@ -48,7 +48,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
             <div class="text-center">
                 <a href="{{ route('admin.taxes.create') }}" class="btn border-t-indigo-100 btn-outline">Add New Taxes and Fees</a>
             </div>
-            <button type="submit" id="submit" class="btn btn-primary">Save pickup</button>
+            <button type="submit" id="submit" class="btn btn-primary">Save</button>
             </form>
         </div>
     </div>

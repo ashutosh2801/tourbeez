@@ -70,6 +70,23 @@
                                             </textarea>
                                         </div>
                                     </div>
+
+
+                                    @section('js')
+                                    @parent
+                                    <script>
+                                    function {{ $reminderKey }}() {
+                                        if ($('#{{ $reminderKey }}').is(':checked')) {
+                                            $('#{{ $showhideKey }}').removeClass('hidden');
+                                        } else {
+                                            $('#{{ $showhideKey }}').addClass('hidden');
+                                        }
+                                    }
+                                    {{ $reminderKey }}();
+                                    $('#{{ $reminderKey }}').on('change', {{ $reminderKey }});
+                                    </script>
+                                    @endsection
+
                                 @endforeach
 
 
@@ -91,12 +108,12 @@
                                     <div id="smsremindercustomer" class="form-group hidden" style="max-width: 600px;">
                                         <div class="input-group">
                                             <div class="input-group-prepend">
-                                            <input type="text" class="form-control" id="sms_reminder_delay" name="Meta[sms_reminder_delay]" placeholder="7" value="{{ old('meta.sms_reminder_delay', $metaData['sms_reminder_delay'] ?? '') }}">
+                                                <input type="text" class="form-control" id="sms_reminder_delay" name="Meta[sms_reminder_delay]" placeholder="7" value="{{ old('meta.sms_reminder_delay', $metaData['sms_reminder_delay'] ?? '') }}">
                                             </div>
                                             <select class="form-control" id="sms_reminder_delayUnit" name="Meta[sms_reminder_delayUnit]">
-                                                <option {{ (old('meta.sms_reminder_delayUnit', !empty($metaData['sms_reminder_delayUnit']) ?? '')=='MINUTES') ? 'checked' : '' }} value="MINUTES">minutes</option>
-                                                <option {{ (old('meta.sms_reminder_delayUnit', !empty($metaData['sms_reminder_delayUnit']) ?? '')=='HOURS') ? 'checked' : '' }} value="HOURS">hours</option>
-                                                <option {{ (old('meta.sms_reminder_delayUnit', !empty($metaData['sms_reminder_delayUnit']) ?? '')=='DAYS') ? 'checked' : '' }} value="DAYS">days</option>
+                                                <option {{ (old('meta.sms_reminder_delayUnit', $metaData['sms_reminder_delayUnit'] ?? '')=='MINUTES') ? 'selected' : '' }} value="MINUTES">minutes</option>
+                                                <option {{ (old('meta.sms_reminder_delayUnit', $metaData['sms_reminder_delayUnit'] ?? '')=='HOURS') ? 'selected' : '' }} value="HOURS">hours</option>
+                                                <option {{ (old('meta.sms_reminder_delayUnit', $metaData['sms_reminder_delayUnit'] ?? '')=='DAYS') ? 'selected' : '' }} value="DAYS">days</option>
                                             </select>
                                             <div class="input-group-append">
                                                 <span class="input-group-text">before the session start time</span>
@@ -121,38 +138,6 @@
 @section('js')
 @parent
 <script>
-function email1_reminder() {
-    if ($('#email1_reminder').is(':checked')) {
-        $('#email1reminder').removeClass('hidden');
-    } else {
-        $('#email1reminder').addClass('hidden');
-    }
-}
-email1_reminder();
-$('#email1_reminder').on('change', email1_reminder);
-
-function email2_reminder() {
-    if ($('#email2_reminder').is(':checked')) {
-        $('#email2reminder').removeClass('hidden');
-    } else {
-        $('#email2reminder').addClass('hidden');
-    }
-}
-email2_reminder();
-$('#email2_reminder').on('change', email2_reminder);
-
-
-function email3_reminder() {
-    if ($('#email3_reminder').is(':checked')) {
-        $('#email3reminder').removeClass('hidden');
-    } else {
-        $('#email3reminder').addClass('hidden');
-    }
-}
-email3_reminder();
-$('#email3_reminder').on('change', email3_reminder);
-
-
 function sms_reminder_customer() {
     if ($('#sms_reminder_customer').is(':checked')) {
         $('#smsremindercustomer').removeClass('hidden');

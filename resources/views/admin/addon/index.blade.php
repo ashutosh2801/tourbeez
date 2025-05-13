@@ -22,7 +22,15 @@
                 <tbody>
                     @foreach ($data as $item)
                         <tr>
-                            <td><img src="{{ asset('addon/'.$item->image) }}" alt="{{ $item->name }}" width="150" /></td>
+                            <!-- <td><img src="{{ asset('addon/'.$item->image) }}" alt="{{ $item->name }}" width="150" /></td> -->
+
+
+                            <td>
+                                <img class="img-md" src="{{ uploaded_asset($item->image) }}" height="150"  alt="{{translate('photo')}}">
+                            </td>
+
+
+
                             <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
                             <td>{{ $item->description }}</td>
                             <td>{{ price_format($item->price) }}</td>

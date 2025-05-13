@@ -1,7 +1,7 @@
 <div class="card">
     <div class="card-primary">
         <div class="card-header">
-            <h3 class="card-title">Meta Information</h3>            
+            <h3 class="card-title">SEO </h3>            
         </div>
         <form class="needs-validation" novalidate action="{{ route('admin.tour.seo_update', $data) }}"
             method="POST" enctype="multipart/form-data">
@@ -44,7 +44,7 @@
                             </div>
                             <div class="col-lg-12">
                                 <div class="form-group">
-                                    <label for="canonical_url" class="form-label">Meta Keywords</label>
+                                    <label for="canonical_url" class="form-label">Canonical URL</label>
                                     <input type="text" name="canonical_url" id="canonical_url" value="{{ $detail->canonical_url }}"
                                         class="form-control"  placeholder="Enter canonical url">
                                     @error('canonical_url')

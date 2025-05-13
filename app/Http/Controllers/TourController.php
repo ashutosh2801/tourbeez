@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Exclusion;
 use App\Models\Faq;
 use App\Models\Feature;
+use App\Models\Inclusion;
 use App\Models\Itinerary;
 use App\Models\Pickup;
 use App\Models\TaxesFee;
 use App\Models\TourSchedule;
-use App\Models\TourUpload;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Validator;
 use App\Models\Addon;
 use App\Models\Tour;
 use App\Models\Category;
@@ -18,9 +17,12 @@ use App\Models\TourLocation;
 use App\Models\Tourtype;
 use App\Models\TourDetail;
 use App\Models\TourImage;
+use App\Models\TourUpload;
 use App\Models\TourPricing;
 use App\Services\ImageService;
 use Illuminate\Http\Request;
+use Redirect;
+use Validator;
 use Str;
 
 class TourController extends Controller
@@ -73,7 +75,7 @@ class TourController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'title'                 => 'required|max:255',
             'description'           => 'required',
             'long_description'      => 'required',
@@ -90,7 +92,7 @@ class TourController extends Controller
             'country'               => 'required',
             'state'                 => 'required',
             'city'                  => 'required',
-            'image'                 => 'required|intger',
+            'image'                 => 'required|integer',
         ],
         [
             'title.required' => 'Please enter a title',
@@ -105,6 +107,11 @@ class TourController extends Controller
             'image.required' => 'Please select at featured image',
         ]);
 
+        if ($validator->fails()) {
+            // Validation failed
+            return back()->withInput()->withErrors($validator)->with('error','Something went wrong!');
+        }
+        
         // Generate unique slug
         $baseSlug = Str::slug($request->title);
         $uniqueSlug = $baseSlug;
@@ -133,7 +140,7 @@ class TourController extends Controller
             }
             // Save tour types
             if ($request->has('tour_type') && is_array($request->tour_type)) {
-                $tour->tour_types()->sync($request->tour_type);
+                $tour->tourtypes()->sync($request->tour_type);
             }
 
             if ($request->has('PriceOption') && is_array($request->PriceOption)) {
@@ -173,16 +180,14 @@ class TourController extends Controller
         
         $tourId = $tour->id;
         if( $request->has('image') ) { 
-            // Unset is_main for all current pivot rows
             $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
-
-            // Set is_main = 1 for the selected image
-            $tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
-            // $tour_image = new TourUpload();
-            // $tour_image->tour_id    = $tourId;
-            // $tour_image->upload_id  = $request->image;
-            // $tour_image->is_main    = 1;
-            // $tour_image->save();
+            // Check if the requested image is already attached to the tour
+            if ($tour->galleries->contains($request->image)) {
+                // Just update pivot
+                $tour->galleries()->detach($request->image);
+            } 
+            // Attach and set is_main = 1
+            $tour->galleries()->attach($request->image, ['is_main' => 1]);
         }
 
         return redirect()->route('admin.tour.index')->with('success', 'Tour created successfully.');
@@ -201,7 +206,7 @@ class TourController extends Controller
      */
     public function edit($id)
     {
-        $data       = Tour::where('id', decrypt($id))->first();
+        $data       = Tour::findOrFail(decrypt($id));
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
@@ -214,6 +219,72 @@ class TourController extends Controller
      */
     public function update(Request $request, $id)
     {
+    }
+
+    public function clone(Request $request, $id)
+    {
+        // Find the Tour
+        $tour = Tour::with([
+            'categories', 'galleries', 'tourtypes', 'addons', 'pickups',
+            'itineraries', 'faqs', 'features', 'taxes_fees', 'detail',
+            'location', 'schedule', 'pricings'
+        ])->findOrFail(decrypt($id));
+
+        // Duplicate the Main Tour Record
+        $clonedTour = $tour->replicate(); // replicates attributes except primary key
+        $clonedTour->title .= ' (Copy)'; // optionally append to differentiate
+        $clonedTour->slug .= '-copy'; // optionally append to differentiate
+        $clonedTour->unique_code = unique_code();
+        $clonedTour->push(); // saves the tour and related hasOne/hasMany later
+
+        // Attach BelongsToMany Relations
+        $clonedTour->addons()->attach($tour->addons->pluck('id'));
+        $clonedTour->categories()->attach($tour->categories->pluck('id'));
+        $clonedTour->faqs()->attach($tour->faqs->pluck('id'));
+        $clonedTour->galleries()->attach($tour->galleries->pluck('id'));
+        $clonedTour->pickups()->attach($tour->pickups->pluck('id'));
+        $clonedTour->itineraries()->attach($tour->itineraries->pluck('id'));
+        $clonedTour->inclusions()->attach($tour->features->pluck('id'));
+        $clonedTour->exclusions()->attach($tour->features->pluck('id'));
+        $clonedTour->tourtypes()->attach($tour->tourtypes->pluck('id'));
+        $clonedTour->taxes_fees()->attach($tour->taxes_fees->pluck('id'));
+
+        // $pivotData = [];
+        // foreach ($tour->galleries as $gallery) {
+        //     $pivotData[$gallery->id] = [
+        //         'is_main' => 1,
+        //         // Add more fields if needed
+        //     ];
+        // }
+        // $clonedTour->galleries()->attach($pivotData);
+
+        // Duplicate HasOne Relations
+        if ($tour->detail) {
+            $newDetail = $tour->detail->replicate();
+            $newDetail->tour_id = $clonedTour->id;
+            $newDetail->save();
+        }
+        
+        if ($tour->location) {
+            $newLocation = $tour->location->replicate();
+            $newLocation->tour_id = $clonedTour->id;
+            $newLocation->save();
+        }
+        
+        if ($tour->schedule) {
+            $newSchedule = $tour->schedule->replicate();
+            $newSchedule->tour_id = $clonedTour->id;
+            $newSchedule->save();
+        }
+
+        // Duplicate HasMany Relations (e.g., pricings)
+        foreach ($tour->pricings as $pricing) {
+            $newPricing = $pricing->replicate();
+            $newPricing->tour_id = $clonedTour->id;
+            $newPricing->save();
+        }
+
+        return redirect()->route('admin.tour.index')->with('success', 'Tour has been cloned successfully');
     }
 
     public function basic_detail_update(Request $request, $id)
@@ -338,14 +409,16 @@ class TourController extends Controller
             $tourId = $tour->id;
             if( $request->has('image') ) { 
 
+                $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
                 // Check if the requested image is already attached to the tour
                 if ($tour->galleries->contains($request->image)) {
                     // Just update pivot
-                    $tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
-                } else {
-                    // Attach and set is_main = 1
-                    $tour->galleries()->attach($request->image, ['is_main' => 1]);
-                }
+                    //$tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
+                    $tour->galleries()->detach($request->image);
+                } 
+                // Attach and set is_main = 1
+                $tour->galleries()->attach($request->image, ['is_main' => 1]);
+                
 
                 // Unset is_main for all current pivot rows
                 // $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
@@ -401,11 +474,12 @@ class TourController extends Controller
         $validator = Validator::make($request->all(), [
             'address'       => 'required|max:255',
             'destination'   => 'required|max:255',
-            'postal_code'   => 'required',
-            'country'       => 'required',
-            'state'         => 'required',
-            'city'          => 'required'
+            'postal_code'   => 'required|max:7',
+            'country'       => 'required|integer',
+            'state'         => 'required|integer',
+            'city'          => 'required|integer'
         ]);
+
         
         if ($validator->fails()) {
             // Validation failed
@@ -414,11 +488,12 @@ class TourController extends Controller
 
         $tour  = Tour::findOrFail($id);
         $location = $tour->location;
-        if(!empty($location)) {
+        if(empty($location)) {
             $location = new TourLocation();        
             $location->tour_id      = $tour->id;
         }
 
+        //echo $request->country; exit;
         $location->country_id       = $request->country;
         $location->state_id         = $request->state;
         $location->city_id          = $request->city;
@@ -599,6 +674,7 @@ class TourController extends Controller
             $itinerary = Itinerary::where('title', $option['title'])->where('datetime', $option['datetime'])->where('address', $option['address'])->first();
             if (!$itinerary) {
                 $itinerary = new Itinerary();
+                //$itinerary->tour_id     = $tour->id;
                 $itinerary->user_id     = auth()->user()->id;
                 $itinerary->title       = $option['title'] ?? null;
                 $itinerary->datetime    = $option['datetime'] ?? null;
@@ -667,20 +743,22 @@ class TourController extends Controller
         //Save new Exclusion
         $featureIds = [];
         foreach ($request->InclusionOptions as $option) {
-            $feature = Feature::where('name', $option['name'])->first();
+            $feature = Inclusion::where('name', $option['name'])->first();
             if (!$feature) {
-                $feature = new Feature();
+                $feature = new Inclusion();
                 $feature->user_id   = auth()->user()->id;
                 $feature->name      = $option['name'] ?? null;
-                $feature->type      = 'Inclusion';
-                $feature->save();
+                if( $feature->save() )
+                $featureIds[] = $feature->id;
             } 
-            $featureIds[] = $feature->id;
+            else {
+                $featureIds[] = $feature->id;
+            }
         }
 
         // Sycc faqs
         if ( !empty($featureIds) ) {
-            $tour->features()->sync($featureIds);
+            $tour->inclusions()->sync($featureIds);
         }
 
         return redirect()->back()->with('success','Inclusions saved successfully.');
@@ -700,20 +778,22 @@ class TourController extends Controller
         //Save new Exclusion
         $featureIds = [];
         foreach ($request->ExclusionOptions as $option) {
-            $feature = Feature::where('name', $option['name'])->first();
+            $feature = Exclusion::where('name', $option['name'])->first();
             if (!$feature) {
-                $feature = new Feature();
+                $feature = new Exclusion();
                 $feature->user_id   = auth()->user()->id;
                 $feature->name      = $option['name'] ?? null;
-                $feature->type      = 'Exclusion';
-                $feature->save();
+                if( $feature->save() )
+                $featureIds[] = $feature->id;
             } 
-            $featureIds[] = $feature->id;
+            else {
+                $featureIds[] = $feature->id;
+            }
         }
 
         // Sycc faqs
         if ( !empty($featureIds) ) {
-            $tour->features()->sync($featureIds);
+            $tour->exclusions()->sync($featureIds);
         }
 
         return redirect()->back()->with('success','Exclusions saved successfully.');
@@ -850,21 +930,106 @@ class TourController extends Controller
         return redirect()->back()->with('success', 'Tour reminder updated successfully!');
     }
 
+    public function followup_update(Request $request, $id) 
+    {
+        $tour = Tour::findOrFail($id);
+
+        $allMetaKeys = [
+            'email_review_followup', 'email_review_followup_delay', 'email_review_followup_delayUnit', 'email_review_followup_text',
+            'email_recommend_followup', 'email_recommend_followup_delay', 'email_recommend_followup_delayUnit', 'email_recommend_followup_text',
+            'email_coupon_followup', 'email_coupon_followup_delay', 'email_coupon_followup_delayUnit', 'email_coupon_followup_text',
+            'sms_followup_customer', 'sms_followup_delay', 'sms_followup_delayUnit'
+        ];
+
+        // Validate incoming request if needed
+        $validated = $request->validate([
+            'Meta' => 'array',
+            'Meta.*' => 'nullable|string', // customize validation as needed
+        ]);
+
+        $submittedMeta = $request->input('Meta', []);
+        
+        foreach ($allMetaKeys as $key) {
+            //if (array_key_exists($key, $submittedMeta)) {
+                $value = @$submittedMeta[$key];
+                
+                // Normalize checkbox value to boolean or string
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                } elseif (is_bool($value)) {
+                    $value = $value ? '1' : '0';
+                }
+        
+                $tour->meta()->updateOrCreate(
+                    ['tour_id' => $tour->id, 'meta_key' => $key],
+                    ['meta_value' => $value]
+                );
+            //} else {
+                // If key not in request, delete it (e.g., checkbox was unchecked)
+                //$tour->meta()->where('meta_key', $key)->delete();
+            //}
+        }
+
+
+        return redirect()->back()->with('success', 'Tour followup updated successfully!');
+    }
+
+    public function payment_request_update(Request $request, $id) 
+    {
+        $tour = Tour::findOrFail($id);
+
+        $allMetaKeys = [
+            'email1_payment', 'email1_payment_type', 'email1_payment_percent', 'email1_payments_delay', 'email1_payments_date', 'email1_payment_typedate',
+            'email2_payment', 'email2_payment_type', 'email2_payment_percent', 'email2_payments_delay', 'email2_payments_date', 'email2_payment_typedate',
+            'email3_payment', 'email3_payment_type', 'email3_payment_percent', 'email3_payments_delay', 'email3_payments_date', 'email3_payment_typedate',
+        ];
+
+        // Validate incoming request if needed
+        $validated = $request->validate([
+            'Meta' => 'array',
+            'Meta.*' => 'nullable|string', // customize validation as needed
+        ]);
+
+        $submittedMeta = $request->input('Meta', []);
+        
+        foreach ($allMetaKeys as $key) {
+            //if (array_key_exists($key, $submittedMeta)) {
+                $value = @$submittedMeta[$key];
+                
+                // Normalize checkbox value to boolean or string
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                } elseif (is_bool($value)) {
+                    $value = $value ? '1' : '0';
+                }
+        
+                $tour->meta()->updateOrCreate(
+                    ['tour_id' => $tour->id, 'meta_key' => $key],
+                    ['meta_value' => $value]
+                );
+            //} else {
+                // If key not in request, delete it (e.g., checkbox was unchecked)
+                //$tour->meta()->where('meta_key', $key)->delete();
+            //}
+        }
+
+
+        return redirect()->back()->with('success', 'Tour payment request updated successfully!');
+    }
+
     /**
      * Remove the specified resource from storage.
      */
     public function destroy($id)
     {
         $tour = Tour::where('id', decrypt($id))->first();
+        $tour->title .= '-deleted';
+        $tour->slug .= '-deleted';
+        $tour->save();
         if ($tour->delete()) {
-            flash(translate('Tour info has been deleted successfully'))->success();
-            return redirect()->route('admin.tour.index');
+            return redirect()->route('admin.tour.index')->with('success', 'Tour info has been deleted successfull');
         } else {
-            flash(translate('Sorry! Something went wrong.'))->error();
-            return back();
+            return back()->route('admin.tour.index')->with('error', 'Sorry! Something went wrong.');;
         }
-
-        
-        //return redirect()->route('admin.tour.index')->with('error', 'Tour deleted successfully.');
     }
 }

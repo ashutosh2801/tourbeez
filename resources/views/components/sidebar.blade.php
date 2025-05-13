@@ -148,7 +148,12 @@
                     </li>
                 </ul>
             </li>
-            
+            <li class="nav-item">
+                <a href="{{ route('admin.activity.logs') }}" class="nav-link {{ Route::is('admin.activity.logs') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-cog"></i>
+                    <p>Activity Logs</p>
+                </a>
+            </li>    
             
         @endrole
         <!-- <li class="nav-item">
