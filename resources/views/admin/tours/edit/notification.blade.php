@@ -1,7 +1,7 @@
 <div class="card">
-    <div class="card-warnig">
+    <div class="card-info">
         <div class="card-header">
-            <h3 class="card-title">Notification</h3>            
+            <h3 class="card-title">Message Notification</h3>            
         </div>
         @if ($errors->any())
             <div class="alert alert-danger">

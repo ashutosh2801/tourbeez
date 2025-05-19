@@ -195,6 +195,7 @@ $('#country_id').on('change', function() {
 $('#state_id').on('change', function() {
     get_cities_by_state();
 });
+</script>
 <script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_API_KEY') }}&libraries=places"></script>
 <script>
     function initAllAutocompletes() {
@@ -214,6 +215,5 @@ $('#state_id').on('change', function() {
     }
 
     window.onload = initAllAutocompletes;
-</script>
 </script>
 @endsection

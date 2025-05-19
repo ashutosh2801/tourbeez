@@ -50,6 +50,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified']
 
         // Tour
         Route::resource('tour',TourController::class);
+        Route::get('/tour/{id}/edit/addon', [TourController::class, 'editAddon'])->name('tour.edit.addone');
+        Route::get('/tour/{id}/edit/scheduling', [TourController::class, 'editScheduling'])->name('tour.edit.scheduling');
+        Route::get('/tour/{id}/edit/location', [TourController::class, 'editLocation'])->name('tour.edit.location');
+        Route::get('/tour/{id}/edit/pickups', [TourController::class, 'editPickups'])->name('tour.edit.pickups');
+        Route::get('/tour/{id}/edit/itinerary', [TourController::class, 'editItinerary'])->name('tour.edit.itinerary');
+        Route::get('/tour/{id}/edit/faqs', [TourController::class, 'editFaqs'])->name('tour.edit.faqs');
+        Route::get('/tour/{id}/edit/inclusions', [TourController::class, 'editInclusions'])->name('tour.edit.inclusions');
+        Route::get('/tour/{id}/edit/exclusions', [TourController::class, 'editExclusions'])->name('tour.edit.exclusions');
+        Route::get('/tour/{id}/edit/taxesfees', [TourController::class, 'editTaxesfees'])->name('tour.edit.taxesfees');
+        Route::get('/tour/{id}/edit/gallery', [TourController::class, 'editGallery'])->name('tour.edit.gallery');
+        Route::get('/tour/{id}/edit/seo', [TourController::class, 'editSeo'])->name('tour.edit.seo');
+        Route::get('/tour/{id}/edit/notification', [TourController::class, 'editNotification'])->name('tour.edit.message.notification');
+        Route::get('/tour/{id}/edit/reminder', [TourController::class, 'editReminder'])->name('tour.edit.message.reminder');
+        Route::get('/tour/{id}/edit/followup', [TourController::class, 'editFollowup'])->name('tour.edit.message.followup');
+        Route::get('/tour/{id}/edit/paymentrequest', [TourController::class, 'editPaymentRequest'])->name('tour.edit.message.paymentrequest');
+
         Route::get('/tour/clone/{id}', [TourController::class, 'clone'])->name('tour.clone');
         Route::get('/tour/destroy/{id}', [TourController::class, 'destroy'])->name('tour.destroy');
         Route::post('/tour/basic_detail_update/{id}', [TourController::class, 'basic_detail_update'])->name('tour.basic_detail_update');

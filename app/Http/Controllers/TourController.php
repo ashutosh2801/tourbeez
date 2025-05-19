@@ -207,6 +207,7 @@ class TourController extends Controller
     public function edit($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
+        //$data       = Tour::findOrFail(decrypt($id));
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
@@ -214,6 +215,107 @@ class TourController extends Controller
         return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule', 'metaData'));
     }
 
+    public function editAddon($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.addon', compact( 'data'));
+    }
+
+    public function editScheduling($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
+        return view('admin.tours.feature.scheduling', compact( 'data', 'detail', 'schedule'));
+    }
+
+    public function editLocation($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.location', compact( 'data'));
+    }
+
+    public function editPickups($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.pickups', compact( 'data'));
+    }
+
+    public function editItinerary($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.itinerary', compact( 'data'));
+    }
+
+    public function editFaqs($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.faqs', compact( 'data'));
+    }
+
+    public function editInclusions($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.inclusions', compact( 'data'));
+    }
+
+    public function editExclusions($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.exclusions', compact( 'data'));
+    }
+
+    public function editTaxesfees($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.taxesfees', compact( 'data'));
+    }
+
+    public function editGallery($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.gallery', compact( 'data'));
+    }
+
+    public function editSeo($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        //$metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        return view('admin.tours.feature.seo', compact( 'data', 'detail'));
+    }
+
+    public function editNotification($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        return view('admin.tours.feature.message.notification', compact( 'data', 'detail', 'metaData'));
+    }
+
+    public function editReminder($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        return view('admin.tours.feature.message.reminder', compact( 'data', 'detail', 'metaData'));
+    }
+
+    public function editFollowup($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        return view('admin.tours.feature.message.followup', compact( 'data', 'detail', 'metaData'));
+    }
+
+    public function editPaymentRequest($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        return view('admin.tours.feature.message.paymentrequest', compact( 'data', 'detail', 'metaData'));
+    }
     /**
      * Update the specified resource in storage.
      */
@@ -418,45 +520,14 @@ class TourController extends Controller
                 } 
                 // Attach and set is_main = 1
                 $tour->galleries()->attach($request->image, ['is_main' => 1]);
-                
-
-                // Unset is_main for all current pivot rows
-                // $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
-
-                // Set is_main = 1 for the selected image
-                // $tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
-
-                // $tour_image = TourUpload::where('tour_id', $tourId)->where('is_main', 1)->first();
-                // if( !$tour_image ) {
-                //     $tour_image = new TourUpload();
-                // }
-                // $tour_image->tour_id    = $tourId;
-                // $tour_image->upload_id  = $request->image;
-                // $tour_image->is_main    = 1;
-                // $tour_image->save();
             }
-        
-            /*if( $request->hasFile('image') ) { 
-                $tour_image = TourImage::where('tour_id', $tour->id)->where('is_main', 1)->first();
-                if($tour_image) {
-                    $image_path = public_path('tour-image/' . $tour_image->image);
-                    if (file_exists($image_path)) {
-                        unlink($image_path);
-                    }
-                }
-                else
-                $tour_image = new TourImage();
-
-                $filename = $this->imageService->compressAndStoreImage($request->file('image'), $uniqueSlug, 'tour');
-                $tour_image->image      = $filename;
-                $tour_image->tour_id    = $tour->id;
-                $tour_image->type       = 'Image';
-                $tour_image->is_main    = 1;
-                $tour_image->save();
-            }*/
+            
         }
 
-        return redirect()->back()->with('success', 'Tour  created successfully');
+        return redirect()->back()->with([
+            'success' => 'Tour created successfully',
+            'active_tab' => '#basic_information'
+        ]);
     }
 
     public function addon_update(Request $request, $id) {
@@ -513,7 +584,7 @@ class TourController extends Controller
         if ($request->has('pickups') && is_array($request->pickups)) {
             $tour->pickups()->sync($request->pickups);
 
-            return Redirect::route('admin.tour.edit', encrypt($id) )->with('success','Pickup location saved successfully.'); 
+            return redirect()->back()->withInput()->with('success','Pickup location saved successfully.'); 
         }
 
         return back()->withInput()->with('success','Addon saved successfully.');
@@ -545,12 +616,13 @@ class TourController extends Controller
             $tour_detail->meta_keywords    = $request->meta_keywords;
             $tour_detail->canonical_url    = $request->canonical_url;
             if ($tour_detail->save() ) {
-                return Redirect::route('admin.tour.edit', encrypt($id) )->with('success','Tour SEO data saved successfully.'); 
+                return redirect()->back()->withInput()->with('success','Tour SEO data saved successfully.'); 
             }
         }
 
-        return redirect()->back()->with('error', 'Something went wrong!');
+        return redirect()->back()->withInput()->with('error', 'Something went wrong!');
     }
+
     public function schedule_update(Request $request, $id) {
         //echo $request->session_start_time;   exit;
         $request->validate([
@@ -805,7 +877,7 @@ class TourController extends Controller
         if ($request->has('taxes') && is_array($request->taxes)) {
             $tour->taxes_fees()->sync($request->taxes);
 
-            return Redirect::route('admin.tour.edit', encrypt($id) )->with('success','Tax and fee saved successfully.'); 
+            return redirect()->back()->withInput()->with('success','Tax and fee saved successfully.'); 
         }
 
         return back()->withInput()->with('error','OOPs! something went wrong!');
@@ -827,7 +899,7 @@ class TourController extends Controller
                 $tour->galleries()->sync($gallery);
             }
 
-            return Redirect::route('admin.tour.edit', encrypt($id) )->with('success','Gallery saved successfully.'); 
+            return redirect()->back()->withInput()->with('success','Gallery saved successfully.'); 
         }
 
         return back()->withInput()->with('error','OOPs! something went wrong!');
