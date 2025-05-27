@@ -1,15 +1,15 @@
-@role('admin')
+@role('Super Admin')
 <div class="mb-5 mx-2">
     <h2 class="text-lg">Performance</h2>
     <p>Last 7 Days</p>
     <div class="py-2 d-flex bd-highlight text-center border-bottom">
         <div class="pt-3 flex-fill bd-highlight border bg-white">
-            <p>Number of ordes</p>
+            <p>Number of orders</p>
             <h2>0</h2>
             <p>0</p>
         </div>
         <div class="pt-3 flex-fill bd-highlight border bg-white">
-            <p>Value of ordes</p>
+            <p>Value of orders</p>
             <h2>0</h2>
             <p>$0.00</p>
         </div>
@@ -35,6 +35,8 @@
         </div>
     </div>
 </div>
+@endrole
+
 <div class="row mx-0">
     <div class="col-lg-3 col-6">
         <div class="small-box bg-info">
@@ -89,4 +91,3 @@
         </div>
     </div>
 </div>
-@endrole

@@ -29,12 +29,21 @@
                     </div>
                     <div class="col-lg-6">
                         <div class="form-group">
+                            <label for="Password" class="form-label">Password:</label>
+                            <input type="password" class="form-control" name="password" >
+                            <x-error>password</x-error>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="form-group">
                             <label for="role" class="form-label">Role:*</label>
                             <select name="role" id="role" class="form-control" required>
                                 <option value="" selected disabled>selecte the role</option>
                                 @foreach ($roles as $role)
+                                    @if($role->name!='Super Admin')
                                     <option value="{{ $role->name }}"
-                                        {{ $user->roles[0]['name'] === $role->name ? 'selected' : '' }}>{{ $role->name }}</option>
+                                        {{ ($user->role== $role->name) ? 'selected' : '' }}>{{ $role->name }}</option>
+                                    @endif
                                 @endforeach
                             </select>
                             <x-error>role</x-error>

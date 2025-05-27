@@ -78,8 +78,10 @@
                 <div id="includesContainer"></div>
 
             </div>
-            <div class="card-footer">
-                <button type="submit" id="submit" class="btn btn-primary">Save</button>
+            <div class="card-footer"  style="display:block">
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.faqs', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
+                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.exclusions', encrypt($data->id)) }}" class="btn btn-primary">Next</a>           
             </div>
             </form>
         </div>

@@ -13,9 +13,9 @@ class CityController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['permission:show_member_languages'])->only('index');
-        $this->middleware(['permission:edit_member_language'])->only('edit');
-        $this->middleware(['permission:delete_member_language'])->only('destroy');
+        // $this->middleware(['permission:show_member_languages'])->only('index');
+        // $this->middleware(['permission:edit_member_language'])->only('edit');
+        // $this->middleware(['permission:delete_member_language'])->only('destroy');
 
         $this->city_rules = [
             'name' => ['required','max:255'],
@@ -45,7 +45,7 @@ class CityController extends Controller
             $cities       = $cities->where('name', 'like', '%'.$sort_search.'%');
         }
         $cities = $cities->paginate(10);
-        return view('admin.member_profile_attributes.cities.index', compact('cities','state','countries','sort_search'));
+        return view('admin.attributes.cities.index', compact('cities','state','countries','sort_search'));
 
     }
 
@@ -72,8 +72,8 @@ class CityController extends Controller
         $validator  = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
-            flash(translate('Sorry! Something went wrong'))->error();
-            return Redirect::back()->withErrors($validator);
+            //flash(translate('Sorry! Something went wrong'))->error();
+            return Redirect::back()->withErrors($validator)->with('error', translate('Sorry! Something went wrong'));
         }
 
         $city              = new City;
@@ -81,12 +81,12 @@ class CityController extends Controller
         $city->state_id    = $request->state_id;
         if($city->save())
         {
-            flash(translate('New City has been added successfully'))->success();
-            return redirect()->route('cities.index');
+            //flash(translate('New City has been added successfully'))->success();
+            return redirect()->route('admin.cities.index')->with('error', 'New City has been added successfully');
         }
         else {
-            flash(translate('Sorry! Something went wrong.'))->error();
-            return back();
+            //flash(translate('Sorry! Something went wrong.'))->error();
+            return back()->with(translate('Sorry! Something went wrong.'));
         }
     }
 
@@ -111,7 +111,7 @@ class CityController extends Controller
     {
         $city        = city::findOrFail(decrypt($id));
         $countries   = Country::where('status',1)->get();
-        return view('admin.member_profile_attributes.cities.edit', compact('city','countries'));
+        return view('admin.attributes.cities.edit', compact('city','countries'));
     }
 
     /**
@@ -128,8 +128,8 @@ class CityController extends Controller
         $validator  = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
-            flash(translate('Sorry! Something went wrong'))->error();
-            return Redirect::back()->withErrors($validator);
+            //flash(translate('Sorry! Something went wrong'))->error();
+            return Redirect::back()->withErrors($validator)->with('error', translate('Sorry! Something went wrong'));
         }
 
         $city              = City::findOrFail($id);
@@ -137,12 +137,12 @@ class CityController extends Controller
         $city->state_id    = $request->state_id;
         if($city->save())
         {
-            flash(translate('City info has been updated successfully'))->success();
-            return redirect()->route('cities.index');
+            //flash(translate('City info has been updated successfully'))->success();
+            return redirect()->route('admin.cities.index')->with('success', translate('City info has been updated successfully'));
         }
         else {
-            flash(translate('Sorry! Something went wrong.'))->error();
-            return back();
+            //flash(translate('Sorry! Something went wrong.'))->error();
+            return back()->with('error', translate('Sorry! Something went wrong.'));
         }
     }
 
@@ -155,11 +155,11 @@ class CityController extends Controller
     public function destroy($id)
     {
         if (City::destroy($id)) {
-            flash(translate('City info has been deleted successfully'))->success();
-            return redirect()->route('cities.index');
+            //flash(translate('City info has been deleted successfully'))->success();
+            return redirect()->route('admin.cities.index')->with('success', translate('City info has been deleted successfully'));
         } else {
-            flash(translate('Sorry! Something went wrong.'))->error();
-            return back();
+            //flash(translate('Sorry! Something went wrong.'))->error();
+            return back()->with('error', translate('Sorry! Something went wrong.'));
         }
     }
 

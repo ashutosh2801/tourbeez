@@ -7,9 +7,11 @@
     </ul>
     <ul class="navbar-nav ml-auto">
         <li class="nav-item">
+            
+
             <a href="{{ route('admin.profile.edit') }}"
                 class="nav-link {{ Route::is('admin.profile.edit') ? 'active' : '' }}">
-                <i class="nav-icon fas fa-user"></i> My Profile
+                <i class="nav-icon fas fa-user"></i> {{ Auth::user()->name }} Profile
             </a>
         </li>
         <li class="nav-item">

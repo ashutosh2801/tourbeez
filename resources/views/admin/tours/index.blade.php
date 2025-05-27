@@ -3,9 +3,11 @@
     <div class="card card-primary">
         <div class="card-header">
             <h3 class="card-title">{{ translate('Tours') }}</h3>
+            @can('add_tour') 
             <div class="card-tools">
                 <a href="{{ route('admin.tour.create') }}" class="btn btn-sm btn-info">Create New Tour</a>
             </div>
+            @endcan
         </div>
         <div class="card-body">
             <table class="table table-striped" id="tourTable">
@@ -23,13 +25,22 @@
                     @foreach ($data as $tour)
                         <tr>
                             <td>{!! main_image_html($tour->main_image?->id) !!}</td>
-                            <td><a class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a></td>
+                            <td>
+                                @can('edit_tour')     
+                                <a class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a></td>
+                                @else
+                                {{ $tour->title }}
+                                @endcan
                             <td>{{ price_format($tour->price) }}</td>
                             <td>{{ $tour->unique_code }}</td>
                             <td>{{ $tour->category_names ?: 'No categories' }}</td>
                             <td>
+                                @can('clone_tour')   
                                 <a class="btn btn-sm btn-success confirm-clone" data-href="{{ route('admin.tour.clone', encrypt($tour->id)) }}">Clone</a>
+                                @endcan
+                                @can('delete_tour')  
                                 <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.tour.destroy', encrypt($tour->id)) }}">{{translate('Delete')}}</a>
+                                @endcan
                             </td>
                         </tr>
                     @endforeach

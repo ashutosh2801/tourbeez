@@ -10,16 +10,19 @@ class CountryController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['permission:show_countries'])->only('index');
-        $this->middleware(['permission:edit_country'])->only('updateStatus');
+        //$this->middleware(['permission:show_countries'])->only('index');
+        //$this->middleware(['permission:edit_country'])->only('updateStatus');
 
         $this->country_rules = [
-            'name' => ['required','max:255'],
+            'name' => ['required','max:255', 'unique:countries'],
+            'code' => ['required','max:3'],
         ];
 
         $this->country_messages = [
             'name.required'             => translate('Country Name is required'),
+            'name.unique'             => translate('Country Name is already created'),
             'name.max'                  => translate('Max 255 characters'),
+            'code.required'             => translate('Country Code is required'),
         ];
     }
     /**
@@ -37,7 +40,7 @@ class CountryController extends Controller
             $countries    = $countries->where('name', 'like', '%'.$sort_search.'%');
         }
         $countries = $countries->paginate(10);
-        return view('admin.member_profile_attributes.countries.index', compact('countries','sort_search'));
+        return view('admin.attributes.countries.index', compact('countries','sort_search'));
 
     }
 
@@ -57,27 +60,28 @@ class CountryController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    // public function store(Request $request)
-    // {
-    //     $rules      = $this->country_rules;
-    //     $messages   = $this->country_messages;
-    //     $validator  = Validator::make($request->all(), $rules, $messages);
-    //
-    //     if ($validator->fails()) {
-    //         flash(translate('Sorry! Something went wrong'))->error();
-    //         return Redirect::back()->withErrors($validator);
-    //     }
-    //
-    //     $country       = new Country;
-    //     $country->name = $request->name;
-    //     if($country->save()){
-    //         flash(translate('New country has been added successfully'))->success();
-    //         return redirect()->route('countries.index');
-    //     } else {
-    //         flash(translate('Sorry! Something went wrong.'))->error();
-    //         return back();
-    //     }
-    // }
+    public function store(Request $request)
+    {
+        $rules      = $this->country_rules;
+        $messages   = $this->country_messages;
+        $validator  = Validator::make($request->all(), $rules, $messages);
+    
+        if ($validator->fails()) {
+            //flash(translate('Sorry! Something went wrong'))->error();
+            return Redirect::back()->withInput()->withErrors($validator)->with('error',translate('Sorry! Something went wrong'));
+        }
+    
+        $country       = new Country;
+        $country->name = $request->name;
+        $country->iso3 = $request->code;
+        if($country->save()){
+            //flash(translate('New country has been added successfully'))->success();
+            return redirect()->route('admin.countries.index')->with('success', 'New country has been added successfully');
+        } else {
+            //flash(translate('Sorry! Something went wrong.'))->error();
+            return back()->with('error','Something went wrong!');
+        }
+    }
 
     /**
      * Display the specified resource.
@@ -99,7 +103,7 @@ class CountryController extends Controller
     public function edit($id)
     {
         $country = Country::findOrFail(decrypt($id));
-        return view('admin.member_profile_attributes.countries.edit',compact('country'));
+        return view('admin.attributes.countries.edit',compact('country'));
     }
 
     /**
@@ -109,27 +113,28 @@ class CountryController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    // public function update(Request $request, $id)
-    // {
-    //     $rules = $this->country_rules;
-    //     $messages = $this->country_messages;
-    //     $validator = Validator::make($request->all(), $rules, $messages);
-    //
-    //     if ($validator->fails()) {
-    //         flash(translate('Sorry! Something went wrong'))->error();
-    //         return Redirect::back()->withErrors($validator);
-    //     }
-    //
-    //     $country       = Country::findOrFail($id);
-    //     $country->name = $request->name;
-    //     if($country->save()){
-    //         flash(translate('Country info updated successfully.'))->success();
-    //         return redirect()->route('countries.index');
-    //     } else {
-    //         flash(translate('Sorry! Something went wrong.'))->error();
-    //         return back();
-    //     }
-    // }
+    public function update(Request $request, $id)
+    {
+        $rules = $this->country_rules;
+        $messages = $this->country_messages;
+        $validator = Validator::make($request->all(), $rules, $messages);
+    
+        if ($validator->fails()) {
+            //flash(translate('Sorry! Something went wrong'))->error();
+            return Redirect::back()->withErrors($validator)->with('success', translate('Sorry! Something went wrong.'));
+        }
+    
+        $country       = Country::findOrFail($id);
+        $country->name = $request->name;
+        $country->iso3 = $request->code;
+        if($country->save()){
+            //flash(translate('Country info updated successfully.'))->success();
+            return redirect()->route('admin.countries.index')->with('success', translate('Country info updated successfully.'));
+        } else {
+            //flash(translate('Sorry! Something went wrong.'))->error();
+            return back()->with('error', translate('Sorry! Something went wrong.'));;
+        }
+    }
 
     public function updateStatus(Request $request){
         $country = Country::findOrFail($request->id);
@@ -156,11 +161,11 @@ class CountryController extends Controller
             $state->delete();
         }
         if (Country::destroy($id)) {
-            flash(translate('Country deleted successfully'))->success();
-            return redirect()->route('countries.index');
+            //flash(translate('Country deleted successfully'))->success();
+            return redirect()->route('admin.countries.index')->with('success', translate('Country deleted successfully'));
         } else {
-            flash(translate('Sorry! Something went wrong.'))->error();
-            return back();
+            //flash(translate('Sorry! Something went wrong.'))->error();
+            return back()->with('error', translate('Sorry! Something went wrong.'));
         }
     }
 }

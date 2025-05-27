@@ -54,6 +54,13 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
+    // Route::post('logout', function() {
+    //     Artisan::call('cache:clear');
+    //     Artisan::call('config:clear');
+    //     Artisan::call('permission:cache-reset');
+    //     return redirect()->back()->with('success', 'Cache cleared successfully.');
+    // })->name('logout');
+
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
                 ->name('logout');
 });

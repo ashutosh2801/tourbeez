@@ -33,6 +33,18 @@ class TourController extends Controller
      */
     public function __construct(ImageService $imageService)
     {
+        // $user = \App\Models\User::find(1); // replace with your user ID
+        // $user->givePermissionTo('show_tours');
+        // $dd = $user->getPermissionNames(); // See if 'show_tours' is listed
+
+        // dd($dd );
+        $this->middleware('auth');
+        $this->middleware(['permission:show_tours'])->only('index');
+        $this->middleware(['permission:add_tour'])->only('create', 'store');
+        $this->middleware(['permission:clone_tour'])->only('clone');
+        $this->middleware(['permission:edit_tour'])->only('edit', 'update');
+        $this->middleware(['permission:delete_tour'])->only('destroy');
+        
         $this->imageService = $imageService;
 
         $data = Tour::orderBy('id', 'DESC')->get();
@@ -190,15 +202,20 @@ class TourController extends Controller
             $tour->galleries()->attach($request->image, ['is_main' => 1]);
         }
 
-        return redirect()->route('admin.tour.index')->with('success', 'Tour created successfully.');
+        return redirect()->route('admin.tour.edit', encrypt($tour->id))->with('success', 'Tour created successfully.');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Tour $tour)
+    public function preview($id)
     {
-        //
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+
+        return view('admin.tours.preview.index', compact( 'data', 'detail', 'schedule', 'metaData'));
     }
 
     /**
@@ -598,23 +615,24 @@ class TourController extends Controller
             'meta_title'         => 'required|max:255',
             'meta_description'   => 'required',
             //'meta_keywords'      => 'required',
-            'canonical_url'      => 'required',
+            //'canonical_url'      => 'required',
         ],
         [
             'meta_title.required'       => 'Please enter a meta title',
             'meta_description.required' => 'Please enter a meta description',
             //'meta_keywords.required'    => 'Please enter a long description',
-            'canonical_url.required'    => 'Please enter a canonical url',
+            //'canonical_url.required'    => 'Please enter a canonical url',
         ]);
         
         // Update tour instance
         $tour  = Tour::findOrFail($id);
-        if($tour) {            
+        $tour->status = 1;
+        if($tour->save()) {            
             $tour_detail = TourDetail::where('tour_id', $tour->id)->first();
             $tour_detail->meta_title       = $request->meta_title;
             $tour_detail->meta_description = $request->meta_description;
             $tour_detail->meta_keywords    = $request->meta_keywords;
-            $tour_detail->canonical_url    = $request->canonical_url;
+            //$tour_detail->canonical_url    = $request->canonical_url;
             if ($tour_detail->save() ) {
                 return redirect()->back()->withInput()->with('success','Tour SEO data saved successfully.'); 
             }
@@ -626,25 +644,29 @@ class TourController extends Controller
     public function schedule_update(Request $request, $id) {
         //echo $request->session_start_time;   exit;
         $request->validate([
-            'minimum_notice_num'    => 'required|integer|min:0',
-            'minimum_notice_unit'   => 'required',
-            'session_start_date'    => 'required|date_format:Y-m-d',
-            'session_start_time'    => 'required',
-            'session_end_date'      => 'required|date_format:Y-m-d',
-            'session_end_time'      => 'required',
+            'minimum_notice_num'        => 'required|integer|min:0',
+            'minimum_notice_unit'       => 'required',
+            'estimated_duration_num'    => 'required|integer|min:0',
+            'estimated_duration_unit'   => 'required',
+            'session_start_date'        => 'required|date_format:Y-m-d',
+            'session_start_time'        => 'required',
+            'session_end_date'          => 'required|date_format:Y-m-d',
+            'session_end_time'          => 'required',
 
-            'repeat_period'         => 'required|string|in:NONE,MINUTELY,HOURLY,DAILY,WEEKLY,MONTHLY,YEARLY', 
-            'repeat_period_unit'    => 'required_if:repeat_period,MINUTELY,HOURLY|integer',
-            'until_date'            => 'required_if:repeat_period,MINUTELY,HOURLY|date',  
+            'repeat_period'             => 'required|string|in:NONE,MINUTELY,HOURLY,DAILY,WEEKLY,MONTHLY,YEARLY', 
+            'repeat_period_unit'        => 'required_if:repeat_period,MINUTELY,HOURLY|integer',
+            'until_date'                => 'required_if:repeat_period,MINUTELY,HOURLY|date',  
         ],
         [
-            'minimum_notice_num.required'   => 'Please enter a minimum notice number',
-            'minimum_notice_unit.required'  => 'Please select a minimum notice unit',
-            'session_start_date.required'   => 'Please enter a start date',
-            'session_start_time.required'   => 'Please enter a start time',
-            'session_end_date.required'     => 'Please enter a to date',
-            'session_end_time.required'     => 'Please enter a to time',
-            'repeat_period.required'        => 'Please select a repeat',
+            'minimum_notice_num.required'       => 'Please enter a minimum notice number',
+            'minimum_notice_unit.required'      => 'Please select a minimum notice unit',
+            'estimated_duration_num.required'   => 'Please enter a minimum notice number',
+            'estimated_duration_unit.required'  => 'Please select a minimum notice unit',
+            'session_start_date.required'       => 'Please enter a start date',
+            'session_start_time.required'       => 'Please enter a start time',
+            'session_end_date.required'         => 'Please enter a to date',
+            'session_end_time.required'         => 'Please enter a to time',
+            'repeat_period.required'            => 'Please select a repeat',
         ]);
 
         // If repeat_period is MINUTELY or HOURLY, validate Repeat[]
@@ -680,17 +702,19 @@ class TourController extends Controller
             $schedule = new TourSchedule();
         }
 
-        $schedule->tour_id             = $tour->id;
-        $schedule->minimum_notice_num  = $request->minimum_notice_num;
-        $schedule->minimum_notice_unit = $request->minimum_notice_unit;
-        $schedule->session_start_date  = $request->session_start_date;
-        $schedule->session_start_time  = $request->session_start_time;
-        $schedule->session_end_date    = $request->session_end_date;
-        $schedule->session_end_time    = $request->session_end_time;
-        $schedule->sesion_all_day      = $request->sesion_all_day?1:0;
-        $schedule->repeat_period       = $request->repeat_period;
-        $schedule->repeat_period_unit  = $request->repeat_period_unit;
-        $schedule->until_date          = $request->until_date;
+        $schedule->tour_id                  = $tour->id;
+        $schedule->minimum_notice_num       = $request->minimum_notice_num;
+        $schedule->minimum_notice_unit      = $request->minimum_notice_unit;
+        $schedule->estimated_duration_num   = $request->estimated_duration_num;
+        $schedule->estimated_duration_unit  = $request->estimated_duration_unit;
+        $schedule->session_start_date       = $request->session_start_date;
+        $schedule->session_start_time       = $request->session_start_time;
+        $schedule->session_end_date         = $request->session_end_date;
+        $schedule->session_end_time         = $request->session_end_time;
+        $schedule->sesion_all_day           = $request->sesion_all_day?1:0;
+        $schedule->repeat_period            = $request->repeat_period;
+        $schedule->repeat_period_unit       = $request->repeat_period_unit;
+        $schedule->until_date               = $request->until_date;
         if ($schedule->save() ) {
             // First delete old repeats
             $schedule->repeats()->delete();
@@ -729,13 +753,13 @@ class TourController extends Controller
         $request->validate([
             'ItineraryOptions'               => 'required|array',
             'ItineraryOptions.*.title'       => 'required|string|max:255',
-            'ItineraryOptions.*.datetime'        => 'required|string|max:255',
+            //'ItineraryOptions.*.datetime'        => 'required|string|max:255',
             'ItineraryOptions.*.address'     => 'required|string|max:255',
             'ItineraryOptions.*.description' => 'required',
         ],
         [
             'ItineraryOptions.*.title.required'      => 'Itinerary title is required',
-            'ItineraryOptions.*.datetime.required'   => 'Itinerary datetime is required',
+            //'ItineraryOptions.*.datetime.required'   => 'Itinerary datetime is required',
             'ItineraryOptions.*.address.required'    => 'Itinerary address is required',
             'ItineraryOptions.*.description.required'=> 'Itinerary description is required',
         ]);

@@ -1,10 +1,9 @@
 <div class="card">
     <div class="card card-primary">
+        <form class="needs-validation" novalidate action="{{ route('admin.tour.schedule_update', $data->id) }}" method="POST"
+    enctype="multipart/form-data" autocomplete="off">
         <div class="card-header">
             <h3 class="card-title">Scheduling</h3>
-            <div class="card-tools">
-                <!-- <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-info">Create New</a> -->
-            </div>
         </div>
         <div class="card-body">
 
@@ -16,16 +15,13 @@
                         @endforeach
                     </ul>
                 </div>
-            @endif
-
-            <form class="needs-validation" novalidate action="{{ route('admin.tour.schedule_update', $data->id) }}" method="POST"
-            enctype="multipart/form-data" autocomplete="off">
-                @method('PUT')
-                @csrf
-                <input type="hidden" name="id" value="{{ $data->id }}">
+            @endif            
+            @method('PUT')
+            @csrf
+            <input type="hidden" name="id" value="{{ $data->id }}">
 
                 <div class="row mb-4">
-                    <label for="minimum_notice_num" class="form-label col-lg-2">Minimum notice</label>
+                    <label for="minimum_notice_num" class="form-label col-lg-2">Minimum notice *</label>
                     <div class="col-lg-3">
                         <input type="text" name="minimum_notice_num" id="minimum_notice_num" 
                         value="{{ old('minimum_notice_num', $schedule?->minimum_notice_num) }}"
@@ -40,6 +36,28 @@
                             <option {{ old('minimum_notice_unit', $schedule?->minimum_notice_unit) === 'HOURS' ? 'selected' : '' }} value="HOURS">Hours</option>
                         </select>
                         @error('minimum_notice_unit')
+                            <small class="form-text text-danger">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <label for="estimated_duration_num" class="form-label col-lg-2">Estimated duration *</label>
+                    <div class="col-lg-3">
+                        <input type="text" name="estimated_duration_num" id="estimated_duration_num" 
+                        value="{{ old('estimated_duration_num', $schedule?->estimated_duration_num) }}"
+                            class="form-control " placeholder="Session time">
+                        @error('estimated_duration_num')
+                            <small class="form-text text-danger">{{ $message }}</small>
+                        @enderror
+                    </div>
+                    <div class="col-lg-3">
+                        <select class="form-control " name="estimated_duration_unit" id="estimated_duration_unit">
+                            <option {{ old('estimated_duration_unit', $schedule?->estimated_duration_unit) === 'MINUTES' ? 'selected' : '' }} value="MINUTES">Minutes</option>
+                            <option {{ old('estimated_duration_unit', $schedule?->estimated_duration_unit) === 'HOURS' ? 'selected' : '' }} value="HOURS">Hours</option>
+                            <option {{ old('estimated_duration_unit', $schedule?->estimated_duration_unit) === 'DAYS' ? 'selected' : '' }} value="DAYS">Days</option>
+                        </select>
+                        @error('mestimated_duration_unit')
                             <small class="form-text text-danger">{{ $message }}</small>
                         @enderror
                     </div>
@@ -215,10 +233,14 @@
                 @endphp
                 @endforeach
 
-                <button type="submit" id="submit" class="btn btn-primary">Save</button>
 
-            </form>
         </div>
+        <div class="card-footer" style="display:block">
+            <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
+            <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
+            <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.location', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
+        </div>
+        </form>
     </div>
 </div>
 

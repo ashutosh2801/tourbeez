@@ -16,7 +16,7 @@ class UserController extends Controller
     }
     public function index()
     {
-        $data = User::orderBy('id','DESC')->get();
+        $data = User::where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
         return view('admin.user.index', compact('data'));
     }
     public function create()
@@ -29,13 +29,14 @@ class UserController extends Controller
             'name' => 'required', 'string', 'max:255',
             'email' => 'required', 'string', 'email', 'max:255', 'unique:'.User::class,
             'password' => 'required|max:255|min:6',
-            'role' => 'required'
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
+            'role' => $request->role,
+            'user_type' => 'staff'
         ]);
         $user->assignRole($request->role);
         return redirect()->route('admin.user.index')->with('success','User created successfully.');
@@ -50,11 +51,14 @@ class UserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'role' => ['required', 'string']
         ]); 
         $user = User::find($request->id);
         $user->name = $request->name;
         $user->email = $request->email;
+        $user->role = $request->role;
+        if($request->password) {
+            $user->password = bcrypt($request->password);
+        }
         $user->save();
         $user->assignRole($request->role);
         return redirect()->route('admin.user.index')->with('success','User updated successfully.');

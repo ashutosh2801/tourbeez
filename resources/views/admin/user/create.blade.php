@@ -38,8 +38,10 @@
                             <select name="role" id="role" class="form-control" required>
                                 <option value="" selected disabled>selecte the role</option>
                                 @foreach ($roles as $role)
+                                    @if($role->name!='Super Admin')
                                     <option value="{{ $role->name }}"
                                         {{ $role->name == old('role') ? 'selected' : '' }}>{{ $role->name }}</option>
+                                    @endif
                                 @endforeach
                             </select>
                             <x-error>role</x-error>

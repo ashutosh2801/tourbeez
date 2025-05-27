@@ -4,17 +4,21 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AddonController;
 use App\Http\Controllers\AizUploadController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CityController;
 use App\Http\Controllers\CollectionController;
+use App\Http\Controllers\CountryController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\ExclusionController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeatureController;
 use App\Http\Controllers\InclusionController;
 use App\Http\Controllers\ItineraryController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PickupController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\StateController;
 use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
@@ -24,19 +28,31 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SubCateoryController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard',[ProfileController::class,'dashboard'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::middleware(['role:admin'])->group(function(){
-        Route::resource('user',UserController::class);
-        Route::resource('role',RoleController::class);
-        Route::resource('permission',PermissionController::class);
-        Route::resource('category',CategoryController::class);
-        Route::resource('tour_type',TourTypeController::class);
-        Route::resource('collection',CollectionController::class);
-        //Route::resource('product',ProductController::class);
+    //Route::middleware(['role:admin'])->group(function(){
+        Route::resource('/user',UserController::class);
+        Route::resource('/role',RoleController::class);
+        Route::resource('/permission',PermissionController::class);
+        Route::resource('/category',CategoryController::class);
+        Route::resource('/tour_type',TourTypeController::class);
+        Route::resource('/collection',CollectionController::class);
+        
+        // Country
+        Route::resource('/countries', CountryController::class);
+        Route::post('/countries/status', [CountryController::class, 'updateStatus'])->name('countries.status');
+        Route::get('/countries/destroy/{id}', [CountryController::class, 'destroy'])->name('countries.destroy');
+
+        // State
+        Route::resource('/states', StateController::class);
+        Route::get('/states/destroy/{id}', [StateController::class, 'destroy'])->name('states.destroy');
+
+        // City
+        Route::resource('/cities', CityController::class);
+        Route::get('/cities/destroy/{id}', [CityController::class, 'destroy'])->name('cities.destroy');
 
         // Addone
         Route::resource('addon',AddonController::class);
@@ -84,6 +100,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified']
         Route::put('/tour/reminders_update/{id}', [TourController::class, 'reminders_update'])->name('tour.reminders_update');
         Route::put('/tour/followup_update/{id}', [TourController::class, 'followup_update'])->name('tour.followup_update');
         Route::put('/tour/payment_request_update/{id}', [TourController::class, 'payment_request_update'])->name('tour.payment_request_update');
+        Route::get('/tour/preview/{id}', [TourController::class, 'preview'])->name('tour.preview');
 
         Route::resource('itineraries',ItineraryController::class);
         Route::post('/itinerary/single', [ItineraryController::class, 'single'])->name('itinerary.single');
@@ -113,8 +130,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified']
         Route::any('/uploaded-files/file-info', [AizUploadController::class, 'file_info'])->name('uploaded-files.info');
         Route::get('/uploaded-files/destroy/{id}', [AizUploadController::class, 'destroy'])->name('uploaded-files.destroy');
 
+        Route::resource('/orders', OrderController::class);
+
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity.logs');
-    });
+    //});
 
 
 
@@ -146,26 +165,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'verified']
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
     Route::post('/email-templates/preview/{id}', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
     
-    // Route::get('/payment-methods-settings', 'SettingController@payment_method_settings')->name('payment_method_settings');
-    // Route::post('/payment_method_update', 'SettingController@payment_method_update')->name('payment_method.update');
-
-    // Route::get('/third-party-settings', 'SettingController@third_party_settings')->name('third_party_settings');
-    // Route::post('/third-party-settings/update', 'SettingController@third_party_settings_update')->name('third_party_settings.update');
-
-    // Route::get('/social-media-login-settings', 'SettingController@social_media_login_settings')->name('social_media_login');
-
-    // Route::get('//member-profile-sections', 'SettingController@member_profile_sections_configuration')->name('member_profile_sections_configuration');
-
-    // // website setting
-    // Route::group(['prefix' => 'website'], function () {
-    //     Route::get('/header_settings', 'SettingController@website_header_settings')->name('website.header_settings');
-    //     Route::get('/footer_settings', 'SettingController@website_footer_settings')->name('website.footer_settings');
-    //     Route::get('/appearances', 'SettingController@website_appearances')->name('website.appearances');
-    //     Route::resource('custom-pages', 'PageController');
-    //     Route::get('/custom-pages/edit/{id}', 'PageController@edit')->name('custom-pages.edit');
-    //     Route::get('/custom-pages/destroy/{id}', 'PageController@destroy')->name('custom-pages.destroy');
-    // });
-
-    // Route::resource('staffs', 'StaffController');
-    // Route::get('/staffs/destroy/{id}', 'StaffController@destroy')->name('staffs.destroy');
+    Route::get('/clear-cache', function() {
+        Artisan::call('cache:clear');
+        Artisan::call('config:clear');
+        Artisan::call('permission:cache-reset');
+        //Artisan::call('route:clear');
+        //Artisan::call('view:clear');
+        return redirect()->back()->with('success', 'Cache cleared successfully.');
+    })->name('clear.cache');
 });

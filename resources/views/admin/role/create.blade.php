@@ -24,8 +24,24 @@
                                         <label for="name" class="form-label">Role Name</label>
                                         <input type="text" class="form-control" name="name" id="name"
                                             required="" value="{{ old('name') }}">
-                                            <x-error>name</x-error>
+                                        <x-error>name</x-error>
                                         <div class="invalid-feedback">Role name field is required.</div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="roles" class="form-label"><strong>Permissions</strong></label>
+                                        <select class="form-control @error('permissions') is-invalid @enderror" multiple aria-label="Permissions" id="permissions" name="permissions[]" style="height: 210px;">
+                                            @forelse ($permissions as $permission)
+                                                <option value="{{ $permission->id }}">
+                                                    {{ ucwords(str_replace("_", " ", $permission->name)) }}
+                                                </option>
+                                            @empty
+                                                <option value="" disabled>No permissions available</option>
+                                            @endforelse
+                                        </select>
+                                        @if ($errors->has('permissions'))
+                                            <div class="text-danger">{{ $errors->first('permissions') }}</div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

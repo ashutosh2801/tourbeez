@@ -12,9 +12,10 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                 <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-info">Create New</a>
             </div>
         </div>
+        <form class="needs-validation" novalidate action="{{ route('admin.tour.addon_update', $data->id) }}" method="POST"
+    enctype="multipart/form-data">
         <div class="card-body">
-            <form class="needs-validation" novalidate action="{{ route('admin.tour.addon_update', $data->id) }}" method="POST"
-            enctype="multipart/form-data">
+            
             @csrf
             <table class="table table-striped align-middle" id="myTable">
                 <thead>
@@ -47,9 +48,13 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                     @endforeach
                 </tbody>
             </table>
-            <button type="submit" id="submit" class="btn btn-primary">Save</button>
-            </form>
         </div>
+        <div class="card-footer" style="display:block">
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
+                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
+            </div>
+            </form>
     </div>
 </div>
 
