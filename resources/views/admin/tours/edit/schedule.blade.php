@@ -62,7 +62,7 @@
                         @enderror
                     </div>
                 </div>
-
+               
                 <div class="mb-4">
                     <div class="row">
                         <label for="session_start_date" class="form-label col-lg-2">Next available session *</label>
@@ -317,13 +317,78 @@ $(document).ready(function(){
     
     $('.aiz-date-range').on('apply.daterangepicker', function(ev, picker) {
         var selectedDate = picker.startDate.format('YYYY-MM-DD');
-        //console.log("Selected date:", selectedDate);
-        $(this).val(selectedDate); // If needed
+        var endDate = picker.endDate.format('YYYY-MM-DD');
+      //  $(this).val(selectedDate); // If needed
+    // Update visible input with selected range
+        $(this).val(endDate);
 
-        $('#session_end_date').val(selectedDate);
-        $('#session_start_time, .start_time').val('09:00 AM');
-        $('#session_end_time, .end_time').val('05:00 PM');
+       // $('#session_end_date').val(endDate);
+        $('#until_date').val(endDate); // Applies the end date to the until_date input
+
+       // $('#session_end_date').val(selectedDate);
+       // $('#session_start_time, .start_time').val('09:00 AM');
+       // $('#session_end_time, .end_time').val('05:00 PM');
     });
+    
 });
+
+$(document).ready(function() {
+    $('#estimated_duration_num, #estimated_duration_unit, #session_start_time').on('input', function() {
+        let durationNum = parseInt($('#estimated_duration_num').val());
+        let durationUnit = $('#estimated_duration_unit').val();
+        let sessionStartTime = $('#session_start_time').val(); // e.g., "9:00 AM"
+
+        if (!durationNum || !sessionStartTime) return;
+
+        // Parse "9:00 AM" (or "9:00 AM YYYY-MM-DD" if you add dates)
+        let timeParts = sessionStartTime.match(/(\d+):(\d+)\s?(AM|PM)/i);
+        if (!timeParts) return;
+
+        let hours = parseInt(timeParts[1]);
+        let minutes = parseInt(timeParts[2]);
+        let period = timeParts[3].toUpperCase();
+
+        // Convert to 24-hour time
+        if (period === 'PM' && hours < 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+
+        // Create Date object for today
+        let date = new Date();
+        date.setHours(hours);
+        date.setMinutes(minutes);
+        date.setSeconds(0);
+
+        // Add based on durationUnit
+        if (durationUnit === 'HOURS') {
+            date.setHours(date.getHours() + durationNum);
+        } else if (durationUnit === 'MINUTES') {
+            date.setMinutes(date.getMinutes() + durationNum);
+        } else if (durationUnit === 'DAYS') {
+            date.setDate(date.getDate() + durationNum);
+        }
+
+        // Format to 12-hour with AM/PM
+        let newHours = date.getHours();
+        let newMinutes = date.getMinutes();
+        let newPeriod = newHours >= 12 ? 'PM' : 'AM';
+
+        newHours = newHours % 12;
+        newHours = newHours ? newHours : 12; // Handle midnight
+        newMinutes = newMinutes < 10 ? '0' + newMinutes : newMinutes;
+
+        let formattedTime = newHours + ':' + newMinutes + ' ' + newPeriod;
+
+        // Optional: include date
+        let month = date.getMonth() + 1;
+        let day = date.getDate();
+        let year = date.getFullYear();
+        let formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+        let fullFormatted = formattedTime;
+        $('#session_end_time').val(fullFormatted);
+        $('#session_end_date').val(formattedDate);
+    });
+});                 
 </script>
+
 @endsection
