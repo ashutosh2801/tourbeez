@@ -72,10 +72,10 @@
                                     <span class="input-group-text" id="basic-addon-from" style="width:70px;">Form</span>
                                 </div>
                                 <input type="text" placeholder="Date" name="session_start_date" id="session_start_date" 
-                                value="{{ old('session_start_date', $schedule->session_start_date) }}" class="aiz-date-range form-control" data-single="true" 
+                                value="{{ old('session_start_date', $schedule->session_start_date) }}" class="form-control aiz-date-range" data-single="true" 
                                 data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                    <span class="input-group-text calendar-icon-start" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                                 </div>                       
                             </div>
                             @error('session_start_date')
@@ -87,7 +87,7 @@
                                 <input type="text" placeholder="Time" name="session_start_time" id="session_start_time" 
                                 value="{{ old('session_start_time', $schedule->session_start_time) }}" class="form-control aiz-time-picker"> 
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                    <span class="input-group-text time-icon-start" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                                 </div>                       
                             </div>
                             @error('session_start_time')
@@ -103,9 +103,9 @@
                                     <span class="input-group-text" id="basic-addon-from"  style="width:70px;">To</span>
                                 </div>
                                 <input type="text" placeholder="Date" name="session_end_date" id="session_end_date" 
-                                value="{{ old('session_end_date', $schedule->session_end_date) }}" class="aiz-date-range form-control" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
+                                value="{{ old('session_end_date', $schedule->session_end_date) }}" class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                    <span class="input-group-text calendar-icon-end" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                                 </div>                       
                             </div>
                             @error('session_end_date')
@@ -117,7 +117,7 @@
                                 <input type="text" placeholder="Time" name="session_end_time" id="session_end_time" 
                                 value="{{ old('session_end_time', $schedule->session_end_time) }}" class="form-control aiz-time-picker"> 
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                    <span class="input-group-text time-icon-end" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                                 </div>                       
                             </div>
                             @error('session_end_time')
@@ -175,9 +175,9 @@
                             </div>
                             <input type="text" placeholder="Date" name="until_date" id="until_date" 
                             value="{{ old('until_date', $schedule->until_date) }}" 
-                            class="aiz-date-range form-control" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
+                            class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
                             <div class="input-group-prepend">
-                                <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                <span class="input-group-text calendar-icon-util" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                             </div>                       
                         </div>
                         @error('until_date')
@@ -246,6 +246,7 @@
 
 @section('js')
 @parent
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 function setValueTime( value ) {
 
@@ -388,7 +389,68 @@ $(document).ready(function() {
         $('#session_end_time').val(fullFormatted);
         $('#session_end_date').val(formattedDate);
     });
-});                 
+});     
+$(document).ready(function() {
+        $('.calendar-icon-start').on('click', function () {
+        const startdate = $('#session_start_date').data('daterangepicker');
+        if (!startdate.isShowing) {
+            $('#session_start_date').focus();
+        }
+     //   $('#session_start_date').focus(); // focus input
+       // $('#session_end_date').focus(); // focus input
+        
+    });
+          $('.calendar-icon-end').on('click', function () {
+        const enddate = $('#session_end_date').data('daterangepicker');
+        if (!enddate.isShowing) {
+            $('#session_end_date').focus();
+        }
+     //   $('#session_start_date').focus(); // focus input
+       // $('#session_end_date').focus(); // focus input
+        
+    });
+    $('.calendar-icon-util').on('click', function () {
+        const enddate = $('#until_date').data('daterangepicker');
+        if (!enddate.isShowing) {
+            $('#until_date').focus();
+        }
+     //   $('#session_start_date').focus(); // focus input
+       // $('#session_end_date').focus(); // focus input
+        
+    });
+});   
+ $(document).ready(function () {
+  // Initialize flatpickr and save instance in a variable
+  const startpickr = flatpickr("#session_start_time", {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "H:i",
+  });
+
+  // On icon click, open the picker ONLY if it's not already open
+  $('.time-icon-start').on('click', function () {
+    if (!startpickr.isOpen) {
+      startpickr.open();
+    }
+    // Focus input as well, optional
+    $('#session_start_time').focus();
+  });
+  const endpickr = flatpickr("#session_end_time", {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "H:i",
+  });
+
+  // On icon click, open the picker ONLY if it's not already open
+  $('.time-icon-end').on('click', function () {
+    if (!endpickr.isOpen) {
+      endpickr.open();
+    }
+    // Focus input as well, optional
+    $('#session_end_time').focus();
+  });
+});
+
 </script>
 
 @endsection
