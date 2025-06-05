@@ -4,8 +4,8 @@ use App\Models\Tour;
 use App\Models\Translation;
 
 // use App\Models\EmailTemplate;
-// use App\Models\SmsTemplate;
-// use App\Models\Notification;
+ use App\Models\TourImage;
+use App\Models\TourDetail;
 use App\Upload;
 use App\User;
 use Ashutosh2801\Colorcodeconverter\Colorcodeconverter;
@@ -781,7 +781,221 @@ if (!function_exists('show_profile_picture')) {
         return $profile_picture_show;
     }
 }
+function checkWebsiteSeoContent($id,$focusKeyword = 'NA') {
 
+    $tour = Tour::findorFail($id);
+    $score = 100;
+    $passedChecks = [];
+    $failedChecks = [];
 
+   // $html = @file_get_contents($url);
+   // if (!$html) return ['error' => 'URL not accessible'];
+
+   // libxml_use_internal_errors(true);
+    //$dom = new DOMDocument();
+   // $dom->loadHTML($html);
+
+    // 1. Page Title
+    //$titleTags = $dom->getElementsByTagName('title');
+    $title = trim($tour->title);
+    if (!$title) {
+        $failedChecks[] = "❌ Page Title is missing.";
+        $score -= 10;
+    } elseif (strlen($title) > 60) {
+        $failedChecks[] = "⚠️ The Page Title is too long (max 60 chars).";
+        $score -= 5;
+    } else {
+        $passedChecks[] = "✅ Page Title is present.";
+    }
+
+    if ($focusKeyword !== 'NA' && stripos($title, $focusKeyword) === false) {
+        $failedChecks[] = "❌ Focus keyword not found in the Page Title.";
+        $score -= 5;
+    } else {
+        if ($focusKeyword !== 'NA') {
+            $passedChecks[] = "✅ Focus keyword found in the Page Title.";
+        }
+    }
+
+    // 2. Meta Description
+    $tourDetail = TourDetail::where('tour_id', $id)->firstOrFail();
+    $description = trim($tourDetail->meta_description ?? '');
+
+    if (!$description) {
+        $failedChecks[] = "❌ Meta Description is missing.";
+        $score -= 15;
+    } elseif (strlen($description) > 160) {
+        $failedChecks[] = "⚠️ The Meta Description is too long (max 160 chars).";
+        $score -= 10;
+    } else {
+        $passedChecks[] = "✅ Meta Description is present.";
+    }
+
+    if ($focusKeyword !== 'NA' && stripos($description, $focusKeyword) === false) {
+        $failedChecks[] = "❌ Focus keyword not found in Meta Description.";
+        $score -= 5;
+    } else {
+        if ($focusKeyword !== 'NA') {
+            $passedChecks[] = "✅ Focus keyword found in Meta Description.";
+        }
+    }
+
+    // 3. H1 Tag
+    $descriptionHtml = $tourDetail->description ?? '';
+
+    // Check for <h1>
+    if (preg_match('/<h1[^>]*>(.*?)<\/h1>/i', $descriptionHtml, $matches)) {
+        $passedChecks[] = "✅ H1 tag is present.";
+        $h1Content = strip_tags($matches[1]);
+    } else {
+        $failedChecks[] = "❌ H1 tag is missing.";
+        $score -= 10;
+    }
+
+    // 4. First paragraph keyword presence
+    $descriptionHtml = $tourDetail->description ?? '';
+    $firstParagraph = '';
+
+    if (preg_match('/<p[^>]*>(.*?)<\/p>/is', $descriptionHtml, $matches)) {
+        $firstParagraph = strtolower(strip_tags(trim($matches[1])));
+        
+        if ($focusKeyword !== 'NA' && stripos($firstParagraph, $focusKeyword) === false) {
+            $failedChecks[] = "❌ Focus keyword not found in the first paragraph.";
+            $score -= 5;
+        } else {
+            $passedChecks[] = "✅ Focus keyword found in the first paragraph.";
+        }
+    } else {
+        $failedChecks[] = "❌ No paragraph (<p>) tag found.";
+        $score -= 5;
+    }
+    // 5. Content Analysis - word count and keyword density
+        $textContent = strtolower(
+            strip_tags(
+                $tour->title . ' ' .
+                $tour->short_description . ' ' .
+                $tourDetail->description
+            )
+        );
+
+        $words = str_word_count($textContent, 1);
+        $wordCount = count($words);
+
+        if ($wordCount < 300) {
+            $failedChecks[] = "❌ Your text doesn't contain enough words, a minimum of 300 words is recommended.";
+            $score -= 15; // Adjusted penalty
+        } else {
+            $passedChecks[] = "✅ Text contains enough words.";
+        }
+
+        // Keyword density
+        $keywordCount = ($focusKeyword !== 'NA') ? substr_count($textContent, strtolower($focusKeyword)) : 0;
+        $keywordDensity = ($wordCount > 0) ? ($keywordCount / $wordCount) * 100 : 0;
+
+        if ($focusKeyword !== 'NA') {
+            if ($keywordDensity < 1) {
+                $failedChecks[] = "❌ Low keyword density (" . round($keywordDensity, 2) . "%).";
+                $score -= 5;
+            } elseif ($keywordDensity > 4) {
+                $failedChecks[] = "⚠️ Keyword density detected (" . round($keywordDensity, 2) . "%).";
+                $score -= 10;
+            } else {
+                $passedChecks[] = "✅ Keyword density is optimal.";
+            }
+        }
+    // 6. Images & Alt attributes
+     $imgs = TourImage::where('tour_id', $id)->get();// get all images
+    $missingAlt = 0;
+    $keywordInAlt = false;
+
+    // Image check
+    if ($imgs->count() === 0) {
+        $failedChecks[] = "❌ No images found.";
+        $score -= 15;
+    } else {
+        $passedChecks[] = "✅ Images are present.";
+
+        foreach ($imgs as $img) {
+            $alt = $img->alt ?? ''; // assuming alt attribute is stored in DB
+            if (!$alt) {
+                $missingAlt++;
+            }
+            if ($focusKeyword !== 'NA' && stripos($alt, $focusKeyword) !== false) {
+                $keywordInAlt = true;
+            }
+        }
+
+        if ($missingAlt > 0) {
+            $failedChecks[] = "❌ $missingAlt image(s) missing alt attributes.";
+            $score -= 10;
+        } else {
+            $passedChecks[] = "✅ All images have alt attributes.";
+        }
+
+        if (!$keywordInAlt && $focusKeyword !== 'NA') {
+            $failedChecks[] = "❌ Focus keyword not found in any image alt attribute.";
+            $score -= 5;
+        } else {
+            $passedChecks[] = "✅ Focus keyword found in image Alt tag.";
+        }
+    }
+    // 7. Internal & External Links
+ 
+  /*  $internalLinks = 0;
+    $externalLinks = 0;
+    $host = parse_url($url, PHP_URL_HOST);
+    foreach ($dom->getElementsByTagName('a') as $link) {
+        $href = $link->getAttribute('href');
+        if (!$href) continue;
+        // Normalize relative links starting with /
+        if (str_starts_with($href, '/')) {
+            $internalLinks++;
+        } elseif (strpos($href, $host) !== false) {
+            $internalLinks++;
+        } else {
+            $externalLinks++;
+        }
+    }
+    if ($internalLinks === 0) {
+        $failedChecks[] = "❌ No internal links found.";
+        $score -= 5;
+    } else {
+        $passedChecks[] = "✅ Internal links are present.";
+    }
+    if ($externalLinks === 0) {
+        $failedChecks[] = "❌ No external links found.";
+        $score -= 5;
+    } else {
+        $passedChecks[] = "✅ External links are present.";
+    }
+
+    // 8. Canonical Tag
+    $hasCanonical = false;
+    foreach ($dom->getElementsByTagName('link') as $link) {
+        if (strtolower($link->getAttribute('rel')) === 'canonical') {
+            $hasCanonical = true;
+            break;
+        }
+    }
+    if (!$hasCanonical) {
+        $failedChecks[] = "❌ Canonical tag is missing.";
+        $score -= 5;
+    } else {
+        $passedChecks[] = "✅ Canonical tag is present.";
+    }
+    */
+
+    // Clamp score between 0 and 100
+    $score = max(0, min(100, $score));
+
+    return [
+        'score' => $score,
+        'percentage' => round($score),
+        'passed' => $passedChecks,
+        'failed' => $failedChecks,
+        'wordCount' => $wordCount,
+        'keywordDensity' => round($keywordDensity, 2)
+    ];
+}
 
 ?>

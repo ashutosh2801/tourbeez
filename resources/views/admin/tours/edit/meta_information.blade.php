@@ -1,66 +1,58 @@
-<div class="card">
-    <div class="card-primary">
-        <div class="card-header">
-            <h3 class="card-title">SEO </h3>            
-        </div>
-        <form class="needs-validation" novalidate action="{{ route('admin.tour.seo_update', $data) }}"
-            method="POST" enctype="multipart/form-data">
-            @method('PUT')
-            @csrf
-            <input type="hidden" name="id" value="{{ $data->id }}">
+<!-- Load jQuery and Bootstrap (must be placed before </body>) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
-            <div class="card">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-lg-12">
-                                <div class="form-group">
-                                    <label for="meta_title" class="form-label">Meta Title</label>
-                                    <input type="text" name="meta_title" id="meta_title" value="{{ $detail->meta_title }}"
-                                        class="form-control" placeholder="Enter meta title">
-                                    @error('meta_title')
-                                        <small class="form-text text-danger">{{ $message }}</small>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-lg-12">
-                                <div class="form-group">
-                                    <label for="meta_description" class="form-label">Meta Description</label>
-                                    <input type="text" name="meta_description" id="meta_description" value="{{ $detail->meta_description }}"
-                                        class="form-control"  placeholder="Enter meta description">
-                                    @error('meta_description')
-                                        <small class="form-text text-danger">{{ $message }}</small>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-lg-12">
-                                <div class="form-group">
-                                    <label for="meta_keywords" class="form-label">Meta Keywords</label>
-                                    <input type="text" name="meta_keywords" id="meta_keywords" value="{{ $detail->meta_keywords }}"
-                                        class="form-control"  placeholder="Enter meta keywords">
-                                    @error('meta_keywords')
-                                        <small class="form-text text-danger">{{ $message }}</small>
-                                    @enderror
-                                </div>
-                            </div>
-                            <!-- <div class="col-lg-12">
-                                <div class="form-group">
-                                    <label for="canonical_url" class="form-label">Canonical URL</label>
-                                    <input type="text" name="canonical_url" id="canonical_url" value="{{ $detail->canonical_url }}"
-                                        class="form-control"  placeholder="Enter canonical url">
-                                    @error('canonical_url')
-                                        <small class="form-text text-danger">{{ $message }}</small>
-                                    @enderror
-                                </div>
-                            </div> -->
-                        </div>
+<!-- Tab Pills -->
+<div class="card">
+    <div class="card-body">
+        <!-- Nav pills -->
+        <div class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+            <a class="nav-link active" id="seo-tab" data-toggle="pill" href="#seo" role="tab" aria-controls="seo" aria-selected="true">
+                SEO
+            </a>
+            <a class="nav-link" id="seoScore-tab" data-toggle="pill" href="#seoScore" role="tab" aria-controls="seoScore" aria-selected="false">
+                SEO Score
+            </a>
+        </div>
+
+        <!-- Tab content -->
+        <div class="tab-content" id="pills-tabContent">
+            <div class="tab-pane fade show active" id="seo" role="tabpanel" aria-labelledby="seo-tab">
+                <div class="card">
+                        @include('admin.tours.edit.seo')
                     </div>
-                </div>
             </div>
-            <div class="card-footer" style="display:block">                
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.message.paymentrequest', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
-                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-lg btn-success">Publish</button>
+            <div class="tab-pane fade" id="seoScore" role="tabpanel" aria-labelledby="seoScore-tab">
+                  <div class="card">
+                        @include('admin.tours.edit.seo_score')
+                    </div>
             </div>
-            
-        </form>
+        </div>
     </div>
 </div>
+
+@section('modal')
+
+@endsection
+@section('js')
+<script>
+$(document).ready(function () {
+    $('#seo-tab').click(function (e) {
+        e.preventDefault();
+        $('#seo').addClass('show active');
+        $('#seoScore').removeClass('show active');
+        $(this).addClass('active');
+        $('#seoScore-tab').removeClass('active');
+    });
+
+    $('#seoScore-tab').click(function (e) {
+        e.preventDefault();
+        $('#seoScore').addClass('show active');
+        $('#seo').removeClass('show active');
+        $(this).addClass('active');
+        $('#seo-tab').removeClass('active');
+    });
+});
+</script>
+
+@endsection

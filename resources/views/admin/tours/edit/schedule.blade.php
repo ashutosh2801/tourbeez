@@ -327,8 +327,8 @@ $(document).ready(function(){
         $('#until_date').val(endDate); // Applies the end date to the until_date input
 
        // $('#session_end_date').val(selectedDate);
-       // $('#session_start_time, .start_time').val('09:00 AM');
-       // $('#session_end_time, .end_time').val('05:00 PM');
+        $('#session_start_time, .start_time').val('09:00 AM');
+        $('#session_end_time, .end_time').val('05:00 PM');
     });
     
 });
@@ -422,10 +422,12 @@ $(document).ready(function() {
  $(document).ready(function () {
   // Initialize flatpickr and save instance in a variable
   const startpickr = flatpickr("#session_start_time", {
-    enableTime: true,
-    noCalendar: true,
-    dateFormat: "H:i",
-  });
+  enableTime: true,
+  noCalendar: true,
+  dateFormat: "h:i K",     // Format shown to user
+  time_24hr: false,        // 12-hour format
+  defaultDate: "09:00 AM"  // Set default time
+});
 
   // On icon click, open the picker ONLY if it's not already open
   $('.time-icon-start').on('click', function () {
@@ -436,11 +438,12 @@ $(document).ready(function() {
     $('#session_start_time').focus();
   });
   const endpickr = flatpickr("#session_end_time", {
-    enableTime: true,
-    noCalendar: true,
-    dateFormat: "H:i",
-  });
-
+  enableTime: true,
+  noCalendar: true,
+  dateFormat: "h:i K",     // Format shown to user
+  time_24hr: false,        // 12-hour format
+  defaultDate: "05:00 PM"  // Set default time
+});
   // On icon click, open the picker ONLY if it's not already open
   $('.time-icon-end').on('click', function () {
     if (!endpickr.isOpen) {
