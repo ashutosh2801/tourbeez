@@ -1,14 +1,30 @@
-
+    @section('css')
+     <style>
+     .cardbox {
+        background: #f6f6f6;
+        border-radius: 2px;
+        display: inline-block;
+        height: 93px;
+        margin: 1rem;
+        position: relative;
+        width: 181%;
+        }
+        .focus{
+                margin-top: 30px;
+                margin-left: 11px;
+        }
+    </style>
+    @endsection
   <div class="card">
     <div class="card-info">
       <div class="card-header">
             <h3 class="card-title"> Optimization Grade</h3>            
         </div>
         @php
-          $result = checkWebsiteSeoContent($data->id);
-          $percentage = (int) $result['percentage']; // remove % if needed
-
-                $progressClass = 'bg-info';
+        $focusKeyword = $detail->focus_keyword;
+          $result = checkWebsiteSeoContent($data->id,$focusKeyword);
+            $percentage = (int) $result['percentage']; 
+                $progressClass = 'bg-danger';
                 if ($percentage > 60) {
                     $progressClass = 'bg-success';
                 } elseif ($percentage > 50) {
@@ -28,49 +44,72 @@
                                     aria-valuenow="@php echo $percentage; @endphp"
                                     aria-valuemin="0"
                                     aria-valuemax="100"
-                                    style="width: @php echo $percentage; @endphp %;">
-                                    @php echo $percentage; @endphp %
+                                    style="width: <?php echo $percentage; ?>%;">
+                                    <?php echo $percentage; ?>%
                                 </div>
                                 </div>
                             </div>
                             <div class="col-md-12" style="margin-top: 14px;">
                                 <div class="progress" style="height: 31px;">
-                                    <div class="progress-bar bg-info progress-bar-striped" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width:50%">Low</div>
-                                    <div class="progress-bar bg-warning progress-bar-striped" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width:25%">Medium</div>
-                                    <div class="progress-bar bg-success progress-bar-striped" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width:25%">High</div>
+                                    <div class="progress-bar bg-danger progress-bar-striped" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:30%">Low</div>
+                                    <div class="progress-bar bg-warning progress-bar-striped" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width:35%">Medium</div>
+                                    <div class="progress-bar bg-success progress-bar-striped" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width:35%">High</div>
                                 </div>
                             </div>
-                            <div class="col-md-12">
-                            <div class="form-group">
+                      
+                            <form  action="{{ route('admin.tour.addfocus', $data->id) }}" method="POST" enctype="multipart/form-data" autocomplete="off">
+                              @csrf
+                           <div class="cardbox">
+                            <div class="row col-md-12 focus">
+                            <div class="form-group col-md-2">
                                 <label class="control-label">Focus Keyword</label> 
+                            </div>
+                             <div class="form-group col-md-8">
                                 <div>
-                                
-                                    <input type="hidden" name="id" value="{{ $data->id }}" disabled="disabled">
+                                    <input type="hidden" name="id" value="{{ $data->id }}">
                                     <input type="text" class="form-control icon" name="focus_keyword" 
-                                    id="focus_keyword" placeholder="10" autocomplete="off" value="{{ $data->title }}" 
-                                    disabled="disabled">
+                                    id="focus_keyword" placeholder="10" autocomplete="off" value="{{ $data->title }}">
                                 </div>
-                            </div>  
-                            <button type="submit" name="submit" class="btn btn-success btn-flat btn-pri">Submit</button>
+                            </div> 
+                            <div class="form-group col-md-2"> 
+                                <button type="submit" name="submit" class="btn btn-success btn-flat btn-pri">Submit</button>
+                            </div>     
                         </div>
-                        <br>
+                        </div>
+                    </form>
                         <div class="col-md-12">
-                            @php
-                            echo "<br /><h3>✅ Passed Checks:</h3><br />";
-                            echo "<ul style='list-style:none;font-size:15px;line-height:1.7em'>";
-                            foreach ($result['passed'] as $msg) {
-                                    echo "<li>$msg</li>";
-                                }
-                            
-                            echo "</ul><br /><br /><ul style='list-style:none;font-size:15px;line-height:1.7em; color:red; margin-left: -37px;'>";
-                            echo "<h3>❌ Failed Checks:</h3><br />";
-                            foreach ($result['failed'] as $msg) {
-                                        echo "<li>$msg</li>";
-                                    }
-                            echo "<ul>";
-                            
-                           @endphp
-                           
+                             <div class="mb-3">
+                                <h5 class="text-success">✅ Passed Checks</h5>
+                                <ul>
+                                    @forelse ($result['passed'] as $item)
+                                        <li>{{ $item }}</li>
+                                    @empty
+                                        <li>None</li>
+                                    @endforelse
+                                </ul>
+                            </div>
+
+                            <div class="mb-3">
+                                <h5 class="text-warning">⚠️ Warnings</h5>
+                                <ul>
+                                    @forelse ($result['warning'] as $item)
+                                        <li>{{ $item }}</li>
+                                    @empty
+                                        <li>None</li>
+                                    @endforelse
+                                </ul>
+                            </div>
+
+                            <div class="mb-3">
+                                <h5 class="text-danger">❌ Failed Checks</h5>
+                                <ul>
+                                    @forelse ($result['failed'] as $item)
+                                        <li>{{ $item }}</li>
+                                    @empty
+                                        <li>None</li>
+                                    @endforelse
+                                </ul>
+                            </div>
                         </div>
                         </div>
                     </div>

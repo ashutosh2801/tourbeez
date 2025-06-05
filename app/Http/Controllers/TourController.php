@@ -12,6 +12,7 @@ use App\Models\TaxesFee;
 use App\Models\TourSchedule;
 use App\Models\Addon;
 use App\Models\Tour;
+use App\Models\User;
 use App\Models\Category;
 use App\Models\TourLocation;
 use App\Models\Tourtype;
@@ -64,6 +65,13 @@ class TourController extends Controller
 
         $taxesfees = TaxesFee::orderBy('sort_order','ASC')->get();
         view()->share('taxesfees', $taxesfees);
+        
+        $datas     = Tour::all();
+        foreach($datas as $val){
+        $users      = User::findOrFail($val->user_id);
+         view()->share('users', $users);
+        }
+        
     }
 
     /**
@@ -135,6 +143,7 @@ class TourController extends Controller
 
         // Create new product instance
         $tour = new Tour();
+        $tour->user_id    = auth()->id();
         $tour->title      = $request->title;
         $tour->slug       = $uniqueSlug;
         $tour->unique_code= $request->unique_code;
@@ -211,11 +220,12 @@ class TourController extends Controller
     public function preview($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
+        $users      = User::findOrFail($data->user_id);
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
 
-        return view('admin.tours.preview.index', compact( 'data', 'detail', 'schedule', 'metaData'));
+        return view('admin.tours.preview.index', compact( 'data', 'detail', 'schedule', 'metaData','users'));
     }
 
     /**
@@ -224,12 +234,12 @@ class TourController extends Controller
     public function edit($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        //$data       = Tour::findOrFail(decrypt($id));
+        $users      = User::findOrFail($data->user_id);
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
 
-        return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule', 'metaData'));
+        return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule', 'metaData','users'));
     }
 
     public function editAddon($id)
@@ -1126,6 +1136,23 @@ class TourController extends Controller
             return redirect()->route('admin.tour.index')->with('success', 'Tour info has been deleted successfull');
         } else {
             return back()->route('admin.tour.index')->with('error', 'Sorry! Something went wrong.');;
+        }
+    }
+    /***
+     Add focus keyword
+     */
+     public function add_focus_keyword(Request $request, $id)
+    {
+        
+        // Update tour instance
+        $tour  = Tour::findOrFail($id);
+        $tour->status = 1;
+        if($tour->save()) {            
+            $tour_detail = TourDetail::where('tour_id', $tour->id)->first();
+            $tour_detail->focus_keyword       = $request->focus_keyword;
+            if ($tour_detail->save() ) {
+                return redirect()->back()->withInput()->with('success','Focus key saved successfully.'); 
+            }
         }
     }
 }

@@ -101,6 +101,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::put('/tour/followup_update/{id}', [TourController::class, 'followup_update'])->name('tour.followup_update');
         Route::put('/tour/payment_request_update/{id}', [TourController::class, 'payment_request_update'])->name('tour.payment_request_update');
         Route::get('/tour/preview/{id}', [TourController::class, 'preview'])->name('tour.preview');
+        Route::post('/tour/addfocus/{id}', [TourController::class, 'add_focus_keyword'])->name('tour.addfocus');
 
         Route::resource('itineraries',ItineraryController::class);
         Route::post('/itinerary/single', [ItineraryController::class, 'single'])->name('itinerary.single');

@@ -14,7 +14,7 @@
                 <thead>
                     <tr>
                         <th>{{ translate('Image') }}</th>
-                        <th>{{ translate('Title') }}</th>
+                        <th>{{ translate('Title') }} </th>
                         <th width="80">{{ translate('Price') }}</th>
                         <th width="80">{{ translate('Code') }}</th>
                         <th width="250">{{ translate('Category') }}</th>
@@ -22,14 +22,18 @@
                     </tr>
                 </thead>
                 <tbody>
+                   
                     @foreach ($data as $tour)
                         <tr>
                             <td>{!! main_image_html($tour->main_image?->id) !!}</td>
                             <td>
                                 @can('edit_tour')     
-                                <a class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a></td>
+                                <a class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
+                                <br> Written By : {{ $users->name }}
+                               </td>
                                 @else
                                 {{ $tour->title }}
+                               
                                 @endcan
                             <td>{{ price_format($tour->price) }}</td>
                             <td>{{ $tour->unique_code }}</td>

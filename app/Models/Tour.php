@@ -158,4 +158,12 @@ class Tour extends Model
     {
         return $this->hasMany(ProductImage::class);
     }
+    public function addonsAll(): BelongsToMany
+    {
+        return $this->belongsToMany(Addon::class, 'addon_tour', 'tour_id', 'addon_id'); 
+    }
+    public function itinerariesAll()
+    {
+       return $this->hasMany(Itinerary::class, 'tour_id');
+    }
 }
