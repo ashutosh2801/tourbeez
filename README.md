@@ -1,7 +1,3 @@
-## About This Projects
-
-This project is made in Laravel version 10. In this project, I used an Admin LTE with a breeze installation. Users do have not to worry about assets & folder paths for the admin side. Created for basic e-commerce project admin.Added the basic modules. Don't forget to give star to this repository ⭐.
-
 ## Installation & usage
 - For Install you have to clone this repo or you can fire this command as well.
 
@@ -83,7 +79,7 @@ password: ```p$ssw#rd```
 
 - if you want to use the admin side but you have no idea about components & how here things work. so that you just have to create a file & put your code.
 
-- I added the functionality to compress the image size & convert it into webp format in the ```ProductController```.
+- I added the functionality to compress the image size & convert it into webp format in the ```TourController```.
 
 # Toast
 
