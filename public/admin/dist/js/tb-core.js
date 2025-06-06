@@ -1013,7 +1013,7 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
                 var minuteStep = $this.data("minute-step");
                 var defaultTime = $this.data("default");
 
-                minuteStep = !minuteStep ? 10 : minuteStep;
+                minuteStep = !minuteStep ? 5 : minuteStep;
                 defaultTime = !defaultTime ? "00:00" : defaultTime;
 
                 $this.timepicker({

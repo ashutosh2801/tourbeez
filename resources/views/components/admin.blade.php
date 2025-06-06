@@ -17,8 +17,8 @@
 
     <!-- Required meta tags -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="app-url" content="{{ getBaseURL() }}">
-    <meta name="file-base-url" content="{{ getFileBaseURL() }}">
+    <meta name="app-url" content="{{ env('APP_URL') }}/admin/">
+    <meta name="file-base-url" content="{{ env('APP_URL') }}/public/">
 
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"
@@ -49,6 +49,7 @@
     @yield('css')
 
     <script>
+        var APP_URL = '{{ env('APP_URL') }}';
         var TB = TB || {};
     </script>
 </head>
@@ -69,7 +70,7 @@
                 <div class="user-panel mt-3 pb-3 mb-3 d-flex">
                     <div class="image">
                         @if (Auth::user()->avatar != null)
-                            <img src="{{ Auth::user()->avatar }}" class="img-circle elevation-2" alt="User Image">
+                             <img src="{{ Auth::user()->avatar }}" class="img-circle elevation-2" alt="User Image">
                         @else
                             <a href="{{ route('admin.dashboard') }}"><img style="width:200px" src="{{ asset('admin/dist/img/tourbeez-logo-white.png') }}" class="img-responsive"
                         alt="tourbeez-logo-white.png"></a>

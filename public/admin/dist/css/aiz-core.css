@@ -4313,7 +4313,7 @@ input[type="number"] {
     padding: 0.6rem 1rem;
     font-size: 0.875rem;
     height: calc(1.3125rem + 1.2rem + 2px);
-    border: 1px solid #e2e5ec;
+    border: 1px solid #aeb0b4;
     color: #898b92;
 }
 .form-control-sm {
@@ -4559,7 +4559,7 @@ input[type="number"] {
     line-height: 1.5;
     color: #74788d;
     background-color: #f7f8fa;
-    border: 1px solid #e2e5ec;
+    border: 1px solid #aeb0b4;
     border-radius: 4px;
 }
 .input-group-sm > .custom-select,
@@ -7347,6 +7347,13 @@ ul.social.colored [class*="linkedin"] {
     padding: 0;
     text-align: center;
     line-height: 30px;
+}
+
+.alink {
+    color:#007bff;
+}
+.alink:hover {
+    text-decoration: underline;
 }
 
 .hidden {

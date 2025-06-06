@@ -1,7 +1,7 @@
 <div class="card">
-    <div class="card-warnig">
+    <div class="card-info">
         <div class="card-header">
-            <h3 class="card-title">Payment Request</h3>            
+            <h3 class="card-title">Message Payment Request</h3>            
         </div>
         @if ($errors->any())
             <div class="alert alert-danger">
@@ -12,118 +12,124 @@
                 </ul>
             </div>
         @endif
-        <form class="needs-validation" novalidate action="{{ route('admin.tour.followup_update', $data->id) }}" method="POST" enctype="multipart/form-data">
+        <form class="needs-validation" novalidate action="{{ route('admin.tour.payment_request_update', $data->id) }}" 
+        method="POST" enctype="multipart/form-data" autocomplete="off">
+            @method('PUT')
             @csrf
             <div class="card-body">
                 <!-- Emails -->
                 <div class="row">                   
                     <div class="col-lg-12">
                         <div class="form-group row">
-                            <label for="IsPurchasedAsAGift" class="form-label col-2">Emails</label>
+                            <label class="form-label col-2">Emails</label>
                             <div class="col-lg-10">
-                                <div class="form-group">
-                                    <label style="font-weight:400"><input type="checkbox" name="payment_request_reminder" id="payment_request_reminder" {{ old('payment_request_reminder') || $data->detail?->payment_request_reminder ? 'checked' : '' }} />  Send a follow-up Review Request</label>
-                                    <div id="paymentrequestreminder" class="hid den">
-                                        <div class="form-group" style="max-width: 600px;">
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                <input type="text" class="form-control" id="payment_request_reminder_delay" name="payment_request_reminder_delay" placeholder="7" value="{{ old('payment_request_reminder_delay') ?? $data->detail?->email1_reminder_num }}">
-                                                </div>
-                                                <select class="form-control" id="payment_request_reminder_delayUnit" name="payment_request_reminder_delayUnit">
-                                                    <option {{ (old('payment_request_reminder_delayUnit', $data->detail?->payment_request_reminder_delayUnit)=='MINUTES') ? 'checked' : '' }} value="MINUTES">minutes</option>
-                                                    <option {{ (old('payment_request_reminder_delayUnit', $data->detail?->payment_request_reminder_delayUnit)=='HOURS') ? 'checked' : '' }} value="HOURS">hours</option>
-                                                    <option {{ (old('payment_request_reminder_delayUnit', $data->detail?->payment_request_reminder_delayUnit)=='DAYS') ? 'checked' : '' }} value="DAYS">days</option>
-                                                </select>
-                                                <div class="input-group-append">
-                                                    <span class="input-group-text">before the session start time</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <textarea name="payment_request_reminder_text" id="payment_request_reminder_text" class="form-control  aiz-text-editor" >{{ old('payment_request_reminder_text') }}</textarea>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label style="font-weight:400"><input type="checkbox" name="payment_request_reminder_req" id="payment_request_reminder_req" {{ old('payment_request_reminder_req') || $data->detail?->payment_request_reminder_req ? 'checked' : '' }} /> Send a follow-up Recommendation Request</label>
-                                    <div id="paymentrequestreminderreq" class="hid den">
-                                        <div class="form-group" style="max-width: 600px;">
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                <input type="text" class="form-control" id="payment_request_reminder_req_delay" name="payment_request_reminder_req_delay" placeholder="7" value="{{ old('payment_request_reminder_req_delay') ?? $data->detail?->payment_request_reminder_req_delay }}">
-                                                </div>
-                                                <select class="form-control" id="payment_request_reminder_req_delayUnit" name="payment_request_reminder_req_delayUnit">
-                                                    <option {{ (old('payment_request_reminder_req_delayUnit', $data->detail?->payment_request_reminder_req_delayUnit)=='MINUTES') ? 'checked' : '' }} value="MINUTES">minutes</option>
-                                                    <option {{ (old('payment_request_reminder_req_delayUnit', $data->detail?->payment_request_reminder_req_delayUnit)=='HOURS') ? 'checked' : '' }} value="HOURS">hours</option>
-                                                    <option {{ (old('payment_request_reminder_req_delayUnit', $data->detail?->payment_request_reminder_req_delayUnit)=='DAYS') ? 'checked' : '' }} value="DAYS">days</option>
-                                                </select>
-                                                <div class="input-group-append">
-                                                    <span class="input-group-text">before the session start time</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <textarea name="email2_reminder_text" id="email2_reminder_text" class="form-control  aiz-text-editor" >{{ old('email2_reminder_text') }}</textarea>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label style="font-weight:400"><input type="checkbox" name="email3_reminder" id="email3_reminder" {{ old('email3_reminder') || $data->detail?->email3_reminder ? 'checked' : '' }} /> Send a follow-up Coupon</label>
-                                    <div id="email3reminder" class="hidden">
-                                        <div class="form-group" style="max-width: 600px;">
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                <input type="text" class="form-control" id="email3_reminder_delay" name="email3_reminder_delay" placeholder="7" value="{{ old('email3_reminder_delay') ?? $data->detail?->email3_reminder_num }}">
-                                                </div>
-                                                <select class="form-control" id="email3_reminder_delayUnit" name="email3_reminder_delayUnit">
-                                                    <option {{ (old('email3_reminder_delayUnit', $data->detail?->email3_reminder_delayUnit)=='MINUTES') ? 'checked' : '' }} value="MINUTES">minutes</option>
-                                                    <option {{ (old('email3_reminder_delayUnit', $data->detail?->email3_reminder_delayUnit)=='HOURS') ? 'checked' : '' }} value="HOURS">hours</option>
-                                                    <option {{ (old('email3_reminder_delayUnit', $data->detail?->email3_reminder_delayUnit)=='DAYS') ? 'checked' : '' }} value="DAYS">days</option>
-                                                </select>
-                                                <div class="input-group-append">
-                                                    <span class="input-group-text">before the session start time</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <textarea name="email3_reminder_text" id="email3_reminder_text" class="form-control  aiz-text-editor" >{{ old('email3_reminder_text') }}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <hr />
-                <!-- SMS -->
-                <div class="row">                   
-                    <div class="col-lg-12">
-                        <div class="form-group row">
-                            <label for="IsPurchasedAsAGift" class="form-label col-2">SMS</label>
-                            <div class="col-lg-10">
-                                <div class="form-group">
-                                    <label style="font-weight:400"><input type="checkbox" name="sms_reminder_customer" id="sms_reminder_customer" {{ old('sms_reminder_customer') || $data->detail?->sms_reminder_customer ? 'checked' : '' }} /> Send a follow up SMS to the customer
-                                    </label>
+                                
+                                @php
+                                    $payments = [1, 2, 3];
+                                @endphp
 
-                                    <div class="form-group" style="max-width: 600px;">
-                                        <div class="input-group">
-                                            <div class="input-group-prepend">
-                                            <input type="text" class="form-control" id="sms_reminder_delay" name="sms_reminder_delay" placeholder="7" value="{{ old('sms_reminder_delay') ?? $data->detail?->sms_reminder_num }}">
+                                @foreach ($payments as $i)
+                                    @php
+                                        $paymentKey = "email{$i}_payment";
+                                        $showhideKey= "email{$i}paymentstype";
+                                        $ptypeKey   = "email{$i}_payment_type";
+                                        $percentKey = "email{$i}_payment_percent";
+                                        $delayKey   = "email{$i}_payments_delay";
+                                        $dateKey    = "email{$i}_payments_date";
+                                        $unitKey    = "email{$i}_payment_typedate";
+                                    @endphp
+
+                                    <div class="form-group">
+                                        <label style="font-weight:400">
+                                            <input type="checkbox" name="Meta[{{ $paymentKey }}]" id="{{ $paymentKey }}"
+                                                {{ old("Meta.$paymentKey", !empty($metaData[$paymentKey])) ? 'checked' : '' }}
+                                            /> Automated Payment Request {{ $i }}
+                                        </label>
+
+                                        <div id="{{ $showhideKey }}" class="hidden"  style="max-width: 600px;">
+                                            <div class="form-group">
+                                                <select class="form-control" id="{{ $ptypeKey }}" name="Meta[{{ $ptypeKey }}]">
+                                                    <option {{ (old("meta.$ptypeKey", $metaData[$ptypeKey] ?? '')=='PAYMENT_REQUEST_PERCENT') ? 'checked' : '' }} value="PAYMENT_REQUEST_PERCENT">Percentage of order total amount</option>
+                                                    <option {{ (old("meta.$ptypeKey", $metaData[$ptypeKey] ?? '')=='PAYMENT_REQUEST_FIXED') ? 'checked' : '' }} value="PAYMENT_REQUEST_FIXED"> Fixed amount per order </option>
+                                                </select>
                                             </div>
-                                            <select class="form-control" id="sms_reminder_delayUnit" name="sms_reminder_delayUnit">
-                                                <option {{ (old('sms_reminder_delayUnit', $data->detail?->sms_reminder_delayUnit)=='MINUTES') ? 'checked' : '' }} value="MINUTES">minutes</option>
-                                                <option {{ (old('sms_reminder_delayUnit', $data->detail?->sms_reminder_delayUnit)=='HOURS') ? 'checked' : '' }} value="HOURS">hours</option>
-                                                <option {{ (old('sms_reminder_delayUnit', $data->detail?->sms_reminder_delayUnit)=='DAYS') ? 'checked' : '' }} value="DAYS">days</option>
-                                            </select>
-                                            <div class="input-group-append">
-                                                <span class="input-group-text">before the session start time</span>
+
+                                            <div class="form-group">
+                                                <div class="input-group">
+                                                    <div class="input-group-prepend">
+                                                        <span class="input-group-text">Amount requested</span>
+                                                    </div>
+                                                    <input type="number" class="form-control" id="{{ $percentKey }}"
+                                                        name="Meta[{{ $percentKey }}]" placeholder="Ex: 10"
+                                                        value="{{ old("Meta.$percentKey", $metaData[$percentKey] ?? '') }}">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
                                             </div>
+
+                                            <div class="form-group">
+                                                <div class="input-group">
+                                                    <div class="input-group-append">
+                                                        <input type="number" class="form-control" id="{{ $delayKey }}"
+                                                        name="Meta[{{ $delayKey }}]" placeholder="Ex: 10" 
+                                                        value="{{ old("Meta.$delayKey", $metaData[$delayKey] ?? '') }}">
+                                                        <input type="text" class="form-control aiz-date-range hidden" id="{{ $dateKey }}"
+                                                        name="Meta[{{ $dateKey }}]" placeholder="Ex: {{ date('Y-m-d') }}" data-single="true" data-show-dropdown="true"
+                                                        value="{{ old("Meta.$dateKey", $metaData[$dateKey] ?? '') }}">                                                        
+                                                    </div>                                                    
+                                                    <select class="form-control" id="{{ $unitKey }}" name="Meta[{{ $unitKey }}]">
+                                                        <option {{ (old("meta.$unitKey", $metaData[$unitKey] ?? '')=='TOUR_DATE') ? 'selected' : '' }} value="TOUR_DATE" selected="selected">Days before tour date</option>
+                                                        <option {{ (old("meta.$unitKey", $metaData[$unitKey] ?? '')=='ORDER_DATE') ? 'selected' : '' }} value="ORDER_DATE">Days after order date</option>
+                                                        <option {{ (old("meta.$unitKey", $metaData[$unitKey] ?? '')=='SPECIFIC_DATE') ? 'selected' : '' }} value="SPECIFIC_DATE">Specific date</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <hr />
                                         </div>
                                     </div>
-                                </div>
+
+                                    @section('js')
+                                    @parent
+                                    <script>
+                                    function {{ $paymentKey }}() {
+                                        if ($('#{{ $paymentKey }}').is(':checked')) {
+                                            $('#{{ $showhideKey }}').removeClass('hidden');
+                                        } else {
+                                            $('#{{ $showhideKey }}').addClass('hidden');
+                                        }
+                                    }
+                                    {{ $paymentKey }}();
+                                    $('#{{ $paymentKey }}').on('change', {{ $paymentKey }});
+
+                                    function {{ $unitKey }}() {
+                                        if ( $('#{{ $unitKey }}').val() == 'SPECIFIC_DATE' ) {
+                                            $('#{{ $dateKey }}').removeClass('hidden');
+                                            $('#{{ $delayKey }}').addClass('hidden');
+                                            //TB.plugins.dateRange();
+                                        } else {
+                                            $('#{{ $dateKey }}').addClass('hidden');
+                                            $('#{{ $delayKey }}').removeClass('hidden');
+                                            TB.plugins.dateRange();
+                                        }
+                                    }
+                                    {{ $unitKey }}();
+                                    $('#{{ $unitKey }}').on('change', {{ $unitKey }});
+                                    </script>
+                                    @endsection
+
+                                @endforeach
+
+
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div class="card-footer">
-                <button type="submit" id="submit" class="btn btn-primary">Save</button>
-                <a href="{{ route('admin.tour.index') }}" class="btn btn-secondary">Cancel</a>
+            <div class="card-footer" style="display:block">                
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.message.followup', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
+                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}" class="btn btn-primary">Next</a>   
             </div>
         </form>
     </div>

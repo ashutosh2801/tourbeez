@@ -23,8 +23,7 @@ class SettingController extends Controller
         // $this->middleware(['permission:system_update'])->only('system_update');
         // $this->middleware(['permission:server_status'])->only('system_server');
         // $this->middleware(['permission:firebase_push_notification'])->only('fcm_settings');
-      
-    }
+    }  
 
     public function general_settings()
     {

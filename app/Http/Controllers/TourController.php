@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Exclusion;
 use App\Models\Faq;
 use App\Models\Feature;
+use App\Models\Inclusion;
 use App\Models\Itinerary;
 use App\Models\Pickup;
 use App\Models\TaxesFee;
 use App\Models\TourSchedule;
-use App\Models\TourUpload;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Validator;
 use App\Models\Addon;
 use App\Models\Tour;
 use App\Models\Category;
@@ -18,9 +17,12 @@ use App\Models\TourLocation;
 use App\Models\Tourtype;
 use App\Models\TourDetail;
 use App\Models\TourImage;
+use App\Models\TourUpload;
 use App\Models\TourPricing;
 use App\Services\ImageService;
 use Illuminate\Http\Request;
+use Redirect;
+use Validator;
 use Str;
 
 class TourController extends Controller
@@ -31,6 +33,18 @@ class TourController extends Controller
      */
     public function __construct(ImageService $imageService)
     {
+        // $user = \App\Models\User::find(1); // replace with your user ID
+        // $user->givePermissionTo('show_tours');
+        // $dd = $user->getPermissionNames(); // See if 'show_tours' is listed
+
+        // dd($dd );
+        $this->middleware('auth');
+        $this->middleware(['permission:show_tours'])->only('index');
+        $this->middleware(['permission:add_tour'])->only('create', 'store');
+        $this->middleware(['permission:clone_tour'])->only('clone');
+        $this->middleware(['permission:edit_tour'])->only('edit', 'update');
+        $this->middleware(['permission:delete_tour'])->only('destroy');
+        
         $this->imageService = $imageService;
 
         $data = Tour::orderBy('id', 'DESC')->get();
@@ -73,7 +87,7 @@ class TourController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'title'                 => 'required|max:255',
             'description'           => 'required',
             'long_description'      => 'required',
@@ -90,7 +104,7 @@ class TourController extends Controller
             'country'               => 'required',
             'state'                 => 'required',
             'city'                  => 'required',
-            'image'                 => 'required|intger',
+            'image'                 => 'required|integer',
         ],
         [
             'title.required' => 'Please enter a title',
@@ -105,6 +119,11 @@ class TourController extends Controller
             'image.required' => 'Please select at featured image',
         ]);
 
+        if ($validator->fails()) {
+            // Validation failed
+            return back()->withInput()->withErrors($validator)->with('error','Something went wrong!');
+        }
+        
         // Generate unique slug
         $baseSlug = Str::slug($request->title);
         $uniqueSlug = $baseSlug;
@@ -116,6 +135,7 @@ class TourController extends Controller
 
         // Create new product instance
         $tour = new Tour();
+        $tour->user_id    = auth()->id();
         $tour->title      = $request->title;
         $tour->slug       = $uniqueSlug;
         $tour->unique_code= $request->unique_code;
@@ -133,7 +153,7 @@ class TourController extends Controller
             }
             // Save tour types
             if ($request->has('tour_type') && is_array($request->tour_type)) {
-                $tour->tour_types()->sync($request->tour_type);
+                $tour->tourtypes()->sync($request->tour_type);
             }
 
             if ($request->has('PriceOption') && is_array($request->PriceOption)) {
@@ -173,27 +193,30 @@ class TourController extends Controller
         
         $tourId = $tour->id;
         if( $request->has('image') ) { 
-            // Unset is_main for all current pivot rows
             $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
-
-            // Set is_main = 1 for the selected image
-            $tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
-            // $tour_image = new TourUpload();
-            // $tour_image->tour_id    = $tourId;
-            // $tour_image->upload_id  = $request->image;
-            // $tour_image->is_main    = 1;
-            // $tour_image->save();
+            // Check if the requested image is already attached to the tour
+            if ($tour->galleries->contains($request->image)) {
+                // Just update pivot
+                $tour->galleries()->detach($request->image);
+            } 
+            // Attach and set is_main = 1
+            $tour->galleries()->attach($request->image, ['is_main' => 1]);
         }
 
-        return redirect()->route('admin.tour.index')->with('success', 'Tour created successfully.');
+        return redirect()->route('admin.tour.edit', encrypt($tour->id))->with('success', 'Tour created successfully.');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Tour $tour)
+    public function preview($id)
     {
-        //
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+
+        return view('admin.tours.preview.index', compact( 'data', 'detail', 'schedule', 'metaData'));
     }
 
     /**
@@ -201,7 +224,8 @@ class TourController extends Controller
      */
     public function edit($id)
     {
-        $data       = Tour::where('id', decrypt($id))->first();
+        $data       = Tour::findOrFail(decrypt($id));
+        //$data       = Tour::findOrFail(decrypt($id));
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
@@ -209,11 +233,274 @@ class TourController extends Controller
         return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule', 'metaData'));
     }
 
+    public function single(Request $request)
+    {
+        $data  = Tour::find($request->id);
+        $str = '';
+        if($data) {
+            $row_id = 'row_'.$request->tourCount;
+            $str = '<div id="'.$row_id.'" style="border:1px solid #ccc; margin-bottom:10px">
+                    <table class="table">
+                        <tr>
+                            <td width="600"><h3 class="text-lg">' .  $data->title . '</h3></td>
+                            <td class="text-right" width="200">
+                                <div class="input-group">
+                                    <input type="text" class="aiz-date-range form-control" id="expiry_date" name="expiry_date" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="2025-05-31">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-right" width="200">
+                                <div class="input-group">
+                                    <input type="text" placeholder="Time" name="session_start_time" id="session_start_time" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                    </div>                       
+                                </div>
+                            </td>
+                            <td class="text-right" width="200">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">$</span>
+                                    </div>                       
+                                    <input type="text" placeholder="99.99" name="tour_price" id="tour_price" value="" class="form-control"> 
+                                </div>
+                            </td>
+                            <td class="text-right">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeTour(\''.$row_id.'\')">-</button>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="table" style="background:#ebebeb">
+                        <tr>
+                            <td style="width:200px">
+                                <table class="table">
+                                    <tr>
+                                        <td colspan="2">
+                                            <h4 style="font-size:16px; font-weight:600">Quantities</h4>
+                                        </td>
+                                    </tr>';
+                                    if($data->tour?->pricings) {
+                                        foreach($data->tour?->pricings as $pricing) {
+                                        $str.= '<tr>
+                                            <td><input type="number" value="2" style="width:60px" class="form-contorl"></td>
+                                            <td>{{ $pricing->label }} ($42.95)</td>
+                                        </tr>';
+                                        }
+                                    }
+                                    
+                                $str.= '</table>
+                            </td>
+                            <td style="width:200px">
+                                <table class="table">
+                                    <tr>
+                                        <td colspan="2">
+                                            <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
+                                        </td>
+                                    </tr>';
+                                    if($data->tour?->addons) {
+                                        foreach($data->tour?->addons as $addon) {
+                                        $str.= '<tr>
+                                            <td><input type="number" value="0" style="width:60px" class="form-contorl"></td>
+                                            <td>{{ $addon->name }} ({{ price_format($addon->price) }})</td>
+                                        </tr>';
+                                        }
+                                    }
+                                $str.= '</table>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="table">    
+                        <tr>
+                            <td>HST ON (13.0%)</td>
+                            <td class="text-right">$1.84</td>
+                        </tr>
+
+                        <tr>
+                            <td>Subtotal</td>
+                            <td class="text-right">$19.84</td>
+                        </tr>
+                    </table>
+                    </div>';
+        }
+        return $str;
+    }
+
+    public function editAddon($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.addon', compact( 'data'));
+    }
+
+    public function editScheduling($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
+        return view('admin.tours.feature.scheduling', compact( 'data', 'detail', 'schedule'));
+    }
+
+    public function editLocation($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.location', compact( 'data'));
+    }
+
+    public function editPickups($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.pickups', compact( 'data'));
+    }
+
+    public function editItinerary($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.itinerary', compact( 'data'));
+    }
+
+    public function editFaqs($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.faqs', compact( 'data'));
+    }
+
+    public function editInclusions($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.inclusions', compact( 'data'));
+    }
+
+    public function editExclusions($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.exclusions', compact( 'data'));
+    }
+
+    public function editTaxesfees($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.taxesfees', compact( 'data'));
+    }
+
+    public function editGallery($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.gallery', compact( 'data'));
+    }
+
+    public function editSeo($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        //$metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        return view('admin.tours.feature.seo', compact( 'data', 'detail'));
+    }
+
+    public function editNotification($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        return view('admin.tours.feature.message.notification', compact( 'data', 'detail', 'metaData'));
+    }
+
+    public function editReminder($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        return view('admin.tours.feature.message.reminder', compact( 'data', 'detail', 'metaData'));
+    }
+
+    public function editFollowup($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        return view('admin.tours.feature.message.followup', compact( 'data', 'detail', 'metaData'));
+    }
+
+    public function editPaymentRequest($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        return view('admin.tours.feature.message.paymentrequest', compact( 'data', 'detail', 'metaData'));
+    }
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, $id)
     {
+    }
+
+    public function clone(Request $request, $id)
+    {
+        // Find the Tour
+        $tour = Tour::with([
+            'categories', 'galleries', 'tourtypes', 'addons', 'pickups',
+            'itineraries', 'faqs', 'features', 'taxes_fees', 'detail',
+            'location', 'schedule', 'pricings'
+        ])->findOrFail(decrypt($id));
+
+        // Duplicate the Main Tour Record
+        $clonedTour = $tour->replicate(); // replicates attributes except primary key
+        $clonedTour->title .= ' (Copy)'; // optionally append to differentiate
+        $clonedTour->slug .= '-copy'; // optionally append to differentiate
+        $clonedTour->unique_code = unique_code();
+        $clonedTour->push(); // saves the tour and related hasOne/hasMany later
+
+        // Attach BelongsToMany Relations
+        $clonedTour->addons()->attach($tour->addons->pluck('id'));
+        $clonedTour->categories()->attach($tour->categories->pluck('id'));
+        $clonedTour->faqs()->attach($tour->faqs->pluck('id'));
+        $clonedTour->galleries()->attach($tour->galleries->pluck('id'));
+        $clonedTour->pickups()->attach($tour->pickups->pluck('id'));
+        $clonedTour->itineraries()->attach($tour->itineraries->pluck('id'));
+        $clonedTour->inclusions()->attach($tour->features->pluck('id'));
+        $clonedTour->exclusions()->attach($tour->features->pluck('id'));
+        $clonedTour->tourtypes()->attach($tour->tourtypes->pluck('id'));
+        $clonedTour->taxes_fees()->attach($tour->taxes_fees->pluck('id'));
+
+        // $pivotData = [];
+        // foreach ($tour->galleries as $gallery) {
+        //     $pivotData[$gallery->id] = [
+        //         'is_main' => 1,
+        //         // Add more fields if needed
+        //     ];
+        // }
+        // $clonedTour->galleries()->attach($pivotData);
+
+        // Duplicate HasOne Relations
+        if ($tour->detail) {
+            $newDetail = $tour->detail->replicate();
+            $newDetail->tour_id = $clonedTour->id;
+            $newDetail->save();
+        }
+        
+        if ($tour->location) {
+            $newLocation = $tour->location->replicate();
+            $newLocation->tour_id = $clonedTour->id;
+            $newLocation->save();
+        }
+        
+        if ($tour->schedule) {
+            $newSchedule = $tour->schedule->replicate();
+            $newSchedule->tour_id = $clonedTour->id;
+            $newSchedule->save();
+        }
+
+        // Duplicate HasMany Relations (e.g., pricings)
+        foreach ($tour->pricings as $pricing) {
+            $newPricing = $pricing->replicate();
+            $newPricing->tour_id = $clonedTour->id;
+            $newPricing->save();
+        }
+
+        return redirect()->route('admin.tour.index')->with('success', 'Tour has been cloned successfully');
     }
 
     public function basic_detail_update(Request $request, $id)
@@ -338,52 +625,23 @@ class TourController extends Controller
             $tourId = $tour->id;
             if( $request->has('image') ) { 
 
+                $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
                 // Check if the requested image is already attached to the tour
                 if ($tour->galleries->contains($request->image)) {
                     // Just update pivot
-                    $tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
-                } else {
-                    // Attach and set is_main = 1
-                    $tour->galleries()->attach($request->image, ['is_main' => 1]);
-                }
-
-                // Unset is_main for all current pivot rows
-                // $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
-
-                // Set is_main = 1 for the selected image
-                // $tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
-
-                // $tour_image = TourUpload::where('tour_id', $tourId)->where('is_main', 1)->first();
-                // if( !$tour_image ) {
-                //     $tour_image = new TourUpload();
-                // }
-                // $tour_image->tour_id    = $tourId;
-                // $tour_image->upload_id  = $request->image;
-                // $tour_image->is_main    = 1;
-                // $tour_image->save();
+                    //$tour->galleries()->updateExistingPivot($request->image, ['is_main' => 1]);
+                    $tour->galleries()->detach($request->image);
+                } 
+                // Attach and set is_main = 1
+                $tour->galleries()->attach($request->image, ['is_main' => 1]);
             }
-        
-            /*if( $request->hasFile('image') ) { 
-                $tour_image = TourImage::where('tour_id', $tour->id)->where('is_main', 1)->first();
-                if($tour_image) {
-                    $image_path = public_path('tour-image/' . $tour_image->image);
-                    if (file_exists($image_path)) {
-                        unlink($image_path);
-                    }
-                }
-                else
-                $tour_image = new TourImage();
-
-                $filename = $this->imageService->compressAndStoreImage($request->file('image'), $uniqueSlug, 'tour');
-                $tour_image->image      = $filename;
-                $tour_image->tour_id    = $tour->id;
-                $tour_image->type       = 'Image';
-                $tour_image->is_main    = 1;
-                $tour_image->save();
-            }*/
+            
         }
 
-        return redirect()->back()->with('success', 'Tour  created successfully');
+        return redirect()->back()->with([
+            'success' => 'Tour created successfully',
+            'active_tab' => '#basic_information'
+        ]);
     }
 
     public function addon_update(Request $request, $id) {
@@ -401,11 +659,12 @@ class TourController extends Controller
         $validator = Validator::make($request->all(), [
             'address'       => 'required|max:255',
             'destination'   => 'required|max:255',
-            'postal_code'   => 'required',
-            'country'       => 'required',
-            'state'         => 'required',
-            'city'          => 'required'
+            'postal_code'   => 'required|max:7',
+            'country'       => 'required|integer',
+            'state'         => 'required|integer',
+            'city'          => 'required|integer'
         ]);
+
         
         if ($validator->fails()) {
             // Validation failed
@@ -414,11 +673,12 @@ class TourController extends Controller
 
         $tour  = Tour::findOrFail($id);
         $location = $tour->location;
-        if(!empty($location)) {
+        if(empty($location)) {
             $location = new TourLocation();        
             $location->tour_id      = $tour->id;
         }
 
+        //echo $request->country; exit;
         $location->country_id       = $request->country;
         $location->state_id         = $request->state;
         $location->city_id          = $request->city;
@@ -438,7 +698,7 @@ class TourController extends Controller
         if ($request->has('pickups') && is_array($request->pickups)) {
             $tour->pickups()->sync($request->pickups);
 
-            return Redirect::route('admin.tour.edit', encrypt($id) )->with('success','Pickup location saved successfully.'); 
+            return redirect()->back()->withInput()->with('success','Pickup location saved successfully.'); 
         }
 
         return back()->withInput()->with('success','Addon saved successfully.');
@@ -452,52 +712,58 @@ class TourController extends Controller
             'meta_title'         => 'required|max:255',
             'meta_description'   => 'required',
             //'meta_keywords'      => 'required',
-            'canonical_url'      => 'required',
+            //'canonical_url'      => 'required',
         ],
         [
             'meta_title.required'       => 'Please enter a meta title',
             'meta_description.required' => 'Please enter a meta description',
             //'meta_keywords.required'    => 'Please enter a long description',
-            'canonical_url.required'    => 'Please enter a canonical url',
+            //'canonical_url.required'    => 'Please enter a canonical url',
         ]);
         
         // Update tour instance
         $tour  = Tour::findOrFail($id);
-        if($tour) {            
+        $tour->status = 1;
+        if($tour->save()) {            
             $tour_detail = TourDetail::where('tour_id', $tour->id)->first();
             $tour_detail->meta_title       = $request->meta_title;
             $tour_detail->meta_description = $request->meta_description;
             $tour_detail->meta_keywords    = $request->meta_keywords;
-            $tour_detail->canonical_url    = $request->canonical_url;
+            //$tour_detail->canonical_url    = $request->canonical_url;
             if ($tour_detail->save() ) {
-                return Redirect::route('admin.tour.edit', encrypt($id) )->with('success','Tour SEO data saved successfully.'); 
+                return redirect()->back()->withInput()->with('success','Tour SEO data saved successfully.'); 
             }
         }
 
-        return redirect()->back()->with('error', 'Something went wrong!');
+        return redirect()->back()->withInput()->with('error', 'Something went wrong!');
     }
+
     public function schedule_update(Request $request, $id) {
         //echo $request->session_start_time;   exit;
         $request->validate([
-            'minimum_notice_num'    => 'required|integer|min:0',
-            'minimum_notice_unit'   => 'required',
-            'session_start_date'    => 'required|date_format:Y-m-d',
-            'session_start_time'    => 'required',
-            'session_end_date'      => 'required|date_format:Y-m-d',
-            'session_end_time'      => 'required',
+            'minimum_notice_num'        => 'required|integer|min:0',
+            'minimum_notice_unit'       => 'required',
+            'estimated_duration_num'    => 'required|integer|min:0',
+            'estimated_duration_unit'   => 'required',
+            'session_start_date'        => 'required|date_format:Y-m-d',
+            'session_start_time'        => 'required',
+            'session_end_date'          => 'required|date_format:Y-m-d',
+            'session_end_time'          => 'required',
 
-            'repeat_period'         => 'required|string|in:NONE,MINUTELY,HOURLY,DAILY,WEEKLY,MONTHLY,YEARLY', 
-            'repeat_period_unit'    => 'required_if:repeat_period,MINUTELY,HOURLY|integer',
-            'until_date'            => 'required_if:repeat_period,MINUTELY,HOURLY|date',  
+            'repeat_period'             => 'required|string|in:NONE,MINUTELY,HOURLY,DAILY,WEEKLY,MONTHLY,YEARLY', 
+            'repeat_period_unit'        => 'required_if:repeat_period,MINUTELY,HOURLY|integer',
+            'until_date'                => 'required_if:repeat_period,MINUTELY,HOURLY|date',  
         ],
         [
-            'minimum_notice_num.required'   => 'Please enter a minimum notice number',
-            'minimum_notice_unit.required'  => 'Please select a minimum notice unit',
-            'session_start_date.required'   => 'Please enter a start date',
-            'session_start_time.required'   => 'Please enter a start time',
-            'session_end_date.required'     => 'Please enter a to date',
-            'session_end_time.required'     => 'Please enter a to time',
-            'repeat_period.required'        => 'Please select a repeat',
+            'minimum_notice_num.required'       => 'Please enter a minimum notice number',
+            'minimum_notice_unit.required'      => 'Please select a minimum notice unit',
+            'estimated_duration_num.required'   => 'Please enter a minimum notice number',
+            'estimated_duration_unit.required'  => 'Please select a minimum notice unit',
+            'session_start_date.required'       => 'Please enter a start date',
+            'session_start_time.required'       => 'Please enter a start time',
+            'session_end_date.required'         => 'Please enter a to date',
+            'session_end_time.required'         => 'Please enter a to time',
+            'repeat_period.required'            => 'Please select a repeat',
         ]);
 
         // If repeat_period is MINUTELY or HOURLY, validate Repeat[]
@@ -533,17 +799,19 @@ class TourController extends Controller
             $schedule = new TourSchedule();
         }
 
-        $schedule->tour_id             = $tour->id;
-        $schedule->minimum_notice_num  = $request->minimum_notice_num;
-        $schedule->minimum_notice_unit = $request->minimum_notice_unit;
-        $schedule->session_start_date  = $request->session_start_date;
-        $schedule->session_start_time  = $request->session_start_time;
-        $schedule->session_end_date    = $request->session_end_date;
-        $schedule->session_end_time    = $request->session_end_time;
-        $schedule->sesion_all_day      = $request->sesion_all_day?1:0;
-        $schedule->repeat_period       = $request->repeat_period;
-        $schedule->repeat_period_unit  = $request->repeat_period_unit;
-        $schedule->until_date          = $request->until_date;
+        $schedule->tour_id                  = $tour->id;
+        $schedule->minimum_notice_num       = $request->minimum_notice_num;
+        $schedule->minimum_notice_unit      = $request->minimum_notice_unit;
+        $schedule->estimated_duration_num   = $request->estimated_duration_num;
+        $schedule->estimated_duration_unit  = $request->estimated_duration_unit;
+        $schedule->session_start_date       = $request->session_start_date;
+        $schedule->session_start_time       = $request->session_start_time;
+        $schedule->session_end_date         = $request->session_end_date;
+        $schedule->session_end_time         = $request->session_end_time;
+        $schedule->sesion_all_day           = $request->sesion_all_day?1:0;
+        $schedule->repeat_period            = $request->repeat_period;
+        $schedule->repeat_period_unit       = $request->repeat_period_unit;
+        $schedule->until_date               = $request->until_date;
         if ($schedule->save() ) {
             // First delete old repeats
             $schedule->repeats()->delete();
@@ -582,13 +850,13 @@ class TourController extends Controller
         $request->validate([
             'ItineraryOptions'               => 'required|array',
             'ItineraryOptions.*.title'       => 'required|string|max:255',
-            'ItineraryOptions.*.datetime'        => 'required|string|max:255',
+            //'ItineraryOptions.*.datetime'        => 'required|string|max:255',
             'ItineraryOptions.*.address'     => 'required|string|max:255',
             'ItineraryOptions.*.description' => 'required',
         ],
         [
             'ItineraryOptions.*.title.required'      => 'Itinerary title is required',
-            'ItineraryOptions.*.datetime.required'   => 'Itinerary datetime is required',
+            //'ItineraryOptions.*.datetime.required'   => 'Itinerary datetime is required',
             'ItineraryOptions.*.address.required'    => 'Itinerary address is required',
             'ItineraryOptions.*.description.required'=> 'Itinerary description is required',
         ]);
@@ -599,6 +867,7 @@ class TourController extends Controller
             $itinerary = Itinerary::where('title', $option['title'])->where('datetime', $option['datetime'])->where('address', $option['address'])->first();
             if (!$itinerary) {
                 $itinerary = new Itinerary();
+                //$itinerary->tour_id     = $tour->id;
                 $itinerary->user_id     = auth()->user()->id;
                 $itinerary->title       = $option['title'] ?? null;
                 $itinerary->datetime    = $option['datetime'] ?? null;
@@ -667,20 +936,22 @@ class TourController extends Controller
         //Save new Exclusion
         $featureIds = [];
         foreach ($request->InclusionOptions as $option) {
-            $feature = Feature::where('name', $option['name'])->first();
+            $feature = Inclusion::where('name', $option['name'])->first();
             if (!$feature) {
-                $feature = new Feature();
+                $feature = new Inclusion();
                 $feature->user_id   = auth()->user()->id;
                 $feature->name      = $option['name'] ?? null;
-                $feature->type      = 'Inclusion';
-                $feature->save();
+                if( $feature->save() )
+                $featureIds[] = $feature->id;
             } 
-            $featureIds[] = $feature->id;
+            else {
+                $featureIds[] = $feature->id;
+            }
         }
 
         // Sycc faqs
         if ( !empty($featureIds) ) {
-            $tour->features()->sync($featureIds);
+            $tour->inclusions()->sync($featureIds);
         }
 
         return redirect()->back()->with('success','Inclusions saved successfully.');
@@ -700,20 +971,22 @@ class TourController extends Controller
         //Save new Exclusion
         $featureIds = [];
         foreach ($request->ExclusionOptions as $option) {
-            $feature = Feature::where('name', $option['name'])->first();
+            $feature = Exclusion::where('name', $option['name'])->first();
             if (!$feature) {
-                $feature = new Feature();
+                $feature = new Exclusion();
                 $feature->user_id   = auth()->user()->id;
                 $feature->name      = $option['name'] ?? null;
-                $feature->type      = 'Exclusion';
-                $feature->save();
+                if( $feature->save() )
+                $featureIds[] = $feature->id;
             } 
-            $featureIds[] = $feature->id;
+            else {
+                $featureIds[] = $feature->id;
+            }
         }
 
         // Sycc faqs
         if ( !empty($featureIds) ) {
-            $tour->features()->sync($featureIds);
+            $tour->exclusions()->sync($featureIds);
         }
 
         return redirect()->back()->with('success','Exclusions saved successfully.');
@@ -725,7 +998,7 @@ class TourController extends Controller
         if ($request->has('taxes') && is_array($request->taxes)) {
             $tour->taxes_fees()->sync($request->taxes);
 
-            return Redirect::route('admin.tour.edit', encrypt($id) )->with('success','Tax and fee saved successfully.'); 
+            return redirect()->back()->withInput()->with('success','Tax and fee saved successfully.'); 
         }
 
         return back()->withInput()->with('error','OOPs! something went wrong!');
@@ -747,7 +1020,7 @@ class TourController extends Controller
                 $tour->galleries()->sync($gallery);
             }
 
-            return Redirect::route('admin.tour.edit', encrypt($id) )->with('success','Gallery saved successfully.'); 
+            return redirect()->back()->withInput()->with('success','Gallery saved successfully.'); 
         }
 
         return back()->withInput()->with('error','OOPs! something went wrong!');
@@ -850,21 +1123,124 @@ class TourController extends Controller
         return redirect()->back()->with('success', 'Tour reminder updated successfully!');
     }
 
+    public function followup_update(Request $request, $id) 
+    {
+        $tour = Tour::findOrFail($id);
+
+        $allMetaKeys = [
+            'email_review_followup', 'email_review_followup_delay', 'email_review_followup_delayUnit', 'email_review_followup_text',
+            'email_recommend_followup', 'email_recommend_followup_delay', 'email_recommend_followup_delayUnit', 'email_recommend_followup_text',
+            'email_coupon_followup', 'email_coupon_followup_delay', 'email_coupon_followup_delayUnit', 'email_coupon_followup_text',
+            'sms_followup_customer', 'sms_followup_delay', 'sms_followup_delayUnit'
+        ];
+
+        // Validate incoming request if needed
+        $validated = $request->validate([
+            'Meta' => 'array',
+            'Meta.*' => 'nullable|string', // customize validation as needed
+        ]);
+
+        $submittedMeta = $request->input('Meta', []);
+        
+        foreach ($allMetaKeys as $key) {
+            //if (array_key_exists($key, $submittedMeta)) {
+                $value = @$submittedMeta[$key];
+                
+                // Normalize checkbox value to boolean or string
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                } elseif (is_bool($value)) {
+                    $value = $value ? '1' : '0';
+                }
+        
+                $tour->meta()->updateOrCreate(
+                    ['tour_id' => $tour->id, 'meta_key' => $key],
+                    ['meta_value' => $value]
+                );
+            //} else {
+                // If key not in request, delete it (e.g., checkbox was unchecked)
+                //$tour->meta()->where('meta_key', $key)->delete();
+            //}
+        }
+
+
+        return redirect()->back()->with('success', 'Tour followup updated successfully!');
+    }
+
+    public function payment_request_update(Request $request, $id) 
+    {
+        $tour = Tour::findOrFail($id);
+
+        $allMetaKeys = [
+            'email1_payment', 'email1_payment_type', 'email1_payment_percent', 'email1_payments_delay', 'email1_payments_date', 'email1_payment_typedate',
+            'email2_payment', 'email2_payment_type', 'email2_payment_percent', 'email2_payments_delay', 'email2_payments_date', 'email2_payment_typedate',
+            'email3_payment', 'email3_payment_type', 'email3_payment_percent', 'email3_payments_delay', 'email3_payments_date', 'email3_payment_typedate',
+        ];
+
+        // Validate incoming request if needed
+        $validated = $request->validate([
+            'Meta' => 'array',
+            'Meta.*' => 'nullable|string', // customize validation as needed
+        ]);
+
+        $submittedMeta = $request->input('Meta', []);
+        
+        foreach ($allMetaKeys as $key) {
+            //if (array_key_exists($key, $submittedMeta)) {
+                $value = @$submittedMeta[$key];
+                
+                // Normalize checkbox value to boolean or string
+                if (is_array($value)) {
+                    $value = json_encode($value);
+                } elseif (is_bool($value)) {
+                    $value = $value ? '1' : '0';
+                }
+        
+                $tour->meta()->updateOrCreate(
+                    ['tour_id' => $tour->id, 'meta_key' => $key],
+                    ['meta_value' => $value]
+                );
+            //} else {
+                // If key not in request, delete it (e.g., checkbox was unchecked)
+                //$tour->meta()->where('meta_key', $key)->delete();
+            //}
+        }
+
+
+        return redirect()->back()->with('success', 'Tour payment request updated successfully!');
+    }
+
     /**
      * Remove the specified resource from storage.
      */
     public function destroy($id)
     {
         $tour = Tour::where('id', decrypt($id))->first();
+        $tour->title .= '-deleted';
+        $tour->slug .= '-deleted';
+        $tour->save();
         if ($tour->delete()) {
-            flash(translate('Tour info has been deleted successfully'))->success();
-            return redirect()->route('admin.tour.index');
+            return redirect()->route('admin.tour.index')->with('success', 'Tour info has been deleted successfull');
         } else {
-            flash(translate('Sorry! Something went wrong.'))->error();
-            return back();
+            return back()->route('admin.tour.index')->with('error', 'Sorry! Something went wrong.');;
         }
+    }
 
+    /***
+     Add focus keyword [SS]
+    */
+    public function add_focus_keyword(Request $request, $id)
+    {
         
-        //return redirect()->route('admin.tour.index')->with('error', 'Tour deleted successfully.');
+        // Update tour instance
+        $tour  = Tour::findOrFail($id);
+        $tour->status = 1;
+        if($tour->save()) {            
+            $tour_detail = TourDetail::where('tour_id', $tour->id)->first();
+            $tour_detail->focus_keyword       = $request->focus_keyword;
+            if ($tour_detail->save() ) {
+                return redirect()->back()->withInput()->with('success','Focus key saved successfully.'); 
+            }
+        }
     }
 }

@@ -7,11 +7,24 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 use Requests;
 
 class Tour extends Model
 {
     use SoftDeletes, HasFactory;
+    use LogsActivity;
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+        ->useLogName('Tour')
+        ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
+        ->logOnly(['*'])
+        ->logOnlyDirty()
+        ->dontSubmitEmptyLogs();
+    }
 
     public function galleries(): BelongsToMany
     {
@@ -27,16 +40,6 @@ class Tour extends Model
     {
         return $this->hasMany(TourMeta::class);
     }
-
-    // public function main_image()
-    // {
-    //     return $this->hasOne(TourUpload::class)->where('is_main', 1);
-    // }
-
-    // public function images()
-    // {
-    //     return $this->hasMany(TourUpload::class)->where('is_main', '<>', 1);
-    // }
 
     public function categories(): BelongsToMany
     {
@@ -83,6 +86,16 @@ class Tour extends Model
         return Faq::all();
     }
 
+    public function inclusions(): BelongsToMany
+    {
+        return $this->belongsToMany(Inclusion::class);
+    }
+
+    public function exclusions(): BelongsToMany
+    {
+        return $this->belongsToMany(Exclusion::class);
+    }
+
     public function features(): BelongsToMany
     {
         return $this->belongsToMany(Feature::class);
@@ -109,6 +122,11 @@ class Tour extends Model
     public function detail()
     {
         return $this->hasOne(TourDetail::class);
+    }
+
+    public function user()
+    {
+        return $this->hasOne(User::class);
     }
 
     public function location()
@@ -144,5 +162,10 @@ class Tour extends Model
     public function productImages()
     {
         return $this->hasMany(ProductImage::class);
+    }
+
+    public function orderTours()
+    {
+        return $this->hasMany(OrderTour::class);
     }
 }

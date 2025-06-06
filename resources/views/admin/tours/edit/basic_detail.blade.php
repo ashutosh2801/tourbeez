@@ -1,5 +1,5 @@
 <div class="card">
-    <div class="card-primary">
+    <div class="card card-primary">
         <div class="card-header">
             <h3 class="card-title">Basic Details</h3>            
         </div>
@@ -72,8 +72,8 @@
                                 @if($index == 0)
                                 <div class="col-lg-2">
                                     <select name="price_type" id="pricing" class="form-control">
-                                        <option @if(old('price_type')=='PER_PERSON' || old('price_type')=='') echo 'selected'; @endif value="PER_PERSON">By Person</option>
-                                        <option @if(old('price_type')=='FIXED') echo 'selected'; @endif value="FIXED">By Fixed</option>
+                                        <option @if(old('price_type')=='PER_PERSON' || $data->price_type=="PER_PERSON" || old('price_type')=='') selected @endif value="PER_PERSON">By Person</option>
+                                        <option @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") selected @endif value="FIXED">By Fixed</option>
                                     </select>                                                
                                 </div>
                                 @else
@@ -100,8 +100,8 @@
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror                                              
                                 </div>
-                                <div class="col-lg-5">
-                                    <div class="input-group quantity_used">
+                                <div class="col-lg-5 ">
+                                    <div class="input-group quantity_used @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") hidden @endif">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">Quantity used</span>
                                         </div>
@@ -328,7 +328,7 @@
                                     <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
                                 </div>
                                 <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
-                                <input type="hidden" name="image" class="selected-files" value="{{ $data->main_image?->image }}">
+                                <input type="hidden" name="image" class="selected-files" value="{{ $data->main_image?->id }}">
                             </div>
                             <div class="file-preview box sm"></div>
                         </div>
@@ -353,13 +353,12 @@
                     </div> -->
                     
                 </div>
-            </div>
+            </div>            
 
-            
-
-            <div class="card-footer">
-                <button type="submit" id="submit" class="btn btn-primary">Save tour</button>
-                <a href="{{ route('admin.tour.index') }}" class="btn btn-secondary">Cancel</a>
+            <div class="card-footer" style="display:block">
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.index') }}" class="btn btn-secondary">Back</a>
+                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
             </div>
         </form>
     </div>

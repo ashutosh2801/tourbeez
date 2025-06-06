@@ -6,6 +6,8 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 </style>
 <div class="card">
     <div class="card card-primary">
+    <form class="needs-validation" novalidate action="{{ route('admin.tour.taxfee_update', $data->id) }}" method="POST"
+    enctype="multipart/form-data">
         <div class="card-header">
             <h3 class="card-title">Taxes and Fees</h3>
             <div class="card-tools">
@@ -22,8 +24,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                     </ul>
                 </div>
             @endif
-            <form class="needs-validation" novalidate action="{{ route('admin.tour.taxfee_update', $data->id) }}" method="POST"
-            enctype="multipart/form-data">
+            
             @method('PUT')
             @csrf
             <table class="table table-striped align-middle" id="taxTable">
@@ -48,9 +49,13 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
             <div class="text-center">
                 <a href="{{ route('admin.taxes.create') }}" class="btn border-t-indigo-100 btn-outline">Add New Taxes and Fees</a>
             </div>
-            <button type="submit" id="submit" class="btn btn-primary">Save pickup</button>
-            </form>
         </div>
+        <div class="card-footer" style="display:block">
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.exclusions', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
+                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.gallery', encrypt($data->id)) }}" class="btn btn-primary">Next</a>           
+            </div>
+            </form>
     </div>
 </div>
 

@@ -4,6 +4,7 @@ namespace App\View\Components;
 
 use App\Models\Category;
 use App\Models\Collection;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\Tour;
 use App\Models\User;
@@ -18,17 +19,18 @@ class Dashboard extends Component
      */
     public function __construct()
     {
-        $user = User::count();
-        view()->share('user',$user);
+        $user_count = User::where('user_type', 'Member')->count();
+        view()->share('user_count',$user_count);
         
-        $category = Category::count();
-        view()->share('category',$category);
+        $tour_count = Tour::count();
+        view()->share('tour_count',$tour_count);
         
-        $product = Tour::count();
-        view()->share('tour',$product);
+        $category_count = Category::count();
+        view()->share('category_count',$category_count);
         
-        $collection = Collection::count();
-        view()->share('collection',$collection);
+        
+        $staff_count = User::where('user_type', '<>', 'Member')->where('user_type', '<>', 'Super Admin')->count();
+        view()->share('staff_count',$staff_count);
     }
 
     /**

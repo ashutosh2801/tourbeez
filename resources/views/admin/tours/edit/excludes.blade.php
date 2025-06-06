@@ -23,14 +23,14 @@
             <div class="card-body">
                 
                 @php
-                $ExclusionOptions = old('ExclusionOptions', $data->features?->map(function ($item) {
-                                            if ($item->type === 'Exclusion') {
+                $ExclusionOptions = old('ExclusionOptions', $data->exclusions?->map(function ($item) {
+                                            
                                                 return [
                                                     'id'     => $item->id,
                                                     'name'   => $item->name,
-                                                    'type'   => $item->type,
+                                                    
                                                 ];
-                                            }
+                                            
                                         })->filter()->values()->toArray());
                             
                 $count = count($ExclusionOptions);
@@ -46,8 +46,7 @@
                     <input type="hidden" name="ExclusionOptions[{{ $index }}][id]" id="ExclusionOptions_id_{{ $index }}" 
                     value="{{ old("ExclusionOptions.$index.id", $option['id']) }}" class="form-control" />
 
-                    <input type="hidden" name="ExclusionOptions[{{ $index }}][type]" id="ExclusionOptions_type_{{ $index }}" 
-                    value="{{ old("ExclusionOptions.$index.id", $option['type']) }}" class="form-control" />
+                    
                     <div class="row">
                         @if ($count == 1)                        
                         <div class="col-lg-12">
@@ -55,7 +54,7 @@
                                 <label for="exclusion_name" class="form-label">Tour Exclusions</label>
                                 <select class="form-control" data-live-search="true" onchange="fetchExclusion(this.value, {{ $index }})">
                                     <option value="">Select one</option>
-                                    @foreach ($data->featureAll('Exclusion') as $item)
+                                    @foreach ($data->exclusions as $item)
                                     <option value="{{ $item->id }}">{{ $item->name }}</option>
                                     @endforeach
                                 </select>
@@ -83,8 +82,10 @@
                 <div id="exclusionsContainer"></div>
 
             </div>
-            <div class="card-footer">
-                <button type="submit" id="submit" class="btn btn-primary">Save</button>
+            <div class="card-footer" style="display:block">
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.inclusions', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
+                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.taxesfees', encrypt($data->id)) }}" class="btn btn-primary">Next</a>           
             </div>
             </form>
         </div>
@@ -110,7 +111,7 @@ function addExclusion() {
                 <label for="exclusion_name" class="form-label">Tour Exclusions</label>
                 <select class="form-control" data-live-search="true" id="exclusion"  onchange="fetchExclusion(this.value, ${exclusionCount})">
                     <option value="">Select one</option>
-                    @foreach ($data->featureAll('Exclusion') as $item)
+                    @foreach ($data->exclusions as $item)
                     <option value="{{ $item->id }}">{{ $item->name }}</option>
                     @endforeach
                 </select>
@@ -146,7 +147,7 @@ function removeExclusion(id) {
 }
 
 function fetchExclusion( selectedValue, num ) {
-    $.post('{{ route('admin.feature.single') }}', {
+    $.post('{{ route('admin.exclusion.single') }}', {
         _token: '{{ csrf_token() }}',
         feature_id: selectedValue,
         type: 'exclusion'

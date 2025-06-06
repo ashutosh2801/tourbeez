@@ -23,14 +23,11 @@
             <div class="card-body">
                 
                 @php
-                $InclusionOptions = old('InclusionOptions', $data->features?->map(function ($item) {
-                                            if ($item->type === 'Inclusion') {
+                $InclusionOptions = old('InclusionOptions', $data->inclusions?->map(function ($item) {
                                                 return [
                                                     'id'     => $item->id,
                                                     'name'   => $item->name,
-                                                    'type'   => $item->type,
                                                 ];
-                                            }
                                         })->filter()->values()->toArray());
                             
                 $count = count($InclusionOptions);
@@ -46,8 +43,6 @@
                     <input type="hidden" name="InclusionOptions[{{ $index }}][id]" id="InclusionOptions_id_{{ $index }}" 
                     value="{{ old("InclusionOptions.$index.id", $option['id']) }}" class="form-control" />
 
-                    <input type="hidden" name="InclusionOptions[{{ $index }}][type]" id="InclusionOptions_type_{{ $index }}" 
-                    value="{{ old("InclusionOptions.$index.id", $option['type']) }}" class="form-control" />
                     <div class="row">
                         @if ($count == 1)                        
                         <div class="col-lg-12">
@@ -55,7 +50,7 @@
                                 <label for="include_name" class="form-label">Tour Inclusions</label>
                                 <select class="form-control" data-live-search="true" onchange="fetchInclude(this.value, {{ $index }})">
                                     <option value="">Select one</option>
-                                    @foreach ($data->featureAll('Inclusion') as $item)
+                                    @foreach ($data->inclusions as $item)
                                     <option value="{{ $item->id }}">{{ $item->name }}</option>
                                     @endforeach
                                 </select>
@@ -83,8 +78,10 @@
                 <div id="includesContainer"></div>
 
             </div>
-            <div class="card-footer">
-                <button type="submit" id="submit" class="btn btn-primary">Save</button>
+            <div class="card-footer"  style="display:block">
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.faqs', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
+                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.exclusions', encrypt($data->id)) }}" class="btn btn-primary">Next</a>           
             </div>
             </form>
         </div>
@@ -110,7 +107,7 @@ function addInclude() {
                 <label for="include_name" class="form-label">Tour Inclusions</label>
                 <select class="form-control" data-live-search="true" id="include"  onchange="fetchInclude(this.value, ${includeCount})">
                     <option value="">Select one</option>
-                    @foreach ($data->featureAll('Inclusion') as $item)
+                    @foreach ($data->inclusions as $item)
                     <option value="{{ $item->id }}">{{ $item->name }}</option>
                     @endforeach
                 </select>
@@ -146,7 +143,7 @@ function removeInclude(id) {
 }
 
 function fetchInclude( selectedValue, num ) {
-    $.post('{{ route('admin.feature.single') }}', {
+    $.post('{{ route('admin.inclusion.single') }}', {
         _token: '{{ csrf_token() }}',
         feature_id: selectedValue,
         type: 'inclusion'

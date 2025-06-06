@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AizUploadController;
+use App\Http\Controllers\TourController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\LoginWithOTPController;
 use App\Http\Controllers\SocialiteController;
@@ -25,6 +26,8 @@ Route::get('/', function () {
         'readmeContent' => Str::markdown(file_get_contents($readmePath)),
     ]);
 });
+
+Route::post('/tour/single', [TourController::class,'single'])->name('tour.single');
 
 Route::post('/states/get_state_by_country', [StateController::class,'get_state_by_country'])->name('states.get_state_by_country');
 Route::post('/cities/get_cities_by_state', [CityController::class,'get_cities_by_state'])->name('cities.get_cities_by_state');

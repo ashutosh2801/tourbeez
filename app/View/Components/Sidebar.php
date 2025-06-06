@@ -4,9 +4,12 @@ namespace App\View\Components;
 
 use App\Models\Addon;
 use App\Models\Category;
+use App\Models\City;
 use App\Models\Collection;
+use App\Models\Country;
 use App\Models\Pickup;
 use App\Models\Product;
+use App\Models\State;
 use App\Models\SubCategory;
 use App\Models\TaxesFee;
 use App\Models\Tour;
@@ -54,6 +57,18 @@ class Sidebar extends Component
 
         $TaxesCount = TaxesFee::count();
         view()->share('TaxesCount',$TaxesCount);
+
+        $CountryCount = Country::count();
+        view()->share('CountryCount',$CountryCount);
+
+        $StateCount = State::count();
+        view()->share('StateCount',$StateCount);
+
+        $CityCount = City::count();
+        view()->share('CityCount',$CityCount);
+
+
+
     }
 
     /**

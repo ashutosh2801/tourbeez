@@ -13,9 +13,9 @@ class StateController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['permission:show_states'])->only('index');
-        $this->middleware(['permission:edit_state'])->only('edit');
-        $this->middleware(['permission:delete_state'])->only('destroy');
+        // $this->middleware(['permission:show_states'])->only('index');
+        // $this->middleware(['permission:edit_state'])->only('edit');
+        // $this->middleware(['permission:delete_state'])->only('destroy');
 
         $this->state_rules = [
             'name'          => ['required','max:255'],
@@ -44,7 +44,7 @@ class StateController extends Controller
             $states       = $states->where('name', 'like', '%'.$sort_search.'%');
         }
         $states = $states->paginate(10);
-        return view('admin.member_profile_attributes.states.index', compact('states','countries','sort_search'));
+        return view('admin.attributes.states.index', compact('states','countries','sort_search'));
     }
 
     /**
@@ -70,8 +70,8 @@ class StateController extends Controller
         $validator  = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
-            flash(translate('Sorry! Something went wrong'))->error();
-            return Redirect::back()->withErrors($validator);
+            //flash(translate('Sorry! Something went wrong'))->error();
+            return Redirect::back()->withErrors($validator)->with('error', translate('Sorry! Something went wrong'));
         }
 
         $state              = new State;
@@ -79,12 +79,12 @@ class StateController extends Controller
         $state->country_id  = $request->country_id;
         if($state->save())
         {
-            flash(translate('New state has been added successfully'))->success();
-            return redirect()->route('states.index');
+            //flash(translate('New state has been added successfully'))->success();
+            return redirect()->route('admin.states.index')->with('success', translate('New state has been added successfully'));
         }
         else {
-            flash(translate('Sorry! Something went wrong.'))->error();
-            return back();
+            //flash(translate('Sorry! Something went wrong.'))->error();
+            return back()->with('error', translate('Sorry! Something went wrong.'));
         }
     }
 
@@ -109,7 +109,7 @@ class StateController extends Controller
     {
         $state         = State::findOrFail(decrypt($id));
         $countries     = Country::where('status',1)->get();
-        return view('admin.member_profile_attributes.states.edit', compact('state','countries'));
+        return view('admin.attributes.states.edit', compact('state','countries'));
     }
 
     /**
@@ -126,8 +126,8 @@ class StateController extends Controller
         $validator  = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
-            flash(translate('Sorry! Something went wrong'))->error();
-            return Redirect::back()->withErrors($validator);
+            //flash(translate('Sorry! Something went wrong'))->error();
+            return Redirect::back()->withErrors($validator)->with('error', translate('Sorry! Something went wrong'));;
         }
 
         $state              = State::findOrFail($id);
@@ -135,12 +135,12 @@ class StateController extends Controller
         $state->country_id  = $request->country_id;
         if($state->save())
         {
-            flash(translate('State info has been updated successfully'))->success();
-            return redirect()->route('states.index');
+            //flash(translate('State info has been updated successfully'))->success();
+            return redirect()->route('admin.states.index')->with('success', translate('State info has been updated successfully'));
         }
         else {
-            flash(translate('Sorry! Something went wrong.'))->error();
-            return back();
+            //flash(translate('Sorry! Something went wrong.'))->error();
+            return back()->with('error', translate('Sorry! Something went wrong.'));
         }
     }
 
@@ -157,11 +157,11 @@ class StateController extends Controller
             $city->delete();
         }
         if (State::destroy($id)) {
-            flash(translate('State info has been deleted successfully'))->success();
-            return redirect()->route('states.index');
+            //flash(translate('State info has been deleted successfully'))->success();
+            return redirect()->route('admin.states.index')->with('success', translate('State info has been deleted successfully'));
         } else {
-            flash(translate('Sorry! Something went wrong.'))->error();
-            return back();
+            //flash(translate('Sorry! Something went wrong.'))->error();
+            return back()->with('error', translate('Sorry! Something went wrong.'));
         }
     }
 

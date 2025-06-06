@@ -48,20 +48,21 @@ class AddonController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'  => 'required|max:255',
-            'price' => 'required|numeric',
-            'description'   => 'required|string'
+            'name'          => 'required|max:255',
+            'price'         => 'required|numeric',
+            'description'   => 'required|string',
+            'image'         => 'required|integer'
         ]);
 
 
-        $image = '';
-        if( $request->hasFile('image') ) { 
-            // Generate unique image name
-            $baseSlug = Str::slug($request->name);
-            $uniqueSlug = $baseSlug . '-' . rand(10,99);
-            $image = $this->imageService->compressAndStoreImage($request->file('image'), $uniqueSlug, 'addon');
+        // $image = '';
+        // if( $request->hasFile('image') ) { 
+        //     // Generate unique image name
+        //     $baseSlug = Str::slug($request->name);
+        //     $uniqueSlug = $baseSlug . '-' . rand(10,99);
+        //     $image = $this->imageService->compressAndStoreImage($request->file('image'), $uniqueSlug, 'addon');
             
-        }
+        // }
 
         Addon::create([
             'name'  => $request->name,
@@ -69,7 +70,7 @@ class AddonController extends Controller
             'customer_choice' => $request->customer_choice,
             'description' => $request->description,
             'availability' => $request->availability,
-            'image' => $image
+            'image' => $request->image
         ]);
 
         // $tourId = $tour->id;
@@ -108,16 +109,17 @@ class AddonController extends Controller
             'id'            => 'required',
             'name'          => 'required|max:255',
             'price'         => 'required|numeric',
-            'description'   => 'required|string'
+            'description'   => 'required|string',
+            'image'         => 'required|integer'
         ]);
 
-        $image = '';
-        if( $request->hasFile('image') ) { 
-            // Generate unique image name
-            $baseSlug = Str::slug($request->name);
-            $uniqueSlug = $baseSlug . '-' . rand(10,99);
-            $image = $this->imageService->compressAndStoreImage($request->file('image'), $uniqueSlug, 'addon');
-        }
+        // $image = '';
+        // if( $request->hasFile('image') ) { 
+        //     // Generate unique image name
+        //     $baseSlug = Str::slug($request->name);
+        //     $uniqueSlug = $baseSlug . '-' . rand(10,99);
+        //     $image = $this->imageService->compressAndStoreImage($request->file('image'), $uniqueSlug, 'addon');
+        // }
 
         $addon = Addon::findOrFail($request->id);
         $addon->name            = $request->name;
@@ -125,7 +127,7 @@ class AddonController extends Controller
         $addon->customer_choice = $request->customer_choice;
         $addon->description     = $request->description;
         $addon->availability    = $request->availability;
-        $addon->image           = $image;
+        $addon->image           = $request->image;
         if($addon->save()) {
             return redirect()->route('admin.addon.index')->with('success','Addon updated successfully.');
         }
