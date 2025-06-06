@@ -80,7 +80,7 @@
                         <div class="col-md-12">
                              <div class="mb-3">
                                 <h5 class="text-success">✅ Passed Checks</h5>
-                                <ul>
+                                <ul style="list-style: none; padding:0">
                                     @forelse ($result['passed'] as $item)
                                         <li>{{ $item }}</li>
                                     @empty
@@ -91,7 +91,7 @@
 
                             <div class="mb-3">
                                 <h5 class="text-warning">⚠️ Warnings</h5>
-                                <ul>
+                                <ul style="list-style: none; padding:0">
                                     @forelse ($result['warning'] as $item)
                                         <li>{{ $item }}</li>
                                     @empty
@@ -102,7 +102,7 @@
 
                             <div class="mb-3">
                                 <h5 class="text-danger">❌ Failed Checks</h5>
-                                <ul>
+                                <ul style="list-style: none; padding:0">
                                     @forelse ($result['failed'] as $item)
                                         <li>{{ $item }}</li>
                                     @empty
