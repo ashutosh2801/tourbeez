@@ -61,6 +61,11 @@ class Tour extends Model
         return $this->belongsToMany(Addon::class);
     }
 
+    public function addonsAll(): BelongsToMany
+    {
+        return $this->belongsToMany(Addon::class, 'addon_tour', 'tour_id', 'addon_id');
+    }
+
     public function pickups(): BelongsToMany
     {
         return $this->belongsToMany(Pickup::class);
@@ -69,6 +74,11 @@ class Tour extends Model
     public function itineraries(): BelongsToMany
     {
         return $this->belongsToMany(Itinerary::class);
+    }
+
+    public function itinerariesAll()
+    {
+       return $this->hasMany(Itinerary::class, 'tour_id');
     }
 
     public function itineraryAll()
