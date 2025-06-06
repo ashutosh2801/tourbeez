@@ -37,14 +37,18 @@
     </form>
     <div class="card-body">
     	<div class="row gutters-5">
+			
     		@foreach($all_uploads as $key => $file)
     			@php
     				if($file->file_original_name == null){
     				    $file_name = translate('Unknown');
     				}else{
     					$file_name = $file->file_original_name;
+						
 	    			}
+					
     			@endphp
+		
     			<div class="col-auto w-140px w-lg-220px">
     				<div class="aiz-file-box">
     					<div class="dropdown-file" >
@@ -52,6 +56,11 @@
     							<i class="la la-ellipsis-v"></i>
     						</a>
     						<div class="dropdown-menu dropdown-menu-right">
+								<a href="javascript:void(0)" class="dropdown-item" onclick="imagedetailsInfo(this)" data-id="{{ $file->id }}" 
+								data-name="{{ $file_name }}" data-url="{{ url('/') . '/public/'.$file->file_name }}"  data-caption="{{ $file->caption }}" data-description="{{ $file->description }}">
+    								<i class="las la-info-circle mr-2"></i>
+    								<span>{{ translate('Image Info') }}</span>
+    							</a>
     							<a href="javascript:void(0)" class="dropdown-item" onclick="detailsInfo(this)" data-id="{{ $file->id }}">
     								<i class="las la-info-circle mr-2"></i>
     								<span>{{ translate('Details Info') }}</span>
@@ -129,10 +138,71 @@
 		</div>
 	</div>
 </div>
+<div id="image-info-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-right" role="document">
+        <div class="modal-content">
+            <form action="{{ route('admin.uploaded-files.add_image_info') }}" method="POST">
+                @csrf
+			
+                <div class="modal-header">
+                    <h5 class="modal-title h6">{{ translate('Image Info') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+				<input type="hidden" class="form-control" id="image_id" name="image_id">
+                <div class="modal-body c-scrollbar-light position-relative" id="info-modal-content">
+                    <div class="form-group">
+                        <label for="image-title">Title</label>
+                        <input type="text" class="form-control" id="image-title" name="image_title">
+                    </div>
 
+                    <div class="form-group">
+                        <label for="caption">Caption</label>
+                        <input type="text" class="form-control" id="caption" name="caption">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+
+                    <!-- Image URL and Copy Button -->
+                    <div class="form-group">
+                        <label for="image-url">Image URL</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="image-url" readonly>
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" onclick="copyImageUrl()">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save Info</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @section('js')
 	<script type="text/javascript">
+			function imagedetailsInfo(e){
+				var id = $(e).data('id')
+				var name = $(e).data('name')
+				var caption = $(e).data('caption')
+				var description = $(e).data('description')
+				var url = $(e).data('url')
+				$('#image-info-modal').modal('show');
+				$('#image_id').val(id);
+				$('#image-title').val(name);
+				$('#image-url').val(url);
+				$('#caption').val(caption);
+				$('#description').val(description);
+		}
 		function detailsInfo(e){
       $('#info-modal-content').html('<div class="c-preloader text-center absolute-center"><i class="las la-spinner la-spin la-3x opacity-70"></i></div>');
 			var id = $(e).data('id')
@@ -158,6 +228,15 @@
         function sort_uploads(el){
             $('#sort_uploads').submit();
         }
+		function copyImageUrl() {
+			var copyText = document.getElementById("image-url");
+			copyText.select();
+			copyText.setSelectionRange(0, 99999); // For mobile devices
+			document.execCommand("copy");
+
+			// Optional: alert or toast
+			alert("Image URL copied to clipboard");
+		}
 	</script>
 @endsection
 </x-admin>

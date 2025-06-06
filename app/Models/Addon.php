@@ -11,6 +11,6 @@ class Addon extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'price', 'description'
+        'name', 'price', 'description', 'customer_choice', 'availability', 'image'
     ];
 }

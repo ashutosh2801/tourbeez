@@ -255,5 +255,25 @@ class AizUploadController extends Controller
     public function migrate_database(Request $request){
 		//bugs
     }
+    public function add_image_info(Request $request){
+
+        $request->validate([
+
+            'image_title'   => 'required|max:255',
+        ],
+        [
+            'image_title.required'       => 'Please enter a image title',
+        ]);
+        
+        // Update tour instance
+        $id = $request->image_id;
+        $upload  = Upload::findOrFail($id);           
+        $upload->file_original_name     = $request->image_title;
+        $upload->caption                = $request->caption;
+        $upload->description            = $request->description;
+            if ($upload->save() ) {
+                return redirect()->back()->withInput()->with('success','Image Info saved successfully.'); 
+            }
+    }
 
 }
