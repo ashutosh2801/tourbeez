@@ -123,27 +123,16 @@ ul.flex li:last-child:after {
                             </h2>
                         </div>
                         <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
-                            <div class="card-body">
-                                <div style="border:1px solid #ccc; margin-bottom:10px">
-                                    <table class="table">
-                                        <tr>
-                                            <td><b>Booking fee</b> (included in price)</td>
-                                            <td class="text-right">$1.84</td>
-                                        </tr>
-                                        <tr>
-                                            <td><b>Total</b></td>
-                                            <td class="text-right">$19.84</td>
-                                        </tr>
-                                    </table>
-                                </div>
+                            <div class="card-body">                               
                                 
                                 <div id="tour_all">
                                     @php $count = count( $order->orderTours ); $index=0; @endphp
                                     @foreach ($order->orderTours as $order_tour)
                                     @php
                                         $row_id = 'row_'.$index++;
+                                        $subtotal = 0;
                                     @endphp
-                                    <div id="{{ $row_id }}" style="border:1px solid #ccc; margin-bottom:10px">    
+                                    <div id="{{ $row_id }}" style="border:1px solid #e1a604; margin-bottom:10px">    
                                     <table class="table">
                                         <tr>
                                             <td width="600"><h3 class="text-lg">{{ $order_tour->tour?->title }}</h3></td>
@@ -163,16 +152,16 @@ ul.flex li:last-child:after {
                                                     </div>                       
                                                 </div>
                                             </td>
-                                            <td class="text-right" width="200">
+                                            {{-- <td class="text-right" width="200">
                                                 <div class="input-group">
                                                     <div class="input-group-prepend">
                                                         <span class="input-group-text">$</span>
                                                     </div>                       
                                                     <input type="text" placeholder="99.99" name="tour_price" id="tour_price" value="{{ $order_tour->total_amount }}" class="form-control"> 
                                                 </div>
-                                            </td>
+                                            </td> --}}
                                             <td class="text-right">
-                                                {{-- <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button> --}}
+                                                <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button>
                                                 <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
                                             </td>
                                         </tr>
@@ -188,10 +177,21 @@ ul.flex li:last-child:after {
                                                         </td>
                                                     </tr>
                                                     @if ($order_tour->tour)
+                                                    @php
+                                                        $tour_pricing = ( json_decode($order_tour->tour_pricing) );
+                                                    @endphp
                                                     @foreach($order_tour->tour?->pricings as $pricing)
+                                                    @php
+                                                        $price = $pricing->price;
+                                                        $result = getTourPricingDetails($tour_pricing, $pricing->id);
+                                                        if(isset($result['price'])) {
+                                                            $price = $result['price'];
+                                                            $subtotal = $subtotal + ($result['quantity'] * $price);
+                                                        }
+                                                    @endphp
                                                     <tr>
-                                                        <td width="60"><input type="number" value="2" style="width:60px" class="form-contorl"></td>
-                                                        <td>{{ $pricing->label }} ($42.95)</td>
+                                                        <td width="60"><input type="number" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" class="form-contorl"></td>
+                                                        <td>{{ $pricing->label }} ({{ price_format($price) }})</td>
                                                     </tr>
                                                     @endforeach
                                                     @endif
@@ -206,6 +206,9 @@ ul.flex li:last-child:after {
                                                     </tr>
                                                     @if ($order_tour->tour)
                                                     @foreach($order_tour->tour?->addons as $addon)
+                                                    @php
+                                                    //$subtotal += $addon->price;
+                                                    @endphp
                                                     <tr>
                                                         <td width="60"><input type="number" value="0" style="width:60px" class="form-contorl"></td>
                                                         <td>{{ $addon->name }} ({{ price_format($addon->price) }})</td>
@@ -217,15 +220,29 @@ ul.flex li:last-child:after {
                                         </tr>
                                     </table>
 
-                                    <table class="table">    
+                                    <table class="table">
+                                        @php
+                                        $i=1;
+                                        $taxesfees = $order_tour->tour->taxes_fees;
+                                        @endphp 
+
+                                        @if( $taxesfees )
+                                        @foreach ($taxesfees as $key => $item)  
+                                        @php
+                                        $price      = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
+                                        $tax        = $price ?? 0;
+                                        $subtotal   = $subtotal + $tax; 
+                                        @endphp 
                                         <tr>
-                                            <td>HST ON (13.0%)</td>
-                                            <td class="text-right">$1.84</td>
+                                            <td>{{ $item->label }} ({{ taxes_format($item->fee_type, $item->tax_fee_value) }})</td>
+                                            <td class="text-right">{{ price_format($tax) }}</td>
                                         </tr>
+                                        @endforeach
+                                        @endif
 
                                         <tr>
-                                            <td>Subtotal</td>
-                                            <td class="text-right">$19.84</td>
+                                            <th>Subtotal</th>
+                                            <th class="text-right"> {{ price_format($subtotal) }} </th>
                                         </tr>
                                     </table>
                                     </div>
@@ -233,6 +250,19 @@ ul.flex li:last-child:after {
                                 </div>
                                 
                                 <div id="tourContainer"></div>
+
+                                <div style="border:1px solid #e1a604; margin-bottom:10px">
+                                    <table class="table">
+                                        <tr>
+                                            <td><b>Booking fee</b> (included in price)</td>
+                                            <td class="text-right">$1.84</td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>Total</b></td>
+                                            <td class="text-right">{{ price_format($order->total_amount) }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -359,7 +389,7 @@ ul.flex li:last-child:after {
         newRow.innerHTML = `<div style="border:1px solid #ccc; margin-bottom:10px"><table class="table">
                                 <tr>
                                     <td>
-                                        <select onchange="loadOrderTour(this.value)" name="tours" id="tours" class="form-control" style="max-width: 500px">` 
+                                        <select onchange="loadOrderTour(this.value)" name="load_order_tour" id="load_order_tour" class="form-control" style="max-width: 500px"><option value="">Select Tour</option>` 
                                             + tourOptions() + 
                                         `</select>
                                     </td>
@@ -367,6 +397,9 @@ ul.flex li:last-child:after {
                             </table></div>`;
 
         container.replaceChildren(newRow);
+        if (container) {
+            container.scrollIntoView({ behavior: "smooth" });
+        }
         tourCount++;
     }
 
@@ -395,6 +428,7 @@ ul.flex li:last-child:after {
             success: function(response) {
                 //console.log('Success:', response);
                 $('#tour_all').append(response);
+                $('#tourContainer').html('');
                 tourCount++;
 
                 TB.plugins.dateRange();

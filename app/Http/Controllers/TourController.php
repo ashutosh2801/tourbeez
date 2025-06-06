@@ -237,9 +237,10 @@ class TourController extends Controller
     {
         $data  = Tour::find($request->id);
         $str = '';
+        $subtotal = 0;
         if($data) {
             $row_id = 'row_'.$request->tourCount;
-            $str = '<div id="'.$row_id.'" style="border:1px solid #ccc; margin-bottom:10px">
+            $str = '<div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
                     <table class="table">
                         <tr>
                             <td width="600"><h3 class="text-lg">' .  $data->title . '</h3></td>
@@ -258,36 +259,43 @@ class TourController extends Controller
                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                     </div>                       
                                 </div>
-                            </td>
-                            <td class="text-right" width="200">
+                            </td>';
+                            /* <td class="text-right" width="200">
                                 <div class="input-group">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text">$</span>
                                     </div>                       
                                     <input type="text" placeholder="99.99" name="tour_price" id="tour_price" value="" class="form-control"> 
                                 </div>
-                            </td>
-                            <td class="text-right">
+                            </td> */
+                            $str.= '<td class="text-right">
                                 <button type="button" class="btn btn-sm btn-danger" onclick="removeTour(\''.$row_id.'\')">-</button>
+                                <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
                             </td>
                         </tr>
                     </table>
 
                     <table class="table" style="background:#ebebeb">
                         <tr>
-                            <td style="width:200px">
+                            <td style="width:200px" width="200">
                                 <table class="table">
                                     <tr>
                                         <td colspan="2">
                                             <h4 style="font-size:16px; font-weight:600">Quantities</h4>
                                         </td>
                                     </tr>';
-                                    if($data->tour?->pricings) {
-                                        foreach($data->tour?->pricings as $pricing) {
-                                        $str.= '<tr>
-                                            <td><input type="number" value="2" style="width:60px" class="form-contorl"></td>
-                                            <td>{{ $pricing->label }} ($42.95)</td>
-                                        </tr>';
+                                    if($data->pricings) {
+                                        $i=0;
+                                        foreach($data->pricings as $pricing) {
+                                            $num = 0;
+                                            if($i++ == 0) {
+                                                $num = 1;
+                                                $subtotal = $subtotal + ($num * $pricing->price);
+                                            }
+                                            $str.= '<tr>
+                                                <td width="60"><input type="number" value="'. $num .'" style="width:60px" class="form-contorl"></td>
+                                                <td>'. $pricing->label .' ('. $pricing->price .')</td>
+                                            </tr>';
                                         }
                                     }
                                     
@@ -300,10 +308,10 @@ class TourController extends Controller
                                             <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
                                         </td>
                                     </tr>';
-                                    if($data->tour?->addons) {
-                                        foreach($data->tour?->addons as $addon) {
+                                    if($data->addons) {
+                                        foreach($data->addons as $addon) {
                                         $str.= '<tr>
-                                            <td><input type="number" value="0" style="width:60px" class="form-contorl"></td>
+                                            <td width="60"><input type="number" value="0" style="width:60px" class="form-contorl"></td>
                                             <td>{{ $addon->name }} ({{ price_format($addon->price) }})</td>
                                         </tr>';
                                         }
@@ -312,16 +320,27 @@ class TourController extends Controller
                             </td>
                         </tr>
                     </table>
+                    
+                    <table class="table">';
 
-                    <table class="table">    
-                        <tr>
-                            <td>HST ON (13.0%)</td>
-                            <td class="text-right">$1.84</td>
-                        </tr>
+                    $taxesfees = $data->taxes_fees;
+                    if( $taxesfees ) {
+                        foreach ($taxesfees as $key => $item) {                    
+                            $price      = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
+                            $tax        = $price ?? 0;
+                            $subtotal   = $subtotal + $tax; 
+                            
+                            $str .= '<tr>
+                                <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
+                                <td class="text-right">'. price_format($tax) .'</td>
+                            </tr>';
+                        }
+                    }
 
+                    $str .= '
                         <tr>
-                            <td>Subtotal</td>
-                            <td class="text-right">$19.84</td>
+                            <th>Subtotal</th>
+                            <th class="text-right">'. price_format($subtotal) .'</th>
                         </tr>
                     </table>
                     </div>';

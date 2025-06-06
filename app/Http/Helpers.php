@@ -25,7 +25,16 @@ if(!function_exists('ordinal')) {
 if(!function_exists('price_format')) {
     function price_format($value)
     {
-    
+        return '$'.number_format($value, 2);
+    }
+}
+
+if(!function_exists('taxes_format')) {
+    function taxes_format($type, $value)
+    {
+        if($type == 'PERCENT')
+        return number_format($value,1).'%';
+        elseif($type == 'FIXED_PER_ORDER')
         return '$'.number_format($value, 2);
     }
 }
@@ -41,6 +50,34 @@ if (!function_exists('site_url')) {
     function site_url()
     {
         return !empty(env('APP_URL')) ? env('APP_URL') : url('');
+    }
+}
+
+if (! function_exists('getTourPricingDetails')) {
+    function getTourPricingDetails($data, $tour_pricing_id=0)
+    {
+        foreach ($data as $item) {
+            if (isset($item->tour_pricing_id) && $item->tour_pricing_id == $tour_pricing_id) {
+                return [
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                ];
+            }
+        }
+
+        return null;
+    }
+}
+
+if (! function_exists('get_tax')) {
+    function get_tax($subtotal, $type, $value) {
+        if($type == 'PERCENT') {
+            return ($subtotal * ($value/100));
+        }
+        elseif($type == 'FIXED_PER_ORDER') {
+            return $value;
+        }
+        return 0;
     }
 }
 

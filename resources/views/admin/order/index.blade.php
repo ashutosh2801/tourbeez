@@ -23,7 +23,7 @@
                             <td>{!!  order_status($order->order_status) !!}</td>
                             <td>
                                 @foreach ($order->orderTours as $order_tour)
-                                <p><a href="{{ route('admin.tour.edit', encrypt($order->tour_id) ) }}" target="_blank" class="alink">{{ $order_tour->tour?->title }}</a></p>
+                                <p><a href="{{ route('admin.tour.edit', encrypt($order_tour->tour_id) ) }}" target="_blank" class="alink">{{ $order_tour->tour?->title }}</a></p>
                                 @endforeach
                             </td>
                             <td><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->user?->name }}</a> <br />{{ $order->user?->phonenumber }}</td>
