@@ -130,7 +130,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::resource('/uploaded-files', AizUploadController::class);
         Route::any('/uploaded-files/file-info', [AizUploadController::class, 'file_info'])->name('uploaded-files.info');
         Route::get('/uploaded-files/destroy/{id}', [AizUploadController::class, 'destroy'])->name('uploaded-files.destroy');
-
+        Route::any('/uploaded-files/add_image_info', [AizUploadController::class, 'add_image_info'])->name('uploaded-files.add_image_info');
+        
         Route::resource('/orders', OrderController::class);
 
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity.logs');

@@ -24,6 +24,6 @@ class Addon extends Model
     }
 
     protected $fillable = [
-        'name', 'price', 'description'
+        'name', 'price', 'description','customer_choice','availability','image'
     ];
 }
