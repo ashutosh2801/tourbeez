@@ -7,6 +7,7 @@ use App\Models\Translation;
 // use App\Models\SmsTemplate;
 // use App\Models\Notification;
 use App\Upload;
+use App\Models\TourUpload;
 use App\User;
 use Ashutosh2801\Colorcodeconverter\Colorcodeconverter;
 use Carbon\Carbon;

@@ -27,11 +27,13 @@
                             <td>{!! main_image_html($tour->main_image?->id) !!}</td>
                             <td>
                                 @can('edit_tour')     
-                                <a class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a></td>
+                                <a class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
                                 @else
                                 {{ $tour->title }}
                                 @endcan
-                                <i>Written by : {{ $tour->user->name }}</i>
+
+                                <div class="text-sm">Written by : {{ $tour->user->name }}</div>
+                            </td>    
                             <td>{{ price_format($tour->price) }}</td>
                             <td>{{ $tour->unique_code }}</td>
                             <td>{{ $tour->category_names ?: 'No categories' }}</td>

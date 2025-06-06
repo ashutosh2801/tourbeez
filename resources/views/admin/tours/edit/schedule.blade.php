@@ -62,7 +62,7 @@
                         @enderror
                     </div>
                 </div>
-
+               
                 <div class="mb-4">
                     <div class="row">
                         <label for="session_start_date" class="form-label col-lg-2">Next available session *</label>
@@ -72,10 +72,10 @@
                                     <span class="input-group-text" id="basic-addon-from" style="width:70px;">Form</span>
                                 </div>
                                 <input type="text" placeholder="Date" name="session_start_date" id="session_start_date" 
-                                value="{{ old('session_start_date', $schedule->session_start_date) }}" class="aiz-date-range form-control" data-single="true" 
+                                value="{{ old('session_start_date', $schedule->session_start_date) }}" class="form-control aiz-date-range" data-single="true" 
                                 data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                    <span class="input-group-text calendar-icon-start" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                                 </div>                       
                             </div>
                             @error('session_start_date')
@@ -87,7 +87,7 @@
                                 <input type="text" placeholder="Time" name="session_start_time" id="session_start_time" 
                                 value="{{ old('session_start_time', $schedule->session_start_time) }}" class="form-control aiz-time-picker"> 
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                    <span class="input-group-text time-icon-start" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                                 </div>                       
                             </div>
                             @error('session_start_time')
@@ -103,9 +103,9 @@
                                     <span class="input-group-text" id="basic-addon-from"  style="width:70px;">To</span>
                                 </div>
                                 <input type="text" placeholder="Date" name="session_end_date" id="session_end_date" 
-                                value="{{ old('session_end_date', $schedule->session_end_date) }}" class="aiz-date-range form-control" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
+                                value="{{ old('session_end_date', $schedule->session_end_date) }}" class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                    <span class="input-group-text calendar-icon-end" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                                 </div>                       
                             </div>
                             @error('session_end_date')
@@ -117,7 +117,7 @@
                                 <input type="text" placeholder="Time" name="session_end_time" id="session_end_time" 
                                 value="{{ old('session_end_time', $schedule->session_end_time) }}" class="form-control aiz-time-picker"> 
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                    <span class="input-group-text time-icon-end" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                                 </div>                       
                             </div>
                             @error('session_end_time')
@@ -175,9 +175,9 @@
                             </div>
                             <input type="text" placeholder="Date" name="until_date" id="until_date" 
                             value="{{ old('until_date', $schedule->until_date) }}" 
-                            class="aiz-date-range form-control" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
+                            class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
                             <div class="input-group-prepend">
-                                <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                <span class="input-group-text calendar-icon-util" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                             </div>                       
                         </div>
                         @error('until_date')
@@ -246,6 +246,7 @@
 
 @section('js')
 @parent
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 function setValueTime( value ) {
 
@@ -317,13 +318,142 @@ $(document).ready(function(){
     
     $('.aiz-date-range').on('apply.daterangepicker', function(ev, picker) {
         var selectedDate = picker.startDate.format('YYYY-MM-DD');
-        //console.log("Selected date:", selectedDate);
-        $(this).val(selectedDate); // If needed
+        var endDate = picker.endDate.format('YYYY-MM-DD');
+      //  $(this).val(selectedDate); // If needed
+    // Update visible input with selected range
+        $(this).val(endDate);
 
-        $('#session_end_date').val(selectedDate);
+       // $('#session_end_date').val(endDate);
+        $('#until_date').val(endDate); // Applies the end date to the until_date input
+
+       // $('#session_end_date').val(selectedDate);
         $('#session_start_time, .start_time').val('09:00 AM');
         $('#session_end_time, .end_time').val('05:00 PM');
     });
+    
 });
+
+$(document).ready(function() {
+    $('#estimated_duration_num, #estimated_duration_unit, #session_start_time').on('input', function() {
+        let durationNum = parseInt($('#estimated_duration_num').val());
+        let durationUnit = $('#estimated_duration_unit').val();
+        let sessionStartTime = $('#session_start_time').val(); // e.g., "9:00 AM"
+
+        if (!durationNum || !sessionStartTime) return;
+
+        // Parse "9:00 AM" (or "9:00 AM YYYY-MM-DD" if you add dates)
+        let timeParts = sessionStartTime.match(/(\d+):(\d+)\s?(AM|PM)/i);
+        if (!timeParts) return;
+
+        let hours = parseInt(timeParts[1]);
+        let minutes = parseInt(timeParts[2]);
+        let period = timeParts[3].toUpperCase();
+
+        // Convert to 24-hour time
+        if (period === 'PM' && hours < 12) hours += 12;
+        if (period === 'AM' && hours === 12) hours = 0;
+
+        // Create Date object for today
+        let date = new Date();
+        date.setHours(hours);
+        date.setMinutes(minutes);
+        date.setSeconds(0);
+
+        // Add based on durationUnit
+        if (durationUnit === 'HOURS') {
+            date.setHours(date.getHours() + durationNum);
+        } else if (durationUnit === 'MINUTES') {
+            date.setMinutes(date.getMinutes() + durationNum);
+        } else if (durationUnit === 'DAYS') {
+            date.setDate(date.getDate() + durationNum);
+        }
+
+        // Format to 12-hour with AM/PM
+        let newHours = date.getHours();
+        let newMinutes = date.getMinutes();
+        let newPeriod = newHours >= 12 ? 'PM' : 'AM';
+
+        newHours = newHours % 12;
+        newHours = newHours ? newHours : 12; // Handle midnight
+        newMinutes = newMinutes < 10 ? '0' + newMinutes : newMinutes;
+
+        let formattedTime = newHours + ':' + newMinutes + ' ' + newPeriod;
+
+        // Optional: include date
+        let month = date.getMonth() + 1;
+        let day = date.getDate();
+        let year = date.getFullYear();
+        let formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+        let fullFormatted = formattedTime;
+        $('#session_end_time').val(fullFormatted);
+        $('#session_end_date').val(formattedDate);
+    });
+});     
+$(document).ready(function() {
+        $('.calendar-icon-start').on('click', function () {
+        const startdate = $('#session_start_date').data('daterangepicker');
+        if (!startdate.isShowing) {
+            $('#session_start_date').focus();
+        }
+     //   $('#session_start_date').focus(); // focus input
+       // $('#session_end_date').focus(); // focus input
+        
+    });
+          $('.calendar-icon-end').on('click', function () {
+        const enddate = $('#session_end_date').data('daterangepicker');
+        if (!enddate.isShowing) {
+            $('#session_end_date').focus();
+        }
+     //   $('#session_start_date').focus(); // focus input
+       // $('#session_end_date').focus(); // focus input
+        
+    });
+    $('.calendar-icon-util').on('click', function () {
+        const enddate = $('#until_date').data('daterangepicker');
+        if (!enddate.isShowing) {
+            $('#until_date').focus();
+        }
+     //   $('#session_start_date').focus(); // focus input
+       // $('#session_end_date').focus(); // focus input
+        
+    });
+});   
+ $(document).ready(function () {
+  // Initialize flatpickr and save instance in a variable
+  const startpickr = flatpickr("#session_start_time", {
+  enableTime: true,
+  noCalendar: true,
+  dateFormat: "h:i K",     // Format shown to user
+  time_24hr: false,        // 12-hour format
+  defaultDate: "09:00 AM"  // Set default time
+});
+
+  // On icon click, open the picker ONLY if it's not already open
+  $('.time-icon-start').on('click', function () {
+    if (!startpickr.isOpen) {
+      startpickr.open();
+    }
+    // Focus input as well, optional
+    $('#session_start_time').focus();
+  });
+  const endpickr = flatpickr("#session_end_time", {
+  enableTime: true,
+  noCalendar: true,
+  dateFormat: "h:i K",     // Format shown to user
+  time_24hr: false,        // 12-hour format
+  defaultDate: "05:00 PM"  // Set default time
+});
+  // On icon click, open the picker ONLY if it's not already open
+  $('.time-icon-end').on('click', function () {
+    if (!endpickr.isOpen) {
+      endpickr.open();
+    }
+    // Focus input as well, optional
+    $('#session_end_time').focus();
+  });
+});
+
 </script>
+
 @endsection
