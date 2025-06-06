@@ -29,11 +29,12 @@
                             <td>
                                 @can('edit_tour')     
                                 <a class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
-                                <br> Written By : {{ $users->name }}
+                                <br> 
+                                <p style="font-size: 13px;color: #878585;">Written By : {{ $users->name }}</p>
                                </td>
                                 @else
                                 {{ $tour->title }}
-                               
+                                <p style="font-size: 13px;color: #878585;">Written By : {{ $users->name }}</p>
                                 @endcan
                             <td>{{ price_format($tour->price) }}</td>
                             <td>{{ $tour->unique_code }}</td>

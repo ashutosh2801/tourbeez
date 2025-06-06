@@ -68,7 +68,7 @@
                                 <div>
                                     <input type="hidden" name="id" value="{{ $data->id }}">
                                     <input type="text" class="form-control icon" name="focus_keyword" 
-                                    id="focus_keyword" placeholder="10" autocomplete="off" value="{{ $data->title }}">
+                                    id="focus_keyword" placeholder="10" autocomplete="off" value="{{ !empty($focusKeyword) ? $focusKeyword : $data->title }}">
                                 </div>
                             </div> 
                             <div class="form-group col-md-2"> 
@@ -80,7 +80,7 @@
                         <div class="col-md-12">
                              <div class="mb-3">
                                 <h5 class="text-success">✅ Passed Checks</h5>
-                                <ul>
+                                <ul style="list-style: none;">
                                     @forelse ($result['passed'] as $item)
                                         <li>{{ $item }}</li>
                                     @empty
@@ -91,7 +91,7 @@
 
                             <div class="mb-3">
                                 <h5 class="text-warning">⚠️ Warnings</h5>
-                                <ul>
+                                <ul style="list-style: none;">
                                     @forelse ($result['warning'] as $item)
                                         <li>{{ $item }}</li>
                                     @empty
@@ -102,7 +102,7 @@
 
                             <div class="mb-3">
                                 <h5 class="text-danger">❌ Failed Checks</h5>
-                                <ul>
+                                <ul style="list-style: none;">
                                     @forelse ($result['failed'] as $item)
                                         <li>{{ $item }}</li>
                                     @empty
