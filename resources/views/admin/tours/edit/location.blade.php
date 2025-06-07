@@ -195,24 +195,24 @@ $('#state_id').on('change', function() {
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_API_KEY') }}&libraries=places"></script>
 <script>
-    function initAutocompleteById() {
-        const input = document.getElementById('autocomplete');
+function initAutocompleteById() {
+    const input = document.getElementById('autocomplete');
 
-        if (input) {
-            const autocomplete = new google.maps.places.Autocomplete(input, {
-                types: ['geocode'],
-                componentRestrictions: { country: "ca" }, // restrict to Canada
-            });
+    if (input) {
+        const autocomplete = new google.maps.places.Autocomplete(input, {
+            types: ['geocode'],
+            componentRestrictions: { country: "ca" }, // restrict to Canada
+        });
 
-            autocomplete.addListener("place_changed", function () {
-                const place = autocomplete.getPlace();
-                console.log("Selected address:", place.formatted_address);
-            });
-        } else {
-            console.warn("Input with ID 'address-input' not found.");
-        }
+        autocomplete.addListener("place_changed", function () {
+            const place = autocomplete.getPlace();
+            console.log("Selected address:", place.formatted_address);
+        });
+    } else {
+        console.warn("Input with ID 'address-input' not found.");
     }
+}
 
-    window.onload = initAutocompleteById;
+window.onload = initAutocompleteById;
 </script>
 @endsection

@@ -30,11 +30,20 @@ ul.flex li:after {
 ul.flex li:last-child:after {
     content: "";
 }
+.highlight {
+  animation: fadeHighlight 2s ease;
+}
+
+@keyframes fadeHighlight {
+  0%   { background-color: #e1a10b; }
+  100% { background-color: transparent; }
+}
 </style>
 @endsection
     <form action="{{ route('admin.orders.update',$order->id) }}" method="POST">
     @method('PUT')
     @csrf
+    <input type="hidden" name="order_id" value="{{ $order->id }}" /> 
     <div class="card">
         <div class="card-header">
             <h5>Created on {{ date__format($order->created_at) }} online on your booking form</h5>
@@ -59,7 +68,7 @@ ul.flex li:last-child:after {
                         </select>
                     </div>
                     <div class="col-lg-8 text-right">
-                        <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
+                        {{-- <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
                             <option value="" >Email</option>
                             <option value="Order Details" >Order Details -> Send Now</option>
                             <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
@@ -93,7 +102,7 @@ ul.flex li:last-child:after {
                             <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
                             <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
                             <option value="Simple Email" >Simple Email -> Send Now</option>
-                        </select>
+                        </select> --}}
                     </div>
                 </div>
             </div>
@@ -116,6 +125,7 @@ ul.flex li:last-child:after {
                             </div>
                         </div>
                     </div>
+
                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
                             <h2 class="my-0 py-0">
@@ -131,14 +141,16 @@ ul.flex li:last-child:after {
                                     @php
                                         $row_id = 'row_'.$index++;
                                         $subtotal = 0;
+                                        $_tourId = $order_tour->tour_id;
                                     @endphp
-                                    <div id="{{ $row_id }}" style="border:1px solid #e1a604; margin-bottom:10px">    
+                                    <div id="{{ $row_id }}" style="border:1px solid #e1a604; margin-bottom:10px">
+                                    <input type="hidden" name="tour_id[]" value="{{ $order_tour->tour_id }}" />    
                                     <table class="table">
                                         <tr>
                                             <td width="600"><h3 class="text-lg">{{ $order_tour->tour?->title }}</h3></td>
                                             <td class="text-right" width="200">
                                                 <div class="input-group">
-                                                    <input type="text" class="aiz-date-range form-control" id="tour_startdate" name="tour_startdate" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="{{ $order_tour->tour_date }}">
+                                                    <input type="text" class="aiz-date-range form-control" id="tour_startdate" name="tour_startdate[]" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="{{ $order_tour->tour_date }}">
                                                     <div class="input-group-append">
                                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                                     </div>
@@ -146,7 +158,7 @@ ul.flex li:last-child:after {
                                             </td>
                                             <td class="text-right" width="200">
                                                 <div class="input-group">
-                                                    <input type="text" placeholder="Time" name="tour_starttime" id="tour_starttime" value="{{ $order_tour->tour_time }}" class="form-control aiz-time-picker" data-minute-step="1"> 
+                                                    <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="{{ $order_tour->tour_time }}" class="form-control aiz-time-picker" data-minute-step="1"> 
                                                     <div class="input-group-prepend">
                                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                                     </div>                       
@@ -157,7 +169,7 @@ ul.flex li:last-child:after {
                                                     <div class="input-group-prepend">
                                                         <span class="input-group-text">$</span>
                                                     </div>                       
-                                                    <input type="text" placeholder="99.99" name="tour_price" id="tour_price" value="{{ $order_tour->total_amount }}" class="form-control"> 
+                                                    <input type="text" placeholder="99.99" name="tour_price[]" id="tour_price" value="{{ $order_tour->total_amount }}" class="form-control"> 
                                                 </div>
                                             </td> --}}
                                             <td class="text-right">
@@ -178,7 +190,7 @@ ul.flex li:last-child:after {
                                                     </tr>
                                                     @if ($order_tour->tour)
                                                     @php
-                                                        $tour_pricing = ( json_decode($order_tour->tour_pricing) );
+                                                        $tour_pricing = !empty($order_tour->tour_pricing) ? ( json_decode($order_tour->tour_pricing) ) : [];
                                                     @endphp
                                                     @foreach($order_tour->tour?->pricings as $pricing)
                                                     @php
@@ -190,7 +202,11 @@ ul.flex li:last-child:after {
                                                         }
                                                     @endphp
                                                     <tr>
-                                                        <td width="60"><input type="number" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" class="form-contorl"></td>
+                                                        <td width="60">
+                                                            <input type="hidden" name="tour_pricing_id_{{$_tourId}}[]" value="{{ $pricing->id }}" />  
+                                                            <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
+                                                            <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
+                                                        </td>
                                                         <td>{{ $pricing->label }} ({{ price_format($price) }})</td>
                                                     </tr>
                                                     @endforeach
@@ -205,13 +221,25 @@ ul.flex li:last-child:after {
                                                         </td>
                                                     </tr>
                                                     @if ($order_tour->tour)
-                                                    @foreach($order_tour->tour?->addons as $addon)
                                                     @php
-                                                    //$subtotal += $addon->price;
+                                                        $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
+                                                    @endphp
+                                                    @foreach($order_tour->tour?->addons as $extra)
+                                                    @php
+                                                        $price = $extra->price;
+                                                        $result = getTourExtraDetails($tour_extra, $extra->id);
+                                                        if(isset($result['price'])) {
+                                                            $price = $result['price'];
+                                                            $subtotal = $subtotal + ($result['quantity'] * $price);
+                                                        }
                                                     @endphp
                                                     <tr>
-                                                        <td width="60"><input type="number" value="0" style="width:60px" class="form-contorl"></td>
-                                                        <td>{{ $addon->name }} ({{ price_format($addon->price) }})</td>
+                                                        <td width="60">
+                                                            <input type="hidden" name="tour_extra_id_{{$_tourId}}[]" value="{{ $extra->id }}" />  
+                                                            <input type="number" name="tour_extra_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
+                                                            <input type="hidden" name="tour_extra_price_{{$_tourId}}[]" value="{{ $price }}" /> 
+                                                        </td>
+                                                        <td>{{ $extra->name }} ({{ price_format($extra->price) }})</td>
                                                     </tr>
                                                     @endforeach
                                                     @endif
@@ -266,6 +294,7 @@ ul.flex li:last-child:after {
                             </div>
                         </div>
                     </div>
+
                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="heading4">
                             <h2 class="my-0 py-0">
@@ -274,10 +303,11 @@ ul.flex li:last-child:after {
                         </div>
                         <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
-                                <textarea class="form-control" name="additional_info" id="additional_info" rows="4" placeholder="Additional information"></textarea>
+                                <textarea class="form-control" name="additional_info" id="additional_info" rows="4" placeholder="Additional information">{{ $order->additional_info }}</textarea>
                             </div>
                         </div>
                     </div>
+
                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="headingThree">
                             <h2 class="my-0 py-0">
@@ -288,14 +318,14 @@ ul.flex li:last-child:after {
                             <div class="card-body">
                                 <table class="table">    
                                     <tr>
-                                        <td>Total: $97.07</td>
+                                        <td>Total: {{ price_format($order->total_amount) }}</td>
                                     </tr>
 
                                     <tr>
                                         <td>Stored Credit Card</td>
-                                        <td>XXXXXXXXXXXX5959</td>
+                                        <td>{{ $order->card_info }}</td>
                                         <td>STRIPE</td>
-                                        <td>ch_3RSiaLEcMxhlmBMk0dT82PRI</td>
+                                        <td>{{ $order->transaction_id }}</td>
                                     </tr>
                                 </table>
                             </div>
@@ -386,19 +416,28 @@ ul.flex li:last-child:after {
         //newRow.classList.add('row', 'align-items-end', 'mb-2');
         newRow.setAttribute('id', `row_${tourCount}`);
 
-        newRow.innerHTML = `<div style="border:1px solid #ccc; margin-bottom:10px"><table class="table">
-                                <tr>
-                                    <td>
-                                        <select onchange="loadOrderTour(this.value)" name="load_order_tour" id="load_order_tour" class="form-control" style="max-width: 500px"><option value="">Select Tour</option>` 
-                                            + tourOptions() + 
-                                        `</select>
-                                    </td>
-                                </tr>
-                            </table></div>`;
-
+        newRow.innerHTML = `<div style="border:1px solid #ccc; margin-bottom:10px">
+        <table class="table">
+            <tr>
+                <td>
+                    <select onchange="loadOrderTour(this.value)" name="load_order_tour" 
+                        id="load_order_tour" class="form-control aiz-selectpicker" 
+                        data-live-search="true" style="max-width: 500px">
+                        <option value="">Select Tour</option>` 
+                        + tourOptions() + 
+                    `</select>
+                </td>
+            </tr>
+        </table></div>`;
         container.replaceChildren(newRow);
+        TB.plugins.bootstrapSelect('refresh'); 
+
         if (container) {
-            container.scrollIntoView({ behavior: "smooth" });
+            container.scrollIntoView({ top:15, behavior: "smooth" });
+            container.classList.add('highlight');
+            setTimeout(() => {
+                container.classList.remove('highlight');
+            }, 5000);
         }
         tourCount++;
     }
@@ -419,7 +458,7 @@ ul.flex li:last-child:after {
             }
         });
         $.ajax({
-            url: 'http://localhost/tourbeez/tbadmin/tour/single',
+            url: '{{ route('tour.single') }}',
             type: 'POST',
             data: {
                 id: tour_id,
@@ -440,6 +479,10 @@ ul.flex li:last-child:after {
         });
     }
 
+    $(document).on('click', '.fa-calendar', function() {
+        $(this).closest('.input-group').find('.aiz-time-picker, .aiz-date-range').focus();
+    });
+
     $(document).ready(function(){
         // Add down arrow icon for collapse element which is open by default
         $(".collapse.show").each(function(){
@@ -452,8 +495,6 @@ ul.flex li:last-child:after {
         }).on('hide.bs.collapse', function(){
         	$(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
         });
-
-        
     });
 </script>
 @endsection

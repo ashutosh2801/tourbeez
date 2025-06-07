@@ -239,14 +239,16 @@ class TourController extends Controller
         $str = '';
         $subtotal = 0;
         if($data) {
+            $_tourId = $data->id;
             $row_id = 'row_'.$request->tourCount;
             $str = '<div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
+                    <input type="hidden" name="tour_id[]" value="' .  $data->id . '" />  
                     <table class="table">
                         <tr>
                             <td width="600"><h3 class="text-lg">' .  $data->title . '</h3></td>
                             <td class="text-right" width="200">
                                 <div class="input-group">
-                                    <input type="text" class="aiz-date-range form-control" id="expiry_date" name="expiry_date" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="2025-05-31">
+                                    <input type="text" class="aiz-date-range form-control" id="tour_startdate" name="tour_startdate[]" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="2025-05-31">
                                     <div class="input-group-append">
                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                     </div>
@@ -254,7 +256,7 @@ class TourController extends Controller
                             </td>
                             <td class="text-right" width="200">
                                 <div class="input-group">
-                                    <input type="text" placeholder="Time" name="session_start_time" id="session_start_time" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
+                                    <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                     </div>                       
@@ -293,8 +295,12 @@ class TourController extends Controller
                                                 $subtotal = $subtotal + ($num * $pricing->price);
                                             }
                                             $str.= '<tr>
-                                                <td width="60"><input type="number" value="'. $num .'" style="width:60px" class="form-contorl"></td>
-                                                <td>'. $pricing->label .' ('. $pricing->price .')</td>
+                                                <td width="60">
+                                                    <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'. $pricing->id .'" />
+                                                    <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'. $num .'" style="width:60px" class="form-contorl">
+                                                    <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'. $pricing->price .'" /> 
+                                                </td>
+                                                <td>'. $pricing->label .' ('. price_format($pricing->price) .')</td>
                                             </tr>';
                                         }
                                     }
@@ -308,14 +314,21 @@ class TourController extends Controller
                                             <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
                                         </td>
                                     </tr>';
-                                    if($data->addons) {
-                                        foreach($data->addons as $addon) {
-                                        $str.= '<tr>
-                                            <td width="60"><input type="number" value="0" style="width:60px" class="form-contorl"></td>
-                                            <td>{{ $addon->name }} ({{ price_format($addon->price) }})</td>
-                                        </tr>';
+
+                                    if ($data->addons) {
+                                        foreach($data->addons as $extra) {
+                                            $price = $extra->price;                                        
+                                            $str.= '<tr>
+                                                <td width="60">
+                                                    <input type="hidden" name="tour_extra_id_'.$_tourId.'[]" value="'. $extra->id .'" />  
+                                                    <input type="number" name="tour_extra_qty_'.$_tourId.'[]" value="0" style="width:60px" min="0" class="form-contorl text-center">
+                                                    <input type="hidden" name="tour_extra_price_'.$_tourId.'[]" value="'. $price .'" /> 
+                                                </td>
+                                                <td>'. $extra->name .' ('. price_format($extra->price) .')</td>
+                                            </tr>';
                                         }
                                     }
+                                    
                                 $str.= '</table>
                             </td>
                         </tr>

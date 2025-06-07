@@ -53,6 +53,22 @@ if (!function_exists('site_url')) {
     }
 }
 
+if (! function_exists('getTourExtraDetails')) {
+    function getTourExtraDetails($data, $tour_extra_id=0)
+    {
+        foreach ($data as $item) {
+            if (isset($item->tour_extra_id) && $item->tour_extra_id == $tour_extra_id) {
+                return [
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                ];
+            }
+        }
+
+        return null;
+    }
+}
+
 if (! function_exists('getTourPricingDetails')) {
     function getTourPricingDetails($data, $tour_pricing_id=0)
     {
