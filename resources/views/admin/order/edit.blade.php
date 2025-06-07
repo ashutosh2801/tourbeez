@@ -419,7 +419,7 @@ ul.flex li:last-child:after {
             }
         });
         $.ajax({
-            url: 'http://localhost/tourbeez/tbadmin/tour/single',
+            url: "{{ route('tour.single') }}",
             type: 'POST',
             data: {
                 id: tour_id,

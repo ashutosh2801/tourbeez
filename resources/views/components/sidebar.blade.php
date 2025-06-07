@@ -122,7 +122,15 @@
                 <p>{{ translate('Orders') }}</p>
             </a>
         </li>
-        @endcan 
+          @endcan 
+        <li class="nav-item">
+            <a href="{{ route('admin.orders.invoice') }}"
+                class="nav-link {{ areActiveRoutes(['uploaded-files.create']) }}">
+                <i class="nav-icon fas fa-file"></i>
+                <p>{{ translate('Invoice') }}</p>
+            </a>
+        </li>
+      
         @can('show_customers') 
         <li class="nav-item">
             <a href="{{ route('admin.customers.index') }}"

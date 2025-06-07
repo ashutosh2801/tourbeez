@@ -67,7 +67,7 @@
                 </div>
             </div>
             <div class="card-footer" style="display:block">                
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.message.paymentrequest', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.seoscore', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
                 <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-lg btn-success">Publish</button>
             </div>
             

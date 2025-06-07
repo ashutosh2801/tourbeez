@@ -79,4 +79,12 @@ class OrderController extends Controller
     {
         //
     }
+
+    // Shilpi Invoice
+    public function invoice()
+    {
+        $orders = Order::all();
+        return view('admin.order.invoice', compact(['orders']));
+    }
+
 }

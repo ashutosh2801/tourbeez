@@ -417,7 +417,20 @@ class TourController extends Controller
         $detail     = $data->detail ? $data->detail : new TourDetail();
         return view('admin.tours.feature.seo', compact( 'data', 'detail'));
     }
-
+    public function editSeoScore($id)
+        {
+            $data       = Tour::findOrFail(decrypt($id));
+            //$metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+            $detail     = $data->detail ? $data->detail : new TourDetail();
+            return view('admin.tours.feature.seo_score', compact( 'data', 'detail'));
+        }
+          public function editinfoSeo($id)
+        {
+            $data       = Tour::findOrFail(decrypt($id));
+            //$metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+            $detail     = $data->detail ? $data->detail : new TourDetail();
+            return view('admin.tours.feature.info_seo', compact( 'data', 'detail'));
+        }
     public function editNotification($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
@@ -1257,8 +1270,12 @@ class TourController extends Controller
         if($tour->save()) {            
             $tour_detail = TourDetail::where('tour_id', $tour->id)->first();
             $tour_detail->focus_keyword       = $request->focus_keyword;
-            if ($tour_detail->save() ) {
-                return redirect()->back()->withInput()->with('success','Focus key saved successfully.'); 
+            $result = checkWebsiteSeoContent($tour->id,$request->focus_keyword);
+            $percentage  = $result['percentage'];
+            $msg = "You Score is -  $percentage ";
+            
+            if ($tour_detail->save() ) { 
+                return redirect()->back()->withInput()->with('success',$msg); 
             }
         }
     }
