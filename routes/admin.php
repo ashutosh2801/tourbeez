@@ -42,7 +42,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/category',CategoryController::class);
     Route::resource('/tour_type',TourTypeController::class);
     Route::resource('/collection',CollectionController::class);
+        //Order(Shilpi)
     Route::resource('/orders', OrderController::class);
+    //Route::get('/admin/orders/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
     
     // Country
     Route::resource('/countries', CountryController::class);
@@ -150,8 +152,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/aiz-uploader/download/{id}', [AizUploadController::class,'attachment_download'])->name('download_attachment');
     Route::get('/migrate/database', [AizUploadController::class,'migrate_database']);
    
-    //Order(Shilpi)
-    Route::get('admin/orders/invoice', [OrderController::class,'invoice'])->name('orders.invoice');
+   
 
     // Setting
     Route::resource('/settings', SettingController::class);
