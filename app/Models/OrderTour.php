@@ -13,6 +13,9 @@ class OrderTour extends Model
     use LogsActivity;
 
     public $timestamps = false;
+    protected $fillable = [
+        'tour_id', 'order_id ', 'tour_date', 'tour_time', 'tour_pricing', 'tour_extra', 'number_of_guests', 'total_amount'
+    ];
 
     public function getActivitylogOptions(): LogOptions
     {
