@@ -62,7 +62,7 @@ class AizUploadController extends Controller
     public function show_uploader(Request $request){
         return view('uploader.aiz-uploader');
     }
-    public function upload(Request $request){
+      public function upload(Request $request){
         $type = array(
             "jpg"=>"image",
             "jpeg"=>"image",

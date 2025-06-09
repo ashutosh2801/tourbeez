@@ -6,6 +6,7 @@ use App\Http\Controllers\CityController;
 use App\Http\Controllers\LoginWithOTPController;
 use App\Http\Controllers\SocialiteController;
 use App\Http\Controllers\StateController;
+use App\http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 /*
@@ -26,6 +27,8 @@ Route::get('/', function () {
         'readmeContent' => Str::markdown(file_get_contents($readmePath)),
     ]);
 });
+Route::post('/payment-method/update', [SettingController::class, 'payment_method_update'])->name('payment_method.update');
+Route::post('/settings/update', [SettingController::class, 'update'])->name('settings.update');
 
 Route::post('/tour/single', [TourController::class,'single'])->name('tour.single');
 

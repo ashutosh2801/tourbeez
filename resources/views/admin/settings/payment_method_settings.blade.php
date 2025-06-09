@@ -1,5 +1,94 @@
-@extends('admin.layouts.app')
-@section('content')
+<x-admin>
+    @section('title')
+        {{ 'Payment Settings' }}
+    @endsection
+ <div class="row">
+        <div class="col-lg-12 mx-auto">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h1 class="mb-0 h6">{{ __('Payment Setting') }}</h1>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('admin.settings.payment_method_update') }}" method="POST">
+                        @csrf
+                        <p><strong>{{ __('Online Booking Fee') }} </p></strong>
+                  
+                        <div class="form-group row">
+                              <div class="option">
+                                <input type="hidden" name="types[]" value="price_booking_fee">
+                                  <label class="mb-0">
+                                    <input value="1" name="price_booking_fee" id="includes" type="radio" @if (get_setting('price_booking_fee') == 1)
+                                    checked
+                                    @endif>
+                                    <span class="slider round"></span>
+                                </label>
+                                <label for="includes">Price includes booking fee</label>
+                            </div>
+                        </div>
+                        <div class="form-group row hidden" id="include_fee">
+                             <input type="hidden" name="types[]" value="tour_booking_fee">
+                            <div class="desc">
+                                <label for="tour_booking_fee">Booking Fee Amount</label>
+                                <input type="text" name="tour_booking_fee" id="tour_booking_fee" 
+                                class="form-control" value="{{ get_setting('tour_booking_fee') }}" placeholder="Enter fee amount">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                              <div class="option">
+                            
+                               
+                                 <label class="mb-0">
+                                    <input value="0" name="price_booking_fee" id="excludes" type="radio" @if (get_setting('price_booking_fee') == 0)
+                                    checked
+                                    @endif>
+                                    <span class="slider round"></span>
+                                </label>
+                                <label for="excludes">Price excludes booking fee</label>
+                            </div>
+                        </div>
+                        
+                       
+                       
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+</div>
+@section('js')
+@parent()
+<script>
+  $(document).ready(function () {
+    function toggleBookingFeeField() {
+      if ($("#includes").is(":checked")) {
+                if($("#excludes").is(":checked"))
+                {
+                    $("#include_fee").removeClass('hidden');
+                    $("#includes").prop("checked", false);
+                }else{
+                $("#includes").prop("checked", true);
+                $("#include_fee").removeClass('hidden');
+                }
+
+        
+      } else {
+        
+        $("#include_fee").addClass('hidden');
+      }
+    }
+
+    // Initial state
+    toggleBookingFeeField();
+
+    // On radio change
+    $("input[name='price_booking_fee']").change(function () {
+      toggleBookingFeeField();
+    });
+  });
+</script>
+@endsection
     <div class="row">
 
         <!-- Paypal -->
@@ -9,7 +98,8 @@
                     <h5 class="mb-0 h6 ">{{ translate('Paypal Credential') }}</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('payment_method.update') }}" method="POST">
+                    <form action="{{ route('admin.settings.payment_method_update') }}" method="POST">
+                        @csrf
                         <input type="hidden" name="payment_method" value="paypal">
                         @csrf
                         <div class="form-group row">
@@ -69,7 +159,7 @@
         </div>
 
         <!-- Instamojo -->
-        <div class="col-md-6">
+       <!-- <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('Instamojo Credential') }}</h5>
@@ -132,7 +222,7 @@
                     </form>
                 </div>
             </div>
-        </div>
+        </div>-->
 
         <!-- Stripe -->
         <div class="col-md-6">
@@ -141,7 +231,7 @@
                     <h5 class="mb-0 h6 ">{{ translate('Stripe Credential') }}</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('payment_method.update') }}" method="POST">
+                   <form action="{{ route('admin.settings.payment_method_update') }}" method="POST">
                         @csrf
                         <input type="hidden" name="payment_method" value="stripe">
                         <div class="form-group row">
@@ -188,7 +278,7 @@
         </div>
 
         <!-- Razorpay -->
-        <div class="col-md-6">
+      <!--  <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('RazorPay Credential') }}</h5>
@@ -331,10 +421,10 @@
                     </form>
                 </div>
             </div>
-        </div>
+        </div>-->
 
         <!-- Paystack -->
-        <div class="col-md-6">
+       <!-- <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('PayStack Credential') }}</h5>
@@ -406,9 +496,10 @@
                     </form>
                 </div>
             </div>
-        </div>
+        </div>-->
 
         <!-- Manual Payment Method 1 -->
+      <!--  <div class="col-md-6">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
@@ -479,9 +570,9 @@
                 </div>
             </div>
         </div>
-
+-->
         <!-- Manual Payment Method 2 -->
-        <div class="col-md-6">
+      <!--  <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('Manual Payment Method 2') }}</h5>
@@ -550,7 +641,29 @@
                     </form>
                 </div>
             </div>
-        </div>
+        </div>-->
 
     </div>
+</x-admin>
+@section('js')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function () {
+    function toggleBookingFeeField() {
+      if ($("#includes").is(":checked")) {
+        $("#include_fee").slideDown();
+      } else {
+        $("#include_fee").slideUp();
+      }
+    }
+
+    // Initial state
+    toggleBookingFeeField();
+
+    // On radio change
+    $("input[name='booking_option']").change(function () {
+      toggleBookingFeeField();
+    });
+  });
+</script>
 @endsection

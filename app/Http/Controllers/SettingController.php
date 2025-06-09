@@ -130,6 +130,8 @@ class SettingController extends Controller
      */
      public function update(Request $request)
      {
+        //print_r($request->types); exit;
+        
         foreach ($request->types as $key => $type) {
            if($type == 'site_name'){
                 $this->overWriteEnvFile('APP_NAME', $request[$type]);
@@ -172,7 +174,9 @@ class SettingController extends Controller
 
     public function payment_method_update(Request $request)
     {
-        foreach ($request->types as $key => $type) {
+   
+        foreach ($request as $key => $type) {
+            
             $this->overWriteEnvFile($type, $request[$type]);
         }
 

@@ -30,7 +30,7 @@ class AddonController extends Controller
      */
     public function index()
     {
-        $data = Addon::orderBy('sort_order','ASC')->get();
+        $data = Addon::orderBy('id','DESC')->get();
         return view('admin.addon.index',compact('data'));
     }
 

@@ -458,11 +458,7 @@ ul.flex li:last-child:after {
             }
         });
         $.ajax({
-<<<<<<< HEAD
             url: "{{ route('tour.single') }}",
-=======
-            url: '{{ route('tour.single') }}',
->>>>>>> 8ff6bb47c16adae29e0a83dc2f62fc7b343f06b7
             type: 'POST',
             data: {
                 id: tour_id,

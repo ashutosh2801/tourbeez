@@ -158,9 +158,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/settings', SettingController::class);
     Route::post('/settings/update', [SettingController::class, 'update'])->name('settings.update');
     Route::get('/general-settings', [SettingController::class, 'general_settings'])->name('general_settings');
+    Route::get('/payment-settings', [SettingController::class, 'payment_method_settings'])->name('payment_method_settings');
     Route::get('/email-settings', [SettingController::class, 'email_settings'])->name('email_settings');
     Route::post('/settings/activation/update', [SettingController::class, 'updateActivationSettings'])->name('settings.activation.update');
-    
+    Route::post('/settings/payment_method_update', [SettingController::class, 'update'])->name('settings.payment_method_update');
     // env Update
     Route::post('/env_key_update', [SettingController::class, 'env_key_update'])->name('env_key_update.update');
     Route::post('/settings/test/mail', [SettingController::class, 'testEmail'])->name('test.mail');

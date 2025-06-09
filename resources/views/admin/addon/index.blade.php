@@ -57,6 +57,7 @@
                     "responsive": true,
                 });
             });
+
         </script>
     @endsection
 </x-admin>
