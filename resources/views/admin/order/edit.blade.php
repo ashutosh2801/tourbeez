@@ -44,7 +44,7 @@ ul.flex li:last-child:after {
     @method('PUT')
     @csrf
     <input type="hidden" name="order_id" value="{{ $order->id }}" /> 
-    <div class="card">
+    <div class="card card-primary">
         <div class="card-header">
             <h5>Created on {{ date__format($order->created_at) }} online on your booking form</h5>
         </div>
@@ -55,8 +55,8 @@ ul.flex li:last-child:after {
                         <label class="d-block" for="">Balance</label>
                         <select class="form-control" style="border:0" name="order_balance" id="order_balance">
                             <option value="$0.00" >$0.00</option>
-                            <option value="Paid $97.07" >Paid $97.07</option>
-                            <option value="Refunded $0.00" >Refunded $0.00</option>
+                            <option value="Paid" >Paid {{ price_format($order->total_amount) }}</option>
+                            <option value="Refunded" >Refunded $0.00</option>
                         </select>
                     </div>
                     <div class="col-lg-2 text-ceneter">
@@ -68,7 +68,7 @@ ul.flex li:last-child:after {
                         </select>
                     </div>
                     <div class="col-lg-8 text-right">
-                        {{-- <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
+                        <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
                             <option value="" >Email</option>
                             <option value="Order Details" >Order Details -> Send Now</option>
                             <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
@@ -102,7 +102,7 @@ ul.flex li:last-child:after {
                             <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
                             <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
                             <option value="Simple Email" >Simple Email -> Send Now</option>
-                        </select> --}}
+                        </select>
                     </div>
                 </div>
             </div>
@@ -334,8 +334,8 @@ ul.flex li:last-child:after {
 
                     <div class="card-footer" style="display:block">
                         <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save order</button>
-                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.index') }}" class="btn btn-outline-secondary">Cancel</a>
-                        <a style="padding:0.6rem 2rem" href="" class="btn btn-outline-danger">Delete</a>
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                        <a onclick="return confirm('Are you sure?')" style="padding:0.6rem 2rem" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-outline-danger">Delete</a>
                     </div>
                 </div>
             </div>
@@ -355,7 +355,7 @@ ul.flex li:last-child:after {
                             </tr>
                             <tr>
                                 <td>May 25, 2025, 1:43 PM</td>
-                                <td>System charged CAD97.07 on credit card XXXXXXXXXXXX5959. Reference number is ch_3RSiaLEcMxhlmBMk0dT82PRI</td>
+                                <td>System charged {{ price_format($order->total_amount) }} on credit card XXXXXXXXXXXX5959. Reference number is ch_3RSiaLEcMxhlmBMk0dT82PRI</td>
                             </tr>
                             <tr>
                                 <td>May 25, 2025, 1:43 PM</td>
@@ -363,7 +363,7 @@ ul.flex li:last-child:after {
                             </tr>
                             <tr>
                                 <td>May 25, 2025, 1:43 PM</td>
-                                <td>Order created with Credit card payment of CAD97.07</td>
+                                <td>Order created with Credit card payment of {{ price_format($order->total_amount) }}</td>
                             </tr>
                         </table>
 

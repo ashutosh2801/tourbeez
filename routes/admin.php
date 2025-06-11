@@ -154,6 +154,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/general-settings', [SettingController::class, 'general_settings'])->name('general_settings');
     Route::get('/email-settings', [SettingController::class, 'email_settings'])->name('email_settings');
     Route::post('/settings/activation/update', [SettingController::class, 'updateActivationSettings'])->name('settings.activation.update');
+    Route::get('/payment-methods-settings', [SettingController::class, 'payment_method_settings'])->name('payment_method_settings');
+    Route::post('/payment_method_update', [SettingController::class, 'payment_method_update'])->name('payment_method.update');
+    Route::get('/third-party-settings', [SettingController::class, 'third_party_settings'])->name('third_party_settings');
+    Route::post('/third-party-settings/update', [SettingController::class, 'third_party_settings_update'])->name('third_party_settings.update');
     
     // env Update
     Route::post('/env_key_update', [SettingController::class, 'env_key_update'])->name('env_key_update.update');

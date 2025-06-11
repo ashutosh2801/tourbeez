@@ -28,13 +28,14 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                         <th width="150">Customer choise</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="addon-table-body">
                     @php
                     $i=1;
+                    $index=0;
                     $existing_addons = $data->addons->pluck('id')->toArray();
                     @endphp
                     @foreach ($addons as $item)
-                        <tr draggable="true" data-id="{{ $item->id }}" data-order="{{ $item->order ? $item->order : $i++  }}">
+                        <tr draggable="true" data-original-index="{{ $index }}" data-id="{{ $item->id }}" data-order="{{ $item->order ? $item->order : $i++  }}">
                             <th><input {{ (is_array($existing_addons) && in_array($item->id, $existing_addons)) ? 'checked' : '' }} type="checkbox" class="check_all" name="addons[]" value="{{ $item->id }}" style="width: 20px;height: 20px;" /></th>
                             <td>
                                 <img class="img-md" src="{{ uploaded_asset($item->image) }}" height="150"  alt="{{translate('photo')}}">
@@ -45,6 +46,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                             <td>{{ $item->customer_choice }}</td>
                                                   
                         </tr>
+                      @php $index++; @endphp
                     @endforeach
                 </tbody>
             </table>
@@ -157,5 +159,30 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     });
   });
+
+$(document).ready(function () {
+    function reorderRowsByCheckbox() {
+        const tbody = $('#addon-table-body');
+
+        // Collect rows
+        const checkedRows = tbody.find('tr').filter(function () {
+            return $(this).find('input[type="checkbox"]').prop('checked');
+        });
+        const uncheckedRows = tbody.find('tr').filter(function () {
+            return !$(this).find('input[type="checkbox"]').prop('checked');
+        });
+
+        // Append checked first, then unchecked
+        tbody.append(checkedRows).append(uncheckedRows);
+    }
+
+    // Initial sort on page load
+    reorderRowsByCheckbox();
+
+    // Sort again on checkbox change
+    $(document).on('change', '.check_all', function () {
+        reorderRowsByCheckbox();
+    });
+});
 </script>
 @endsection

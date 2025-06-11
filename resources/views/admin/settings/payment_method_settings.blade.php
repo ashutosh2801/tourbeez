@@ -1,15 +1,75 @@
-@extends('admin.layouts.app')
-@section('content')
+<x-admin>
+    @section('title')
+        {{ 'Payment Settings' }}
+    @endsection
     <div class="row">
+
+         <div class="col-lg-12 mx-auto">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h1 class="mb-0 h6">{{ __('Online Booking Fee') }}</h1>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('admin.payment_method.update') }}" method="POST">
+                        @csrf
+                  
+                        <div class="form-group row">
+                            <div class="option">
+                                <input type="hidden" name="types[]" value="price_booking_fee">
+                                  <label class="mb-0">
+                                    <input value="1" name="price_booking_fee" id="includes" type="radio" @if (get_setting('price_booking_fee') == 1)
+                                    checked
+                                    @endif>
+                                </label>
+                                <label for="includes">Price includes booking fee</label>
+                            </div>
+                        </div>
+                        <div class="form-group row {{ get_setting('price_booking_fee') == 1 ?? 'hidden' }}" id="include_fee">
+                            <input type="hidden" name="types[]" value="tour_booking_fee">
+                            <div class="desc">
+                                <label for="tour_booking_fee">Booking Fee Amount</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">$</span>
+                                    </div>                       
+                                    <input type="text" 
+                                        placeholder="Enter fee amount" 
+                                        name="tour_booking_fee" 
+                                        value="{{ get_setting('tour_booking_fee') }}" 
+                                        class="form-control" id="tour_booking_fee" 
+                                    /> 
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                              <div class="option">
+                                <label class="mb-0">
+                                    <input value="0" name="price_booking_fee" id="excludes" type="radio" @if (get_setting('price_booking_fee') == 0)
+                                    checked
+                                    @endif>
+                                </label>
+                                <label for="excludes">Price excludes booking fee</label>
+                            </div>
+                        </div>
+                        
+                       
+                       
+                        <div class="text-left">
+                            <button type="submit" class="btn btn-sm btn-primary">{{ __('Save') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
         <!-- Paypal -->
         <div class="col-md-6">
-            <div class="card">
+            <div class="card card-primary">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('Paypal Credential') }}</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('payment_method.update') }}" method="POST">
+                    <form action="{{ route('admin.payment_method.update') }}" method="POST">
                         <input type="hidden" name="payment_method" value="paypal">
                         @csrf
                         <div class="form-group row">
@@ -68,14 +128,69 @@
             </div>
         </div>
 
-        <!-- Instamojo -->
+        <!-- Stripe -->
         <div class="col-md-6">
-            <div class="card">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h5 class="mb-0 h6 ">{{ translate('Stripe Credential') }}</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('admin.payment_method.update') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="payment_method" value="stripe">
+                        <div class="form-group row">
+                            <div class="col-md-4">
+                                <label class="col-from-label">{{ translate('Activation') }}</label>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="aiz-switch aiz-switch-success mb-0">
+                                    <input value="1" name="stripe_payment_activation" type="checkbox" @if (get_setting('stripe_payment_activation') == 1)
+                                    checked
+                                    @endif>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
+                            <input type="hidden" name="types[]" value="STRIPE_KEY">
+                            <div class="col-md-4">
+                                <label class="col-from-label">{{ translate('Stripe Key') }}</label>
+                            </div>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control" name="STRIPE_KEY"
+                                    value="{{ env('STRIPE_KEY') }}" placeholder="{{ translate('STRIPE KEY') }}">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <input type="hidden" name="types[]" value="STRIPE_SECRET">
+                            <div class="col-md-4">
+                                <label class="col-from-label">{{ translate('Stripe Secret') }}</label>
+                            </div>
+                            <div class="col-md-8">
+                                <input type="text" class="form-control" name="STRIPE_SECRET"
+                                    value="{{ env('STRIPE_SECRET') }}"
+                                    placeholder="{{ translate('STRIPE SECRET') }}">
+                            </div>
+                        </div>
+                        <div class="form-group mb-0 text-right">
+                            <button type="submit" class="btn btn-sm btn-primary">{{ translate('Save') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @php
+            /*
+        <!-- Instamojo -->
+        {{-- <div class="col-md-6">
+            <div class="card card-primary">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('Instamojo Credential') }}</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('payment_method.update') }}" method="POST">
+                    <form action="{{ route('admin.payment_method.update') }}" method="POST">
                         @csrf
                         <input type="hidden" name="payment_method" value="instamojo">
                         <div class="form-group row">
@@ -132,69 +247,16 @@
                     </form>
                 </div>
             </div>
-        </div>
-
-        <!-- Stripe -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0 h6 ">{{ translate('Stripe Credential') }}</h5>
-                </div>
-                <div class="card-body">
-                    <form action="{{ route('payment_method.update') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="payment_method" value="stripe">
-                        <div class="form-group row">
-                            <div class="col-md-4">
-                                <label class="col-from-label">{{ translate('Activation') }}</label>
-                            </div>
-                            <div class="col-md-8">
-                                <label class="aiz-switch aiz-switch-success mb-0">
-                                    <input value="1" name="stripe_payment_activation" type="checkbox" @if (get_setting('stripe_payment_activation') == 1)
-                                    checked
-                                    @endif>
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="form-group row">
-                            <input type="hidden" name="types[]" value="STRIPE_KEY">
-                            <div class="col-md-4">
-                                <label class="col-from-label">{{ translate('Stripe Key') }}</label>
-                            </div>
-                            <div class="col-md-8">
-                                <input type="text" class="form-control" name="STRIPE_KEY"
-                                    value="{{ env('STRIPE_KEY') }}" placeholder="{{ translate('STRIPE KEY') }}">
-                            </div>
-                        </div>
-                        <div class="form-group row">
-                            <input type="hidden" name="types[]" value="STRIPE_SECRET">
-                            <div class="col-md-4">
-                                <label class="col-from-label">{{ translate('Stripe Secret') }}</label>
-                            </div>
-                            <div class="col-md-8">
-                                <input type="text" class="form-control" name="STRIPE_SECRET"
-                                    value="{{ env('STRIPE_SECRET') }}"
-                                    placeholder="{{ translate('STRIPE SECRET') }}">
-                            </div>
-                        </div>
-                        <div class="form-group mb-0 text-right">
-                            <button type="submit" class="btn btn-sm btn-primary">{{ translate('Save') }}</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+        </div> --}}
 
         <!-- Razorpay -->
-        <div class="col-md-6">
-            <div class="card">
+        {{-- <div class="col-md-6">
+            <div class="card card-primary">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('RazorPay Credential') }}</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('payment_method.update') }}" method="POST">
+                    <form action="{{ route('admin.payment_method.update') }}" method="POST">
                         @csrf
                         <input type="hidden" name="payment_method" value="razorpay">
                         <div class="form-group row">
@@ -237,16 +299,16 @@
                     </form>
                 </div>
             </div>
-        </div>
+        </div> --}}
 
         {{-- Paytm --}}
-        <div class="col-lg-6 mx-auto">
-            <div class="card">
+        {{-- <div class="col-lg-6 mx-auto">
+            <div class="card card-primary">
                 <div class="card-header">
                     <h5 class="mb-0 h6">{{ translate('Paytm Credential') }}</h5>
                 </div>
                 <div class="card-body">
-                    <form class="form-horizontal" action="{{ route('payment_method.update') }}" method="POST">
+                    <form class="form-horizontal" action="{{ route('admin.payment_method.update') }}" method="POST">
                         @csrf
                         <input type="hidden" name="payment_method" value="paytm">
                         <div class="form-group row">
@@ -331,16 +393,16 @@
                     </form>
                 </div>
             </div>
-        </div>
+        </div> --}}
 
         <!-- Paystack -->
-        <div class="col-md-6">
-            <div class="card">
+        {{-- <div class="col-md-6">
+            <div class="card card-primary">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('PayStack Credential') }}</h5>
                 </div>
                 <div class="card-body">
-                    <form class="form-horizontal" action="{{ route('payment_method.update') }}" method="POST">
+                    <form class="form-horizontal" action="{{ route('admin.payment_method.update') }}" method="POST">
                         @csrf
                         <input type="hidden" name="payment_method" value="paystack">
                         <div class="form-group row">
@@ -406,16 +468,16 @@
                     </form>
                 </div>
             </div>
-        </div>
+        </div> --}}
 
         <!-- Manual Payment Method 1 -->
-        <div class="col-md-6">
-            <div class="card">
+        {{-- <div class="col-md-6">
+            <div class="card card-primary">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('Manual Payment Method 1') }}</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('settings.update') }}" method="POST">
+                    <form action="{{ route('admin.settings.update') }}" method="POST">
                         @csrf
                         <div class="form-group row">
                             <div class="col-md-3">
@@ -478,16 +540,16 @@
                     </form>
                 </div>
             </div>
-        </div>
+        </div> --}}
 
         <!-- Manual Payment Method 2 -->
-        <div class="col-md-6">
-            <div class="card">
+        {{-- <div class="col-md-6">
+            <div class="card card-primary">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('Manual Payment Method 2') }}</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('settings.update') }}" method="POST">
+                    <form action="{{ route('admin.settings.update') }}" method="POST">
                         @csrf
                         <div class="form-group row">
                             <div class="col-md-3">
@@ -550,7 +612,38 @@
                     </form>
                 </div>
             </div>
-        </div>
+        </div> --}}
+
+        */
+                @endphp
+
 
     </div>
-@endsection
+
+@section('js')
+@parent()
+<script>
+function toggleBookingFeeField() {
+    if ($("#includes").is(":checked")) {
+        $("#include_fee").removeClass('hidden');
+    }
+    else if($("#excludes").is(":checked")) {
+        $("#include_fee").addClass('hidden');
+    }
+    else {
+        $("#include_fee").addClass('hidden');
+    }
+}    
+$(document).ready(function () {
+
+    // Initial state
+    toggleBookingFeeField();
+
+    // On radio change
+    $("input[name='price_booking_fee']").change(function () {
+        toggleBookingFeeField();
+    });
+});
+</script>
+@endsection    
+</x-admin>

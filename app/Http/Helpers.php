@@ -952,7 +952,7 @@ if (!function_exists('checkWebsiteSeoContent')) {
 
         // 5. Word Count & Keyword Density
         $textContent = strtolower(strip_tags(
-            $tour->title . ' ' . $tour->short_description . ' ' . $tourDetail->description
+            $tour->title . ' ' . $tour->detail?->description . ' ' .$tour->detail?->long_description
         ));
         $words = str_word_count($textContent, 1);
         $wordCount = count($words);
@@ -1064,20 +1064,22 @@ if (!function_exists('checkWebsiteSeoContent')) {
         $internalLinks = 0;
         $externalLinks = 0;
 
-        libxml_use_internal_errors(true);
-        $dom = new \DOMDocument();
-        $dom->loadHTML(mb_convert_encoding($description, 'HTML-ENTITIES', 'UTF-8'));
-        libxml_clear_errors();
+        if(!empty(strip_tags($description))) {
+            libxml_use_internal_errors(true);
+            $dom = new \DOMDocument();
+            $dom->loadHTML(mb_convert_encoding($description, 'HTML-ENTITIES', 'UTF-8'));
+            libxml_clear_errors();
 
-        foreach ($dom->getElementsByTagName('a') as $link) {
-            $href = $link->getAttribute('href');
-            if (!$href || $href === '#' || stripos($href, 'javascript:') !== false) continue;
+            foreach ($dom->getElementsByTagName('a') as $link) {
+                $href = $link->getAttribute('href');
+                if (!$href || $href === '#' || stripos($href, 'javascript:') !== false) continue;
 
-            $hrefHost = parse_url($href, PHP_URL_HOST);
-            if (!$hrefHost || str_contains($href, $host) || str_starts_with($href, '/')) {
-                $internalLinks++;
-            } else {
-                $externalLinks++;
+                $hrefHost = parse_url($href, PHP_URL_HOST);
+                if (!$hrefHost || str_contains($href, $host) || str_starts_with($href, '/')) {
+                    $internalLinks++;
+                } else {
+                    $externalLinks++;
+                }
             }
         }
 

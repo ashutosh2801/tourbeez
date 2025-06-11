@@ -100,6 +100,13 @@ class AizUploadController extends Controller
             "xlsx"=>"document"
         );
 
+        if (!$request->hasFile('aiz_file') || !$request->file('aiz_file')->isValid()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No valid file uploaded.'
+            ], 400);
+        }
+
         if($request->hasFile('aiz_file')){
             $upload = new Upload;
             $extension = strtolower($request->file('aiz_file')->getClientOriginalExtension());
@@ -146,36 +153,54 @@ class AizUploadController extends Controller
                             
 
                         } catch (\Exception $e) {
-                            dd($e);
+                            \Log::error('Upload failed', ['error' => $e->getMessage()]);
+                            return response()->json([
+                                'status' => false,
+                                'message' => $e->getMessage(),
+                            ], 500);
                         }
                     }
 
-                    if (env('FILESYSTEM_DRIVER') == 's3') {
-                        Storage::disk('s3')->put($path, file_get_contents(base_path('public/' . $path)));
-                        Storage::disk('s3')->put($mediumPath, file_get_contents(base_path('public/' . $mediumPath)));
-                        Storage::disk('s3')->put($thumbPath, file_get_contents(base_path('public/' . $thumbPath)));
-
-                        unlink(base_path('public/' . $path));
-                        unlink(base_path('public/' . $mediumPath));
-                        unlink(base_path('public/' . $thumbPath));
-
-                        //Storage::disk('s3')->put($path, file_get_contents(base_path('public/').$path));
-                        //unlink(base_path('public/').$path);
+                    try {
+                        \Log::info('S3 Upload triggered' . env('FILESYSTEM_DRIVER') );
+                        if (env('FILESYSTEM_DRIVER') === 'S3') {
+                            Storage::disk('s3')->put($path, file_get_contents(base_path('public/' . $path)), 'public');
+                            Storage::disk('s3')->put($mediumPath, file_get_contents(base_path('public/' . $mediumPath)), 'public');
+                            Storage::disk('s3')->put($thumbPath, file_get_contents(base_path('public/' . $thumbPath)), 'public');
+                            //\Log::info("Upload to S3 successful: " . $path);
+                            //$url = Storage::disk('s3')->url($path);
+                            //\Log::info("File URL: " . $url);
+                            //unlink(base_path('public/' . $path));
+                            //unlink(base_path('public/' . $mediumPath));
+                            //unlink(base_path('public/' . $thumbPath));
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('S3 Upload error: ' . $e->getMessage());
                     }
 
-                    $upload->extension  = $extension;
-                    $upload->file_name  = $path;
-                    $upload->medium_name  = $mediumPath ?? null;
-                    $upload->thumb_name  = $thumbPath ?? null;
-                    $upload->user_id    = Auth::user()->id;
-                    $upload->type       = $type[$upload->extension];
-                    $upload->file_size  = $size;
+                    $upload->extension      = $extension;
+                    $upload->file_name      = $path;
+                    $upload->medium_name    = $mediumPath ?? null;
+                    $upload->thumb_name     = $thumbPath ?? null;
+                    $upload->user_id        = Auth::user()->id;
+                    $upload->type           = $type[$upload->extension];
+                    $upload->file_size      = $size;
                     $upload->save();
                 } catch (\Exception $e) {
-                    dd($e);
+                    \Log::error('Upload failed', ['error' => $e->getMessage()]);
+                    return response()->json([
+                        'status' => false,
+                        'message' => $e->getMessage(),
+                    ], 500);
                 }
             }
-            return '{}';
+            else {
+                \Log::error('Upload failed', ['error' => $e->getMessage()]);
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No valid file uploaded.'
+                ], 400);
+            }
         }
     }
 
@@ -210,20 +235,23 @@ class AizUploadController extends Controller
     public function destroy(Request $request,$id)
     {
         try{
-            if(env('FILESYSTEM_DRIVER') == 's3'){
+            if(env('FILESYSTEM_DRIVER') === 'S3'){
                 Storage::disk('s3')->delete(Upload::where('id', $id)->first()->file_name);
             }
             else{
                 unlink(public_path().'/'.Upload::where('id', $id)->first()->file_name);
             }
             Upload::destroy($id);
-            flash(translate('File deleted successfully'))->success();
+            \Log::info("File deleted successfully " . $id);
+            //flash(translate('File deleted successfully'))->success();
+            return redirect()->back()->with('success','File deleted successfully');
         }
         catch(\Exception $e){
-            Upload::destroy($id);
-            flash(translate('File deleted successfully'))->success();
+            //Upload::destroy($id);
+            \Log::info("Faild deleted: " . $e->getMessage());
+            //flash(translate('File deleted successfully'))->success();
         }
-        return back();
+        return redirect()->back()->with('error',"Faild deleted: " . $e->getMessage());;
     }
 
     public function get_preview_files(Request $request){
@@ -240,7 +268,8 @@ class AizUploadController extends Controller
            $file_path = public_path($project_attachment->file_name);
             return Response::download($file_path);
         }catch(\Exception $e){
-            flash(translate('File does not exist!'))->error();
+            \Log::info("File does not exist! " . $e->getMessage());
+            //flash(translate('File does not exist!'))->error();
             return back();
         }
 
