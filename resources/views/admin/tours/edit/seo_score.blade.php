@@ -24,11 +24,12 @@
         $focusKeyword = $detail->focus_keyword;
           $result = checkWebsiteSeoContent($data->id,$focusKeyword);
             $percentage = (int) $result['percentage']; 
-                $progressClass = 'bg-danger';
-                if ($percentage > 60) {
-                    $progressClass = 'bg-success';
-                } elseif ($percentage > 50) {
+                if($percentage <  30){
+                    $progressClass = 'bg-danger';
+                } elseif ($percentage < 65) {
                     $progressClass = 'bg-warning';
+                }else{
+                    $progressClass = 'bg-success';
                 }
                @endphp
             <div class="card">
@@ -68,9 +69,10 @@
                                 <div>
                                     <input type="hidden" name="id" value="{{ $data->id }}">
                                     <input type="text" class="form-control icon" name="focus_keyword" 
-                                    id="focus_keyword" placeholder="10" autocomplete="off" value="{{ $data->detail->focus_keyword ?? $data->title }}">
+                                    id="focus_keyword"  autocomplete="off" value="{{ !empty($data->detail->focus_keyword) ? $data->detail->focus_keyword : $data->title }}">
                                 </div>
                             </div> 
+                          
                             <div class="form-group col-md-2"> 
                                 <button type="submit" name="submit" class="btn btn-success btn-flat btn-pri">Submit</button>
                             </div>     
@@ -110,6 +112,10 @@
                                     @endforelse
                                 </ul>
                             </div>
+                              <div class="card-footer" style="display:block">                
+                                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
+                                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
+                            </div> 
                         </div>
                         </div>
                     </div>

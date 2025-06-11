@@ -25,33 +25,31 @@
                                 <a class="nav-link" href="{{ route('admin.tour.edit.exclusions', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Exclusions')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.taxesfees', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Taxes & Fees')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.gallery', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Gallery')}}</a>
-                                <a class="nav-link" href="{{ route('admin.tour.edit.message.notification', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Message')}}</a>
-                                <a class="nav-link active" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('SEO')}}</a>                               
+                                <a class="nav-link active" href="{{ route('admin.tour.edit.message.notification', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Message')}}</a>
+                                <a class="nav-link" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('SEO')}}</a>                               
                             </div>
                         </div>
                         <div class="col-10">
-                            <div class="tab-content" id="v-pills-tabContent">                               
-                                <div class="tab-pane fade show active" id="meta_information" role="tabpanel" aria-labelledby="v-pills-messages-tab-13">
-                                   
-                                        <div class="card">
-                                            <div class="nav nav-pills mb-3 justify-center align-center" id="v-pills-tab" role="tablist" aria-orientation="horizontal">
-                                                <a class="nav-link active" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Seo')}}</a>
-                                                <a class="nav-link" href="{{ route('admin.tour.edit.seoscore', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Seo Score')}}</a>
-                                            </div>
+                            <div class="tab-content" id="v-pills-tabContent">                                
+                                <div class="tab-pane fade show active" id="message" role="tabpanel" aria-labelledby="v-pills-messages-tab-12">
+                                    <div class="card">
+                                        <div class="nav nav-pills mb-3 justify-center align-center" id="v-pills-tab" role="tablist" aria-orientation="horizontal">
+                                            <a class="nav-link" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Seo')}}</a>
+                                            <a class="nav-link active" href="{{ route('admin.tour.edit.seoscore', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Seo Score')}}</a>
+                                        </div>
 
-                                            <div class="tab-content" id="v-pills-tabContent">
-                                                <div class="tab-pane fade show active" id="reminders" role="tabpanel" aria-labelledby="v-pills-tab-100">
-                                                    @include('admin.tours.edit.info_seo')
-                                                </div>
+                                        <div class="tab-content" id="v-pills-tabContent">
+                                            <div class="tab-pane fade show active" id="reminders" role="tabpanel" aria-labelledby="v-pills-tab-100">
+                                                @include('admin.tours.edit.seo_score')
                                             </div>
                                         </div>
-                                  
-                                </div>
+                                    </div>
+                                </div>                                
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div> 
+    </div>   
 </x-admin>
