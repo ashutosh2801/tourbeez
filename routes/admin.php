@@ -43,9 +43,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/tour_type',TourTypeController::class);
     Route::resource('/collection',CollectionController::class);
     Route::resource('/orders', OrderController::class);
-    Route::post('/order/orderMailSend/', [OrderController::class, 'orderMailSend'])->name('mailsend');
-    Route::post('/order/ordertemplatedetails/', [OrderController::class, 'ordertemplatedetails'])->name('ordertemplatedetails');
-    
+    Route::post('/order/orderMailSend/', [OrderController::class, 'order_mail_send'])->name('mail_send');
+    Route::post('/order/order_template_details/', [OrderController::class, 'order_template_details'])->name('order_template_details');
+    Route::post('/order/order_confirmation_message/', [OrderController::class, 'order_confirmation_message'])->name('order_confirmation_message');
+Route::post('/order/order_sms_send/', [OrderController::class, 'order_sms_send'])->name('order_sms_send');
     // Country
     Route::resource('/countries', CountryController::class);
     Route::post('/countries/status', [CountryController::class, 'updateStatus'])->name('countries.status');

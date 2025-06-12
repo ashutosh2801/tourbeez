@@ -70,7 +70,7 @@ ul.flex li:last-child:after {
                     <div class="col-lg-8 text-right">
                         <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
                             <option value="" >Email</option>
-                            <option value="Order Details" data-order-deatils="order_detail">Order Details -> Send Now</option>
+                            <option value="14">Order Details -> Send Now</option>
                             <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
                             <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
                             <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
@@ -84,7 +84,7 @@ ul.flex li:last-child:after {
 
                         <select class="form-control" style="width:150px; display:inline-block;" name="sms_template_name" id="sms_template_name">
                             <option value="" >SMS</option>
-                            <option value="Order Confirmation" >Order Confirmation -> Send Now</option>
+                            <option value="1" >Order Confirmation -> Send Now</option>
                             <option value="Reminder" >Reminder -> Send Now</option>
                             <option value="FollowUp" >FollowUp -> Send Now</option>
                             <option value="Simple" >Simple -> Send Now</option>
@@ -399,8 +399,8 @@ ul.flex li:last-child:after {
     </div>
     </form>
 @section('modal')
-<!-- Modal -->
-<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+<!-- Order Template Modal -->
+<div class="modal fade" id="order_template_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
   <div class="modal-dialog" role="document">
     <div class="modal-content" style="width: 784px;">
       <div class="modal-body">
@@ -415,7 +415,7 @@ ul.flex li:last-child:after {
                                 <div class="col-12">
                                     <div class="tab-content" id="v-pills-tabContent">
                                     
-                                                <form id="ordermail" method="POST" enctype="multipart/form-data">
+                                                <form id="order_mail" method="POST" enctype="multipart/form-data">
                                                     @csrf
                                                     <input type="hidden" name="identifier" id="identifier">
                                                     <div class="form-group row">
@@ -468,6 +468,57 @@ ul.flex li:last-child:after {
                                                     </div>
                                             </div>
                                         
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+       
+      <div class="modal-footer">
+         <button type="submit" class="btn btn-primary">Send Mail</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+       
+      </div>
+       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Order Confirmation Template -->
+ <div class="modal fade" id="order_confirmation_sms" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content" style="width: 784px;">
+      <div class="modal-body">
+           <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0 h6">{{translate('Order Confirmation SMS')}}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="tab-content" id="v-pills-tabContent">
+                                    
+                                                <form id="order_sms_send" method="POST" enctype="multipart/form-data">
+                                                    @csrf
+                                                    <input type="hidden" name="identifier" id="identifier">
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">{{ translate('Mobile Number') }}</label>
+                                                        <div class="col-md-12">
+                                                            <input type="text" name="mobile_number"  id="mobile_number"  class="form-control" placeholder="{{translate('Mobile Number') }}" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12col-form-label">{{translate('SMS Body')}}</label>
+                                                        <div class="col-md-12">
+                                                            <textarea name="message" id="message" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="500"></textarea>
+                                                        
+                                                        </div>
+                                                    </div>
+                                            </div>                                       
                                     </div>
                                 </div>
                             </div>
@@ -584,64 +635,121 @@ ul.flex li:last-child:after {
         	$(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
         });
     });
+   
 
     $('#email_template_name').change(function() {
-    var orderid = $('#order_id').val();
-    var orderdetail = $(this).find(':selected').data('order-deatils');
-    $.ajaxSetup({
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
-    });
+     var order_id = $('#order_id').val();
+     var order_template_id = $(this).val();
+     $.ajaxSetup({
+         headers: {
+             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+         }
+     });
 
-    $.ajax({
-        url: "{{ route('admin.ordertemplatedetails') }}",
-        type: 'POST',
-        data: {
-            orderid: orderid,
-            orderdetail: orderdetail
-        },
-        success: function(response) {
+     $.ajax({
+         url: "{{ route('admin.order_template_details') }}",
+         type: 'POST',
+         data: {
+             order_id: order_id,
+             order_template_id: order_template_id
+         },
+         success: function(response) {
 
-        $('#email').val(response.email);
-        console.log(response.email_template);
-        $('#identifier').val(response.email_template.identifier);
-        $('#subject').val(response.email_template.subject);
-        $('#body').summernote('code', response.body);
-        $('#myModal').modal("show");
-        },
-        error: function(xhr, status, error) {
-            console.error('Error:', error);
-        }
-    });
+             $('#email').val(response.email);
+             $('#identifier').val(response.email_template.identifier);
+             $('#subject').val(response.email_template.subject);
+             $('#header').summernote('code', response.email_template.header);
+             $('#body').summernote('code', response.body);
+             $('#footer').summernote('code', response.footer);
+             $('#order_template_modal').modal("show");
+         },
+         error: function(xhr, status, error) {
+             console.error('Error:', error);
+         }
+     });
+ });
 
 
-    
-});
-$('#ordermail').on('submit', function(e) {
-    e.preventDefault(); 
-    $.ajaxSetup({
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
-    });
+ $('#order_mail').on('submit', function(e) {
+     e.preventDefault();
+     $.ajaxSetup({
+         headers: {
+             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+         }
+     });
 
-    let formData = new FormData(this);
+     let formData = new FormData(this);
 
-    $.ajax({
-        url: "{{ route('admin.mailsend') }}",
-        type: 'POST',
-        data: formData,
-        contentType: false,     
-        processData: false,      
-        success: function(response) {
-            console.log('Success:', response);
-        },
-        error: function(xhr, status, error) {
-            console.error('Error:', error);
-        }
-    });
-});
+     $.ajax({
+         url: "{{ route('admin.mail_send') }}",
+         type: 'POST',
+         data: formData,
+         contentType: false,
+         processData: false,
+         success: function(response) {
+             console.log('Success:', response);
+         },
+         error: function(xhr, status, error) {
+             console.error('Error:', error);
+         }
+     });
+ });
+
+ //Order Confirmation
+ $('#sms_template_name').change(function() {
+     var order_id = $('#order_id').val();
+     var order_confirmation_id = $(this).val();
+     $.ajaxSetup({
+         headers: {
+             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+         }
+     });
+
+     $.ajax({
+         url: "{{ route('admin.order_confirmation_message') }}",
+         type: 'POST',
+         data: {
+             order_id: order_id,
+             order_confirmation_id: order_confirmation_id
+         },
+         success: function(response) {
+
+             $('#mobile_number').val(response.mobile);
+             $('#identifier').val(response.confirmation_template.identifier);
+             $('#message').summernote('code', response.message);
+             $('#order_confirmation_sms').modal("show");
+         },
+         error: function(xhr, status, error) {
+             console.error('Error:', error);
+         }
+     });
+ });
+
+ // Send SMS 
+ $('#order_sms_send').on('submit', function(e) {
+     e.preventDefault();
+     $.ajaxSetup({
+         headers: {
+             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+         }
+     });
+
+     let formData = new FormData(this);
+
+     $.ajax({
+         url: "{{ route('admin.order_sms_send') }}",
+         type: 'POST',
+         data: formData,
+         contentType: false,
+         processData: false,
+         success: function(response) {
+             console.log('Success:', response);
+         },
+         error: function(xhr, status, error) {
+             console.error('Error:', error);
+         }
+     });
+ });
 
 </script>
 @endsection

@@ -7,6 +7,7 @@ use App\Models\OrderTour;
 use App\Models\Tour;
 use Illuminate\Http\Request;
 use App\models\EmailTemplate;
+use App\models\SmsTemplate;
 use App\Mail\EmailManager;
 use Mail;
 
@@ -194,51 +195,64 @@ class OrderController extends Controller
     {
         //
     }
-     public function ordertemplatedetails(Request $request)
+    
+    public function order_template_details(Request $request)
     {
-    $template=0;
-    $orderid = $request->orderid;
-    $orderdetail = $request->orderdetail;
-    $order = Order::find($orderid);
-   $email_template = EmailTemplate::where('identifier', $orderdetail)->first();
-   $template = $email_template->body;
-    $replacements = [
-        '[CUSTOMER_NAME]'     => $order->user->name ?? '',
-        '[COMPANY_NAME]'      => config('app.name'), // Or from DB
-        '[ORDER_NUMBER]'      => $order->order_number ?? '',
-        '[ORDER_STATUS]'      => ucfirst($order->status) ?? '',
-        '[ORDER_STATUS_HELP]' => $order->status_help ?? '', // Custom field if available
-    ];
-    $finalMessage = strtr($template, $replacements);
+        try{
+            $order_id = $request->order_id;
+            $order_template_id = $request->order_template_id;
+            $order = Order::findorFail($order_id);
+            $email_template = EmailTemplate::findorFail($order_template_id);
+            $template = $email_template->body;
+            $template_footer = $email_template->footer;
+            $replacements = [
+                "[CUSTOMER_NAME]"     => $order->user->name ?? '',
+                "[COMPANY_NAME]"      => config('app.name'), 
+                "[ORDER_NUMBER]"      => $order->order_number ?? '',
+                "[ORDER_STATUS]"      => ucfirst($order->status) ?? '',
+                "[ORDER_STATUS_HELP]" => $order->status_help ?? '', 
+            ];
 
-        if ($order) {
-            // Example of returning some data (customize as needed)
+            $finalMessage = strtr($template, $replacements);
+            $finalfooter = strtr($template_footer, $replacements);
+
+            if ($order) {
+                return response()->json([
+                    'success' => true,
+                    'email' => $order->user->email,
+                    'email_template' => $email_template,
+                    'body'=>$finalMessage,
+                    'footer'=>$finalfooter,
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.'
+                ], 404);
+            }
+        }
+        catch(\Exception $e){
             return response()->json([
-                'success' => true,
-                'email' => $order->user->email,
-                'email_template' => $email_template,
-                'body'=>$finalMessage,
-            ]);
-        } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order not found.'
-            ], 404);
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 404);
         }
 
     }
-    public function orderMailSend(Request $request)
+    public function order_mail_send(Request $request)
     {
         $email = $request->input('email');
         $subject = $request->input('subject');
         $header = $request->input('header');
         $body = $request->input('body');
+        $footer = $request->input('footer');
+
         if (env('MAIL_USERNAME') != null) {
             $array['view'] = 'emails.newsletter';
             $array['subject'] = $subject;
             $array['header'] = $header;
             $array['from'] = env('MAIL_USERNAME');
-            $array['content'] = $body;
+            $array['content'] =  $header.$body.$footer;
 
             try {
                 if(Mail::to($request->email)->queue(new EmailManager($array))){
@@ -252,5 +266,62 @@ class OrderController extends Controller
             }
         }
         
+    }
+
+    //Shilpi Order Confirmation messageorder_confirmation_message
+
+    public function order_confirmation_message(Request $request)
+    {
+        try{
+            $order_id = $request->order_id;
+            $order_confirmation_id = $request->order_confirmation_id;
+            $order = Order::findorFail($order_id);
+            $confirmation_template = SmsTemplate::findorFail($order_confirmation_id);
+            $template = $confirmation_template->message;
+            $replacements = [
+                "[CUSTOMER_NAME]"     => $order->user->name ?? '',
+                "[COMPANY_NAME]"      => config('app.name'), 
+                "[ORDER_NUMBER]"      => $order->order_number ?? '',
+                "[ORDER_STATUS]"      => ucfirst($order->status) ?? '',
+                "[ORDER_STATUS_HELP]" => $order->status_help ?? '', 
+            ];
+
+            $finalMessage = strtr($template, $replacements);
+
+            if ($order) {
+                return response()->json([
+                    'success' => true,
+                    'mobile' => $order->user->phonenumber,
+                    'confirmation_template' => $confirmation_template,
+                    'message'=>$finalMessage,
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.'
+                ], 404);
+            }
+        }
+        catch(\Exception $e){
+            return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 404);
+        }
+
+    }
+    public function order_sms_send(Request $request)
+    {
+        try{
+            $mobile_number = $request->mobile_number;
+            $message       = $request->message;
+
+        }
+        catch(\Exception $e){
+            return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 404);
+        }
     }
 }
