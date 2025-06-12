@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Setting;
 use Artisan;
 use MehediIitdu\CoreComponentRepository\CoreComponentRepository;
+use App\Mail\EmailManager;
+use Mail;
 
 class SettingController extends Controller
 {
@@ -179,6 +181,30 @@ class SettingController extends Controller
             
             $this->overWriteEnvFile($type, $request[$type]);
         }
+        
+        foreach ($request->types as $key => $type) {
+            $settings = Setting::where('type', $type)->first();
+            if($settings != null){
+                if(gettype($request[$type]) == 'array'){
+                    $settings->value = json_encode($request[$type]);
+                }
+                else {
+                    $settings->value = $request[$type];
+                }
+                $settings->save();
+            }
+            else{
+                $settings = new Setting;
+                $settings->type = $type;
+                if(gettype($request[$type]) == 'array'){
+                    $settings->value = json_encode($request[$type]);
+                }
+                else {
+                    $settings->value = $request[$type];
+                }
+                $settings->save();
+            }
+        }
 
         $payemnt_sandbox = Setting::where('type', $request->payment_method.'_sandbox')->first();
         if($payemnt_sandbox != null){
@@ -212,32 +238,58 @@ class SettingController extends Controller
 
         Artisan::call('cache:clear');
 
-        flash(translate("Settings updated successfully"))->success();
-        return back();
+        //flash(translate("Settings updated successfully"))->success();
+        return back()->with('success', translate("Settings updated successfully"));
     }
 
     public function third_party_settings_update(Request $request)
     {
-      foreach ($request->types as $key => $type) {
-          $this->overWriteEnvFile($type, $request[$type]);
-      }
+        foreach ($request->types as $key => $type) {
+            $this->overWriteEnvFile($type, $request[$type]);
+        }
 
-      $activation = Setting::where('type', $request->setting_type.'_activation')->first();
-      if($activation != null){
-          if ($request->has($request->setting_type.'_activation')) {
-              $activation->value = 1;
-              $activation->save();
-          }
-          else{
-              $activation->value = 0;
-              $activation->save();
-          }
-      }
+        foreach ($request->types as $key => $type) {
+            $settings = Setting::where('type', $type)->first();
+            if($settings != null){
+                if(gettype($request[$type]) == 'array'){
+                    $settings->value = json_encode($request[$type]);
+                }
+                else {
+                    $settings->value = $request[$type];
+                }
+                $settings->save();
+            }
+            else{
+                $settings = new Setting;
+                $settings->type = $type;
+                if(gettype($request[$type]) == 'array'){
+                    $settings->value = json_encode($request[$type]);
+                }
+                else {
+                    $settings->value = $request[$type];
+                }
+                $settings->save();
+            }
+        }
 
-      Artisan::call('cache:clear');
 
-      flash(translate("Settings updated successfully"))->success();
-      return back();
+
+        $activation = Setting::where('type', $request->setting_type.'_activation')->first();
+        if($activation != null){
+            if ($request->has($request->setting_type.'_activation')) {
+                $activation->value = 1;
+                $activation->save();
+            }
+            else{
+                $activation->value = 0;
+                $activation->save();
+            }
+        }
+
+        Artisan::call('cache:clear');
+
+        //flash(translate("Settings updated successfully"))->success();
+        return back()->with('success', translate("Settings updated successfully"));;
     }
 
 
@@ -246,8 +298,8 @@ class SettingController extends Controller
          foreach ($request->types as $key => $type) {
              $this->overWriteEnvFile($type, $request[$type]);
          }
-         flash(translate("Settings has been updated successfully"))->success();
-         return back();
+         //flash(translate("Settings has been updated successfully"))->success();
+         return back()->with('success', translate("Settings updated successfully"));
      }
 
      public function overWriteEnvFile($type, $val)
@@ -346,6 +398,8 @@ class SettingController extends Controller
                     $array['content'] = $request->content;
 
                     try {
+                        //Mail::to($request->user())->send(new MailableClass);
+
                         Mail::to($email)->queue(new EmailManager($array));
                     } catch (\Exception $e) {
                         //dd($e);
@@ -354,12 +408,12 @@ class SettingController extends Controller
             }
         }
         else {
-            flash(translate('Please configure SMTP first'))->error();
-            return back();
+            //flash(translate('Please configure SMTP first'))->error();
+            return back()->with('success', translate("Please configure SMTP first"));
         }
 
-    	flash(translate('Newsletter has been send'))->success();
-    	return redirect()->route('newsletters.index');
+    	//flash(translate('Newsletter has been send'))->success();
+    	return redirect()->route('newsletters.index')->with('success', translate("Newsletter has been send"));;
     }
 
     public function testEmail(Request $request){
@@ -374,8 +428,8 @@ class SettingController extends Controller
             dd($e);
         }
 
-        flash(translate('An email has been sent.'))->success();
-        return back();
+        //flash(translate('An email has been sent.'))->success();
+        return back()->with('success', translate("Test email has been sent."));
     }
 
     public function fcm_settings(){
@@ -405,7 +459,7 @@ class SettingController extends Controller
         
         Artisan::call('cache:clear');
 
-        flash(translate("Settings updated successfully"))->success();
-        return back();
+        //flash(translate("Settings updated successfully"))->success();
+        return back()->with('success', translate("Settings updated successfully"));
     }
 }

@@ -909,17 +909,23 @@ class TourController extends Controller
         //Save new itinerary
         $itineraryIds = [];
         foreach ($request->ItineraryOptions as $option) {
-            $itinerary = Itinerary::where('title', $option['title'])->where('datetime', $option['datetime'])->where('address', $option['address'])->first();
+            // $itinerary = Itinerary::where('title', $option['title'])
+            // ->where('datetime', $option['datetime'])
+            // ->where('address', $option['address'])
+            // ->first();
+
+            $itinerary = Itinerary::find( $option['id'] ?? 0 );
             if (!$itinerary) {
                 $itinerary = new Itinerary();
                 //$itinerary->tour_id     = $tour->id;
                 $itinerary->user_id     = auth()->user()->id;
-                $itinerary->title       = $option['title'] ?? null;
-                $itinerary->datetime    = $option['datetime'] ?? null;
-                $itinerary->address     = $option['address'] ?? null;
-                $itinerary->description = $option['description'] ?? null;
-                $itinerary->save();
-            } 
+            }
+            $itinerary->title       = $option['title'] ?? null;
+            $itinerary->datetime    = $option['datetime'] ?? null;
+            $itinerary->address     = $option['address'] ?? null;
+            $itinerary->description = $option['description'] ?? null;
+            $itinerary->save();
+
             $itineraryIds[] = $itinerary->id;
         }
 
@@ -948,14 +954,17 @@ class TourController extends Controller
         //Save new faqs
         $faqIds = [];
         foreach ($request->FaqOptions as $option) {
-            $faq = Faq::where('question', $option['question'])->first();
+            //$faq = Faq::where('question', $option['question'])->first();
+            $faq = Faq::find( $option['id'] ?? 0 );
             if (!$faq) {
                 $faq = new Faq();
-                $faq->user_id  = auth()->user()->id;
-                $faq->question = $option['question'] ?? null;
-                $faq->answer   = $option['answer'] ?? null;
-                $faq->save();
-            } 
+                //$faq->tour_id     = $tour->id;
+                $faq->user_id     = auth()->user()->id;
+            }
+            $faq->question = $option['question'] ?? null;
+            $faq->answer   = $option['answer'] ?? null;
+            $faq->save();
+
             $faqIds[] = $faq->id;
         }
 
@@ -981,12 +990,16 @@ class TourController extends Controller
         //Save new Exclusion
         $featureIds = [];
         foreach ($request->InclusionOptions as $option) {
-            $feature = Inclusion::where('name', $option['name'])->first();
+            //$feature = Inclusion::where('name', $option['name'])->first();
+            $feature = Inclusion::find( $option['id'] ?? 0 );
             if (!$feature) {
                 $feature = new Inclusion();
-                $feature->user_id   = auth()->user()->id;
-                $feature->name      = $option['name'] ?? null;
-                if( $feature->save() )
+                //$feature->tour_id     = $tour->id;
+                $feature->user_id     = auth()->user()->id;
+            }
+            $feature->name      = $option['name'] ?? null;
+            
+            if( $feature->save() ) {
                 $featureIds[] = $feature->id;
             } 
             else {
@@ -1016,12 +1029,16 @@ class TourController extends Controller
         //Save new Exclusion
         $featureIds = [];
         foreach ($request->ExclusionOptions as $option) {
-            $feature = Exclusion::where('name', $option['name'])->first();
+            //$feature = Exclusion::where('name', $option['name'])->first();
+
+            $feature = Exclusion::find( $option['id'] ?? 0 );
             if (!$feature) {
                 $feature = new Exclusion();
-                $feature->user_id   = auth()->user()->id;
-                $feature->name      = $option['name'] ?? null;
-                if( $feature->save() )
+                $feature->user_id    = auth()->user()->id;
+            }
+            
+            $feature->name      = $option['name'] ?? null;
+            if( $feature->save() ) {
                 $featureIds[] = $feature->id;
             } 
             else {

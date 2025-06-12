@@ -88,7 +88,7 @@
                                         <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
                                     </div>
                                     <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
-                                    <input type="hidden" name="image" class="selected-files" >
+                                    <input type="hidden" name="image" class="selected-files" value="{{  old('image', $data->image) }}" >
                                 </div>
                                 <div class="file-preview box"></div>
                             </div>

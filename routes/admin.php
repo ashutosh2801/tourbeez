@@ -42,9 +42,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/category',CategoryController::class);
     Route::resource('/tour_type',TourTypeController::class);
     Route::resource('/collection',CollectionController::class);
-        //Order(Shilpi)
     Route::resource('/orders', OrderController::class);
-    //Route::get('/admin/orders/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
+    Route::post('/order/orderMailSend/', [OrderController::class, 'orderMailSend'])->name('mailsend');
+    Route::post('/order/ordertemplatedetails/', [OrderController::class, 'ordertemplatedetails'])->name('ordertemplatedetails');
     
     // Country
     Route::resource('/countries', CountryController::class);
@@ -82,8 +82,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/taxesfees', [TourController::class, 'editTaxesfees'])->name('tour.edit.taxesfees');
     Route::get('/tour/{id}/edit/gallery', [TourController::class, 'editGallery'])->name('tour.edit.gallery');
     Route::get('/tour/{id}/edit/seo', [TourController::class, 'editSeo'])->name('tour.edit.seo');
-    Route::get('/tour/{id}/edit/info_seo', [TourController::class, 'editinfoSeo'])->name('tour.edit.infoseo');
-    Route::get('/tour/{id}/edit/seoscore', [TourController::class, 'editSeoScore'])->name('tour.edit.seoscore');
+     Route::get('/tour/{id}/edit/info_seo', [TourController::class, 'editinfoSeo'])->name('tour.edit.infoseo');
+     Route::get('/tour/{id}/edit/seoscore', [TourController::class, 'editSeoScore'])->name('tour.edit.seoscore');
     Route::get('/tour/{id}/edit/notification', [TourController::class, 'editNotification'])->name('tour.edit.message.notification');
     Route::get('/tour/{id}/edit/reminder', [TourController::class, 'editReminder'])->name('tour.edit.message.reminder');
     Route::get('/tour/{id}/edit/followup', [TourController::class, 'editFollowup'])->name('tour.edit.message.followup');
@@ -151,17 +151,18 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/aiz-uploader/get_file_by_ids', [AizUploadController::class,'get_preview_files']);
     Route::get('/aiz-uploader/download/{id}', [AizUploadController::class,'attachment_download'])->name('download_attachment');
     Route::get('/migrate/database', [AizUploadController::class,'migrate_database']);
-   
-   
 
     // Setting
     Route::resource('/settings', SettingController::class);
     Route::post('/settings/update', [SettingController::class, 'update'])->name('settings.update');
     Route::get('/general-settings', [SettingController::class, 'general_settings'])->name('general_settings');
-    Route::get('/payment-settings', [SettingController::class, 'payment_method_settings'])->name('payment_method_settings');
     Route::get('/email-settings', [SettingController::class, 'email_settings'])->name('email_settings');
     Route::post('/settings/activation/update', [SettingController::class, 'updateActivationSettings'])->name('settings.activation.update');
-    Route::post('/settings/payment_method_update', [SettingController::class, 'update'])->name('settings.payment_method_update');
+    Route::get('/payment-methods-settings', [SettingController::class, 'payment_method_settings'])->name('payment_method_settings');
+    Route::post('/payment_method_update', [SettingController::class, 'payment_method_update'])->name('payment_method.update');
+    Route::get('/third-party-settings', [SettingController::class, 'third_party_settings'])->name('third_party_settings');
+    Route::post('/third-party-settings/update', [SettingController::class, 'third_party_settings_update'])->name('third_party_settings.update');
+    
     // env Update
     Route::post('/env_key_update', [SettingController::class, 'env_key_update'])->name('env_key_update.update');
     Route::post('/settings/test/mail', [SettingController::class, 'testEmail'])->name('test.mail');

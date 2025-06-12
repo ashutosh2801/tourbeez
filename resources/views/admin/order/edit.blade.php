@@ -43,8 +43,8 @@ ul.flex li:last-child:after {
     <form action="{{ route('admin.orders.update',$order->id) }}" method="POST">
     @method('PUT')
     @csrf
-    <input type="hidden" name="order_id" value="{{ $order->id }}" /> 
-    <div class="card">
+    <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
+    <div class="card card-primary">
         <div class="card-header">
             <h5>Created on {{ date__format($order->created_at) }} online on your booking form</h5>
         </div>
@@ -55,8 +55,8 @@ ul.flex li:last-child:after {
                         <label class="d-block" for="">Balance</label>
                         <select class="form-control" style="border:0" name="order_balance" id="order_balance">
                             <option value="$0.00" >$0.00</option>
-                            <option value="Paid $97.07" >Paid $97.07</option>
-                            <option value="Refunded $0.00" >Refunded $0.00</option>
+                            <option value="Paid" >Paid {{ price_format($order->total_amount) }}</option>
+                            <option value="Refunded" >Refunded $0.00</option>
                         </select>
                     </div>
                     <div class="col-lg-2 text-ceneter">
@@ -68,9 +68,9 @@ ul.flex li:last-child:after {
                         </select>
                     </div>
                     <div class="col-lg-8 text-right">
-                        {{-- <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
+                        <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
                             <option value="" >Email</option>
-                            <option value="Order Details" >Order Details -> Send Now</option>
+                            <option value="Order Details" data-order-deatils="order_detail">Order Details -> Send Now</option>
                             <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
                             <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
                             <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
@@ -102,7 +102,7 @@ ul.flex li:last-child:after {
                             <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
                             <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
                             <option value="Simple Email" >Simple Email -> Send Now</option>
-                        </select> --}}
+                        </select>
                     </div>
                 </div>
             </div>
@@ -334,8 +334,8 @@ ul.flex li:last-child:after {
 
                     <div class="card-footer" style="display:block">
                         <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save order</button>
-                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.index') }}" class="btn btn-outline-secondary">Cancel</a>
-                        <a style="padding:0.6rem 2rem" href="" class="btn btn-outline-danger">Delete</a>
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                        <a onclick="return confirm('Are you sure?')" style="padding:0.6rem 2rem" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-outline-danger">Delete</a>
                     </div>
                 </div>
             </div>
@@ -355,7 +355,7 @@ ul.flex li:last-child:after {
                             </tr>
                             <tr>
                                 <td>May 25, 2025, 1:43 PM</td>
-                                <td>System charged CAD97.07 on credit card XXXXXXXXXXXX5959. Reference number is ch_3RSiaLEcMxhlmBMk0dT82PRI</td>
+                                <td>System charged {{ price_format($order->total_amount) }} on credit card XXXXXXXXXXXX5959. Reference number is ch_3RSiaLEcMxhlmBMk0dT82PRI</td>
                             </tr>
                             <tr>
                                 <td>May 25, 2025, 1:43 PM</td>
@@ -363,7 +363,7 @@ ul.flex li:last-child:after {
                             </tr>
                             <tr>
                                 <td>May 25, 2025, 1:43 PM</td>
-                                <td>Order created with Credit card payment of CAD97.07</td>
+                                <td>Order created with Credit card payment of {{ price_format($order->total_amount) }}</td>
                             </tr>
                         </table>
 
@@ -398,6 +398,94 @@ ul.flex li:last-child:after {
         </div>
     </div>
     </form>
+@section('modal')
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content" style="width: 784px;">
+      <div class="modal-body">
+           <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0 h6">{{translate('Order Details Templates')}}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="tab-content" id="v-pills-tabContent">
+                                    
+                                                <form id="ordermail" method="POST" enctype="multipart/form-data">
+                                                    @csrf
+                                                    <input type="hidden" name="identifier" id="identifier">
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">TO</label>
+                                                        <div class="col-md-12">
+                                                            <input type="text" name="email"  id="email"  class="form-control" placeholder="{{translate('TO')}}" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">{{translate('CC Mail')}}</label>
+                                                        <div class="col-md-12">
+                                                            <input type="text" name="cc_mail" class="form-control" placeholder="{{translate('CC Mail')}}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">{{translate('Subject')}}</label>
+                                                        <div class="col-md-12">
+                                                            <input type="text" name="subject" id="subject"  class="form-control" placeholder="{{translate('Subject')}}" required>
+                                                            @error('subject')
+                                                                <small class="form-text text-danger">{{ $message }}</small>
+                                                            @enderror
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">{{translate('Email Header')}}</label>
+                                                        <div class="col-md-12">
+                                                            <textarea name="header" id="header" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300"></textarea>
+                                                            @error('header')
+                                                                <small class="form-text text-danger">{{ $message }}</small>
+                                                            @enderror
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12col-form-label">{{translate('Email Body')}}</label>
+                                                        <div class="col-md-12">
+                                                            <textarea name="body" id="body" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="500"></textarea>
+                                                            @error('body')
+                                                                <small class="form-text text-danger">{{ $message }}</small>
+                                                            @enderror
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="form-group row">
+                                                        <label class="col-form-label">{{translate('Email Footer')}}</label>
+                                                        <div class="col-md-12">
+                                                            <textarea name="footer" id="footer" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300"></textarea>
+                                                        </div>
+                                                    </div>
+                                            </div>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+       
+      <div class="modal-footer">
+         <button type="submit" class="btn btn-primary">Send Mail</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+       
+      </div>
+       </form>
+    </div>
+  </div>
+</div>
+@endsection
 @section('js')   
 <script>
     let tourCount = {{ $count ? $count : 1 }}
@@ -496,6 +584,65 @@ ul.flex li:last-child:after {
         	$(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
         });
     });
+
+    $('#email_template_name').change(function() {
+    var orderid = $('#order_id').val();
+    var orderdetail = $(this).find(':selected').data('order-deatils');
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
+    $.ajax({
+        url: "{{ route('admin.ordertemplatedetails') }}",
+        type: 'POST',
+        data: {
+            orderid: orderid,
+            orderdetail: orderdetail
+        },
+        success: function(response) {
+
+        $('#email').val(response.email);
+        console.log(response.email_template);
+        $('#identifier').val(response.email_template.identifier);
+        $('#subject').val(response.email_template.subject);
+        $('#body').summernote('code', response.body);
+        $('#myModal').modal("show");
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+        }
+    });
+
+
+    
+});
+$('#ordermail').on('submit', function(e) {
+    e.preventDefault(); 
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
+    let formData = new FormData(this);
+
+    $.ajax({
+        url: "{{ route('admin.mailsend') }}",
+        type: 'POST',
+        data: formData,
+        contentType: false,     
+        processData: false,      
+        success: function(response) {
+            console.log('Success:', response);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error:', error);
+        }
+    });
+});
+
 </script>
 @endsection
 </x-admin>

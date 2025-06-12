@@ -122,8 +122,7 @@
                 <p>{{ translate('Orders') }}</p>
             </a>
         </li>
-          @endcan 
-      
+        @endcan 
         @can('show_customers') 
         <li class="nav-item">
             <a href="{{ route('admin.customers.index') }}"
@@ -203,14 +202,22 @@
                     </a>
                 </li>
                 @endcan   
-                @can('payment_method_settings')
+                @can('general_settings')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.payment_method_settings') }}" class="aiz-side-nav-link">
                         <i class="nav-icon fas fa-cog"></i>
                         <span class="aiz-side-nav-text">{{ translate('Payment Settings') }}</span>
                     </a>
                 </li>
-                @endcan  
+                @endcan 
+                @can('general_settings')
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.third_party_settings') }}" class="aiz-side-nav-link">
+                        <i class="nav-icon fas fa-cog"></i>
+                        <span class="aiz-side-nav-text">{{ translate('Third Party Settings') }}</span>
+                    </a>
+                </li>
+                @endcan
                 @can('smtp_settings')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.email_settings') }}" class="aiz-side-nav-link">

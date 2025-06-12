@@ -6,6 +6,9 @@ use App\Models\Order;
 use App\Models\OrderTour;
 use App\Models\Tour;
 use Illuminate\Http\Request;
+use App\models\EmailTemplate;
+use App\Mail\EmailManager;
+use Mail;
 
 class OrderController extends Controller
 {
@@ -49,7 +52,8 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail( decrypt($id) );
         $tours = Tour::orderBy('title', 'ASC')->get();
-        return view('admin.order.edit', compact(['order', 'tours']));
+         $email_templates = EmailTemplate::all();
+        return view('admin.order.edit', compact(['order', 'tours','email_templates']));
     }
 
     /**
@@ -189,5 +193,64 @@ class OrderController extends Controller
     public function destroy(Order $order)
     {
         //
+    }
+     public function ordertemplatedetails(Request $request)
+    {
+    $template=0;
+    $orderid = $request->orderid;
+    $orderdetail = $request->orderdetail;
+    $order = Order::find($orderid);
+   $email_template = EmailTemplate::where('identifier', $orderdetail)->first();
+   $template = $email_template->body;
+    $replacements = [
+        '[CUSTOMER_NAME]'     => $order->user->name ?? '',
+        '[COMPANY_NAME]'      => config('app.name'), // Or from DB
+        '[ORDER_NUMBER]'      => $order->order_number ?? '',
+        '[ORDER_STATUS]'      => ucfirst($order->status) ?? '',
+        '[ORDER_STATUS_HELP]' => $order->status_help ?? '', // Custom field if available
+    ];
+    $finalMessage = strtr($template, $replacements);
+
+        if ($order) {
+            // Example of returning some data (customize as needed)
+            return response()->json([
+                'success' => true,
+                'email' => $order->user->email,
+                'email_template' => $email_template,
+                'body'=>$finalMessage,
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.'
+            ], 404);
+        }
+
+    }
+    public function orderMailSend(Request $request)
+    {
+        $email = $request->input('email');
+        $subject = $request->input('subject');
+        $header = $request->input('header');
+        $body = $request->input('body');
+        if (env('MAIL_USERNAME') != null) {
+            $array['view'] = 'emails.newsletter';
+            $array['subject'] = $subject;
+            $array['header'] = $header;
+            $array['from'] = env('MAIL_USERNAME');
+            $array['content'] = $body;
+
+            try {
+                if(Mail::to($request->email)->queue(new EmailManager($array))){
+                    return response()->json(['status' => 'success']);
+                }else{
+                     return response()->json(['status' => 'Failed']);
+                }
+                  
+            } catch (\Exception $e) {
+                dd($e);
+            }
+        }
+        
     }
 }
