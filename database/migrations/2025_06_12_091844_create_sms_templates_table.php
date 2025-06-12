@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('identifier');
             $table->text('message');
+            $table->text('parameters');
             $table->timestamps();
         });
     }

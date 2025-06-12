@@ -233,6 +233,14 @@
                         <span class="aiz-side-nav-text">{{ translate('Email Templates') }}</span>
                     </a>
                 </li>
+                @endcan  
+                 @can('sms_templates')
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.sms-templates.index') }}" class="aiz-side-nav-link">
+                        <i class="nav-icon fas fa-envelope-open-text"></i>
+                        <span class="aiz-side-nav-text">{{ translate('SMS Templates') }}</span>
+                    </a>
+                </li>
                 @endcan   
                 @can('general_settings')
                 <li class="aiz-side-nav-item">

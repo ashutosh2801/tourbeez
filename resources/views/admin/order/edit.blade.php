@@ -512,7 +512,7 @@ ul.flex li:last-child:after {
                                                         </div>
                                                     </div>
                                                     <div class="form-group row">
-                                                        <label class="col-md-12col-form-label">{{translate('SMS Body')}}</label>
+                                                        <label class="col-md-12col-form-label">{{translate('Message')}}</label>
                                                         <div class="col-md-12">
                                                             <textarea name="message" id="message" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="500"></textarea>
                                                         

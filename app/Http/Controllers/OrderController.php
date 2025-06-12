@@ -206,11 +206,10 @@ class OrderController extends Controller
             $template = $email_template->body;
             $template_footer = $email_template->footer;
             $replacements = [
-                "[CUSTOMER_NAME]"     => $order->user->name ?? '',
-                "[COMPANY_NAME]"      => config('app.name'), 
-                "[ORDER_NUMBER]"      => $order->order_number ?? '',
-                "[ORDER_STATUS]"      => ucfirst($order->status) ?? '',
-                "[ORDER_STATUS_HELP]" => $order->status_help ?? '', 
+                "[[CUSTOMER_NAME]]"     => $order->user->name ?? '',
+                "[[COMPANY_NAME]]"      => config('app.name'), 
+                "[[ORDER_NUMBER]]"      => $order->order_number ?? '',
+                "[[ORDER_STATUS]]"      => ucfirst($order->status) ?? '',
             ];
 
             $finalMessage = strtr($template, $replacements);
@@ -279,11 +278,10 @@ class OrderController extends Controller
             $confirmation_template = SmsTemplate::findorFail($order_confirmation_id);
             $template = $confirmation_template->message;
             $replacements = [
-                "[CUSTOMER_NAME]"     => $order->user->name ?? '',
-                "[COMPANY_NAME]"      => config('app.name'), 
-                "[ORDER_NUMBER]"      => $order->order_number ?? '',
-                "[ORDER_STATUS]"      => ucfirst($order->status) ?? '',
-                "[ORDER_STATUS_HELP]" => $order->status_help ?? '', 
+                "[[CUSTOMER_NAME]]"     => $order->user->name ?? '',
+                "[[COMPANY_NAME]]"      => config('app.name'), 
+                "[[ORDER_NUMBER]]"      => $order->order_number ?? '',
+                "[[ORDER_STATUS]]"      => ucfirst($order->status) ?? '', 
             ];
 
             $finalMessage = strtr($template, $replacements);
@@ -310,18 +308,23 @@ class OrderController extends Controller
         }
 
     }
-    public function order_sms_send(Request $request)
+    public function order_sms_send(Request $request,TwilioService $twilio)
     {
-        try{
-            $mobile_number = $request->mobile_number;
-            $message       = $request->message;
+        
+        $mobile_number = $request->mobile_number;
+        $message       = strip_tags($request->message);
 
+        try {
+            $lookup = $twilio->lookupNumber($mobile_number);
+
+            if($lookup->phoneNumber) 
+            $twilio->sendSms($number, $message);
+
+            return back()->with('success', translate("SMS has been sent."));
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
         }
-        catch(\Exception $e){
-            return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage()
-                ], 404);
-        }
+        
+       
     }
 }
