@@ -178,6 +178,94 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-6">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="mb-0 h6">{{translate('Twilio Setting')}}</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('admin.third_party_settings.update') }}" method="POST">
+                        <input type="hidden" name="setting_type" value="twilio">
+                        @csrf
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <label class="control-label">{{translate('Activation')}}</label>
+                            </div>
+                            <div class="col-md-9">
+                                <label class="aiz-switch aiz-switch-success mb-0">
+                                    <input value="1" name="twilio_activation" type="checkbox" @if (get_setting('twilio_activation') == 1)
+                                        checked
+                                    @endif>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <input type="hidden" name="types[]" value="TWILIO_SID">
+                            <div class="col-md-3">
+                                <label class="control-label">{{translate('TWILIO SID')}}</label>
+                            </div>
+                            <div class="col-md-9">
+                                <input type="text" class="form-control" name="TWILIO_SID" value="{{  env('TWILIO_SID') }}" placeholder="{{ translate('TWILIO SID') }}" required>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <input type="hidden" name="types[]" value="TWILIO_TOKEN">
+                            <div class="col-md-3">
+                                <label class="control-label">{{translate('TWILIO TOKEN')}}</label>
+                            </div>
+                            <div class="col-md-9">
+                                <input type="text" class="form-control" name="TWILIO_TOKEN" value="{{  env('TWILIO_TOKEN') }}" placeholder="{{ translate('TWILIO TOKEN') }}" required>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <input type="hidden" name="types[]" value="TWILIO_FROM">
+                            <div class="col-md-3">
+                                <label class="control-label">{{translate('TWILIO FROM')}}</label>
+                            </div>
+                            <div class="col-md-9">
+                                <input type="text" class="form-control" name="TWILIO_FROM" value="{{  env('TWILIO_FROM') }}" placeholder="{{ translate('TWILIO_FROM') }}" required>
+                            </div>
+                        </div>
+                        <div class="form-group mb-0 text-right">
+                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="mb-0 h6">{{translate('Twilio Test')}}</h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('admin.third_party_settings.send') }}" method="POST">
+                        @csrf
+                        
+                        <div class="form-group row">
+                            <div class="col-md-3">
+                                <label class="control-label">{{translate('Phone No.')}}</label>
+                            </div>
+                            <div class="col-md-9">
+                                <input type="text" class="form-control" name="phone_no" placeholder="+14167894321" required>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <div class="col-md-12">
+                                <label class="control-label">{{translate('Message')}}</label>
+                            </div>
+                            <div class="col-md-12">
+                                <input type="text" class="form-control" name="message" value="Hi, How are you?" placeholder="Message here..." required>
+                            </div>
+                        </div>
+                        <div class="form-group mb-0 text-right">
+                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Send')}}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
 
         <!-- Facebook Chat Setting -->
         <div class="col-md-12">
