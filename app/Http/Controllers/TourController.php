@@ -433,7 +433,6 @@ class TourController extends Controller
         $detail     = $data->detail ? $data->detail : new TourDetail();
         return view('admin.tours.feature.seo', compact( 'data', 'detail'));
     }
-<<<<<<< HEAD
     public function editSeoScore($id)
         {
             $data       = Tour::findOrFail(decrypt($id));
@@ -448,25 +447,6 @@ class TourController extends Controller
             $detail     = $data->detail ? $data->detail : new TourDetail();
             return view('admin.tours.feature.info_seo', compact( 'data', 'detail'));
         }
-=======
-
-    public function editSeoScore($id)
-    {
-        $data       = Tour::findOrFail(decrypt($id));
-        //$metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
-        $detail     = $data->detail ? $data->detail : new TourDetail();
-        return view('admin.tours.feature.seo_score', compact( 'data', 'detail'));
-    }
-    
-    public function editinfoSeo($id)
-    {
-        $data       = Tour::findOrFail(decrypt($id));
-        //$metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
-        $detail     = $data->detail ? $data->detail : new TourDetail();
-        return view('admin.tours.feature.info_seo', compact( 'data', 'detail'));
-    }
-
->>>>>>> 015edf3380a82f1825f791086e3c03f66e98d787
     public function editNotification($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
