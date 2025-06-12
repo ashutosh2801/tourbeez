@@ -167,6 +167,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/env_key_update', [SettingController::class, 'env_key_update'])->name('env_key_update.update');
     Route::post('/settings/test/mail', [SettingController::class, 'testEmail'])->name('test.mail');
 
+    Route::post('/settings/test/send', [SettingController::class, 'testSend'])->name('third_party_settings.send');
+
     // Email Templates
     Route::resource('/email-templates', EmailTemplateController::class);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');

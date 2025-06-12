@@ -1,7 +1,3 @@
-<!-- Load jQuery and Bootstrap (must be placed before </body>) -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-
 <!-- Tab Pills -->
 <div class="card">
     <div class="card-body">
@@ -28,7 +24,7 @@
 </div>
 
 @section('modal')
-
 @endsection
+
 @section('js')
 @endsection

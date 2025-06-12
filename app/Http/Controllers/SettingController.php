@@ -8,6 +8,7 @@ use Artisan;
 use MehediIitdu\CoreComponentRepository\CoreComponentRepository;
 use App\Mail\EmailManager;
 use Mail;
+use App\Services\TwilioService;
 
 class SettingController extends Controller
 {
@@ -414,6 +415,25 @@ class SettingController extends Controller
 
     	//flash(translate('Newsletter has been send'))->success();
     	return redirect()->route('newsletters.index')->with('success', translate("Newsletter has been send"));;
+    }
+
+    public function testSend(Request $request, TwilioService $twilio){
+        $number = $request->phone_no;
+        $message = $request->message;
+
+        try {
+            $lookup = $twilio->lookupNumber($number);
+
+            if($lookup->phoneNumber) 
+            $twilio->sendSms($number, $message);
+
+            return back()->with('success', translate("Test SMS has been sent."));
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        //flash(translate('An email has been sent.'))->success();
+        //return back()->with('success', translate("Test email has been sent."));
     }
 
     public function testEmail(Request $request){

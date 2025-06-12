@@ -181,6 +181,9 @@ class TourController extends Controller
             $tour_detail->gift_tax_fees         = $request->gift_tax_fees?1:0;
             $tour_detail->IsTerms               = $request->IsTerms?1:0;
             $tour_detail->terms_and_conditions  = $request->terms_and_conditions;
+            $tour_detail->meta_title            = $request->title;
+            $tour_detail->meta_description	    = $request->title;
+            $tour_detail->focus_keyword         = $request->title;
             $tour_detail->save();
 
             $location = new TourLocation();
@@ -430,6 +433,7 @@ class TourController extends Controller
         $detail     = $data->detail ? $data->detail : new TourDetail();
         return view('admin.tours.feature.seo', compact( 'data', 'detail'));
     }
+<<<<<<< HEAD
     public function editSeoScore($id)
         {
             $data       = Tour::findOrFail(decrypt($id));
@@ -444,6 +448,25 @@ class TourController extends Controller
             $detail     = $data->detail ? $data->detail : new TourDetail();
             return view('admin.tours.feature.info_seo', compact( 'data', 'detail'));
         }
+=======
+
+    public function editSeoScore($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        //$metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        return view('admin.tours.feature.seo_score', compact( 'data', 'detail'));
+    }
+    
+    public function editinfoSeo($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        //$metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        return view('admin.tours.feature.info_seo', compact( 'data', 'detail'));
+    }
+
+>>>>>>> 015edf3380a82f1825f791086e3c03f66e98d787
     public function editNotification($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
@@ -652,7 +675,10 @@ class TourController extends Controller
             }
             
             $tour_detail = TourDetail::where('tour_id', $tour->id)->first();
-            $tour_detail->tour_id               = $tour->id;
+            if(!$tour_detail) {
+                $tour_detail = new TourDetail();
+                $tour_detail->tour_id           = $tour->id;
+            }
             $tour_detail->description           = $request->description;
             $tour_detail->long_description      = $request->long_description;
             $tour_detail->quantity_min          = $request->quantity_min;
