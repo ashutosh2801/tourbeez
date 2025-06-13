@@ -23,6 +23,7 @@ class User extends Authenticatable
         'password',
         'phonenumber',
         'role',
+        'remember_token',
         'user_type',
         'provider_id',
         'avatar'
@@ -47,4 +48,14 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function tours()
+    {
+        return $this->hasMany(Tour::class, 'user_id', 'id');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'user_id', 'id');
+    }
 }
