@@ -49,3 +49,8 @@ use Illuminate\Support\Facades\Route;
         Route::post("/logout", [AuthController::class, "logout"]);
         Route::post("/dashboard", [DashboardController::class, "index"]);
     });
+    Route::middleware(["api.key"])->group(function () {
+        Route::get("/tourlist", [DashboardController::class, "tourlist"]);
+        Route::get("/singletour", [DashboardController::class, "singletour"]);
+
+    });

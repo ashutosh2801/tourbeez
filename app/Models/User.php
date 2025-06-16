@@ -51,11 +51,16 @@ class User extends Authenticatable
 
     public function tours()
     {
-        return $this->hasMany(Tour::class, 'user_id', 'id');
+        return $this->hasMany(Tour::class);
+    }
+
+    public function itineraries()
+    {
+        return $this->hasMany(Itinerary::class);
     }
 
     public function orders()
     {
-        return $this->hasMany(Order::class, 'user_id', 'id');
+        return $this->hasMany(Order::class);
     }
 }

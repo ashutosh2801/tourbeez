@@ -12,4 +12,9 @@ class Itinerary extends Model
     protected $fillable = [
         'tour_id', 'created_by', 'title', 'description', 'address', 'datetime', 'latitude', 'longitude', 'status'
     ];
+    
+    public function tour()
+    {
+        return $this->belongsTo(Tour::class);
+    }
 }
