@@ -61,6 +61,35 @@
                                 <div class="file-preview box sm"></div>
                             </div>
                         </div>
+
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-from-label">{{ __('App URL') }}</label>
+                            <div class="col-sm-9">
+                                <input type="hidden" name="types[]" value="app_url">
+                                <input type="text" name="app_url" class="form-control" value="{{ env('APP_URL') }}">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-from-label">{{ __('App Email') }}</label>
+                            <div class="col-sm-9">
+                                <input type="hidden" name="types[]" value="app_email">
+                                <input type="text" name="app_email" class="form-control" value="{{ get_setting('app_email') }}">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-from-label">{{ __('App Phone') }}</label>
+                            <div class="col-sm-9">
+                                <input type="hidden" name="types[]" value="app_phone">
+                                <input type="text" name="app_phone" class="form-control" value="{{ get_setting('app_phone') }}">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-from-label">{{ __('App Address') }}</label>
+                            <div class="col-sm-9">
+                                <input type="hidden" name="types[]" value="app_address">
+                                <input type="text" name="app_address" class="form-control" value="{{ get_setting('app_address') }}">
+                            </div>
+                        </div>
                        
                         <div class="text-right">
                             <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>

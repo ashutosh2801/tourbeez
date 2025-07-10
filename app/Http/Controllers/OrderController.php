@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderTour;
 use App\Models\Tour;
+use App\Models\EmailTemplate;
+use App\Models\SmsTemplate;
+use App\Services\TwilioService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -74,7 +77,6 @@ class OrderController extends Controller
         $orderId = $id;
         $total   = 0;
         if($orderId && is_array($request->tour_id)) {
-
             foreach ($tourIds as $index => $tourId) {
                 $startDate = $request->tour_startdate[$index];
                 $startTime = $request->tour_starttime[$index];
@@ -190,4 +192,311 @@ class OrderController extends Controller
     {
         //
     }
+
+    public function order_mail_send(Request $request)
+    {
+        $email = $request->input('email');
+        $subject = $request->input('subject');
+        $header = $request->input('header');
+        $body = $request->input('body');
+        $footer = $request->input('footer');
+ 
+        if (env('MAIL_USERNAME') != null) {
+            $array['view'] = 'emails.newsletter';
+            $array['subject'] = $subject;
+            $array['header'] = $header;
+            $array['from'] = env('MAIL_USERNAME');
+            $array['content'] =  $header.$body.$footer;
+ 
+            try {
+                if(Mail::to($request->email)->queue(new EmailManager($array))){
+                    return response()->json(['status' => 'success']);
+                }else{
+                     return response()->json(['status' => 'Failed']);
+                }
+                 
+            } catch (\Exception $e) {
+                dd($e);
+            }
+        }
+       
+    }
+
+    public function order_template_details(Request $request)
+    {
+        try{
+            $order_id = $request->order_id;
+            $order_template_id = $request->order_template_id;
+            $order = Order::findorFail($order_id);
+            $email_template = EmailTemplate::findorFail($order_template_id);
+            $template = $email_template->body;
+            $template_footer = $email_template->footer;
+
+            $system_logo = get_setting('system_logo');
+            $logo = uploaded_asset($system_logo);
+
+            $customer   = $order->user;
+            $orderTour  = $order->orderTours()->first();
+            $tour       = $orderTour->tour;
+            //echo '<pre>'; print_r($orderTour->tour); exit;
+
+            $TOUR_PAYMENT_HISTORY = '
+                    <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
+                        <tbody>
+                            <tr>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
+                                    <h3 style="font-size:19px"><strong>Payment History</strong></h3>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+            
+                    <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
+                        <tbody>
+                            <tr>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
+                                </td>
+
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . date('M d, Y', strtotime($order->created_at)) . '</td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: right;padding: 5px 0px;" valign="top"><strong>' . price_format($order->total_amount) . '</strong></td>
+                            </tr>
+
+                            <tr>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000;">
+                                &nbsp;
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;  border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                    <h3 style="color: #000;font-size:19px"><strong>' . price_format($order->total_amount) . '</strong></h3>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>';
+
+            $TOUR_ITEM_SUMMARY = '
+                    <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
+                        <tbody>
+                        <tr>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
+                                <h3 style="font-size:19px"><strong>Item Summary</strong></h3>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+        
+                    <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
+                        <tbody>
+                            <tr>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">
+                                        &nbsp;
+                                    </small>
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">
+                                    5
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">
+                                    Adult (13+)
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">
+                                    $42.95
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">
+                                    $214.75
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;;padding: 5px 0px;padding: 5px 0px;">
+                                    &nbsp;
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;;padding: 5px 0px;padding: 5px 0px;">
+                                    &nbsp;
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;padding: 5px 0px;">
+                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">HST ON</small>
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;padding: 5px 0px;">
+                                    $27.92
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; ">
+                                    &nbsp;
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; ">
+                                    &nbsp;
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
+                                </td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                    <h3 style="color:#000; margin:0; font-size:19px"><strong>$242.67</strong></h3>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>';
+
+            $replacements = [
+                "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
+                "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
+                "[[CUSTOMER_PHONE]]"        => $customer->name ?? '',
+
+                "[[TOUR_TITLE]]"            => $tour->title ?? '',
+                "[[TOUR_MAP]]"              => $tour->location->address ?? '',
+                "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
+                "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
+                "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
+                "[[TOUR_TERMS_CONDITIONS]]"  => $tour->terms_and_conditions,
+
+                "[[APP_LOGO]]"              => $logo,
+                "[[APP_NAME]]"              => get_setting('site_name'),
+                "[[APP_URL]]"               => get_setting('app_url'),
+                "[[APP_EMAIL]]"             => get_setting('app_email'),
+                "[[APP_PHONE]]"             => get_setting('app_phone'),
+                "[[APP_ADDRESS]]"           => get_setting('app_address'),
+
+                "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
+                "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($order->created_at)),
+                "[[ORDER_TOUR_TIME]]"       => date('H:i A', strtotime($order->created_at)),
+                "[[ORDER_TOTAL]]"           => price_format($order->total_amount) ?? '',
+                "[[ORDER_BALANCE]]"         => price_format($order->balance_amount) ?? '',
+                "[[ORDER_BOOKING_FEE]]"     => price_format($order->booking_fee) ?? '',
+                "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
+            ];
+ 
+            $finalMessage = strtr($template, $replacements);
+            $finalfooter = strtr($template_footer, $replacements);
+ 
+            if ($order) {
+                return response()->json([
+                    'success' => true,
+                    'email' => $order->user->email,
+                    'email_template' => $email_template,
+                    'body'=>$finalMessage,
+                    'footer'=>$finalfooter,
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.'
+                ], 404);
+            }
+        }
+        catch(\Exception $e){
+            return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 404);
+        }
+ 
+    }
+    
+    public function order_sms_send(Request $request, TwilioService $twilio)
+    {
+        $mobile_number = $request->mobile_number;
+        $message       = strip_tags($request->message);
+ 
+        try {
+            $lookup = $twilio->lookupNumber($mobile_number);
+ 
+            if($lookup->phoneNumber)
+            $twilio->sendSms($number, $message);
+ 
+            return back()->with('success', translate("SMS has been sent."));
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function order_confirmation_message(Request $request) {
+        try {
+            $order_id = $request->order_id;
+            $order_confirmation_id = $request->order_confirmation_id;
+            $order = Order::findorFail($order_id);
+            $confirmation_template = SmsTemplate::findorFail($order_confirmation_id);
+            $template = $confirmation_template->message;
+            $replacements = [
+                "[[CUSTOMER_NAME]]"         => $order->user->name ?? '',
+                "[[COMPANY_NAME]]"          => config('app.name'),
+                "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
+                "[[ORDER_STATUS]]"          => ucfirst($order->status) ?? '',
+
+                "[[TOUR_TITLE]]"            => $order->user->name ?? '',
+                "[[TOUR_DATE]]"             => $order->user->name ?? '',
+                "[[TOUR_TIME]]"             => $order->user->name ?? '',
+                "[[TOUR_MAP]]"              => $order->user->name ?? '',
+                "[[TOUR_ADDRESS]]"          => $order->user->name ?? '',
+                "[[TOUR_PAYMENT_HISTORY]]"  => $order->user->name ?? '',
+                "[[TOUR_ITEM_SUMMARY]]"     => $order->user->name ?? '',
+
+                "[[CUSTOMER_NAME]]"         => $order->user->name ?? '',
+                "[[CUSTOMER_EMAIL]]"        => $order->user->name ?? '',
+                "[[CUSTOMER_PHONE]]"        => $order->user->name ?? '',
+
+                "[[APP_LOGO]]"              => $order->user->name ?? '',
+                "[[APP_NAME]]"              => $order->user->name ?? '',
+                "[[APP_URL]]"               => $order->user->name ?? '',
+                "[[APP_EMAIL]]"             => $order->user->name ?? '',
+                "[[APP_PHONE]]"             => $order->user->name ?? '',
+                "[[APP_ADDRESS]]"           => $order->user->name ?? '',
+
+                "[[ORDER_NUMBER]]"          => $order->user->name ?? '',
+                "[[ORDER_TOTAL]]"           => $order->user->name ?? '',
+                "[[ORDER_BALANCE]]"         => $order->user->name ?? '',
+                "[[ORDER_BOOKING_FEE]]"     => $order->user->name ?? '',
+                "[[ORDER_CREATED_DATE]]"    => $order->user->name ?? '',
+            ];
+ 
+            $finalMessage = strtr($template, $replacements);
+ 
+            if ($order) {
+                return response()->json([
+                    'success' => true,
+                    'mobile' => $order->user->phonenumber,
+                    'confirmation_template' => $confirmation_template,
+                    'message'=>$finalMessage,
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.'
+                ], 404);
+            }
+        }
+        catch(\Exception $e){
+            return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 404);
+        }
+ 
+    }
+
 }

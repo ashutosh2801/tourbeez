@@ -5,6 +5,7 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0 h6">{{translate('Edit City Info')}}</h5>
+                    <a class="btn btn-warning float-right" href="{{ route('admin.cities.index') }}">Back</a>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('admin.cities.update', $city->id) }}" method="POST" >
@@ -37,6 +38,18 @@
                            @enderror
                         </div>
 
+                        <div class="form-group mb-3">
+                            <label class="form-label">{{translate('Image')}}</label>
+                            <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
+                                <div class="input-group-prepend">
+                                    <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
+                                </div>
+                                <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
+                                <input type="hidden" name="upload_id" class="selected-files" value="{{ $city->upload_id }}" >
+                            </div>
+                            <div class="file-preview box"></div>
+                        </div>
+
                         <div class="form-group mb-3 text-right">
                             <button type="submit" class="btn btn-primary">{{translate('Update')}}</button>
                         </div>
@@ -59,7 +72,7 @@
                         value: data[i].id,
                         text: data[i].name
                     }));
-                    AIZ.plugins.bootstrapSelect('refresh');
+                    TB.plugins.bootstrapSelect('refresh');
                 }
             });
 

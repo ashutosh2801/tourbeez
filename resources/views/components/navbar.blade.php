@@ -6,23 +6,23 @@
         </li>
     </ul>
     <ul class="navbar-nav ml-auto">
+         <li class="nav-item">
+            <a href="{{ route('admin.clear.cache') }}" class="btn btn-info btn-sm"> <i class="fas fa-wrench"></i> Clear Cache</a> &nbsp;
+        </li>
         <li class="nav-item">
-            
-
-            <a href="{{ route('admin.profile.edit') }}"
-                class="nav-link {{ Route::is('admin.profile.edit') ? 'active' : '' }}">
-                <i class="nav-icon fas fa-user"></i> {{ Auth::user()->name }} Profile
-            </a>
+            <a href="{{ route('admin.profile.edit') }}" class="btn btn-success btn-sm {{ Route::is('admin.profile.edit') ? 'active' : '' }}"><i class="nav-icon fas fa-user"></i> {{ Auth::user()->name }} Profile </a> &nbsp;
         </li>
         <li class="nav-item">
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <input type="submit" name="submit" value="Log out" class="btn btn-danger btn-sm">
+                    <button type="submit" name="submit" class="btn btn-danger btn-sm">
+                        <i class="fas fa-sign-out-alt"></i> Log out
+                    </button>    
                     {{-- <a :href="route('logout')"
                         onclick="event.preventDefault();
-                                    this.closest('form').submit();">
+                                    this.closest('form').submit();"> <i class="fas fa-sign-out-alt"></i>
                         {{ __('Log Out') }}
                     </a> --}}
                 </form>

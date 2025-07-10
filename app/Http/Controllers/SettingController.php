@@ -413,7 +413,7 @@ class SettingController extends Controller
     	return redirect()->route('newsletters.index')->with('success', translate("Newsletter has been send"));;
     }
 
-    public function testSend(Request $request, TwilioService $twilio){
+    public function testSend(Request $request, TwilioService $twilio) {
         $number = $request->phone_no;
         $message = $request->message;
 
@@ -432,7 +432,7 @@ class SettingController extends Controller
         //return back()->with('success', translate("Test email has been sent."));
     }
 
-    public function testEmail(Request $request){
+    public function testEmail(Request $request) {
         $array['view'] = 'emails.newsletter';
         $array['subject'] = "SMTP Test";
         $array['from'] = env('MAIL_USERNAME');

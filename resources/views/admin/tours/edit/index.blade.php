@@ -9,7 +9,7 @@
                 <div class="card-header">
                     <h5 class="mb-0 h6">{{ $data->title }}</h5>
                     <div class="card-tools">
-                        <a href="#" class="btn btn-primary btn-sm">{{translate('View Tour Online')}}</a>
+                        <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-primary btn-sm" target="_blank">{{translate('View Tour Online')}}</a>
                         <a href="{{ route('admin.tour.preview', encrypt($data->id)) }}" class="btn btn-success btn-sm">{{translate('Preview')}}</a>
                         <a href="{{ route('admin.tour.index') }}" class="btn btn-info btn-sm">Back</a>
                     </div>
@@ -30,6 +30,7 @@
                                 <a class="nav-link" href="{{ route('admin.tour.edit.taxesfees', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Taxes & Fees')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.gallery', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Gallery')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.message.notification', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Message')}}</a>
+                                <a class="nav-link" href="{{ route('admin.tour.edit.booking', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Booking Info')}}</a>                               
                                 <a class="nav-link" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('SEO')}}</a>                               
                             </div>
                             <!-- <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">

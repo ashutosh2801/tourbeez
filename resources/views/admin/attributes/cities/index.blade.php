@@ -21,6 +21,7 @@
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>Image</th>
                             <th>{{translate('City')}}</th>
                             <th data-breakpoints="md">{{translate('State')}}</th>
                             <th data-breakpoints="md">{{translate('Country')}}</th>
@@ -31,6 +32,7 @@
                         @foreach($cities as $key => $city)
                             <tr>
                                 <td>{{ ($key+1) + ($cities->currentPage() - 1)*$cities->perPage() }}</td>
+                                <td><img class="img-md" src="{{ uploaded_asset($city->upload_id) }}" height="45px" alt="{{translate('photo')}}" /></td>
                                 <td>{{ucwords($city->name)}}</td>
                                 <td>{{ucwords($city->state->name)}}</td>
                                 <td>{{ucwords($city->state->country->name)}}</td>
@@ -85,6 +87,18 @@
                        @error('name')
                            <small class="form-text text-danger">{{ $message }}</small>
                        @enderror
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label">{{translate('Image')}}</label>
+                        <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
+                            <div class="input-group-prepend">
+                                <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
+                            </div>
+                            <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
+                            <input type="hidden" name="upload_id" class="selected-files" >
+                        </div>
+                        <div class="file-preview box"></div>
                     </div>
 
                     <div class="form-group mb-3 text-right">

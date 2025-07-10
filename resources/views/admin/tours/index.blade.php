@@ -16,7 +16,7 @@
                         <th>{{ translate('Image') }}</th>
                         <th>{{ translate('Title') }}</th>
                         <th width="80">{{ translate('Price') }}</th>
-                        <th width="80">{{ translate('Code') }}</th>
+                        <th width="100">{{ translate('Code') }}</th>
                         <th width="250">{{ translate('Category') }}</th>
                         <th width="100">{{ translate('Actions') }}</th>
                     </tr>
@@ -32,7 +32,8 @@
                                 {{ $tour->title }}
                                 @endcan
 
-                                <div class="text-sm">Written by : {{ $tour->user->name }}</div>
+                                <div class="text-sm text-gray-500"><i>By: {{ $tour->user->name }}</i></div>
+                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city->name) }} | {{ ($tour->detail?->booking_type) }}</div>
                             </td>    
                             <td>{{ price_format($tour->price) }}</td>
                             <td>{{ $tour->unique_code }}</td>

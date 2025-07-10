@@ -3,55 +3,163 @@
 
 @section('css')
 <style>
-.bs-example{
-    margin: 20px;
-}
-.accordion .fa{
-    margin-right: 0.5rem;
-    font-size: 24px;
-    font-weight: bold;
-    position: relative;
-    top: 2px;
-}
-ul.flex {
-    display: flex;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-ul.flex li {
-    margin-right:15px;
-}
-ul.flex li:after {
-    margin-left:15px;
-    content: "|";
-    color: #bbb;
-}
-ul.flex li:last-child:after {
-    content: "";
-}
-.highlight {
-  animation: fadeHighlight 2s ease;
-}
+    .bs-example{
+        margin: 20px;
+    }
+    .accordion .fa{
+        margin-right: 0.5rem;
+        font-size: 24px;
+        font-weight: bold;
+        position: relative;
+        top: 2px;
+    }
+    ul.flex {
+        display: flex;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+    ul.flex li {
+        margin-right:15px;
+    }
+    ul.flex li:after {
+        margin-left:15px;
+        content: "|";
+        color: #bbb;
+    }
+    ul.flex li:last-child:after {
+        content: "";
+    }
+    .highlight {
+        animation: fadeHighlight 2s ease;
+    }
 
-@keyframes fadeHighlight {
-  0%   { background-color: #e1a10b; }
-  100% { background-color: transparent; }
-}
+    @keyframes fadeHighlight {
+        0%   { background-color: #e1a10b; }
+        100% { background-color: transparent; }
+    }
+    /* Improve button group and dropdown alignment */
+    .btngroup .btn-group .btn.dropdown-toggle {
+        padding: 0.5rem 2rem;
+        font-weight: 600;
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #ced4da;
+        border-radius: 0.25rem;
+        font-size: 21px;
+    }
+
+    /* Payment dropdown styling */
+    .dropdown-menu.dropdown-value.payment-details-breakdown--container {
+        min-width: 250px;
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        background-color: #ffffff;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .payment-details-breakdown--item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+        font-size: 0.95rem;
+    }
+
+    .payment-details-breakdown--text {
+        color: #333;
+    }
+
+    /* Order status dropdown */
+    .dropdown-menu.dropdown-value {
+        min-width: 220px;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        background-color: #fff;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .dropdown-menu.dropdown-value li {
+        display: flex;
+        align-items: center;
+        padding: 0.4rem 0.5rem;
+        list-style: none;
+    }
+    .dropdown-menu.dropdown-value input[type="radio"] {
+        margin-right: 10px;
+    }
+    .dropdown-menu.dropdown-value label {
+        margin: 0;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        width: 100%;
+    }
+
+    .dropdown-menu.dropdown-value label:hover {
+        background-color: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .dropdown-menu.dropdown-value i.fa-circle {
+        font-size: 10px;
+        margin-right: 6px;
+        color: #6c757d;
+    }
+    .dropdown-menu input[type=radio] {
+        display: none
+    }
+    .order-status, .order-balance {
+        display: inline-block;
+    }
+    .order-status label, .order-status .btn-group, .order-balance label, .order-balance .btn-group {
+        display: block; text-align: center
+    }
+    .order-status label, .order-balance label {
+        margin: 0
+    }
+    /* Balance dropdown always green */
+    .payment-status .btn.dropdown-toggle {
+    border-color: #28a745 !important;
+    color: #28a745 !important;
+    }
+    .payment-status .btn.dropdown-toggle:hover {
+    background-color: rgba(40,167,69,0.1);
+    }
+
+    /* Order‐status color map */
+    .status-NEW           { --status-color: #6c757d; } /* gray */
+    .status-ON_HOLD       { --status-color: #ffc107; } /* yellow */
+    .status-PENDING_SUPPLIER { --status-color: #6610f2; } /* purple */
+    .status-PENDING_CUSTOMER { --status-color: #20c997; } /* teal */
+    .status-CONFIRMED     { --status-color: #28a745; } /* green */
+    .status-CANCELLED     { --status-color: #dc3545; } /* red */
+    .status-ABANDONED_CART{ --status-color: #343a40; } /* dark */
+
+    /* Apply the variable to the button */
+    .order-status .btn.dropdown-toggle {
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--status-color);
+    color: var(--status-color);
+    background-color: #fff;
+    }
+    .order-status .btn.dropdown-toggle:hover {
+    background-color: rgba(0,0,0,0.03);
+    }
 </style>
 @endsection
     <form action="{{ route('admin.orders.update',$order->id) }}" method="POST">
     @method('PUT')
     @csrf
-    <input type="hidden" name="order_id" value="{{ $order->id }}" /> 
+    <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
     <div class="card card-primary">
         <div class="card-header">
             <h5>Created on {{ date__format($order->created_at) }} online on your booking form</h5>
         </div>
         <div class="card-body">
             <div style="padding:0 15px;">
+
                 <div class="row">
-                    <div class="col-lg-2 text-ceneter">
+                    {{-- <div class="col-lg-2 text-ceneter">
                         <label class="d-block" for="">Balance</label>
                         <select class="form-control" style="border:0" name="order_balance" id="order_balance">
                             <option value="$0.00" >$0.00</option>
@@ -66,11 +174,77 @@ ul.flex li:last-child:after {
                             <option value="{{ $key }}" >{{ $status }}</option>
                             @endforeach
                         </select>
+                    </div> --}}
+                    <div class="col-lg-5 btngroup">
+                        <div class="justify-center item-center">
+                            <div class="payment-status order-balance paid">
+                                <div class="btn-group">
+                                    <label for="totalDue">Balance</label>
+                                    <button type="button" class="btn dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <strong id="totalDue" class="total-due">$0.00</strong>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
+                                        <li class="payment-details-breakdown--item"><strong class="payment-details-breakdown--text">Paid</strong> <strong class="payment-details-breakdown--text">$247.28</strong></li>
+                                        <li class="payment-details-breakdown--item"><strong class="payment-details-breakdown--text">Refunded</strong> <strong class="payment-details-breakdown--text">$0.00</strong></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="order-status">
+                                <div class="btn-group open">
+                                    <label for="order_status">Order Status</label>
+                                    <button type="button" class="btn dropdown-toggle arrow childOrderEnabled" data-element-to-update=".payment-status" data-selected="CONFIRMED" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Confirmed</button>
+                                    <ul class="dropdown-menu dropdown-value">
+                                        <li>
+                                            <input type="radio" id="NEW" name="order_status" value="NEW" autocomplete="off">
+                                            <label for="NEW" class="NEW">
+                                                <i class="fa fa-circle" aria-hidden="true"></i>
+                                                New                                    </label>
+                                        </li>
+                                        <li>
+                                            <input type="radio" id="ON_HOLD" name="order_status" value="ON_HOLD" autocomplete="off">
+                                            <label for="ON_HOLD" class="ON_HOLD">
+                                                <i class="fa fa-circle" aria-hidden="true"></i>
+                                                On Hold                                    </label>
+                                        </li>
+                                        <li>
+                                            <input type="radio" id="PENDING_SUPPLIER" name="order_status" value="PENDING_SUPPLIER" autocomplete="off">
+                                            <label for="PENDING_SUPPLIER" class="PENDING_SUPPLIER">
+                                                <i class="fa fa-circle" aria-hidden="true"></i>
+                                                Pending supplier                                    </label>
+                                        </li>
+                                        <li>
+                                            <input type="radio" id="PENDING_CUSTOMER" name="order_status" value="PENDING_CUSTOMER" autocomplete="off">
+                                            <label for="PENDING_CUSTOMER" class="PENDING_CUSTOMER">
+                                                <i class="fa fa-circle" aria-hidden="true"></i>
+                                                Pending customer                                    </label>
+                                        </li>
+                                        <li>
+                                            <input type="radio" id="CONFIRMED" name="order_status" value="CONFIRMED" autocomplete="off" checked="checked">
+                                            <label for="CONFIRMED" class="CONFIRMED">
+                                                <i class="fa fa-circle" aria-hidden="true"></i>
+                                                Confirmed                                    </label>
+                                        </li>
+                                        <li>
+                                            <input type="radio" id="CANCELLED" name="order_status" value="CANCELLED" autocomplete="off">
+                                            <label for="CANCELLED" class="CANCELLED">
+                                                <i class="fa fa-circle" aria-hidden="true"></i>
+                                                Cancelled                                    </label>
+                                        </li>
+                                        <li>
+                                            <input type="radio" id="ABANDONED_CART" name="order_status" value="ABANDONED_CART" autocomplete="off">
+                                            <label for="ABANDONED_CART" class="ABANDONED_CART">
+                                                <i class="fa fa-circle" aria-hidden="true"></i>
+                                                Abandoned cart                                    </label>
+                                        </li>
+                                                                </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-lg-8 text-right">
+                    <div class="col-lg-7 text-right">
                         <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
                             <option value="" >Email</option>
-                            <option value="Order Details" >Order Details -> Send Now</option>
+                            <option value="14" >Order Details -> Send Now</option>
                             <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
                             <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
                             <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
@@ -84,7 +258,7 @@ ul.flex li:last-child:after {
 
                         <select class="form-control" style="width:150px; display:inline-block;" name="sms_template_name" id="sms_template_name">
                             <option value="" >SMS</option>
-                            <option value="Order Confirmation" >Order Confirmation -> Send Now</option>
+                            <option value="14" >Order Confirmation -> Send Now</option>
                             <option value="Reminder" >Reminder -> Send Now</option>
                             <option value="FollowUp" >FollowUp -> Send Now</option>
                             <option value="Simple" >Simple -> Send Now</option>
@@ -398,7 +572,154 @@ ul.flex li:last-child:after {
         </div>
     </div>
     </form>
-@section('js')   
+
+
+@section('modal')
+<!-- Order Template Modal -->
+<div class="modal fade" id="order_template_modal" tabindex="1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form id="order_mail" method="POST" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="identifier" id="identifier">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="card" style="margin: 0; padding: 0">
+                                <div class="card-header"  style="margin: 0; padding: 0">
+                                    <h2 class="card-title" style="font-size: 21px; font-weight:600">{{translate('Order Details Templates')}}</h2>
+                                </div>
+                                <div class="card-body"  style="margin: 0; padding: 0">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="tab-content" id="v-pills-tabContent">
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">To</label>
+                                                        <div class="col-md-12">
+                                                            <input type="text" name="email"  id="email"  class="form-control" placeholder="{{translate('TO')}}" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">{{translate('CC Mail')}}</label>
+                                                        <div class="col-md-12">
+                                                            <input type="text" name="cc_mail" class="form-control" placeholder="{{translate('CC Mail')}}">
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">{{translate('BCC Mail')}}</label>
+                                                        <div class="col-md-12">
+                                                            <input type="text" name="bcc_mail" class="form-control" placeholder="{{translate('BCC Mail')}}">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">{{translate('Subject')}}</label>
+                                                        <div class="col-md-12">
+                                                            <input type="text" name="subject" id="subject"  class="form-control" placeholder="{{translate('Subject')}}" required>
+                                                            @error('subject')
+                                                                <small class="form-text text-danger">{{ $message }}</small>
+                                                            @enderror
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">{{translate('Email Header')}}</label>
+                                                        <div class="col-md-12">
+                                                            <textarea name="header" id="header" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300"></textarea>
+                                                            @error('header')
+                                                                <small class="form-text text-danger">{{ $message }}</small>
+                                                            @enderror
+                                                        </div>
+                                                    </div> --}}
+
+                                                    <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">{{translate('Email Body')}}</label>
+                                                        <div class="col-md-12">
+                                                            <textarea name="body" id="body" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="500"></textarea>
+                                                            @error('body')
+                                                                <small class="form-text text-danger">{{ $message }}</small>
+                                                            @enderror
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- <div class="form-group row">
+                                                        <label class="col-md-12 col-form-label">{{translate('Email Footer')}}</label>
+                                                        <div class="col-md-12">
+                                                            <textarea name="footer" id="footer" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300"></textarea>
+                                                        </div>
+                                                    </div> --}}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Send Mail</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Order Confirmation Template -->
+<div class="modal fade" id="order_confirmation_sms" tabindex="2" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form id="order_sms_send" method="POST" enctype="multipart/form-data">
+            @csrf
+            <input type="hidden" name="identifier" id="identifier">
+
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="card" style="margin: 0; padding: 0">
+                            <div class="card-header" style="margin: 0; padding: 0">
+                                <h2 class="card-title" style="font-size: 21px; font-weight:600">{{translate('Order Confirmation SMS')}}</h2>
+                            </div>
+                            <div class="card-body" style="margin: 0; padding: 0">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="tab-content" id="v-pills-tabContent">
+                                        
+                                            <div class="form-group row">
+                                                <label class="col-md-12 col-form-label">{{ translate('Mobile Number') }}</label>
+                                                <div class="col-md-12">
+                                                    <input type="text" name="mobile_number"  id="mobile_number"  class="form-control" placeholder="{{translate('Mobile Number') }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="form-group row">
+                                                <label class="col-md-12 col-form-label">{{translate('Message')}}</label>
+                                                <div class="col-md-12">
+                                                    <textarea name="message" id="message" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="500"></textarea>
+                                                
+                                                </div>
+                                            </div>
+                                        </div>                                       
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+       
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Send Mail</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            </div>
+       </form>
+    </div>
+  </div>
+</div>
+@endsection
+
+@section('js') 
+@parent()  
 <script>
     let tourCount = {{ $count ? $count : 1 }}
     function tourOptions() {
@@ -496,6 +817,167 @@ ul.flex li:last-child:after {
         	$(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
         });
     });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Balance dropdown: keep green on select
+        document.querySelectorAll('.payment-details-breakdown--item').forEach(item => {
+            item.addEventListener('click', function () {
+            const total = this.querySelectorAll('strong')[1].textContent;
+            const btn    = document.getElementById('totalDue');
+            btn.textContent = total;
+            // ensure green
+            const wrap = btn.closest('.btn.dropdown-toggle');
+            wrap.style.borderColor = '#28a745';
+            wrap.style.color       = '#28a745';
+            });
+        });
+
+        // Order status: when a radio changes, update button text + color class
+        document.querySelectorAll('input[name="order_status"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+            const id     = this.id;
+            const label  = document.querySelector(`label[for="${id}"]`).textContent.trim();
+            const group  = this.closest('.btn-group');
+            const button = group.querySelector('button.dropdown-toggle');
+            // update text
+            button.textContent = label;
+            // remove old status‐ classes
+            button.classList.remove(
+                'status-NEW','status-ON_HOLD','status-PENDING_SUPPLIER',
+                'status-PENDING_CUSTOMER','status-CONFIRMED',
+                'status-CANCELLED','status-ABANDONED_CART'
+            );
+            // add new
+            button.classList.add(`status-${id}`);
+            });
+        });
+
+        // Initialize on page load for whichever is checked
+        const init = document.querySelector('input[name="order_status"]:checked');
+        if (init) init.dispatchEvent(new Event('change'));
+    });
+</script>
+<script>
+$(document).ready(function(){    
+    //Order Email Modal
+    $('#email_template_name').change(function() {
+        var order_id = $('#order_id').val();
+        var order_template_id = $(this).val();
+
+        const data = {
+            'order_id': order_id,
+            'order_template_id': order_template_id
+        }
+        
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        $.ajax({
+            url: "{{ route('admin.order_template_details') }}",
+            type: 'POST',
+            data: data,
+            success: function(response) {
+                $('#email').val(response.email);
+                $('#identifier').val(response.email_template.identifier);
+                $('#subject').val(response.email_template.subject);
+                //$('#header').summernote('code', response.email_template.header);
+                $('#body').summernote('code', response.body);
+                //$('#footer').summernote('code', response.footer);
+                $('#order_template_modal').modal("show");
+                $('#email_template_name').val('');
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+            }
+        });
+    });
+
+    // Send Email
+    $('#order_mail').on('submit', function(e) {
+        e.preventDefault();
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        let formData = new FormData(this);
+
+        $.ajax({
+            url: "{{ route('admin.mail_send') }}",
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                console.log('Success:', response);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+            }
+        });
+    });
+
+    //Order SMS Modal 
+    $('#sms_template_name').change(function() {
+        var order_id = $('#order_id').val();
+        var order_confirmation_id = $(this).val();
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        $.ajax({
+            url: "{{ route('admin.order_confirmation_message') }}",
+            type: 'POST',
+            data: {
+                order_id: order_id,
+                order_confirmation_id: order_confirmation_id
+            },
+            success: function(response) {
+
+                $('#mobile_number').val(response.mobile);
+                $('#identifier').val(response.confirmation_template.identifier);
+                $('#message').summernote('code', response.message);
+                $('#order_confirmation_sms').modal("show");
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+            }
+        });
+    });
+
+    // Send SMS 
+    $('#order_sms_send').on('submit', function(e) {
+        e.preventDefault();
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+
+        let formData = new FormData(this);
+
+        $.ajax({
+            url: "{{ route('admin.order_sms_send') }}",
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                console.log('Success:', response);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+            }
+        });
+    });
+});
 </script>
 @endsection
 </x-admin>

@@ -70,19 +70,17 @@
                                                             <span class="slider round"></span>
                                                         </label>
                                                     </div>
-
                                                     
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-5">
 
-<button type="button"
-    class="btn btn-sm btn-primary popover-btn"
-    data-toggle="popover"
-    title="{{ $email_template->subject }}"
-    data-html="true"
-    data-placement="left"
-    data-content="{{ $email_template->parameters }}">Use variables from here</button>
-
-<a class="btn btn-sm btn-danger email-preview" data-href="{{ route('admin.email-templates.preview', $email_template->identifier) }}">{{translate('Preview')}}</a>
+                                                        <button type="button"
+                                                        class="btn btn-sm btn-primary popover-btn"
+                                                        data-toggle="popover"
+                                                        title="{{ $email_template->subject }}"
+                                                        data-html="true"
+                                                        data-placement="left"
+                                                        data-content="{{ $email_template->parameters }}">Use variables from here</button> 
+                                                        <a class="btn btn-sm btn-danger email-preview" data-href="{{ route('admin.email-templates.preview', $email_template->identifier) }}">{{translate('Preview')}}</a>
 
                                                     </div>
                                                 </div>
@@ -97,7 +95,7 @@
                                                 </div>
                                             </div>
 
-                                            <div class="form-group row">
+                                            {{-- <div class="form-group row">
                                                 <label class="col-md-12 col-form-label">{{translate('Email Header')}}</label>
                                                 <div class="col-md-12">
                                                     <textarea name="header" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ $email_template->header ? $email_template->header : get_setting('default_email_header') }}</textarea>
@@ -105,10 +103,10 @@
                                                         <small class="form-text text-danger">{{ $message }}</small>
                                                     @enderror
                                                 </div>
-                                            </div>
+                                            </div> --}}
 
                                             <div class="form-group row">
-                                                <label class="col-md-12col-form-label">{{translate('Email Body')}}</label>
+                                                <label class="col-md-12 col-form-label">{{translate('Email Body')}}</label>
                                                 <div class="col-md-12">
                                                     <textarea name="body" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="500" required>{{ $email_template->body }}</textarea>
                                                     @error('body')
@@ -117,20 +115,22 @@
                                                 </div>
                                             </div>
 
-                                            <div class="form-group row">
+                                            {{-- <div class="form-group row">
                                                 <label class="col-form-label">{{translate('Email Footer')}}</label>
-                                                <div class="col-md-12">
+                                                <div class="col-md-12 col-form-label">
                                                     <textarea name="footer" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ $email_template->footer ? $email_template->footer : get_setting('default_email_footer') }}</textarea>
                                                     @error('footer')
                                                         <small class="form-text text-danger">{{ $message }}</small>
                                                     @enderror
                                                 </div>
-                                            </div>
+                                            </div> --}}
 
                                             <div class="form-group row">
-                                                <label class="col-form-label">{{translate('Email Parameters')}}</label>
+                                                <label class="col-md-12 col-form-label">{{translate('Email Parameters')}}</label>
                                                 <div class="col-md-12">
-                                                    <textarea name="parameters" class="form-control" placeholder="Type.." rows="8" required>{{ $email_template->parameters }}</textarea>
+                                                    <textarea name="parameters" class="form-control  aiz-text-editor" 
+                                                    data-buttons='[["font", ["bold", "underline", "italic"]],["para", ["ul", "ol"]],["view", ["fullscreen",  "codeview"]]]'
+                                                    placeholder="Type.." rows="8" required>{{ $email_template->parameters }}</textarea>
                                                     @error('parameters')
                                                         <small class="form-text text-danger">{{ $message }}</small>
                                                     @enderror

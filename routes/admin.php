@@ -20,6 +20,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StateController;
+use App\Http\Controllers\SmsTemplateController;
 use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SubCateoryController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
@@ -80,6 +82,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/taxesfees', [TourController::class, 'editTaxesfees'])->name('tour.edit.taxesfees');
     Route::get('/tour/{id}/edit/gallery', [TourController::class, 'editGallery'])->name('tour.edit.gallery');
     Route::get('/tour/{id}/edit/seo', [TourController::class, 'editSeo'])->name('tour.edit.seo');
+    Route::get('/tour/{id}/edit/booking', [TourController::class, 'editBooking'])->name('tour.edit.booking');
     Route::get('/tour/{id}/edit/info_seo', [TourController::class, 'editinfoSeo'])->name('tour.edit.infoseo');
     Route::get('/tour/{id}/edit/seoscore', [TourController::class, 'editSeoScore'])->name('tour.edit.seoscore');
     Route::get('/tour/{id}/edit/notification', [TourController::class, 'editNotification'])->name('tour.edit.message.notification');
@@ -95,6 +98,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/tour/location_update/{id}', [TourController::class, 'location_update'])->name('tour.location_update');
     Route::put('/tour/pickup_update/{id}', [TourController::class, 'pickup_update'])->name('tour.pickup_update');
     Route::put('/tour/seo_update/{id}', [TourController::class, 'seo_update'])->name('tour.seo_update');
+    Route::post('/tour/booking_update/{id}', [TourController::class, 'booking_update'])->name('tour.booking_update');
     Route::put('/tour/schedule_update/{id}', [TourController::class, 'schedule_update'])->name('tour.schedule_update');
     Route::put('/tour/itinerary_update/{id}', [TourController::class, 'itinerary_update'])->name('tour.itinerary_update');
     Route::put('/tour/faq_update/{id}', [TourController::class, 'faq_update'])->name('tour.faq_update');
@@ -167,6 +171,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::post('/settings/test/send', [SettingController::class, 'testSend'])->name('third_party_settings.send');
 
+    Route::post('/order/order_mail_send/', [OrderController::class, 'order_mail_send'])->name('mail_send');
+    Route::post('/order/order_template_details/', [OrderController::class, 'order_template_details'])->name('order_template_details');
+    Route::post('/order/order_confirmation_message/', [OrderController::class, 'order_confirmation_message'])->name('order_confirmation_message');
+    Route::post('/order/order_sms_send/', [OrderController::class, 'order_sms_send'])->name('order_sms_send');
+
+     // SMS Templates
+    Route::resource('/sms-templates', SmsTemplateController::class);
+    Route::post('/sms-templates/update', [SmsTemplateController::class, 'update'])->name('sms-templates.update');
+    Route::post('/sms-templates/preview/{id}', [SmsTemplateController::class, 'preview'])->name('sms-templates.preview');
+    
     // Email Templates
     Route::resource('/email-templates', EmailTemplateController::class);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
@@ -176,5 +190,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Artisan::call('cache:clear');
         Artisan::call('config:clear');
         Artisan::call('permission:cache-reset');
+        return redirect()->back()->with('success', 'Cache cleared!');
     })->name('clear.cache');
 });

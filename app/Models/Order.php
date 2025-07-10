@@ -41,7 +41,11 @@ class Order extends Model
         return $this->hasMany(OrderTour::class);
     }
 
+    public function tour() {
+        return $this->belongsTo(Tour::class);
+    }
+
     public function user() {
-        return $this->belongsTo(user::class, 'user_id');
+        return $this->belongsTo(user::class);
     }
 }

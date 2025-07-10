@@ -1,16 +1,40 @@
 <?php
+
+use App\Models\Addon;
+use App\Models\Currency;
+use App\Models\EmailTemplate;
 use App\Models\Setting;
+use App\Models\SmsTemplate;
 use App\Models\Tour;
 use App\Models\Translation;
+use App\Models\TourUpload;
+use App\Upload;
+use App\User;
 
 // use App\Models\EmailTemplate;
 // use App\Models\SmsTemplate;
 // use App\Models\Notification;
-use App\Upload;
-use App\Models\TourUpload;
-use App\User;
 use Ashutosh2801\Colorcodeconverter\Colorcodeconverter;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Route;
+//use Illuminate\Support\Facades\Storage;
+
+if(!function_exists('tour_status')) {
+    function tour_status($number) {
+        switch ($number) {
+            case 1:
+                return '<span class="badge badge-success">Activated</span>';
+                break;
+            case 2:
+                return '<span class="badge badge-warning">Under Review</span>';
+                break;
+            default:
+                return '<span class="badge badge-danger">Pending</span>';
+                break;
+        }
+    }
+}
 
 if(!function_exists('ordinal')) {
     function ordinal($number) {
@@ -19,6 +43,13 @@ if(!function_exists('ordinal')) {
             return $number. 'th';
         else
             return $number. $ends[$number % 10];
+    }
+}
+
+if(!function_exists('randomFloat')) {
+    function randomFloat($min, $max, $precision = 1) {
+        $scale = pow(10, $precision); // e.g., 1 decimal = 10
+        return mt_rand($min * $scale, $max * $scale) / $scale;
     }
 }
 
@@ -110,13 +141,25 @@ if (! function_exists('areActiveRoutes')) {
 
 //return file uploaded via uploader
 if (!function_exists('uploaded_asset')) {
-    function uploaded_asset($id)
+    function uploaded_asset($id, $type = 'original')
     {
         if (($asset = Upload::find($id)) != null) {
-            return static_asset($asset->file_name);
+            if ($type == 'thumb') {
+                return static_asset($asset->thumb_name);
+            } elseif ($type == 'medium') {
+                return static_asset($asset->medium_name);
+            } else {
+                return static_asset($asset->file_name);
+            }
         }
         return static_asset('placeholder.jpg');
     }
+    // {
+    //     if (($asset = Upload::find($id)) != null) {
+    //         return static_asset($asset->file_name);
+    //     }
+    //     return static_asset('placeholder.jpg');
+    // }
 }
 
 if (!function_exists('main_image_html')) {

@@ -11,6 +11,9 @@ use Validator;
 
 class CityController extends Controller
 {
+    public $city_rules = [];
+    public $city_messages = [];
+
     public function __construct()
     {
         // $this->middleware(['permission:show_member_languages'])->only('index');
@@ -72,20 +75,18 @@ class CityController extends Controller
         $validator  = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
-            //flash(translate('Sorry! Something went wrong'))->error();
             return Redirect::back()->withErrors($validator)->with('error', translate('Sorry! Something went wrong'));
         }
 
         $city              = new City;
         $city->name        = $request->name;
         $city->state_id    = $request->state_id;
+        $city->upload_id   = $request->upload_id;
         if($city->save())
         {
-            //flash(translate('New City has been added successfully'))->success();
             return redirect()->route('admin.cities.index')->with('error', 'New City has been added successfully');
         }
         else {
-            //flash(translate('Sorry! Something went wrong.'))->error();
             return back()->with(translate('Sorry! Something went wrong.'));
         }
     }
@@ -128,20 +129,18 @@ class CityController extends Controller
         $validator  = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
-            //flash(translate('Sorry! Something went wrong'))->error();
             return Redirect::back()->withErrors($validator)->with('error', translate('Sorry! Something went wrong'));
         }
 
         $city              = City::findOrFail($id);
         $city->name        = $request->name;
         $city->state_id    = $request->state_id;
+        $city->upload_id   = $request->upload_id;
         if($city->save())
         {
-            //flash(translate('City info has been updated successfully'))->success();
-            return redirect()->route('admin.cities.index')->with('success', translate('City info has been updated successfully'));
+            return redirect()->route('admin.cities.edit', encrypt($city->id))->with('success', translate('City info has been updated successfully'));
         }
         else {
-            //flash(translate('Sorry! Something went wrong.'))->error();
             return back()->with('error', translate('Sorry! Something went wrong.'));
         }
     }

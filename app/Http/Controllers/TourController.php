@@ -426,6 +426,14 @@ class TourController extends Controller
         return view('admin.tours.feature.gallery', compact( 'data'));
     }
 
+    
+    public function editBooking($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        return view('admin.tours.feature.booking', compact( 'data', 'detail'));
+    }
+
     public function editSeo($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
@@ -741,6 +749,21 @@ class TourController extends Controller
         $location->postal_code      = $request->postal_code;
         if($location->save() ) {
             return back()->withInput()->with('success','Location saved successfully.');
+        }
+
+        return back()->withInput()->withErrors($request->all())->with('error','Something went wrong!');
+    }
+
+    public function booking_update(Request $request, $id)
+    {
+        $tour  = Tour::findOrFail($id);
+        $detail = $tour->detail;
+
+        $detail->booking_type    = $request->booking_type;
+        $detail->booking_link    = $request->booking_link;
+        $detail->other_link      = $request->other_link;
+        if($detail->save() ) {
+            return back()->withInput()->with('success','Booking info saved successfully.');
         }
 
         return back()->withInput()->withErrors($request->all())->with('error','Something went wrong!');

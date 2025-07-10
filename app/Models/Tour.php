@@ -158,21 +158,26 @@ class Tour extends Model
     {
         return $this->belongsTo(Category::class,'category_id');
     }
+
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
     
-    public function subcategory()
-    {
-        return $this->belongsTo(SubCategory::class,'sub_category_id');
-    }
+    // public function subcategory()
+    // {
+    //     return $this->belongsTo(SubCategory::class,'sub_category_id');
+    // }
 
-    public function collection()
-    {
-        return $this->belongsTo(SubCategory::class,'collection_id');
-    }
+    // public function collection()
+    // {
+    //     return $this->belongsTo(SubCategory::class,'collection_id');
+    // }
 
-    public function productImages()
-    {
-        return $this->hasMany(ProductImage::class);
-    }
+    // public function productImages()
+    // {
+    //     return $this->hasMany(ProductImage::class);
+    // }
 
     public function orderTours()
     {

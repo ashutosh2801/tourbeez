@@ -16,7 +16,7 @@ class ApiKeyMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         // Get API key from request headers
-        $requestApiKey = $request->header('X-API-KEY');
+        $requestApiKey = $request->header('apiKey');
 
         if (!$requestApiKey) {
             return response()->json(['message' => 'API Key is required'], 401);

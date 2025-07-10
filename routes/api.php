@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CategoryController;
+use App\Http\Controllers\API\CommonController;
 use App\Http\Controllers\API\TourController;
+use App\Http\Controllers\API\WishlistController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,11 +24,29 @@ use Illuminate\Support\Facades\Route;
 // });
 
 Route::middleware(['api.key'])->group(function () {
-    Route::get('/cateogries',[CategoryController::class,'index'])->name('index');
+    Route::get('/categories',[CategoryController::class,'index'])->name('categories');
     Route::post('/sub-cateogries',[CategoryController::class,'subcategory'])->name('sub.category');
     
-    Route::post('/tours',[TourController::class,'index'])->name('tour.index');
-    Route::get('/tour/{id}',[TourController::class,'show'])->name('tour.show');
+    Route::get('/home-listing',[CommonController::class,'home_listing'])->name('home_listing');
+    Route::get('/popular-cities',[CommonController::class,'popular_cities'])->name('popular_cities');
+    Route::get('/single-city/{id}',[CommonController::class,'single_city'])->name('single_city');
+    Route::post('/contact',[CommonController::class,'contact'])->name('contact');
+
+    Route::get('/tours',[TourController::class,'index'])->name('tour.index');
+    Route::get('/tour/search', [TourController::class, 'search']);
+    Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
+    // Route::get('/tour/{id}',[TourController::class,'show'])->name('tour.show');
+
+    Route::get('/wishlist', [WishlistController::class, 'index']);
+    Route::get('/wishlist/tours', [WishlistController::class, 'wishlist_tours']);
+    Route::post('/wishlist', [WishlistController::class, 'store']);
+    Route::delete('/wishlist/{tourId}', [WishlistController::class, 'destroy']);
+
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/forgot', [AuthController::class, 'forgot']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', [AuthController::class, 'me'])->middleware('auth:sanctum');
 });
 
 
