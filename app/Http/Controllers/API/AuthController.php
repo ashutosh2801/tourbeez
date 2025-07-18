@@ -36,9 +36,11 @@ class AuthController extends Controller
         }
 
         $user = User::create([
-            'name' => $request->first_name . ' ' . $request->last_name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'first_name'=> $request->first_name,
+            'last_name' => $request->last_name,
+            'name'      => $request->first_name . ' ' . $request->last_name,
+            'email'     => $request->email,
+            'password'  => Hash::make($request->password),
         ]);
 
         $user->id  = $user->id;
@@ -103,5 +105,34 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         return response()->json($request->user());
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::findorFail($id);
+
+        // $validated = $request->validate([
+        //     'first_name'=> 'required|string|max:100',
+        //     'last_name' => 'required|string|max:100',
+        //     'email'     => 'required|email|unique:users,email,' . $user->id,
+        //     'phone'     => 'nullable|string|max:20',
+        //     'dob'       => 'nullable|string|max:20',
+        //     'country'   => 'nullable|string|max:100',
+        // ]);
+        
+        $name = $request->input('first_name') ?? $user->first_name;
+        $name.= ' '.$request->input('last_name') ?? $user->last_name;
+
+        $user->update([
+            'first_name'=> $request->input('first_name') ?? $user->first_name,
+            'last_name' => $request->input('last_name') ?? $user->last_name,
+            'name'      => $name,
+            'email'     => $request->input('email') ?? $user->email,
+            'phone'     => $request->input('phone') ?? $user->phone,
+            'dob'       => $request->input('dob') ?? $user->dob,
+            'country'   => $request->input('country') ?? $user->country,
+        ]);
+
+        return response()->json(['status' => true, 'message' => 'Profile updated successfully', 'posted'=>$request->all(), 'user' => $user]);
     }
 }

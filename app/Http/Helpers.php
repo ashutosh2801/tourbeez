@@ -56,7 +56,7 @@ if(!function_exists('randomFloat')) {
 if(!function_exists('price_format')) {
     function price_format($value)
     {
-        return '$'.number_format($value, 2);
+        return '$'.number_format(floatval($value), 2);
     }
 }
 

@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->string('mode')->default('dark');
             $table->rememberToken();
+            $table->string('phone')->nullable();
+            $table->string('dob')->nullable(); // or split into date/month/year as needed
+            $table->string('country')->nullable();
             $table->timestamps();
         });
     }

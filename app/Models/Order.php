@@ -23,10 +23,10 @@ class Order extends Model
         ->dontSubmitEmptyLogs();
     }
 
-    // protected $fillable = [
-    //     'tour_id', 'user_id', 'order_number', 'tour_date', 'tour_time', 'number_of_guests', 'payment_status', 
-    //     'payment_method', 'total_amount', 'currency', 'order_status'
-    // ];
+    protected $fillable = [
+        'tour_id', 'user_id', 'session_id', 'order_number', 'tour_date', 'tour_time', 'number_of_guests', 'payment_status', 
+        'payment_method', 'total_amount', 'currency', 'order_status'
+    ];
 
     public function tour_detail($id, $label='all') {
         $tour = Tour::where('id', $id)->first();

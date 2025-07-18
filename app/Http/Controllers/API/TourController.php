@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\City;
+use App\Models\Order;
 use App\Models\Tour;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -117,6 +118,9 @@ class TourController extends Controller
         ]);
     }
     
+    /**
+     * Fetch a single tour.
+     */
     public function fetch_one(Request $request, $slug)
     {
         //$slug = $request->input('slug');
@@ -162,9 +166,26 @@ class TourController extends Controller
             $thumb_url  = str_replace($item->file_name, $item->thumb_name, $image);
 
             $galleries[] = [
-                'original_img' => $image,
-                'medium_img' => $medium_url,
-                'thumb_img' => $thumb_url
+                'original_url'  => $image,
+                'medium_url'    => $medium_url,
+                'thumb_url'     => $thumb_url
+            ];
+        }
+
+        $addons = [];
+        foreach ($tour->addons as $addon) {
+            $image      = uploaded_asset($addon->image);
+            $medium_url = str_replace($item->file_name, $item->medium_name, $image);
+            $thumb_url  = str_replace($item->file_name, $item->thumb_name, $image);
+
+            $addons[] = [
+                'id'            => $addon->id,
+                'name'          => $addon->name,
+                'description'   => $addon->description,
+                'price'         => $addon->price,
+                'original_url'  => $image,
+                'medium_url'    => $medium_url,
+                'thumb_url'     => $thumb_url,
             ];
         }
 
@@ -189,6 +210,14 @@ class TourController extends Controller
             'label'=> $tour->title
         ];
 
+        $pickups = [];
+        if($tour->pickups[0]->name !== 'No Pickups') {
+            $pickups = $tour->pickups[0]?->locations;
+        }
+        else if($tour->pickups[0]->name !== 'No Pickups') {
+            $pickups[] = 'Pickups';
+        }
+
 
         if ($tour) {
             // 💡 You can now format or transform fields as needed
@@ -201,12 +230,12 @@ class TourController extends Controller
                 'slug'          => $tour->slug,
                 'features'      => $tour->features,
                 'meta'          => $tour->meta,
-                'galleries'     => $galleries,
                 'categories'    => $tour->categories,
                 'tourtypes'     => $tour->tourtypes,
-                'pickups'       => $tour->pickups,
                 'itineraries'   => $tour->itineraries,
-                'itinerariesAll'=> $tour->itinerariesAll,
+                'pickups'       => $pickups,
+                //'itinerariesAll'=> $tour->itinerariesAll,
+                //'schedule'      => $tour->schedule,
                 'faqs'          => $tour->faqs,
                 'inclusions'    => $tour->inclusions,
                 'exclusions'    => $tour->exclusions,
@@ -214,9 +243,10 @@ class TourController extends Controller
                 'detail'        => $tour->detail,
                 'location'      => $tour->location,
                 'breadcrumbs'   => $breadcrumbs,
-                'schedule'      => $tour->schedule,
                 'pricings'      => $tour->pricings,
                 'category'      => $tour->category,
+                'galleries'     => $galleries,
+                'addons'        => $addons,
             ];
         }
 
@@ -226,7 +256,9 @@ class TourController extends Controller
         ]);
     }
 
-    /** Search home page  */
+    /** 
+     * Search home page tour  
+     */
     public function search(Request $request) {
         
         $search = $request->input('q', '');

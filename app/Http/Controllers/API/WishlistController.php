@@ -16,19 +16,26 @@ class WishlistController extends Controller
     
     public function index(Request $request)
     {
-        //$tourId = $request->tour_id;
-        $userId = $request->user_id;
-        $sessionId = $request->session_id;
+        $userId     = $request->user_id;
+        $sessionId  = $request->session_id;
 
-        if ( $userId ) {
-            return Wishlist::with('tour')
+        $wishlists = [];
+        if ( $userId && $sessionId ) {
+            $wishlists = Wishlist::with('tour')
                     ->where('user_id', $userId)
+                    ->orWhere('session_id', $sessionId)
                     ->get();
-        } else {
-            return Wishlist::with('tour')
+        } else if ( $sessionId ) {
+            $wishlists = Wishlist::with('tour')
                     ->where('session_id', $sessionId)
                     ->get();
         }
+
+        // Return the transformed data along with pagination info
+        return response()->json([
+            'status'         => true,
+            'data'           => $wishlists,
+        ]);
     }
 
     public function store(Request $request)

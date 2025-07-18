@@ -14,15 +14,18 @@ class UserController extends Controller
         $roles = Role::all();
         view()->share('roles',$roles);
     }
+
     public function index()
     {
         $data = User::where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
         return view('admin.user.index', compact('data'));
     }
+
     public function create()
     {
         return view('admin.user.create');
     }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -41,11 +44,13 @@ class UserController extends Controller
         $user->assignRole($request->role);
         return redirect()->route('admin.user.index')->with('success','User created successfully.');
     }
+
     public function edit($id)
     {
         $user = User::where('id',decrypt($id))->first();
         return view('admin.user.edit',compact('user'));
     }
+
     public function update(Request $request, User $user)
     {
         $request->validate([
@@ -63,6 +68,7 @@ class UserController extends Controller
         $user->assignRole($request->role);
         return redirect()->route('admin.user.index')->with('success','User updated successfully.');
     }
+    
     public function destroy($id)
     {
         User::where('id',decrypt($id))->delete();
