@@ -48,4 +48,38 @@ class Order extends Model
     public function user() {
         return $this->belongsTo(user::class);
     }
+
+
+    public function getStatusAttribute()
+    {
+
+        $val = $this->order_status;
+
+        switch($val) {
+            case 1:
+                return 'New';
+                break;
+            case 2:
+                return 'On Hold';
+                break;
+            case 3:
+                return 'Pending supplier';
+                break; 
+            case 4:
+                return 'Pending customer';
+                break;
+            case 5:
+                return 'Confirmed';
+                break;
+            case 6:
+                return 'Cancelled';   
+                break;  
+            case 7:
+                return 'Abandoned cart';   
+                break; 
+            default:
+                return 'Cancelled';   
+                break;   
+        }
+    }
 }

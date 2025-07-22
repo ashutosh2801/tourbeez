@@ -244,7 +244,10 @@
                     <div class="col-lg-7 text-right">
                         <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
                             <option value="" >Email</option>
-                            <option value="14" >Order Details -> Send Now</option>
+                            @foreach($email_templates as $email_template)
+                                <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
+                            @endforeach
+                            <!-- <option value="14" >Order Details -> Send Now</option>
                             <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
                             <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
                             <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
@@ -253,7 +256,7 @@
                             <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
                             <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
                             <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
-                            <option value="Simple Email" >Simple Email -> Send Now</option>
+                            <option value="Simple Email" >Simple Email -> Send Now</option> -->
                         </select>
 
                         <select class="form-control" style="width:150px; display:inline-block;" name="sms_template_name" id="sms_template_name">
