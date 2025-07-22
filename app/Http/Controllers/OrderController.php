@@ -243,7 +243,17 @@ class OrderController extends Controller
             $system_logo = get_setting('system_logo');
             $logo = uploaded_asset($system_logo);
 
-            $customer   = $order->user ?? User::find(1); // need to update this
+            $customer   = $order->user;
+            if(!$customer){
+                $customer = $order->orderUser;
+            }
+
+            if(!$customer){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.'
+                ], 404);
+            }
 
             $orderTour  = $order->orderTours()->first();
             $tour       = $orderTour->tour;
