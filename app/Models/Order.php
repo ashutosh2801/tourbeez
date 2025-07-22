@@ -48,4 +48,8 @@ class Order extends Model
     public function user() {
         return $this->belongsTo(user::class);
     }
+
+    public function customer() {
+        return $this->hasOne(OrderCustomer::class);
+    }
 }

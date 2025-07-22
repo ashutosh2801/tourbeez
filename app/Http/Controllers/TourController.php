@@ -69,9 +69,30 @@ class TourController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return view('admin.tours.index');
+        $query = Tour::query();
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                ->orWhere('unique_code', "%{$search}%");
+            });
+        }
+
+        if ($request->has('category') && $request->category != '') {
+            $query->whereHas('categories', function ($q) use ($request) {
+                $q->where('category_id', $request->category);
+            });
+        }
+
+        // Set items per page
+        $perPage = $request->input('per_page', 10);
+
+        $tours = $query->with('categories')->latest()->paginate($perPage)->withQueryString();
+        $categories = Category::all();
+
+        return view('admin.tours.index', compact(['tours', 'categories']));
     }
 
     /**
@@ -1336,5 +1357,18 @@ class TourController extends Controller
                 return redirect()->back()->withInput()->with('success','Focus key saved successfully.'); 
             }
         }
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->ids;
+
+        if (!$ids || count($ids) === 0) {
+            return redirect()->back()->with('error', 'No tour selected.');
+        }
+
+        Tour::whereIn('id', $ids)->delete();
+
+        return redirect()->back()->with('success', 'Selected tours deleted successfully.');
     }
 }

@@ -21,11 +21,15 @@
                     <div class="col-lg-8">
                         <div class="form-group">
                             <label class="form-label">Select Booking Type</label><br>
-                            <input type="radio" id="rezdy_radio" name="booking_type" value="rezdy" {{ $data->detail?->booking_type == 'rezdy' ? 'checked' : '' }} >
+                            <input type="radio" name="booking_type" value="rezdy" {{ $data->detail?->booking_type == 'rezdy' ? 'checked' : '' }} >
                             <label for="rezdy_radio">Rezdy</label>
                             
-                            <input type="radio" id="other_radio" name="booking_type" value="other" {{ $data->detail?->booking_type == 'other' ? 'checked' : '' }} style="margin-left: 20px;">
+                            <input type="radio" name="booking_type" value="TourBeez" {{ $data->detail?->booking_type == 'TourBeez' || $data->detail?->booking_type == '' ? 'checked' : '' }} style="margin-left: 20px;">
+                            <label for="other_radio">TourBeez</label>
+
+                            <input type="radio" name="booking_type" value="other" {{ $data->detail?->booking_type == 'other' ? 'checked' : '' }} style="margin-left: 20px;">
                             <label for="other_radio">Other Link</label>
+
                         </div>
                     </div>
 

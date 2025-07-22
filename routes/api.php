@@ -39,8 +39,10 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
 
     Route::post('/cart/add', [OrderController::class, 'add_to_cart']);
+    Route::post('/cart/update/{id}', [OrderController::class, 'update_cart']);
     Route::get('/cart', [OrderController::class, 'cart']);
     Route::get('/checkout', [OrderController::class, 'checkout']);
+    Route::get('/orders/{id}',[OrderController::class,'index']);
 
     Route::get('/wishlist', [WishlistController::class, 'index']);
     Route::get('/wishlist/tours', [WishlistController::class, 'wishlist_tours']);
@@ -51,12 +53,12 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/forgot', [AuthController::class, 'forgot']);
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', [AuthController::class, 'me'])->middleware('auth:sanctum');
-
 
 });
 
 Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
+Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
+Route::post('/verify-payment', [PaymentController::class, 'verifyPayment']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/profile/update/{id}', [AuthController::class, 'update']);

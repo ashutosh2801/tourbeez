@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -73,6 +74,10 @@ class AuthController extends Controller
 
         $user = Auth::user();
         $token = $user->createToken('auth_token')->plainTextToken;
+
+        if( $request->session_id ) {
+            Order::where('session_id', $request->session_id)->update(['user_id' => $user->id]);
+        }
 
         return response()->json([
             'message' => 'Login successful.',

@@ -17,7 +17,22 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        $orders = Order::all();
+        //$orders = Order::orderBy('created_at', 'DESC')->paginate(10);
+
+        $query = Order::with(['customer', 'orderTours'])->orderBy('created_at', 'DESC');
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                ->orWhereHas('customer', function ($q2) use ($search) {
+                    $q2->where('first_name', 'like', "%{$search}%");
+                    $q2->orWhere('last_name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        $orders = $query->paginate(10);
+
         return view('admin.order.index', compact(['orders']));
     }
 
@@ -191,6 +206,19 @@ class OrderController extends Controller
     public function destroy(Order $order)
     {
         //
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $ids = $request->ids;
+
+        if (!$ids || count($ids) === 0) {
+            return redirect()->back()->with('error', 'No orders selected.');
+        }
+
+        Order::whereIn('id', $ids)->delete();
+
+        return redirect()->back()->with('success', 'Selected orders deleted successfully.');
     }
 
     public function order_mail_send(Request $request)

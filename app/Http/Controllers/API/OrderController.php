@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Order;
+use App\Models\OrderCustomer;
 use App\Models\OrderTour;
 use App\Models\Tour;
 use Illuminate\Http\Request;
@@ -17,9 +18,50 @@ class OrderController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request, $id = 0)
     {
-        
+        if( $id == 0 ) {
+            return response()->json([
+                'message'    => 'User not found!',
+                'status'    => false,
+                'data'  => $request->all()
+            ]);
+        }
+
+        $session_id = $request->input('session_id');
+
+        $query = Order::where(function ($q) use ($id, $session_id) {
+            $q->where('user_id', $id);
+
+            if($session_id) {
+                $q->orWhere('session_id', $session_id);
+            }
+        })
+        ->orderBy('created_at', 'DESC');
+
+        $orders = $query->paginate(20);
+
+        $items = [];
+        foreach ($orders->items() as $o) {
+            $tours = '';
+            foreach ($o->orderTours as $order_tour) {
+                $tours.='<p><a href="https://tourbeez.com/tour/'. $order_tour->tour?->slug .'" target="_blank" class="alink">'.$order_tour->tour?->title.'</a></p>';
+            }
+
+            $items[] = [
+                'id'  => $o->id,
+                'order_number'  => $o->order_number,
+                'title'         => $tours,
+                'status'        => order_status($o->order_status),
+                'total_amount'  => $o->total_amount,
+                'created_at'    => date__format($o->created_at)
+            ];
+        }
+
+        return response()->json([
+            'orders'    => $items,
+            'status'    => true,
+        ]);
     }
     
 
@@ -58,7 +100,7 @@ class OrderController extends Controller
             'tour_id'       => $request->tourId,
             'user_id'       => $request->userId ?? 0,
             'session_id'    => $request->sessionId, // optional if using guest carts
-            'order_number'  => unique_code(),
+            'order_number'  => unique_code().rand(10,99),
             'currency'      => $request->currency,
             'order_status'  => 0,
             'created_at'    => date('Y-m-d H:i:s'),
@@ -132,10 +174,10 @@ class OrderController extends Controller
             $order->save();
 
             return response()->json([
-                'status'    => true,
-                'message'   => 'Item added in cart',
-                'data'      => $order,
-                'data_detail'      => $order->orderTours
+                'status'        => true,
+                'message'       => 'Item added in cart',
+                'data'          => $order,
+                'data_detail'   => $order->orderTours
             ], 200);
         }
 
@@ -150,6 +192,8 @@ class OrderController extends Controller
      */
     public function update_cart(Request $request)
     {
+        return response()->json($request->all());
+
         $validated = $request->validate([
             'orderId' => 'required|integer|exists:orders,id',
             'tourId' => 'required|integer|exists:tours,id',
@@ -158,6 +202,10 @@ class OrderController extends Controller
             'cartItems.*.id' => 'required|integer',
             'cartItems.*.price' => 'required',
             'cartItems.*.quantity' => 'required|integer|min:1',
+            'first_name'  => 'required|string|max:255',
+            'last_name'  => 'required|string|max:255',
+            'email'  => 'required|string|max:255',
+            'phone'  => 'required',
         ]);
 
         $order = Order::find($request->orderId);
@@ -167,6 +215,21 @@ class OrderController extends Controller
                 'message' => 'Order not found.'
             ], 404);
         }
+
+        $customer = Tour::where('order_id', $request->orderId)->first();
+        if(!$customer) {
+            $customer = new OrderCustomer();
+        }
+        $data = $request->input('formData');
+
+        $customer->order_id     = $order->id;
+        $customer->user_id      = $request->userId;
+        $customer->first_name   = $data->first_name;
+        $customer->last_name    = $data->last_name;
+        $customer->email        = $data->email;
+        $customer->phone        = $data->phone;
+        $customer->instructions = $data->instructions;
+        $customer->save();
 
         $tour = Tour::with(['pricings'])->where('id', $request->tourId)->first();
         if (!$tour) {
