@@ -54,6 +54,8 @@ class TourController extends Controller
         $page = $request->get('page', 1);
         $cacheKey = 'tour_list_' . md5(json_encode($request->all()) . '_page_' . $page);
 
+        //dd($query->toSql(), $query->getBindings(), $query->get());
+
         $paginated = Cache::remember($cacheKey, 86400, function () use ($query) {
             return $query->paginate(12);
         });
@@ -109,6 +111,7 @@ class TourController extends Controller
         return response()->json([
             'status'         => true,
             'data'           => $items,
+            'requested'           => $request->all(),
             'current_page'   => $paginated->currentPage(),
             'last_page'      => $paginated->lastPage(),
             'per_page'       => $paginated->perPage(),
@@ -211,12 +214,13 @@ class TourController extends Controller
         ];
 
         $pickups = [];
-        if($tour->pickups[0]->name !== 'No Pickups') {
-            $pickups = $tour->pickups[0]?->locations;
-        }
-        else if($tour->pickups[0]->name !== 'No Pickups') {
+        if (!empty($tour->pickups) && isset($tour->pickups[0]) && $tour->pickups[0]?->name !== 'No Pickups') {
+            $pickups = $tour->pickups[0]?->locations ?? [];
+        } else {
             $pickups[] = 'Pickups';
         }
+
+        
 
 
         if ($tour) {

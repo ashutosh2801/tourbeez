@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+
 
 class OrderCustomer extends Model
 {
@@ -36,4 +38,5 @@ class OrderCustomer extends Model
     {
         return $this->belongsTo(Order::class);
     }
+
 }

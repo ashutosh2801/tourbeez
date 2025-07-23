@@ -171,10 +171,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::post('/settings/test/send', [SettingController::class, 'testSend'])->name('third_party_settings.send');
 
+    Route::post('/order', [OrderController::class, 'index'])->name('order.index');
     Route::post('/order/order_mail_send/', [OrderController::class, 'order_mail_send'])->name('mail_send');
     Route::post('/order/order_template_details/', [OrderController::class, 'order_template_details'])->name('order_template_details');
     Route::post('/order/order_confirmation_message/', [OrderController::class, 'order_confirmation_message'])->name('order_confirmation_message');
     Route::post('/order/order_sms_send/', [OrderController::class, 'order_sms_send'])->name('order_sms_send');
+    Route::delete('/order/bulk-delete', [OrderController::class, 'bulkDelete'])->name('order.bulkDelete');
 
      // SMS Templates
     Route::resource('/sms-templates', SmsTemplateController::class);
