@@ -55,6 +55,9 @@ class Order extends Model
     {
         return $this->hasOne(OrderCustomer::class);
     }
+    public function customer() {
+        return $this->hasOne(OrderCustomer::class);
+    }
 
     public function orderUser()
     {
