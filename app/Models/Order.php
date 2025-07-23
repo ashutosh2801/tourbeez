@@ -41,11 +41,20 @@ class Order extends Model
         return $this->hasMany(OrderTour::class);
     }
 
+    public function order_tour()
+    {
+        return $this->hasOne(OrderTour::class);
+    }
+
     public function tour() {
         return $this->belongsTo(Tour::class);
     }
 
     public function user() {
         return $this->belongsTo(user::class);
+    }
+
+    public function customer() {
+        return $this->hasOne(OrderCustomer::class);
     }
 }

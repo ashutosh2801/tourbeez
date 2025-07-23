@@ -56,7 +56,7 @@ if(!function_exists('randomFloat')) {
 if(!function_exists('price_format')) {
     function price_format($value)
     {
-        return '$'.number_format(floatval($value), 2);
+        return number_format(floatval($value), 2);
     }
 }
 
@@ -66,7 +66,7 @@ if(!function_exists('taxes_format')) {
         if($type == 'PERCENT')
         return number_format($value,1).'%';
         elseif($type == 'FIXED_PER_ORDER')
-        return '$'.number_format($value, 2);
+        return number_format($value, 2);
     }
 }
 
@@ -608,7 +608,7 @@ if (! function_exists('order_status')) {
                 return '<span class="badge badge-inline badge-warning">Abandoned cart</span>';   
                 break; 
             default:
-                return '<span class="badge badge-inline badge-warning">Cancelled</span>';   
+                return '<span class="badge badge-inline badge-warning">Not completed</span>';   
                 break;   
         }
     }
