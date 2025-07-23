@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\OrderCustomer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -54,7 +55,59 @@ class Order extends Model
         return $this->belongsTo(user::class);
     }
 
+
+    public function orderCustomer()
+    {
+        return $this->hasOne(OrderCustomer::class);
+    }
     public function customer() {
         return $this->hasOne(OrderCustomer::class);
     }
+
+    public function orderUser()
+    {
+        return $this->hasOneThrough(
+            User::class,
+            OrderCustomer::class,
+            'order_id',   // Foreign key on order_customers table...
+            'id',         // Foreign key on users table...
+            'id',         // Local key on orders table...
+            'user_id'     // Local key on order_customers table...
+        );
+    }
+
+
+    public function getStatusAttribute()
+    {
+
+        $val = $this->order_status;
+
+        switch($val) {
+            case 1:
+                return 'New';
+                break;
+            case 2:
+                return 'On Hold';
+                break;
+            case 3:
+                return 'Pending supplier';
+                break; 
+            case 4:
+                return 'Pending customer';
+                break;
+            case 5:
+                return 'Confirmed';
+                break;
+            case 6:
+                return 'Cancelled';   
+                break;  
+            case 7:
+                return 'Abandoned cart';   
+                break; 
+            default:
+                return 'Cancelled';   
+                break;   
+        }
+    }
+
 }

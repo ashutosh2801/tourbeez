@@ -2,5 +2,5 @@
 Welcome TourBeez Admin Panel
 </h2>
 
-<p align="center"><a href="http://localhost/tourbeez/tbadmin/login">Click here to Login</a></p>
+<p align="center"><a href="http://127.0.0.1:8000/tourbeez/tbadmin/login">Click here to Login</a></p>
 

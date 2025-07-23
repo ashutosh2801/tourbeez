@@ -244,7 +244,10 @@
                     <div class="col-lg-7 text-right">
                         <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
                             <option value="" >Email</option>
-                            <option value="14" >Order Details -> Send Now</option>
+                            @foreach($email_templates as $email_template)
+                                <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
+                            @endforeach
+                            <!-- <option value="14" >Order Details -> Send Now</option>
                             <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
                             <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
                             <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
@@ -253,7 +256,7 @@
                             <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
                             <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
                             <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
-                            <option value="Simple Email" >Simple Email -> Send Now</option>
+                            <option value="Simple Email" >Simple Email -> Send Now</option> -->
                         </select>
 
                         <select class="form-control" style="width:150px; display:inline-block;" name="sms_template_name" id="sms_template_name">
@@ -286,7 +289,7 @@
                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="headingOne">
                             <h2 class="my-0 py-0">
-                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0 px-0" data-toggle="collapse" data-target="#collapseOne"><i class="fa fa-angle-right"></i>Customer Details</button>									
+                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0 px-0" data-toggle="collapse" data-target="#collapseOne"><i class="fa fa-angle-right"></i>Customer Details</button>                                  
                             </h2>
                         </div>
                         <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
@@ -472,7 +475,7 @@
                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="heading4">
                             <h2 class="my-0 py-0">
-                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0 px-0" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>									
+                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0 px-0" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>                                  
                             </h2>
                         </div>
                         <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
@@ -513,8 +516,8 @@
                     </div>
                 </div>
             </div>
-
-            <div class="bs-example">
+            <!-- recent action need to update this -->
+            <!-- <div class="bs-example">
                 <div class="card">
                     <div class="card-body">
                         <h5>Recent actions</h5>
@@ -568,7 +571,9 @@
                         </table>
                     </div>
                 </div>
-            </div>
+            </div> -->
+
+            <!-- recent action -->
         </div>
     </div>
     </form>
@@ -807,14 +812,14 @@
     $(document).ready(function(){
         // Add down arrow icon for collapse element which is open by default
         $(".collapse.show").each(function(){
-        	$(this).prev(".card-header").find(".fa").addClass("fa-angle-down").removeClass("fa-angle-right");
+            $(this).prev(".card-header").find(".fa").addClass("fa-angle-down").removeClass("fa-angle-right");
         });
         
         // Toggle right and down arrow icon on show hide of collapse element
         $(".collapse").on('show.bs.collapse', function(){
-        	$(this).prev(".card-header").find(".fa").removeClass("fa-angle-right").addClass("fa-angle-down");
+            $(this).prev(".card-header").find(".fa").removeClass("fa-angle-right").addClass("fa-angle-down");
         }).on('hide.bs.collapse', function(){
-        	$(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
+            $(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
         });
     });
 </script>

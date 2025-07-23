@@ -53,9 +53,9 @@ return [
     | the Artisan command line tool. You should set this to the root of
     | your application so that it is used when running Artisan tasks.
     |
-    */
+    */ 
 
-    'url' => env('APP_URL', 'http://localhost/tourbeez/tbadmin'),
+    'url' => env('APP_URL', 'http://127.0.0.1:8000/admin'),
 
     'asset_url' => env('ASSET_URL'),
 

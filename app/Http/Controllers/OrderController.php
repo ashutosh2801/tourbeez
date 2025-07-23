@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\EmailManager;
+use App\Models\EmailTemplate;
 use App\Models\Order;
 use App\Models\OrderTour;
-use App\Models\Tour;
-use App\Models\EmailTemplate;
 use App\Models\SmsTemplate;
+use App\Models\Tour;
 use App\Services\TwilioService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -17,7 +20,6 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        //$orders = Order::orderBy('created_at', 'DESC')->paginate(10);
 
         $query = Order::with(['customer', 'orderTours'])->orderBy('created_at', 'DESC');
 
@@ -67,7 +69,8 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail( decrypt($id) );
         $tours = Tour::orderBy('title', 'ASC')->get();
-        return view('admin.order.edit', compact(['order', 'tours']));
+        $email_templates = EmailTemplate::get();
+        return view('admin.order.edit', compact(['order', 'tours', 'email_templates']));
     }
 
     /**
@@ -233,7 +236,7 @@ class OrderController extends Controller
             $array['view'] = 'emails.newsletter';
             $array['subject'] = $subject;
             $array['header'] = $header;
-            $array['from'] = env('MAIL_USERNAME');
+            $array['from'] = env('MAIL_FROM_ADDRESS');
             $array['content'] =  $header.$body.$footer;
  
             try {
@@ -257,13 +260,28 @@ class OrderController extends Controller
             $order_template_id = $request->order_template_id;
             $order = Order::findorFail($order_id);
             $email_template = EmailTemplate::findorFail($order_template_id);
+
             $template = $email_template->body;
+
             $template_footer = $email_template->footer;
+
+            $template_subject = $email_template->subject;
 
             $system_logo = get_setting('system_logo');
             $logo = uploaded_asset($system_logo);
 
             $customer   = $order->user;
+            if(!$customer){
+                $customer = $order->orderUser;
+            }
+
+            if(!$customer){
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.'
+                ], 404);
+            }
+
             $orderTour  = $order->orderTours()->first();
             $tour       = $orderTour->tour;
             //echo '<pre>'; print_r($orderTour->tour); exit;
@@ -405,12 +423,14 @@ class OrderController extends Controller
 
                 "[[APP_LOGO]]"              => $logo,
                 "[[APP_NAME]]"              => get_setting('site_name'),
+                "[[COMPANY_NAME]]"          => get_setting('site_name'),
                 "[[APP_URL]]"               => get_setting('app_url'),
                 "[[APP_EMAIL]]"             => get_setting('app_email'),
                 "[[APP_PHONE]]"             => get_setting('app_phone'),
                 "[[APP_ADDRESS]]"           => get_setting('app_address'),
 
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
+                "[[ORDER_STATUS]]"          => $order->status,
                 "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($order->created_at)),
                 "[[ORDER_TOUR_TIME]]"       => date('H:i A', strtotime($order->created_at)),
                 "[[ORDER_TOTAL]]"           => price_format($order->total_amount) ?? '',
@@ -421,11 +441,14 @@ class OrderController extends Controller
  
             $finalMessage = strtr($template, $replacements);
             $finalfooter = strtr($template_footer, $replacements);
- 
+            $finalsubject = strtr($template_subject, $replacements);
+            
             if ($order) {
+                $email_template->subject = $finalsubject;
+
                 return response()->json([
                     'success' => true,
-                    'email' => $order->user->email,
+                    'email' => $customer->email,
                     'email_template' => $email_template,
                     'body'=>$finalMessage,
                     'footer'=>$finalfooter,
