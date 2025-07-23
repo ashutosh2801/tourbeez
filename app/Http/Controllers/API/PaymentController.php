@@ -8,6 +8,7 @@ use Stripe\Webhook;
 use Stripe\PaymentIntent;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
@@ -139,43 +140,83 @@ class PaymentController extends Controller
             'client_secret' => 'required|string',
         ]);
 
-        //config('services.stripe.secret')
         Stripe::setApiKey(env('STRIPE_SECRET'));
 
         try {
-            // Extract the payment intent ID from client_secret
             $clientSecret = $request->client_secret;
             $intentId = explode('_secret_', $clientSecret)[0];
 
-            // Retrieve payment intent
+            // Retrieve payment intent from Stripe
             $paymentIntent = PaymentIntent::retrieve($intentId);
 
             if ($paymentIntent->status === 'succeeded') {
-                // Update booking in DB if not already updated
-                $booking = Order::where('payment_intent_id', $paymentIntent->id)->first();
 
-                if ($booking && $booking->status !== 1) {
+                $cacheKey = 'booking_' . $paymentIntent->id;
+
+                // Try retrieving from cache or load and store it
+                $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($paymentIntent) {
+                    return Order::with([
+                        'tour',
+                        'tour.location',
+                        'tour.detail',
+                        'customer'
+                    ])->where('payment_intent_id', $paymentIntent->id)->first();
+                });
+
+                if ($booking && $booking->order_status !== 1) {
                     $booking->order_status   = 1;
                     $booking->payment_status = 1;
                     $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
                     $booking->updated_at     = now();
                     $booking->save();
+
+                    // Refresh cache after updating the order
+                    // Cache::put($cacheKey, $booking->fresh(['tour.location', 'tour.detail', 'tour.addons', 'tour.fees', 'tour.pickups', 'customer']), now()->addMinutes(10));
                 }
 
+                $tour_pricing = json_decode($booking->order_tour->tour_pricing);
+                $pricing=[];
+
+
+                $extra = $booking->order_tour->tour_extra;
+
+                $image = uploaded_asset($booking->tour->main_image->id, 'medium');
+
+                $detail = [
+                    'order_number'      => $booking->order_number,
+                    'number_of_guests'  => $booking->number_of_guests,
+                    'total_amount'      => $booking->total_amount,
+                    'currency'          => $booking->currency,
+                    'tour'      => [
+                        'image'         => $image,
+                        'title'         => $booking->tour?->title,
+                        'address'       => $booking->tour?->location->address,
+                        'pricing'       => $pricing,
+                        'extra'         => $extra,
+                        't_and_c'       => $booking->tour?->terms_and_conditions,
+                    ],
+                    'customer'          => $booking->customer,
+                    'payment'   => [
+                        'payment_method'=> $booking->payment_method,
+                        'created_at'    => date('Y-m-d', strtotime($booking->created_at)),
+                        'total_amount'  => $booking->total_amount,
+                    ]
+                ];
+
                 return response()->json([
-                    'status' => 'succeeded',
-                    'booking' => $booking,
+                    'status'  => 'succeeded',
+                    'booking' => $detail,
                 ]);
             }
 
             return response()->json([
-                'status' => 'failed',
+                'status'  => 'failed',
                 'message' => 'Payment not successful',
             ], 400);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'failed',
+                'status'  => 'failed',
                 'message' => $e->getMessage(),
             ], 500);
         }

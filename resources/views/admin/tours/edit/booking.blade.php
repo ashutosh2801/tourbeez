@@ -24,7 +24,7 @@
                             <input type="radio" name="booking_type" value="rezdy" {{ $data->detail?->booking_type == 'rezdy' ? 'checked' : '' }} >
                             <label for="rezdy_radio">Rezdy</label>
                             
-                            <input type="radio" name="booking_type" value="TourBeez" {{ $data->detail?->booking_type == 'TourBeez' || $data->detail?->booking_type == '' ? 'checked' : '' }} style="margin-left: 20px;">
+                            <input type="radio" name="booking_type" value="tourbeez" {{ $data->detail?->booking_type == 'tourbeez' || $data->detail?->booking_type == '' ? 'checked' : '' }} style="margin-left: 20px;">
                             <label for="other_radio">TourBeez</label>
 
                             <input type="radio" name="booking_type" value="other" {{ $data->detail?->booking_type == 'other' ? 'checked' : '' }} style="margin-left: 20px;">
