@@ -1145,4 +1145,10 @@ if (!function_exists('snakeToWords')) {
         return ucwords(str_replace('_', ' ', $string));
     }
 }
+if (!function_exists('emailAlreadySent')) {
+    function emailAlreadySent($paymentIntentId)
+    {
+        return Cache::has('email_sent_' . $paymentIntentId);
+    }
+}
 ?>

@@ -11,6 +11,7 @@ use App\Models\Tour;
 use App\Services\TwilioService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -19,7 +20,6 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        //$orders = Order::orderBy('created_at', 'DESC')->paginate(10);
 
         $query = Order::with(['customer', 'orderTours'])->orderBy('created_at', 'DESC');
 
@@ -236,7 +236,7 @@ class OrderController extends Controller
             $array['view'] = 'emails.newsletter';
             $array['subject'] = $subject;
             $array['header'] = $header;
-            $array['from'] = env('MAIL_USERNAME');
+            $array['from'] = env('MAIL_FROM_ADDRESS');
             $array['content'] =  $header.$body.$footer;
  
             try {
