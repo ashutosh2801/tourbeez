@@ -45,6 +45,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/tour_type',TourTypeController::class);
     Route::resource('/collection',CollectionController::class);
     Route::resource('/orders', OrderController::class);
+    Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus']);
+
+
+
     
     // Country
     Route::resource('/countries', CountryController::class);

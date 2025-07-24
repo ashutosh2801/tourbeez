@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\OrderCustomer;
+use App\Models\OrderMeta;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -79,35 +80,42 @@ class Order extends Model
 
     public function getStatusAttribute()
     {
+        return match ($this->order_status) {
+            1 => 'New',
+            2 => 'On Hold',
+            3 => 'Pending supplier',
+            4 => 'Pending customer',
+            5 => 'Confirmed',
+            6 => 'Cancelled',
+            7 => 'Abandoned cart',
+            default => 'Cancelled',
+        };
+    }
 
-        $val = $this->order_status;
+    public function setOrderStatusAttribute($value)
+    {
+        $map = [
+            'New' => 1,
+            'On Hold' => 2,
+            'Pending supplier' => 3,
+            'Pending customer' => 4,
+            'Confirmed' => 5,
+            'Cancelled' => 6,
+            'Abandoned cart' => 7,
+        ];
 
-        switch($val) {
-            case 1:
-                return 'New';
-                break;
-            case 2:
-                return 'On Hold';
-                break;
-            case 3:
-                return 'Pending supplier';
-                break; 
-            case 4:
-                return 'Pending customer';
-                break;
-            case 5:
-                return 'Confirmed';
-                break;
-            case 6:
-                return 'Cancelled';   
-                break;  
-            case 7:
-                return 'Abandoned cart';   
-                break; 
-            default:
-                return 'Cancelled';   
-                break;   
-        }
+        // optional fallback if string doesn't match
+        $this->attributes['order_status'] = $map[$value] ?? 6;
+    }
+
+    public function meta()
+    {
+        return $this->hasMany(OrderMeta::class);
+    }
+
+    public function bookingFee()
+    {
+        return $this->meta()->where('name', 'booking_fee');
     }
 
 }

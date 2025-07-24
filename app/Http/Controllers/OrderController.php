@@ -70,7 +70,8 @@ class OrderController extends Controller
         $order = Order::findOrFail( decrypt($id) );
         $tours = Tour::orderBy('title', 'ASC')->get();
         $email_templates = EmailTemplate::get();
-        return view('admin.order.edit', compact(['order', 'tours', 'email_templates']));
+        $sms_templates = SmsTemplate::get();
+        return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates']));
     }
 
     /**
@@ -78,6 +79,7 @@ class OrderController extends Controller
      */
     public function update(Request $request, $id)
     {
+
         $validator = $request->validate([
             'order_status'   => 'required|max:255',
         ],
@@ -195,7 +197,7 @@ class OrderController extends Controller
                 }
             }
         }
-        $order->total_amount = $total;
+        $order->balance_amount = $total - $order->total_amount;
         
         if( !$order->save() )
         return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Something went wrong!');
@@ -476,12 +478,13 @@ class OrderController extends Controller
  
         try {
             $lookup = $twilio->lookupNumber($mobile_number);
- 
+            
             if($lookup->phoneNumber)
-            $twilio->sendSms($number, $message);
- 
+            $twilio->sendSms($mobile_number, $message);
+
             return back()->with('success', translate("SMS has been sent."));
         } catch (\Exception $e) {
+            return $e->getMessage();
             return back()->with('error', $e->getMessage());
         }
     }
@@ -492,45 +495,98 @@ class OrderController extends Controller
             $order_confirmation_id = $request->order_confirmation_id;
             $order = Order::findorFail($order_id);
             $confirmation_template = SmsTemplate::findorFail($order_confirmation_id);
+
+            $customer = $order->user;
+
+            $customer   = $order->user;
+            if(!$customer){
+                $customer = $order->orderUser;
+            }
+            // dd($customer, $order->user);
             $template = $confirmation_template->message;
+            $orderTour  = $order->orderTours()->first();
+            $tour       = $orderTour->tour;
+
+            $system_logo = get_setting('system_logo');
+            $logo = uploaded_asset($system_logo);
+
+
             $replacements = [
-                "[[CUSTOMER_NAME]]"         => $order->user->name ?? '',
-                "[[COMPANY_NAME]]"          => config('app.name'),
+                "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
+                "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
+                "[[CUSTOMER_PHONE]]"        => $customer->name ?? '',
+                "[[CUSTOMER_FIRST_NAME]]"   => $customer->first_name ?? '',
+                "[[CUSTOMER_LAST_NAME]]"   => $customer->last_name ?? '',
+
+                "[[TOUR_TITLE]]"            => $tour->title ?? '',
+                "[[TOUR_MAP]]"              => $tour->location->address ?? '',
+                "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
+                // "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
+                // "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
+                "[[TOUR_TERMS_CONDITIONS]]"  => $tour->terms_and_conditions,
+
+                "[[APP_LOGO]]"              => $logo,
+                "[[APP_NAME]]"              => get_setting('site_name'),
+                "[[COMPANY_NAME]]"          => get_setting('site_name'),
+                "[[APP_URL]]"               => get_setting('app_url'),
+                "[[APP_EMAIL]]"             => get_setting('app_email'),
+                "[[APP_PHONE]]"             => get_setting('app_phone'),
+                "[[APP_ADDRESS]]"           => get_setting('app_address'),
+
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
-                "[[ORDER_STATUS]]"          => ucfirst($order->status) ?? '',
-
-                "[[TOUR_TITLE]]"            => $order->user->name ?? '',
-                "[[TOUR_DATE]]"             => $order->user->name ?? '',
-                "[[TOUR_TIME]]"             => $order->user->name ?? '',
-                "[[TOUR_MAP]]"              => $order->user->name ?? '',
-                "[[TOUR_ADDRESS]]"          => $order->user->name ?? '',
-                "[[TOUR_PAYMENT_HISTORY]]"  => $order->user->name ?? '',
-                "[[TOUR_ITEM_SUMMARY]]"     => $order->user->name ?? '',
-
-                "[[CUSTOMER_NAME]]"         => $order->user->name ?? '',
-                "[[CUSTOMER_EMAIL]]"        => $order->user->name ?? '',
-                "[[CUSTOMER_PHONE]]"        => $order->user->name ?? '',
-
-                "[[APP_LOGO]]"              => $order->user->name ?? '',
-                "[[APP_NAME]]"              => $order->user->name ?? '',
-                "[[APP_URL]]"               => $order->user->name ?? '',
-                "[[APP_EMAIL]]"             => $order->user->name ?? '',
-                "[[APP_PHONE]]"             => $order->user->name ?? '',
-                "[[APP_ADDRESS]]"           => $order->user->name ?? '',
-
-                "[[ORDER_NUMBER]]"          => $order->user->name ?? '',
-                "[[ORDER_TOTAL]]"           => $order->user->name ?? '',
-                "[[ORDER_BALANCE]]"         => $order->user->name ?? '',
-                "[[ORDER_BOOKING_FEE]]"     => $order->user->name ?? '',
-                "[[ORDER_CREATED_DATE]]"    => $order->user->name ?? '',
+                "[[ORDER_STATUS]]"          => $order->status,
+                "[[ORDER_STATUS_HELP]]"     => $order->help ?? '',
+                "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($order->created_at)),
+                "[[ORDER_TOUR_TIME]]"       => date('H:i A', strtotime($order->created_at)),
+                "[[ORDER_TOTAL]]"           => price_format($order->total_amount) ?? '',
+                "[[ORDER_BALANCE]]"         => price_format($order->balance_amount) ?? '',
+                "[[ORDER_BOOKING_FEE]]"     => price_format($order->booking_fee) ?? '',
+                "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
             ];
- 
+            // $replacements = [
+            //     "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
+            //     "[[CUSTOMER_FIRST_NAME]]"   => $customer->first_name ?? '',
+            //     "[[CUSTOMER_LAST_NAME]]"   => $customer->first_name ?? '',
+            //     "[[COMPANY_NAME]]"          => config('app.name'),
+            //     "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
+            //     "[[ORDER_STATUS]]"          => ucfirst($order->status) ?? '',
+
+            //     "[[TOUR_TITLE]]"            => $order->user->name ?? '',
+            //     "[[TOUR_DATE]]"             => $order->user->name ?? '',
+            //     "[[TOUR_TIME]]"             => $order->user->name ?? '',
+            //     "[[TOUR_MAP]]"              => $order->user->name ?? '',
+            //     "[[TOUR_ADDRESS]]"          => $order->user->name ?? '',
+            //     "[[TOUR_PAYMENT_HISTORY]]"  => $order->user->name ?? '',
+            //     "[[TOUR_ITEM_SUMMARY]]"     => $order->user->name ?? '',
+
+            //     "[[CUSTOMER_NAME]]"         => $order->user->name ?? '',
+            //     "[[CUSTOMER_EMAIL]]"        => $order->user->name ?? '',
+            //     "[[CUSTOMER_PHONE]]"        => $order->user->name ?? '',
+
+            //     "[[APP_LOGO]]"              => $order->user->name ?? '',
+            //     "[[APP_NAME]]"              => $order->user->name ?? '',
+            //     "[[APP_URL]]"               => $order->user->name ?? '',
+            //     "[[APP_EMAIL]]"             => $order->user->name ?? '',
+            //     "[[APP_PHONE]]"             => $order->user->name ?? '',
+            //     "[[APP_ADDRESS]]"           => $order->user->name ?? '',
+
+            //     "[[ORDER_NUMBER]]"          => $order->user->name ?? '',
+            //     "[[ORDER_STATUS_HELP]]"     => $order->user->name ?? '',
+            //     "[[ORDER_STATUS]]"     => $order->user->name ?? '',
+            //     "[[ORDER_TOTAL]]"           => $order->user->name ?? '',
+            //     "[[ORDER_BALANCE]]"         => $order->user->name ?? '',
+            //     "[[ORDER_BOOKING_FEE]]"     => $order->user->name ?? '',
+            //     "[[ORDER_CREATED_DATE]]"    => $order->user->name ?? '',
+            // ];
+            // dd($template);
+
+
             $finalMessage = strtr($template, $replacements);
  
             if ($order) {
                 return response()->json([
                     'success' => true,
-                    'mobile' => $order->user->phonenumber,
+                    'mobile' => $customer->phone,
                     'confirmation_template' => $confirmation_template,
                     'message'=>$finalMessage,
                 ]);
@@ -548,6 +604,24 @@ class OrderController extends Controller
                 ], 404);
         }
  
+    }
+
+
+    public function updateStatus(Request $request, $id)
+    {
+
+        $order = Order::findOrFail($id);
+
+        $request->validate([
+            'status' => 'required|string|max:50',
+        ]);
+
+        $order->order_status = $request->status;
+
+
+        $order->save();
+
+        return response()->json(['success' => true]);
     }
 
 }

@@ -5,7 +5,7 @@
             <div class="card">
                 <div class="card-primary">
                     <div class="card-header">
-                        <h3 class="card-title">Update Pickup</h3>
+                        <h3 class="card-title">Update Pickup </h3>
                         <div class="card-tools">
                             <a href="{{ route('admin.pickups.index') }}" class="btn btn-info btn-sm">Back</a>
                         </div>
@@ -53,13 +53,13 @@
                             @foreach ($pickupLocations as $index => $option)
 
                             <input type="hidden" name="PickupLocations[{{ $index }}][id]" id="PickupLocations_id" 
-                            value="{{ old("PickupLocations.$index.id", $option['id']) }}" class="form-control" />
+                            value="{{ old("PickupLocations.$index.id", $option['id'] ?? '') }}" class="form-control" />
 
                             <div style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
                                 <div class="form-group">
                                     <div class="row">
                                         <div class="col-md-5">
-                                            <label for="pickup_location">Pickup location</label>
+                                            <label for="pickup_location">Pickup location </label>
                                             <input type="text" class="form-control" id="pickup_location" name="PickupLocations[{{ $index }}][location]"
                                                 placeholder="Enter pickup location" required value="{{ old("PickupLocations.$index.location", $option['location']) }}">
                                             @error("PickupLocations.$index.location")

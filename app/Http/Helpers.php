@@ -60,6 +60,26 @@ if(!function_exists('price_format')) {
     }
 }
 
+
+if (!function_exists('price_format_with_currency')) {
+    function price_format_with_currency($amount, $currency = 'CAD')
+    {
+        // Define currency symbols (add more as needed)
+        $symbols = [
+            'INR' => '₹',
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            'AUD' => 'A$',
+            'CAD' => 'C$',
+        ];
+
+        $symbol = $symbols[$currency] ?? '';
+
+        return $symbol . " " . number_format($amount, 2);
+    }
+}
+
 if(!function_exists('taxes_format')) {
     function taxes_format($type, $value)
     {

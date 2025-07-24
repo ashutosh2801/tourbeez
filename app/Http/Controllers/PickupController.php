@@ -48,7 +48,7 @@ class PickupController extends Controller
         $pickup        = new Pickup();
         $pickup->name  = $request->name;
         $pickup->price  = $request->price;
-        $pickup->pickup_charge  = $request->pickup_charge;
+        $pickup->pickup_charge  = $request->pickup_charge ?? 0;
 
         if( $pickup->save() ) {
             if ($request->has('PickupLocations') && is_array($request->PickupLocations)) {

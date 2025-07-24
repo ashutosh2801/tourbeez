@@ -240,13 +240,9 @@ class OrderController extends Controller
         $data = $request->input('formData');
 
 
-        if($request->userId != 0){
-            $userId = $request->userId;
-        } else{
-            $userId = (string)Str::uuid();
-        }
+
         $customer->order_id     = $order->id;
-        $customer->user_id      = $userId;
+        $customer->user_id      = $request->userId;
         $customer->first_name   = $data['first_name'];
         $customer->last_name    = $data['last_name'];
         $customer->email        = $data['email'];
