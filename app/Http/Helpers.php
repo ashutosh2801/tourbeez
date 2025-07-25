@@ -72,9 +72,10 @@ if (!function_exists('price_format_with_currency')) {
             'GBP' => '£',
             'AUD' => 'A$',
             'CAD' => 'C$',
+            'CRC' => '₡'
         ];
 
-        $symbol = $symbols[$currency] ?? '';
+        $symbol = $symbols[$currency] ?? $currency;
 
         return $symbol . " " . number_format($amount, 2);
     }
