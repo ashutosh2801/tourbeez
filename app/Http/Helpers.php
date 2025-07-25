@@ -60,6 +60,26 @@ if(!function_exists('price_format')) {
     }
 }
 
+if (!function_exists('price_format_with_currency')) {
+    function price_format_with_currency($amount, $currency = 'CAD')
+    {
+        // Define currency symbols (add more as needed)
+        $symbols = [
+            'INR' => '₹',
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            'AUD' => 'A$',
+            'CAD' => 'C$',
+            'CRC' => '₡'
+        ];
+
+        $symbol = $symbols[$currency] ?? $currency;
+
+        return $symbol . " " . number_format($amount, 2);
+    }
+}
+
 if(!function_exists('taxes_format')) {
     function taxes_format($type, $value)
     {
@@ -587,28 +607,28 @@ if (! function_exists('order_status')) {
     {
         switch($val) {
             case 1:
-                return '<span class="badge badge-inline badge-success">New</span>';
+                return '<span class="badge badge-inline badge-success text-green-800 bg-green-100 px-4 py-2  rounded-full">New</span>';
                 break;
             case 2:
-                return '<span class="badge badge-inline badge-danger">On Hold</span>';
+                return '<span class="badge badge-inline badge-danger text-red-800 bg-red-100 px-4 py-2  rounded-full">On Hold</span>';
                 break;
             case 3:
-                return '<span class="badge badge-inline badge-danger">Pending supplier</span>';
+                return '<span class="badge badge-inline badge-danger text-yellow-800 bg-yellow-100 px-4 py-2  rounded-full">Pending supplier</span>';
                 break; 
             case 4:
-                return '<span class="badge badge-inline badge-warning">Pending customer</span>';
+                return '<span class="badge badge-inline badge-warning text-yellow-800 bg-yellow-100 px-4 py-2  rounded-full">Pending customer</span>';
                 break;
             case 5:
-                return '<span class="badge badge-inline badge-warning">Confirmed</span>';
+                return '<span class="badge badge-inline badge-warning text-green-800 bg-green-100 px-4 py-2  rounded-full">Confirmed</span>';
                 break;
             case 6:
-                return '<span class="badge badge-inline badge-warning">Cancelled</span>';   
+                return '<span class="badge badge-inline badge-warning text-red-800 bg-red-100 px-4 py-2  rounded-full">Cancelled</span>';   
                 break;  
             case 7:
-                return '<span class="badge badge-inline badge-warning">Abandoned cart</span>';   
+                return '<span class="badge badge-inline badge-warning text-red-800 bg-red-100 px-4 py-2  rounded-full">Abandoned cart</span>';   
                 break; 
             default:
-                return '<span class="badge badge-inline badge-warning">Not completed</span>';   
+                return '<span class="badge badge-inline badge-warning text-gray-800 bg-gray-100 px-4 py-2  rounded-full">Not completed</span>';   
                 break;   
         }
     }
@@ -1138,6 +1158,19 @@ if (!function_exists('checkWebsiteSeoContent')) {
             'wordCount' => $wordCount,
             'keywordDensity' => round($keywordDensity, 2)
         ];
+    }
+
+    if (!function_exists('snakeToWords')) {
+        function snakeToWords($string) {
+            return ucwords(str_replace('_', ' ', $string));
+        }
+    }
+
+    if (!function_exists('emailAlreadySent')) {
+        function emailAlreadySent($paymentIntentId)
+        {
+            return Cache::has('email_sent_' . $paymentIntentId);
+        }
     }
 }
 
