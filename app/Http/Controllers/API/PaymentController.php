@@ -432,9 +432,9 @@ class PaymentController extends Controller
                 "[[ORDER_STATUS]]"          => $order->status,
                 "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($order->created_at)),
                 "[[ORDER_TOUR_TIME]]"       => date('H:i A', strtotime($order->created_at)),
-                "[[ORDER_TOTAL]]"           => price_format($order->total_amount) ?? '',
-                "[[ORDER_BALANCE]]"         => price_format($order->balance_amount) ?? '',
-                "[[ORDER_BOOKING_FEE]]"     => price_format($order->booking_fee) ?? '',
+                "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
+                "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
+                "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
             ];
 

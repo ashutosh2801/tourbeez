@@ -317,7 +317,7 @@ class OrderController extends Controller
                             <tr>
                                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
                                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . date('M d, Y', strtotime($order->created_at)) . '</td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: right;padding: 5px 0px;" valign="top"><strong>' . price_format($order->total_amount) . '</strong></td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: right;padding: 5px 0px;" valign="top"><strong>' . price_format_with_currency($order->total_amount, $order->currency) . '</strong></td>
                             </tr>
 
                             <tr>
@@ -328,7 +328,7 @@ class OrderController extends Controller
                                     <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
                                 </td>
                                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                    <h3 style="color: #000;font-size:19px"><strong>' . price_format($order->total_amount) . '</strong></h3>
+                                    <h3 style="color: #000;font-size:19px"><strong>' . price_format_with_currency($order->total_amount, $order->currency) . '</strong></h3>
                                 </td>
                             </tr>
                         </tbody>
@@ -435,9 +435,9 @@ class OrderController extends Controller
                 "[[ORDER_STATUS]]"          => $order->status,
                 "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($order->created_at)),
                 "[[ORDER_TOUR_TIME]]"       => date('H:i A', strtotime($order->created_at)),
-                "[[ORDER_TOTAL]]"           => price_format($order->total_amount) ?? '',
-                "[[ORDER_BALANCE]]"         => price_format($order->balance_amount) ?? '',
-                "[[ORDER_BOOKING_FEE]]"     => price_format($order->booking_fee) ?? '',
+                "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
+                "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
+                "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
             ];
  
@@ -538,9 +538,9 @@ class OrderController extends Controller
                 "[[ORDER_STATUS_HELP]]"     => $order->help ?? '',
                 "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($order->created_at)),
                 "[[ORDER_TOUR_TIME]]"       => date('H:i A', strtotime($order->created_at)),
-                "[[ORDER_TOTAL]]"           => price_format($order->total_amount) ?? '',
-                "[[ORDER_BALANCE]]"         => price_format($order->balance_amount) ?? '',
-                "[[ORDER_BOOKING_FEE]]"     => price_format($order->booking_fee) ?? '',
+                "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
+                "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
+                "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
             ];
             // $replacements = [
@@ -578,7 +578,6 @@ class OrderController extends Controller
             //     "[[ORDER_BOOKING_FEE]]"     => $order->user->name ?? '',
             //     "[[ORDER_CREATED_DATE]]"    => $order->user->name ?? '',
             // ];
-            // dd($template);
 
 
             $finalMessage = strtr($template, $replacements);
