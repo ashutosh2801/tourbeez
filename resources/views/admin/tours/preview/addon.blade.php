@@ -38,7 +38,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                             </td>
                             <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
                             <td>{{ substr($item->description,0,150) }}...</td>
-                            <td>{{ price_format($item->price) }}</td>
+                            <td>{{ price_format_with_currency($item->price) }}</td>
                             <td>{{ $item->customer_choice }}</td>
                                                   
                         </tr>

@@ -60,6 +60,7 @@ if(!function_exists('price_format')) {
     }
 }
 
+
 if (!function_exists('price_format_with_currency')) {
     function price_format_with_currency($amount, $currency = 'CAD')
     {
@@ -1173,6 +1174,15 @@ if (!function_exists('checkWebsiteSeoContent')) {
         }
     }
 }
-
-
+if (!function_exists('snakeToWords')) {
+    function snakeToWords($string) {
+        return ucwords(str_replace('_', ' ', $string));
+    }
+}
+if (!function_exists('emailAlreadySent')) {
+    function emailAlreadySent($paymentIntentId)
+    {
+        return Cache::has('email_sent_' . $paymentIntentId);
+    }
+}
 ?>

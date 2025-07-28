@@ -244,17 +244,23 @@ class PaymentController extends Controller
                 ];
 
                 $order = Order::where('order_number',$booking->order_number)->first();
+
+
                 if ($order && !$order->email_sent) {                    
-                    //$mailsent = self::sendOrderDetailMail($detail);
+                    $mailsent = self::sendOrderDetailMail($detail);
 
                     $order->email_sent = true;
                     $order->save();
                 }
 
+
                 return response()->json([
-                    'status'  => 'succeeded',
-                    'booking' => $detail,
-                ]);
+                        'status'  => 'succeeded',
+                        'booking' => $detail,
+                    ]);
+
+                
+
             }
 
             return response()->json([
@@ -269,6 +275,7 @@ class PaymentController extends Controller
             ], 500);
         }
     }
+
 
     public static function sendOrderDetailMail($detail)
     {

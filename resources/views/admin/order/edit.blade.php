@@ -147,6 +147,10 @@
     }
 </style>
 @endsection
+
+@php
+    $statuses = config('constants.order_statuses');
+@endphp
     <form action="{{ route('admin.orders.update',$order->id) }}" method="POST">
     @method('PUT')
     @csrf
@@ -163,7 +167,7 @@
                         <label class="d-block" for="">Balance</label>
                         <select class="form-control" style="border:0" name="order_balance" id="order_balance">
                             <option value="$0.00" >$0.00</option>
-                            <option value="Paid" >Paid {{ price_format($order->total_amount) }}</option>
+                            <option value="Paid" >Paid {{ price_format_with_currency($order->total_amount, $order->currency) }}</option>
                             <option value="Refunded" >Refunded $0.00</option>
                         </select>
                     </div>
@@ -181,17 +185,17 @@
                                 <div class="btn-group">
                                     <label for="totalDue">Balance</label>
                                     <button type="button" class="btn dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        <strong id="totalDue" class="total-due">$0.00</strong>
+                                        <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
                                     </button>
                                     <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
-                                        <li class="payment-details-breakdown--item"><strong class="payment-details-breakdown--text">Paid</strong> <strong class="payment-details-breakdown--text">$247.28</strong></li>
+                                        <li class="payment-details-breakdown--item"><strong class="payment-details-breakdown--text">Paid</strong> <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->total_amount, $order->currency) }}</strong></li>
                                         <li class="payment-details-breakdown--item"><strong class="payment-details-breakdown--text">Refunded</strong> <strong class="payment-details-breakdown--text">$0.00</strong></li>
                                     </ul>
                                 </div>
                             </div>
-                            <div class="order-status">
+                            <!-- <div class="order-status" >
                                 <div class="btn-group open">
-                                    <label for="order_status">Order Status</label>
+                                    <label for="order_status">Order Status </label>
                                     <button type="button" class="btn dropdown-toggle arrow childOrderEnabled" data-element-to-update=".payment-status" data-selected="CONFIRMED" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Confirmed</button>
                                     <ul class="dropdown-menu dropdown-value">
                                         <li>
@@ -238,13 +242,48 @@
                                         </li>
                                                                 </ul>
                                 </div>
+                            </div> -->
+
+
+                            <div class="order-status">
+                                <div class="btn-group open">
+                                    <label for="order_status">Order Status</label>
+                                    <button type="button" class="btn dropdown-toggle arrow childOrderEnabled"
+                                        data-element-to-update=".payment-status"
+                                        data-selected="{{ $order->status }}"
+                                        data-toggle="dropdown"
+                                        aria-haspopup="true"
+                                        aria-expanded="false">
+                                        {{ $statuses[$order->status] ?? 'Unknown' }}
+                                    </button>
+
+                                    <ul class="dropdown-menu dropdown-value">
+                                        @foreach ($statuses as $key => $label)
+                                            <li>
+                                                <input type="radio"
+                                                    id="{{ $key }}"
+                                                    name="order_status"
+                                                    value="{{ $key }}"
+                                                    autocomplete="off"
+                                                    {{ $order->status === $key ? 'checked' : '' }}>
+                                                <label for="{{ $key }}" class="{{ $key }}">
+                                                    <i class="fa fa-circle" aria-hidden="true"></i>
+                                                    {{ $label }}
+                                                </label>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-lg-7 text-right">
                         <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
                             <option value="" >Email</option>
-                            <option value="14" >Order Details -> Send Now</option>
+                            @foreach($email_templates as $email_template)
+                                <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
+                            @endforeach
+                            <!-- <option value="14" >Order Details -> Send Now</option>
                             <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
                             <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
                             <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
@@ -253,15 +292,21 @@
                             <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
                             <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
                             <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
-                            <option value="Simple Email" >Simple Email -> Send Now</option>
+                            <option value="Simple Email" >Simple Email -> Send Now</option> -->
                         </select>
 
                         <select class="form-control" style="width:150px; display:inline-block;" name="sms_template_name" id="sms_template_name">
                             <option value="" >SMS</option>
-                            <option value="14" >Order Confirmation -> Send Now</option>
+
+                            @foreach($sms_templates as $sms_template)
+                           <!--  <option value="14" >Order Confirmation -> Send Now</option>
                             <option value="Reminder" >Reminder -> Send Now</option>
                             <option value="FollowUp" >FollowUp -> Send Now</option>
-                            <option value="Simple" >Simple -> Send Now</option>
+                            <option value="Simple" >Simple -> Send Now</option> -->
+
+                            <option value="{{$sms_template->id}}" >{{snakeToWords($sms_template->identifier)}} -> Send Now</option>
+
+                            @endforeach
                         </select>
 
                         <select class="form-control" style="width:150px; display:inline-block;" name="print_template_name" id="print_template_name">
@@ -286,16 +331,26 @@
                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="headingOne">
                             <h2 class="my-0 py-0">
-                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0 px-0" data-toggle="collapse" data-target="#collapseOne"><i class="fa fa-angle-right"></i>Customer Details</button>									
+                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0 px-0" data-toggle="collapse" data-target="#collapseOne"><i class="fa fa-angle-right"></i>Customer Details</button>                                  
                             </h2>
                         </div>
                         <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
                             <div class="card-body">
-                                <ul class="flex flex-row">
-                                    <li><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->user?->name }}</a></li>
-                                    <li>{{ $order->user?->email }}</li>
-                                    <li>{{ $order->user?->phonenumber }}</li>
-                                </ul>
+
+                                @if($order->user)
+                                    <ul class="flex flex-row">
+                                        <li><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->user?->name }}</a></li>
+                                        <li>{{ $order->user?->email }}</li>
+                                        <li>{{ $order->user?->phonenumber }}</li>
+                                    </ul>
+                                @else
+                                    <ul class="flex flex-row">
+                                        <!-- <li><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a></li> -->
+                                        <li>{{ $order->customer?->name }}</li>
+                                        <li>{{ $order->customer?->email }}</li>
+                                        <li>{{ $order->customer?->phone }}</li>
+                                    </ul>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -381,7 +436,7 @@
                                                             <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
                                                             <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
                                                         </td>
-                                                        <td>{{ $pricing->label }} ({{ price_format($price) }})</td>
+                                                        <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency, $order->currency) }})</td>
                                                     </tr>
                                                     @endforeach
                                                     @endif
@@ -413,7 +468,7 @@
                                                             <input type="number" name="tour_extra_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
                                                             <input type="hidden" name="tour_extra_price_{{$_tourId}}[]" value="{{ $price }}" /> 
                                                         </td>
-                                                        <td>{{ $extra->name }} ({{ price_format($extra->price) }})</td>
+                                                        <td>{{ $extra->name }} ({{ price_format_with_currency($extra->price, $order->currency) }})</td>
                                                     </tr>
                                                     @endforeach
                                                     @endif
@@ -437,14 +492,14 @@
                                         @endphp 
                                         <tr>
                                             <td>{{ $item->label }} ({{ taxes_format($item->fee_type, $item->tax_fee_value) }})</td>
-                                            <td class="text-right">{{ price_format($tax) }}</td>
+                                            <td class="text-right">{{ price_format_with_currency($tax, $order->currency) }}</td>
                                         </tr>
                                         @endforeach
                                         @endif
 
                                         <tr>
-                                            <th>Subtotal</th>
-                                            <th class="text-right"> {{ price_format($subtotal) }} </th>
+                                            <th>Subtotal </th>
+                                            <th class="text-right">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
                                         </tr>
                                     </table>
                                     </div>
@@ -457,11 +512,11 @@
                                     <table class="table">
                                         <tr>
                                             <td><b>Booking fee</b> (included in price)</td>
-                                            <td class="text-right">$1.84</td>
+                                            <td class="text-right">{{ $order->bookingFee ? price_format_with_currency($order->bookingFee->value('value'), $order->currency) : "NA" }} </td>
                                         </tr>
                                         <tr>
                                             <td><b>Total</b></td>
-                                            <td class="text-right">{{ price_format($order->total_amount) }}</td>
+                                            <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }} {{ $order->currency}}</td>
                                         </tr>
                                     </table>
                                 </div>
@@ -472,12 +527,67 @@
                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="heading4">
                             <h2 class="my-0 py-0">
-                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0 px-0" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>									
+                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0 px-0" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
+
+
                             </h2>
                         </div>
                         <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
-                                <textarea class="form-control" name="additional_info" id="additional_info" rows="4" placeholder="Additional information">{{ $order->additional_info }}</textarea>
+                                <!-- <textarea class="form-control" name="additional_info" id="additional_info" rows="4" placeholder="Additional information">{{ $order->additional_info }}</textarea> -->
+
+
+                                 <div style="border:1px solid #e1a604; margin-bottom:10px">
+                                    <table class="table">
+                                        <tr>
+                                            <td><b>Tour Guest</b> </td>
+                                            <td class="text-right">{{ $order->order_tour->number_of_guests }} </td>
+                                        </tr>
+                                        
+                                        <tr>
+                                            <td><b>Category</b></td>
+                                            <td class="text-right">{{ $order->tour['catogory'] ?? '-' }}</td>
+                                        </tr>
+
+                                        
+                                        <tr>
+                                            <td><b>Tour Types</b></td>
+                                            <td class="text-right">{{ $order->tour->category->name ?? '-' }}</td>
+                                        </tr>
+                                        
+                                        <tr>
+                                            <td><b>Price Type</b></td>
+                                            <td class="text-right">{{ snakeToWords($order->tour->price_type)  ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>Country</b></td>
+                                            <td class="text-right">{{ $order->tour->location->country->name ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>State</b></td>
+                                            <td class="text-right">{{ $order->tour->location->state->name ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>City</b></td>
+                                            <td class="text-right">{{  $order->tour->location->city->name ?? '-' }}</td>
+                                        </tr>
+
+                                         
+                                        @foreach ($order->tour->pickups as $pickup)
+                                            <tr>
+                                                <td><b>Pickup Location</b></td>
+                                                <td class="text-right">{{ $pickup->name }}</td> 
+                                                
+
+                                            </tr>
+                                            <tr>
+                                                <td><b>Pickup Charge</b></td>
+                                                <td class="text-right">{{ $pickup->pickup_charge }}</td>
+                                            </tr> 
+                                        @endforeach
+                                        
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -492,7 +602,7 @@
                             <div class="card-body">
                                 <table class="table">    
                                     <tr>
-                                        <td>Total: {{ price_format($order->total_amount) }}</td>
+                                        <td>Total: {{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                     </tr>
 
                                     <tr>
@@ -513,8 +623,8 @@
                     </div>
                 </div>
             </div>
-
-            <div class="bs-example">
+            <!-- recent action need to update this -->
+            <!-- <div class="bs-example">
                 <div class="card">
                     <div class="card-body">
                         <h5>Recent actions</h5>
@@ -529,7 +639,7 @@
                             </tr>
                             <tr>
                                 <td>May 25, 2025, 1:43 PM</td>
-                                <td>System charged {{ price_format($order->total_amount) }} on credit card XXXXXXXXXXXX5959. Reference number is ch_3RSiaLEcMxhlmBMk0dT82PRI</td>
+                                <td>System charged {{ price_format_with_currency($order->total_amount) }} on credit card XXXXXXXXXXXX5959. Reference number is ch_3RSiaLEcMxhlmBMk0dT82PRI</td>
                             </tr>
                             <tr>
                                 <td>May 25, 2025, 1:43 PM</td>
@@ -537,7 +647,7 @@
                             </tr>
                             <tr>
                                 <td>May 25, 2025, 1:43 PM</td>
-                                <td>Order created with Credit card payment of {{ price_format($order->total_amount) }}</td>
+                                <td>Order created with Credit card payment of {{ price_format_with_currency($order->total_amount) }}</td>
                             </tr>
                         </table>
 
@@ -568,7 +678,9 @@
                         </table>
                     </div>
                 </div>
-            </div>
+            </div> -->
+
+            <!-- recent action -->
         </div>
     </div>
     </form>
@@ -689,7 +801,7 @@
                                             <div class="form-group row">
                                                 <label class="col-md-12 col-form-label">{{ translate('Mobile Number') }}</label>
                                                 <div class="col-md-12">
-                                                    <input type="text" name="mobile_number"  id="mobile_number"  class="form-control" placeholder="{{translate('Mobile Number') }}" required>
+                                                    <input type="text" name="mobile_number"  id="mobile_number"  class="form-control" placeholder="{{translate('mobile') }}" required>
                                                 </div>
                                             </div>
                                             <div class="form-group row">
@@ -709,7 +821,7 @@
             </div>
        
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Send Mail</button>
+                <button type="submit" class="btn btn-primary">Send Sms</button>
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
             </div>
        </form>
@@ -807,14 +919,14 @@
     $(document).ready(function(){
         // Add down arrow icon for collapse element which is open by default
         $(".collapse.show").each(function(){
-        	$(this).prev(".card-header").find(".fa").addClass("fa-angle-down").removeClass("fa-angle-right");
+            $(this).prev(".card-header").find(".fa").addClass("fa-angle-down").removeClass("fa-angle-right");
         });
         
         // Toggle right and down arrow icon on show hide of collapse element
         $(".collapse").on('show.bs.collapse', function(){
-        	$(this).prev(".card-header").find(".fa").removeClass("fa-angle-right").addClass("fa-angle-down");
+            $(this).prev(".card-header").find(".fa").removeClass("fa-angle-right").addClass("fa-angle-down");
         }).on('hide.bs.collapse', function(){
-        	$(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
+            $(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
         });
     });
 </script>
@@ -835,23 +947,61 @@
 
         // Order status: when a radio changes, update button text + color class
         document.querySelectorAll('input[name="order_status"]').forEach(radio => {
-            radio.addEventListener('change', function () {
+        radio.addEventListener('change', function () {
             const id     = this.id;
             const label  = document.querySelector(`label[for="${id}"]`).textContent.trim();
             const group  = this.closest('.btn-group');
             const button = group.querySelector('button.dropdown-toggle');
-            // update text
+
+            // Update text
             button.textContent = label;
-            // remove old status‐ classes
+
+            // Remove old status classes
             button.classList.remove(
                 'status-NEW','status-ON_HOLD','status-PENDING_SUPPLIER',
                 'status-PENDING_CUSTOMER','status-CONFIRMED',
                 'status-CANCELLED','status-ABANDONED_CART'
             );
-            // add new
-            button.classList.add(`status-${id}`);
+
+            // Sanitize ID to use in class
+            const safeId = id.replace(/\s+/g, '_').toUpperCase();
+
+            // Add new status class
+            button.classList.add(`status-${safeId}`);
+            
+            // 🔽 Add AJAX here to update order status in backend
+               // get order ID from input
+
+            var order_id = $('#order_id').val();
+
+            console.log(order_id);
+            const status = this.value;              // selected status
+
+            fetch(`/admin/orders/${order_id}/update-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ status: status })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Status updated.');
+                } else {
+                    console.error('Failed to update status.');
+                    alert('Could not update order status.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Something went wrong while updating status.');
             });
         });
+    });
+
+
 
         // Initialize on page load for whichever is checked
         const init = document.querySelector('input[name="order_status"]:checked');

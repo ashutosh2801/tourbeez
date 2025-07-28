@@ -21,6 +21,7 @@
                 </thead>
                 <tbody>
                     @foreach ($data as $item)
+
                         <tr>
                             <td><a href="{{ route('admin.pickups.edit', encrypt($item->id)) }}" class="text-info text-sm">{{ $item->name }}</a></td>
                             <td>
@@ -30,7 +31,7 @@
                             </td>
                             <td>{{ count($item->locations) }}</td>
                             <td>{{ count($item->locations) }}</td>
-                            <td>{{ price_format($item->price) }}</td>
+                            <td>{{ price_format_with_currency($item->price) }}</td>
                             <td width="60">
                                 <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.pickup.destroy', encrypt($item->id)) }}">
                                 {{translate('Delete')}}</a>

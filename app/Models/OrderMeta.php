@@ -8,4 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class OrderMeta extends Model
 {
     use HasFactory;
+
+    protected $table = 'order_meta';
+
 }

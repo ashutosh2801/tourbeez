@@ -325,36 +325,21 @@ class OrderController extends Controller
      */
     public function update_cart(Request $request)
     {
-        // return response()->json($request->all());
- 
-        // $validated = $request->validate([
-        //     'orderId' => 'required|integer|exists:orders,id',
-        //     'tourId' => 'required|integer|exists:tours,id',
-        //     'selectedDate' => 'required|date_format:Y-m-d',
-        //     'cartItems' => 'required|array|min:1',
-        //     'cartItems.*.id' => 'required|integer',
-        //     'cartItems.*.price' => 'required',
-        //     'cartItems.*.quantity' => 'required|integer|min:1',
-        //     'first_name'  => 'required|string|max:255',
-        //     'last_name'  => 'required|string|max:255',
-        //     'email'  => 'required|string|max:255',
-        //     'phone'  => 'required',
-        // ]);
- 
-        $validated = $request->validate([
-            'orderId'                => 'required|integer|exists:orders,id',
-            'tourId'                 => 'required|integer|exists:tours,id',
-            'selectedDate'           => 'required|date_format:Y-m-d',
-            'cartItems'              => 'required|array|min:1',
-            'cartItems.*.id'         => 'required|integer',
-            'cartItems.*.price'      => 'required|numeric',
-            'cartItems.*.quantity'   => 'required|integer|min:1',
-            'cartItems.*.total_price'=> 'required', 
 
-            'formData.first_name'    => 'required|string|max:255',
-            'formData.last_name'     => 'required|string|max:255',
-            'formData.email'         => 'required|email|max:255',
-            'formData.phone'         => 'required|string|max:20',
+        $validated = $request->validate([
+            'orderId' => 'required|integer|exists:orders,id',
+            'tourId' => 'required|integer|exists:tours,id',
+            'selectedDate' => 'required|date_format:Y-m-d',
+            
+            'cartItems' => 'required|array|min:1',
+            'cartItems.*.id' => 'required|integer',
+            'cartItems.*.price' => 'required|numeric',
+            'cartItems.*.quantity' => 'required|integer|min:1',
+            'cartItems.*.total_price'=> 'required',
+            'formData.first_name' => 'required|string|max:255',
+            'formData.last_name'  => 'required|string|max:255',
+            'formData.email'      => 'required|email|max:255',
+            'formData.phone'      => 'required|string|max:20',
         ]);
  
         $order = Order::find($request->orderId);
@@ -364,6 +349,53 @@ class OrderController extends Controller
                 'message' => 'Order not found.'
             ], 404);
         }
+
+
+        // $customer = Tour::where('order_id', $request->orderId)->first();
+        // if(!$customer) {
+        //     $customer = new OrderCustomer();
+        // }
+        $customer = new OrderCustomer();
+        $data = $request->input('formData');
+
+
+
+        $customer->order_id     = $order->id;
+        $customer->user_id      = $request->userId;
+        $customer->first_name   = $data['first_name'];
+        $customer->last_name    = $data['last_name'];
+        $customer->email        = $data['email'];
+        $customer->phone        = $data['phone'];
+        $customer->instructions = $data['instructions'];
+        $customer->save();
+
+        $tour = Tour::with(['pricings'])->where('id', $request->tourId)->first();
+        if (!$tour) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tour not found.'
+            ], 404);
+        }
+
+        $quantity = 0;
+        $pricing = [];
+        $extra = [];
+        $item_total = 0;
+
+        foreach ($validated['cartItems'] as $item) {
+            if (isset($item['id']) && isset($item['quantity'])) {
+                $price = floatval($item['price']);
+                $qty = intval($item['quantity']);
+                $item_price = $price * $qty;
+                $item_total += $item_price;
+                $quantity += $qty;
+
+                $pricing[] = [
+                    'tour_id' => $request->tourId,
+                    'tour_pricing_id' => $item['id'],
+                    'quantity' => $qty,
+                    'price' => $item_price
+                ];
 
         try {
  
