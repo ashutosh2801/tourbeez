@@ -18,7 +18,7 @@
     <!-- Required meta tags -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="app-url" content="{{ env('APP_URL') }}/admin/">
-    <meta name="file-base-url" content="{{ env('APP_URL') }}/public/">
+    <meta name="file-base-url" content="{{ env('APP_BASE_URL') }}">
 
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"

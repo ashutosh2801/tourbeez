@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Upload;
-use Response;
-use Auth;
-use Storage;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
+// use Response;
+// use Auth;
+// use Storage;
 //use Image;
 use Illuminate\Support\Str;
 use Intervention\Image\Laravel\Facades\Image;
@@ -20,8 +24,8 @@ class AizUploadController extends Controller
         //$this->middleware(['permission:show_uploaded_files'])->only('index');
     }
 
-    public function index(Request $request){
-
+    public function index(Request $request)
+    {
         $all_uploads = Upload::query();
         $search = null;
         $sort_by = null;
@@ -153,7 +157,7 @@ class AizUploadController extends Controller
                             
 
                         } catch (\Exception $e) {
-                            \Log::error('Upload failed', ['error' => $e->getMessage()]);
+                            Log::error('Upload failed', ['error' => $e->getMessage()]);
                             return response()->json([
                                 'status' => false,
                                 'message' => $e->getMessage(),
@@ -162,20 +166,20 @@ class AizUploadController extends Controller
                     }
 
                     try {
-                        \Log::info('S3 Upload triggered' . env('FILESYSTEM_DRIVER') );
-                        if (env('FILESYSTEM_DRIVER') === 'S3') {
+                        Log::info('s3 Upload triggered' . env('FILESYSTEM_DRIVER') );
+                        if (env('FILESYSTEM_DRIVER') === 's3') {
                             Storage::disk('s3')->put($path, file_get_contents(base_path('public/' . $path)), 'public');
                             Storage::disk('s3')->put($mediumPath, file_get_contents(base_path('public/' . $mediumPath)), 'public');
                             Storage::disk('s3')->put($thumbPath, file_get_contents(base_path('public/' . $thumbPath)), 'public');
-                            //\Log::info("Upload to S3 successful: " . $path);
+                            //Log::info("Upload to s3 successful: " . $path);
                             //$url = Storage::disk('s3')->url($path);
-                            //\Log::info("File URL: " . $url);
+                            //Log::info("File URL: " . $url);
                             //unlink(base_path('public/' . $path));
                             //unlink(base_path('public/' . $mediumPath));
                             //unlink(base_path('public/' . $thumbPath));
                         }
                     } catch (\Exception $e) {
-                        \Log::error('S3 Upload error: ' . $e->getMessage());
+                        Log::error('s3 Upload error: ' . $e->getMessage());
                     }
 
                     $upload->extension      = $extension;
@@ -187,7 +191,7 @@ class AizUploadController extends Controller
                     $upload->file_size      = $size;
                     $upload->save();
                 } catch (\Exception $e) {
-                    \Log::error('Upload failed', ['error' => $e->getMessage()]);
+                    Log::error('Upload failed', ['error' => $e->getMessage()]);
                     return response()->json([
                         'status' => false,
                         'message' => $e->getMessage(),
@@ -195,7 +199,7 @@ class AizUploadController extends Controller
                 }
             }
             else {
-                \Log::error('Upload failed', ['error' => $e->getMessage()]);
+                //Log::error('Upload failed', ['error' => $e->getMessage()]);
                 return response()->json([
                     'status' => false,
                     'message' => 'No valid file uploaded.'
@@ -235,20 +239,20 @@ class AizUploadController extends Controller
     public function destroy(Request $request,$id)
     {
         try{
-            if(env('FILESYSTEM_DRIVER') === 'S3'){
+            if(env('FILESYSTEM_DRIVER') === 's3'){
                 Storage::disk('s3')->delete(Upload::where('id', $id)->first()->file_name);
             }
             else{
                 unlink(public_path().'/'.Upload::where('id', $id)->first()->file_name);
             }
             Upload::destroy($id);
-            \Log::info("File deleted successfully " . $id);
+            Log::info("File deleted successfully " . $id);
             //flash(translate('File deleted successfully'))->success();
             return redirect()->back()->with('success','File deleted successfully');
         }
         catch(\Exception $e){
             //Upload::destroy($id);
-            \Log::info("Faild deleted: " . $e->getMessage());
+            Log::info("Faild deleted: " . $e->getMessage());
             //flash(translate('File deleted successfully'))->success();
         }
         return redirect()->back()->with('error',"Faild deleted: " . $e->getMessage());;
@@ -268,7 +272,7 @@ class AizUploadController extends Controller
            $file_path = public_path($project_attachment->file_name);
             return Response::download($file_path);
         }catch(\Exception $e){
-            \Log::info("File does not exist! " . $e->getMessage());
+            Log::info("File does not exist! " . $e->getMessage());
             //flash(translate('File does not exist!'))->error();
             return back();
         }
@@ -287,11 +291,10 @@ class AizUploadController extends Controller
     public function add_image_info(Request $request){
 
         $request->validate([
-
-            'image_title'   => 'required|max:255',
+            'image_title' => 'required|max:255',
         ],
         [
-            'image_title.required'       => 'Please enter a image title',
+            'image_title.required' => 'Please enter a image title',
         ]);
         
         // Update tour instance
@@ -300,9 +303,9 @@ class AizUploadController extends Controller
         $upload->file_original_name     = $request->image_title;
         $upload->caption                = $request->caption;
         $upload->description            = $request->description;
-            if ($upload->save() ) {
-                return redirect()->back()->withInput()->with('success','Image Info saved successfully.'); 
-            }
+        if ( $upload->save() ) {
+            return redirect()->back()->withInput()->with('success','Image Info saved successfully.'); 
+        }
     }
 
 }
