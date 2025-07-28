@@ -2,11 +2,15 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Mail\RegistrationMail;
+use App\Models\EmailTemplate;
 use App\Models\Order;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 
@@ -36,22 +40,55 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::create([
-            'first_name'=> $request->first_name,
-            'last_name' => $request->last_name,
-            'name'      => $request->first_name . ' ' . $request->last_name,
-            'email'     => $request->email,
-            'password'  => Hash::make($request->password),
-        ]);
+        try {
+            $user = User::create([
+                'first_name'=> $request->first_name,
+                'last_name' => $request->last_name,
+                'name'      => $request->first_name . ' ' . $request->last_name,
+                'email'     => $request->email,
+                'password'  => Hash::make($request->password),
+            ]);
 
-        $user->id  = $user->id;
-        $token = $user->createToken('auth_token')->plainTextToken;
+            $user->id  = $user->id;
+            $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'Account created successfully.',
-            'user' => $user,
-            'token' => $token,
-        ]);
+            // Load template
+            $template = fetch_email_template('user_registration');
+
+            // Parse placeholders
+            $placeholders = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'app_name' => config('app.name'),
+            ];
+
+            $parsedBody = parseTemplate($template->body, $placeholders);
+            $parsedSubject = parseTemplate($template->subject, $placeholders);
+
+            // Send to user
+            Mail::to($user->email)->send(new RegistrationMail($parsedSubject, $parsedBody));
+
+            // Load Admin template && Send to admin
+            $template = fetch_email_template('user_registration_for_admin');
+            $parsedBody = parseTemplate($template->body, $placeholders);
+            $parsedSubject = parseTemplate($template->subject, $placeholders);
+            Mail::to( get_setting('MAIL_FROM_ADDRESS') )->send(new RegistrationMail($parsedSubject, $parsedBody));
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Account created successfully.',
+                'user' => $user,
+                'token' => $token,
+            ]);
+        }
+        catch(\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+                'user' => [],
+                'token' => '',
+            ]);
+        }
     }
 
     // Login
