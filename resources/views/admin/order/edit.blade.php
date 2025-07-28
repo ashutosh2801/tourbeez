@@ -337,20 +337,23 @@
                         <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
                             <div class="card-body">
 
-                                @if($order->user)
-                                    <ul class="flex flex-row">
+                                
+                                    <!-- <ul class="flex flex-row">
+
                                         <li><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->user?->name }}</a></li>
                                         <li>{{ $order->user?->email }}</li>
                                         <li>{{ $order->user?->phonenumber }}</li>
-                                    </ul>
-                                @else
+                                    </ul> -->
+                               
                                     <ul class="flex flex-row">
+
                                         <!-- <li><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a></li> -->
-                                        <li>{{ $order->customer?->name }}</li>
+
+                                        <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a></li>
                                         <li>{{ $order->customer?->email }}</li>
                                         <li>{{ $order->customer?->phone }}</li>
                                     </ul>
-                                @endif
+                                
                             </div>
                         </div>
                     </div>

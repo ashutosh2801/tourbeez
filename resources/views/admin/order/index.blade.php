@@ -51,7 +51,7 @@
                                 <p><a href="{{ route('admin.tour.edit', encrypt($order_tour->tour_id) ) }}" target="_blank" class="alink">{{ $order_tour->tour?->title }}</a></p>
                                 @endforeach
                             </td>
-                            <td><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a> <br />{{ $order->customer?->phone }}</td>
+                            <td><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a> <br />{{ $order->customer?->phone }}</td>
                             <td>{{ $order->currency }}&nbsp;{{ price_format( $order->total_amount) }}</td>
                             <td>{{ date__format($order->created_at) }}</td>
                         </tr>
