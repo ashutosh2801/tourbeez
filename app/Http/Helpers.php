@@ -24,7 +24,7 @@ if(!function_exists('parseTemplate')) {
     function parseTemplate($body, $data)
     {
         foreach ($data as $key => $value) {
-            $body = str_replace('[[' . $key . ']]', $value, $body);
+            $body = str_replace('[[' . strtoupper($key) . ']]', $value, $body);
         }
         return $body;
     }
