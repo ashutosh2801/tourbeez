@@ -4,6 +4,8 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Mail\EmailManager;
+use App\Models\Addon;
+use App\Models\TourPricing;
 use App\Models\EmailTemplate;
 use App\Models\Order;
 use App\Models\User;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
 use Stripe\Webhook;
+
 
 class PaymentController extends Controller
 {
@@ -177,12 +180,45 @@ class PaymentController extends Controller
                     // Refresh cache after updating the order
                     // Cache::put($cacheKey, $booking->fresh(['tour.location', 'tour.detail', 'tour.addons', 'tour.fees', 'tour.pickups', 'customer']), now()->addMinutes(10));
                 }
-
+                
                 $tour_pricing = json_decode($booking->order_tour->tour_pricing);
-                $pricing=[];
+                $pricing=[]; $total = 0;
+                foreach($tour_pricing as $tp) {
+                    $tourPricing = TourPricing::find($tp->tour_pricing_id);
+                    $total = ($tp->quantity * $tp->price);
+                    $pricing[] = [
+                        'lable' => $tourPricing->label,
+                        'qty'   => $tp->quantity,
+                        'price' => $tp->price,
+                        'total' => $total
+                    ];
+                }
 
+                $extra_pricing = json_decode($booking->order_tour->tour_extra);
+                $extra=[]; $total = 0;
+                foreach($extra_pricing as $ep) {
+                    $extraAddon = Addon::find($ep->tour_extra_id);
+                    $total = ($ep->quantity * $ep->price);
+                    $extra[] = [
+                        'lable' => $extraAddon->name,
+                        'qty'   => $ep->quantity,
+                        'price' => $ep->price,
+                        'total' => $total
+                    ];
+                }
 
-                $extra = $booking->order_tour->tour_extra;
+                $metas=[]; 
+                if($booking->orderMetas) {
+                    foreach($booking->orderMetas as $om) {
+                        $metas[] = [
+                            'lable' => $om->name,
+                            'qty'   => '',
+                            'price' => $om->value,
+                            'total' => $om->value,
+                        ];
+                    }
+                }
+
 
                 $image = uploaded_asset($booking->tour->main_image->id, 'medium');
 
@@ -191,20 +227,20 @@ class PaymentController extends Controller
                     'number_of_guests'  => $booking->number_of_guests,
                     'total_amount'      => $booking->total_amount,
                     'currency'          => $booking->currency,
+                    'payment_method'    => ucfirst($booking->payment_method),
+                    'customer'          => $booking->customer,
+                    'tour_date'         => date('D, M d, Y', strtotime($booking->order_tour->tour_date)),
+                    'tour_time'         => $booking->order_tour->tour_time,
+                    'created_at'        => date('Y-m-d', strtotime($booking->created_at)),
                     'tour'      => [
                         'image'         => $image,
                         'title'         => $booking->tour?->title,
                         'address'       => $booking->tour?->location->address,
                         'pricing'       => $pricing,
                         'extra'         => $extra,
+                        'metas'         => $metas,
                         't_and_c'       => $booking->tour?->terms_and_conditions,
                     ],
-                    'customer'          => $booking->customer,
-                    'payment'   => [
-                        'payment_method'=> $booking->payment_method,
-                        'created_at'    => date('Y-m-d', strtotime($booking->created_at)),
-                        'total_amount'  => $booking->total_amount,
-                    ]
                 ];
 
                 $order = Order::where('order_number',$booking->order_number)->first();
@@ -216,7 +252,6 @@ class PaymentController extends Controller
                     $order->email_sent = true;
                     $order->save();
                 }
-                
 
 
                 return response()->json([
@@ -240,7 +275,6 @@ class PaymentController extends Controller
             ], 500);
         }
     }
-
 
 
     public static function sendOrderDetailMail($detail)

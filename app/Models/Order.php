@@ -43,6 +43,11 @@ class Order extends Model
         return $this->hasMany(OrderTour::class);
     }
 
+    public function orderMetas()
+    {
+        return $this->hasMany(OrderMeta::class);
+    }
+
     public function order_tour()
     {
         return $this->hasOne(OrderTour::class);
