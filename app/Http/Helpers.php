@@ -20,6 +20,16 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 //use Illuminate\Support\Facades\Storage;
 
+if(!function_exists('parseTemplate')) {
+    function parseTemplate($body, $data)
+    {
+        foreach ($data as $key => $value) {
+            $body = str_replace('[[' . $key . ']]', $value, $body);
+        }
+        return $body;
+    }
+}
+
 if(!function_exists('tour_status')) {
     function tour_status($number) {
         switch ($number) {
@@ -331,6 +341,15 @@ if (!function_exists('get_email_template')) {
     {
         $value = EmailTemplate::where('identifier', $identifier)->first()->$colmn_name;
         return $value;
+    }
+}
+
+// email template
+if (!function_exists('get_email_template')) {
+    function fetch_email_template($identifier)
+    {
+        $model = EmailTemplate::where('identifier', $identifier)->first();
+        return $model;
     }
 }
 

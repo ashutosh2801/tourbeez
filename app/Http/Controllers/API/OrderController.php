@@ -396,6 +396,8 @@ class OrderController extends Controller
                     'quantity' => $qty,
                     'price' => $item_price
                 ];
+            }
+        }
 
         try {
  
