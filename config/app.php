@@ -58,6 +58,7 @@ return [
     'url' => env('APP_URL', 'https://tourbeez.com/tbadmin/admin'),
 
     'asset_url' => env('ASSET_URL'),
+    'site_url' => env('SITE_URL', 'https://tourbeez.com'),
 
     /*
     |--------------------------------------------------------------------------
