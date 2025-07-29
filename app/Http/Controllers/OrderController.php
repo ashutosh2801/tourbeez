@@ -11,6 +11,7 @@ use App\Models\Tour;
 use App\Services\TwilioService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
@@ -36,6 +37,28 @@ class OrderController extends Controller
         $orders = $query->paginate(10);
 
         return view('admin.order.index', compact(['orders']));
+    }
+
+    public function showPdfFiles()
+    {
+        
+        $pdfFiles = Storage::disk('s3')->files('rezdy-manifest'); // or 'your-folder/' if needed
+
+        // Filter only .pdf files
+        $pdfFiles = array_filter($pdfFiles, function ($file) {
+            return str_ends_with($file, '.pdf');
+        });
+
+        // Get URLs
+        $pdfUrls = array_map(function ($file) {
+            return [
+                'name' => basename($file),
+                'path' => $file,
+                'url' => Storage::disk('s3')->url($file)
+            ];
+        }, $pdfFiles);
+
+        return view('admin.order.pdfs', compact('pdfUrls'));
     }
 
     /**
@@ -622,5 +645,7 @@ class OrderController extends Controller
 
         return response()->json(['success' => true]);
     }
+
+    
 
 }

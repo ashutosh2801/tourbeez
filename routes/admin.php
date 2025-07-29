@@ -44,9 +44,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/category',CategoryController::class);
     Route::resource('/tour_type',TourTypeController::class);
     Route::resource('/collection',CollectionController::class);
+    
     Route::resource('/orders', OrderController::class);
+    Route::get('/order/rezdy-manifest', [OrderController::class, 'showPdfFiles']);
     Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus']);
-
 
 
     
