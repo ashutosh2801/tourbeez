@@ -251,7 +251,27 @@ class CommonController extends Controller
         $validated = Validator::make($request->all(), $this->rules, $this->messages);
         if ($validated->fails()) {
             return response()->json(['status' => false, 'errors' => $validated->errors()], 422);
-        }        
+        }
+
+
+        $template = fetch_email_template('career_mail');
+
+        // Parse placeholders
+        $placeholders = [
+            'name' => $request->name,
+            'email' => $request->email,
+            'message' => $request->message,
+            'year' => date('Y'),
+            'app_name' => get_setting('site_name'),
+        ];
+
+
+
+        $parsedBody = parseTemplate($template->body, $placeholders);
+        $parsedSubject = parseTemplate($template->subject, $placeholders);
+
+        // Send to user
+     
 
         $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
             'secret'   => env('RECAPTCHA_SECRET'),
@@ -264,7 +284,9 @@ class CommonController extends Controller
         if (!($result['success'] ?? false)) {
             return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
         }
-
+        
+        // Send to user
+        Mail::to($request->email)->send(new CommonMail($parsedSubject, $parsedBody));
         // Send email using mailable and template
         Mail::to($validated['email'])->send(new ContactMail($validated));
 
