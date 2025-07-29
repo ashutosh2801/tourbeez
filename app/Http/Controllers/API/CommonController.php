@@ -205,5 +205,45 @@ class CommonController extends Controller
 
         return response()->json(['message' => 'Message sent successfully.']);
     }
+
+    public function careers(Request $request)
+    {
+        $this->rules = [
+            'name'    => 'required|string|max:255',
+            'email'   => 'required|email',
+            'phone'   => 'required',
+            'message' => 'required|string',
+            'recaptcha_token' => 'required',
+        ];
+        $this->messages = [
+            'name.required' => 'Name is required.',
+            'email.required' => 'Email is required.',
+            'phone.required' => 'Phone number is required.',
+            'message.required' => 'Message is required.',
+            'recaptcha_token.required' => 'reCAPTCHA token is required.',
+        ];
+
+        $validated = Validator::make($request->all(), $this->rules, $this->messages);
+        if ($validated->fails()) {
+            return response()->json(['status' => false, 'errors' => $validated->errors()], 422);
+        }        
+
+        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret'   => env('RECAPTCHA_SECRET'),
+            'response' => $request->recaptcha_token,
+            'remoteip' => $request->ip(),
+        ]);
+
+        $result = $response->json();
+
+        if (!($result['success'] ?? false)) {
+            return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
+        }
+
+        // Send email using mailable and template
+        Mail::to($validated['email'])->send(new ContactMail($validated));
+
+        return response()->json(['message' => 'Message sent successfully.']);
+    }
     
 }
