@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('category')->nullable();
             $table->string('tour_types')->nullable();
             $table->string('price')->nullable();
+            $table->float('price', 10, 2)->nullable();
             $table->integer('status')->default(0);
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();
