@@ -217,7 +217,7 @@ class OrderController extends Controller
             'order_number'  => unique_code().rand(10,99),
             'currency'      => $request->currency,
             'total_amount'  => $request->tourPrice,
-            'order_status'  => 0,
+            'order_status'  => 1,
             'created_at'    => date('Y-m-d H:i:s'),
             'updated_at'    => date('Y-m-d H:i:s'),
         ]);
@@ -367,7 +367,7 @@ class OrderController extends Controller
         $customer->last_name    = $data['last_name'];
         $customer->email        = $data['email'];
         $customer->phone        = $data['phone'];
-        $customer->instructions = $data['instructions'];
+        $customer->instructions = $data['instructions'] ?? NULL;
         $customer->save();
 
         $tour = Tour::with(['pricings'])->where('id', $request->tourId)->first();
@@ -421,8 +421,8 @@ class OrderController extends Controller
             $customer->email        = $data['email'];
             $customer->phone        = $data['phone'];
             $customer->instructions = $data['instructions'] ?? '';
-            $customer->pickup_id    = $data['pickup_id'] ?? 0;
-            $customer->pickup_name  = $data['pickup_name'] ?? '';
+            // $customer->pickup_id    = $data['pickup_id'] ?? 0;
+            // $customer->pickup_name  = $data['pickup_name'] ?? '';
             $customer->save();
     
             $tour = Tour::with(['pricings'])->where('id', $request->tourId)->first();
@@ -443,13 +443,15 @@ class OrderController extends Controller
                     $pricing[] = [
                         'tour_id'           => $request->tourId,
                         'tour_pricing_id'   => $item['id'],
-                        'quantity'          => $item['quantity'],
-                        'label'             => $item['label'],
-                        'price'             => $item['price'],
-                        'total_price'       => $item['total_price']
+                        'quantity'          => $item['quantity'] ?? 0,
+                        'label'             => $item['label'] ?? 0,
+                        'price'             => $item['price'] ?? 0,
+                        'total_price'       => $item['total_price'] ?? 0
                     ];
+
+                    $qty = $item['quantity'] ?? 0;
                     // $price = floatval($item['price']);
-                    $qty = intval($item['quantity']);
+                    $qty = intval($qty);
                     // $item_price = $price * $qty;
                     // $item_total += $item_price;
                     $quantity += $qty;
@@ -469,10 +471,10 @@ class OrderController extends Controller
                         $extra[] = [
                             'tour_id'           => $request->tourId,
                             'tour_extra_id'     => $addon['id'],
-                            'quantity'          => $addon['quantity'],
-                            'label'             => $addon['label'],
-                            'price'             => $addon['price'],
-                            'total_price'       => $addon['total_price']
+                            'quantity'          => $addon['quantity'] ?? 0,
+                            'label'             => $addon['label'] ?? '-',
+                            'price'             => $addon['price'] ?? 0,
+                            'total_price'       => $addon['total_price']?? 0
                         ];
                         // $price = floatval($addon['price']);
                         // $qty = intval($addon['quantity']);
