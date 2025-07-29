@@ -33,6 +33,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/popular-cities',[CommonController::class,'popular_cities'])->name('popular_cities');
     Route::get('/single-city/{id}',[CommonController::class,'single_city'])->name('single_city');
     Route::post('/contact',[CommonController::class,'contact'])->name('contact');
+    Route::post('/careers',[CommonController::class,'careers'])->name('careers');
 
     Route::get('/tours',[TourController::class,'index'])->name('tour.index');
     Route::get('/tour/search', [TourController::class, 'search']);

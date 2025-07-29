@@ -18,6 +18,7 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
+
         $rules = [
             'first_name' => 'required|min:2',
             'last_name' => 'required|min:2',
@@ -60,6 +61,8 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'app_name' => config('app.name'),
+                'login_url' => config('app.site_url') .  "/login",
+                'year' => date('Y')
             ];
 
             $parsedBody = parseTemplate($template->body, $placeholders);
