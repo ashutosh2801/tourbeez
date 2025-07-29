@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Mail\CommonMail;
 use App\Mail\ContactMail;
 use App\Models\Category;
 use App\Models\City;
@@ -201,7 +202,31 @@ class CommonController extends Controller
         }
 
         // Send email using mailable and template
-        Mail::to('ashutosh2801@gmail.com')->send(new ContactMail($validated));
+        //Mail::to('ashutosh2801@gmail.com')->send(new ContactMail($validated));
+        // Load template
+        $template = fetch_email_template('contact_mail');
+
+        // Parse placeholders
+        $placeholders = [
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'message' => $request->message,
+            'year' => date('Y'),
+            'app_name' => get_setting('site_name'),
+        ];
+
+        $parsedBody = parseTemplate($template->body, $placeholders);
+        $parsedSubject = parseTemplate($template->subject, $placeholders);
+
+        // Send to user
+        Mail::to($request->email)->send(new CommonMail($parsedSubject, $parsedBody));
+
+        // Load Admin template && Send to admin
+        $template = fetch_email_template('contact_mail_for_admin');
+        $parsedBody = parseTemplate($template->body, $placeholders);
+        $parsedSubject = parseTemplate($template->subject, $placeholders);
+        Mail::to( get_setting('MAIL_FROM_ADDRESS') )->send(new CommonMail($parsedSubject, $parsedBody));
 
         return response()->json(['message' => 'Message sent successfully.']);
     }

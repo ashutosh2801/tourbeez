@@ -21,6 +21,7 @@ class EmailManager extends Mailable
     {
         $this->array = $array;
     }
+    
     /**
      * Build the message.
      *

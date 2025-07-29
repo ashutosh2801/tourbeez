@@ -64,6 +64,11 @@ class CustomerController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $user = User::findOrFail($id);
+        if ($user::destroy($id)) {
+            return redirect()->route('admin.customers.index')->with('success', translate('Customers deleted successfully'));
+        } else {
+            return back()->with('error', translate('Sorry! Something went wrong.'));
+        }
     }
 }
