@@ -935,50 +935,53 @@
 </script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Balance dropdown: keep green on select
-        document.querySelectorAll('.payment-details-breakdown--item').forEach(item => {
-            item.addEventListener('click', function () {
+
+    // ✅ Function to update status UI
+    function updateStatusUI(radio) {
+        const id     = radio.id;
+        const label  = document.querySelector(`label[for="${id}"]`).textContent.trim();
+        const group  = radio.closest('.btn-group');
+        const button = group.querySelector('button.dropdown-toggle');
+
+        // Update button text
+        button.textContent = label;
+
+        // Remove old status classes
+        button.classList.remove(
+            'status-NEW','status-ON_HOLD','status-PENDING_SUPPLIER',
+            'status-PENDING_CUSTOMER','status-CONFIRMED',
+            'status-CANCELLED','status-ABANDONED_CART'
+        );
+
+        // Add new class based on status
+        const safeId = id.replace(/\s+/g, '_').toUpperCase();
+        button.classList.add(`status-${safeId}`);
+    }
+
+    // ✅ On click of payment option
+    document.querySelectorAll('.payment-details-breakdown--item').forEach(item => {
+        item.addEventListener('click', function () {
             const total = this.querySelectorAll('strong')[1].textContent;
-            const btn    = document.getElementById('totalDue');
+            const btn   = document.getElementById('totalDue');
             btn.textContent = total;
-            // ensure green
+
+            // make green
             const wrap = btn.closest('.btn.dropdown-toggle');
             wrap.style.borderColor = '#28a745';
-            wrap.style.color       = '#28a745';
-            });
+            wrap.style.color = '#28a745';
         });
+    });
 
-        // Order status: when a radio changes, update button text + color class
-        document.querySelectorAll('input[name="order_status"]').forEach(radio => {
-        radio.addEventListener('change', function () {
-            const id     = this.id;
-            const label  = document.querySelector(`label[for="${id}"]`).textContent.trim();
-            const group  = this.closest('.btn-group');
-            const button = group.querySelector('button.dropdown-toggle');
+    // ✅ Attach event to each order_status radio
+    document.querySelectorAll('input[name="order_status"]').forEach(radio => {
+        radio.addEventListener('change', function (e) {
 
-            // Update text
-            button.textContent = label;
+            // update UI
+            updateStatusUI(this);
 
-            // Remove old status classes
-            button.classList.remove(
-                'status-NEW','status-ON_HOLD','status-PENDING_SUPPLIER',
-                'status-PENDING_CUSTOMER','status-CONFIRMED',
-                'status-CANCELLED','status-ABANDONED_CART'
-            );
-
-            // Sanitize ID to use in class
-            const safeId = id.replace(/\s+/g, '_').toUpperCase();
-
-            // Add new status class
-            button.classList.add(`status-${safeId}`);
-            
-            // 🔽 Add AJAX here to update order status in backend
-               // get order ID from input
-
-            var order_id = $('#order_id').val();
-
-            console.log(order_id);
-            const status = this.value;              // selected status
+            // now update backend via fetch()
+            const order_id = document.getElementById('order_id').value;
+            const status = this.value;
 
             fetch(`/admin/orders/${order_id}/update-status`, {
                 method: 'POST',
@@ -1004,12 +1007,11 @@
         });
     });
 
+    // ✅ Only update UI on page load, not backend
+    const init = document.querySelector('input[name="order_status"]:checked');
+    if (init) updateStatusUI(init);
+});
 
-
-        // Initialize on page load for whichever is checked
-        const init = document.querySelector('input[name="order_status"]:checked');
-        if (init) init.dispatchEvent(new Event('change'));
-    });
 </script>
 <script>
 $(document).ready(function(){    
