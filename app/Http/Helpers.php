@@ -345,7 +345,7 @@ if (!function_exists('get_email_template')) {
 }
 
 // email template
-if (!function_exists('get_email_template')) {
+if (!function_exists('fetch_email_template')) {
     function fetch_email_template($identifier)
     {
         $model = EmailTemplate::where('identifier', $identifier)->first();

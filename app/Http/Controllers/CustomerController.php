@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\OrderCustomer;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -37,7 +38,8 @@ class CustomerController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $user = OrderCustomer::findOrFail(decrypt($id) );
+        return view('admin.customer.show', compact('user'));
     }
 
     /**

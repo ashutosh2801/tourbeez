@@ -21,6 +21,7 @@ class IsAdmin
                 Auth::user()->user_type === 'tour listing associate')) {
             return $next($request);
         }
-        return redirect()->route('admin.login');
+        auth()->logout();
+        return redirect()->route('login')->with('error', 'You don’t have permission to access the dashboard. Please contact the admin.');
     }
 }
