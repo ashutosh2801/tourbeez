@@ -233,20 +233,32 @@ class CommonController extends Controller
 
     public function careers(Request $request)
     {
-        $this->rules = [
-            'name'    => 'required|string|max:255',
-            'email'   => 'required|email',
-            'phone'   => 'required',
-            'message' => 'required|string',
-            'recaptcha_token' => 'required',
-        ];
-        $this->messages = [
-            'name.required' => 'Name is required.',
-            'email.required' => 'Email is required.',
-            'phone.required' => 'Phone number is required.',
-            'message.required' => 'Message is required.',
+        $validated = $request->validate([
+            'first_name'       => 'required|string|max:255',
+            'last_name'        => 'required|string|max:255',
+            'email'            => 'required|email',
+            'speciality'       => 'required|string|max:255',
+            'phone'            => 'required|string|max:20',
+            'gender'           => 'required|in:male,female,other',
+            'experience'       => 'required|numeric|min:0',
+            'cv'               => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+            'recaptcha_token'  => 'required',
+        ], [
+            'first_name.required'      => 'First name is required.',
+            'last_name.required'       => 'Last name is required.',
+            'email.required'           => 'Email is required.',
+            'email.email'              => 'Enter a valid email address.',
+            'speciality.required'      => 'Speciality is required.',
+            'phone.required'           => 'Phone number is required.',
+            'gender.required'          => 'Gender is required.',
+            'gender.in'                => 'Gender must be Male, Female, or Other.',
+            'experience.required'      => 'Experience is required.',
+            'experience.numeric'       => 'Experience must be a number.',
+            'cv.file'                  => 'CV must be a file.',
+            'cv.mimes'                 => 'CV must be a PDF or Word document.',
+            'cv.max'                   => 'CV must not be larger than 2MB.',
             'recaptcha_token.required' => 'reCAPTCHA token is required.',
-        ];
+        ]);
 
         $validated = Validator::make($request->all(), $this->rules, $this->messages);
         if ($validated->fails()) {
@@ -256,15 +268,16 @@ class CommonController extends Controller
 
         $template = fetch_email_template('career_mail');
 
-        // Parse placeholders
+        // Parse placeholders 
         $placeholders = [
-            'name' => $request->name,
+            'name' => $request->first_name . " " $request->last_name,
             'email' => $request->email,
             'message' => $request->message,
             'year' => date('Y'),
             'app_name' => get_setting('site_name'),
+            'app_name' => get_setting('site_name'),
+            'login_url' => config('app.site_url') .  "/login",
         ];
-
 
 
         $parsedBody = parseTemplate($template->body, $placeholders);
@@ -284,7 +297,7 @@ class CommonController extends Controller
         if (!($result['success'] ?? false)) {
             return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
         }
-        
+
         // Send to user
         Mail::to($request->email)->send(new CommonMail($parsedSubject, $parsedBody));
         // Send email using mailable and template
