@@ -270,7 +270,7 @@ class CommonController extends Controller
 
         // Parse placeholders 
         $placeholders = [
-            'name' => $request->first_name . " " $request->last_name,
+            'name' => $request->first_name." ".$request->last_name,
             'email' => $request->email,
             'message' => $request->message,
             'year' => date('Y'),

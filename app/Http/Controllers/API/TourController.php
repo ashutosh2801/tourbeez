@@ -54,7 +54,7 @@ class TourController extends Controller
         $page = $request->get('page', 1);
         $cacheKey = 'tour_list_' . md5(json_encode($request->all()) . '_page_' . $page);
 
-        //dd($query->toSql(), $query->getBindings(), $query->get());
+        // dd($query->toSql(), $query->getBindings(), $query->get());
 
         $paginated = Cache::remember($cacheKey, 86400, function () use ($query) {
             return $query->paginate(12);
@@ -260,6 +260,11 @@ class TourController extends Controller
         ]);
     }
 
+    function highlightMatch($string, $keyword) {
+        $string = ucfirst($string);
+        return preg_replace("/(" . preg_quote($keyword, '/') . ")/i", '<mark>$1</mark>', $string);
+    }
+
     /** 
      * Search home page tour  
      */
@@ -280,6 +285,8 @@ class TourController extends Controller
             ->orderBy('name', 'asc')
             ->limit(2)
             ->get();
+
+
             
         $categories = Category::orderBy('name', 'asc')
             ->when($search, function ($query, $search) {
@@ -315,18 +322,18 @@ class TourController extends Controller
         $data = [];
         if($total_cities>0) {
             foreach($cities as $city) {
-                $data[] = ['icon'=>'city', 'title' => ucfirst($city->name), 'slug' => 'c1/'.Str::slug($city->name).'/'.$city->id, 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
+                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => 'c1/'.Str::slug($city->name).'/'.$city->id, 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
             }
         }
         if($total_categories>0) {
             foreach($categories as $category) {
-                $data[] = ['icon'=>'category', 'title' => ucfirst($category->name), 'slug' => 'c3/'.$category->slug.'/'.$category->id , 'address' => ''];
+                $data[] = ['icon'=>'category', 'title' => $this->highlightMatch($category->name, $search), 'slug' => 'c3/'.$category->slug.'/'.$category->id , 'address' => ''];
             }
         }
         if($tours->count()>0) {
             foreach($tours as $tour) {
                 $image  = uploaded_asset($tour->main_image->id, 'thumb');
-                $data[] = ['icon'=>$image, 'title' => ucfirst($tour->title), 'slug' => 'tour/'.$tour->slug, 'address' => $tour->location->address];
+                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => 'tour/'.$tour->slug, 'address' => $tour->location->address];
             }
         }
         
