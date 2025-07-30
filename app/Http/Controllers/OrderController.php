@@ -92,7 +92,14 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail( decrypt($id) );
         $tours = Tour::orderBy('title', 'ASC')->get();
-        $email_templates = EmailTemplate::get();
+        // $email_templates = EmailTemplate::get();
+
+        $email_templates = EmailTemplate::whereIn('identifier', [
+            'order_detail',
+            'order_cancelled',
+            'order_confirmed',
+            'payment_receipt'
+        ])->get();
         $sms_templates = SmsTemplate::get();
         return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates']));
     }
@@ -257,7 +264,7 @@ class OrderController extends Controller
         $body = $request->input('body');
         $footer = $request->input('footer');
  
-        if (env('MAIL_USERNAME') != null) {
+        if (env('MAIL_FROM_ADDRESS') != null) {
             $array['view'] = 'emails.newsletter';
             $array['subject'] = $subject;
             $array['header'] = $header;
@@ -265,7 +272,8 @@ class OrderController extends Controller
             $array['content'] =  $header.$body.$footer;
  
             try {
-                if(Mail::to($request->email)->queue(new EmailManager($array))){
+
+                if(Mail::to($request->email)->send(new EmailManager($array))){
                     return response()->json(['status' => 'success']);
                 }else{
                      return response()->json(['status' => 'Failed']);
@@ -295,9 +303,9 @@ class OrderController extends Controller
             $system_logo = get_setting('system_logo');
             $logo = uploaded_asset($system_logo);
 
-            $customer   = $order->user;
+            $customer   = $order->customer;
             if(!$customer){
-                $customer = $order->orderUser;
+                $customer = $order->user;
             }
 
             if(!$customer){

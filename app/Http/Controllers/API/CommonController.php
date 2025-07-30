@@ -241,7 +241,8 @@ class CommonController extends Controller
             'phone'            => 'required|string|max:20',
             'gender'           => 'required|string|max:20',
             'experience'       => 'required|string|min:0',
-            'cv'               => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+            'cv'               => 'nullable',
+            // 'cv'               => 'nullable|file|mimes:pdf,doc,docx|max:2048',
             'recaptcha_token'  => 'required',
         ], [
             'first_name.required'      => 'First name is required.',
@@ -254,11 +255,17 @@ class CommonController extends Controller
             'gender.in'                => 'Gender must be Male, Female, or Other.',
             'experience.required'      => 'Experience is required.',
             'experience.string'       => 'Experience must be a string.',
-            'cv.file'                  => 'CV must be a file.',
-            'cv.mimes'                 => 'CV must be a PDF or Word document.',
-            'cv.max'                   => 'CV must not be larger than 2MB.',
+            // 'cv.file'                  => 'CV must be a file.',
+            // 'cv.mimes'                 => 'CV must be a PDF or Word document.',
+            // 'cv.max'                   => 'CV must not be larger than 2MB.',
             'recaptcha_token.required' => 'reCAPTCHA token is required.',
         ]);
+
+        if ($request->hasFile('cv')) {
+            $request->validate([
+                'cv' => 'file|mimes:pdf,doc,docx|max:2048'
+            ]);
+        }
 
         $validated = Validator::make($request->all(), $this->rules, $this->messages);
         if ($validated->fails()) {
@@ -278,6 +285,7 @@ class CommonController extends Controller
         }
 
         $validated = $validated->validated();
+        $template = fetch_email_template('career_mail');
         $template = fetch_email_template('career_mail');
 
         // Parse placeholders 
@@ -308,6 +316,7 @@ class CommonController extends Controller
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
 
+        $adminTemplate = fetch_email_template('career_mail_for_admin');
 
         $parsedAdminBody = parseTemplate($adminTemplate->body, $adminplaceholders);
         $parsedAdminSubject = parseTemplate($adminTemplate->subject, $adminplaceholders);
