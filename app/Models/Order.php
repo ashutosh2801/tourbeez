@@ -93,7 +93,7 @@ class Order extends Model
             5 => 'Confirmed',
             6 => 'Cancelled',
             7 => 'Abandoned cart',
-            default => 'Cancelled',
+            default => 'New',
         };
     }
 
@@ -110,7 +110,7 @@ class Order extends Model
         ];
 
         // optional fallback if string doesn't match
-        $this->attributes['order_status'] = $map[$value] ?? 6;
+        $this->attributes['order_status'] = $map[$value] ?? 1;
     }
 
     public function meta()
