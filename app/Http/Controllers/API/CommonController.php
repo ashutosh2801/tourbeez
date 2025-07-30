@@ -279,6 +279,7 @@ class CommonController extends Controller
 
         $validated = $validated->validated();
         $template = fetch_email_template('career_mail');
+        $template = fetch_email_template('career_mail');
 
         // Parse placeholders 
         $placeholders = [
@@ -308,7 +309,8 @@ class CommonController extends Controller
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
 
-
+        $adminTemplate = fetch_email_template('career_mail_for_admin');
+        
         $parsedAdminBody = parseTemplate($adminTemplate->body, $adminplaceholders);
         $parsedAdminSubject = parseTemplate($adminTemplate->subject, $adminplaceholders);
 
