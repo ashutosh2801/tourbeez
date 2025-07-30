@@ -179,7 +179,7 @@ class CommonController extends Controller
         $this->messages = [
             'name.required' => 'Name is required.',
             'email.required' => 'Email is required.',
-            'phone.required' => 'Phone number is required.',
+            'phone.required' => 'Phone number is required.',    
             'message.required' => 'Message is required.',
             'recaptcha_token.required' => 'reCAPTCHA token is required.',
         ];
@@ -253,7 +253,7 @@ class CommonController extends Controller
             'gender.required'          => 'Gender is required.',
             'gender.in'                => 'Gender must be Male, Female, or Other.',
             'experience.required'      => 'Experience is required.',
-            'experience.numeric'       => 'Experience must be a number.',
+            'experience.string'       => 'Experience must be a string.',
             'cv.file'                  => 'CV must be a file.',
             'cv.mimes'                 => 'CV must be a PDF or Word document.',
             'cv.max'                   => 'CV must not be larger than 2MB.',
@@ -264,27 +264,6 @@ class CommonController extends Controller
         if ($validated->fails()) {
             return response()->json(['status' => false, 'errors' => $validated->errors()], 422);
         }
-
-
-        $template = fetch_email_template('career_mail');
-
-        // Parse placeholders 
-        $placeholders = [
-            'name' => $request->first_name . " " . $request->last_name,
-            'email' => $request->email,
-            'message' => $request->message,
-            'year' => date('Y'),
-            'app_name' => get_setting('site_name'),
-            'app_name' => get_setting('site_name'),
-            'login_url' => config('app.site_url') .  "/login",
-        ];
-
-
-        $parsedBody = parseTemplate($template->body, $placeholders);
-        $parsedSubject = parseTemplate($template->subject, $placeholders);
-
-        // Send to user
-     
 
         $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
             'secret'   => env('RECAPTCHA_SECRET'),
@@ -298,11 +277,49 @@ class CommonController extends Controller
             return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
         }
 
+        $validated = $validated->validated();
+        $template = fetch_email_template('career_mail');
+
+        // Parse placeholders 
+        $placeholders = [
+            'name' => $request->first_name . " " . $request->last_name,
+            'email' => $request->email,
+            'message' => $request->message,
+            'year' => date('Y'),
+            'app_name' => get_setting('site_name'),
+            'app_name' => get_setting('site_name'),
+            'login_url' => config('app.site_url') .  "/login",
+        ];
+
+        $adminplaceholders = [
+            'name' => $request->first_name . " " . $request->last_name,
+            'email' => $request->email,
+            'gender' => $request->gender,
+            'speciality' => $request->speciality,
+            'experience' => $request->experience,
+            'year' => date('Y'),
+            'app_name' => get_setting('site_name'),
+            'app_name' => get_setting('site_name'),
+            'login_url' => config('app.site_url') .  "/login",
+        ];
+
+
+
+        $parsedBody = parseTemplate($template->body, $placeholders);
+        $parsedSubject = parseTemplate($template->subject, $placeholders);
+
+
+        $parsedAdminBody = parseTemplate($adminTemplate->body, $adminplaceholders);
+        $parsedAdminSubject = parseTemplate($adminTemplate->subject, $adminplaceholders);
+
         // Send to user
         Mail::to($request->email)->send(new CommonMail($parsedSubject, $parsedBody));
-        // Send email using mailable and template
-        Mail::to($validated['email'])->send(new ContactMail($validated));
+        // Send to admin
+        $cv = $request->file('cv');
 
+        Mail::to($request->email)->send(new CommonMail($parsedAdminSubject, $parsedAdminBody), $cv);
+        // Send email using mailable and template
+       
         return response()->json(['message' => 'Message sent successfully.']);
     }
     
