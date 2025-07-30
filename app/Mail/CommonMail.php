@@ -46,10 +46,10 @@ class CommonMail extends Mailable
      */
      public function attachments(): array
         {
-            if ($this->cv) {
+            if ($this->attachment) {
                 return [
-                    Attachment::fromPath($this->cv->getRealPath())
-                        ->as('attachment.' . $this->cv->getClientOriginalExtension())
+                    Attachment::fromPath($this->attachment->getRealPath())
+                        ->as('attachment.' . $this->attachment->getClientOriginalExtension())
                         ->withMime($this->attachment->getMimeType())
                 ];
             }
