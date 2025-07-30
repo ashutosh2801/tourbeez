@@ -27,6 +27,7 @@ class CommonMail extends Mailable
     {
         $this->subjectHtml = $subjectHtml;
         $this->bodyHtml = $bodyHtml;
+        $this->attachment = $attachment;
     }
 
     /**

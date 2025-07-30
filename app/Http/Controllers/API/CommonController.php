@@ -305,6 +305,7 @@ class CommonController extends Controller
             'gender' => $request->gender,
             'speciality' => $request->speciality,
             'experience' => $request->experience,
+            'phone' => $request->phone,
             'year' => date('Y'),
             'app_name' => get_setting('site_name'),
             'app_name' => get_setting('site_name'),
@@ -326,7 +327,9 @@ class CommonController extends Controller
         // Send to admin
         $cv = $request->file('cv');
 
-        Mail::to($request->email)->send(new CommonMail($parsedAdminSubject, $parsedAdminBody), $cv);
+        $adminMailId = get_setting('admin_mail_address');
+
+        Mail::to($adminMailId)->send(new CommonMail($parsedAdminSubject, $parsedAdminBody), $cv);
         // Send email using mailable and template
        
         return response()->json(['message' => 'Message sent successfully.']);
