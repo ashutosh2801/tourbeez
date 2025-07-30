@@ -284,8 +284,6 @@ class CommonController extends Controller
             return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
         }
 
-        $validated = $validated->validated();
-        $template = fetch_email_template('career_mail');
         $template = fetch_email_template('career_mail');
 
         // Parse placeholders 
@@ -299,37 +297,12 @@ class CommonController extends Controller
             'login_url' => config('app.site_url') .  "/login",
         ];
 
-        $adminplaceholders = [
-            'name' => $request->first_name . " " . $request->last_name,
-            'email' => $request->email,
-            'gender' => $request->gender,
-            'speciality' => $request->speciality,
-            'experience' => $request->experience,
-            'phone' => $request->phone,
-            'year' => date('Y'),
-            'app_name' => get_setting('site_name'),
-            'app_name' => get_setting('site_name'),
-            'login_url' => config('app.site_url') .  "/login",
-        ];
-
-
-
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
-
-        $adminTemplate = fetch_email_template('career_mail_for_admin');
-
-        $parsedAdminBody = parseTemplate($adminTemplate->body, $adminplaceholders);
-        $parsedAdminSubject = parseTemplate($adminTemplate->subject, $adminplaceholders);
-
+     
         // Send to user
         Mail::to($request->email)->send(new CommonMail($parsedSubject, $parsedBody));
-        // Send to admin
-        $cv = $request->file('cv');
-
-        $adminMailId = get_setting('admin_mail_address');
-
-        Mail::to($adminMailId)->send(new CommonMail($parsedAdminSubject, $parsedAdminBody), $cv);
+        
         // Send email using mailable and template
        
         return response()->json(['message' => 'Message sent successfully.']);

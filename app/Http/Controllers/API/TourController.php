@@ -332,7 +332,8 @@ class TourController extends Controller
         }
         if($tours->count()>0) {
             foreach($tours as $tour) {
-                $image  = uploaded_asset($tour->main_image->id, 'thumb');
+                $image_id = $tour->main_image->id ?? 0;
+                $image  = uploaded_asset($image_id, 'thumb');
                 $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => 'tour/'.$tour->slug, 'address' => $tour->location->address];
             }
         }
