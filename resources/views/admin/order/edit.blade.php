@@ -1070,6 +1070,7 @@ $(document).ready(function(){
             processData: false,
             success: function(response) {
                 console.log('Success:', response);
+                $('.modal').modal('hide');
             },
             error: function(xhr, status, error) {
                 console.error('Error:', error);
