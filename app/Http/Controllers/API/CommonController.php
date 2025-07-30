@@ -239,8 +239,8 @@ class CommonController extends Controller
             'email'            => 'required|email',
             'speciality'       => 'required|string|max:255',
             'phone'            => 'required|string|max:20',
-            'gender'           => 'required|in:male,female,other',
-            'experience'       => 'required|numeric|min:0',
+            'gender'           => 'required|string|max:20',
+            'experience'       => 'required|string|min:0',
             'cv'               => 'nullable|file|mimes:pdf,doc,docx|max:2048',
             'recaptcha_token'  => 'required',
         ], [
@@ -270,7 +270,7 @@ class CommonController extends Controller
 
         // Parse placeholders 
         $placeholders = [
-            'name' => $request->first_name." ".$request->last_name,
+            'name' => $request->first_name . " " . $request->last_name,
             'email' => $request->email,
             'message' => $request->message,
             'year' => date('Y'),
