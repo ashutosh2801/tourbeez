@@ -83,20 +83,6 @@ class Order extends Model
     }
 
 
-    public function getStatusAttribute()
-    {
-        return match ($this->order_status) {
-            1 => 'New',
-            2 => 'On Hold',
-            3 => 'Pending supplier',
-            4 => 'Pending customer',
-            5 => 'Confirmed',
-            6 => 'Cancelled',
-            7 => 'Abandoned cart',
-            default => 'Cancelled',
-        };
-    }
-
     public function setOrderStatusAttribute($value)
     {
         $map = [
@@ -110,8 +96,23 @@ class Order extends Model
         ];
 
         // optional fallback if string doesn't match
-        $this->attributes['order_status'] = $map[$value] ?? 6;
+        $this->attributes['order_status'] = $map[$value] ?? 1;
     }
+
+    public function getStatusAttribute()
+    {
+        return match ($this->order_status) {
+            1 => 'New',
+            2 => 'On Hold',
+            3 => 'Pending supplier',
+            4 => 'Pending customer',
+            5 => 'Confirmed',
+            6 => 'Cancelled',
+            7 => 'Abandoned cart',
+            default => 'New',
+        };
+    }
+
 
     public function meta()
     {
