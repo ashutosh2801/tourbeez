@@ -179,7 +179,7 @@ class CommonController extends Controller
         $this->messages = [
             'name.required' => 'Name is required.',
             'email.required' => 'Email is required.',
-            'phone.required' => 'Phone number is required.',
+            'phone.required' => 'Phone number is required.',    
             'message.required' => 'Message is required.',
             'recaptcha_token.required' => 'reCAPTCHA token is required.',
         ];
@@ -241,7 +241,8 @@ class CommonController extends Controller
             'phone'            => 'required|string|max:20',
             'gender'           => 'required|string|max:20',
             'experience'       => 'required|string|min:0',
-            'cv'               => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+            'cv'               => 'nullable',
+            // 'cv'               => 'nullable|file|mimes:pdf,doc,docx|max:2048',
             'recaptcha_token'  => 'required',
         ], [
             'first_name.required'      => 'First name is required.',
@@ -253,12 +254,18 @@ class CommonController extends Controller
             'gender.required'          => 'Gender is required.',
             'gender.in'                => 'Gender must be Male, Female, or Other.',
             'experience.required'      => 'Experience is required.',
-            'experience.numeric'       => 'Experience must be a number.',
-            'cv.file'                  => 'CV must be a file.',
-            'cv.mimes'                 => 'CV must be a PDF or Word document.',
-            'cv.max'                   => 'CV must not be larger than 2MB.',
+            'experience.string'       => 'Experience must be a string.',
+            // 'cv.file'                  => 'CV must be a file.',
+            // 'cv.mimes'                 => 'CV must be a PDF or Word document.',
+            // 'cv.max'                   => 'CV must not be larger than 2MB.',
             'recaptcha_token.required' => 'reCAPTCHA token is required.',
         ]);
+
+        if ($request->hasFile('cv')) {
+            $request->validate([
+                'cv' => 'file|mimes:pdf,doc,docx|max:2048'
+            ]);
+        }
 
         $validated = Validator::make($request->all(), $this->rules, $this->messages);
         if ($validated->fails()) {
@@ -297,8 +304,7 @@ class CommonController extends Controller
         Mail::to($request->email)->send(new CommonMail($parsedSubject, $parsedBody));
         
         // Send email using mailable and template
-        Mail::to($validated['email'])->send(new ContactMail($validated));
-
+       
         return response()->json(['message' => 'Message sent successfully.']);
     }
     

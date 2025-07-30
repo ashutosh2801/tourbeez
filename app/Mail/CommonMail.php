@@ -8,6 +8,8 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Mail\Mailables\Attachment;
+use Illuminate\Http\UploadedFile;
 
 class CommonMail extends Mailable
 {
@@ -15,13 +17,17 @@ class CommonMail extends Mailable
     public $subjectHtml;
     public $bodyHtml;
 
+    public ?UploadedFile $attachment;
+
+
     /**
      * Create a new message instance.
      */
-    public function __construct($subjectHtml, $bodyHtml)
+    public function __construct($subjectHtml, $bodyHtml, UploadedFile $attachment = null)
     {
         $this->subjectHtml = $subjectHtml;
         $this->bodyHtml = $bodyHtml;
+        $this->attachment = $attachment;
     }
 
     /**
@@ -39,8 +45,16 @@ class CommonMail extends Mailable
      *
      * @return array<int, \Illuminate\Mail\Mailables\Attachment>
      */
-    public function attachments(): array
-    {
-        return [];
-    }
+     public function attachments(): array
+        {
+            if ($this->attachment) {
+                return [
+                    Attachment::fromPath($this->attachment->getRealPath())
+                        ->as('attachment.' . $this->attachment->getClientOriginalExtension())
+                        ->withMime($this->attachment->getMimeType())
+                ];
+            }
+
+            return [];
+        }
 }
