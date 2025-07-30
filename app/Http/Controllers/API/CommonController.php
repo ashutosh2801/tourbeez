@@ -265,6 +265,17 @@ class CommonController extends Controller
             return response()->json(['status' => false, 'errors' => $validated->errors()], 422);
         }
 
+        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret'   => env('RECAPTCHA_SECRET'),
+            'response' => $request->recaptcha_token,
+            'remoteip' => $request->ip(),
+        ]);
+
+        $result = $response->json();
+
+        if (!($result['success'] ?? false)) {
+            return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
+        }
 
         $template = fetch_email_template('career_mail');
 
@@ -279,27 +290,12 @@ class CommonController extends Controller
             'login_url' => config('app.site_url') .  "/login",
         ];
 
-
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
-
-        // Send to user
      
-
-        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret'   => env('RECAPTCHA_SECRET'),
-            'response' => $request->recaptcha_token,
-            'remoteip' => $request->ip(),
-        ]);
-
-        $result = $response->json();
-
-        if (!($result['success'] ?? false)) {
-            return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
-        }
-
         // Send to user
         Mail::to($request->email)->send(new CommonMail($parsedSubject, $parsedBody));
+        
         // Send email using mailable and template
         Mail::to($validated['email'])->send(new ContactMail($validated));
 
