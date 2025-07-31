@@ -40,7 +40,8 @@ class CommonController extends Controller
             $cities[] = [
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
-                'url'   => '/'.$d->id.'/'.Str::slug( $d->name ),
+                // 'url'   => '/'.$d->id.'/'.Str::slug( $d->name ),
+                'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
                 'image' => uploaded_asset( $d->upload_id ),
                 'extra' => ''
             ];
@@ -102,7 +103,7 @@ class CommonController extends Controller
             $blogs[] = [
                 'id'    => $b->id,
                 'name'  => ucfirst($b->name),
-                'url'   => ('/blog/' . $b->slug), // or $b->guid if using permalink
+                'url'   => ('https://tourbeez.com/blog/' . $b->slug), // or $b->guid if using permalink
                 'image' => $image_url,
                 'date' => date('d M, Y', strtotime($b->post_date))
             ];
@@ -129,7 +130,7 @@ class CommonController extends Controller
             $cities[] = [
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
-                'url'   => '/'.$d->id.'/'.Str::slug( $d->name ),
+                'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
                 'image' => uploaded_asset( $d->upload_id ),
                 'extra' => ''
             ];

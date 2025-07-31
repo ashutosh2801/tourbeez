@@ -88,9 +88,8 @@ class TourController extends Controller
                 ];
             }
 
-            $duration = $d->schedule?->estimated_duration_num ?? '';
-            $duration.= ' '.ucfirst($d->schedule?->estimated_duration_unit ?? '');
-            $duration = $duration ?? 'NA';
+            $duration = $d->schedule?->estimated_duration_num.' ' ?? '';
+            $duration.= ucfirst($d->schedule?->estimated_duration_unit ?? '');
 
             $items[] = [
                 'id'             => $d->id,
@@ -101,7 +100,7 @@ class TourController extends Controller
                 //'catogory'       => $d->catogory,
                 'price'          => price_format($d->price),
                 'original_price' => $d->price,
-                'duration'       => $duration,
+                'duration'       => trim($duration),
                 'rating'         => randomFloat(4, 5),
                 'comment'        => rand(50, 100),
             ];
@@ -111,7 +110,7 @@ class TourController extends Controller
         return response()->json([
             'status'         => true,
             'data'           => $items,
-            'requested'           => $request->all(),
+            'requested'      => $request->all(),
             'current_page'   => $paginated->currentPage(),
             'last_page'      => $paginated->lastPage(),
             'per_page'       => $paginated->perPage(),
@@ -322,12 +321,12 @@ class TourController extends Controller
         $data = [];
         if($total_cities>0) {
             foreach($cities as $city) {
-                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => 'c1/'.Str::slug($city->name).'/'.$city->id, 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
+                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => 'c1/'.$city->id.'/'.Str::slug($city->name), 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
             }
         }
         if($total_categories>0) {
             foreach($categories as $category) {
-                $data[] = ['icon'=>'category', 'title' => $this->highlightMatch($category->name, $search), 'slug' => 'c3/'.$category->slug.'/'.$category->id , 'address' => ''];
+                $data[] = ['icon'=>'category', 'title' => $this->highlightMatch($category->name, $search), 'slug' => 'c3/'.$category->id.'/'.$category->slug , 'address' => ''];
             }
         }
         if($tours->count()>0) {
@@ -339,7 +338,7 @@ class TourController extends Controller
         }
         
         if (!$data) {
-            return response()->json(['status' => false, 'message' => 'No records found!'], 404);
+            return response()->json(['status' => false, 'data' => [], 'message' => 'No records found!']);
         }
 
         // Return the transformed data along with pagination info
