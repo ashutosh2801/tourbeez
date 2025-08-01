@@ -12,9 +12,13 @@ use App\Models\OrderMeta;
 use App\Models\OrderTour;
 use App\Models\Tour;
 use App\Models\TourPricing;
+use App\Models\TourSchedule;
+use App\Models\TourScheduleRepeats;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 
 class OrderController extends Controller
 {
@@ -443,15 +447,16 @@ class OrderController extends Controller
                     $pricing[] = [
                         'tour_id'           => $request->tourId,
                         'tour_pricing_id'   => $item['id'],
-                        'quantity'          => $item['quantity'] ?? 0,
-                        'label'             => $item['label'] ?? 0,
-                        'price'             => $item['price'] ?? 0,
-                        'total_price'       => $item['total_price'] ?? 0
+                        'quantity'          => $item['quantity'],
+                        'label'             => $item['label'],
+                        'price'             => $item['price'],
+                        'total_price'       => $item['total_price']
                     ];
 
-                    $qty = $item['quantity'] ?? 0;
+                    // $qty = $item['quantity'] ?? 0;
                     // $price = floatval($item['price']);
-                    $qty = intval($qty);
+                    // $qty = intval($qty);
+                    $qty    = intval($item['quantity']);
                     // $item_price = $price * $qty;
                     // $item_total += $item_price;
                     $quantity += $qty;
@@ -471,10 +476,10 @@ class OrderController extends Controller
                         $extra[] = [
                             'tour_id'           => $request->tourId,
                             'tour_extra_id'     => $addon['id'],
-                            'quantity'          => $addon['quantity'] ?? 0,
-                            'label'             => $addon['label'] ?? '-',
-                            'price'             => $addon['price'] ?? 0,
-                            'total_price'       => $addon['total_price']?? 0
+                            'quantity'          => $addon['quantity'],
+                            'label'             => $addon['label'],
+                            'price'             => $addon['price'],
+                            'total_price'       => $addon['total_price']
                         ];
                         // $price = floatval($addon['price']);
                         // $qty = intval($addon['quantity']);
@@ -540,11 +545,118 @@ class OrderController extends Controller
             ], 200);
         }
         catch (\Exception $e) {
+            Log::info($e);
             return response()->json([
                 'status' => true,
                 'message' => $e->getMessage(),
             ], 401);
         }
+    }
+
+
+    public function getSessionTimes(Request $request)
+    {
+
+        $carbonDate = Carbon::parse($request->date);
+        $date = $request->date;
+
+ 
+        $dayName = $carbonDate->format('l');
+        $slots = [];
+
+        $schedules = TourSchedule::where('tour_id', $request->tour_id)
+            ->whereDate('session_start_date', '<=', $date)
+            ->whereDate('until_date', '>=', $date)
+            ->get();
+            
+        foreach ($schedules as $schedule) {
+            $durationMinutes = match (strtolower($schedule->minimum_notice_unit)) {
+                'minute', 'minutes' => $schedule->minimum_notice_num,
+                'hour', 'hours' => $schedule->minimum_notice_num * 60,
+                default => 0
+            };
+
+            $startTime = $schedule->session_start_time ?? '00:00';
+            $endTime = $schedule->session_end_time ?? '23:59';
+
+            if ($schedule->sesion_all_day) {
+                $startTime = '00:00';
+                $endTime = '23:59';
+            }
+
+            $repeatType = strtoupper($schedule->repeat_period);
+            $start = Carbon::parse($startTime);
+            $end = Carbon::parse($endTime);
+
+            if ($durationMinutes <= 0 || $start->gte($end)) {
+                continue;
+            }
+
+            $valid = false;
+
+            if ($repeatType === 'NONE') {
+                $valid = $date->isSameDay(Carbon::parse($schedule->session_start_date));
+                if ($valid) {
+                    $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $schedule->id, null));
+                }
+            } elseif ($repeatType === 'DAILY') {
+                $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $schedule->id, null));
+            } elseif ($repeatType === 'WEEKLY') {
+                $repeats = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+                    ->where('day', $dayName)
+                    ->get();
+
+                foreach ($repeats as $repeat) {
+                    $slotStart = Carbon::parse($repeat->start_time ?? $startTime);
+                    $slotEnd = Carbon::parse($repeat->end_time ?? $endTime);
+                    $slots = array_merge($slots, $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $schedule->id, $repeat->id));
+                }
+            } elseif ($repeatType === 'MONTHLY') {
+                if ($date->day == Carbon::parse($schedule->session_start_date)->day) {
+                    $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $schedule->id, null));
+                }
+            } elseif ($repeatType === 'YEARLY') {
+                $ref = Carbon::parse($schedule->session_start_date);
+                if ($date->day == $ref->day && $date->month == $ref->month) {
+                    $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $schedule->id, null));
+                }
+            }
+        }
+        
+        if (empty($slots)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No sessions available on this date.'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'slots' => $slots
+        ]);
+    }
+
+    private function generateSlots($start, $end, $durationMinutes, $scheduleId, $repeatId = null)
+    {
+        $slots = [];
+
+        while ($start->lt($end)) {
+            $slotEnd = $start->copy()->addMinutes($durationMinutes);
+
+            if ($slotEnd->gt($end)) {
+                break;
+            }
+
+            $slots[] = [
+                'label' => $start->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                'schedule_id' => $scheduleId,
+                'repeat_id' => $repeatId,
+            ];
+
+            $start = $slotEnd;
+        }
+
+        return $slots;
     }
     
 }

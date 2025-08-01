@@ -8,8 +8,11 @@ use App\Models\Order;
 use App\Models\OrderTour;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
+use App\Models\TourPricing;
 use App\Services\TwilioService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -653,6 +656,88 @@ class OrderController extends Controller
 
         return response()->json(['success' => true]);
     }
+
+
+
+
+    public function manifest(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        // Preload pricing labels indexed by ID
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+
+        // Create 48 half-hour slots
+        $timeSlots = collect();
+        $start = Carbon::createFromTime(0, 0);
+        for ($i = 0; $i < 48; $i++) {
+            $slotStart = $start->copy()->addMinutes($i * 30);
+            $slotEnd = $slotStart->copy()->addMinutes(30);
+            $timeSlots->push([
+                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                'start' => $slotStart->format('H:i:s'),
+                'end' => $slotEnd->format('H:i:s'),
+            ]);
+        }
+
+        $sessions = collect();
+
+        foreach ($timeSlots as $slot) {
+            $orders = Order::with(['customer', 'orderTours'])
+                ->whereDate('created_at', $date)
+                ->whereTime('created_at', '>=', $slot['start'])
+                ->whereTime('created_at', '<', $slot['end'])
+                ->get()
+                ->map(function ($order) use ($pricingLabels) {
+                    $guests = collect();
+                    $extras = collect();
+
+                    foreach ($order->orderTours as $ot) {
+                        // Parse guest pricing
+                        $pricingItems = json_decode($ot->tour_pricing, true);
+                        if (is_array($pricingItems)) {
+                            foreach ($pricingItems as $p) {
+                                $qty = $p['quantity'] ?? 0;
+                                $pricingId = $p['tour_pricing_id'] ?? null;
+                                $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                                if ($qty && $label) {
+                                    $guests->push("{$qty} {$label}");
+                                }
+                            }
+                        }
+
+                        // Parse extras
+                        $extraItems = json_decode($ot->tour_extra, true);
+                        if (is_array($extraItems)) {
+                            foreach ($extraItems as $e) {
+                                $qty = $e['quantity'] ?? 0;
+                                $label = $e['label'] ?? null;
+                                if ($qty && $label) {
+                                    $extras->push("{$qty} {$label}");
+                                }
+                            }
+                        }
+                    }
+
+                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+
+                    return $order;
+                });
+
+            if ($orders->isNotEmpty()) {
+                $sessions->push([
+                    'slot_time' => $slot['label'],
+                    'orders' => $orders,
+                ]);
+            }
+        }
+
+        return view('admin.order.manifest', compact('sessions', 'date'));
+    }
+
 
     
 

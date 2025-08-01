@@ -245,14 +245,14 @@ class PaymentController extends Controller
 
                 $order = Order::where('order_number',$booking->order_number)->first();
 
-
+                Log::info('order_email_sent' . $order->email_sent);
                 if ($order && !$order->email_sent) {                    
                     $mailsent = self::sendOrderDetailMail($detail);
-
+                    Log::info('order_email_sentqwwqdwqqdqwdqw' . $order->email_sent);
                     $order->email_sent = true;
                     $order->save();
                 }
-
+                Log::info('order_email_sentqwwqdwq' . $order->email_sent);
 
                 return response()->json([
                         'status'  => 'succeeded',
@@ -279,6 +279,7 @@ class PaymentController extends Controller
 
     public static function sendOrderDetailMail($detail)
     {
+        Log::info('order_email_sentqwwqdwq' . 282);
         try{
             $order_id = $detail['order_number'];
             // $order_template_id = $request->order_template_id;
@@ -292,7 +293,7 @@ class PaymentController extends Controller
             $template_subject = $email_template->subject;
 
             $header = $email_template->header;
-
+            Log::info('order_email_sentqwwqdwq' . 296);
             $system_logo = get_setting('system_logo');
             $logo = uploaded_asset($system_logo);
 
@@ -301,7 +302,7 @@ class PaymentController extends Controller
             if(!$customer){
                 $customer = $order->orderUser;
             }
-
+            Log::info('order_email_sentqwwqdwq' . 305);
             if(!$customer){
                 // $customer = User::find(4);
 
@@ -310,11 +311,11 @@ class PaymentController extends Controller
                     'message' => "customer not found"
                 ], 404);
             }
-
+            Log::info('order_email_sentqwwqdwq' . 314);
             $orderTour  = $order->orderTours()->first();
             $tour       = $orderTour->tour;
             //echo '<pre>'; print_r($orderTour->tour); exit;
-            $payment = $detail['payment'];
+            $payment = $detail['payment_method'];
 
 
             $TOUR_PAYMENT_HISTORY = '
@@ -345,8 +346,8 @@ class PaymentController extends Controller
 
                             <tr>
                                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $payment['created_at'] . '</td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: right;padding: 5px 0px;" valign="top"><strong>' . $payment['total_amount'] . '</strong></td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail['created_at'] . '</td>
+                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: right;padding: 5px 0px;" valign="top"><strong>' . $detail['total_amount'] . '</strong></td>
                             </tr>
 
                             <tr>
@@ -357,7 +358,7 @@ class PaymentController extends Controller
                                     <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
                                 </td>
                                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                    <h3 style="color: #000;font-size:19px"><strong>' . $payment['total_amount'] . '</strong></h3>
+                                    <h3 style="color: #000;font-size:19px"><strong>' . $detail['total_amount'] . '</strong></h3>
                                 </td>
                             </tr>
                         </tbody>
@@ -473,12 +474,12 @@ class PaymentController extends Controller
             ];
 
 
-            
+            Log::info('order_email_sentqwwqdwq' . 477);
             $body = strtr($template, $replacements);
             $footer = strtr($template_footer, $replacements);
             $subject = strtr($template_subject, $replacements);
 
-
+            Log::info('order_mail_send' . $customer->email);
             $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer);
 
             return response()->json([
@@ -494,6 +495,8 @@ class PaymentController extends Controller
             }
         }
         catch(\Exception $e){
+            Log::info('order_email_sentqwwqdwq' . 498);
+            Log::info($e);
             return response()->json([
                     'success' => false,
                     'message' => $e->getMessage()
@@ -505,7 +508,7 @@ class PaymentController extends Controller
     public static function order_mail_send($email,$subject, $header,  $body, $footer)
     {
         
-        if (env('MAIL_USERNAME') != null) {
+        if (env('MAIL_FROM_ADDRESS') != null) {
             $array['view'] = 'emails.newsletter';
             $array['subject'] = $subject;
             $array['header'] = $header;
