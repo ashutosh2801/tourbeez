@@ -123,6 +123,16 @@
             </a>
         </li>
         @endcan 
+
+        @can('show_orders') 
+        <li class="nav-item">
+            <a href="{{ route('admin.orders.manifest') }}"
+                class="nav-link {{ areActiveRoutes(['uploaded-files.create']) }}">
+                <i class="nav-icon fas fa-tasks"></i>
+                <p>{{ translate('Manifest') }}</p>
+            </a>
+        </li>
+        @endcan
         @can('show_customers') 
         <li class="nav-item">
             <a href="{{ route('admin.customers.index') }}"

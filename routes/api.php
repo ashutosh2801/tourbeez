@@ -25,6 +25,9 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 
+
+
+
 Route::middleware(['api.key'])->group(function () {
     Route::get('/categories',[CategoryController::class,'index'])->name('categories');
     Route::post('/sub-cateogries',[CategoryController::class,'subcategory'])->name('sub.category');
@@ -45,6 +48,8 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/checkout', [OrderController::class, 'checkout']);
     Route::get('/orders/{id}',[OrderController::class,'index']);
     Route::get('/order/{id}',[OrderController::class,'view']);
+
+    Route::post('/tour-sessions', [OrderController::class, 'getSessionTimes']);
 
     Route::get('/wishlist', [WishlistController::class, 'index']);
     Route::get('/wishlist/tours', [WishlistController::class, 'wishlist_tours']);
