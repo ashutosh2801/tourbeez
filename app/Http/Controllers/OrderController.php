@@ -295,6 +295,7 @@ class OrderController extends Controller
             $order_id = $request->order_id;
             $order_template_id = $request->order_template_id;
             $order = Order::findorFail($order_id);
+            dd($order->order_tour->tour_date ? date('l, F j, Y', strtotime($order->order_tour->tour_date)) : '', $order->order_tour->tour_time ? date('H:i A', strtotime($order->order_tour->tour_time)) : '');
             $email_template = EmailTemplate::findorFail($order_template_id);
 
             $template = $email_template->body;

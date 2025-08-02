@@ -26,13 +26,19 @@ class CommonController extends Controller
     public function home_listing(Request $request)
     {
         $data = Cache::remember('cities_home_list', 86400, function () {
-            return  DB::table('tour_locations as tl')
-                    ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                    ->select('c.id', 'c.name', 'c.upload_id')
-                    ->groupBy('c.name')
-                    ->orderBy('c.name')
-                    ->limit(25)
-                    ->get();
+            return DB::table('tour_locations as tl')
+                ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                ->join('states as s', 's.id', '=', 'c.state_id')
+                ->join('countries as co', 'co.id', '=', 's.country_id')
+                ->whereIn('co.name', ['Canada', 'United States'])
+                ->where('co.status', 'active')
+                ->where('s.status', 'active')
+                ->where('c.status', 'active')
+                ->select('c.id', 'c.name', 'c.upload_id')
+                ->groupBy('c.id', 'c.name', 'c.upload_id')
+                ->inRandomOrder()
+                ->limit(15)
+                ->get();
         });
 
         $cities = [];
