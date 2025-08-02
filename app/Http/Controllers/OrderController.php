@@ -22,25 +22,152 @@ class OrderController extends Controller
     /**
      * Display a listing of the resource.
      */
+    // public function index(Request $request)
+    // {
+
+    //     $query = Order::with(['customer', 'orderTours'])->orderBy('created_at', 'DESC');
+
+    //     if ($search = $request->input('search')) {
+    //         $query->where(function ($q) use ($search) {
+    //             $q->where('order_number', 'like', "%{$search}%")
+    //             ->orWhereHas('customer', function ($q2) use ($search) {
+    //                 $q2->where('first_name', 'like', "%{$search}%");
+    //                 $q2->orWhere('last_name', 'like', "%{$search}%");
+    //             });
+    //         });
+    //     }
+
+    //     $orders = $query->paginate(10);
+
+    //     return view('admin.order.index', compact(['orders']));
+    // }
+
+//     use App\Models\Order;
+// use App\Models\Tour;
+// use Illuminate\Http\Request;
+
     public function index(Request $request)
     {
+        $query = Order::with(['customer', 'orderTours.tour'])->orderBy('created_at', 'DESC');
 
-        $query = Order::with(['customer', 'orderTours'])->orderBy('created_at', 'DESC');
-
+        // Search by order number or customer name
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
-                ->orWhereHas('customer', function ($q2) use ($search) {
-                    $q2->where('first_name', 'like', "%{$search}%");
-                    $q2->orWhere('last_name', 'like', "%{$search}%");
-                });
+                  ->orWhereHas('customer', function ($q2) use ($search) {
+                      $q2->where('first_name', 'like', "%{$search}%")
+                         ->orWhere('last_name', 'like', "%{$search}%");
+                  });
             });
         }
 
-        $orders = $query->paginate(10);
+        // Filter by tour product
+        if ($product = $request->input('product')) {
 
-        return view('admin.order.index', compact(['orders']));
+            $query->whereHas('orderTours', function ($q) use ($product) {
+                $q->where('tour_id', $product);
+            });
+        }
+
+        // Filter by payment status
+        if ($paymentStatus = $request->input('payment_status')) {
+            $query->where('payment_status', $paymentStatus);
+        }
+
+        // Filter by order status
+
+
+        if ($orderStatus = $request->input('order_status')) {
+            $query->where('order_status', $orderStatus);
+        }
+
+        // Filter by tour start date range
+        if ($start = $request->input('tour_start_date')) {
+            // dd($request->input('tour_start_date'));
+            $query->whereHas('orderTours', function ($q) use ($start) {
+
+                $q->whereDate('tour_date', '=', $start);
+            });
+        }
+
+        // if ($end = $request->input('tour_end_date')) {
+        //     $query->whereHas('orderTours', function ($q) use ($end) {
+        //         $q->whereDate('tour_date', '<=', $end);
+        //     });
+        // }
+        if ($filter = $request->input('date_filter')) {
+            $today = Carbon::today();
+
+            switch ($filter) {
+                case 'last_7':
+                    $from = $today->copy()->subDays(6); // today + last 6
+                    break;
+                case 'last_15':
+                    $from = $today->copy()->subDays(14);
+                    break;
+                case 'this_month':
+                    $from = $today->copy()->startOfMonth();
+                    break;
+                case 'last_90':
+                    $from = $today->copy()->subDays(89);
+                    break;
+                case 'last_6_months':
+                    $from = $today->copy()->subMonths(5)->startOfMonth(); // inclusive of current
+                    break;
+                case 'this_year':
+                    $from = $today->copy()->startOfYear();
+                    break;
+                default:
+                    $from = null;
+            }
+
+            if (isset($from)) {
+                $query->whereDate('created_at', '>=', $from);
+            }
+        }
+
+        if ($tourFilter = $request->input('tour_date_filter')) {
+            $today = Carbon::today();
+
+            switch ($tourFilter) {
+                case 'last_7':
+                    $from = $today->copy()->subDays(6);
+                    break;
+                case 'last_15':
+                    $from = $today->copy()->subDays(14);
+                    break;
+                case 'this_month':
+                    $from = $today->copy()->startOfMonth();
+                    break;
+                case 'last_90':
+                    $from = $today->copy()->subDays(89);
+                    break;
+                case 'last_6_months':
+                    $from = $today->copy()->subMonths(5)->startOfMonth();
+                    break;
+                case 'this_year':
+                    $from = $today->copy()->startOfYear();
+                    break;
+                default:
+                    $from = null;
+            }
+
+            if (isset($from)) {
+                $query->whereHas('orderTours', function ($q) use ($from) {
+                    $q->whereDate('tour_date', '>=', $from);
+                });
+            }
+        }
+
+
+
+        $orders = $query->paginate(10)->appends($request->all()); // preserve filters in pagination
+
+        $products = Tour::select('id', 'title')->get(); // for filter dropdown
+
+        return view('admin.order.index', compact('orders', 'products'));
     }
+
 
     public function showPdfFiles()
     {
