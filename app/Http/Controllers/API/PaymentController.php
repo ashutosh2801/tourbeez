@@ -225,7 +225,7 @@ class PaymentController extends Controller
                 $detail = [
                     'order_number'      => $booking->order_number,
                     'number_of_guests'  => $booking->number_of_guests,
-                    'total_amount'      => $booking->total_amount,
+                    'total_amount'      => price_format_with_currency($booking->total_amount, $booking->currency) ?? '',
                     'currency'          => $booking->currency,
                     'payment_method'    => ucfirst($booking->payment_method),
                     'customer'          => $booking->customer,
@@ -414,7 +414,7 @@ class PaymentController extends Controller
                                     <tr>
                                       <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
                                       <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail["created_at"] . '</td>
-                                      <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px;" valign="top"><strong>' . $detail["total_amount"] . '</strong></td>
+                                      <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:10px;" valign="top"><strong>' . $detail["total_amount"] . '</strong></td>
                                     </tr>
 
                                     <tr>
@@ -423,7 +423,7 @@ class PaymentController extends Controller
                                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
                                       </td>
                                       <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                        <h3 style="color: #000;font-size:19px; margin:0;"><strong>' . $detail["total_amount"] . '</strong></h3>
+                                        <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . $detail["total_amount"] . '</strong></h3>
                                       </td>
                                     </tr>
                                   </tbody>
@@ -530,8 +530,8 @@ class PaymentController extends Controller
 
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
                 "[[ORDER_STATUS]]"          => $order->status,
-                "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($order->created_at)),
-                "[[ORDER_TOUR_TIME]]"       => date('H:i A', strtotime($order->created_at)),
+                "[[ORDER_TOUR_DATE]]"       => $order->order_tour->tour_date ? date('l, F j, Y', strtotime($order->order_tour->tour_date)) : '',
+                "[[ORDER_TOUR_TIME]]"       => $order->order_tour->tour_time ? date('H:i A', strtotime($order->order_tour->tour_time)) : '',
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
                 "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
