@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Exports\ManifestExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class OrderController extends Controller
 {
@@ -866,6 +870,82 @@ class OrderController extends Controller
         return view('admin.order.manifest', compact('sessions', 'date'));
     }
 
+
+    public function downloadManifest(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+        $timeSlots = collect();
+        $start = Carbon::createFromTime(0, 0);
+        for ($i = 0; $i < 48; $i++) {
+            $slotStart = $start->copy()->addMinutes($i * 30);
+            $slotEnd = $slotStart->copy()->addMinutes(30);
+            $timeSlots->push([
+                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                'start' => $slotStart->format('H:i:s'),
+                'end' => $slotEnd->format('H:i:s'),
+            ]);
+        }
+
+        $sessions = collect();
+
+        foreach ($timeSlots as $slot) {
+            $orders = Order::with(['customer', 'orderTours'])
+                ->whereDate('created_at', $date)
+                ->whereTime('created_at', '>=', $slot['start'])
+                ->whereTime('created_at', '<', $slot['end'])
+                ->get()
+                ->map(function ($order) use ($pricingLabels) {
+                    $guests = collect();
+                    $extras = collect();
+                    $guestCount = 0;
+
+                    foreach ($order->orderTours as $ot) {
+                        $pricingItems = json_decode($ot->tour_pricing, true);
+                        if (is_array($pricingItems)) {
+                            foreach ($pricingItems as $p) {
+                                $qty = $p['quantity'] ?? 0;
+                                $pricingId = $p['tour_pricing_id'] ?? null;
+                                $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                                if ($qty && $label) {
+                                    $guests->push("{$qty} {$label}");
+                                    $guestCount += $qty;
+                                }
+                            }
+                        }
+
+                        $extraItems = json_decode($ot->tour_extra, true);
+                        if (is_array($extraItems)) {
+                            foreach ($extraItems as $e) {
+                                $qty = $e['quantity'] ?? 0;
+                                $label = $e['label'] ?? null;
+                                if ($qty && $label) {
+                                    $extras->push("{$qty} {$label}");
+                                }
+                            }
+                        }
+                    }
+
+                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+                    $order->guest_count = $guestCount;
+
+                    return $order;
+                });
+
+            if ($orders->isNotEmpty()) {
+                $sessions->push([
+                    'slot_time' => $slot['label'],
+                    'orders' => $orders,
+                ]);
+            }
+        }
+
+        return Excel::download(new ManifestExport($sessions, $date), "Manifest_{$date}.xlsx");
+    }
 
     
 
