@@ -347,4 +347,98 @@ class TourController extends Controller
             'data'    => $data,
         ]);
     }
+
+
+    public function toursByCategory(Request $request)
+    {
+        $category_id = $request->input('category_id');
+
+        if (!$category_id) {
+            return response()->json([
+                'status' => false,
+                'message' => 'category_id is required'
+            ], 400);
+        }
+
+        $page = $request->get('page', 1);
+        $order_by = $request->input('order_by');
+
+        $cacheKey = 'category_tours_' . $category_id . '_order_' . $order_by . '_page_' . $page;
+
+        $paginated = Cache::remember($cacheKey, 86400, function () use ($category_id, $order_by) {
+            $query = Tour::where('status', 1)
+                ->whereNull('deleted_at')
+                ->whereHas('categories', function ($q) use ($category_id) {
+                    $q->where('categories.id', $category_id);
+                });
+
+            if ($order_by === 'lowtohigh') {
+                $query->orderBy('price', 'ASC');
+            } elseif ($order_by === 'hightolow') {
+                $query->orderBy('price', 'DESC');
+            } else {
+                $query->orderBy('id', 'DESC');
+            }
+
+            return $query->paginate(12);
+        });
+
+        // Format paginated result
+        $items = [];
+        foreach ($paginated->items() as $d) {
+            $galleries = [];
+
+            if (count($d->galleries) > 0) {
+                foreach ($d->galleries as $g) {
+                    $image      = uploaded_asset($g->id);
+                    $medium_url = str_replace($g->file_name, $g->medium_name, $image);
+                    $thumb_url  = str_replace($g->file_name, $g->thumb_name, $image);
+                    $galleries[] = [
+                        'original_image' => $image,
+                        'medium_image'   => $medium_url,
+                        'thumb_image'    => $thumb_url,
+                    ];
+                }
+            } else {
+                $image      = uploaded_asset($d->main_image->id);
+                $medium_url = str_replace($d->main_image->file_name, $d->main_image->medium_name, $image);
+                $thumb_url  = str_replace($d->main_image->file_name, $d->main_image->thumb_name, $image);
+                $galleries[] = [
+                    'original_image' => $image,
+                    'medium_image'   => $medium_url,
+                    'thumb_image'    => $thumb_url,
+                ];
+            }
+
+            $duration = $d->schedule?->estimated_duration_num . ' ' ?? '';
+            $duration .= ucfirst($d->schedule?->estimated_duration_unit ?? '');
+
+            $items[] = [
+                'id'             => $d->id,
+                'title'          => $d->title,
+                'slug'           => $d->slug,
+                'unique_code'    => $d->unique_code,
+                'all_images'     => $galleries,
+                'price'          => price_format($d->price),
+                'original_price' => $d->price,
+                'duration'       => trim($duration),
+                'rating'         => randomFloat(4, 5),
+                'comment'        => rand(50, 100),
+            ];
+        }
+
+        return response()->json([
+            'status'         => true,
+            'data'           => $items,
+            'requested'      => $request->all(),
+            'current_page'   => $paginated->currentPage(),
+            'last_page'      => $paginated->lastPage(),
+            'per_page'       => $paginated->perPage(),
+            'total'          => $paginated->total(),
+            'next_page_url'  => $paginated->nextPageUrl(),
+            'prev_page_url'  => $paginated->previousPageUrl(),
+        ]);
+    }
+
+
 }

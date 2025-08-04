@@ -225,7 +225,7 @@ class PaymentController extends Controller
                 $detail = [
                     'order_number'      => $booking->order_number,
                     'number_of_guests'  => $booking->number_of_guests,
-                    'total_amount'      => $booking->total_amount,
+                    'total_amount'      => price_format_with_currency($booking->total_amount, $booking->currency) ?? '',
                     'currency'          => $booking->currency,
                     'payment_method'    => ucfirst($booking->payment_method),
                     'customer'          => $booking->customer,
@@ -318,51 +318,116 @@ class PaymentController extends Controller
             $payment = $detail['payment_method'];
 
 
-            $TOUR_PAYMENT_HISTORY = '
-                    <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
-                        <tbody>
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
-                                    <h3 style="font-size:19px"><strong>Payment History</strong></h3>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+            // $TOUR_PAYMENT_HISTORY = '
+            //         <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
+            //             <tbody>
+            //                 <tr>
+            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
+            //                         <h3 style="font-size:19px"><strong>Payment History</strong></h3>
+            //                     </td>
+            //                 </tr>
+            //             </tbody>
+            //         </table>
             
-                    <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
-                        <tbody>
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
-                                </td>
+            //         <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
+            //             <tbody>
+            //                 <tr>
+            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
+            //                     </td>
 
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
-                                </td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
-                                </td>
-                            </tr>
+            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
+            //                     </td>
+            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
+            //                     </td>
+            //                 </tr>
 
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail['created_at'] . '</td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: right;padding: 5px 0px;" valign="top"><strong>' . $detail['total_amount'] . '</strong></td>
-                            </tr>
+            //                 <tr>
+            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
+            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail['created_at'] . '</td>
+            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: right;padding: 5px 0px;" valign="top"><strong>' . $detail['total_amount'] . '</strong></td>
+            //                 </tr>
 
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000;">
-                                &nbsp;
-                                </td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;  border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-                                </td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                    <h3 style="color: #000;font-size:19px"><strong>' . $detail['total_amount'] . '</strong></h3>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>';
+            //                 <tr>
+            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000;">
+            //                     &nbsp;
+            //                     </td>
+            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;  border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
+            //                     </td>
+            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+            //                         <h3 style="color: #000;font-size:19px"><strong>' . $detail['total_amount'] . '</strong></h3>
+            //                     </td>
+            //                 </tr>
+            //             </tbody>
+            //         </table>';
+
+
+        $TOUR_PAYMENT_HISTORY =    '
+                                <style>
+                                @media only screen and (max-width: 640px) {
+                                  .wrapper {
+                                    width: 100% !important;
+                                    padding: 0 10px !important;
+                                  }
+                                  .table, .header_table {
+                                    width: 100% !important;
+                                  }
+                                  .table td {
+                                    display: block;
+                                    width: 100% !important;
+                                    text-align: left !important;
+                                  }
+                                  .table h3, .table small {
+                                    text-align: left !important;
+                                  }
+                                }
+                                </style>
+                                </head>
+                                <body style="margin:0; padding:0; font-family: \'Lato\', Helvetica, Arial, sans-serif; background-color: #f9f9f9;">
+                                <div class="wrapper" style="width:640px; margin:0 auto;">
+
+                                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:100%; max-width:640px;">
+                                  <tr>
+                                    <td style="padding: 30px 30px 15px;">
+                                      <h3 style="font-size:19px; margin: 0;"><strong>Payment History</strong></h3>
+                                    </td>
+                                  </tr>
+                                </table>
+
+                                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-collapse:collapse; background-color:#fff; width:100%; max-width:640px; border-left:30px solid #fff; border-right:30px solid #fff; border-bottom:30px solid #fff;">
+                                  <tbody>
+                                    <tr>
+                                      <td style="width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
+                                      </td>
+                                      <td style="width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
+                                      </td>
+                                      <td style="width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
+                                      </td>
+                                    </tr>
+
+                                    <tr>
+                                      <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
+                                      <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail["created_at"] . '</td>
+                                      <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:10px;" valign="top"><strong>' . $detail["total_amount"] . '</strong></td>
+                                    </tr>
+
+                                    <tr>
+                                      <td style="border-top:2pt solid #000; border-bottom:2pt solid #000;">&nbsp;</td>
+                                      <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
+                                      </td>
+                                      <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                        <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . $detail["total_amount"] . '</strong></h3>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>';
 
                     
 
@@ -465,8 +530,8 @@ class PaymentController extends Controller
 
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
                 "[[ORDER_STATUS]]"          => $order->status,
-                "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($order->created_at)),
-                "[[ORDER_TOUR_TIME]]"       => date('H:i A', strtotime($order->created_at)),
+                "[[ORDER_TOUR_DATE]]"       => $order->order_tour->tour_date ? date('l, F j, Y', strtotime($order->order_tour->tour_date)) : '',
+                "[[ORDER_TOUR_TIME]]"       => $order->order_tour->tour_time ? date('H:i A', strtotime($order->order_tour->tour_time)) : '',
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
                 "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',

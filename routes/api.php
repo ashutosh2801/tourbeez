@@ -32,6 +32,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/categories',[CategoryController::class,'index'])->name('categories');
     Route::post('/sub-cateogries',[CategoryController::class,'subcategory'])->name('sub.category');
     
+<<<<<<< HEAD
     Route::get('/home-listing',[CommonController::class,'home_listing']);
     Route::get('/popular-cities',[CommonController::class,'popular_cities']);
     Route::get('/popular-destinations',[CommonController::class,'popular_destinations']);
@@ -39,6 +40,14 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/contact',[CommonController::class,'contact']);
     Route::post('/careers',[CommonController::class,'careers']);
     Route::get('/recommendations', [CommonController::class, 'recommendations']);
+=======
+    Route::get('/home-listing',[CommonController::class,'home_listing'])->name('home_listing');
+    Route::get('/popular-cities',[CommonController::class,'popular_cities'])->name('popular_cities');
+    Route::get('/single-city/{id}',[CommonController::class,'single_city'])->name('single_city');
+    Route::post('/contact',[CommonController::class,'contact'])->name('contact');
+    Route::post('/careers',[CommonController::class,'careers'])->name('careers');
+    Route::get('/category-tours', [TourController::class, 'toursByCategory'])->name('tour.category');
+>>>>>>> d30568afce0f7fe0004adccfae088ecd5da83d7b
 
     Route::get('/tours',[TourController::class,'index']);
     Route::get('/tour/search', [TourController::class, 'search']);
