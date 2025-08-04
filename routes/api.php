@@ -37,6 +37,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/single-city/{id}',[CommonController::class,'single_city'])->name('single_city');
     Route::post('/contact',[CommonController::class,'contact'])->name('contact');
     Route::post('/careers',[CommonController::class,'careers'])->name('careers');
+    Route::get('/category-tours', [TourController::class, 'toursByCategory'])->name('tour.category');
 
     Route::get('/tours',[TourController::class,'index'])->name('tour.index');
     Route::get('/tour/search', [TourController::class, 'search']);

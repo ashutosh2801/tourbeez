@@ -100,15 +100,15 @@
                     <thead>
                         <tr>
                             <th><input type="checkbox" id="checkAll" style="width:15px; height:15px;"></th>
-                            <th>Order Number</th>
-                            <th>Status</th>
-                            <th>Tour</th>
-                            <th>Tour Date</th>
-                            <th>Customer</th>
-                            <th>Amount</th>
-                            <th>Payment</th>
-                            <th>Created</th>
-                            <th>Source</th>
+                            <th style="white-space: nowrap;">Order Number</th>
+                            <th style="white-space: nowrap;">Status</th>
+                            <th style="white-space: nowrap;">Tour</th>
+                            <th style="white-space: nowrap;">Tour Date</th>
+                            <th style="white-space: nowrap;">Customer</th>
+                            <th style="white-space: nowrap;">Amount</th>
+                            <th style="white-space: nowrap;">Payment</th>
+                            <th style="white-space: nowrap;">Created</th>
+                            <th style="white-space: nowrap;">Source</th>
                         </tr>
                     </thead>
                     <tbody>
