@@ -32,13 +32,15 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/categories',[CategoryController::class,'index'])->name('categories');
     Route::post('/sub-cateogries',[CategoryController::class,'subcategory'])->name('sub.category');
     
-    Route::get('/home-listing',[CommonController::class,'home_listing'])->name('home_listing');
-    Route::get('/popular-cities',[CommonController::class,'popular_cities'])->name('popular_cities');
-    Route::get('/single-city/{id}',[CommonController::class,'single_city'])->name('single_city');
-    Route::post('/contact',[CommonController::class,'contact'])->name('contact');
-    Route::post('/careers',[CommonController::class,'careers'])->name('careers');
+    Route::get('/home-listing',[CommonController::class,'home_listing']);
+    Route::get('/popular-cities',[CommonController::class,'popular_cities']);
+    Route::get('/popular-destinations',[CommonController::class,'popular_destinations']);
+    Route::get('/single-city/{id}',[CommonController::class,'single_city']);
+    Route::post('/contact',[CommonController::class,'contact']);
+    Route::post('/careers',[CommonController::class,'careers']);
+    Route::get('/recommendations', [CommonController::class, 'recommendations']);
 
-    Route::get('/tours',[TourController::class,'index'])->name('tour.index');
+    Route::get('/tours',[TourController::class,'index']);
     Route::get('/tour/search', [TourController::class, 'search']);
     Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
 

@@ -30,8 +30,8 @@ class CommonController extends Controller
                     ->join('cities as c', 'c.id', '=', 'tl.city_id')
                     ->select('c.id', 'c.name', 'c.upload_id')
                     ->groupBy('c.name')
-                    ->orderBy('c.name')
-                    ->limit(25)
+                    ->orderBy( rand() )
+                    ->limit(50)
                     ->get();
         });
 
@@ -71,7 +71,7 @@ class CommonController extends Controller
         }  
         
         //Blog
-        $blog_data = Cache::remember('tb_blog_home_list', 86400, function () {
+        $blog_data = Cache::remember('blog_home_list', 86400, function () {
             return DB::table('tb_posts as p')
                 ->leftJoin('tb_postmeta as pm', 'pm.post_id', '=', 'p.ID')
                 ->select('p.ID as id', 'p.post_title as name', 'p.post_name as slug', 'p.post_date', 'p.guid')
@@ -120,7 +120,7 @@ class CommonController extends Controller
                     ->join('cities as c', 'c.id', '=', 'tl.city_id')
                     ->select('c.id', 'c.name', 'c.upload_id')
                     ->distinct()
-                    ->orderBy('c.name')
+                    ->orderBy( rand())
                     ->limit(25)
                     ->get();
         // });
@@ -130,6 +130,33 @@ class CommonController extends Controller
             $cities[] = [
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
+                'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
+                'image' => uploaded_asset( $d->upload_id ),
+                'extra' => ''
+            ];
+        }  
+
+        return response()->json(['status' => true, 'popular_cities' => $cities], 200);
+    }
+
+    public function popular_destinations(Request $request)
+    {
+        // $cacheKey = 'popular_cities_list_'. $request->id;
+        // $data = Cache::remember($cacheKey, 86400, function () {
+            $data =   DB::table('tour_locations as tl')
+                    ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                    ->select('c.id', 'c.name', 'c.upload_id')
+                    ->distinct()
+                    ->orderBy( rand())
+                    ->limit(25)
+                    ->get();
+        // });
+
+        $cities = [];
+        foreach($data as $d) {
+            $cities[] = [
+                'id'    => $d->id,
+                'name'  => 'Things to do in '.ucfirst( $d->name ),
                 'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
                 'image' => uploaded_asset( $d->upload_id ),
                 'extra' => ''
@@ -166,6 +193,63 @@ class CommonController extends Controller
         ];
 
         return response()->json(['status' => true, 'data' => $data], 200);
+    }
+
+    public function recommendations(Request $request)
+    {
+        $ids = $request->input('ids', []);
+
+        $recommended = Tour::whereIn('id', $ids)
+            ->inRandomOrder()
+            ->limit(4)
+            ->paginate(4);
+
+        $items = [];
+        foreach ($recommended->items() as $d) {
+
+            $galleries = [];
+            if(count($d->galleries)>0) {
+                foreach( $d->galleries as $g ) {
+                    $image      = uploaded_asset($g->id);
+                    $medium_url = str_replace($g->file_name, $g->medium_name, $image);
+                    $thumb_url  = str_replace($g->file_name, $g->thumb_name, $image);
+                    $galleries[] = [
+                        'original_image' => $image,
+                        'medium_image'   => $medium_url,
+                        'thumb_image'    => $thumb_url,
+                    ];
+                }
+            }
+            else {
+                $image      = uploaded_asset($d->main_image->id);
+                $medium_url = str_replace($d->main_image->file_name, $d->main_image->medium_name, $image);
+                $thumb_url  = str_replace($d->main_image->file_name, $d->main_image->thumb_name, $image);
+                $galleries[] = [
+                    'original_image' => $image,
+                    'medium_image'   => $medium_url,
+                    'thumb_image'    => $thumb_url,
+                ];
+            }
+
+            $duration = $d->schedule?->estimated_duration_num.' ' ?? '';
+            $duration.= ucfirst($d->schedule?->estimated_duration_unit ?? '');
+
+            $items[] = [
+                'id'             => $d->id,
+                'title'          => $d->title,
+                'slug'           => $d->slug,
+                'unique_code'    => $d->unique_code,
+                'all_images'     => $galleries,
+                //'catogory'       => $d->catogory,
+                'price'          => price_format($d->price),
+                'original_price' => $d->price,
+                'duration'       => trim($duration),
+                'rating'         => randomFloat(4, 5),
+                'comment'        => rand(50, 100),
+            ];
+        }    
+
+        return response()->json(['status' => true, 'data' => $items], 200);
     }
     
     public function contact(Request $request)
