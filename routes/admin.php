@@ -49,6 +49,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/order/rezdy-manifest', [OrderController::class, 'showPdfFiles']);
     Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus']);
     Route::get('/order-manifest', [OrderController::class, 'manifest'])->name('orders.manifest');
+    Route::get('/ordersmanifest/download', [OrderController::class, 'downloadManifest'])->name('orders.manifest.download');
 
 
     

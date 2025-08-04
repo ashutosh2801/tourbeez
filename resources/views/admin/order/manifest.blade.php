@@ -22,6 +22,10 @@
                         <i class="bi bi-chevron-right"></i>
                     </button>
                 </div>
+                <a href="{{ route('admin.orders.manifest.download', ['date' => request('date')]) }}"
+                   class="btn btn-outline-success btn-sm">
+                   <i class="bi bi-download"></i> Download PDF
+                </a>
             </div>
         </div>
     </form>
@@ -52,14 +56,14 @@
                         <table class="table table-bordered table-sm">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Order #</th>
-                                    <th>Customer</th>
-                                    <th>Phone</th>
-                                    <th>Guests</th>
-                                    <th>Extras</th>
-                                    <th>Balance</th>
-                                    <th>Total</th>
-                                    <th>Paid</th>
+                                    <th class="text-nowrap" style="white-space: nowrap;">Order #</th>
+                                    <th style="white-space: nowrap;">Customer</th>
+                                    <th style="white-space: nowrap;">Phone</th>
+                                    <th style="white-space: nowrap;">Guests</th>
+                                    <th style="white-space: nowrap;">Extras</th>
+                                    <th style="white-space: nowrap;">Balance</th>
+                                    <th style="white-space: nowrap;">Total</th>
+                                    <th style="white-space: nowrap;">Paid </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -79,9 +83,9 @@
                                         <td>{{ $order->customer?->phone }}</td>
                                         <td>{{ $order->guest_summary }}</td>
                                         <td>{{ $order->extras_summary }}</td>
-                                        <td>${{ number_format($order->balance_amount, 2) }}</td>
-                                        <td>${{ number_format($order->total_amount, 2) }}</td>
-                                        <td>${{ number_format($order->paid_amount, 2) }}</td>
+                                        <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
+                                        <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        <td>{{ price_format_with_currency($order->paid_amount, $order->currency) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
