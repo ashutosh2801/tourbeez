@@ -25,14 +25,15 @@ class CommonController extends Controller
      */
     public function home_listing(Request $request)
     {
+
         $data = Cache::remember('cities_home_list', 86400, function () {
-            return  DB::table('tour_locations as tl')
-                    ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                    ->select('c.id', 'c.name', 'c.upload_id')
-                    ->groupBy('c.name')
-                    ->orderBy( rand() )
-                    ->limit(50)
-                    ->get();
+            return DB::table('tour_locations as tl')
+                ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                ->select('c.id', 'c.name', 'c.upload_id')
+                ->groupBy('c.id', 'c.name', 'c.upload_id') 
+                ->orderByRaw('RAND()') 
+                ->limit(50)
+                ->get();
         });
 
         $cities = [];
@@ -116,14 +117,22 @@ class CommonController extends Controller
     {
         // $cacheKey = 'popular_cities_list_'. $request->id;
         // $data = Cache::remember($cacheKey, 86400, function () {
-            $data =   DB::table('tour_locations as tl')
-                    ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                    ->select('c.id', 'c.name', 'c.upload_id')
-                    ->distinct()
-                    ->orderBy( rand())
-                    ->limit(25)
-                    ->get();
+            // $data =   DB::table('tour_locations as tl')
+            //         ->join('cities as c', 'c.id', '=', 'tl.city_id')
+            //         ->select('c.id', 'c.name', 'c.upload_id')
+            //         ->distinct()
+            //         ->orderBy( rand())
+            //         ->limit(25)
+            //         ->get();
         // });
+
+            $data = DB::table('tour_locations as tl')
+                ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                ->select('c.id', 'c.name', 'c.upload_id')
+                ->distinct()
+                ->orderByRaw('RAND()') // ✅ Correct way to randomize rows
+                ->limit(25)
+                ->get();
 
         $cities = [];
         foreach($data as $d) {
@@ -143,23 +152,52 @@ class CommonController extends Controller
     {
         // $cacheKey = 'popular_cities_list_'. $request->id;
         // $data = Cache::remember($cacheKey, 86400, function () {
-            $data =   DB::table('tour_locations as tl')
-                    ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                    ->select('c.id', 'c.name', 'c.upload_id')
-                    ->distinct()
-                    ->orderBy( rand())
-                    ->limit(25)
-                    ->get();
+            // $data =   DB::table('tour_locations as tl')
+            //         ->join('cities as c', 'c.id', '=', 'tl.city_id')
+            //         ->select('c.id', 'c.name', 'c.upload_id')
+            //         ->distinct()
+            //         ->orderBy( rand())
+            //         ->limit(25)
+            //         ->get();
         // });
 
+        // $data = DB::table('tour_locations as tl')
+        //     ->join('cities as c', 'c.id', '=', 'tl.city_id')
+        //     ->select('c.id', 'c.name', 'c.upload_id', 'tl.state_id', 'tl.country_id')
+        //     ->distinct()
+        //     ->orderByRaw('RAND()') // ✅ Correct usage for random order
+        //     ->limit(25)
+        //     ->get();
+
+
+        $data = DB::table('tour_locations as tl')
+            ->join('cities as c', 'c.id', '=', 'tl.city_id')
+            ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
+            ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
+            ->select(
+                'c.id',
+                'c.name',
+                'c.upload_id',
+                'tl.state_id',
+                'tl.country_id',
+                's.name as state_name',
+                'co.name as country_name'
+            )
+            ->distinct()
+            ->orderByRaw('RAND()')
+            ->limit(25)
+            ->get();
+
         $cities = [];
+        
         foreach($data as $d) {
+
             $cities[] = [
                 'id'    => $d->id,
                 'name'  => 'Things to do in '.ucfirst( $d->name ),
                 'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
                 'image' => uploaded_asset( $d->upload_id ),
-                'extra' => ''
+                'extra' => '' . ucwords($d->state_name) . ',' . ucwords($d->country_name) . '', 
             ];
         }  
 
