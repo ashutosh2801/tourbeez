@@ -188,7 +188,7 @@ class CommonController extends Controller
 
     public function popular_destinations(Request $request)
     {
-        $limit = $request->input('limit', 25); 
+        $limit = $request->input('limit', 15); 
         $page = $request->input('page', 1);  
 
         $query = DB::table('tour_locations as tl')
