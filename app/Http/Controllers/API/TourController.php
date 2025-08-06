@@ -25,6 +25,13 @@ class TourController extends Controller
         if ($request->title) {
             $query->where('title', 'like', '%' . $request->title . '%');
         }
+        if ($request->q) {
+            $query->where('title', 'like', '%' . $request->q . '%');
+        }
+
+        if ($request->slug) {
+            $query->where('slug', 'like', '%' . $request->slug . '%');
+        }
 
         if ($request->categories) {
             $query->whereHas('categories', function ($q) use ($request) {
@@ -40,7 +47,6 @@ class TourController extends Controller
             });
         }
 
-        // Filter by price range
         if ($request->min_price && $request->max_price) {
             $query->whereBetween('price', [(float)$request->min_price, (float)$request->max_price]);
         } elseif ($request->min_price) {

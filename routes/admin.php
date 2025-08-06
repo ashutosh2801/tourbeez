@@ -96,6 +96,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/reminder', [TourController::class, 'editReminder'])->name('tour.edit.message.reminder');
     Route::get('/tour/{id}/edit/followup', [TourController::class, 'editFollowup'])->name('tour.edit.message.followup');
     Route::get('/tour/{id}/edit/paymentrequest', [TourController::class, 'editPaymentRequest'])->name('tour.edit.message.paymentrequest');
+    Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
+
 
     // Tour Preview
     Route::get('/tour/clone/{id}', [TourController::class, 'clone'])->name('tour.clone');

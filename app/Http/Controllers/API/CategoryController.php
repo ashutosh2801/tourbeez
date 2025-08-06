@@ -11,17 +11,33 @@ use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+
+    public function index(Request $request)
     {
+        $city_id = $request->input('city_id');
+        if ($city_id) {
+
+              $categories = Category::whereHas('tours', function ($query) use ($city_id) {
+                    $query->where('city', $city_id);
+                })->orderBy('name','ASC')->get();
+
+            return response()->json([
+                'status' => true,
+                'data' => $categories
+            ]);
+        }
+
+        // Else fetch all categories from cache
         $data = Cache::remember('category_list', 86400, function () {
             return Category::orderBy('name','ASC')->get();
         });
 
-        return response()->json(['status' => true, 'data' => $data], 200);
+        return response()->json([
+            'status' => true,
+            'data' => $data
+        ]);
     }
+
 
     public function subcategory(Request $request)
     {
