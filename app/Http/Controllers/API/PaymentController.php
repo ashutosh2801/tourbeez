@@ -240,6 +240,7 @@ class PaymentController extends Controller
                         'extra'         => $extra,
                         'metas'         => $metas,
                         't_and_c'       => $booking->tour?->terms_and_conditions,
+                        'order_email'       => $booking->tour?->order_email,
                     ],
                 ];
 
