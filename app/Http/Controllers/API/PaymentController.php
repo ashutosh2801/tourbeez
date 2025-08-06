@@ -240,13 +240,14 @@ class PaymentController extends Controller
                         'extra'         => $extra,
                         'metas'         => $metas,
                         't_and_c'       => $booking->tour?->terms_and_conditions,
+                        'order_email'   => $booking->tour?->order_email,
                     ],
                 ];
 
                 $order = Order::where('order_number',$booking->order_number)->first();
 
                 Log::info('order_email_sent' . $order->email_sent);
-                if ($order && !$order->email_sent) {                    
+                if ($order && $booking->tour->order_email && !$order->email_sent) {                    
                     $mailsent = self::sendOrderDetailMail($detail);
                     Log::info('order_email_sentqwwqdwqqdqwdqw' . $order->email_sent);
                     $order->email_sent = true;

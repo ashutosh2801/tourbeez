@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Addon;
+use App\Models\Category;
+use App\Models\City;
 use App\Models\Exclusion;
 use App\Models\Faq;
 use App\Models\Feature;
@@ -9,21 +12,19 @@ use App\Models\Inclusion;
 use App\Models\Itinerary;
 use App\Models\Pickup;
 use App\Models\TaxesFee;
-use App\Models\TourSchedule;
-use App\Models\Addon;
 use App\Models\Tour;
-use App\Models\Category;
-use App\Models\TourLocation;
-use App\Models\Tourtype;
 use App\Models\TourDetail;
 use App\Models\TourImage;
-use App\Models\TourUpload;
+use App\Models\TourLocation;
 use App\Models\TourPricing;
+use App\Models\TourSchedule;
+use App\Models\TourUpload;
+use App\Models\Tourtype;
 use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Redirect;
-use Validator;
 use Str;
+use Validator;
 
 class TourController extends Controller
 {
@@ -86,13 +87,22 @@ class TourController extends Controller
             });
         }
 
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status', $request->status);
+        }
+        if ($request->has('city') && $request->city != '') {
+            $query->where('city', $request->city);
+        }
+
         // Set items per page
         $perPage = $request->input('per_page', 10);
 
         $tours = $query->with('categories')->latest()->paginate($perPage)->withQueryString();
         $categories = Category::all();
+        $cities = City::limit(10)->get();
 
-        return view('admin.tours.index', compact(['tours', 'categories']));
+
+        return view('admin.tours.index', compact(['tours', 'categories', 'cities']));
     }
 
     /**
@@ -585,7 +595,7 @@ class TourController extends Controller
 
     public function basic_detail_update(Request $request, $id)
     {
-
+        
         //dd($request->all(), $request->file('image'));
         $request->validate([
             'title'                 => 'required|max:255',
@@ -634,6 +644,7 @@ class TourController extends Controller
         $tour->unique_code= $request->unique_code;
         $tour->price      = $request->advertised_price;
         $tour->price_type = $request->price_type;
+        $tour->order_email = $request->order_email;
         // $tour->country    = $request->country;
         // $tour->state      = $request->state;
         // $tour->city       = $request->city;
@@ -1370,5 +1381,23 @@ class TourController extends Controller
         Tour::whereIn('id', $ids)->delete();
 
         return redirect()->back()->with('success', 'Selected tours deleted successfully.');
+    }
+
+    public function citySearch(Request $request)
+    {
+        $term = $request->get('term', '');
+
+        $results = City::where('name', 'LIKE', "%{$term}%")
+                    ->orderBy('name')
+                    ->limit(10)
+                    ->get()
+                    ->map(function ($city) {
+                        return [
+                            'id' => $city->id,
+                            'text' => ucwords($city->name),
+                        ];
+                    });
+
+        return response()->json(['results' => $results]);
     }
 }
