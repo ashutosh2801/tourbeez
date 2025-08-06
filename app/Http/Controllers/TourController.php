@@ -175,6 +175,7 @@ class TourController extends Controller
         $tour->country    = $request->country;
         $tour->state      = $request->state;
         $tour->city       = $request->city;
+        $tour->order_email       = $request->order_email;
 
         if($tour->save()) {
 
@@ -193,7 +194,7 @@ class TourController extends Controller
                     $pricing->tour_id       = $tour->id;
                     $pricing->label         = $option['label'] ?? null;
                     $pricing->price         = $option['price'] ?? null;
-                    $pricing->quantity_used = $option['quantity_used'] ?? 0;
+                    $pricing->quantity_used = $option['qty_used'] ?? 0;
                     $pricing->save();
                 }
             }
@@ -670,12 +671,13 @@ class TourController extends Controller
                 }
 
                 foreach ($request->PriceOption as $option) {
+
                     if (!empty($option['id'])) {
                         $pricing = TourPricing::find($option['id']);
                         if ($pricing && $pricing->tour_id == $tour->id) {
                             $pricing->label = $option['label'] ?? null;
                             $pricing->price = $option['price'] ?? null;
-                            $pricing->quantity_used = $option['quantity_used'] ?? 0;
+                            $pricing->quantity_used = $option['qty_used'] ?? 0;
                             $pricing->save();
                         }
                         // else {
@@ -691,7 +693,7 @@ class TourController extends Controller
                         $pricing->tour_id       = $tour->id;
                         $pricing->label         = $option['label'] ?? null;
                         $pricing->price         = $option['price'] ?? null;
-                        $pricing->quantity_used = $option['quantity_used'] ?? 0;
+                        $pricing->quantity_used = $option['qty_used'] ?? 0;
                         $pricing->save();
                     }
                 }
