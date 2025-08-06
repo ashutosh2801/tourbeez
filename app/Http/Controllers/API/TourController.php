@@ -25,6 +25,13 @@ class TourController extends Controller
         if ($request->title) {
             $query->where('title', 'like', '%' . $request->title . '%');
         }
+        if ($request->q) {
+            $query->where('title', 'like', '%' . $request->q . '%');
+        }
+
+        if ($request->slug) {
+            $query->where('slug', 'like', '%' . $request->slug . '%');
+        }
 
         if ($request->categories) {
             $query->whereHas('categories', function ($q) use ($request) {
