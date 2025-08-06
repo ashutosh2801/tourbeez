@@ -225,7 +225,8 @@ class PaymentController extends Controller
                 $detail = [
                     'order_number'      => $booking->order_number,
                     'number_of_guests'  => $booking->number_of_guests,
-                    'total_amount'      => price_format_with_currency($booking->total_amount, $booking->currency) ?? '',
+                    //'total_amount'      => price_format_with_currency($booking->total_amount, $booking->currency) ?? '',
+                    'total_amount'      => $booking->total_amount ?? '',
                     'currency'          => $booking->currency,
                     'payment_method'    => ucfirst($booking->payment_method),
                     'customer'          => $booking->customer,
