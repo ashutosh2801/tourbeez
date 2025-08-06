@@ -148,29 +148,50 @@ class CommonController extends Controller
         return response()->json(['status' => true, 'popular_cities' => $cities], 200);
     }
 
+    // public function popular_destinations(Request $request)
+    // {
+
+    //     $data = DB::table('tour_locations as tl')
+    //         ->join('cities as c', 'c.id', '=', 'tl.city_id')
+    //         ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
+    //         ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
+    //         ->select(
+    //             'c.id',
+    //             'c.name',
+    //             'c.upload_id',
+    //             'tl.state_id',
+    //             'tl.country_id',
+    //             's.name as state_name',
+    //             'co.name as country_name'
+    //         )
+    //         ->distinct()
+    //         ->orderByRaw('RAND()')
+    //         ->limit(25)
+    //         ->get();
+
+    //     $cities = [];
+        
+    //     foreach($data as $d) {
+
+    //         $cities[] = [
+    //             'id'    => $d->id,
+    //             'name'  => 'Things to do in '.ucfirst( $d->name ),
+    //             'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
+    //             'image' => uploaded_asset( $d->upload_id ),
+    //             'extra' => '' . ucwords($d->state_name) . ', ' . ucwords($d->country_name) . '', 
+    //         ];
+    //     }  
+
+    //     return response()->json(['status' => true, 'popular_cities' => $cities], 200);
+    // }
+
+
     public function popular_destinations(Request $request)
     {
-        // $cacheKey = 'popular_cities_list_'. $request->id;
-        // $data = Cache::remember($cacheKey, 86400, function () {
-            // $data =   DB::table('tour_locations as tl')
-            //         ->join('cities as c', 'c.id', '=', 'tl.city_id')
-            //         ->select('c.id', 'c.name', 'c.upload_id')
-            //         ->distinct()
-            //         ->orderBy( rand())
-            //         ->limit(25)
-            //         ->get();
-        // });
+        $limit = $request->input('limit', 15); 
+        $page = $request->input('page', 1);  
 
-        // $data = DB::table('tour_locations as tl')
-        //     ->join('cities as c', 'c.id', '=', 'tl.city_id')
-        //     ->select('c.id', 'c.name', 'c.upload_id', 'tl.state_id', 'tl.country_id')
-        //     ->distinct()
-        //     ->orderByRaw('RAND()') // ✅ Correct usage for random order
-        //     ->limit(25)
-        //     ->get();
-
-
-        $data = DB::table('tour_locations as tl')
+        $query = DB::table('tour_locations as tl')
             ->join('cities as c', 'c.id', '=', 'tl.city_id')
             ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
             ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
@@ -184,25 +205,33 @@ class CommonController extends Controller
                 'co.name as country_name'
             )
             ->distinct()
-            ->orderByRaw('RAND()')
-            ->limit(25)
-            ->get();
+            ->orderByRaw('RAND()');
+
+        $paginated = $query->paginate($limit, ['*'], 'page', $page);
 
         $cities = [];
-        
-        foreach($data as $d) {
-
+        foreach ($paginated->items() as $d) {
             $cities[] = [
                 'id'    => $d->id,
-                'name'  => 'Things to do in '.ucfirst( $d->name ),
-                'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
-                'image' => uploaded_asset( $d->upload_id ),
-                'extra' => '' . ucwords($d->state_name) . ',' . ucwords($d->country_name) . '', 
+                'name'  => 'Things to do in ' . ucfirst($d->name),
+                'url'   => '/c1/' . $d->id . '/' . Str::slug($d->name),
+                'image' => uploaded_asset($d->upload_id),
+                'extra' => ucwords($d->state_name) . ', ' . ucwords($d->country_name),
             ];
-        }  
+        }
 
-        return response()->json(['status' => true, 'popular_cities' => $cities], 200);
+        return response()->json([
+            'status'         => true,
+            'popular_cities' => $cities,
+            'current_page'   => $paginated->currentPage(),
+            'last_page'      => $paginated->lastPage(),
+            'per_page'       => $paginated->perPage(),
+            'total'          => $paginated->total(),
+            'next_page_url'  => $paginated->nextPageUrl(),
+            'prev_page_url'  => $paginated->previousPageUrl(),
+        ]);
     }
+
 
     public function single_city(Request $request, $id)
     {

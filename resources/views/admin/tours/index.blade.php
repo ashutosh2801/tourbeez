@@ -1,3 +1,46 @@
+<style>
+    /* Match the height, border, font-size, and padding */
+/* Main select2 container styling to match default dropdown */
+.select2-container--default .select2-selection--single {
+    border: 1px solid #ced4da !important; /* Match Bootstrap or standard form control border */
+    background-color: #fff !important;
+    border-radius: 4px !important;
+    padding: 6px 12px !important;
+    padding-top: 9px !important;
+    height: 39px !important;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #495057;
+    box-shadow: none !important;
+    widows: 150px !important;
+}
+
+/* Ensure focus style also matches */
+.select2-container--default .select2-selection--single:focus,
+.select2-container--default .select2-selection--single:hover {
+    border: 1px solid #86b7fe !important; /* Same as focused input */
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25) !important; /* Optional */
+}
+
+/* Adjust the dropdown arrow positioning */
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100% !important;
+    right: 10px;
+    top: 0;
+    transform: none;
+}
+
+/* Prevent double borders or overlaps */
+.select2-selection {
+    border: none !important;
+}
+
+
+
+</style>
+
 <x-admin>
     @section('title','Tours')
     <div class="card">
@@ -10,8 +53,43 @@
 
                     <div class="d-flex gap-2 flex">
 
+                        {{-- Category Dropdown --}}
+                        <!-- <select name="category" class="form-control form-control-sm mr-2">
+                            <option value="">All Cities</option>
+                            @foreach ($cities as $city)
+                                <option value="{{ $city->id }}" {{ request('city') == $city->id ? 'selected' : '' }}>
+                                    {{ ucwords($city->name) }}
+                                </option>
+                            @endforeach
+                        </select> -->
+
+                        <!-- <select name="cities" class="form-control form-control-sm select2 mr-2">
+                            <option value="">All Cities</option>
+                            @foreach ($cities as $city)
+                                <option value="{{ $city->id }}" {{ request('city') == $city->id ? 'selected' : '' }}>
+                                    {{ ucwords($city->name) }}
+                                </option>
+                            @endforeach
+                        </select> 
+ -->
+                        <!-- <select name="city" id="city-select" class="form-control form-control-sm ">
+                            <option value="">Select a city</option>
+                            @foreach ($cities as $city)
+                                <option value="{{ $city->id }}" {{ request('city') == $city->id ? 'selected' : '' }}>
+                                    {{ ucwords($city->name) }}
+                                </option>
+                            @endforeach
+                        </select> -->
+
+                    <select name="city" id="city-select" class="form-control form-control-sm">
+                        @if(request('city'))
+                            <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
+                        @endif
+                    </select>
+
+
                         {{-- Search Input --}}
-                        <input type="text" name="search" class="form-control form-control-sm mr-2" placeholder="Search tour" value="{{ request('search') }}" />
+                        <input type="text" name="search" class="ml-2 form-control form-control-sm mr-2" placeholder="Search tour" value="{{ request('search') }}" />
 
                         {{-- Category Dropdown --}}
                         <select name="category" class="form-control form-control-sm mr-2">
@@ -30,6 +108,21 @@
                                     {{ $number }} per page
                                 </option>
                             @endforeach
+                        </select>
+
+                        <select name="status" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                            <option value="">All Status</option>
+                                
+                                <option value="">
+                                    Status
+                                </option>
+                                <option value="0" {{ request('staus') === 0 ? 'selected' : '' }}>
+                                    Pending
+                                </option>
+                                <option value="1" {{ request('staus') === 1 ? 'selected' : '' }}>
+                                    Active
+                                </option>
+                            
                         </select>
 
                         {{-- Submit Button --}}
@@ -144,6 +237,14 @@
 </div><!-- /.modal -->
 @endsection
 @section('js')
+
+{{-- Include Select2 CSS --}}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+{{-- Include Select2 JS --}}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
 <script>
 document.getElementById('checkAll').addEventListener('click', function () {
     const checkboxes = document.querySelectorAll('input[name="ids[]"]');
@@ -164,6 +265,48 @@ $(function() {
         var url = $(this).data("href");
         $("#clone-modal").modal("show");
         $("#clone-link").attr("href", url);
+    });
+});
+</script>
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+<script>
+    // $(document).ready(function() {
+    //     $('.select2').select2({
+    //         placeholder: 'Select a city',
+    //         allowClear: true,
+    //         width: '100%' // ensures it matches Bootstrap input width
+    //     });
+    // });
+
+
+    //  $(document).ready(function () {
+    //     $('#city-select').select2({
+    //         placeholder: 'Select a city',
+    //         width: 'style'
+    //     });
+    // });
+
+
+
+$(document).ready(function () {
+    $('#city-select').select2({
+        placeholder: 'Select a city',
+        ajax: {
+            url: '{{ route("admin.city.search") }}',
+            dataType: 'json',
+            delay: 300,
+            data: function (params) {
+                return { term: params.term };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.results
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 2,
+        width: '100%' // or 'resolve'
     });
 });
 </script>

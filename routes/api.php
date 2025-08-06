@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['api.key'])->group(function () {
     Route::get('/categories',[CategoryController::class,'index'])->name('categories');
     Route::post('/sub-cateogries',[CategoryController::class,'subcategory'])->name('sub.category');
+    
     Route::get('/home-listing',[CommonController::class,'home_listing']);
     Route::get('/popular-cities',[CommonController::class,'popular_cities']);
     Route::get('/popular-destinations',[CommonController::class,'popular_destinations']);
