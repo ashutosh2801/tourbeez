@@ -1,3 +1,47 @@
+<style>
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 26px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: #28a745; /* Bootstrap green */
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(24px);
+    }
+</style>
+
 <div class="card">
     <div class="card card-primary">
         <div class="card-header">
@@ -28,13 +72,27 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="col-lg-4">
+
+
+
+                    <div class="col-lg-3 ml-4">
                         <div class="form-group">
-                            <label for="unique_code" class="form-label">Unique code *</label>
-                            <input type="text" name="unique_code" id="unique_code" value="{{ old('unique_code') ? old('unique_code') : $data->unique_code }}"
-                                class="form-control" >
-                                
-                            @error('unique_code')
+                            <label for="order_email" class="form-label d-block">Email Confirmation</label>
+
+                            <!-- Hidden field sends 0 when checkbox is unchecked -->
+                            <input type="hidden" name="order_email" value="0">
+
+                            <!-- Toggle switch sends 1 if checked -->
+                            <label class="switch mt-2">
+                                <input type="checkbox"
+                                       name="order_email"
+                                       id="order_email"
+                                       value="1"
+                                       {{ old('order_email', $data->order_email ?? true) ? 'checked' : '' }}>
+                                <span class="slider"></span>
+                            </label>
+
+                            @error('order_email')
                                 <small class="form-text text-danger">{{ $message }}</small>
                             @enderror
                         </div>
@@ -129,20 +187,33 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-12">
+                    <div class="col-lg-6">
                         <div class="form-group">
                             <label for="title" class="form-label">Advertised price *</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text" id="basic-addon1">$</span>
                                 </div>
-                                <input type="text" class="form-control" placeholder="99.50" name="advertised_price" id="advertised_price" value="{{ old('advertised_price') ?: $data->price }}" style="max-width: 200px;">
+                                <input type="text" class="form-control" placeholder="99.50" name="advertised_price" id="advertised_price" value="{{ old('advertised_price') ?: $data->price }}">
                             </div>
                                 
                             @error('advertised_price')
                                 <small class="form-text text-danger">{{ $message }}</small>
                             @enderror
                         </div>
+
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="form-group">
+                            <label for="unique_code" class="form-label">Unique code *</label>
+                            <input type="text" name="unique_code" id="unique_code" value="{{ old('unique_code') ? old('unique_code') : $data->unique_code }}"
+                                class="form-control" >
+                                
+                            @error('unique_code')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                        
                     </div>
 
                     <div class="col-lg-12">
