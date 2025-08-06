@@ -40,6 +40,15 @@ class TourController extends Controller
             });
         }
 
+        // Filter by price range
+        if ($request->min_price && $request->max_price) {
+            $query->whereBetween('price', [(float)$request->min_price, (float)$request->max_price]);
+        } elseif ($request->min_price) {
+            $query->where('price', '>=', (float)$request->min_price);
+        } elseif ($request->max_price) {
+            $query->where('price', '<=', (float)$request->max_price);
+        }
+
         $order_by = $request->input('order_by');
         if( $order_by == 'lowtohigh' ) {
             $query->orderBy('price', 'ASC');
@@ -100,7 +109,7 @@ class TourController extends Controller
                 //'catogory'       => $d->catogory,
                 'price'          => price_format($d->price),
                 'original_price' => $d->price,
-                'duration'       => trim($duration),
+                'duration'       => strtolower(trim($duration)),
                 'rating'         => randomFloat(4, 5),
                 'comment'        => rand(50, 100),
             ];
@@ -231,6 +240,7 @@ class TourController extends Controller
                 'original_price'=> $tour->price, // without formatted price
                 'unique_code'   => $tour->unique_code,
                 'slug'          => $tour->slug,
+                'order_email'   => $tour->order_email,
                 'features'      => $tour->features,
                 'meta'          => $tour->meta,
                 'categories'    => $tour->categories,
@@ -440,5 +450,26 @@ class TourController extends Controller
         ]);
     }
 
+    // public function categoriesByCity(Request $request)
+    // {
+    //     $city_id = $request->input('city_id');
 
+    //     if (!$city_id) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'city_id is required'
+    //         ], 400);
+    //     }
+
+    //     $categories = Category::whereHas('tours', function ($query) use ($city_id) {
+    //         $query->whereHas('location', function ($q) use ($city_id) {
+    //             $q->where('city_id', $city_id);
+    //         });
+    //     })->get();
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'data'   => $categories
+    //     ]);
+    // }
 }

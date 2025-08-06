@@ -17,7 +17,7 @@ class CategoryController extends Controller
     public function index()
     {
         $data = Cache::remember('category_list', 86400, function () {
-            return Category::orderBy('name','DESC')->get();
+            return Category::orderBy('name','ASC')->get();
         });
 
         return response()->json(['status' => true, 'data' => $data], 200);
