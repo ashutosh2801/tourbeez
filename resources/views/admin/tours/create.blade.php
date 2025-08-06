@@ -1,3 +1,48 @@
+<style>
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 26px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: #28a745; /* Bootstrap green */
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(24px);
+    }
+</style>
+
+
 <x-admin>
     @section('title')
         {{ 'Tour' }}
@@ -26,7 +71,7 @@
                         @csrf
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-lg-8">
+                                <div class="col-lg-7">
                                     <div class="form-group">
                                         <label for="title" class="form-label">Title *</label>
                                         <input type="text" name="title" id="title" value="{{ old('title') }}"
@@ -37,13 +82,35 @@
                                         @enderror
                                     </div>
                                 </div>
-                                <div class="col-lg-4">
+                                <div class="col-lg-3">
                                     <div class="form-group">
                                         <label for="unique_code" class="form-label">Unique code *</label>
                                         <input type="text" name="unique_code" id="unique_code" value="{{ old('unique_code') ? old('unique_code') : unique_code() }}"
                                             class="form-control" >
                                            
                                         @error('unique_code')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="col-lg-2">
+                                    <div class="form-group">
+                                        <label for="order_email" class="form-label d-block no-wrap" style="font-size: 14px;">Email Confirmation</label>
+
+                                        <!-- Hidden field sends 0 when checkbox is unchecked -->
+                                        <input type="hidden" name="order_email" value="0">
+
+                                        <!-- Toggle switch sends 1 if checked -->
+                                        <label class="switch mt-2">
+                                            <input type="checkbox"
+                                                   name="order_email"
+                                                   id="order_email"
+                                                   value="1"
+                                                   {{ old('order_email') ? 'checked' : '' }}>
+                                            <span class="slider"></span>
+                                        </label>
+
+                                        @error('order_email')
                                             <small class="form-text text-danger">{{ $message }}</small>
                                         @enderror
                                     </div>

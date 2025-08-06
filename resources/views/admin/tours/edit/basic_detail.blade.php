@@ -61,7 +61,7 @@
             @csrf
             <div class="card-body">
                 <div class="row">
-                    <div class="col-lg-8">
+                    <div class="col-lg-7">
                         <div class="form-group">
                             <label for="title" class="form-label">Title *</label>
                             <input type="text" name="title" id="title" value="{{ old('title') ? : $data->title }}"
@@ -73,11 +73,24 @@
                         </div>
                     </div>
 
-
-
-                    <div class="col-lg-3 ml-4">
+                    <div class="col-lg-3">
                         <div class="form-group">
-                            <label for="order_email" class="form-label d-block">Email Confirmation</label>
+                            <label for="unique_code" class="form-label">Unique code *</label>
+                            <input type="text" name="unique_code" id="unique_code" value="{{ old('unique_code') ? old('unique_code') : $data->unique_code }}"
+                                class="form-control" >
+                                
+                            @error('unique_code')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                        
+                    </div>
+
+
+
+                    <div class="col-lg-2">
+                        <div class="form-group">
+                            <label for="order_email" class="form-label d-block no-wrap" style="font-size: 14px;">Email Confirmation</label>
 
                             <!-- Hidden field sends 0 when checkbox is unchecked -->
                             <input type="hidden" name="order_email" value="0">
@@ -187,7 +200,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-7">
                         <div class="form-group">
                             <label for="title" class="form-label">Advertised price *</label>
                             <div class="input-group">
@@ -203,18 +216,7 @@
                         </div>
 
                     </div>
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="unique_code" class="form-label">Unique code *</label>
-                            <input type="text" name="unique_code" id="unique_code" value="{{ old('unique_code') ? old('unique_code') : $data->unique_code }}"
-                                class="form-control" >
-                                
-                            @error('unique_code')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                        
-                    </div>
+                    
 
                     <div class="col-lg-12">
                         <div class="form-group">
