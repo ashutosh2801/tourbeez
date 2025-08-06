@@ -44,8 +44,13 @@ class TourController extends Controller
         if ($request->city_id) {
             $query->whereHas('location', function ($q) use ($request) {
                 $q->where('city_id', $request->city_id);
+                $q->orWhere('state_id', $request->city_id);
+                $q->orWhere('country_id', $request->city_id);
             });
         }
+ 
+
+
 
         if ($request->min_price && $request->max_price) {
             $query->whereBetween('price', [(float)$request->min_price, (float)$request->max_price]);
