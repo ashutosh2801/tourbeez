@@ -308,19 +308,20 @@ class TourController extends Controller
 
 
             
-        $categories = Category::orderBy('name', 'asc')
-            ->when($search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'LIKE', '' . $search . '%');
-                });
-            })
-            ->limit(3)
-            ->get();    
+        // $categories = Category::orderBy('name', 'asc')
+        //     ->when($search, function ($query, $search) {
+        //         $query->where(function ($q) use ($search) {
+        //             $q->where('name', 'LIKE', '' . $search . '%');
+        //         });
+        //     })
+        //     ->limit(3)
+        //     ->get();    
         
         $total_cities       = $cities->count();
-        $total_categories   = $categories->count();
-        $total_tours        = 8 - ($total_cities + $total_categories);
+        // $total_categories   = $categories->count();
+        // $total_tours        = 8 - ($total_cities + $total_categories);
 
+        $total_tours        = 8 - ($total_cities);
         //$tours = Cache::remember($cacheKey, now()->addMinutes(20), function () use ($search, $date) {
             //return 
         $tours = Tour::with(['location' => function ($query) {
@@ -345,11 +346,11 @@ class TourController extends Controller
                 $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => 'c1/'.$city->id.'/'.Str::slug($city->name), 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
             }
         }
-        if($total_categories>0) {
-            foreach($categories as $category) {
-                $data[] = ['icon'=>'category', 'title' => $this->highlightMatch($category->name, $search), 'slug' => 'c3/'.$category->id.'/'.$category->slug , 'address' => ''];
-            }
-        }
+        // if($total_categories>0) {
+        //     foreach($categories as $category) {
+        //         $data[] = ['icon'=>'category', 'title' => $this->highlightMatch($category->name, $search), 'slug' => 'c3/'.$category->id.'/'.$category->slug , 'address' => ''];
+        //     }
+        // }
         if($tours->count()>0) {
             foreach($tours as $tour) {
                 $image_id = $tour->main_image->id ?? 0;

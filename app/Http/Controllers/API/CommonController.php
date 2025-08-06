@@ -7,6 +7,8 @@ use App\Mail\CommonMail;
 use App\Mail\ContactMail;
 use App\Models\Category;
 use App\Models\City;
+use App\Models\Country;
+use App\Models\State;
 use App\Models\Tour;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -235,29 +237,49 @@ class CommonController extends Controller
 
     public function single_city(Request $request, $id)
     {
-        $d = Cache::remember('single_city', 86400, function() use ($id) {
-            return  City::findOrFail( $id );
+        $type = $request->input('type', 'city'); // Default to 'city' if not provided
+
+        $cacheKey = 'single_city_' . $id . '_' . $type;
+        $d = Cache::remember($cacheKey, 86400, function() use ($id, $type) {
+            if ($type == 's1') {
+                return State::findOrFail($id);
+            } elseif ($type == 'c2') {
+                return Country::findOrFail($id);
+            }
+            // Default case for 'city'
+            return City::findOrFail( $id );
         });
 
         $data = [];
-        $data['city'] = [
-            'id'    => $d->id,
-            'name'  => ucfirst( $d->name ),
-            'url'   => '/'.$d->id.'/'.Str::slug( $d->name ),
-            'image' => uploaded_asset( $d->upload_id ),
-        ];
-        $data['state'] = [
-            'id'    => $d->state->id,
-            'name'  => ucfirst( $d->state->name ),
-            'url'   => '/'.$d->state->id.'/'.Str::slug( $d->state->name ),
-            'image' => $d->state->upload_id ? uploaded_asset( $d->state->upload_id ) : '',
-        ];
-        $data['country'] = [
-            'id'    => $d->state->country->id,
-            'name'  => ucfirst( $d->state->country->name ),
-            'url'   => '/'.$d->state->country->id.'/'.Str::slug( $d->state->country->name ),
-            'image' => $d->state?->country?->upload_id ? uploaded_asset( $d->state->country->upload_id ) : '',
-        ];
+        // Prepare the response data based on the  city type
+        if ($type == 'c1') {
+                $data['city'] = [
+                    'id'    => $d->id,
+                    'name'  => ucfirst( $d->name ),
+                    'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
+                    'image' => uploaded_asset( $d->upload_id ),
+            ];
+        }
+
+        // Prepare the response data based on the  city and state type
+        if ( $type == 's1' || $type == 'c1' ) {
+            $data['state'] = [
+                'id'    => $d->state->id,
+                'name'  => 'Things to do in '.ucfirst( $d->state->name ),
+                'url'   => '/s1/'.$d->state->id.'/'.Str::slug( $d->state->name ),
+                'image' => $d->state->upload_id ? uploaded_asset( $d->state->upload_id ) : '',
+            ];
+        }
+
+        // Prepare the response data based on the  city, state and country type
+        if ( $type == 'c2' || $type == 's1' || $type == 'c1' ) {
+            $data['country'] = [
+                'id'    => $d->state->country->id,
+                'name'  => 'Things to do in '.ucfirst( $d->state->country->name ),
+                'url'   => '/c2/'.$d->state->country->id.'/'.Str::slug( $d->state->country->name ),
+                'image' => $d->state?->country?->upload_id ? uploaded_asset( $d->state->country->upload_id ) : '',
+            ];
+        }
 
         return response()->json(['status' => true, 'data' => $data], 200);
     }
