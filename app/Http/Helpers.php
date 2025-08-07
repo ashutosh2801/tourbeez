@@ -81,7 +81,7 @@ if (!function_exists('price_format_with_currency')) {
             'EUR' => '€',
             'GBP' => '£',
             'AUD' => 'A$',
-            'CAD' => 'C$',
+            'CAD' => 'CAD',
             'CRC' => '₡'
         ];
 
