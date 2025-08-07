@@ -90,8 +90,17 @@ class TourController extends Controller
         if ($request->has('status') && $request->status != '') {
             $query->where('status', $request->status);
         }
+        // if ($request->has('city') && $request->city != '') {
+        //     $query->where('city', $request->city)->orderBy('sort_order');
+        // }
+
         if ($request->has('city') && $request->city != '') {
-            $query->where('city', $request->city)->orderBy('sort_order');
+
+            $query->whereHas('location', function ($q) use ($request) {
+                    $q->where('city_id', $request->city);
+                });
+
+            $query->orderBy('sort_order');
         }
 
         // Set items per page
@@ -1394,7 +1403,14 @@ class TourController extends Controller
             return redirect()->back()->with('error', 'No tour selected.');
         }
 
-        Tour::whereIn('id', $ids)->delete();
+        $tours = Tour::whereIn('id', $ids)->get();
+
+        foreach ($tours as $tour) {
+            $tour->title .= '-deleted';
+            $tour->slug .= '-deleted';
+            $tour->save();
+            $tour->delete();
+        }
 
         return redirect()->back()->with('success', 'Selected tours deleted successfully.');
     }
