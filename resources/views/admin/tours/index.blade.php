@@ -43,6 +43,11 @@
     color: #888;
 }
 
+.select2-selection__clear{
+    /*display: none;*/
+    height: 0px !important;
+}
+
 
 
 </style>
@@ -74,7 +79,7 @@
                         {{-- Category Dropdown --}}
 
                         <select name="category" class="form-control form-control-sm mr-2 select-searchable">
-                            <!-- <option value="">All Categories</option> -->
+                            <option value="">All Categories</option>
                             @foreach ($categories as $category)
                                 <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
                                     {{ $category->name }}
