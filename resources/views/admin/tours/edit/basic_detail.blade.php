@@ -332,6 +332,15 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                            <label for="other_description" class="form-label">Other description *</label>
+                            <textarea name="other_description" id="other_description" class="form-control aiz-text-editor" >{{ old('other_description') ?: $data->detail?->other_description }}</textarea>
+                                @error('other_description')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div>
 
                     <div class="col-lg-12">
                         <div class="form-group mb-5">

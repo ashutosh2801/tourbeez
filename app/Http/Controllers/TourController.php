@@ -145,6 +145,7 @@ class TourController extends Controller
             'title'                 => 'required|max:255',
             'description'           => 'required',
             'long_description'      => 'required',
+            'other_description'      => 'required',
             'price_type'            => 'required',
             'PriceOption'           => 'required|array',
             'PriceOption.*.label'   => 'required|string|max:255',
@@ -164,6 +165,7 @@ class TourController extends Controller
             'title.required' => 'Please enter a title',
             'description.required' => 'Please enter a description',
             'long_description.required' => 'Please enter a long description',
+            'other_description.required' => 'Please enter a other description',
             'price_type.required' => 'Please select a price type',
             'PriceOption.*.label.required' => 'Please enter a label for the price option',
             'PriceOption.*.price.required' => 'Please enter a price for the price option',
@@ -226,6 +228,7 @@ class TourController extends Controller
             $tour_detail->tour_id               = $tour->id;
             $tour_detail->description           = $request->description;
             $tour_detail->long_description      = $request->long_description;
+            $tour_detail->other_description     = $request->other_description;
             $tour_detail->quantity_min          = $request->quantity_min;
             $tour_detail->quantity_max          = $request->quantity_max;
             $tour_detail->IsPurchasedAsAGift    = $request->IsPurchasedAsAGift?1:0;
@@ -625,6 +628,7 @@ class TourController extends Controller
             'title'                 => 'required|max:255',
             'description'           => 'required',
             'long_description'      => 'required',
+            'other_description'      => 'required',
             'price_type'            => 'required',
             'PriceOption'           => 'required|array',
             'PriceOption.*.label'   => 'required|string|max:255',
@@ -645,6 +649,7 @@ class TourController extends Controller
             'title.required' => 'Please enter a title',
             'description.required' => 'Please enter a description',
             'long_description.required' => 'Please enter a long description',
+            'other_description.required' => 'Please enter a other description',
             'price_type.required' => 'Please select a price type',
             'PriceOption.*.label.required' => 'Please enter a label for the price option',
             'PriceOption.*.price.required' => 'Please enter a price for the price option',
@@ -729,6 +734,7 @@ class TourController extends Controller
             }
             $tour_detail->description           = $request->description;
             $tour_detail->long_description      = $request->long_description;
+            $tour_detail->other_description     = $request->other_description;
             $tour_detail->quantity_min          = $request->quantity_min;
             $tour_detail->quantity_max          = $request->quantity_max;
             $tour_detail->IsPurchasedAsAGift    = $request->IsPurchasedAsAGift?1:0;
