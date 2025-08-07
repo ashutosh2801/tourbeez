@@ -37,6 +37,12 @@
     border: none !important;
 }
 
+.drag-handle {
+    cursor: move;
+    font-size: 18px;
+    color: #888;
+}
+
 
 
 </style>
@@ -53,33 +59,7 @@
 
                     <div class="d-flex gap-2 flex">
 
-                        {{-- Category Dropdown --}}
-                        <!-- <select name="category" class="form-control form-control-sm mr-2">
-                            <option value="">All Cities</option>
-                            @foreach ($cities as $city)
-                                <option value="{{ $city->id }}" {{ request('city') == $city->id ? 'selected' : '' }}>
-                                    {{ ucwords($city->name) }}
-                                </option>
-                            @endforeach
-                        </select> -->
-
-                        <!-- <select name="cities" class="form-control form-control-sm select2 mr-2">
-                            <option value="">All Cities</option>
-                            @foreach ($cities as $city)
-                                <option value="{{ $city->id }}" {{ request('city') == $city->id ? 'selected' : '' }}>
-                                    {{ ucwords($city->name) }}
-                                </option>
-                            @endforeach
-                        </select> 
- -->
-                        <!-- <select name="city" id="city-select" class="form-control form-control-sm ">
-                            <option value="">Select a city</option>
-                            @foreach ($cities as $city)
-                                <option value="{{ $city->id }}" {{ request('city') == $city->id ? 'selected' : '' }}>
-                                    {{ ucwords($city->name) }}
-                                </option>
-                            @endforeach
-                        </select> -->
+                        {{-- City Dropdown --}}
 
                     <select name="city" id="city-select" class="form-control form-control-sm">
                         @if(request('city'))
@@ -92,8 +72,9 @@
                         <input type="text" name="search" class="ml-2 form-control form-control-sm mr-2" placeholder="Search tour" value="{{ request('search') }}" />
 
                         {{-- Category Dropdown --}}
-                        <select name="category" class="form-control form-control-sm mr-2">
-                            <option value="">All Categories</option>
+
+                        <select name="category" class="form-control form-control-sm mr-2 select-searchable">
+                            <!-- <option value="">All Categories</option> -->
                             @foreach ($categories as $category)
                                 <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
                                     {{ $category->name }}
@@ -102,8 +83,8 @@
                         </select>
 
                         {{-- Per Page Dropdown --}}
-                        <select name="per_page" class="form-control form-control-sm mr-2">
-                            @foreach ([10, 25, 50, 100] as $number)
+                        <select name="per_page" class="ml-2 form-control form-control-sm mr-2">
+                            @foreach (['All',10, 25, 50, 100] as $number)
                                 <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
                                     {{ $number }} per page
                                 </option>
@@ -112,10 +93,6 @@
 
                         <select name="status" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
                             <option value="">All Status</option>
-                                
-                                <option value="">
-                                    Status
-                                </option>
                                 <option value="0" {{ request('staus') === 0 ? 'selected' : '' }}>
                                     Pending
                                 </option>
@@ -127,6 +104,7 @@
 
                         {{-- Submit Button --}}
                         <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                        <!-- <a href="{{ route('admin.tour.index')}}" class="btn btn-outline-secondary btn-sm">Clear</a> -->
                     </div>
                 </div>
             </div>
@@ -165,9 +143,9 @@
                         <th width="150">{{ translate('Actions') }}</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="sortable-tours">
                     @foreach ($tours as $tour)
-                        <tr>
+                        <tr data-id="{{ $tour->id }}">
                             <td><input style="width:15px; height:15px;" type="checkbox" name="ids[]" value="{{ $tour->id }}"></td>
                             <td>{!! main_image_html($tour->main_image?->id) !!}</td>
                             <td>
@@ -310,5 +288,46 @@ $(document).ready(function () {
     });
 });
 </script>
+
+<script>
+    $(document).ready(function() {
+        $('.select-searchable').select2({
+            placeholder: "Select a category",
+            allowClear: true,
+            width: 'resolve'
+        });
+    });
+</script>
+
+
+<script>
+    $(function () {
+        $("#sortable-tours").sortable({
+            handle: "td", // You can change this to a specific handle like ".handle"
+            update: function () {
+                let order = [];
+                $("#sortable-tours tr").each(function () {
+                    order.push($(this).data("id"));
+                });
+
+                $.ajax({
+                    url: "{{ route('admin.tour.reorder') }}",
+                    method: "POST",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        order: order
+                    },
+                    success: function () {
+                        console.log('Order updated');
+                    },
+                    error: function () {
+                        alert('Failed to update tour order.');
+                    }
+                });
+            }
+        });
+    });
+</script>
+
 @endsection
 </x-admin>
