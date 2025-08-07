@@ -114,7 +114,7 @@
                 </div>
             </div>
         </form>
-
+        
         <form id="bulkDeleteForm" method="POST" action="{{ route('admin.order.bulkDelete') }}">
         @csrf
         @method('DELETE')
@@ -123,6 +123,8 @@
             <div class="d-flex justify-content-between align-items-center w-100">
                 <h3 class="card-title mb-0"></h3>
                 <div class="card-tools">
+                    <button id="saveSortOrder" type="button" class="btn btn-sm btn-primary">Save Sort Order</button>
+
                     @can('add_tour') 
                     <a href="{{ route('admin.tour.create') }}" class="btn btn-sm btn-info">Create New Tour</a>
                     @endcan
@@ -140,11 +142,12 @@
                 <thead>
                     <tr>
                         <th><input style="width:15px; height:15px;" type="checkbox" id="checkAll" /></th>
-                        <th>{{ translate('Image') }}</th>
+                        <th >{{ translate('Order') }}</th>
+                        <th >{{ translate('Image') }}</th>
                         <th>{{ translate('Title') }}</th>
-                        <th width="100">{{ translate('Price') }}</th>
+                        <th width="150">{{ translate('Price') }}</th>
                         <th width="150">{{ translate('Code') }}</th>
-                        <th width="250">{{ translate('Category') }}</th>
+                        <th width="150">{{ translate('Category') }}</th>
                         <th width="150">{{ translate('Actions') }}</th>
                     </tr>
                 </thead>
@@ -152,6 +155,13 @@
                     @foreach ($tours as $tour)
                         <tr data-id="{{ $tour->id }}">
                             <td><input style="width:15px; height:15px;" type="checkbox" name="ids[]" value="{{ $tour->id }}"></td>
+
+                            <td>
+                                  <input type="hidden" name="tour_ids[]" value="{{ $tour->id }}">
+                                  <input style="width:35px; height:35px;" type="text" name="sort_order[{{ $tour->id }}]" value="{{ $tour->sort_order }}">
+                                </td>
+
+
                             <td>{!! main_image_html($tour->main_image?->id) !!}</td>
                             <td>
                                 @can('edit_tour')     
@@ -314,7 +324,7 @@ $(document).ready(function () {
                 $("#sortable-tours tr").each(function () {
                     order.push($(this).data("id"));
                 });
-
+                console.log(order);
                 $.ajax({
                     url: "{{ route('admin.tour.reorder') }}",
                     method: "POST",
@@ -323,6 +333,7 @@ $(document).ready(function () {
                         order: order
                     },
                     success: function () {
+                        alert('Sort order updated!');
                         console.log('Order updated');
                     },
                     error: function () {
@@ -332,6 +343,39 @@ $(document).ready(function () {
             }
         });
     });
+</script>
+
+<script>
+    $('#saveSortOrder').click(function () {
+        let sortedData = [];
+
+        $('#sortable-tours tr').each(function () {
+            const tourId = $(this).data('id');
+            const sortOrder = $(this).find('input[name^="sort_order"]').val();
+            sortedData[sortOrder] = tourId;
+
+        });
+
+
+        $.ajax({
+            url: "{{ route('admin.tour.reorder') }}",
+            type: "POST",
+            data: {
+                _token: '{{ csrf_token() }}',
+                order: sortedData
+            },
+            success: function (response) {
+                alert('Sort order updated!');
+            },
+            error: function (xhr) {
+                console.error(xhr.responseText);
+                alert('Error saving sort order.');
+            }
+        });
+    });
+
+
+
 </script>
 
 @endsection
