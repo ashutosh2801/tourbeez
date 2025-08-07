@@ -91,18 +91,32 @@ class TourController extends Controller
             $query->where('status', $request->status);
         }
         if ($request->has('city') && $request->city != '') {
-            $query->where('city', $request->city);
+            $query->where('city', $request->city)->orderBy('sort_order');
         }
 
         // Set items per page
         $perPage = $request->input('per_page', 10);
 
-        $tours = $query->with('categories')->latest()->paginate($perPage)->withQueryString();
+        if($perPage != "All"){
+            $tours = $query->with('categories')->paginate($perPage)->withQueryString();
+        } else {
+            $tours = $query->with('categories')->paginate(100000)->withQueryString();
+        }
+        
         $categories = Category::all();
         $cities = City::limit(10)->get();
 
 
         return view('admin.tours.index', compact(['tours', 'categories', 'cities']));
+    }
+
+    public function reorder(Request $request)
+    {
+        foreach ($request->order as $index => $id) {
+            Tour::where('id', $id)->update(['sort_order' => $index]);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /**

@@ -122,6 +122,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/preview/{id}', [TourController::class, 'preview'])->name('tour.preview');
     Route::post('/tour/addfocus/{id}', [TourController::class, 'add_focus_keyword'])->name('tour.addfocus');
 
+    Route::post('/tours/reorder', [TourController::class, 'reorder'])->name('tour.reorder');
+
+
     Route::resource('itineraries',ItineraryController::class);
     Route::post('/itinerary/single', [ItineraryController::class, 'single'])->name('itinerary.single');
 
