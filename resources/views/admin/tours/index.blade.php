@@ -163,7 +163,7 @@
                                 <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }}</div>
                                 <div class="text-sm text-gray-500"><i style="font-size:11px">By: {{ $tour->user->name }}</i></div>
                             </td>    
-                            <td>USD&nbsp;{{ price_format_with_currency($tour->price) }}</td>
+                            <td>{{ price_format_with_currency($tour->price) }}</td>
                             <td>{{ $tour->unique_code }}</td>
                             <td>{{ $tour->category_names ?: 'No categories' }}</td>
                             <td>
