@@ -724,9 +724,10 @@ class OrderController extends Controller
             ->get();
         
         foreach ($schedules as $schedule) {
-            $durationMinutes = match (strtolower($schedule->minimum_notice_unit)) {
-                'minute', 'minutes' => $schedule->minimum_notice_num,
-                'hour', 'hours' => $schedule->minimum_notice_num * 60,
+            
+            $durationMinutes = match (strtolower($schedule->repeat_period)) {
+                'minute', 'minutes' => $schedule->repeat_period_unit,
+                'hour', 'hourly' => $schedule->repeat_period_unit * 60,
                 default => 0
             };
 
