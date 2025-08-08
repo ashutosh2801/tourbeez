@@ -233,14 +233,15 @@ class TourController extends Controller
         ];
 
         $pickups = [];
-        if (!empty($tour->pickups) && isset($tour->pickups[0]) && $tour->pickups[0]?->name !== 'No Pickups') {
-            $pickups = $tour->pickups[0]?->locations ?? [];
-        } else {
-            $pickups[] = 'Pickups';
+        if(!empty($tour->pickups) && $tour->pickups[0]?->name === 'No Pickup') {
+            $pickups[] = 'No Pickup';
         }
-
-        
-
+        else if(!empty($tour->pickups) && $tour->pickups[0]?->name === 'Pickup') {
+            $pickups[] = 'Pickup';
+        }
+        else if (!empty($tour->pickups) && isset($tour->pickups[0])) {
+            $pickups = $tour->pickups[0]?->locations ?? [];
+        }
 
         if ($tour) {
             // 💡 You can now format or transform fields as needed
@@ -254,10 +255,10 @@ class TourController extends Controller
                 'order_email'   => $tour->order_email,
                 'features'      => $tour->features,
                 'meta'          => $tour->meta,
+                'pickups'       => $pickups,
                 'categories'    => $tour->categories,
                 'tourtypes'     => $tour->tourtypes,
                 'itineraries'   => $tour->itineraries,
-                'pickups'       => $pickups,
                 //'itinerariesAll'=> $tour->itinerariesAll,
                 //'schedule'      => $tour->schedule,
                 'faqs'          => $tour->faqs,
