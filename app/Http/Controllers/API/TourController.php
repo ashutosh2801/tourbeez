@@ -164,6 +164,7 @@ class TourController extends Controller
                     'itinerariesAll',
                     'faqs',
                     'inclusions',
+                    'optionals'
                     'exclusions',
                     'features',
                     'taxes_fees',
@@ -263,6 +264,7 @@ class TourController extends Controller
                 //'schedule'      => $tour->schedule,
                 'faqs'          => $tour->faqs,
                 'inclusions'    => $tour->inclusions,
+                'optionals'    => $tour->optionals,
                 'exclusions'    => $tour->exclusions,
                 'taxes_fees'    => $tour->taxes_fees,
                 'detail'        => $tour->detail,

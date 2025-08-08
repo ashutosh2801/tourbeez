@@ -10,6 +10,7 @@ use App\Models\Faq;
 use App\Models\Feature;
 use App\Models\Inclusion;
 use App\Models\Itinerary;
+use App\Models\Optional;
 use App\Models\Pickup;
 use App\Models\TaxesFee;
 use App\Models\Tour;
@@ -464,6 +465,15 @@ class TourController extends Controller
         return view('admin.tours.feature.inclusions', compact( 'data'));
     }
 
+    public function editOptionals($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.feature.optionals', compact( 'data'));
+    }
+
+
+    
+
     public function editExclusions($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
@@ -576,6 +586,7 @@ class TourController extends Controller
         $clonedTour->pickups()->attach($tour->pickups->pluck('id'));
         $clonedTour->itineraries()->attach($tour->itineraries->pluck('id'));
         $clonedTour->inclusions()->attach($tour->features->pluck('id'));
+        $clonedTour->optionals()->attach($tour->features->pluck('id'));
         $clonedTour->exclusions()->attach($tour->features->pluck('id'));
         $clonedTour->tourtypes()->attach($tour->tourtypes->pluck('id'));
         $clonedTour->taxes_fees()->attach($tour->taxes_fees->pluck('id'));
@@ -1085,6 +1096,45 @@ class TourController extends Controller
             $feature = Inclusion::find( $option['id'] ?? 0 );
             if (!$feature) {
                 $feature = new Inclusion();
+                //$feature->tour_id     = $tour->id;
+                $feature->user_id     = auth()->user()->id;
+            }
+            $feature->name      = $option['name'] ?? null;
+            
+            if( $feature->save() ) {
+                $featureIds[] = $feature->id;
+            } 
+            else {
+                $featureIds[] = $feature->id;
+            }
+        }
+
+        // Sycc faqs
+        if ( !empty($featureIds) ) {
+            $tour->inclusions()->sync($featureIds);
+        }
+
+        return redirect()->back()->with('success','Inclusions saved successfully.');
+    }
+
+    public function optional_update(Request $request, $id) {
+        $tour  = Tour::findOrFail($id);
+
+        $request->validate([
+            'optionalValue'        => 'required|array',
+            'optionalValue.*.name' => 'required|string|max:255',
+        ],
+        [
+            'optionalValue.*.name.required'=> 'Name is required',
+        ]);
+
+        //Save new Exclusion
+        $featureIds = [];
+        foreach ($request->optionalValue as $option) {
+            //$feature = Inclusion::where('name', $option['name'])->first();
+            $feature = Optional::find( $option['id'] ?? 0 );
+            if (!$feature) {
+                $feature = new Optional();
                 //$feature->tour_id     = $tour->id;
                 $feature->user_id     = auth()->user()->id;
             }

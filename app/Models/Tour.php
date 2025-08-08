@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Optional;
 use App\Upload;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
 use Requests;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Tour extends Model
 {
@@ -100,6 +101,11 @@ class Tour extends Model
     {
         return $this->belongsToMany(Inclusion::class);
     }
+    public function optionals(): BelongsToMany
+    {
+        return $this->belongsToMany(Optional::class);
+    }
+
 
     public function exclusions(): BelongsToMany
     {
