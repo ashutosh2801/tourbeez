@@ -148,8 +148,8 @@ class TourController extends Controller
         //$slug = $request->input('slug');
         $cacheKey = 'tour_detail_' . $slug;
 
-        //$tour = Cache::remember($cacheKey, 86400, function () use ($slug) {
-            $tour = Tour::where('slug', $slug)
+        $tour = Cache::remember($cacheKey, 86400, function () use ($slug) {
+            return Tour::where('slug', $slug)
                 ->where('status', 1)
                 ->whereNull('deleted_at')
                 //->with('main_image') // eager load image if needed
@@ -175,7 +175,7 @@ class TourController extends Controller
                     'category',
                 ])
                 ->first();
-        //});
+        });
 
         if (!$tour) {
             return response()->json(['status' => false, 'message' => 'Tour not found'], 404);
@@ -242,9 +242,6 @@ class TourController extends Controller
         else if (!empty($tour->pickups) && isset($tour->pickups[0])) {
             $pickups = $tour->pickups[0]?->locations ?? [];
         }
-
-        
-
 
         if ($tour) {
             // 💡 You can now format or transform fields as needed
