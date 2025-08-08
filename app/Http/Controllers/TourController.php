@@ -1408,7 +1408,7 @@ class TourController extends Controller
     {
         $tour = Tour::where('id', decrypt($id))->first();
         $tour->title .= '-deleted';
-        $tour->slug .= '-deleted';
+        $tour->slug .= '-deleted-' . Str::random(6);
         $tour->save();
         if ($tour->delete()) {
             return redirect()->route('admin.tour.index')->with('success', 'Tour info has been deleted successfull');
@@ -1447,7 +1447,7 @@ class TourController extends Controller
 
         foreach ($tours as $tour) {
             $tour->title .= '-deleted';
-            $tour->slug .= '-deleted';
+            $tour->slug .= '-deleted-' . Str::random(6);
             $tour->save();
             $tour->delete();
         }

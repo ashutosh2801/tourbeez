@@ -19,7 +19,7 @@
                             </ul>
                         </div>
                     @endif
-                    <form class="needs-validation" novalidate action="{{ route('admin.pickups.update', $data->id) }}" 
+                    <form class="needs-validation" novalidate action="{{ route('admin.pickups.update', encrypt($data->id)) }}" 
                     method="POST" enctype="multipart/form-data">
                         @method('PUT')
                         @csrf
@@ -80,7 +80,7 @@
                                                 $old_time = old("PickupLocations.$index.time", $option['time'])
                                                 @endphp
                                                 @for ($hour = 0; $hour <= 12; $hour++)
-                                                    @foreach ([0, 5] as $minute)
+                                                    @foreach ([0, 15, 30, 45] as $minute)
                                                     @php
                                                         $time = \Carbon\Carbon::createFromTime($hour == 12 ? 12 : $hour, $minute);
                                                         $formatted = $time->format('h:i A');
@@ -125,9 +125,10 @@
 
 @section('js')
 <script>
-let pickupLocationCount = {{ old('PickupLocations') ? count(old('PickupLocations')) : 1 }}
+let pickupLocationCount = {{ $pickupLocations ? count($pickupLocations) : 1 }}
 
 function addPickupLocation() {
+
     const container = document.getElementById('pickupLocationContainer');
 
     const newRow = document.createElement('div');
@@ -150,10 +151,10 @@ function addPickupLocation() {
                     </div>
                     <div class="col-md-2">
                         <label for="pickup_time">Pickup time</label>
-                        <select class="form-control aiz-selectpicker" data-live-search="true" name="pPickup[${pickupLocationCount}][time]" id="pickup_time">
+                        <select class="form-control aiz-selectpicker" data-live-search="true" name="PickupLocations[${pickupLocationCount}][time]" id="pickup_time">
                             <option value="">Select one</option>
                             @for ($hour = 0; $hour <= 12; $hour++)
-                                @foreach ([0, 5] as $minute)
+                                @foreach ([0, 15, 30, 45] as $minute)
                                 @php
                                     $time = \Carbon\Carbon::createFromTime($hour == 12 ? 12 : $hour, $minute);
                                     $formatted = $time->format('h:i A'); // 'h' = 12-hour with leading zero
