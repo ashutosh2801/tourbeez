@@ -424,7 +424,25 @@ class TourController extends Controller
     public function editAddon($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.feature.addon', compact( 'data'));
+
+        // Step 1: Get pivot data (related addon IDs with sort_by)
+        $pivotData = $data->addons()->withPivot('sort_by')->get()->keyBy('id');
+
+        // Step 2: Get all addons
+        $addons = Addon::all();
+
+        // Step 3: Attach pivot sort_by where available, otherwise default
+        $addons = $addons->map(function ($addon) use ($pivotData) {
+            $addon->sort_order_from_pivot = $pivotData[$addon->id]->pivot->sort_by ?? 0;
+            return $addon;
+        });
+
+        // Step 4: Sort all addons by the pivot-based value
+        $addons = $addons->sortBy('sort_order_from_pivot');
+
+        //echo '<pre>';  print_r($addons); exit;
+
+        return view('admin.tours.feature.addon', compact( 'data', 'addons'));
     }
 
     public function editScheduling($id)
@@ -779,9 +797,29 @@ class TourController extends Controller
     public function addon_update(Request $request, $id) {
         $tour  = Tour::findOrFail($id);
         // Save tour types
-        if ($request->has('addons') && is_array($request->addons)) {
-            $tour->addons()->sync($request->addons);
+        
+        // Checked addon IDs
+        $checkedAddons = $request->input('selected_addons', []); // This is an array of IDs
+
+        // All addon pivot data (includes sort_by values keyed by ID)
+        $addonInputs = $request->input('addons', []); // This is an array like: [1 => ['sort_by' => 2], ...]
+
+        $syncData = [];
+
+        foreach ($checkedAddons as $addonId) {
+            // Make sure it's numeric to avoid issues
+            $addonId = (int)$addonId;
+
+            $sortBy = $addonInputs[$addonId]['sort_by'] ?? null;
+
+            $syncData[$addonId] = [
+                'sort_by' => $sortBy,
+            ];
         }
+
+        //echo '<pre>';  print_r($syncData); exit;
+
+        $tour->addons()->sync($syncData);
 
         return back()->withInput()->with('success','Addon saved successfully.');
     }

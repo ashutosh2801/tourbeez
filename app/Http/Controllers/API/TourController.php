@@ -49,9 +49,6 @@ class TourController extends Controller
             });
         }
  
-
-
-
         if ($request->min_price && $request->max_price) {
             $query->whereBetween('price', [(float)$request->min_price, (float)$request->max_price]);
         } elseif ($request->min_price) {
@@ -68,7 +65,7 @@ class TourController extends Controller
             $query->orderBy('price', 'DESC');
         }
         else {
-            $query->orderBy('id', 'DESC');
+            $query->orderBy('sort_order', 'DESC');
         }
 
         $page = $request->get('page', 1);
@@ -256,7 +253,8 @@ class TourController extends Controller
                 'order_email'   => $tour->order_email,
                 'features'      => $tour->features,
                 'meta'          => $tour->meta,
-                'pickups'       => $pickups,
+                 'addons'        => $addons,
+               'pickups'       => $pickups,
                 'categories'    => $tour->categories,
                 'tourtypes'     => $tour->tourtypes,
                 'itineraries'   => $tour->itineraries,
@@ -266,6 +264,7 @@ class TourController extends Controller
                 'inclusions'    => $tour->inclusions,
                 'optionals'    => $tour->optionals,
                 'exclusions'    => $tour->exclusions,
+                'optionals'     => $tour->optionals,
                 'taxes_fees'    => $tour->taxes_fees,
                 'detail'        => $tour->detail,
                 'location'      => $tour->location,
@@ -273,7 +272,6 @@ class TourController extends Controller
                 'pricings'      => $tour->pricings,
                 'category'      => $tour->category,
                 'galleries'     => $galleries,
-                'addons'        => $addons,
             ];
         }
 

@@ -59,7 +59,9 @@ class Tour extends Model
 
     public function addons(): BelongsToMany
     {
-        return $this->belongsToMany(Addon::class);
+        return $this->belongsToMany(Addon::class)
+                    ->withPivot('sort_by') // Make sure to select the pivot column
+                    ->orderBy('addon_tour.sort_by', 'ASC'); // Fully qualify the pivot column;
     }
 
     public function addonsAll(): BelongsToMany
@@ -110,6 +112,11 @@ class Tour extends Model
     public function exclusions(): BelongsToMany
     {
         return $this->belongsToMany(Exclusion::class);
+    }
+
+    public function optionals(): BelongsToMany
+    {
+        return $this->belongsToMany(Optional::class);
     }
 
     public function features(): BelongsToMany
