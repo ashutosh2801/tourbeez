@@ -161,7 +161,7 @@ class TourController extends Controller
                     'itinerariesAll',
                     'faqs',
                     'inclusions',
-                    'optionals'
+                    'optionals', 
                     'exclusions',
                     'features',
                     'taxes_fees',
@@ -248,13 +248,13 @@ class TourController extends Controller
                 'title'         => $tour->title,
                 'price'         => format_price($tour->price), // formatted price
                 'original_price'=> $tour->price, // without formatted price
+                'price_type'    => $tour->price_type,
                 'unique_code'   => $tour->unique_code,
                 'slug'          => $tour->slug,
                 'order_email'   => $tour->order_email,
                 'features'      => $tour->features,
                 'meta'          => $tour->meta,
-                 'addons'        => $addons,
-               'pickups'       => $pickups,
+                'pickups'       => $pickups,
                 'categories'    => $tour->categories,
                 'tourtypes'     => $tour->tourtypes,
                 'itineraries'   => $tour->itineraries,
@@ -262,7 +262,7 @@ class TourController extends Controller
                 //'schedule'      => $tour->schedule,
                 'faqs'          => $tour->faqs,
                 'inclusions'    => $tour->inclusions,
-                'optionals'    => $tour->optionals,
+                'optionals'     => $tour->optionals,
                 'exclusions'    => $tour->exclusions,
                 'optionals'     => $tour->optionals,
                 'taxes_fees'    => $tour->taxes_fees,
@@ -272,6 +272,7 @@ class TourController extends Controller
                 'pricings'      => $tour->pricings,
                 'category'      => $tour->category,
                 'galleries'     => $galleries,
+                'addons'        => $addons,
             ];
         }
 

@@ -706,8 +706,6 @@ class OrderController extends Controller
 
     public function getSessionTimes(Request $request)
     {
-
-
         $carbonDate = Carbon::parse($request->date);
         $date = $request->date;
 
