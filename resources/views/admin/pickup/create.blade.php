@@ -59,7 +59,7 @@
                                             <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="PickupLocations[{{ $index }}][time]">
                                                 <option value="">Select one</option>
                                                 @for ($hour = 0; $hour <= 12; $hour++)
-                                                    @foreach ([0, 30] as $minute)
+                                                    @foreach ([0, 15, 30, 45] as $minute)
                                                     @php
                                                         $time = \Carbon\Carbon::createFromTime($hour == 12 ? 12 : $hour, $minute);
                                                         $formatted = $time->format('h:i A'); // 'h' = 12-hour with leading zero
@@ -85,8 +85,8 @@
                                 </div>  
                             </div>                                
                             @endforeach 
-
-                            <div class="text-right">
+                            </div>
+                            <div class="text-right form-group">
                                 <button type="button" onclick="addPickupLocation()" class="btn border-t-indigo-100 btn-outline">Add pickup location</button>
                             </div>
                             
@@ -127,10 +127,10 @@ function addPickupLocation() {
                     </div>
                     <div class="col-md-2">
                         <label for="pickup_time">Pickup time</label>
-                        <select class="form-control aiz-selectpicker" data-live-search="true" name="pPickup[${pickupLocationCount}][time]" id="pickup_time">
+                        <select class="form-control aiz-selectpicker" data-live-search="true" name="PickupLocations[${pickupLocationCount}][time]" id="pickup_time">
                             <option value="">Select one</option>
                             @for ($hour = 0; $hour <= 12; $hour++)
-                                @foreach ([0, 30] as $minute)
+                                @foreach ([0, 15, 30, 45] as $minute)
                                 @php
                                     $time = \Carbon\Carbon::createFromTime($hour == 12 ? 12 : $hour, $minute);
                                     $formatted = $time->format('h:i A'); // 'h' = 12-hour with leading zero
@@ -144,8 +144,8 @@ function addPickupLocation() {
             </div>
             <div class="form-group">
                 <label for="additional_information">Additional information</label>
-                <textarea type="text" class="form-control" rows="3" id="additional_information" name="PickupLocations[${pickupLocationCount}][additional]"
-                    placeholder="Enter additional information">{{ old('additional') }}</textarea>
+                <textarea type="text" class="form-control" rows="3" id="additional_information" name="PickupLocations[${pickupLocationCount}][additional_information]"
+                    placeholder="Enter additional information">{{ old('additional_information') }}</textarea>
             </div>
             <button type="button" class="btn btn-sm btn-danger text-right" onclick="removePickupLocation(${pickupLocationCount})"><i class="fa fa-minus"></i></button>
             </div>  
