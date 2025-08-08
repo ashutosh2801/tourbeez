@@ -594,6 +594,8 @@ class OrderController extends Controller
             $customer->email        = $data['email'];
             $customer->phone        = $data['phone'];
             $customer->instructions = $data['instructions'] ?? '';
+            $customer->pickup_id    = $data['pickup_id'] ?? '';
+            $customer->pickup_name  = $data['pickup_name'] ?? '';
             $customer->save();
 
             $tour = Tour::with(['pricings'])->find($request->tourId);
