@@ -58,7 +58,7 @@ class PickupController extends Controller
                     $location->location   = $option['location'] ?? null;
                     $location->address    = $option['address'] ?? null;
                     $location->time       = $option['time'] ?? null;
-                    $location->additional = $option['additional'] ?? null;
+                    $location->additional = $option['additional_information'] ?? null;
                     $location->save();
                 }
             }
@@ -92,6 +92,7 @@ class PickupController extends Controller
      */
     public function update(Request $request, $id)
     {
+
         $request->validate([
             'name'                           => 'required|max:255',
             'PickupLocations'                => 'required|array',
@@ -106,7 +107,8 @@ class PickupController extends Controller
             'PickupLocations.*.time.required'    => 'Please enter time',
         ]);
 
-        $pickup = Pickup::findOrFail($request->id);
+        $pickup = Pickup::findOrFail(decrypt($id));
+
         $pickup->name           = $request->name;
         $pickup->price          = $request->price;
         $pickup->pickup_charge  = $request->pickup_charge;
@@ -121,31 +123,33 @@ class PickupController extends Controller
                     $pickup->pricings()->whereNotIn('id', $pickupIds)->delete();
                 }
 
-                foreach ($request->PriceOption as $option) {
+                foreach ($request->PickupLocations as $option) {
+                    // dd($option, $request->PickupLocations);
                     if (!empty($option['id'])) {
-                        $pickup = PickupLocation::find($option['id']);
-                        if ($pickup && $pickup->pickup_id == $pickup->id) {
-                            $pickup->location  = $option['location'] ?? null;
-                            $pickup->address   = $option['address'] ?? null;
-                            $pickup->time      = $option['time'] ?? null;
-                            $pickup->additional= $option['additional'] ?? null;
-                            $pickup->save();
+                        $pickupLocation = PickupLocation::find($option['id']);
+                        
+                        if ($pickupLocation && $pickupLocation->pickup_id == $pickup->id) {
+                            $pickupLocation->location  = $option['location'] ?? null;
+                            $pickupLocation->address   = $option['address'] ?? null;
+                            $pickupLocation->time      = $option['time'] ?? null;
+                            $pickupLocation->additional= $option['additional'] ?? null;
+                            $pickupLocation->save();
                         }
                     } else {
-                        $pickup = new PickupLocation();
-                        $pickup->pickup_id     = $pickup->id;
-                        $pickup->location      = $option['location'] ?? null;
-                        $pickup->address       = $option['address'] ?? null;
-                        $pickup->time          = $option['time'] ?? null;
-                        $pickup->additional    = $option['additional'] ?? null;
-                        $pickup->save();
+                        $pickupLocation = new PickupLocation();
+                        $pickupLocation->pickup_id     = $pickup->id ?? decrypt($id);
+                        $pickupLocation->location      = $option['location'] ?? null;
+                        $pickupLocation->address       = $option['address'] ?? null;
+                        $pickupLocation->time          = $option['time'] ?? null;
+                        $pickupLocation->additional    = $option['additional'] ?? null;
+                        $pickupLocation->save();
                     }
                 }
             }
 
-            return redirect()->route('admin.pickup.index')->with('success','Pickup updated successfully.');
+            return redirect()->route('admin.pickups.index')->with('success','Pickup updated successfully.');
         }
-        
+
         return back()->withInput()->withErrors($request->all());
     }
 
