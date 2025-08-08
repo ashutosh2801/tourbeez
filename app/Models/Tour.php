@@ -114,11 +114,6 @@ class Tour extends Model
         return $this->belongsToMany(Exclusion::class);
     }
 
-    public function optionals(): BelongsToMany
-    {
-        return $this->belongsToMany(Optional::class);
-    }
-
     public function features(): BelongsToMany
     {
         return $this->belongsToMany(Feature::class);
