@@ -59,6 +59,7 @@
                                             <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="PickupLocations[{{ $index }}][time]">
                                                 <option value="">Select one</option>
                                                 @for ($hour = 0; $hour <= 12; $hour++)
+
                                                     @foreach ([0, 15, 30, 45] as $minute)
                                                     @php
                                                         $time = \Carbon\Carbon::createFromTime($hour == 12 ? 12 : $hour, $minute);

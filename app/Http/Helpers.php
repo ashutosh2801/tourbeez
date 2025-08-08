@@ -606,6 +606,8 @@ if (! function_exists('format_price')) {
             $fomated_price = number_format($price, get_setting('no_of_decimals') , ',' , ' ');
         }
 
+        return $fomated_price;
+
         if(get_setting('symbol_format') == 1){
             return currency_symbol().$fomated_price;
         }
