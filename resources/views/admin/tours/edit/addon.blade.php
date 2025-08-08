@@ -21,6 +21,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                 <thead>
                     <tr>
                         <th><input type="checkbox" id="check_all" style="width: 20px;height: 20px;" /></th>
+                        <th>Ordering</th>
                         <th>Image</th>
                         <th width="200">Name</th>
                         <th>Description</th>
@@ -36,7 +37,8 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                     @endphp
                     @foreach ($addons as $item)
                         <tr draggable="true" data-original-index="{{ $index }}" data-id="{{ $item->id }}" data-order="{{ $item->order ? $item->order : $i++  }}">
-                            <th><input {{ (is_array($existing_addons) && in_array($item->id, $existing_addons)) ? 'checked' : '' }} type="checkbox" class="check_all" name="addons[]" value="{{ $item->id }}" style="width: 20px;height: 20px;" /></th>
+                            <th><input {{ (is_array($existing_addons) && in_array($item->id, $existing_addons)) ? 'checked' : '' }} type="checkbox" class="check_all" name="selected_addons[]" value="{{ $item->id }}" style="width: 20px;height: 20px;" /></th>
+                            <th><input type="number" name="addons[{{ $item->id }}][sort_by]" value="{{ $item->sort_order_from_pivot ?? '' }}" style="width: 50px;" /></th>
                             <td>
                                 <img class="img-md" src="{{ uploaded_asset($item->image) }}" height="150"  alt="{{translate('photo')}}">
                             </td>

@@ -85,6 +85,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/itinerary', [TourController::class, 'editItinerary'])->name('tour.edit.itinerary');
     Route::get('/tour/{id}/edit/faqs', [TourController::class, 'editFaqs'])->name('tour.edit.faqs');
     Route::get('/tour/{id}/edit/inclusions', [TourController::class, 'editInclusions'])->name('tour.edit.inclusions');
+    Route::get('/tour/{id}/edit/optionals', [TourController::class, 'editOptionals'])->name('tour.edit.optionals');
     Route::get('/tour/{id}/edit/exclusions', [TourController::class, 'editExclusions'])->name('tour.edit.exclusions');
     Route::get('/tour/{id}/edit/taxesfees', [TourController::class, 'editTaxesfees'])->name('tour.edit.taxesfees');
     Route::get('/tour/{id}/edit/gallery', [TourController::class, 'editGallery'])->name('tour.edit.gallery');
@@ -112,6 +113,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('/tour/itinerary_update/{id}', [TourController::class, 'itinerary_update'])->name('tour.itinerary_update');
     Route::put('/tour/faq_update/{id}', [TourController::class, 'faq_update'])->name('tour.faq_update');
     Route::put('/tour/inclusion_update/{id}', [TourController::class, 'inclusion_update'])->name('tour.inclusion_update');
+    Route::put('/tour/optional_update/{id}', [TourController::class, 'optional_update'])->name('tour.optional_update');
     Route::put('/tour/exclusion_update/{id}', [TourController::class, 'exclusion_update'])->name('tour.exclusion_update');
     Route::put('/tour/taxfee_update/{id}', [TourController::class, 'taxfee_update'])->name('tour.taxfee_update');
     Route::put('/tour/gallery_update/{id}', [TourController::class, 'gallery_update'])->name('tour.gallery_update');
@@ -139,6 +141,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::resource('inclusions',InclusionController::class);
     Route::post('/inclusions/single', [InclusionController::class, 'single'])->name('inclusion.single');
+
+    Route::resource('optionals',InclusionController::class);
+    Route::post('/optionals/single', [InclusionController::class, 'single'])->name('optionals.single');
 
     // Product
     Route::get('/get/subcategory',[ProductController::class,'getsubcategory'])->name('getsubcategory');

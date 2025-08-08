@@ -249,7 +249,6 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 function setValueTime( value ) {
-
     let step10 = step1 = '';
     for(i=10; i<91; i+=5) 
     step10+= `<option value="${i}">${i}</option>`;
@@ -327,8 +326,9 @@ $(document).ready(function(){
         $('#until_date').val(endDate); // Applies the end date to the until_date input
 
        // $('#session_end_date').val(selectedDate);
-        $('#session_start_time, .start_time').val('09:00 AM');
-        $('#session_end_time, .end_time').val('05:00 PM');
+
+        // $('#session_start_time, .start_time').val('09:00 AM');
+        // $('#session_end_time, .end_time').val('05:00 PM');
     });
     
 });
@@ -384,14 +384,17 @@ $(document).ready(function() {
         let day = date.getDate();
         let year = date.getFullYear();
         let formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-
+        
+        
         let fullFormatted = formattedTime;
+        
         $('#session_end_time').val(fullFormatted);
         $('#session_end_date').val(formattedDate);
     });
 });     
 $(document).ready(function() {
         $('.calendar-icon-start').on('click', function () {
+            
         const startdate = $('#session_start_date').data('daterangepicker');
         if (!startdate.isShowing) {
             $('#session_start_date').focus();
@@ -426,7 +429,7 @@ $(document).ready(function() {
   noCalendar: true,
   dateFormat: "h:i K",     // Format shown to user
   time_24hr: false,        // 12-hour format
-  defaultDate: "09:00 AM"  // Set default time
+    // Set default time
 });
 
   // On icon click, open the picker ONLY if it's not already open
@@ -442,7 +445,7 @@ $(document).ready(function() {
   noCalendar: true,
   dateFormat: "h:i K",     // Format shown to user
   time_24hr: false,        // 12-hour format
-  defaultDate: "05:00 PM"  // Set default time
+   // Set default time
 });
   // On icon click, open the picker ONLY if it's not already open
   $('.time-icon-end').on('click', function () {
@@ -454,6 +457,98 @@ $(document).ready(function() {
   });
 });
 
+
+function updateEndDateTime() {
+    
+    let durationNum = parseInt($('#estimated_duration_num').val());
+    let durationUnit = $('#estimated_duration_unit').val();
+    let sessionStartTime = $('#session_start_time').val(); // e.g., "9:00 AM"
+    let sessionStartDate = $('#session_start_date').val(); // e.g., "2025-08-10"
+    
+    if (!durationNum || !sessionStartTime || !sessionStartDate) return;
+    
+    // Parse time: "9:00 AM"
+    let timeParts = sessionStartTime.match(/(\d+):(\d+)\s?(AM|PM)/i);
+    if (!timeParts) return;
+
+    let hours = parseInt(timeParts[1]);
+    let minutes = parseInt(timeParts[2]);
+    let period = timeParts[3].toUpperCase();
+
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+
+    // Create Date object with both date and time
+    let date = new Date(`${sessionStartDate}T00:00:00`);
+    date.setHours(hours);
+    date.setMinutes(minutes);
+    date.setSeconds(0);
+
+    // Add duration
+    if (durationUnit === 'HOURS') {
+        date.setHours(date.getHours() + durationNum);
+    } else if (durationUnit === 'MINUTES') {
+        date.setMinutes(date.getMinutes() + durationNum);
+    } else if (durationUnit === 'DAYS') {
+        date.setDate(date.getDate() + durationNum);
+    }
+
+    // Format time to 12-hour AM/PM
+    let newHours = date.getHours();
+    let newMinutes = date.getMinutes();
+    let newPeriod = newHours >= 12 ? 'PM' : 'AM';
+
+    newHours = newHours % 12;
+    newHours = newHours ? newHours : 12;
+    newMinutes = newMinutes < 10 ? '0' + newMinutes : newMinutes;
+
+    let formattedTime = newHours + ':' + newMinutes + ' ' + newPeriod;
+
+    // Format date to yyyy-mm-dd
+    let month = date.getMonth() + 1;
+    let day = date.getDate();
+    let year = date.getFullYear();
+    let formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    
+    // Update inputs
+    $('#session_end_time').val(formattedTime);
+    $('#session_end_date').val(formattedDate);
+    $('#session_end_date').data('daterangepicker').setStartDate(formattedDate);
+    $('#session_end_date').data('daterangepicker').setEndDate(formattedDate);
+}
+
+
+$(document).ready(function () {
+    // When duration, time, or unit changes
+    $('#estimated_duration_num, #estimated_duration_unit, #session_start_time').on('input change', updateEndDateTime);
+
+    // When session_start_date changes via AIZ datepicker
+    $(document).on('apply.daterangepicker', '#session_start_date', updateEndDateTime);
+
+    // Also fallback for manual input
+    $('#session_start_date').on('change input blur', updateEndDateTime);
+});
+
+
+</script>
+
+<script>
+    $(document).ready(function () {
+        if ($('.aiz-date-range').length > 0) {
+            $('.aiz-date-range').each(function () {
+                // reinitialize the date picker with fresh settings if needed
+                var $input = $(this);
+                $input.daterangepicker({
+                    singleDatePicker: true,
+                    showDropdowns: true,
+                    minDate: $input.data('min-date'),
+                    locale: {
+                        format: 'YYYY-MM-DD'
+                    }
+                });
+            });
+        }
+    });
 </script>
 
 @endsection

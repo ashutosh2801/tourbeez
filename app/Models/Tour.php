@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Optional;
 use App\Upload;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
 use Requests;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Tour extends Model
 {
@@ -58,7 +59,9 @@ class Tour extends Model
 
     public function addons(): BelongsToMany
     {
-        return $this->belongsToMany(Addon::class);
+        return $this->belongsToMany(Addon::class)
+                    ->withPivot('sort_by') // Make sure to select the pivot column
+                    ->orderBy('addon_tour.sort_by', 'ASC'); // Fully qualify the pivot column;
     }
 
     public function addonsAll(): BelongsToMany
@@ -100,10 +103,20 @@ class Tour extends Model
     {
         return $this->belongsToMany(Inclusion::class);
     }
+    public function optionals(): BelongsToMany
+    {
+        return $this->belongsToMany(Optional::class);
+    }
+
 
     public function exclusions(): BelongsToMany
     {
         return $this->belongsToMany(Exclusion::class);
+    }
+
+    public function optionals(): BelongsToMany
+    {
+        return $this->belongsToMany(Optional::class);
     }
 
     public function features(): BelongsToMany

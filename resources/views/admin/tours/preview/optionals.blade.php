@@ -1,0 +1,148 @@
+<div class="card">
+    <div class="card card-primary">
+        <div class="card-header">
+            <h3 class="card-title">Tour Optinals</h3>
+        </div>
+        <div class="card-body">
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul class="list-unstyled">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form class="needs-validation" novalidate action="{{ route('admin.tour.optional_update', $data->id) }}" method="POST"
+            enctype="multipart/form-data">
+            @method('PUT')
+            @csrf
+            <div class="">
+                
+                @php
+                $optionalData = old('optionalData', $data->optionals?->map(function ($item) {
+                                                return [
+                                                    'id'     => $item->id,
+                                                    'name'   => $item->name,
+                                                ];
+                                        })->filter()->values()->toArray());
+                            
+                $count = count($optionalData);
+                if($count == 0){
+                    $optionalData = old('optionalData', [ ['id' => '', 'name' => '', 'type' => ''] ]);
+                    $count = 1;
+                }
+                @endphp
+
+                @foreach ($optionalData as $index => $option) 
+
+                <div id="FeatureRow_{{ $index }}"> 
+                    <input type="hidden" name="optionalData[{{ $index }}][id]" id="optionalData_id_{{ $index }}" 
+                    value="{{ old("optionalData.$index.id", $option['id']) }}" class="form-control" />
+
+                    <div class="row">
+                        @if ($count == 1)                        
+                        <div class="col-lg-12">
+                            <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
+                                <label for="include_name" class="form-label">Tour Inclusions</label>
+                                <select class="form-control" data-live-search="true" onchange="fetchInclude(this.value, {{ $index }})">
+                                    <option value="">Select one</option>
+                                    @foreach ($data->optionals as $item)
+                                    <option value="{{ $item->id }}">{{ $item->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        @endif
+
+                        <div class="col-lg-12">
+                            <div class="form-group mb-2">
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-pencil-alt"></i></span>
+                                    </div>
+                                    <input type="text" name="optionalData[{{ $index }}][name]" id="include_name_{{ $index }}" value="{{ old("optionalData.$index.name", $option['name']) }}"
+                                        class="form-control  mr-2" placeholder="Enter name">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+
+                <div id="includesContainer"></div>
+
+            </div>
+            
+            </form>
+        </div>
+    </div>
+</div>
+
+@section('js')
+@parent
+<script>
+let includeCount = {{ ($count > 1) ? $count : 1 }}
+
+function addInclude() {
+
+    const container = document.getElementById('includesContainer');
+
+    const newRow = document.createElement('div');
+    newRow.classList.add('align-items-end', 'mb-2');
+    newRow.setAttribute('id', `FeatureRow_${includeCount}`);
+
+    newRow.innerHTML = `<hr><div class="row">                    
+        <div class="col-lg-12">
+            <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
+                <label for="include_name" class="form-label">Tour Inclusions</label>
+                <select class="form-control" data-live-search="true" id="include"  onchange="fetchInclude(this.value, ${includeCount})">
+                    <option value="">Select one</option>
+                    @foreach ($data->optionals as $item)
+                    <option value="{{ $item->id }}">{{ $item->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+        <input type="hidden" name="optionalData[${includeCount}][type]" id="optionalData_type_${includeCount}" 
+                    value="" class="form-control" />
+        <div class="col-lg-12">
+            <div class="form-group mb-2">
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fa fa-pencil-alt"></i></span>
+                    </div>
+                    <input type="text" name="optionalData[${includeCount}][name]" id="include_name_${includeCount}" value=""
+                        class="form-control mr-2" placeholder="Enter name">
+                    <button type="button" class="btn btn-sm btn-success mr-2" onclick="addInclude()"><i class="fa fa-plus"></i></button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeInclude(${includeCount})"><i class="fa fa-minus"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+    container.appendChild(newRow);
+    includeCount++;
+}
+
+function removeInclude(id) {
+    const row = document.getElementById(`FeatureRow_${id}`);
+    if (row) {
+        row.remove();
+        includeCount--;
+    }
+}
+
+function fetchInclude( selectedValue, num ) {
+    $.post('{{ route('admin.inclusion.single') }}', {
+        _token: '{{ csrf_token() }}',
+        feature_id: selectedValue,
+        type: 'inclusion'
+    }, function(data) {
+        console.log(num, data);
+        $(`#include_name_${num}`).val(data.name);
+        $(`#include_type_${num}`).val(data.type);
+    });
+}
+</script>
+@endsection
