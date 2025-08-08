@@ -59,7 +59,7 @@
                                             <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="PickupLocations[{{ $index }}][time]">
                                                 <option value="">Select one</option>
                                                 @for ($hour = 0; $hour <= 12; $hour++)
-                                                    @foreach ([0, 30] as $minute)
+                                                    @foreach ([0, 5] as $minute)
                                                     @php
                                                         $time = \Carbon\Carbon::createFromTime($hour == 12 ? 12 : $hour, $minute);
                                                         $formatted = $time->format('h:i A'); // 'h' = 12-hour with leading zero
@@ -85,8 +85,8 @@
                                 </div>  
                             </div>                                
                             @endforeach 
-
-                            <div class="text-right">
+                            </div>
+                            <div class="text-right form-group">
                                 <button type="button" onclick="addPickupLocation()" class="btn border-t-indigo-100 btn-outline">Add pickup location</button>
                             </div>
                             
@@ -130,7 +130,7 @@ function addPickupLocation() {
                         <select class="form-control aiz-selectpicker" data-live-search="true" name="pPickup[${pickupLocationCount}][time]" id="pickup_time">
                             <option value="">Select one</option>
                             @for ($hour = 0; $hour <= 12; $hour++)
-                                @foreach ([0, 30] as $minute)
+                                @foreach ([0, 5] as $minute)
                                 @php
                                     $time = \Carbon\Carbon::createFromTime($hour == 12 ? 12 : $hour, $minute);
                                     $formatted = $time->format('h:i A'); // 'h' = 12-hour with leading zero
