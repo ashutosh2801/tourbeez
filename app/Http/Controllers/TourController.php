@@ -23,6 +23,7 @@ use App\Models\TourUpload;
 use App\Models\Tourtype;
 use App\Services\ImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Redirect;
 use Str;
 use Validator;
@@ -101,8 +102,10 @@ class TourController extends Controller
                     $q->where('city_id', $request->city);
                 });
 
-            $query->orderBy('sort_order');
+            
         }
+
+        $query->orderBy('sort_order');
 
         // Set items per page
         $perPage = $request->input('per_page', 10);
@@ -142,7 +145,7 @@ class TourController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $validator = FacadesValidator::make($request->all(), [
             'title'                 => 'required|max:255',
             'description'           => 'required',
             'long_description'      => 'required',
@@ -1188,10 +1191,10 @@ class TourController extends Controller
 
         // Sycc faqs
         if ( !empty($featureIds) ) {
-            $tour->inclusions()->sync($featureIds);
+            $tour->optionals()->sync($featureIds);
         }
 
-        return redirect()->back()->with('success','Inclusions saved successfully.');
+        return redirect()->back()->with('success','Optionals saved successfully.');
     }
 
     public function exclusion_update(Request $request, $id) {

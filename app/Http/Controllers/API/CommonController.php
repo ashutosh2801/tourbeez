@@ -55,9 +55,11 @@ class CommonController extends Controller
             return  DB::table(DB::raw('(SELECT t.id, t.title as name, t.slug, t.price, t.created_at, u.upload_id 
                     FROM tours t 
                     JOIN tour_upload u ON u.tour_id = t.id 
+                    JOIN tour_locations l ON l.tour_id = t.id 
                     WHERE t.status = 1 AND t.deleted_at IS NULL 
-                    ORDER BY t.created_at DESC) as sub'))
-                    ->groupBy('name')
+                    AND l.city_id IS NOT NULL and l.city_id = 10519
+                    ORDER BY t.sort_order DESC) as sub'))
+                    //->groupBy('name')
                     ->limit(25)
                     ->get();
         });
