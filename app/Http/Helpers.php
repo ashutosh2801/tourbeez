@@ -3,6 +3,7 @@
 use App\Models\Addon;
 use App\Models\Currency;
 use App\Models\EmailTemplate;
+use App\Models\Order;
 use App\Models\Setting;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
@@ -688,6 +689,16 @@ if (!function_exists('unique_code')) {
     {
         $id = Tour::withTrashed()->latest('id')->first()->id+1;
         $code = get_setting('tour_code_prifix').date('Ym').$id;
+        return $code;
+    }
+}
+
+// Unique order code create and check
+if (!function_exists('unique_order')) {
+    function unique_order()
+    {
+        $id = Order::withTrashed()->latest('id')->first()->id+1;
+        $code = get_setting('order_code_prifix').date('Ym').$id;
         return $code;
     }
 }

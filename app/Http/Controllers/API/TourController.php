@@ -19,8 +19,8 @@ class TourController extends Controller
     public function index(Request $request)
     {
         $query = Tour::query()
-            ->where('status', 1)
-            ->whereNull('deleted_at');
+                ->where('status', 1)
+                ->whereNull('deleted_at');
 
         if ($request->title) {
             $query->where('title', 'like', '%' . $request->title . '%');
@@ -65,14 +65,13 @@ class TourController extends Controller
             $query->orderBy('price', 'DESC');
         }
         else {
-            $query->orderBy('sort_order', 'DESC');
+            $query->orderBy('sort_order', 'ASC');
         }
 
         $page = $request->get('page', 1);
         $cacheKey = 'tour_list_' . md5(json_encode($request->all()) . '_page_' . $page);
 
         // dd($query->toSql(), $query->getBindings(), $query->get());
-
         $paginated = Cache::remember($cacheKey, 86400, function () use ($query) {
             return $query->paginate(12);
         });
@@ -212,6 +211,10 @@ class TourController extends Controller
         $breadcrumbs[] = [
             'url' => '/',
             'label'=> 'Home'
+        ];
+        $breadcrumbs[] = [
+            'url' => 'tours',
+            'label'=> 'Tours'
         ];
         if($tour->location) {
             $location = $tour->location;
