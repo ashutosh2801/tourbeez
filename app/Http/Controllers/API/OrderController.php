@@ -726,11 +726,19 @@ class OrderController extends Controller
         foreach ($schedules as $schedule) {
             
             $durationMinutes = match (strtolower($schedule->repeat_period)) {
-                'minute', 'minutes' => $schedule->repeat_period_unit,
+                'minute', 'minutely' => $schedule->repeat_period_unit,
                 'hour', 'hourly' => $schedule->repeat_period_unit * 60,
+                'daily', 'daily' => $schedule->repeat_period_unit * 60 * 24,
+                'weekly', 'weekly' => $schedule->repeat_period_unit * 60 * 24 * 7,
+                'weekly', 'weekly' => $schedule->repeat_period_unit * 60 * 24 * 7,
+                'monthly', 'monthly' => $schedule->repeat_period_unit * 60 * 24 * 30,
+                'yearly', 'yearly' => $schedule->repeat_period_unit * 60 * 24 * 365,
+ 
+
+                 
                 default => 0
             };
-
+            // dd($durationMinutes);
             $startTime = $schedule->session_start_time ?? '00:00';
             $endTime = $schedule->session_end_time ?? '23:59';
 
@@ -744,14 +752,16 @@ class OrderController extends Controller
             $end = Carbon::parse($endTime);
 
             if ($durationMinutes <= 0 || $start->gte($end)) {
+
                 continue;
             }
 
             $valid = false;
-            // dd($repeatType);
+            
             if ($repeatType === 'NONE') {
                 $valid = $carbonDate->isSameDay(Carbon::parse($schedule->session_start_date));
                 if ($valid) {
+
                     $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $schedule->id, null));
                 }
             } elseif ($repeatType === 'DAILY') {
@@ -767,9 +777,11 @@ class OrderController extends Controller
                     $slots = array_merge($slots, $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $schedule->id, $repeat->id));
                 }
             } elseif ($repeatType === 'MONTHLY') {
+
                 $startDate = Carbon::parse($schedule->session_start_date);
 
                 // Match same day of the month
+
                 if ((int)$carbonDate->format('d') === (int)$startDate->format('d')) {
                     $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
                     $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_end_time);
@@ -780,6 +792,7 @@ class OrderController extends Controller
                     );
                 }
             } elseif ($repeatType === 'YEARLY') {
+               
                 $startDate = Carbon::parse($schedule->session_start_date);
 
                 // Match same day and same month
@@ -862,18 +875,10 @@ class OrderController extends Controller
     {
         $slots = [];
 
-        while ($start->lt($end)) {
-            $slotEnd = $start->copy()->addMinutes($durationMinutes);
-
-            if ($slotEnd->gt($end)) {
-                break;
-            }
-
-
-            $slots[] = 
-                $start->format('g:i A');
-
-            $start = $slotEnd;
+        while ($start->lte($end)) {
+            $slots[] = $start->format('g:i A');
+            
+            $start = $start->copy()->addMinutes($durationMinutes);
         }
 
         return $slots;
