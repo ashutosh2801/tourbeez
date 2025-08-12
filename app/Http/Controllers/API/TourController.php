@@ -234,10 +234,17 @@ class TourController extends Controller
         ];
 
         $pickups = [];
-        if(!empty($tour->pickups) && $tour->pickups[0]?->name === 'No Pickup') {
+
+        // dd($tour->pickups);
+
+        // return response()->json([
+        //     'status' => true,
+        //     'data'   =>$tour->pickups
+        // ]);
+        if(!empty($tour->pickups) && isset($tour->pickups[0]) && $tour->pickups[0]?->name === 'No Pickup') {
             $pickups[] = 'No Pickup';
         }
-        else if(!empty($tour->pickups) && $tour->pickups[0]?->name === 'Pickup') {
+        else if(!empty($tour->pickups) && isset($tour->pickups[0]) && $tour->pickups[0]?->name === 'Pickup') {
             $pickups[] = 'Pickup';
         }
         else if (!empty($tour->pickups) && isset($tour->pickups[0])) {
