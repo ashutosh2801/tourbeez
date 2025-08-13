@@ -19,8 +19,8 @@ class TourController extends Controller
     public function index(Request $request)
     {
         $query = Tour::query()
-            ->where('status', 1)
-            ->whereNull('deleted_at');
+                ->where('status', 1)
+                ->whereNull('deleted_at');
 
         if ($request->title) {
             $query->where('title', 'like', '%' . $request->title . '%');
@@ -65,14 +65,13 @@ class TourController extends Controller
             $query->orderBy('price', 'DESC');
         }
         else {
-            $query->orderBy('sort_order', 'DESC');
+            $query->orderBy('sort_order', 'ASC');
         }
 
         $page = $request->get('page', 1);
         $cacheKey = 'tour_list_' . md5(json_encode($request->all()) . '_page_' . $page);
 
         // dd($query->toSql(), $query->getBindings(), $query->get());
-
         $paginated = Cache::remember($cacheKey, 86400, function () use ($query) {
             return $query->paginate(12);
         });
@@ -161,7 +160,7 @@ class TourController extends Controller
                     'itinerariesAll',
                     'faqs',
                     'inclusions',
-                    'optionals'
+                    'optionals', 
                     'exclusions',
                     'features',
                     'taxes_fees',
@@ -213,6 +212,10 @@ class TourController extends Controller
             'url' => '/',
             'label'=> 'Home'
         ];
+        $breadcrumbs[] = [
+            'url' => 'tours',
+            'label'=> 'Tours'
+        ];
         if($tour->location) {
             $location = $tour->location;
             if($location->country) {
@@ -231,10 +234,17 @@ class TourController extends Controller
         ];
 
         $pickups = [];
-        if(!empty($tour->pickups) && $tour->pickups[0]?->name === 'No Pickup') {
+
+        // dd($tour->pickups);
+
+        // return response()->json([
+        //     'status' => true,
+        //     'data'   =>$tour->pickups
+        // ]);
+        if(!empty($tour->pickups) && isset($tour->pickups[0]) && $tour->pickups[0]?->name === 'No Pickup') {
             $pickups[] = 'No Pickup';
         }
-        else if(!empty($tour->pickups) && $tour->pickups[0]?->name === 'Pickup') {
+        else if(!empty($tour->pickups) && isset($tour->pickups[0]) && $tour->pickups[0]?->name === 'Pickup') {
             $pickups[] = 'Pickup';
         }
         else if (!empty($tour->pickups) && isset($tour->pickups[0])) {
@@ -248,13 +258,13 @@ class TourController extends Controller
                 'title'         => $tour->title,
                 'price'         => format_price($tour->price), // formatted price
                 'original_price'=> $tour->price, // without formatted price
+                'price_type'    => $tour->price_type,
                 'unique_code'   => $tour->unique_code,
                 'slug'          => $tour->slug,
                 'order_email'   => $tour->order_email,
                 'features'      => $tour->features,
                 'meta'          => $tour->meta,
-                 'addons'        => $addons,
-               'pickups'       => $pickups,
+                'pickups'       => $pickups,
                 'categories'    => $tour->categories,
                 'tourtypes'     => $tour->tourtypes,
                 'itineraries'   => $tour->itineraries,
@@ -262,7 +272,7 @@ class TourController extends Controller
                 //'schedule'      => $tour->schedule,
                 'faqs'          => $tour->faqs,
                 'inclusions'    => $tour->inclusions,
-                'optionals'    => $tour->optionals,
+                'optionals'     => $tour->optionals,
                 'exclusions'    => $tour->exclusions,
                 'optionals'     => $tour->optionals,
                 'taxes_fees'    => $tour->taxes_fees,
@@ -272,6 +282,7 @@ class TourController extends Controller
                 'pricings'      => $tour->pricings,
                 'category'      => $tour->category,
                 'galleries'     => $galleries,
+                'addons'        => $addons,
             ];
         }
 

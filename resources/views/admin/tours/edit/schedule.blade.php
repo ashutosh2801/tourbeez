@@ -157,7 +157,7 @@
                             </div>
                             <select class="form-control" name="repeat_period_unit" id="repeat_period_unit">
                                 @for ($i=1; $i<=31; $i++)
-                                <option {{ old('repeat_period_unit', $schedule->repeat_period_unit) === $i ? 'selected' : '' }} value="{{ $i }}">{{ $i }}</option>                            
+                                <option {{ old('repeat_period_unit', $schedule->repeat_period_unit) == $i ? 'selected' : '' }} value="{{ $i }}">{{ $i }}</option>                            
                                 @endfor
                             </select>
                             <div class="input-group-prepend">
@@ -256,11 +256,9 @@ function setValueTime( value ) {
     for(i=1; i<32; i++) 
     step1+= `<option value="${i}">${i}</option>`;
 
-    $('#repeat_period_unit').html(step1);
-    $('#repeat_period_unit').val( {{ old('num') ?? 1 }} );
+   
     if( value == 'MINUTELY' ) {
-        $('#repeat_period_unit').html(step10);
-        $('#repeat_period_unit').val({{ old('num') ?? 10 }});
+ 
         $('#basic-repeat_period_unit').text('minutes');
     }
     else if( value == 'HOURLY' ) {

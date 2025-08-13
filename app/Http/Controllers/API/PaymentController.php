@@ -149,7 +149,7 @@ class PaymentController extends Controller
 
         Stripe::setApiKey(env('STRIPE_SECRET'));
 
-        try {
+        //try {
             $clientSecret = $request->client_secret;
             $intentId = explode('_secret_', $clientSecret)[0];
 
@@ -183,41 +183,59 @@ class PaymentController extends Controller
                 
                 $tour_pricing = json_decode($booking->order_tour->tour_pricing);
                 $pricing=[]; $total = 0;
-                foreach($tour_pricing as $tp) {
-                    $tourPricing = TourPricing::find($tp->tour_pricing_id);
-                    $total = ($tp->quantity * $tp->price);
-                    $pricing[] = [
-                        'lable' => $tourPricing->label,
-                        'qty'   => $tp->quantity,
-                        'price' => $tp->price,
-                        'total' => $total
-                    ];
+                if(!empty($tour_pricing) && is_array($tour_pricing)) {
+                    foreach($tour_pricing as $tp) {
+                        $tourPricing = TourPricing::find($tp->tour_pricing_id);
+                        $label = str_ireplace('Group', 'Participants', $tourPricing->label);
+                        //$total = ($tp->quantity * $tp->price);
+                        $pricing[] = [
+                            'lable' => $label,
+                            'qty'   => $tp->quantity,
+                            'price' => $tp->price,
+                            'total' => $tp->total_price
+                        ];
+                    }
                 }
 
                 $extra_pricing = json_decode($booking->order_tour->tour_extra);
                 $extra=[]; $total = 0;
-                foreach($extra_pricing as $ep) {
-                    $extraAddon = Addon::find($ep->tour_extra_id);
-                    $total = ($ep->quantity * $ep->price);
-                    $extra[] = [
-                        'lable' => $extraAddon->name,
-                        'qty'   => $ep->quantity,
-                        'price' => $ep->price,
-                        'total' => $total
-                    ];
-                }
-
-                $metas=[]; 
-                if($booking->orderMetas) {
-                    foreach($booking->orderMetas as $om) {
-                        $metas[] = [
-                            'lable' => $om->name,
-                            'qty'   => '',
-                            'price' => $om->value,
-                            'total' => $om->value,
+                if(!empty($extra_pricing) && is_array($extra_pricing)) {
+                    foreach($extra_pricing as $ep) {
+                        $extraAddon = Addon::find($ep->tour_extra_id);
+                        //$total = ($ep->quantity * $ep->price);
+                        $extra[] = [
+                            'lable' => $extraAddon->name,
+                            'qty'   => $ep->quantity,
+                            'price' => $ep->price,
+                            'total' => $ep->total_price
                         ];
                     }
                 }
+
+                $fees_pricing = json_decode($booking->order_tour->tour_fees);
+                $fees = [];
+                if (!empty($fees_pricing) && is_array($fees_pricing)) {
+                    foreach ($fees_pricing as $fp) {
+                        $labelText = $fp->type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
+                        $fees[] = [
+                            'lable' => $fp->label . ' ' . $labelText, // fixed spelling
+                            'price' => $fp->price,
+                            'total' => $fp->price
+                        ];
+                    }
+                }
+
+                // $metas=[]; 
+                // if($booking->orderMetas) {
+                //     foreach($booking->orderMetas as $om) {
+                //         $metas[] = [
+                //             'lable' => $om->name,
+                //             'qty'   => '',
+                //             'price' => $om->value,
+                //             'total' => $om->value,
+                //         ];
+                //     }
+                // }
 
 
                 $image = uploaded_asset($booking->tour->main_image->id, 'medium');
@@ -239,7 +257,7 @@ class PaymentController extends Controller
                         'address'       => $booking->tour?->location->address,
                         'pricing'       => $pricing,
                         'extra'         => $extra,
-                        'metas'         => $metas,
+                        'fees'          => $fees,
                         't_and_c'       => $booking->tour?->terms_and_conditions,
                         'order_email'   => $booking->tour?->order_email,
                     ],
@@ -259,9 +277,7 @@ class PaymentController extends Controller
                 return response()->json([
                         'status'  => 'succeeded',
                         'booking' => $detail,
-                    ]);
-
-                
+                    ]);               
 
             }
 
@@ -270,12 +286,12 @@ class PaymentController extends Controller
                 'message' => 'Payment not successful',
             ], 400);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'  => 'failed',
-                'message' => $e->getMessage(),
-            ], 500);
-        }
+        // } catch (\Exception $e) {
+        //     return response()->json([
+        //         'status'  => 'failed',
+        //         'message' => $e->getMessage(),
+        //     ], 500);
+        // }
     }
 
 
@@ -618,8 +634,29 @@ class PaymentController extends Controller
             $footer = strtr($template_footer, $replacements);
             $subject = strtr($template_subject, $replacements);
 
+            // $event = [
+            //             'uid' => $customer->email,
+            //             'start' => $order->order_tour->tour_date ? date('l, F j, Y', strtotime($order->order_tour->tour_date)) : '', // local time
+            //             'end' => $order->order_tour->tour_time ? date('H:i A', strtotime($order->order_tour->tour_time)) : '',
+            //             'title' => $tour->title,
+            //             'description' => $email_template->subject,
+            //             'location' => $tour->location->address,
+            //         ];
+                    
+            $event = [
+                'uid' => $customer->email,
+                'start' => $order->order_tour->tour_date . ' ' . $order->order_tour->tour_time, // "2025-10-02 6:00 PM"
+                'end' => $order->order_tour->tour_date . ' ' . date(
+                    'g:i A',
+                    strtotime('+2 hours', strtotime($order->order_tour->tour_time))
+                ),
+                'title' => $tour->title,
+                'description' => $email_template->subject,
+                'location' => $tour->location->address,
+            ];
+
             Log::info('order_mail_send' . $customer->email);
-            $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer);
+            $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event);
 
             return response()->json([
                     'success' => false,
@@ -644,7 +681,7 @@ class PaymentController extends Controller
  
     }
 
-    public static function order_mail_send($email,$subject, $header,  $body, $footer)
+    public static function order_mail_send($email,$subject, $header,  $body, $footer, $event = null)
     {
         
         if (env('MAIL_FROM_ADDRESS') != null) {
@@ -653,6 +690,8 @@ class PaymentController extends Controller
             $array['header'] = $header;
             $array['from'] = env('MAIL_FROM_ADDRESS');
             $array['content'] =  $header.$body.$footer;
+            $array['event'] = $event;
+
  
             try {
                 if(Mail::to($email)->queue(new EmailManager($array))){

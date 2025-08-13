@@ -26,7 +26,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                         <th width="200">Name</th>
                         <th>Description</th>
                         <th>Price</th>
-                        <th width="150">Customer choise</th>
+                        <th width="150">Customer choice</th>
                     </tr>
                 </thead>
                 <tbody id="addon-table-body">
