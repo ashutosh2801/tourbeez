@@ -286,9 +286,10 @@ function repeat_period(){
         $('.not-repeat-period').addClass('d-none');
     }
     else if(repeat_period_val == 'MONTHLY' || repeat_period_val == 'YEARLY' || repeat_period_val == 'DAILY') {
+        console.log(23423);
         $('.not-repeat-period2').addClass('d-none');
 
-        if(repeat_period_val == 'DAILY')
+        // if(repeat_period_val == 'DAILY')
         $('.not-repeat-period3').removeClass('d-none');
     }
     else {
