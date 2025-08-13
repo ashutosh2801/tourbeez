@@ -46,7 +46,7 @@ class OrderController extends Controller
         })
         ->orderBy('created_at', 'DESC');
 
-        $orders = $query->paginate(20);
+        $orders = $query->paginate(10);
 
         $items = [];
         foreach ($orders->items() as $o) {
@@ -81,7 +81,7 @@ class OrderController extends Controller
             ]);
         }
 
-        try {
+        //try {
 
             $cacheKey = 'booking_order_' . $id;
 
@@ -144,8 +144,7 @@ class OrderController extends Controller
                 }
             }
 
-
-            $image = uploaded_asset($booking->tour->main_image->id, 'medium');
+            $image = uploaded_asset($booking->tour->main_image->id ?? 0, 'medium');
 
             $detail = [
                 'order_number'      => $booking->order_number,
@@ -173,12 +172,12 @@ class OrderController extends Controller
                 'booking' => $detail,
             ]);
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'  => 'failed',
-                'message' => $e->getMessage(),
-            ], 500);
-        }
+        // } catch (\Exception $e) {
+        //     return response()->json([
+        //         'status'  => 'failed',
+        //         'message' => $e->getMessage(),
+        //     ], 500);
+        // }
     }
     
 
@@ -538,6 +537,7 @@ class OrderController extends Controller
 
         foreach ($schedules as $schedule) {
 
+
             $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
                 'minute', 'minutes' => $schedule->estimated_duration_num,
                 'hour', 'hours' => $schedule->estimated_duration_num * 60,
@@ -743,12 +743,18 @@ class OrderController extends Controller
                         ->get();
 
                     foreach ($repeatEntries as $repeat) {
-                        $start = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
-                        $end = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
+                        $slotStart = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
+                        $slotEnd   = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
+
+                        // Check if start time matches the "every X hours" rule
+                        $hoursSinceStart = floor($scheduleStartDate->diffInHours($slotStart));
+                        if ($hoursSinceStart % $interval !== 0) {
+                            continue; // Skip this slot if not matching the interval
+                        }
 
                         $allSlots = array_merge(
                             $slots,
-                            $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
+                            $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod)
                         );
 
                         foreach ($allSlots as $index => $slot) {
@@ -782,7 +788,7 @@ class OrderController extends Controller
 
         // Calculate the earliest slot time allowed
         $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
-        // dd($earliestAllowed, $start, $start->gte($earliestAllowed), now(), $start->lte($end), $end);
+
         while ($start->lte($end)) {
 
             if ($start->gte($earliestAllowed)) {
