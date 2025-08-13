@@ -61,11 +61,11 @@ class Order extends Model
         return $this->belongsTo(user::class);
     }
 
-
     public function orderCustomer()
     {
         return $this->hasOne(OrderCustomer::class);
     }
+
     public function customer() {
         return $this->hasOne(OrderCustomer::class);
     }

@@ -402,87 +402,6 @@ class PaymentController extends Controller
                                   </tbody>
                                 </table>';
 
-                    
-
-            // $TOUR_ITEM_SUMMARY = '
-            //         <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
-            //             <tbody>
-            //             <tr>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
-            //                     <h3 style="font-size:19px"><strong>Item Summary</strong></h3>
-            //                 </td>
-            //             </tr>
-            //             </tbody>
-            //         </table>
-        
-            //         <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
-            //             <tbody>
-            //                 <tr>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">
-            //                             &nbsp;
-            //                         </small>
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
-            //                     </td>
-            //                 </tr>
-
-            //                 <tr>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">
-            //                         5
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">
-            //                         Adult (13+)
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">
-            //                         $42.95
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">
-            //                         $214.75
-            //                     </td>
-            //                 </tr>
-
-            //                 <tr>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;;padding: 5px 0px;padding: 5px 0px;">
-            //                         &nbsp;
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;;padding: 5px 0px;padding: 5px 0px;">
-            //                         &nbsp;
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">HST ON</small>
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;padding: 5px 0px;">
-            //                         $27.92
-            //                     </td>
-            //                 </tr>
-
-            //                 <tr>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; ">
-            //                         &nbsp;
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; ">
-            //                         &nbsp;
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-            //                         <h3 style="color:#000; margin:0; font-size:19px"><strong>$242.67</strong></h3>
-            //                     </td>
-            //                 </tr>
-            //             </tbody>
-            //         </table>';
-
-
-
 
             $TOUR_ITEM_SUMMARY = '';
 
@@ -526,7 +445,8 @@ class PaymentController extends Controller
                     // $result = getTourPricingDetails($tour_pricing, $pricing->id);
                     $qty = $result['quantity'] ?? 0;
                     $price = $result['price'] ?? 0;
-                    $total = $qty * $price;
+                    //$total = $qty * $price;
+                    $total = $result['total_price'] ?? 0;
                     if ($qty > 0) {
                         $subtotal += $total;
                         $TOUR_ITEM_SUMMARY .= '
@@ -544,7 +464,8 @@ class PaymentController extends Controller
                     // $result = getTourExtraDetails($tour_extra, $extra->id);
                     $qty = $extra['quantity'] ?? 0;
                     $price = $extra['price'] ?? 0;
-                    $total = $qty * $price;
+                    // $total = $qty * $price;
+                    $total = $extra['total_price'] ?? 0;
                     if ($qty > 0) {
                         $subtotal += $total;
                         $TOUR_ITEM_SUMMARY .= '
@@ -593,19 +514,43 @@ class PaymentController extends Controller
                 </table>';
             }
 
+            $pickupAddress = $order->customer->pickup_name ?? '';
+            if(!$pickupAddress) {
+                $pickupAddress = $order->customer->pickup;
+            }
+            if( $pickupAddress ) {
+            $pickup_address = '<!-- Picup Address -->
+      <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 33.33%; text-align: left; vertical-align: top; padding: 30px 10px;">
+        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
+        <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
+          <strong>'.$pickupAddress.'</strong>
+        </h3>
+      </td>';
+            }
+
+            $toAddress = $tour->location->destination ?? '';
+            $toAddress.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
+            $to_address = '<!-- Map Link or Embed -->
+      <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 33.33%; text-align: left; vertical-align: top; padding: 30px 10px 30px 0;">
+        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">To</small>
+        <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
+          <strong>'.$toAddress.'</strong>
+        </h3>
+      </td>';
 
                     
-            $replacements = [
+            $replacements = [   
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
-                "[[CUSTOMER_PHONE]]"        => $customer->name ?? '',
+                "[[CUSTOMER_PHONE]]"        => '+'.$customer->phone ?? '',
 
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
-                "[[TOUR_MAP]]"              => $tour->location->address ?? '',
-                "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
+                "[[TOUR_MAP]]"              => $to_address,
+                "[[TOUR_ADDRESS]]"          => $toAddress,
+                "[[PICKUP_ADDRESS]]"        => $pickup_address,
                 "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
                 "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
-                "[[TOUR_TERMS_CONDITIONS]]"  => $tour->terms_and_conditions,
+                "[[TOUR_TERMS_CONDITIONS]]" => $tour->terms_and_conditions,
 
                 "[[APP_LOGO]]"              => $logo,
                 "[[APP_NAME]]"              => get_setting('site_name'),
