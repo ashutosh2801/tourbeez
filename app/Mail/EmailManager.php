@@ -27,10 +27,53 @@ class EmailManager extends Mailable
      *
      * @return $this
      */
+    // public function build()
+    // {
+    //     return $this->view($this->array['view'])
+    //                 ->from($this->array['from'])
+    //                 ->subject($this->array['subject']);
+    // }
+
     public function build()
     {
-        return $this->view($this->array['view'])
-                    ->from($this->array['from'])
-                    ->subject($this->array['subject']);
+        $mail = $this->view($this->array['view'])
+            ->from($this->array['from'])
+            ->subject($this->array['subject']);
+
+        // If event details are provided, generate ICS on the fly
+        if (!empty($this->array['event'])) {
+            $icsContent = $this->generateICS($this->array['event']);
+
+            $mail->attachData($icsContent, 'event.ics', [
+                'mime' => 'text/calendar',
+            ]);
+        }
+
+        return $mail;
     }
+    
+
+    protected function generateICS($event)
+    {
+        $start = date('Ymd\THis', strtotime($event['start']));
+        $end   = date('Ymd\THis', strtotime($event['end']));
+        $dtstamp = date('Ymd\THis');
+
+        // No indentation in ICS body
+        return <<<ICS
+    BEGIN:VCALENDAR
+    VERSION:2.0
+    PRODID:-//Your App//EN
+    BEGIN:VEVENT
+    UID:{$event['uid']}
+    DTSTAMP:{$dtstamp}
+    DTSTART:{$start}
+    SUMMARY:{$event['title']}
+    DESCRIPTION:{$event['description']}
+    LOCATION:{$event['location']}
+    END:VEVENT
+    END:VCALENDAR
+    ICS;
+    }
+
 }

@@ -634,8 +634,29 @@ class PaymentController extends Controller
             $footer = strtr($template_footer, $replacements);
             $subject = strtr($template_subject, $replacements);
 
+            // $event = [
+            //             'uid' => $customer->email,
+            //             'start' => $order->order_tour->tour_date ? date('l, F j, Y', strtotime($order->order_tour->tour_date)) : '', // local time
+            //             'end' => $order->order_tour->tour_time ? date('H:i A', strtotime($order->order_tour->tour_time)) : '',
+            //             'title' => $tour->title,
+            //             'description' => $email_template->subject,
+            //             'location' => $tour->location->address,
+            //         ];
+                    
+            $event = [
+                'uid' => $customer->email,
+                'start' => $order->order_tour->tour_date . ' ' . $order->order_tour->tour_time, // "2025-10-02 6:00 PM"
+                'end' => $order->order_tour->tour_date . ' ' . date(
+                    'g:i A',
+                    strtotime('+2 hours', strtotime($order->order_tour->tour_time))
+                ),
+                'title' => $tour->title,
+                'description' => $email_template->subject,
+                'location' => $tour->location->address,
+            ];
+
             Log::info('order_mail_send' . $customer->email);
-            $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer);
+            $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event);
 
             return response()->json([
                     'success' => false,
@@ -660,7 +681,7 @@ class PaymentController extends Controller
  
     }
 
-    public static function order_mail_send($email,$subject, $header,  $body, $footer)
+    public static function order_mail_send($email,$subject, $header,  $body, $footer, $event = null)
     {
         
         if (env('MAIL_FROM_ADDRESS') != null) {
@@ -669,6 +690,8 @@ class PaymentController extends Controller
             $array['header'] = $header;
             $array['from'] = env('MAIL_FROM_ADDRESS');
             $array['content'] =  $header.$body.$footer;
+            $array['event'] = $event;
+
  
             try {
                 if(Mail::to($email)->queue(new EmailManager($array))){
