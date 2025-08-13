@@ -527,9 +527,17 @@ class OrderController extends Controller
                       });
             })
             ->get();
-        // dd($schedules);
+            // dd($schedules);
+        if ($schedules->isEmpty()) {
+            return response()->json([
+                'status' => 'warning',
+                'message' => 'No sessions available on this date.',
+                'schedule_set' => false
+            ]);
+        }
+
         foreach ($schedules as $schedule) {
-            
+
             $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
                 'minute', 'minutes' => $schedule->estimated_duration_num,
                 'hour', 'hours' => $schedule->estimated_duration_num * 60,
@@ -693,7 +701,7 @@ class OrderController extends Controller
 
                 }
             }elseif ($repeatType === 'MINUTELY') {
-                $interval = $schedule->repeat_period_unit; // e.g., every 15 minutes
+                $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 15 minutes
                 $scheduleStartDate = Carbon::parse($schedule->session_start_date);
                 $scheduleEndDate = Carbon::parse($schedule->until_date);
 
@@ -709,16 +717,21 @@ class OrderController extends Controller
                         $start = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
                         $end = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
 
-                        $slots = array_merge(
+                        $allSlots = array_merge(
                             $slots,
                             $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
                         );
+                        foreach ($allSlots as $index => $slot) {
+                            if ($index % $interval === 0) {
+                                $slots[] = $slot;
+                            }
+                        }
                     }
                 }
             }
             elseif ($repeatType === 'HOURLY') {
 
-                $interval = $schedule->repeat_period_unit; // e.g., every 2 hours
+                $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 2 hours
                 $scheduleStartDate = Carbon::parse($schedule->session_start_date);
                 $scheduleEndDate = Carbon::parse($schedule->until_date);
 
@@ -733,10 +746,16 @@ class OrderController extends Controller
                         $start = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
                         $end = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
 
-                        $slots = array_merge(
+                        $allSlots = array_merge(
                             $slots,
                             $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
                         );
+
+                        foreach ($allSlots as $index => $slot) {
+                            if ($index % $interval === 0) { // keep only every Nth slot
+                                $slots[] = $slot;
+                            }
+                        }
                     }
                 }
             }
@@ -744,14 +763,16 @@ class OrderController extends Controller
         
         if (empty($slots)) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'No sessions available on this date.'
+                'status' => 'warning',
+                'message' => 'No sessions available on this date.',
+                'schedule_set' => true
             ]);
         }
 
         return response()->json([
             'status' => 'success',
-            'data' => array_unique($slots)
+            'data' => array_unique($slots),
+            'schedule_set' => true
         ]);
     }
 
@@ -761,7 +782,7 @@ class OrderController extends Controller
 
         // Calculate the earliest slot time allowed
         $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
-        // dd($earliestAllowed, $start, $start->gte($earliestAllowed), now());
+        // dd($earliestAllowed, $start, $start->gte($earliestAllowed), now(), $start->lte($end), $end);
         while ($start->lte($end)) {
 
             if ($start->gte($earliestAllowed)) {
