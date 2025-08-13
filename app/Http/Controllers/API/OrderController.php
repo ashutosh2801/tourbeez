@@ -185,8 +185,8 @@ class OrderController extends Controller
     /**
      * Adding cart
      */
-    public function add_to_cart(Request $request) {
-
+    public function add_to_cart(Request $request) 
+    {
         //dd($request->all());
         $validated = $request->validate([
             'tourId'                    => 'required|integer|exists:tours,id',
@@ -218,7 +218,7 @@ class OrderController extends Controller
             'tour_id'       => $request->tourId,
             'user_id'       => $request->userId ?? 0,
             'session_id'    => $request->sessionId, // optional if using guest carts
-            'order_number'  => unique_code().rand(10,99),
+            'order_number'  => unique_order(),
             'currency'      => $request->currency,
             'total_amount'  => $request->tourPrice,
             'order_status'  => 1,
@@ -232,6 +232,7 @@ class OrderController extends Controller
             $quantity = 0;
             $pricing = [];
             $extra = [];
+            $fees = [];
             $addon_price  = 8;
             $extra_price  = 0;
             $item_total=0;
@@ -240,28 +241,23 @@ class OrderController extends Controller
 
                 if(isset($item['id']) && isset($item['quantity'])) {
 
+                    $price  = floatval($item['price']);
+                    $qty    = intval($item['quantity']);
+
+                    $item_price  = $tour->price_type == 'PER_PERSON' ? $price * $qty : $price;
+                    $item_total += $item_price;
+                    $quantity   += $qty;
+
                     $pricing[] = [
                         'tour_id'           => $request->tourId,
                         'tour_pricing_id'   => $item['id'],
                         'quantity'          => $item['quantity'],
                         'label'             => $item['label'],
-                        'price'             => $item['price'],
-                        //'total_price'       => $item['total_price']
+                        'price'             => round($item['price'], 2),
+                        'price_type'        => $tour->price_type,
+                        'total_price'       => round($item_price, 2)
                     ];
 
-                    // $price  = floatval($item['price']);
-                    // $qty    = intval($item['quantity']);
-
-                    // $item_price  = $price * $qty;
-                    // $item_total += $item_price;
-                    // $quantity   += $qty;
-
-                    // $pricing[] = [
-                    //     'tour_id'           => $request->tourId,
-                    //     'tour_pricing_id'   => $item['id'],
-                    //     'quantity'          => $qty,
-                    //     'price'             => $item_price
-                    // ];
                 }
                 
             }
@@ -270,27 +266,40 @@ class OrderController extends Controller
                 foreach ($request->cartAdons as $addon) {
                     if(isset($addon['id']) && isset($addon['quantity'])) {
 
+                        $price  = floatval($addon['price']);
+                        $qty    = intval($addon['quantity']);
+
+                        $extra_price  = $price * $qty;
+                        $item_total  += $extra_price;
+
                         $extra[] = [
                             'tour_id'           => $request->tourId,
                             'tour_extra_id'     => $addon['id'],
                             'quantity'          => $addon['quantity'],
                             'label'             => $addon['label'],
-                            'price'             => $addon['price'],
-                            //'total_price'       => $addon['total_price']
+                            'price'             => round($addon['price'], 2),
+                            'total_price'       => round($extra_price, 2)
                         ];
+                    }
+                }
+            }
 
-                        // $price  = floatval($addon['price']);
-                        // $qty    = intval($addon['quantity']);
+            if( isset($request->tourFees) && !empty($request->tourFees) ) {
+                foreach ($request->tourFees as $fee) {
+                    if(isset($fee['id']) && isset($fee['value'])) {
 
-                        // $extra_price  = $price * $qty;
-                        // $item_total  += $extra_price;
+                        $type  = ($fee['type']);
+                        $value = intval($fee['value']);
 
-                        // $extra[] = [
-                        //     'tour_id'           => $request->tourId,
-                        //     'tour_extra_id'     => $addon['id'],
-                        //     'quantity'          => $qty,
-                        //     'price'             => $extra_price
-                        // ];
+                        $tax_fee    = $type === "PERCENT" ? ($item_total * $value)/100 : $value;
+                        $item_total+= $tax_fee;
+
+                        $fees[] = [
+                            'tour_id'           => $request->tourId,
+                            'tour_taxes_id'     => $fee['id'],
+                            'label'             => $fee['label'],
+                            'price'             => round($tax_fee, 2),
+                        ];
                     }
                 }
             }
@@ -302,12 +311,13 @@ class OrderController extends Controller
                 'tour_time'         => $validated['selectedTime'] ?? null,
                 'tour_pricing'      => json_encode($pricing),
                 'tour_extra'        => json_encode($extra),
+                'tour_fees'         => json_encode($fees),
                 'number_of_guests'  => $quantity,
-                'total_amount'      => $item_total,
+                'total_amount'      => round($item_total, 2),
             ]);
 
             $order->number_of_guests = $quantity;
-            //$order->total_amount = $item_total;
+            $order->total_amount = round($item_total, 2);
             $order->save();
 
             return response()->json([
@@ -327,234 +337,9 @@ class OrderController extends Controller
     /**
      * Update cart
      */
-    // public function update_cart(Request $request)
-    // {
-    //     $validated = $request->validate([
-    //         'orderId' => 'required|integer|exists:orders,id',
-    //         'tourId' => 'required|integer|exists:tours,id',
-    //         'selectedDate' => 'required|date_format:Y-m-d',
-            
-    //         'cartItems' => 'required|array|min:1',
-    //         'cartItems.*.id' => 'required|integer',
-    //         'cartItems.*.price' => 'required|numeric',
-    //         'cartItems.*.quantity' => 'required|integer|min:1',
-    //         'cartItems.*.total_price'=> 'required',
-    //         'cartItems.*.label' => 'required|string',
-    //         'formData.first_name' => 'required|string|max:255',
-    //         'formData.last_name'  => 'required|string|max:255',
-    //         'formData.email'      => 'required|email|max:255',
-    //         'formData.phone'      => 'required|string|max:20',
-    //         'formData.instructions' => 'nullable|string|max:20',
-    //     ]);
- 
-    //     $order = Order::find($request->orderId);
-    //     if (!$order) {
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'Order not found.'
-    //         ], 404);
-    //     }
-
-
-    //     // $customer = Tour::where('order_id', $request->orderId)->first();
-    //     // if(!$customer) {
-    //     //     $customer = new OrderCustomer();
-    //     // }
-    //     $customer = new OrderCustomer();
-    //     $data = $request->input('formData');
-
-
-
-    //     $customer->order_id     = $order->id;
-    //     $customer->user_id      = $request->userId;
-    //     $customer->first_name   = $data['first_name'];
-    //     $customer->last_name    = $data['last_name'];
-    //     $customer->email        = $data['email'];
-    //     $customer->phone        = $data['phone'];
-    //     $customer->instructions = $data['instructions'] ?? NULL;
-    //     $customer->save();
-
-    //     $tour = Tour::with(['pricings'])->where('id', $request->tourId)->first();
-    //     if (!$tour) {
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'Tour not found.'
-    //         ], 404);
-    //     }
-
-    //     $quantity = 0;
-    //     $pricing = [];
-    //     $extra = [];
-    //     $item_total = 0;
-
-    //     foreach ($validated['cartItems'] as $item) {
-    //         if (isset($item['id']) && isset($item['quantity'])) {
-    //             $price = floatval($item['price']);
-    //             $qty = intval($item['quantity']);
-    //             $item_price = $price * $qty;
-    //             $item_total += $item_price;
-    //             $quantity += $qty;
-
-    //             $pricing[] = [
-    //                 'tour_id' => $request->tourId,
-    //                 'tour_pricing_id' => $item['id'],
-    //                 'quantity' => $qty,
-    //                 'price' => $item_price
-    //             ];
-    //         }
-    //     }
-
-    //     try {
- 
-    //         $customer = OrderCustomer::where('order_id', $request->orderId)->first();
-    //         if(!$customer) {
-    //             $customer = new OrderCustomer();
-    //         }
-    //         //$customer = new OrderCustomer();
-    //         $data = $request->input('formData'); 
-    
-    //         if($request->userId != 0){
-    //             $userId = $request->userId;
-    //         } else{
-    //             $userId = 0;
-    //         }
-    //         $customer->order_id     = $order->id;
-    //         $customer->user_id      = $userId;
-    //         $customer->first_name   = $data['first_name'];
-    //         $customer->last_name    = $data['last_name'];
-    //         $customer->email        = $data['email'];
-    //         $customer->phone        = $data['phone'];
-    //         $customer->instructions = $data['instructions'] ?? '';
-    //         // $customer->pickup_id    = $data['pickup_id'] ?? 0;
-    //         // $customer->pickup_name  = $data['pickup_name'] ?? '';
-    //         $customer->save();
-    
-    //         $tour = Tour::with(['pricings'])->where('id', $request->tourId)->first();
-    //         if (!$tour) {
-    //             return response()->json([
-    //                 'status' => false,
-    //                 'message' => 'Tour not found.'
-    //             ], 404);
-    //         }
-    
-    //         $quantity = 0;
-    //         $pricing = [];
-    //         $extra = [];
-    //         $item_total = 0;
-    
-    //         foreach ($validated['cartItems'] as $item) {
-    //             if (isset($item['id']) && isset($item['quantity'])) {
-    //                 $pricing[] = [
-    //                     'tour_id'           => $request->tourId,
-    //                     'tour_pricing_id'   => $item['id'],
-    //                     'quantity'          => $item['quantity'],
-    //                     'label'             => $item['label'],
-    //                     'price'             => $item['price'],
-    //                     'total_price'       => $item['total_price']
-    //                 ];
-
-    //                 // $qty = $item['quantity'] ?? 0;
-    //                 // $price = floatval($item['price']);
-    //                 // $qty = intval($qty);
-    //                 $qty    = intval($item['quantity']);
-    //                 // $item_price = $price * $qty;
-    //                 // $item_total += $item_price;
-    //                 $quantity += $qty;
-    
-    //                 // $pricing[] = [
-    //                 //     'tour_id' => $request->tourId,
-    //                 //     'tour_pricing_id' => $item['id'],
-    //                 //     'quantity' => $qty,
-    //                 //     'price' => $item_price
-    //                 // ];
-    //             }
-    //         }
-    
-    //         if (isset($request->cartAdons) && !empty($request->cartAdons)) {
-    //             foreach ($request->cartAdons as $addon) {
-    //                 if (isset($addon['id']) && isset($addon['quantity'])) {
-    //                     $extra[] = [
-    //                         'tour_id'           => $request->tourId,
-    //                         'tour_extra_id'     => $addon['id'],
-    //                         'quantity'          => $addon['quantity'],
-    //                         'label'             => $addon['label'],
-    //                         'price'             => $addon['price'],
-    //                         'total_price'       => $addon['total_price']
-    //                     ];
-    //                     // $price = floatval($addon['price']);
-    //                     // $qty = intval($addon['quantity']);
-    //                     // $extra_price = $price * $qty;
-    //                     // $item_total += $extra_price;
-    
-    //                     // $extra[] = [
-    //                     //     'tour_id' => $request->tourId,
-    //                     //     'tour_extra_id' => $addon['id'],
-    //                     //     'quantity' => $qty,
-    //                     //     'price' => $extra_price
-    //                     // ];
-    //                 }
-    //             }
-    //         }
-    
-    //         $orderTour = OrderTour::where('order_id', $order->id)->first();
-    //         if ($orderTour) {
-    //             $orderTour->tour_id         = $request->tourId;
-    //             $orderTour->tour_date       = $validated['selectedDate'];
-    //             $orderTour->tour_time       = $validated['selectedTime'] ?? null;
-    //             $orderTour->tour_pricing    = json_encode($pricing);
-    //             $orderTour->tour_extra      = json_encode($extra);
-    //             $orderTour->number_of_guests= $quantity;
-    //             $orderTour->total_amount    = $item_total;
-    //             $orderTour->save();
-    //         } else {
-    //             OrderTour::create([
-    //                 'order_id'          => $order->id,
-    //                 'tour_id'           => $request->tourId,
-    //                 'tour_date'         => $validated['selectedDate'],
-    //                 'tour_time'         => $validated['selectedTime'] ?? null,
-    //                 'tour_pricing'      => json_encode($pricing),
-    //                 'tour_extra'        => json_encode($extra),
-    //                 'number_of_guests'  => $quantity,
-    //                 'total_amount'      => $item_total,
-    //             ]);
-    //         }
-
-    //         if (isset($request->cartMetas) && !empty($request->cartMetas)) {
-    //             foreach ($request->cartMetas as $fee) {
-    //                 if (isset($fee['name']) && isset($fee['value'])) {
-    //                     OrderMeta::create([
-    //                         'order_id'  => $order->id,
-    //                         'name'      => $fee['name'],
-    //                         'value'     => $fee['value']
-    //                     ]);
-    //                 }
-    //             }
-    //         }
-    
-    //         $order->tour_id         = $request->tourId;
-    //         $order->number_of_guests= $quantity;
-    //         $order->total_amount    = $item_total;
-    //         $order->updated_at      = date('Y-m-d H:i:s');
-    //         $order->save();
-    
-    //         return response()->json([
-    //             'status' => true,
-    //             'message' => 'Cart updated successfully',
-    //             'data' => $order,
-    //             'data_detail' => $order->orderTours
-    //         ], 200);
-    //     }
-    //     catch (\Exception $e) {
-    //         Log::info($e);
-    //         return response()->json([
-    //             'status' => true,
-    //             'message' => $e->getMessage(),
-    //         ], 401);
-    //     }
-    // }
-
     public function update_cart(Request $request)
     {
+        
         $validated = $request->validate([
             'orderId' => 'required|integer|exists:orders,id',
             'tourId' => 'required|integer|exists:tours,id',
@@ -608,24 +393,27 @@ class OrderController extends Controller
             $quantity = 0;
             $pricing = [];
             $extra = [];
+            $fees = [];
             $item_total = 0;
 
             // Cart Items
             foreach ($validated['cartItems'] as $item) {
-                $qty = intval($item['quantity']);
-                $price = floatval($item['price']);
-                $total = floatval($item['total_price']);
+                $qty        = ($item['quantity']);
+                $price      = ($item['price']);
+                $total      = ($item['total_price']);
                 $item_total += $total;
                 $quantity += $qty;
 
                 $pricing[] = [
                     'tour_id'           => $request->tourId,
                     'tour_pricing_id'   => $item['id'],
-                    'quantity'          => $qty,
                     'label'             => $item['label'],
+                    //'price_type'        => $item['price_type'],
+                    'quantity'          => $qty,
                     'price'             => $price,
                     'total_price'       => $total,
                 ];
+                
             }
 
             // Add-ons
@@ -645,14 +433,32 @@ class OrderController extends Controller
                 }
             }
 
+            // Cart Fees
+            if (!empty($request->cartFees)) {
+                foreach ($request->cartFees as $fee) {
+                    if (isset($fee['id'], $fee['value'], $fee['label'])) {
+                        $fees[] = [
+                            'tour_id'           => $request->tourId,
+                            'tour_taxes_id'     => $fee['id'],
+                            'label'             => $fee['label'],
+                            'type'              => $fee['type'],
+                            'value'             => $fee['value'],
+                            'price'             => $fee['price'],
+                        ];
+                        $item_total += floatval($fee['price']);
+                    }
+                }
+            }
+
             // Update or create OrderTour
             $orderTour = OrderTour::where('order_id', $order->id)->first();
             $tourData = [
                 'tour_id'           => $request->tourId,
                 'tour_date'         => $validated['selectedDate'],
                 'tour_time'         => $validated['selectedTime'] ?? null,
-                'tour_pricing'      => json_encode($pricing),
-                'tour_extra'        => json_encode($extra),
+                'tour_pricing'      => json_encode($pricing ?? []),
+                'tour_extra'        => json_encode($extra ?? []),
+                'tour_fees'         => json_encode($fees ?? []),
                 'number_of_guests'  => $quantity,
                 'total_amount'      => $item_total,
             ];
@@ -665,8 +471,8 @@ class OrderController extends Controller
             }
 
             // Save Order Metas
-            if (!empty($request->cartMetas)) {
-                foreach ($request->cartMetas as $fee) {
+            if (!empty($request->cartFees)) {
+                foreach ($request->cartFees as $fee) {
                     if (isset($fee['name'], $fee['value'])) {
                         OrderMeta::create([
                             'order_id' => $order->id,
@@ -691,7 +497,7 @@ class OrderController extends Controller
                 'data_detail' => $order->orderTours
             ], 200);
         } catch (\Exception $e) {
-            \Log::error('Cart Update Error: ' . $e->getMessage());
+            Log::error('Cart Update Error: ' . $e->getMessage());
 
             return response()->json([
                 'status' => false,
@@ -724,12 +530,21 @@ class OrderController extends Controller
             ->get();
         
         foreach ($schedules as $schedule) {
-            $durationMinutes = match (strtolower($schedule->minimum_notice_unit)) {
-                'minute', 'minutes' => $schedule->minimum_notice_num,
-                'hour', 'hours' => $schedule->minimum_notice_num * 60,
+            
+            $durationMinutes = match (strtolower($schedule->repeat_period)) {
+                'minute', 'minutely' => $schedule->repeat_period_unit,
+                'hour', 'hourly' => $schedule->repeat_period_unit * 60,
+                'daily', 'daily' => $schedule->repeat_period_unit * 60 * 24,
+                'weekly', 'weekly' => $schedule->repeat_period_unit * 60 * 24 * 7,
+                'weekly', 'weekly' => $schedule->repeat_period_unit * 60 * 24 * 7,
+                'monthly', 'monthly' => $schedule->repeat_period_unit * 60 * 24 * 30,
+                'yearly', 'yearly' => $schedule->repeat_period_unit * 60 * 24 * 365,
+ 
+
+                 
                 default => 0
             };
-
+            // dd($durationMinutes);
             $startTime = $schedule->session_start_time ?? '00:00';
             $endTime = $schedule->session_end_time ?? '23:59';
 
@@ -743,14 +558,16 @@ class OrderController extends Controller
             $end = Carbon::parse($endTime);
 
             if ($durationMinutes <= 0 || $start->gte($end)) {
+
                 continue;
             }
 
             $valid = false;
-            // dd($repeatType);
+            
             if ($repeatType === 'NONE') {
                 $valid = $carbonDate->isSameDay(Carbon::parse($schedule->session_start_date));
                 if ($valid) {
+
                     $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $schedule->id, null));
                 }
             } elseif ($repeatType === 'DAILY') {
@@ -766,9 +583,11 @@ class OrderController extends Controller
                     $slots = array_merge($slots, $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $schedule->id, $repeat->id));
                 }
             } elseif ($repeatType === 'MONTHLY') {
+
                 $startDate = Carbon::parse($schedule->session_start_date);
 
                 // Match same day of the month
+
                 if ((int)$carbonDate->format('d') === (int)$startDate->format('d')) {
                     $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
                     $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_end_time);
@@ -779,6 +598,7 @@ class OrderController extends Controller
                     );
                 }
             } elseif ($repeatType === 'YEARLY') {
+               
                 $startDate = Carbon::parse($schedule->session_start_date);
 
                 // Match same day and same month
@@ -861,18 +681,10 @@ class OrderController extends Controller
     {
         $slots = [];
 
-        while ($start->lt($end)) {
-            $slotEnd = $start->copy()->addMinutes($durationMinutes);
-
-            if ($slotEnd->gt($end)) {
-                break;
-            }
-
-
-            $slots[] = 
-                $start->format('g:i A');
-
-            $start = $slotEnd;
+        while ($start->lte($end)) {
+            $slots[] = $start->format('g:i A');
+            
+            $start = $start->copy()->addMinutes($durationMinutes);
         }
 
         return $slots;
