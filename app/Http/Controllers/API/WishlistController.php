@@ -22,19 +22,20 @@ class WishlistController extends Controller
         $wishlists = [];
         if ( $userId && $sessionId ) {
             $wishlists = Wishlist::with('tour')
-                    ->where('user_id', $userId)
-                    ->orWhere('session_id', $sessionId)
-                    ->get();
+                        ->where('user_id', $userId)
+                        ->orWhere('session_id', $sessionId)
+                        ->get();
         } else if ( $sessionId ) {
             $wishlists = Wishlist::with('tour')
-                    ->where('session_id', $sessionId)
-                    ->get();
+                        ->where('session_id', $sessionId)
+                        ->get();
         }
 
         // Return the transformed data along with pagination info
         return response()->json([
-            'status'         => true,
-            'data'           => $wishlists,
+            'status'    => true,
+            'requested' => $request->all(),
+            'data'      => $wishlists,
         ]);
     }
 
@@ -136,6 +137,7 @@ class WishlistController extends Controller
         // Return the transformed data along with pagination info
         return response()->json([
             'status'         => true,
+            'requested'      => $request->all(),
             'data'           => $items,
             'current_page'   => $tours->currentPage(),
             'last_page'      => $tours->lastPage(),
