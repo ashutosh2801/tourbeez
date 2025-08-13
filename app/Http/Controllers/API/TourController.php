@@ -209,7 +209,7 @@ class TourController extends Controller
         }
 
         $breadcrumbs[] = [
-            'url' => '/',
+            'url' => '',
             'label'=> 'Home'
         ];
         $breadcrumbs[] = [

@@ -121,7 +121,7 @@
                                         <label for="category" class="form-label">Product pricing *</label>
                                         
                                         @php
-                                            $priceOptions = old('PriceOption', [ ['label' => '', 'price' => '', 'qty_used' => 0] ]);
+                                            $priceOptions = old('PriceOption', [ ['label' => '', 'price' => '', 'qty_used' => 1] ]);
                                             $count = count($priceOptions);
                                         @endphp
                                         @foreach ($priceOptions as $index => $option)   

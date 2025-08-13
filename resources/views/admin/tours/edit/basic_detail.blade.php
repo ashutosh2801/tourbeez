@@ -127,7 +127,7 @@
                                                 })->toArray());
                                 $count = count($priceOptions);
                                 if($count == 0){
-                                    $priceOptions = [ ['id'=>'', 'label' => '', 'price' => '', 'qty_used' => 0] ];
+                                    $priceOptions = [ ['id'=>'', 'label' => '', 'price' => '', 'qty_used' => 1] ];
                                     $count = 1;
                                 }
                             @endphp
