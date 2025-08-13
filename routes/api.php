@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 
-Route::get('/tour-sessions', [OrderController::class, 'getSessionTimes']);
+// Route::get('/tour-sessions', [OrderController::class, 'getSessionTimes']);
 
 
 
@@ -53,7 +53,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/orders/{id}',[OrderController::class,'index']);
     Route::get('/order/{id}',[OrderController::class,'view']);
 
-    // Route::post('/tour-sessions', [OrderController::class, 'getSessionTimes']);
+    Route::post('/tour-sessions', [OrderController::class, 'getSessionTimes']);
 
     Route::get('/wishlist', [WishlistController::class, 'index']);
     Route::get('/wishlist/tours', [WishlistController::class, 'wishlist_tours']);
