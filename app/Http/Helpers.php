@@ -75,20 +75,20 @@ if(!function_exists('price_format')) {
 if (!function_exists('price_format_with_currency')) {
     function price_format_with_currency($amount, $currency = 'CAD')
     {
-        // Define currency symbols (add more as needed)
-        $symbols = [
-            'INR' => '₹',
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            'AUD' => 'A$',
-            'CAD' => 'CAD',
-            'CRC' => '₡'
-        ];
+        // // Define currency symbols (add more as needed)
+        // $symbols = [
+        //     'INR' => '₹',
+        //     'USD' => '$',
+        //     'EUR' => '€',
+        //     'GBP' => '£',
+        //     'AUD' => 'A$',
+        //     'CAD' => 'CAD',
+        //     'CRC' => '₡'
+        // ];
 
-        $symbol = $symbols[$currency] ?? $currency;
+        //$symbol = $symbols[$currency] ?? $currency;
 
-        return $symbol . " " . number_format($amount, 2);
+        return $currency . " " . number_format($amount, 2);
     }
 }
 
