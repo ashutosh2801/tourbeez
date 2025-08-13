@@ -397,13 +397,16 @@ class OrderController extends Controller
         $header = $request->input('header');
         $body = $request->input('body');
         $footer = $request->input('footer');
- 
+        $event = $request->input('event');
+
         if (env('MAIL_FROM_ADDRESS') != null) {
             $array['view'] = 'emails.newsletter';
             $array['subject'] = $subject;
             $array['header'] = $header;
             $array['from'] = env('MAIL_FROM_ADDRESS');
             $array['content'] =  $header.$body.$footer;
+
+            $array['event'] = $event;
  
             try {
 
@@ -596,9 +599,6 @@ class OrderController extends Controller
                 "[[APP_EMAIL]]"             => get_setting('app_email'),
                 "[[APP_PHONE]]"             => get_setting('app_phone'),
                 "[[APP_ADDRESS]]"           => get_setting('app_address'),
-                "[[GOOGLE_INVITE]]"         => '<a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Laravel+Project+Kickoff&dates=20250810T093000Z/20250810T103000Z&details=Join+Zoom+Meeting:+https://zoom.us/j/1234567890&location=Zoom&sf=true&output=xml" target="_blank">
-  Add to Google Calendar
-</a>',
 
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
                 "[[ORDER_STATUS]]"          => $order->status,
@@ -623,6 +623,14 @@ class OrderController extends Controller
                     'email_template' => $email_template,
                     'body'=>$finalMessage,
                     'footer'=>$finalfooter,
+                    'event' => [
+                        'uid' => $order->order_number,
+                        'start' => date('H:i A', strtotime($order->created_at)), // local time
+                        'end' => date('H:i A', strtotime($order->created_at)),
+                        'title' => $tour->title,
+                        'description' => $email_template->subject,
+                        'location' => $tour->location->address,
+                    ],
                 ]);
             } else {
                 return response()->json([
