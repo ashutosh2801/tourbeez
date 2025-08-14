@@ -356,8 +356,10 @@ class OrderController extends Controller
             'formData.last_name'  => 'required|string|max:255',
             'formData.email'      => 'required|email|max:255',
             'formData.phone'      => 'required|string|max:20',
-            'formData.instructions' => 'nullable|string|max:255',
+            'formData.pickup_id' => 'nullable|numeric|max:255',
+            'formData.pickup_name' => 'nullable|string|max:255',
         ]);
+
 
         $order = Order::find($request->orderId);
         if (!$order) {
@@ -379,6 +381,9 @@ class OrderController extends Controller
             $customer->email        = $data['email'];
             $customer->phone        = $data['phone'];
             $customer->instructions = $data['instructions'] ?? '';
+            $customer->pickup_id    = $data['pickup_id'] ?? '';
+            $customer->pickup_name  = $data['pickup_name'] ? ucwords($data['pickup_name']) : '';
+            
             $customer->save();
 
             $tour = Tour::with(['pricings'])->find($request->tourId);
