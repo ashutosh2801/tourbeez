@@ -35,9 +35,9 @@ class EmailManager extends Mailable
     // }
 
     public function build()
-    {
+    { 
         $mail = $this->view($this->array['view'])
-            ->from($this->array['from'])
+            ->from($this->array['from'], config('app.name'))
             ->subject($this->array['subject']);
 
         // If event details are provided, generate ICS on the fly

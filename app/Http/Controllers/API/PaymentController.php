@@ -608,7 +608,7 @@ class PaymentController extends Controller
                 ),
                 'title' => $tour->title,
                 'description' => $email_template->subject,
-                'location' => $tour->location->address,
+                'location' => $toAddress,
             ];
 
             Log::info('order_mail_send' . $customer->email);
@@ -662,7 +662,7 @@ class PaymentController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'wefwfew'
+                    'message' => 'error'
                 ], 404);
                 dd($e);
             }
