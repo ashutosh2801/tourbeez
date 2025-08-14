@@ -736,6 +736,7 @@
                                                             @enderror
                                                         </div>
                                                     </div>
+                                                    <input type="hidden" name="event" id="event"  class="form-control" placeholder="{{translate('event')}}" required>
 
                                                     {{-- <div class="form-group row">
                                                         <label class="col-md-12 col-form-label">{{translate('Email Header')}}</label>
@@ -1036,9 +1037,11 @@ $(document).ready(function(){
             type: 'POST',
             data: data,
             success: function(response) {
+                console.log(response.event);
                 $('#email').val(response.email);
                 $('#identifier').val(response.email_template.identifier);
                 $('#subject').val(response.email_template.subject);
+                $('#event').val(JSON.stringify(response.event));
                 //$('#header').summernote('code', response.email_template.header);
                 $('#body').summernote('code', response.body);
                 //$('#footer').summernote('code', response.footer);

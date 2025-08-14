@@ -35,9 +35,9 @@ class EmailManager extends Mailable
     // }
 
     public function build()
-    {
+    { 
         $mail = $this->view($this->array['view'])
-            ->from($this->array['from'])
+            ->from($this->array['from'], config('app.name'))
             ->subject($this->array['subject']);
 
         // If event details are provided, generate ICS on the fly
@@ -58,6 +58,7 @@ class EmailManager extends Mailable
         $start = date('Ymd\THis', strtotime($event['start']));
         $end   = date('Ymd\THis', strtotime($event['end']));
         $dtstamp = date('Ymd\THis');
+        $organiser = config('app.name');
 
         // No indentation in ICS body
         return <<<ICS
@@ -71,6 +72,7 @@ class EmailManager extends Mailable
     SUMMARY:{$event['title']}
     DESCRIPTION:{$event['description']}
     LOCATION:{$event['location']}
+    ORGANIZER:{$organiser}
     END:VEVENT
     END:VCALENDAR
     ICS;
