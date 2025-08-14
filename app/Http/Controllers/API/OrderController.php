@@ -24,6 +24,8 @@ class OrderController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * 
+     * 
      */
     public function index(Request $request, $id = 0)
     {
@@ -46,6 +48,7 @@ class OrderController extends Controller
         })
         ->orderBy('created_at', 'DESC');
 
+        //dd($query->toSql());
         $orders = $query->paginate(10);
 
         $items = [];
@@ -71,6 +74,9 @@ class OrderController extends Controller
         ]);
     }
 
+    /**
+     * View indivisual Order
+     */
     public function view(Request $request, $id = 0)
     {
         if( !$id || $id == 0 ) {
@@ -511,8 +517,9 @@ class OrderController extends Controller
         }
     }
 
-
-
+    /**
+     * Get session time 
+     */
     public function getSessionTimes(Request $request)
     {
 
@@ -787,6 +794,9 @@ class OrderController extends Controller
         ]);
     }
 
+    /**
+     * Generate slots
+     */
     private function generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
     {
         $slots = [];
