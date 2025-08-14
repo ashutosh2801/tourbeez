@@ -362,6 +362,7 @@ class OrderController extends Controller
             'formData.last_name'  => 'required|string|max:255',
             'formData.email'      => 'required|email|max:255',
             'formData.phone'      => 'required|string|max:20',
+            'formData.instructions' => 'nullable|numeric|max:255',
             'formData.pickup_id' => 'nullable|numeric|max:255',
             'formData.pickup_name' => 'nullable|string|max:255',
         ]);
