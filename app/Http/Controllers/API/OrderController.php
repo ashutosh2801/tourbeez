@@ -593,7 +593,6 @@ class OrderController extends Controller
 
 
             if ($durationMinutes <= 0 || $start->gte($end)) {
-                var_dump($durationMinutes);
                 continue;
             }
             // dd(3534);

@@ -58,6 +58,7 @@ class EmailManager extends Mailable
         $start = date('Ymd\THis', strtotime($event['start']));
         $end   = date('Ymd\THis', strtotime($event['end']));
         $dtstamp = date('Ymd\THis');
+        $organiser = config('app.name');
 
         // No indentation in ICS body
         return <<<ICS
@@ -71,6 +72,7 @@ class EmailManager extends Mailable
     SUMMARY:{$event['title']}
     DESCRIPTION:{$event['description']}
     LOCATION:{$event['location']}
+    ORGANIZER:{$organiser}
     END:VEVENT
     END:VCALENDAR
     ICS;

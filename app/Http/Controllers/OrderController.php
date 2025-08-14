@@ -406,7 +406,7 @@ class OrderController extends Controller
             $array['from'] = env('MAIL_FROM_ADDRESS');
             $array['content'] =  $header.$body.$footer;
 
-            $array['event'] = $event;
+            $array['event'] = json_decode($event, true);
  
             try {
 
@@ -624,7 +624,7 @@ class OrderController extends Controller
                     'body'=>$finalMessage,
                     'footer'=>$finalfooter,
                     'event' => [
-                        'uid' => $order->order_number,
+                        'uid' => "TB" . $order->order_number,
                         'start' => date('H:i A', strtotime($order->created_at)), // local time
                         'end' => date('H:i A', strtotime($order->created_at)),
                         'title' => $tour->title,
