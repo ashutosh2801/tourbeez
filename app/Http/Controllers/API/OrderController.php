@@ -536,7 +536,7 @@ class OrderController extends Controller
             return response()->json([
                 'status' => 'warning',
                 'message' => 'No sessions available on this date.',
-                'schedule_set' => false
+                'schedule_set' => true
             ]);
         }
 
@@ -776,7 +776,7 @@ class OrderController extends Controller
             return response()->json([
                 'status' => 'warning',
                 'message' => 'No sessions available on this date.',
-                'schedule_set' => true
+                'schedule_set' => false
             ]);
         }
 
