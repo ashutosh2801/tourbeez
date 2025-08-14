@@ -219,13 +219,10 @@ class PaymentController extends Controller
                 $fees = [];
                 if (!empty($fees_pricing) && is_array($fees_pricing)) {
                     foreach ($fees_pricing as $fp) {
-<<<<<<< HEAD
-                        $labelText = $fp->price_type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
-=======
                         // $labelText = $fp->price_type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
 
                         $labelText = $fp->label;
->>>>>>> 4ff1babd4ce8fdacf8cead9e6765b90b4728b147
+
                         $fees[] = [
                             'lable' => $fp->label, // fixed spelling
                             'price' => $fp->price,
@@ -531,7 +528,7 @@ class PaymentController extends Controller
                     </tbody>
                 </table>';
             }
-
+            $pickup_address = '';
             $pickupAddress = $order->customer->pickup_name ?? '';
             if(!$pickupAddress) {
                 $pickupAddress = $order->customer->pickup;
@@ -577,10 +574,6 @@ class PaymentController extends Controller
                 "[[APP_EMAIL]]"             => get_setting('app_email'),
                 "[[APP_PHONE]]"             => get_setting('app_phone'),
                 "[[APP_ADDRESS]]"           => get_setting('app_address'),
-                "[[GOOGLE_INVITE]]"         => '<a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Laravel+Project+Kickoff&dates=20250810T093000Z/20250810T103000Z&details=Join+Zoom+Meeting:+https://zoom.us/j/1234567890&location=Zoom&sf=true&output=xml" target="_blank">
-  Add to Google Calendar
-</a>',
-
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
                 "[[ORDER_STATUS]]"          => $order->status,
                 "[[ORDER_TOUR_DATE]]"       => $order->order_tour->tour_date ? date('l, F j, Y', strtotime($order->order_tour->tour_date)) : '',
