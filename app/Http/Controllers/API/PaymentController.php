@@ -219,9 +219,13 @@ class PaymentController extends Controller
                 $fees = [];
                 if (!empty($fees_pricing) && is_array($fees_pricing)) {
                     foreach ($fees_pricing as $fp) {
+<<<<<<< HEAD
+                        $labelText = $fp->price_type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
+=======
                         // $labelText = $fp->price_type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
 
                         $labelText = $fp->label;
+>>>>>>> 4ff1babd4ce8fdacf8cead9e6765b90b4728b147
                         $fees[] = [
                             'lable' => $fp->label, // fixed spelling
                             'price' => $fp->price,
