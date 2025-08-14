@@ -246,9 +246,9 @@ class PaymentController extends Controller
 
                 $image = uploaded_asset($booking->tour?->main_image->id ?? 0, 'medium');
                 $pickName = '';
-                if($booking->customer->pickup_name){
+                if($booking->customer && $booking->customer->pickup_name){
                     $pickName = $booking->customer->pickup_name;
-                } elseif($booking->customer->pickup_id) {
+                } elseif($booking->customer && $booking->customer->pickup_id) {
                     $pickLocation = PickupLocation::find($booking->customer->pickup_id);
                     $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
                 }
