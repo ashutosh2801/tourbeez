@@ -27,7 +27,6 @@ class CommonController extends Controller
      */
     public function home_listing(Request $request)
     {
-
         $data = Cache::remember('cities_home_list', 86400, function () {
             return DB::table('tour_locations as tl')
                 ->join('cities as c', 'c.id', '=', 'tl.city_id')
@@ -235,7 +234,6 @@ class CommonController extends Controller
             'prev_page_url'  => $paginated->previousPageUrl(),
         ]);
     }
-
 
     public function single_city(Request $request, $id)
     {

@@ -88,6 +88,7 @@ class WishlistController extends Controller
                 })
                 ->paginate(12);
         
+        //dd($tours->toSql());
 
         $items = [];
         foreach ($tours->items() as $d) {
@@ -116,12 +117,8 @@ class WishlistController extends Controller
                 ];
             }
 
-            // $duration = $d->schedule?->estimated_duration_num ?? '';
-            // $duration.= ' '.ucfirst($d->schedule?->estimated_duration_unit ?? '');
-            // $duration = $duration ?? 'NA';
-
             $duration = $d->schedule?->estimated_duration_num . ' ' ?? '';
-            $duration .= strtolower($d->schedule?->estimated_duration_unit ?? '');
+            $duration .= ucfirst($d->schedule?->estimated_duration_unit ?? '');
 
             $items[] = [
                 'id'             => $d->id,
