@@ -356,8 +356,10 @@ class OrderController extends Controller
             'formData.last_name'  => 'required|string|max:255',
             'formData.email'      => 'required|email|max:255',
             'formData.phone'      => 'required|string|max:20',
-            'formData.instructions' => 'nullable|string|max:255',
+            'formData.pickup_id' => 'nullable|numeric|max:255',
+            'formData.pickup_name' => 'nullable|string|max:255',
         ]);
+
 
         $order = Order::find($request->orderId);
         if (!$order) {
@@ -379,6 +381,9 @@ class OrderController extends Controller
             $customer->email        = $data['email'];
             $customer->phone        = $data['phone'];
             $customer->instructions = $data['instructions'] ?? '';
+            $customer->pickup_id    = $data['pickup_id'] ?? '';
+            $customer->pickup_name  = $data['pickup_name'] ? ucwords($data['pickup_name']) : '';
+            
             $customer->save();
 
             $tour = Tour::with(['pricings'])->find($request->tourId);
@@ -526,9 +531,18 @@ class OrderController extends Controller
                       });
             })
             ->get();
-        // dd($schedules);
+            // dd($schedules);
+        if ($schedules->isEmpty()) {
+            return response()->json([
+                'status' => 'warning',
+                'message' => 'No sessions available on this date.',
+                'schedule_set' => false
+            ]);
+        }
+
         foreach ($schedules as $schedule) {
-            
+
+
             $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
                 'minute', 'minutes' => $schedule->estimated_duration_num,
                 'hour', 'hours' => $schedule->estimated_duration_num * 60,
@@ -692,7 +706,7 @@ class OrderController extends Controller
 
                 }
             }elseif ($repeatType === 'MINUTELY') {
-                $interval = $schedule->repeat_period_unit; // e.g., every 15 minutes
+                $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 15 minutes
                 $scheduleStartDate = Carbon::parse($schedule->session_start_date);
                 $scheduleEndDate = Carbon::parse($schedule->until_date);
 
@@ -708,10 +722,15 @@ class OrderController extends Controller
                         $start = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
                         $end = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
 
-                        $slots = array_merge(
+                        $allSlots = array_merge(
                             $slots,
                             $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
                         );
+                        foreach ($allSlots as $index => $slot) {
+                            if ($index % $interval === 0) {
+                                $slots[] = $slot;
+                            }
+                        }
                     }
                 }
             }
@@ -738,10 +757,16 @@ class OrderController extends Controller
                             continue; // Skip this slot if not matching the interval
                         }
 
-                        $slots = array_merge(
+                        $allSlots = array_merge(
                             $slots,
                             $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod)
                         );
+
+                        foreach ($allSlots as $index => $slot) {
+                            if ($index % $interval === 0) { // keep only every Nth slot
+                                $slots[] = $slot;
+                            }
+                        }
                     }
                 }
             }
@@ -749,14 +774,16 @@ class OrderController extends Controller
         
         if (empty($slots)) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'No sessions available on this date.'
+                'status' => 'warning',
+                'message' => 'No sessions available on this date.',
+                'schedule_set' => true
             ]);
         }
 
         return response()->json([
             'status' => 'success',
-            'data' => array_unique($slots)
+            'data' => array_unique($slots),
+            'schedule_set' => true
         ]);
     }
 
@@ -766,7 +793,7 @@ class OrderController extends Controller
 
         // Calculate the earliest slot time allowed
         $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
-        // dd($earliestAllowed, $start, $start->gte($earliestAllowed), now());
+
         while ($start->lte($end)) {
 
             if ($start->gte($earliestAllowed)) {

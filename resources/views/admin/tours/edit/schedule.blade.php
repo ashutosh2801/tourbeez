@@ -66,7 +66,7 @@
                 <div class="mb-4">
                     <div class="row">
                         <label for="session_start_date" class="form-label col-lg-2">Next available session *</label>
-                        <div class="col-lg-3">
+                        <div class="col-lg-4">
                             <div class="input-group">
                                 <div class="input-group-prepend" >
                                     <span class="input-group-text" id="basic-addon-from" style="width:70px;">Form</span>
@@ -97,7 +97,7 @@
                     </div>
                     <div class="row mb-4">
                         <label for="session_end_date" class="form-label col-lg-2"></label>
-                        <div class="col-lg-3">
+                        <div class="col-lg-4">
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text" id="basic-addon-from"  style="width:70px;">To</span>
@@ -168,7 +168,7 @@
                             <small class="form-text text-danger">{{ $message }}</small>
                         @enderror
                     </div>
-                    <div class="col-lg-3 d-none not-repeat-period not-repeat-period3">
+                    <div class="col-lg-4 d-none not-repeat-period not-repeat-period3">
                         <div class="input-group">
                             <div class="input-group-prepend">
                                 <span class="input-group-text" id="basic-addon-until">Until</span>
@@ -279,6 +279,7 @@ function setValueTime( value ) {
 }   
 
 function repeat_period(){
+
     let repeat_period_val = $('#repeat_period').val();
 
     setValueTime(repeat_period_val)
@@ -286,9 +287,10 @@ function repeat_period(){
         $('.not-repeat-period').addClass('d-none');
     }
     else if(repeat_period_val == 'MONTHLY' || repeat_period_val == 'YEARLY' || repeat_period_val == 'DAILY') {
+        console.log(23423);
         $('.not-repeat-period2').addClass('d-none');
 
-        if(repeat_period_val == 'DAILY')
+        // if(repeat_period_val == 'DAILY')
         $('.not-repeat-period3').removeClass('d-none');
     }
     else {

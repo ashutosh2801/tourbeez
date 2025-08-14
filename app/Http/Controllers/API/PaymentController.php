@@ -5,9 +5,11 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Mail\EmailManager;
 use App\Models\Addon;
-use App\Models\TourPricing;
 use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Models\Pickup;
+use App\Models\PickupLocation;
+use App\Models\TourPricing;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +18,7 @@ use Illuminate\Support\Facades\Mail;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
 use Stripe\Webhook;
+
 
 
 class PaymentController extends Controller
@@ -216,9 +219,15 @@ class PaymentController extends Controller
                 $fees = [];
                 if (!empty($fees_pricing) && is_array($fees_pricing)) {
                     foreach ($fees_pricing as $fp) {
+<<<<<<< HEAD
                         $labelText = $fp->price_type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
+=======
+                        // $labelText = $fp->price_type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
+
+                        $labelText = $fp->label;
+>>>>>>> 4ff1babd4ce8fdacf8cead9e6765b90b4728b147
                         $fees[] = [
-                            'lable' => $fp->label . ' ' . $labelText, // fixed spelling
+                            'lable' => $fp->label, // fixed spelling
                             'price' => $fp->price,
                             'total' => $fp->price
                         ];
@@ -238,7 +247,15 @@ class PaymentController extends Controller
                 // }
 
 
-                $image = uploaded_asset($booking->tour->main_image->id, 'medium');
+                $image = uploaded_asset($booking->tour?->main_image->id ?? 0, 'medium');
+                $pickName = '';
+                if($booking->customer->pickup_name){
+                    $pickName = $booking->customer->pickup_name;
+                } elseif($booking->customer->pickup_id) {
+                    $pickLocation = PickupLocation::find($booking->customer->pickup_id);
+                    $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                }
+                
 
                 $detail = [
                     'order_number'      => $booking->order_number,
@@ -248,6 +265,7 @@ class PaymentController extends Controller
                     'currency'          => $booking->currency,
                     'payment_method'    => ucfirst($booking->payment_method),
                     'customer'          => $booking->customer,
+                    'pickup'            => $pickName,
                     'tour_date'         => date('D, M d, Y', strtotime($booking->order_tour->tour_date)),
                     'tour_time'         => $booking->order_tour->tour_time,
                     'created_at'        => date('Y-m-d', strtotime($booking->created_at)),
