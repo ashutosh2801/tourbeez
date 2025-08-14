@@ -455,7 +455,7 @@ class TourController extends Controller
                 'all_images'     => $galleries,
                 'price'          => price_format($d->price),
                 'original_price' => $d->price,
-                'duration'       => trim($duration),
+                'duration'       => strtolower($duration),
                 'rating'         => randomFloat(4, 5),
                 'comment'        => rand(50, 100),
             ];

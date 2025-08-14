@@ -116,9 +116,12 @@ class WishlistController extends Controller
                 ];
             }
 
-            $duration = $d->schedule?->estimated_duration_num ?? '';
-            $duration.= ' '.ucfirst($d->schedule?->estimated_duration_unit ?? '');
-            $duration = $duration ?? 'NA';
+            // $duration = $d->schedule?->estimated_duration_num ?? '';
+            // $duration.= ' '.ucfirst($d->schedule?->estimated_duration_unit ?? '');
+            // $duration = $duration ?? 'NA';
+
+            $duration = $d->schedule?->estimated_duration_num . ' ' ?? '';
+            $duration .= strtolower($d->schedule?->estimated_duration_unit ?? '');
 
             $items[] = [
                 'id'             => $d->id,
@@ -128,7 +131,7 @@ class WishlistController extends Controller
                 'all_images'     => $galleries,
                 'price'          => price_format($d->price),
                 'original_price' => $d->price,
-                'duration'       => $duration,
+                'duration'       => strtolower($duration),
                 'rating'         => randomFloat(4, 5),
                 'comment'        => rand(50, 100),
             ];
