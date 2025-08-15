@@ -326,6 +326,7 @@ class PaymentController extends Controller
             $template_subject = $email_template->subject;
 
             $header = $email_template->header;
+            $pickup_address = '';
 
             $system_logo = get_setting('system_logo');
             $logo = uploaded_asset($system_logo);
@@ -528,7 +529,7 @@ class PaymentController extends Controller
                     </tbody>
                 </table>';
             }
-            $pickup_address = '';
+            
             $pickupAddress = $order->customer->pickup_name ?? '';
             if(!$pickupAddress) {
                 $pickupAddress = $order->customer->pickup;
