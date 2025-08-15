@@ -431,7 +431,7 @@ class OrderController extends Controller
             // Add-ons
             if (!empty($request->cartAdons)) {
                 foreach ($request->cartAdons as $addon) {
-                    if (isset($addon['id'], $addon['quantity'], $addon['price'], $addon['total_price'], $addon['label']) && &&
+                    if (isset($addon['id'], $addon['quantity'], $addon['price'], $addon['total_price'], $addon['label']) &&
     $addon['quantity'] != 0) {
                         $extra[] = [
                             'tour_id'           => $request->tourId,
