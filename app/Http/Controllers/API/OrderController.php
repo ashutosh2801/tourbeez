@@ -362,7 +362,7 @@ class OrderController extends Controller
             'formData.last_name'  => 'required|string|max:255',
             'formData.email'      => 'required|email|max:255',
             'formData.phone'      => 'required|string|max:20',
-            'formData.instructions' => 'nullable|numeric|max:255',
+            'formData.instructions' => 'nullable|string|max:255',
             'formData.pickup_id' => 'nullable|numeric|max:255',
             'formData.pickup_name' => 'nullable|string|max:255',
         ]);
@@ -387,9 +387,9 @@ class OrderController extends Controller
             $customer->last_name    = $data['last_name'];
             $customer->email        = $data['email'];
             $customer->phone        = $data['phone'];
-            $customer->instructions = $data['instructions'] ?? '';
-            $customer->pickup_id    = $data['pickup_id'] ?? '';
-            $customer->pickup_name  = $data['pickup_name'] ? ucwords($data['pickup_name']) : '';
+            $customer->instructions = isset($data['instructions']) ? $data['instructions'] : '';
+            $customer->pickup_id    = isset($data['pickup_id']) ?  $data['pickup_id'] : '';
+            $customer->pickup_name  = isset($data['pickup_name']) ? ucwords($data['pickup_name']) : '';
             
             $customer->save();
 
@@ -431,7 +431,8 @@ class OrderController extends Controller
             // Add-ons
             if (!empty($request->cartAdons)) {
                 foreach ($request->cartAdons as $addon) {
-                    if (isset($addon['id'], $addon['quantity'], $addon['price'], $addon['total_price'], $addon['label'])) {
+                    if (isset($addon['id'], $addon['quantity'], $addon['price'], $addon['total_price'], $addon['label']) && &&
+    $addon['quantity'] != 0) {
                         $extra[] = [
                             'tour_id'           => $request->tourId,
                             'tour_extra_id'     => $addon['id'],
