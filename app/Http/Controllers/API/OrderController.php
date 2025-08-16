@@ -781,6 +781,18 @@ class OrderController extends Controller
         }
         
         if (empty($slots)) {
+            // dd($schedules, $carbonDate);
+            $nextAvailable = $this->nextAvailableSession($request->tour_id, $request->date);
+            dd($nextAvailable );
+            if ($nextAvailable) {
+                return response()->json([
+                    'status' => 'next_available',
+                    'message' => 'No sessions available on this date. Showing next available date.',
+                    'date' => $nextAvailable['date'],
+                    'data' => $nextAvailable['slots'],
+                    'schedule_set' => true
+                ]);
+            }
             return response()->json([
                 'status' => 'warning',
                 'message' => 'No sessions available on this date.',
@@ -816,5 +828,85 @@ class OrderController extends Controller
 
         return $slots;
     }
+
+
+    /**
+ * Find the next available date and slots based on repeat type
+ */
+    
+public function nextAvailableSession($tourId, $selectedDate)
+{
+    $schedule = TourSchedule::where('tour_id', $tourId)->first();
+    // dd($schedule);
+    $carbonDate = Carbon::parse($selectedDate);
+    $scheduleStart = Carbon::parse($schedule->session_start_date);
+    $scheduleEnd   = Carbon::parse($schedule->until_date);
+
+    if ($carbonDate->lt($scheduleStart)) {
+        $carbonDate = $scheduleStart;
+    }
+
+    while ($carbonDate->lte($scheduleEnd)) {
+        if ($this->hasAvailableSlots($schedule, $carbonDate)) {
+            return $carbonDate->toDateString();
+        }
+
+        // Move to next recurrence
+        $carbonDate = $this->getNextRecurrenceDate($schedule, $carbonDate);
+    }
+
+    return null; // No available slots found
+}
+
+
+ 
+private function hasAvailableSlots($schedule, Carbon $date): bool
+{
+    $repeats = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)->get();
+    foreach ($repeats as $repeat) {
+        $slotStart = Carbon::parse($repeat->start_time)->setDate($date->year, $date->month, $date->day);
+        $slotEnd   = Carbon::parse($repeat->end_time)->setDate($date->year, $date->month, $date->day);
+
+        $slots = $this->generateSlots($slotStart, $slotEnd, $schedule->duration_minutes, $schedule->minimum_notice_period);
+
+        if (!empty($slots)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+ 
+private function getNextRecurrenceDate($schedule, Carbon $date): Carbon
+{
+    $interval = $schedule->repeat_period_unit ?? 1;
+
+    switch ($schedule->repeat_type) {
+        case 'DAILY':
+            return $date->addDays($interval);
+
+        case 'WEEKLY':
+            return $date->addWeeks($interval);
+
+        case 'MONTHLY':
+            return $date->addMonths($interval);
+
+        case 'YEARLY':
+            return $date->addYears($interval);
+
+        case 'HOURLY':
+            return $date->addHours($interval);
+
+        case 'MINUTELY':
+            return $date->addMinutes($interval);
+
+        default:
+            return $date->addDay(); // fallback
+    }
+}
+
+
+
     
 }
