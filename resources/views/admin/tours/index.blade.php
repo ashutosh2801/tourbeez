@@ -115,14 +115,16 @@
             </div>
         </form>
         
-        <form id="bulkDeleteForm" method="POST" action="{{ route('admin.order.bulkDelete') }}">
+        <form id="bulkDeleteForm" method="POST" action="{{ route('admin.tour.bulkDelete') }}">
         @csrf
         @method('DELETE')
-
+         </form>
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center w-100">
                 <h3 class="card-title mb-0"></h3>
                 <div class="card-tools">
+
+                    <button id="saveTourCoupon" type="button" class="btn btn-sm btn-info">Create Tour Coupon</button>
                     <button id="saveSortOrder" type="button" class="btn btn-sm btn-primary">Save Sort Order</button>
 
                     @can('add_tour') 
@@ -227,7 +229,64 @@
             </div>
         </div>
     </div>
-</div><!-- /.modal -->
+</div>
+
+<!-- Tour Coupon Modal -->
+<!-- Tour Coupon Modal -->
+<div id="tour-coupon-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title h6">{{ translate('Create Tour Coupon') }}</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+            </div>
+
+            <div class="form-group">
+                <label class="mr-3 mt-2">{{ translate('Selected Tours') }}</label>
+                <div id="selected_tour_list" class="border p-2 rounded bg-light">
+                    <!-- dynamic list will appear here -->
+                </div>
+            </div>
+
+            <form id="tourCouponForm" method="POST" action="{{ route('admin.tour.saveCoupon') }}">
+                @csrf
+                <input type="hidden" name="selected_tours" id="selected_tours">
+
+
+                <div class="modal-body">
+                    <!-- Coupon Type -->
+                    <div class="form-group">
+                        <label for="coupon_type">{{ translate('Coupon Type') }}</label>
+                        <select name="coupon_type" id="coupon_type" class="form-control">
+                            <option value="percentage">{{ translate('Percentage') }}</option>
+                            <option value="fixed">{{ translate('Fixed Amount') }}</option>
+                        </select>
+                    </div>
+
+                    <!-- Coupon Value -->
+                    <div class="form-group">
+                        <label for="coupon_value">{{ translate('Value') }}</label>
+                        <input type="number" step="0.01" name="coupon_value" id="coupon_value" class="form-control" placeholder="Enter value">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                    <button type="submit" class="btn btn-success">{{ translate('Save') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+<!-- /.modal -->
+
 @endsection
 @section('js')
 
@@ -373,6 +432,101 @@ $(document).ready(function () {
             }
         });
     });
+
+
+
+</script>
+
+<script>
+    
+
+// $(document).on("click", "#saveTourCoupon", function (e) {
+//     e.preventDefault(); // 🔥 Prevent form submission
+    
+//     let selected = [];
+//     let selectedNames = [];
+
+//     $('input[name="ids[]"]:checked').each(function () {
+//         selected.push($(this).val());
+//         selectedNames.push($(this).closest('tr').find('td:nth-child(4)').text().trim()); // Get tour title
+//     });
+
+//     if (selected.length === 0) {
+//         alert("Please select at least one tour.");
+//         return;
+//     }
+
+//     // Pass selected tours into hidden field
+//     $("#selected_tours").val(selected.join(","));
+
+//     // Show selected tours in modal
+//     let listHtml = "<ul>";
+//     selectedNames.forEach(name => listHtml += `<li>${name}</li>`);
+//     listHtml += "</ul>";
+//     $("#selected_tour_list").html(listHtml);
+
+//     $("#tour-coupon-modal").modal("show");
+// });
+
+
+    $(document).on("click", "#saveTourCoupon", function (e) {
+        e.preventDefault(); 
+        
+        let selected = [];
+        let selectedNames = [];
+
+        $('input[name="ids[]"]:checked').each(function () {
+            selected.push($(this).val());
+            selectedNames.push({
+                id: $(this).val(),
+                name: $(this).closest('tr').find('td:nth-child(4)').text().trim()
+            });
+        });
+
+        if (selected.length === 0) {
+            alert("Please select at least one tour.");
+            return;
+        }
+
+        // Show selected tours in modal (with remove option)
+        let listHtml = `
+    <div style="max-height:250px; overflow-y:auto;">
+        <ul class="list-group">`;
+        selectedNames.forEach(item => {
+            listHtml += `
+                <li class="list-group-item d-flex justify-content-between align-items-center" data-id="${item.id}">
+                    <span class"mr-3">${item.name}</span>
+                    <button type="button" class="btn btn-sm btn-danger remove-tour" data-id="${item.id}">&times;</button>
+                </li>`;
+        });
+        listHtml += `</ul> </div>`;
+
+
+        $("#selected_tour_list").html(listHtml);
+
+        // Save IDs in hidden input
+        $("#selected_tours").val(selected.join(","));
+
+        // Show modal
+        $("#tour-coupon-modal").modal("show");
+    });
+
+    // 🔹 Handle remove click
+    $(document).on("click", ".remove-tour", function () {
+        let id = $(this).data("id");
+
+        // Remove item from list
+        $(this).closest("li").remove();
+
+        // Update hidden field
+        let remaining = [];
+        $("#selected_tour_list li").each(function () {
+            remaining.push($(this).data("id"));
+        });
+        $("#selected_tours").val(remaining.join(","));
+    });
+
+
 
 
 
