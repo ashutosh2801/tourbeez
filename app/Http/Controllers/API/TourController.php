@@ -7,9 +7,11 @@ use App\Models\Category;
 use App\Models\City;
 use App\Models\Order;
 use App\Models\Tour;
+use App\Models\TourSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
 
 class TourController extends Controller
 {
@@ -250,6 +252,15 @@ class TourController extends Controller
         else if (!empty($tour->pickups) && isset($tour->pickups[0])) {
             $pickups = $tour->pickups[0]?->locations ?? [];
         }
+        $discounted_price = $tour->price;
+        if($tour->coupon_value){
+
+            if($tour->coupon_type == 'fixed'){
+                $discounted_price = $tour->price - $tour->coupon_value;
+            } else if($tour->coupon_type == 'percentage'){
+                $discounted_price = $tour->price - ($tour->price * ($tour->coupon_value / 100)); 
+            }
+        }
 
         if ($tour) {
             // 💡 You can now format or transform fields as needed
@@ -283,7 +294,18 @@ class TourController extends Controller
                 'category'      => $tour->category,
                 'galleries'     => $galleries,
                 'addons'        => $addons,
+                'discount'       => ($tour->coupon_type == 'percentage') ? $tour->coupon_value . " %" : '$ ' . $tour->coupon_value,
+                'discount_type'        => $tour->coupon_type,
+                'discounted_price'        => $discounted_price,
+                'tour_start_date'        => $this->getNextAvailableDate($tour->id),
             ];
+
+            //discounted_price
+            //discount
+            //discount_type
+            // tour_start_date -> inhich solt available (same as the slots and avalable slots)
+            // disabled_tour_dates -> [array of date in which slot is not availble,  // repeate _tour_type
+           
         }
 
         return response()->json([
@@ -473,6 +495,95 @@ class TourController extends Controller
             'prev_page_url'  => $paginated->previousPageUrl(),
         ]);
     }
+
+    private function getNextAvailableDate($tourId)
+    {
+        $today = Carbon::today();
+
+        // 1. Get schedules for this tour where today is between start & until date (or future)
+        $schedules = TourSchedule::where('tour_id', $tourId)
+            ->where(function ($query) use ($today) {
+                $query->orWhere(function ($q) use ($today) {
+                    $q->whereDate('session_start_date', '<=', $today)
+                      ->whereDate('until_date', '>=', $today);
+                })
+                ->orWhereDate('session_start_date', '>=', $today);
+            })
+            ->get();
+
+        $nextDates = [];
+
+        foreach ($schedules as $schedule) {
+            $nextDate = $this->calculateNextDate($schedule, $today);
+            if ($nextDate) {
+                $nextDates[] = $nextDate;
+            }
+        }
+
+        // return earliest upcoming date
+        if (!empty($nextDates)) {
+            usort($nextDates, function ($a, $b) {
+                return strtotime($a['date']) <=> strtotime($b['date']);
+            });
+            return $nextDates[0]; // only the closest one
+        }
+
+        return null;
+    }
+
+    private function calculateNextDate($schedule, Carbon $today)
+    {
+        $interval = $schedule->repeat_period_unit ?? 1;
+        $repeatType = $schedule->repeat_period; 
+        $scheduleStartDate = Carbon::parse($schedule->session_start_date);
+        $scheduleEndDate   = Carbon::parse($schedule->until_date);
+
+        $next = $today->copy()->max($scheduleStartDate);
+
+        while ($next <= $scheduleEndDate) {
+            $slots = $this->getSlotsForDate($schedule, $next);
+            if (!empty($slots)) {
+                return [
+                    'date' => $next->toDateString()
+                ];
+            }
+
+            // move forward
+            switch ($repeatType) {
+                case 'DAILY':   $next->addDays($interval); break;
+                case 'WEEKLY':  $next->addWeeks($interval); break;
+                case 'MONTHLY': $next->addMonths($interval); break;
+                case 'YEARLY':  $next->addYears($interval); break;
+                case 'HOURLY':  $next->addHours($interval); break;
+                case 'MINUTELY':$next->addMinutes($interval); break;
+                default: return null;
+            }
+        }
+
+        return null;
+    }
+    private function getSlotsForDate($schedule, $date, $durationMinutes = 30, $minimumNoticePeriod = 0)
+    {
+        $slots = [];
+
+        // Parse start and end times for the given date
+        $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
+        $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
+
+        // Calculate the earliest slot allowed
+        $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
+
+        // Generate slots at given intervals
+        while ($startTime->lte($endTime)) {
+            if ($startTime->gte($earliestAllowed)) {
+                $slots[] = $startTime->format('g:i A'); // Keep same format as generateSlots()
+            }
+            $startTime->addMinutes($durationMinutes);
+        }
+
+        return $slots;
+    }
+
 
     // public function categoriesByCity(Request $request)
     // {
