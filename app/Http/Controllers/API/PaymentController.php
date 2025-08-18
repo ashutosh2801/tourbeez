@@ -174,7 +174,7 @@ class PaymentController extends Controller
                 });
 
                 if ($booking && $booking->order_status !== 1) {
-                    $booking->order_status   = 1;
+                    $booking->order_status   = 3;
                     $booking->payment_status = 1;
                     $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
                     $booking->updated_at     = now();
