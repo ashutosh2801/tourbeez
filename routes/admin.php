@@ -126,6 +126,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::post('/tours/reorder', [TourController::class, 'reorder'])->name('tour.reorder');
 
+    Route::post('/tours/save-coupon', [TourController::class, 'saveCoupon'])->name('tour.saveCoupon');
+    Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');
+
+
+
+
 
     Route::resource('itineraries',ItineraryController::class);
     Route::post('/itinerary/single', [ItineraryController::class, 'single'])->name('itinerary.single');

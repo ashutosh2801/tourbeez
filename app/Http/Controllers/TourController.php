@@ -653,7 +653,7 @@ class TourController extends Controller
     public function basic_detail_update(Request $request, $id)
     {
         
-        //dd($request->all(), $request->file('image'));
+        // dd($request->all());
         $request->validate([
             'title'                 => 'required|max:255',
             'description'           => 'required',
@@ -702,6 +702,10 @@ class TourController extends Controller
         $tour->price      = $request->advertised_price;
         $tour->price_type = $request->price_type;
         $tour->order_email = $request->order_email;
+        $tour->offer_ends_in = $request->offer_ends_in;
+        $tour->coupon_type = $request->coupon_type;
+        $tour->coupon_value = $request->coupon_value;
+        
         // $tour->country    = $request->country;
         // $tour->state      = $request->state;
         // $tour->city       = $request->city;
@@ -1490,6 +1494,7 @@ class TourController extends Controller
 
     public function bulkDelete(Request $request)
     {
+        dd(324);
         $ids = $request->ids;
 
         if (!$ids || count($ids) === 0) {
@@ -1505,7 +1510,7 @@ class TourController extends Controller
             $tour->delete();
         }
 
-        return redirect()->back()->with('success', 'Selected tours deleted successfully.');
+        return redirect()->back()->with('success', 'Selectdasdsaed tours deleted successfully.');
     }
 
     public function citySearch(Request $request)
@@ -1525,4 +1530,23 @@ class TourController extends Controller
 
         return response()->json(['results' => $results]);
     }
+
+    public function saveCoupon(Request $request)
+    {
+        $request->validate([
+            'selected_tours' => 'required',
+            'coupon_type' => 'required|in:percentage,fixed',
+            'coupon_value' => 'required|numeric|min:0',
+        ]);
+
+        $ids = explode(',', $request->selected_tours);
+
+        Tour::whereIn('id', $ids)->update([
+            'coupon_type' => $request->coupon_type,
+            'coupon_value' => $request->coupon_value,
+        ]);
+
+        return redirect()->route('admin.tour.index')->with('success', 'Coupon applied to selected tours successfully!');
+    }
+
 }

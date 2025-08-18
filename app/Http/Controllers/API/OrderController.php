@@ -781,10 +781,49 @@ class OrderController extends Controller
         }
         
         if (empty($slots)) {
+
+
+                $nextAvailable = [];
+                $next_available = [];
+                foreach ($schedules as $schedule) {
+                    $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
+                        'minute', 'minutes' => $schedule->estimated_duration_num,
+                        'hour', 'hours' => $schedule->estimated_duration_num * 60,
+                        'day', 'days' => $schedule->estimated_duration_num * 60 * 24,
+                        'daily', 'daily' => $schedule->estimated_duration_num * 60 * 24,
+                        'weekly', 'weekly' => $schedule->estimated_duration_num * 60,
+                        'monthly', 'monthly' => $schedule->estimated_duration_num * 60 * 24 * 30,
+                        'yearly', 'yearly' => $schedule->estimated_duration_num * 60,
+         
+
+                         
+                        default => 0
+                    };
+
+                    $minimumNoticePeriod = match (strtolower($schedule->minimum_notice_unit)) {
+                        'minute', 'minutes' => $schedule->minimum_notice_num,
+                        'hour', 'hours' => $schedule->minimum_notice_num * 60,
+                        default => 0
+                    };
+                    $nextAvailable = $this->getNextAvailableSlots($schedule, $carbonDate, $request->get('limit', 1),$durationMinutes, $minimumNoticePeriod);
+                    if (!empty($nextAvailable)) {
+                        $next_available = array_merge($next_available, $nextAvailable);
+                    }
+                }
+
+            // $nextAvailable = $this->getNextAvailableSessions($schedules, $carbonDate, 1); // default only 1
+            // return response()->json([
+            //     'slots' => [],
+            //     'next_available' => $nextAvailable
+            // ]);
+
+
+        
             return response()->json([
                 'status' => 'warning',
                 'message' => 'No sessions available on this date.',
-                'schedule_set' => false
+                'schedule_set' => false,
+                'next_available' => $nextAvailable,
             ]);
         }
 
@@ -816,5 +855,109 @@ class OrderController extends Controller
 
         return $slots;
     }
+
+    private function getNextAvailableSlots($schedule, Carbon $carbonDate, $limit = 1, $durationMinutes = 30, $minimumNoticePeriod = 0)
+    {
+
+        $interval = $schedule->repeat_period_unit ?? 1; // default 1
+        $repeatType = $schedule->repeat_period; // DAILY, WEEKLY, MONTHLY, YEARLY, HOURLY, MINUTELY
+        $scheduleStartDate = Carbon::parse($schedule->session_start_date);
+        $scheduleEndDate   = Carbon::parse($schedule->until_date);
+
+        $nextDates = [];
+        // dd($repeatType, $schedule);
+        // Start calculating from later of session_start_date or selected date
+        $next = $scheduleStartDate->copy();
+
+        // If the session_start_date is before selected date → shift to after selected date
+        while ($next <= $carbonDate) {
+            switch ($repeatType) {
+                case 'DAILY':
+                    $next->addDays($interval);
+                    break;
+                case 'WEEKLY':
+                    $next->addWeeks($interval);
+                    break;
+                case 'MONTHLY':
+                    $next->addMonths($interval);
+                    break;
+                case 'YEARLY':
+                    $next->addYears($interval);
+                    break;
+                case 'HOURLY':
+                    $next->addHours($interval);
+                    break;
+                case 'MINUTELY':
+                    $next->addMinutes($interval);
+                    break;
+                default:
+                    return []; // unsupported type
+            }
+        }
+
+        // Collect future occurrences
+        while ($next <= $scheduleEndDate && count($nextDates) < $limit) {
+            // $slots = $this->getSlotsForDate($schedule, $next);
+
+            $slots = $this->getSlotsForDate($schedule, $next, $durationMinutes = 30, $minimumNoticePeriod = 0);
+            if (!empty($slots)) {
+                $nextDates[] = [
+                    'date'  => $next->toDateString(),
+                    'slots' => $slots,
+                ];
+            }
+
+            // Move to next cycle
+            switch ($repeatType) {
+                case 'DAILY':
+                    $next->addDays($interval);
+                    break;
+                case 'WEEKLY':
+                    $next->addWeeks($interval);
+                    break;
+                case 'MONTHLY':
+                    $next->addMonths($interval);
+                    break;
+                case 'YEARLY':
+                    $next->addYears($interval);
+                    break;
+                case 'HOURLY':
+                    $next->addHours($interval);
+                    break;
+                case 'MINUTELY':
+                    $next->addMinutes($interval);
+                    break;
+            }
+        }
+
+        return $nextDates;
+    }
+
+
+ 
+    private function getSlotsForDate($schedule, $date, $durationMinutes = 30, $minimumNoticePeriod = 0)
+    {
+        $slots = [];
+
+        // Parse start and end times for the given date
+        $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
+        $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
+
+        // Calculate the earliest slot allowed
+        $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
+
+        // Generate slots at given intervals
+        while ($startTime->lte($endTime)) {
+            if ($startTime->gte($earliestAllowed)) {
+                $slots[] = $startTime->format('g:i A'); // Keep same format as generateSlots()
+            }
+            $startTime->addMinutes($durationMinutes);
+        }
+
+        return $slots;
+    }
+
+
+
     
 }
