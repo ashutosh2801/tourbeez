@@ -901,8 +901,11 @@ class OrderController extends Controller
 
             $slots = $this->getSlotsForDate($schedule, $next, $durationMinutes = 30, $minimumNoticePeriod = 0);
             if (!empty($slots)) {
-
-                $slots = array_slice($slots, 0, 1);
+                if($repeatType == 'HOURLY' || $repeatType == 'MINUTELY'){
+                } else{
+                   $slots = array_slice($slots, 0, 1); 
+                }
+                
                 $nextDates[] = [
                     'date'  => $next->toDateString(),
                     'slots' => $slots,
