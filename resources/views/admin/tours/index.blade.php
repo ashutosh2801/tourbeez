@@ -124,7 +124,7 @@
                 <h3 class="card-title mb-0"></h3>
                 <div class="card-tools">
 
-                    <button id="saveTourCoupon" type="button" class="btn btn-sm btn-info">Create Tour Coupon</button>
+                    <button id="saveTourCoupon" type="button" class="btn btn-sm btn-info">Create Discount</button>
                     <button id="saveSortOrder" type="button" class="btn btn-sm btn-primary">Save Sort Order</button>
 
                     @can('add_tour') 
@@ -237,12 +237,12 @@
     <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title h6">{{ translate('Create Tour Coupon') }}</h4>
+                <h4 class="modal-title h6">{{ translate('Create Discount') }}</h4>
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
             </div>
 
             <div class="form-group">
-                <label class="mr-3 mt-2">{{ translate('Selected Tours') }}</label>
+                <label class="ml-3 mt-2">{{ translate('Selected Tours') }}</label>
                 <div id="selected_tour_list" class="border p-2 rounded bg-light">
                     <!-- dynamic list will appear here -->
                 </div>
@@ -495,7 +495,7 @@ $(document).ready(function () {
         selectedNames.forEach(item => {
             listHtml += `
                 <li class="list-group-item d-flex justify-content-between align-items-center" data-id="${item.id}">
-                    <span class"mr-3">${item.name}</span>
+                    <span class"mr-3" style="margin-right : 10px">${item.name}</span>
                     <button type="button" class="btn btn-sm btn-danger remove-tour" data-id="${item.id}">&times;</button>
                 </li>`;
         });

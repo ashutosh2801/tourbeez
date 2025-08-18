@@ -202,7 +202,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-7">
+                    <div class="col-lg-6">
                         <div class="form-group">
                             <label for="title" class="form-label">Advertised price *</label>
                             <div class="input-group">
@@ -263,7 +263,7 @@
 
                     <div class="col-lg-6">
                         <div class="form-group">
-                            <label for="coupon_type" class="form-label">Coupon Type & Value</label>
+                            <label for="coupon_type" class="form-label">Discount Type & Value</label>
                             <div class="row">
                                 <!-- Coupon Type -->
                                 <div class="col-lg-6">
