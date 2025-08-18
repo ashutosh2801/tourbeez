@@ -272,7 +272,7 @@
                                             <span class="input-group-text" id="basic-addon1">Type</span>
                                         </div>
                                         <select name="coupon_type" id="coupon_type" class="form-control">
-                                            <option value="">{{ translate('No Coupon') }} {{$data->id}}</option>
+                                            <option value="">{{ translate('No Coupon') }}</option>
                                             <option value="percentage" {{ $data?->coupon_type == 'percentage' ? 'selected' : ''}}>{{ translate('Percentage') }}</option>
                                             <option value="fixed" {{ $data?->coupon_type == 'fixed' ? 'selected' : ''}}>{{ translate('Fixed Amount') }}</option>
                                         </select>
