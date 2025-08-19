@@ -858,7 +858,8 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
      */
     private function calculateDisabledDates($schedule, Carbon $today): array
     {
-        $start = $today->copy()->startOfDay()->max(Carbon::parse($schedule->session_start_date)->startOfDay());
+        // $start = Carbon::parse($schedule->session_start_date); $today->copy()->startOfDay()->max(Carbon::parse($schedule->session_start_date)->startOfDay());
+        $start = Carbon::parse($schedule->session_start_date);
         $end   = Carbon::parse($schedule->until_date)->endOfDay();
 
         if ($start->gt($end)) return [];
