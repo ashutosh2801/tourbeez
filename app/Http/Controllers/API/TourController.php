@@ -11,7 +11,7 @@ use App\Models\TourSchedule;
 use App\Models\TourScheduleRepeats;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -311,6 +311,7 @@ class TourController extends Controller
         if ($tour) {
             // 💡 You can now format or transform fields as needed
             // return $this->getNextAvailableDate($tour->id);
+            // return $this->getDisabledTourDates($tour->id);
             $formattedTour = [
                 'id'            => $tour->id,
                 'title'         => $tour->title,
@@ -564,6 +565,14 @@ private function getNextAvailableDate($tourId)
     $nextDates = [];
 
     foreach ($schedules as $schedule) {
+        // dd($schedule->repeat_period);
+        if($schedule->repeat_period == 'NONE'){
+            if($today->lte(Carbon::parse($schedule->session_start_date))){
+                return ['date' => Carbon::parse($schedule->session_start_date)->toDateString()];
+            } 
+            return ['date' => ""];
+            
+        }
 
         $nextDate = $this->calculateNextDate($schedule, $today);
         if ($nextDate) {
@@ -583,6 +592,10 @@ private function calculateNextDate($schedule, Carbon $today)
 {
     $interval = $schedule->repeat_period_unit ?? 1;
     $repeatType = $schedule->repeat_period;
+
+    if($repeatType == 'none'){
+        return false;
+    }
     $scheduleStartDate = Carbon::parse($schedule->session_start_date);
     $scheduleEndDate   = Carbon::parse($schedule->until_date);
 
@@ -708,6 +721,7 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
         $dayStr = $date->toDateString();
 
         // Helper: window available?
+        // dd($earliestAllow);
         $windowOk = function (Carbon $slotStart, Carbon $slotEnd) use ($earliestAllow): bool {
             if ($slotEnd->lte($slotStart)) return false;
             // A slot exists if some timepoint within [slotStart, slotEnd] is >= earliestAllow
@@ -719,6 +733,7 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
 
         // NONE: one-off date
         if ($repeatType === 'NONE') {
+
             if (!$date->isSameDay($startDate)) return false;
             $slotStart = $allDay
                 ? $date->copy()->startOfDay()
@@ -728,6 +743,8 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
                 : (isset($schedule->session_end_time)
                     ? $at($schedule->session_end_time)
                     : $slotStart->copy()->addMinutes(max(1, $durationMin)));
+
+                // dd($slotStart, $slotEnd);
             return $windowOk($slotStart, $slotEnd);
         }
 
