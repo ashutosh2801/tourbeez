@@ -302,8 +302,8 @@ class TourController extends Controller
             } elseif ($tour->coupon_type == 'percentage') {
                 // Original price = inflated by coupon percentage
                 // $original_price   = $tour->price * (1 + ($tour->coupon_value / 100));
-                $original = $tour->price / (1 - ($tour->coupon_value / 100));
-                $original = round($original);
+                $original_price = $tour->price / (1 - ($tour->coupon_value / 100));
+                $original_price = round($original_price);
                 $discounted_price = $tour->price;
             }
         }
@@ -315,7 +315,7 @@ class TourController extends Controller
                 'id'            => $tour->id,
                 'title'         => $tour->title,
                 'price'         => format_price($tour->price), // formatted price
-                'original_price'=> $original, // without formatted price
+                'original_price'=> $original_price, // without formatted price
                 'price_type'    => $tour->price_type,
                 'unique_code'   => $tour->unique_code,
                 'slug'          => $tour->slug,
