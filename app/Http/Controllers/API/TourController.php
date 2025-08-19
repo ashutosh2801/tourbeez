@@ -111,6 +111,38 @@ class TourController extends Controller
             $duration = $d->schedule?->estimated_duration_num.' ' ?? '';
             $duration.= ucfirst($d->schedule?->estimated_duration_unit ?? '');
 
+            // $items[] = [
+            //     'id'             => $d->id,
+            //     'title'          => $d->title,
+            //     'slug'           => $d->slug,
+            //     'unique_code'    => $d->unique_code,
+            //     'all_images'     => $galleries,
+            //     //'catogory'       => $d->catogory,
+            //     'price'          => price_format($d->price),
+            //     'original_price' => $d->price,
+            //     'duration'       => strtolower(trim($duration)),
+            //     'rating'         => randomFloat(4, 5),
+            //     'comment'        => rand(50, 100),
+            // ];
+
+
+            $discount         = $d->coupon_value;
+            $original_price   = $d->price;
+            $discounted_price = $d->price;
+ 
+            if ($discount && $discount > 0) {
+                if ($d->coupon_type == 'fixed') {
+                    // Original price = price + coupon value
+                    $original_price   = round($d->price + $discount);
+                    $discounted_price = $d->price;
+                } elseif ($d->coupon_type == 'percentage') {
+                    // Original price = inflated by coupon percentage
+                    $original = $d->price / (1 - ($discount / 100));
+                    $original_price = round($original);
+                    $discounted_price = $d->price;
+                }
+            }
+ 
             $items[] = [
                 'id'             => $d->id,
                 'title'          => $d->title,
@@ -119,10 +151,15 @@ class TourController extends Controller
                 'all_images'     => $galleries,
                 //'catogory'       => $d->catogory,
                 'price'          => price_format($d->price),
-                'original_price' => $d->price,
+                'original_price' => $original_price,
                 'duration'       => strtolower(trim($duration)),
                 'rating'         => randomFloat(4, 5),
                 'comment'        => rand(50, 100),
+                'discount'          =>  $discount,
+                'discount_type'     =>  strtoupper($d->coupon_type),
+                'discounted_price'  => $discounted_price,
+                'offer_ends_in'        => $tour->offer_ends_in,
+ 
             ];
         }
 
@@ -273,7 +310,7 @@ class TourController extends Controller
 
         if ($tour) {
             // 💡 You can now format or transform fields as needed
-
+            // return $this->getNextAvailableDate($tour->id);
             $formattedTour = [
                 'id'            => $tour->id,
                 'title'         => $tour->title,
@@ -304,6 +341,8 @@ class TourController extends Controller
                 'category'      => $tour->category,
                 'galleries'     => $galleries,
                 'addons'        => $addons,
+                'offer_ends_in'        => $tour->offer_ends_in,
+
                 'discount'       =>  $tour->coupon_value,
                 'discount_type'       =>  strtoupper($tour->coupon_type),
                 'discounted_price'     => $discounted_price,
@@ -507,72 +546,97 @@ class TourController extends Controller
         ]);
     }
 
-    private function getNextAvailableDate($tourId)
-    {
-        $today = Carbon::today();
+private function getNextAvailableDate($tourId)
+{
+    $today = Carbon::today();
 
-        // 1. Get schedules for this tour where today is between start & until date (or future)
-        $schedules = TourSchedule::where('tour_id', $tourId)
-            ->where(function ($query) use ($today) {
-                $query->orWhere(function ($q) use ($today) {
-                    $q->whereDate('session_start_date', '<=', $today)
-                      ->whereDate('until_date', '>=', $today);
-                })
-                ->orWhereDate('session_start_date', '>=', $today);
+    // Get schedules where today is within range or in the future
+    $schedules = TourSchedule::where('tour_id', $tourId)
+        ->where(function ($query) use ($today) {
+            $query->orWhere(function ($q) use ($today) {
+                $q->whereDate('session_start_date', '<=', $today)
+                  ->whereDate('until_date', '>=', $today);
             })
-            ->get();
+            ->orWhereDate('session_start_date', '>=', $today);
+        })
+        ->get();
 
-        $nextDates = [];
+    $nextDates = [];
 
-        foreach ($schedules as $schedule) {
-            $nextDate = $this->calculateNextDate($schedule, $today);
-            if ($nextDate) {
-                $nextDates[] = $nextDate;
-            }
+    foreach ($schedules as $schedule) {
+
+        $nextDate = $this->calculateNextDate($schedule, $today);
+        if ($nextDate) {
+            $nextDates[] = $nextDate;
         }
-
-        // return earliest upcoming date
-        if (!empty($nextDates)) {
-            usort($nextDates, function ($a, $b) {
-                return strtotime($a['date']) <=> strtotime($b['date']);
-            });
-            return $nextDates[0]; // only the closest one
-        }
-
-        return null;
     }
 
-    private function calculateNextDate($schedule, Carbon $today)
-    {
-        $interval = $schedule->repeat_period_unit ?? 1;
-        $repeatType = $schedule->repeat_period; 
-        $scheduleStartDate = Carbon::parse($schedule->session_start_date);
-        $scheduleEndDate   = Carbon::parse($schedule->until_date);
+    if (!empty($nextDates)) {
+        usort($nextDates, fn($a, $b) => strtotime($a['date']) <=> strtotime($b['date']));
+        return $nextDates[0];
+    }
 
-        $next = $today->copy()->max($scheduleStartDate);
+    return null;
+}
 
-        while ($next <= $scheduleEndDate) {
-            $slots = $this->getSlotsForDate($schedule, $next);
-            if (!empty($slots)) {
-                return [
-                    'date' => $next->toDateString()
-                ];
-            }
+private function calculateNextDate($schedule, Carbon $today)
+{
+    $interval = $schedule->repeat_period_unit ?? 1;
+    $repeatType = $schedule->repeat_period;
+    $scheduleStartDate = Carbon::parse($schedule->session_start_date);
+    $scheduleEndDate   = Carbon::parse($schedule->until_date);
 
-            // move forward
-            switch ($repeatType) {
-                case 'DAILY':   $next->addDays($interval); break;
-                case 'WEEKLY':  $next->addWeeks($interval); break;
-                case 'MONTHLY': $next->addMonths($interval); break;
-                case 'YEARLY':  $next->addYears($interval); break;
-                case 'HOURLY':  $next->addHours($interval); break;
-                case 'MINUTELY':$next->addMinutes($interval); break;
-                default: return null;
-            }
+    // Start from today or schedule start (whichever is later)
+    $next = $scheduleStartDate;
+
+    while ($next->lte($scheduleEndDate)) {
+        if ($this->hasValidSlot($schedule, $next)) {
+            return ['date' => $next->toDateString()];
         }
 
-        return null;
+        // Move forward by repeat interval
+        switch ($repeatType) {
+            case 'DAILY':   $next->addDays($interval); break;
+            case 'WEEKLY':  $next->addWeeks($interval); break;
+            case 'MONTHLY': $next->addMonths($interval); break;
+            case 'YEARLY':  $next->addYears($interval); break;
+            case 'HOURLY':  $next->addHours($interval); break;
+            case 'MINUTELY':$next->addMinutes($interval); break;
+            default: return null;
+        }
     }
+
+    return null;
+}
+
+private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $minimumNoticePeriod = 0)
+{
+    $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
+    $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
+
+    $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
+
+    // If the entire session is already in the past, skip
+    if ($endTime->lt($earliestAllowed)) {
+        return false;
+    }
+
+    // Daily/weekly/monthly/yearly → just check if at least one valid slot exists
+    if (in_array($schedule->repeat_period, ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'])) {
+        return $startTime->gte($earliestAllowed);
+    }
+
+    // Hourly/minutely schedules → iterate slots
+    while ($startTime->lte($endTime)) {
+        if ($startTime->gte($earliestAllowed)) {
+            return true;
+        }
+        $startTime->addMinutes($durationMinutes);
+    }
+
+    return false;
+}
+
 
     private function getSlotsForDate($schedule, $date, $durationMinutes = 30, $minimumNoticePeriod = 0)
     {
