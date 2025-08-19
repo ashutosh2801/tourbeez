@@ -158,7 +158,7 @@ class TourController extends Controller
                 'discount'          =>  $discount,
                 'discount_type'     =>  strtoupper($d->coupon_type),
                 'discounted_price'  => $discounted_price,
-                'offer_ends_in'        => $tour->offer_ends_in,
+                'offer_ends_in'        => $d->offer_ends_in,
  
             ];
         }
