@@ -425,7 +425,7 @@ class OrderController extends Controller
                 $updatedIntent = \Stripe\PaymentIntent::update(
                     $order->payment_intent_id,
                     [
-                        'customer' => $customer->id,
+                        'customer' => $stripeCustomer->id,
                         'metadata' => [
                             'orderId' => $order->id,
                             'bookedDate' => $order->created_at,
