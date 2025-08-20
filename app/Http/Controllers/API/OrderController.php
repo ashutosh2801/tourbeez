@@ -781,20 +781,21 @@ class OrderController extends Controller
                         $start = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
                         $end = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
                         $durationMinutes = $schedule->repeat_period_unit;
-                        $allSlots = array_merge(
+                        $slots = array_merge(
                             $slots,
                             $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
                         );
-                        foreach ($allSlots as $index => $slot) {
-                            if ($index % $interval === 0) {
-                                $slots[] = $slot;
-                            }
-                        }
+
+                        // foreach ($allSlots as $index => $slot) {
+                        //     if ($index % $interval === 0) {
+                        //         $slots[] = $slot;
+                        //     }
+                        // }
                     }
                 }
             }
             elseif ($repeatType === 'HOURLY') {
-
+                // dd(3223);
 
                 $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 2 hours
                 $scheduleStartDate = Carbon::parse($schedule->session_start_date);
@@ -806,27 +807,31 @@ class OrderController extends Controller
                     $repeatEntries = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
                         ->where('day', $dayName)
                         ->get();
-
+                        // dd($repeatEntries);
                     foreach ($repeatEntries as $repeat) {
                         $slotStart = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
                         $slotEnd   = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
 
                         // Check if start time matches the "every X hours" rule
                         $hoursSinceStart = floor($scheduleStartDate->diffInHours($slotStart));
-                        if ($hoursSinceStart % $interval !== 0) {
-                            continue; // Skip this slot if not matching the interval
-                        }
+                        // dd($hoursSinceStart % $interval, $hoursSinceStart , $interval);
+                        // if ($hoursSinceStart % $interval !== 0) {
+                        //     continue; // Skip this slot if not matching the interval
+                        // }
+                        // dd($schedule->repeat_period_unit);
                         $durationMinutes = $schedule->repeat_period_unit * 60;
-                        $allSlots = array_merge(
+                        // dd($durationMinutes);
+                        // dd($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod);
+                        $slots = array_merge(
                             $slots,
                             $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod)
                         );
-
-                        foreach ($allSlots as $index => $slot) {
-                            if ($index % $interval === 0) { // keep only every Nth slot
-                                $slots[] = $slot;
-                            }
-                        }
+                        // dd($allSlots);
+                        // foreach ($allSlots as $index => $slot) {
+                        //     // if ($index % $interval === 0) { // keep only every Nth slot
+                        //         $slots[] = $slot;
+                        //     // }
+                        // }
                     }
                 }
             }
@@ -917,10 +922,9 @@ class OrderController extends Controller
     private function generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
     {
         $slots = [];
-
-        // Calculate the earliest slot time allowed
+        
         $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
-
+        // dd($earliestAllowed);
         while ($start->lte($end)) {
 
             if ($start->gte($earliestAllowed)) {
