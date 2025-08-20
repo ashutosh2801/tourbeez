@@ -763,6 +763,8 @@ class OrderController extends Controller
 
                 }
             }elseif ($repeatType === 'MINUTELY') {
+
+
                 $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 15 minutes
                 $scheduleStartDate = Carbon::parse($schedule->session_start_date);
                 $scheduleEndDate = Carbon::parse($schedule->until_date);
@@ -778,7 +780,7 @@ class OrderController extends Controller
                     foreach ($repeatEntries as $repeat) {
                         $start = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
                         $end = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
-
+                        $durationMinutes = $schedule->repeat_period_unit;
                         $allSlots = array_merge(
                             $slots,
                             $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
@@ -814,7 +816,7 @@ class OrderController extends Controller
                         if ($hoursSinceStart % $interval !== 0) {
                             continue; // Skip this slot if not matching the interval
                         }
-                        
+                        $durationMinutes = $schedule->repeat_period_unit * 60;
                         $allSlots = array_merge(
                             $slots,
                             $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod)
