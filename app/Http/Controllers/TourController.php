@@ -1549,4 +1549,16 @@ class TourController extends Controller
         return redirect()->route('admin.tour.index')->with('success', 'Coupon applied to selected tours successfully!');
     }
 
+
+    public function toggleStatus(Request $request)
+    {
+        $tourIds = explode(',', $request->selected_tours);
+        $status = $request->bulk_status; // 1 = Enable, 0 = Disable
+        // dd($tourIds, $status);
+        Tour::whereIn('id', $tourIds)->update(['status' => $status]);
+
+        return redirect()->back()->with('success', 'Selected tours updated successfullydew!');
+    }
+
+
 }
