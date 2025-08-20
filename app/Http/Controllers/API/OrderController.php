@@ -696,11 +696,14 @@ class OrderController extends Controller
 
 
                     $selectedDate = Carbon::parse($request->date)->format('Y-m-d'); // or $carbonDate
-
-                    $slotStart = Carbon::parse($selectedDate . ' ' . ($repeat->start_time ?? $schedule->session_start_time));
-                    $slotEnd   = Carbon::parse($selectedDate . ' ' . ($repeat->end_time ?? $endTime));
+                    // dd($repeat->session_start_time);
+                    $slotStart = Carbon::parse($selectedDate . ' ' . ($schedule->session_start_time));
+                    // dd($slotStart);
+                    $slotEnd   = Carbon::parse($selectedDate . ' ' . ($schedule->session_start_time));
+                    // dd($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod);
 
                     $slots = array_merge($slots, $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod));
+                    // dd($slots);
                 }
                 $slots = array_slice($slots, 0, 1);
             } elseif ($repeatType === 'MONTHLY') {
@@ -840,12 +843,17 @@ class OrderController extends Controller
         if (empty($slots)) {
 
 
+            if ($schedules->isEmpty()) {
 
-            if ($schedules->isEmpty() && false) {
                 // find the next available schedule instead of looping
                 $nextDate = $carbonDate->copy();
+                // dd($nextDate);
                 $found = false;
-                while (!$found) {
+
+
+                $maxUntil = TourSchedule::where('tour_id', $request->tour_id)->max('until_date');
+                
+                while (!$found && $maxUntil && Carbon::parse($maxUntil)->gte($nextDate)) {
                     $nextDate->addDay(); // move to next day
 
                     $schedules = TourSchedule::where('tour_id', $request->tour_id)
@@ -863,35 +871,38 @@ class OrderController extends Controller
                 }
                 $carbonDate = $nextDate;
             }
-                $nextAvailable = [];
-                $next_available = [];
 
-                foreach ($schedules as $schedule) {
-                    $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
-                        'minute', 'minutes' => $schedule->estimated_duration_num,
-                        'hour', 'hours' => $schedule->estimated_duration_num * 60,
-                        'day', 'days' => $schedule->estimated_duration_num * 60 * 24,
-                        'daily', 'daily' => $schedule->estimated_duration_num * 60 * 24,
-                        'weekly', 'weekly' => $schedule->estimated_duration_num * 60,
-                        'monthly', 'monthly' => $schedule->estimated_duration_num * 60 * 24 * 30,
-                        'yearly', 'yearly' => $schedule->estimated_duration_num * 60,
-         
+            $nextAvailable = [];
+            $next_available = [];
 
-                         
-                        default => 0
-                    };
+            foreach ($schedules as $schedule) {
+                $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
+                    'minute', 'minutes' => $schedule->estimated_duration_num,
+                    'hour', 'hours' => $schedule->estimated_duration_num * 60,
+                    'day', 'days' => $schedule->estimated_duration_num * 60 * 24,
+                    'daily', 'daily' => $schedule->estimated_duration_num * 60 * 24,
+                    'weekly', 'weekly' => $schedule->estimated_duration_num * 60,
+                    'monthly', 'monthly' => $schedule->estimated_duration_num * 60 * 24 * 30,
+                    'yearly', 'yearly' => $schedule->estimated_duration_num * 60,
+     
 
-                    $minimumNoticePeriod = match (strtolower($schedule->minimum_notice_unit)) {
-                        'minute', 'minutes' => $schedule->minimum_notice_num,
-                        'hour', 'hours' => $schedule->minimum_notice_num * 60,
-                        default => 0
-                    };
+                     
+                    default => 0
+                };
 
-                    $nextAvailable = $this->getNextAvailableSlots($schedule, $carbonDate, $request->get('limit', 1),$durationMinutes, $minimumNoticePeriod);
-                    if (!empty($nextAvailable)) {
-                        $next_available = array_merge($next_available, $nextAvailable);
-                    }
+                $minimumNoticePeriod = match (strtolower($schedule->minimum_notice_unit)) {
+                    'minute', 'minutes' => $schedule->minimum_notice_num,
+                    'hour', 'hours' => $schedule->minimum_notice_num * 60,
+                    default => 0
+                };
+                // dd($durationMinutes);
+                // dd($request->get('limit'));
+                // dd($schedule, $carbonDate, $request->get('limit', 1),$durationMinutes, $minimumNoticePeriod);
+                $nextAvailable = $this->getNextAvailableSlots($schedule, $carbonDate, $request->get('limit', 1),$durationMinutes, $minimumNoticePeriod);
+                if (!empty($nextAvailable)) {
+                    $next_available = array_merge($next_available, $nextAvailable);
                 }
+            }
 
             // $nextAvailable = $this->getNextAvailableSessions($schedules, $carbonDate, 1); // default only 1
             // return response()->json([
@@ -1029,10 +1040,28 @@ class OrderController extends Controller
         $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
         $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
 
+        if($startTime->gte($endTime)){
+            if($schedule->estimated_duration_unit == "HOURS"){
+                $estimateDurationMinutes = $schedule->estimated_duration_num * 60;
+            }elseif($schedule->estimated_duration_unit == "DAYS"){
+                $estimateDurationMinutes = $schedule->estimated_duration_num * 60 * 24;
+            } else{
+                $estimateDurationMinutes = $schedule->estimated_duration_num;
+            }
+            // dd($estimateDurationMinutes, $schedule->estimated_duration_unit, $schedule->estimated_duration_unit == "Hours");
+            $endTime  = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time)->copy()->addMinutes($estimateDurationMinutes);
+        }
+
+        // dd($durationMinutes);
+
+        // dd($schedule->session_start_time, $schedule->session_end_time);
+        // dd( $startTime,  $endTime ,$earliestAllowed = now()->addMinutes($minimumNoticePeriod));
         // Calculate the earliest slot allowed
         $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
 
         // Generate slots at given intervals
+        // dd($startTime->lte($endTime), $startTime, $endTime);
+        // dd($startTime->lte($endTime));
         while ($startTime->lte($endTime)) {
             if ($startTime->gte($earliestAllowed)) {
                 $slots[] = $startTime->format('g:i A'); // Keep same format as generateSlots()
@@ -1165,18 +1194,30 @@ class OrderController extends Controller
 
     private function getNextAvailableSlots($schedule, Carbon $carbonDate, $limit = 1, $durationMinutes = 30, $minimumNoticePeriod = 0)
     {
+        // dd($durationMinutes);
+        $durationMinutes = $schedule->repeat_period_unit;
+        // dd($durationMinutes);
         $repeatType = $schedule->repeat_period; 
+        // dd($repeatType);
         $interval   = $schedule->repeat_period_unit ?? 1;
 
         $scheduleStartDate = Carbon::parse($schedule->session_start_date);
         $scheduleEndDate   = Carbon::parse($schedule->until_date);
 
+
         $nextDates = [];
 
         if ($repeatType === 'NONE') {
+            // dd($repeatType);
             $start = Carbon::parse($schedule->session_start_date.' '.$schedule->session_start_time);
-            $end   = Carbon::parse($schedule->session_start_date.' '.$schedule->session_end_time);
-            $allSlots = $this->generateSlots($scheduleStartDate, $end, $durationMinutes, $minimumNoticePeriod);
+            $end   = Carbon::parse($schedule->session_start_date.' '.$schedule->session_start_time);
+
+            if($carbonDate->gt($start)){
+                return $nextDates;
+            }
+            $allSlots = $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod);
+
+            // dd($allSlots);
             if (!empty($allSlots)) {
                 $nextDates[] = [
                     'date'  => $schedule->session_start_date,
@@ -1279,6 +1320,8 @@ class OrderController extends Controller
 
         // --- Default case (DAILY, WEEKLY, MONTHLY, YEARLY) ---
         $next = $scheduleStartDate->copy();
+        // dd($next, $interval);d
+        // dd($interval);
         while ($next <= $carbonDate) {
             switch ($repeatType) {
                 case 'DAILY':   $next->addDays($interval); break;
@@ -1288,10 +1331,13 @@ class OrderController extends Controller
                 default: return [];
             }
         }
-
+        // dd($next);
         while ($next <= $scheduleEndDate && count($nextDates) < $limit) {
-            $slots = $this->getSlotsForDate($schedule, $next, $durationMinutes, $minimumNoticePeriod);
-
+            // dd($durationMinutes);
+            // dd($schedule, $next, $durationMinutes, $minimumNoticePeriod);
+            // dd($durationMinutes, $schedule, $next, $durationMinutes, $minimumNoticePeriod);
+            $slots = $this->getSlotsForDate($schedule, $next, 24*60, $minimumNoticePeriod);
+            
             if (!empty($slots)) {
                 $slots = array_slice($slots, 0, 1); 
                 $nextDates[] = [
