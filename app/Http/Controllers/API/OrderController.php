@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Carbon;
+use Stripe\Stripe;
+use Stripe\Customer;
 
 class OrderController extends Controller
 {
@@ -376,6 +378,14 @@ class OrderController extends Controller
             ], 404);
         }
 
+        $tour = Tour::with(['pricings'])->find($request->tourId);
+            if (!$tour) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tour not found.'
+                ], 404);
+            }
+
         try {
             // Save or update customer
             $customer = OrderCustomer::where('order_id', $request->orderId)->first() ?? new OrderCustomer();
@@ -393,13 +403,43 @@ class OrderController extends Controller
             
             $customer->save();
 
-            $tour = Tour::with(['pricings'])->find($request->tourId);
-            if (!$tour) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Tour not found.'
-                ], 404);
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            if (!$order->stripe_customer_id) {
+                $stripeCustomer = Customer::create([
+                    'name'  => $data['first_name'].' '.$data['last_name'],
+                    'email' => $data['email'],
+                    'phone' => $data['phone'],
+                    'metadata' => [
+                        'order_id' => $order->id,
+                    ]
+                ]);
+
+                // $customer->stripe_customer_id = $stripeCustomer->id;
+                // $customer->save();
+
+                // Also store in main order for quick access
+                $order->stripe_customer_id = $stripeCustomer->id;
+                $order->save();
+
+                $updatedIntent = \Stripe\PaymentIntent::update(
+                    $order->payment_intent_id,
+                    [
+                        'customer' => $customer->id,
+                        'metadata' => [
+                            'orderId' => $order->id,
+                            'bookedDate' => $order->created_at,
+                            'planName' => "TourBeez Plan",
+                            'product' => $tour->title,
+
+                        ],
+                    ]
+                );
             }
+            
+
+
+            
 
             // Initialize
             $quantity = 0;
@@ -1116,6 +1156,19 @@ class OrderController extends Controller
         $scheduleEndDate   = Carbon::parse($schedule->until_date);
 
         $nextDates = [];
+
+        if ($repeatType === 'NONE') {
+            $start = Carbon::parse($schedule->session_start_date.' '.$schedule->session_start_time);
+            $end   = Carbon::parse($schedule->session_start_date.' '.$schedule->session_end_time);
+            $allSlots = $this->generateSlots($scheduleStartDate, $end, $durationMinutes, $minimumNoticePeriod);
+            if (!empty($allSlots)) {
+                $nextDates[] = [
+                    'date'  => $schedule->session_start_date,
+                    'slots' => $allSlots,
+                ];
+            }
+            return $nextDates;
+        }
 
         // --- Special handling for MINUTELY ---
         if ($repeatType === 'MINUTELY') {
