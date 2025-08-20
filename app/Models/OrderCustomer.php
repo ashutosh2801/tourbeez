@@ -5,6 +5,7 @@ namespace App\Models;
 
 use App\Models\Order;
 use App\Models\User;
+use App\Models\PickupLocation;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
@@ -37,6 +38,11 @@ class OrderCustomer extends Model
     public function order()
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function pickup()
+    {
+        return $this->belongsTo(PickupLocation::class, 'pickup_id');
     }
 
 }
