@@ -91,7 +91,8 @@ class PaymentController extends Controller
                             'amount' => $amount,
                             'currency' => $currency,
                             'description' => $description,
-                            'statement_descriptor_suffix' => 'TOURBEEZ '. $order_num,
+                            'statement_descriptor' => 'TOURBEEZ',
+                            'statement_descriptor_suffix' =>  $order_num,
                             'automatic_payment_methods' => ['enabled' => true],
                             'metadata' => [
                                 'order_id'  => $order_id,
@@ -107,7 +108,8 @@ class PaymentController extends Controller
                         'amount' => $amount,
                         'currency' => $currency,
                         'description' => $description,
-                        'statement_descriptor_suffix' => 'TOURBEEZ '. $order_num,
+                        'statement_descriptor' => 'TOURBEEZ',
+                        'statement_descriptor_suffix' =>  $order_num,
                         'automatic_payment_methods' => ['enabled' => true],
                         'metadata' => [
                             'order_id'  => $order_id,
@@ -123,7 +125,8 @@ class PaymentController extends Controller
                     'amount' => $amount,
                     'currency' => $currency,
                     'description' => $description,
-                    'statement_descriptor_suffix' => 'TOURBEEZ '. $order_num,
+                    'statement_descriptor' => 'TOURBEEZ',
+                    'statement_descriptor_suffix' =>  $order_num,
                     'automatic_payment_methods' => ['enabled' => true],
                     'metadata' => [
                         'order_id'  => $order_id,

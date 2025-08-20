@@ -428,6 +428,8 @@ class OrderController extends Controller
                         'customer' => $stripeCustomer->id,
                         'metadata' => [
                             'bookedDate' => $order->created_at,
+                            'tourDate' => $tour->tour_date,
+                            'tourTime' => $tour->tour_time,
                             'planName' => "TourBeez Plan",
                             'product' => $tour->title,
                             'customerEmail'  => $data['email'],
