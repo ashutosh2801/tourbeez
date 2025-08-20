@@ -651,11 +651,13 @@ class OrderController extends Controller
             }
             // dd(3534);
             $valid = false;
-            // dd($repeatType);
+
             if ($repeatType === 'NONE') {
                 $valid = $carbonDate->isSameDay(Carbon::parse($schedule->session_start_date));
                 if ($valid) {
-
+                    $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                    $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                    
                     $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod));
                 }
             } elseif ($repeatType === 'DAILY') {
@@ -669,8 +671,9 @@ class OrderController extends Controller
                 } else{
                     $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
                     $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
-                    $end = $end->copy()->addMinutes($durationMinutes);
+                    // $end = $end->copy()->addMinutes($durationMinutes);
                     $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod));
+
                     $slots = array_slice($slots, 0, 1);
                 }
                 
@@ -714,7 +717,7 @@ class OrderController extends Controller
 
                     if ((int)$carbonDate->format('d') === (int)$startDate->format('d')) {
                         $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_end_time);
+                        $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
 
                         $slots = array_merge(
                             $slots,
@@ -742,15 +745,16 @@ class OrderController extends Controller
                 ) {
                     $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
                     $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
-                    $end = $end->copy()->addMinutes($durationMinutes);
+                    // $end = $end->copy()->addMinutes($durationMinutes);
                     // dd($start, $end, $durationMinutes, $minimumNoticePeriod);
                     // dd(now(), $minimumNoticePeriod);
                     $slots = array_merge(
                         $slots,
 
 
-                        $this->generateSlots($start, $end, 60, $minimumNoticePeriod)
+                        $this->generateSlots($start, $end, 24*60, $minimumNoticePeriod)
                     );
+                    // dd($slots);
                     $slots = array_slice($slots, 0, 1);
                 }
     
@@ -828,11 +832,12 @@ class OrderController extends Controller
         
         if (empty($slots)) {
 
-            if ($schedules->isEmpty()) {
+
+
+            if ($schedules->isEmpty() && false) {
                 // find the next available schedule instead of looping
                 $nextDate = $carbonDate->copy();
                 $found = false;
-
                 while (!$found) {
                     $nextDate->addDay(); // move to next day
 
