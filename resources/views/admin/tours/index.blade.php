@@ -14,6 +14,7 @@
     color: #495057;
     box-shadow: none !important;
     widows: 150px !important;
+
 }
 
 /* Ensure focus style also matches */
@@ -123,6 +124,7 @@
             <div class="d-flex justify-content-between align-items-center w-100">
                 <h3 class="card-title mb-0"></h3>
                 <div class="card-tools">
+                    <button id="enableDisableTour" type="button" class="btn btn-sm btn-primary">Enable/Disable</button>
 
                     <button id="saveTourCoupon" type="button" class="btn btn-sm btn-info">Create Discount</button>
                     <button id="saveSortOrder" type="button" class="btn btn-sm btn-primary">Save Sort Order</button>
@@ -167,7 +169,7 @@
                             <td>{!! main_image_html($tour->main_image?->id) !!}</td>
                             <td>
                                 @can('edit_tour')     
-                                <a class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
+                                <a target="_blank" class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
                                 @else
                                 {{ $tour->title }}
                                 @endcan
@@ -278,6 +280,38 @@
         </div>
     </div>
 </div>
+<!-- Enable/Disable Tour Modal -->
+<!-- Enable/Disable Tour Modal -->
+<div id="enable-disable-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title h6">{{ translate('Enable/Disable Tours') }}</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+            </div>
+
+            <div class="form-group">
+                <label class="ml-3 mt-2">{{ translate('Selected Tours') }}</label>
+                <div id="enable_disable_tour_list" class="border p-2 rounded bg-light">
+                    <!-- dynamic list will appear here -->
+                </div>
+            </div>
+
+            <form id="enableDisableForm" method="POST" action="{{ route('admin.tour.toggleStatus') }}">
+                @csrf
+                <input type="hidden" name="selected_tours" id="enable_disable_selected_tours">
+                <input type="hidden" name="bulk_status" id="bulk_status">
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                    <button type="submit" class="btn btn-success" onclick="$('#bulk_status').val(1)">{{ translate('Enable') }}</button>
+                    <button type="submit" class="btn btn-danger" onclick="$('#bulk_status').val(2)">{{ translate('Disable') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
 
 
@@ -358,7 +392,6 @@ $(document).ready(function () {
             cache: true
         },
         minimumInputLength: 2,
-        width: '100%' // or 'resolve'
     });
 });
 </script>
@@ -524,6 +557,39 @@ $(document).ready(function () {
             remaining.push($(this).data("id"));
         });
         $("#selected_tours").val(remaining.join(","));
+    });
+
+
+    $(document).on("click", "#enableDisableTour", function (e) {
+        e.preventDefault(); 
+        
+        let selected = [];
+        let selectedNames = [];
+
+        $('input[name="ids[]"]:checked').each(function () {
+            selected.push($(this).val());
+            selectedNames.push($(this).closest('tr').find('td:nth-child(4)').text().trim());
+        });
+
+        if (selected.length === 0) {
+            alert("Please select at least one tour.");
+            return;
+        }
+
+        // Show selected tours in modal
+        let listHtml = "<ul class='list-group'>";
+        selectedNames.forEach(name => {
+            listHtml += `<li class="list-group-item">${name}</li>`;
+        });
+        listHtml += "</ul>";
+
+        $("#enable_disable_tour_list").html(listHtml);
+
+        // Save IDs in hidden input
+        $("#enable_disable_selected_tours").val(selected.join(","));
+
+        // Show modal
+        $("#enable-disable-modal").modal("show");
     });
 
 
