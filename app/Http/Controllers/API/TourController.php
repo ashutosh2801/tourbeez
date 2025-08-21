@@ -310,7 +310,8 @@ class TourController extends Controller
 
         if ($tour) {
             // 💡 You can now format or transform fields as needed
-            return $this->getNextAvailableDate($tour->id);
+            // return $this->getNextAvailableDate($tour->id);
+            // return $this->getDisabledTourDates($tour->id);
             // return $this->getDisabledTourDates($tour->id);
             $formattedTour = [
                 'id'            => $tour->id,
@@ -606,25 +607,33 @@ private function calculateNextDate($schedule, Carbon $today)
 
     while ($next->lte($scheduleEndDate)) {
 
-        if ($repeatType === 'WEEKLY') {
-        // ✅ check if this weekday is allowed
-        $dayName = $next->format('l');
+        if ($repeatType === 'WEEKLY' || $repeatType === 'MINUTELY') {
+            // ✅ check if this weekday is allowed
+            $dayName = $next->format('l');
 
-        $allowed = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
-            ->where('day', $dayName)
-            ->exists();
+            $allowed = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+                ->where('day', $dayName)
+                ->exists();
+                // var_dump($allowed);
+            if (!$allowed) {
+                $next->addDay(); // move to next day if not allowed
+                continue;
+            }
+            if ($repeatType === 'WEEKLY'){
+                $weekDiff = Carbon::parse($schedule->session_start_date)->diffInWeeks($next);
 
-        if (!$allowed) {
-            $next->addDay(); // move to next day if not allowed
-            continue;
+                if ($weekDiff % $interval != 0) {
+                    $next->addDay(); // move to next day if not allowed
+                    continue;// No slots this week
+                } 
+            }
+              
         }
-    }
 
         if ($this->hasValidSlot($schedule, $next)) {
             return ['date' => $next->toDateString()];
         }
 
-        // Move forward by repeat interval
         switch ($repeatType) {
             case 'DAILY':   $next->addDays($interval); break;
             case 'WEEKLY':  $next->addDays(1); break;
@@ -937,7 +946,12 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
 
         $disabled = $this->calculateDisabledDates($schedule, $today);
 
-        return ['disabled_tour_dates' => $disabled];
+        return [
+            'disabled_tour_dates' => $disabled,
+            'start_date' => $schedule->session_start_date,
+            'untill_date' => $schedule->until_date,
+
+        ];
     }
 
 
