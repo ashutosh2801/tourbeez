@@ -569,9 +569,8 @@ class OrderController extends Controller
      */
     public function getSessionTimes(Request $request)
     {
-
         $carbonDate = Carbon::parse($request->date);
-
+        // dd(423, $request->all());
         $date = $request->date;
 
         $dayName = $carbonDate->format('l');
@@ -651,7 +650,7 @@ class OrderController extends Controller
             }
             // dd(3534);
             $valid = false;
-
+            // dd($repeatType );
             if ($repeatType === 'NONE') {
                 $valid = $carbonDate->isSameDay(Carbon::parse($schedule->session_start_date));
                 if ($valid) {
@@ -766,7 +765,7 @@ class OrderController extends Controller
 
                 }
             }elseif ($repeatType === 'MINUTELY') {
-
+                // dd(324);
 
                 $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 15 minutes
                 $scheduleStartDate = Carbon::parse($schedule->session_start_date);
@@ -775,15 +774,16 @@ class OrderController extends Controller
                 // Check if the selected date is between session_start_date and until_date
                 if ($carbonDate->between($scheduleStartDate, $scheduleEndDate)) {
                     $dayName = $carbonDate->format('l'); // e.g., 'Monday'
-
+                    // dd($dayName);
                     $repeatEntries = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
                         ->where('day', $dayName)
                         ->get();
-
+                        // dd($repeatEntries);
                     foreach ($repeatEntries as $repeat) {
                         $start = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
                         $end = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
                         $durationMinutes = $schedule->repeat_period_unit;
+                        // dd($start, $end, $durationMinutes, $minimumNoticePeriod);
                         $slots = array_merge(
                             $slots,
                             $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
@@ -842,7 +842,7 @@ class OrderController extends Controller
         
         if (empty($slots)) {
 
-
+            // dd(23423, $schedules->isEmpty());
             if ($schedules->isEmpty()) {
 
                 // find the next available schedule instead of looping
@@ -1035,11 +1035,11 @@ class OrderController extends Controller
     private function getSlotsForDate($schedule, $date, $durationMinutes = 30, $minimumNoticePeriod = 0)
     {
         $slots = [];
-
+        // dd($schedule, $date, $durationMinutes = 30, $minimumNoticePeriod = 0);
         // Parse start and end times for the given date
         $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
         $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
-
+        
         if($startTime->gte($endTime)){
             if($schedule->estimated_duration_unit == "HOURS"){
                 $estimateDurationMinutes = $schedule->estimated_duration_num * 60;
@@ -1051,14 +1051,14 @@ class OrderController extends Controller
             // dd($estimateDurationMinutes, $schedule->estimated_duration_unit, $schedule->estimated_duration_unit == "Hours");
             $endTime  = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time)->copy()->addMinutes($estimateDurationMinutes);
         }
-
+         // dd($startTime, $endTime);
         // dd($durationMinutes);
 
         // dd($schedule->session_start_time, $schedule->session_end_time);
         // dd( $startTime,  $endTime ,$earliestAllowed = now()->addMinutes($minimumNoticePeriod));
         // Calculate the earliest slot allowed
         $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
-
+        // dd($durationMinutes);
         // Generate slots at given intervals
         // dd($startTime->lte($endTime), $startTime, $endTime);
         // dd($startTime->lte($endTime));
@@ -1237,7 +1237,7 @@ class OrderController extends Controller
                 $repeatEntries = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
                     ->where('day', $dayName)
                     ->get();
-
+                    // dd($repeatEntries, $dayName);
                 if ($repeatEntries->isEmpty()) {
                     $checkDate->addDay(); // move to next day
                     continue;
@@ -1249,17 +1249,17 @@ class OrderController extends Controller
 
                     $allSlots = $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod);
 
-                    $filteredSlots = [];
-                    foreach ($allSlots as $index => $slot) {
-                        if ($index % $interval === 0) {
-                            $filteredSlots[] = $slot;
-                        }
-                    }
+                    // $filteredSlots = [];
+                    // foreach ($allSlots as $index => $slot) {
+                    //     if ($index % $interval === 0) {
+                    //         $filteredSlots[] = $slot;
+                    //     }
+                    // }
 
-                    if (!empty($filteredSlots)) {
+                    if (!empty($allSlots)) {
                         $nextDates[] = [
                             'date'  => $checkDate->toDateString(),
-                            'slots' => $filteredSlots,
+                            'slots' => $allSlots,
                         ];
                     }
                 }
@@ -1294,7 +1294,7 @@ class OrderController extends Controller
                     if ($hoursSinceStart % $interval !== 0) {
                         continue;
                     }
-
+                    $durationMinutes = $durationMinutes * 60;
                     $allSlots = $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod);
 
                     $filteredSlots = [];
@@ -1320,19 +1320,45 @@ class OrderController extends Controller
 
         // --- Default case (DAILY, WEEKLY, MONTHLY, YEARLY) ---
         $next = $scheduleStartDate->copy();
+        // dd($next);
         // dd($next, $interval);d
         // dd($interval);
+        // dd($carbonDate);
+        // dd($interval);   
         while ($next <= $carbonDate) {
             switch ($repeatType) {
                 case 'DAILY':   $next->addDays($interval); break;
-                case 'WEEKLY':  $next->addWeeks($interval); break;
+                case 'WEEKLY':  $next->addDays(1); break;
                 case 'MONTHLY': $next->addMonths($interval); break;
                 case 'YEARLY':  $next->addYears($interval); break;
                 default: return [];
             }
         }
         // dd($next);
+        // dd($next <= $scheduleEndDate, $next);
         while ($next <= $scheduleEndDate && count($nextDates) < $limit) {
+            if ($repeatType === 'WEEKLY') {
+        // ✅ check if this weekday is allowed
+                $dayName = $next->format('l');
+
+                $allowed = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+                    ->where('day', $dayName)
+                    ->exists();
+                
+                if (!$allowed) {
+                    $next->addDay(); // move to next day if not allowed
+                    continue;
+                }
+
+                // $scheduleStart = Carbon::parse($schedule->session_start_date);
+                $weekDiff = $scheduleStartDate->diffInWeeks($next);
+
+                // if week difference is odd → skip this week
+                if ($weekDiff % $interval != 0) {
+                    $next->addDay(); // move to next day if not allowed
+                    continue;
+                }
+            }
             // dd($durationMinutes);
             // dd($schedule, $next, $durationMinutes, $minimumNoticePeriod);
             // dd($durationMinutes, $schedule, $next, $durationMinutes, $minimumNoticePeriod);
@@ -1348,7 +1374,7 @@ class OrderController extends Controller
 
             switch ($repeatType) {
                 case 'DAILY':   $next->addDays($interval); break;
-                case 'WEEKLY':  $next->addWeeks($interval); break;
+                case 'WEEKLY':  $next->addDays(1); break;
                 case 'MONTHLY': $next->addMonths($interval); break;
                 case 'YEARLY':  $next->addYears($interval); break;
             }
