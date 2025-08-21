@@ -536,30 +536,16 @@ class PaymentController extends Controller
                 </table>';
             }
             
-            $pickupAddress = $order->customer->pickup_name ?? '';
-            if(!$pickupAddress) {
-                $pickupAddress = $order->customer->pickup;
+            $pickup_address = '';
+            if( $order->customer->pickup_name ) {
+                $pickup_address = $order->customer->pickup_name;
             }
-            if( $pickupAddress ) {
-            $pickup_address = '<!-- Picup Address -->
-      <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 33.33%; text-align: left; vertical-align: top; padding: 30px 10px;">
-        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
-        <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
-          <strong>'.$pickupAddress.'</strong>
-        </h3>
-      </td>';
+            else if($order->customer->pickup_id) {
+                $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
 
-            $toAddress = $tour->location->destination ?? '';
-            $toAddress.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
-            $to_address = '<!-- Map Link or Embed -->
-      <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 33.33%; text-align: left; vertical-align: top; padding: 30px 10px 30px 0;">
-        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">To</small>
-        <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
-          <strong>'.$toAddress.'</strong>
-        </h3>
-      </td>';
-
+            $to_address = $tour->location->destination ?? '';
+            $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
                     
             $replacements = [   
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
@@ -568,7 +554,7 @@ class PaymentController extends Controller
 
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
                 "[[TOUR_MAP]]"              => $to_address,
-                "[[TOUR_ADDRESS]]"          => $toAddress,
+                "[[TOUR_ADDRESS]]"          => $to_address,
                 "[[PICKUP_ADDRESS]]"        => $pickup_address,
                 "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
                 "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
