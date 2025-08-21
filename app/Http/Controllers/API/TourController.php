@@ -310,7 +310,7 @@ class TourController extends Controller
 
         if ($tour) {
             // 💡 You can now format or transform fields as needed
-            // return $this->getNextAvailableDate($tour->id);
+            return $this->getNextAvailableDate($tour->id);
             // return $this->getDisabledTourDates($tour->id);
             $formattedTour = [
                 'id'            => $tour->id,
@@ -572,9 +572,11 @@ private function getNextAvailableDate($tourId)
             } 
             return ['date' => ""];
             
-        }
+        }   
+        // dd($schedule, $today);
 
         $nextDate = $this->calculateNextDate($schedule, $today);
+        // dd($nextDate);
         if ($nextDate) {
             $nextDates[] = $nextDate;
         }
@@ -603,6 +605,21 @@ private function calculateNextDate($schedule, Carbon $today)
     $next = $scheduleStartDate;
 
     while ($next->lte($scheduleEndDate)) {
+
+        if ($repeatType === 'WEEKLY') {
+        // ✅ check if this weekday is allowed
+        $dayName = $next->format('l');
+
+        $allowed = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+            ->where('day', $dayName)
+            ->exists();
+
+        if (!$allowed) {
+            $next->addDay(); // move to next day if not allowed
+            continue;
+        }
+    }
+
         if ($this->hasValidSlot($schedule, $next)) {
             return ['date' => $next->toDateString()];
         }
@@ -610,7 +627,7 @@ private function calculateNextDate($schedule, Carbon $today)
         // Move forward by repeat interval
         switch ($repeatType) {
             case 'DAILY':   $next->addDays($interval); break;
-            case 'WEEKLY':  $next->addWeeks($interval); break;
+            case 'WEEKLY':  $next->addDays(1); break;
             case 'MONTHLY': $next->addMonths($interval); break;
             case 'YEARLY':  $next->addYears($interval); break;
             case 'HOURLY':  $next->addHours($interval); break;
