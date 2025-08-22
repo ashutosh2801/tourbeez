@@ -653,8 +653,8 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
     $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
     $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
 
+    $minimumNoticePeriod = $schedule->minimum_notice_unit == "HOURS" ? $schedule->minimum_notice_num * 60 : $schedule->minimum_notice_num ;
     $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
-
     // If the entire session is already in the past, skip
     if ($endTime->lt($earliestAllowed)) {
         return false;

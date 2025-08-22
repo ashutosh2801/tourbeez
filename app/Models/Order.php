@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\OrderCustomer;
+use App\Models\OrderEmailHistory;
 use App\Models\OrderMeta;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -96,7 +97,7 @@ class Order extends Model
         ];
 
         // optional fallback if string doesn't match
-        $this->attributes['order_status'] = $map[$value] ?? 1;
+        $this->attributes['order_status'] = $map[$value] ?? $value;
     }
 
     public function getStatusAttribute()
@@ -122,6 +123,11 @@ class Order extends Model
     public function bookingFee()
     {
         return $this->meta()->where('name', 'booking_fee');
+    }
+
+    public function emailHistories()
+    {
+        return $this->hasMany(OrderEmailHistory::class);
     }
 
 }

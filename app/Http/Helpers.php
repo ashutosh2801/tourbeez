@@ -694,14 +694,32 @@ if (!function_exists('unique_code')) {
 }
 
 // Unique order code create and check
-if (!function_exists('unique_order')) {
-    function unique_order()
+// if (!function_exists('unique_order')) {
+//     function unique_order()
+//     {
+//         $id = Order::withTrashed()->latest('id')->first()->id+1;
+//         $code = get_setting('order_code_prifix').date('Ym').$id;
+//         return $code;
+//     }
+// }
+
+function unique_order()
     {
-        $id = Order::withTrashed()->latest('id')->first()->id+1;
-        $code = get_setting('order_code_prifix').date('Ym').$id;
-        return $code;
+        do {
+            // Generate 6 random uppercase alphabets
+            $orderId = strtoupper(Str::random(6));
+ 
+            // Ensure uniqueness by checking in database
+            $exists = Order::where('order_number', $orderId)->exists();
+        } while ($exists);
+ 
+        return get_setting('order_code_prifix').$orderId;
+ 
+        // $id = Order::withTrashed()->latest('id')->first()->id+1;
+        // $code = get_setting('order_code_prifix').date('Ym').$id;
+        // return $code;
     }
-}
+ 
 
 // Unique id create and check
 if (!function_exists('unique_notify_id')) {
