@@ -179,7 +179,7 @@ class PaymentController extends Controller
                     ])->where('payment_intent_id', $paymentIntent->id)->first();
                 });
 
-                if ($booking && $booking->order_status !== 1) {
+                if ($booking) {
                     $booking->order_status   = 3;
                     $booking->payment_status = 1;
                     $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
@@ -315,7 +315,7 @@ class PaymentController extends Controller
         // }
     }
 
-
+    //this function need name should should change
     public static function sendOrderDetailMail($detail)
     {
         
@@ -323,7 +323,7 @@ class PaymentController extends Controller
             $order_id = $detail['order_number'];
             // $order_template_id = $request->order_template_id;
             $order = Order::where('order_number',$order_id)->first();
-            $email_template = EmailTemplate::where('identifier', 'order_detail')->first();
+            $email_template = EmailTemplate::where('identifier', 'order_pending')->first();
 
             $template = $email_template->body;
 
@@ -409,7 +409,7 @@ class PaymentController extends Controller
                                     <tr>
                                       <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
                                       <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail["created_at"] . '</td>
-                                      <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:10px;" valign="top"><strong>' . $detail["total_amount"] . '</strong></td>
+                                      <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:10px;" valign="top"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency) . '</strong></td>
                                     </tr>
 
                                     <tr>
@@ -418,7 +418,7 @@ class PaymentController extends Controller
                                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
                                       </td>
                                       <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                        <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . $detail["total_amount"] . '</strong></h3>
+                                        <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency). '</strong></h3>
                                       </td>
                                     </tr>
                                   </tbody>
@@ -543,6 +543,13 @@ class PaymentController extends Controller
             else if($order->customer->pickup_id) {
                 $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
+            if($pickup_address) {
+                $pickup_address = '
+                  <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
+                  <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
+                    <strong>' . $pickup_address . '</strong>
+                  </h3>';
+                            }
 
             $to_address = $tour->location->destination ?? '';
             $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
@@ -601,7 +608,7 @@ class PaymentController extends Controller
                 ),
                 'title' => $tour->title,
                 'description' => $email_template->subject,
-                'location' => $toAddress,
+                'location' => $to_address,
             ];
 
             Log::info('order_mail_send' . $customer->email);

@@ -174,8 +174,8 @@
                                 {{ $tour->title }}
                                 @endcan
 
-                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }}</div>
-                                <div class="text-sm text-gray-500"><i style="font-size:11px">By: {{ $tour->user->name }}</i></div>
+                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-info text-hover" target="_blank">{{translate('View Tour Online')}}</a></div>
+                                <div class="text-sm text-gray-500"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
                             </td>    
                             <td>{{ price_format_with_currency($tour->price) }}</td>
                             <td>{{ $tour->unique_code }}</td>
@@ -577,11 +577,13 @@ $(document).ready(function () {
         }
 
         // Show selected tours in modal
-        let listHtml = "<ul class='list-group'>";
+       let listHtml = `
+    <div style="max-height:250px; overflow-y:auto;">
+        <ul class="list-group">`;
         selectedNames.forEach(name => {
             listHtml += `<li class="list-group-item">${name}</li>`;
         });
-        listHtml += "</ul>";
+        listHtml += `</ul> </div>`;
 
         $("#enable_disable_tour_list").html(listHtml);
 

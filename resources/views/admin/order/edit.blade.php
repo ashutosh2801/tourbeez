@@ -618,6 +618,41 @@
                             </div>
                         </div>
                     </div>
+                    <div class="card">
+                        <div class="card-header bg-secondary py-0" id="headingThree">
+                            <h2 class="my-0 py-0">
+                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Order Email History</button>                     
+                            </h2>
+                        </div>
+                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+                            <div class="card-body">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>To</th>
+                                            <th>From</th>
+                                            <th>Subject</th>
+                                            <th>Status</th>
+                                            <!-- <th>Content</th> -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($order->emailHistories as $email)
+                                            <tr>
+                                                <td>{{ $email->created_at }}</td>
+                                                <td>{{ $email->to_email }}</td>
+                                                <td>{{ $email->from_email }}</td>
+                                                <td>{{ $email->subject }}</td>
+                                                <td>{{ ucwords($email->status) }}</td>
+                                                
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="card-footer" style="display:block">
                         <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save order</button>
@@ -983,7 +1018,7 @@
             // now update backend via fetch()
             const order_id = document.getElementById('order_id').value;
             const status = this.value;
-
+            
             fetch(`/admin/orders/${order_id}/update-status`, {
                 method: 'POST',
                 headers: {
@@ -992,19 +1027,15 @@
                 },
                 body: JSON.stringify({ status: status })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Status updated.');
-                } else {
-                    console.error('Failed to update status.');
-                    alert('Could not update order status.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Something went wrong while updating status.');
-            });
+            .then(async res => {
+              if (!res.ok) {
+                  const errText = await res.text();
+                  throw new Error(`HTTP ${res.status}: ${errText}`);
+              }
+              return res.json();
+          })
+          .then(data => console.log(data))
+          .catch(err => console.error("Fetch error:", err));
         });
     });
 
