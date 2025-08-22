@@ -425,6 +425,7 @@ class OrderController extends Controller
                 $updatedIntent = \Stripe\PaymentIntent::update(
                     $order->payment_intent_id,
                     [
+                        'capture_method' =>  ($request->action_name == 'reserve') ? 'manual' : 'automatic',
                         'customer' => $stripeCustomer->id,
                         'metadata' => [
                             'bookedDate' => $order->created_at,
@@ -544,8 +545,10 @@ class OrderController extends Controller
             // Final update to main order
             $order->tour_id            = $request->tourId;
             $order->number_of_guests   = $quantity;
-            $order->total_amount       = $item_total;
+            $order->total_amount       = ($request->action_name == 'reserve') ? 0 : $item_total;
+            $order->balance_amount     = ($request->action_name == 'reserve') ? $item_total : 0;
             $order->updated_at         = now();
+            $order->action_name        = $request->action_name;
             $order->save();
 
             return response()->json([

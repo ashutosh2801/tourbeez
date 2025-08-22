@@ -20,6 +20,9 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
+
 
 
 class OrderController extends Controller
@@ -1038,6 +1041,107 @@ class OrderController extends Controller
         return self::order_mail_send($request
         );
     }
+
+
+    public function capturePayment($orderId)
+    {
+        DB::beginTransaction();
+
+        try {
+            $order = Order::findOrFail($orderId);
+
+            // check if order has pending balance
+            if ($order->balance_amount <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No pending amount to charge.'
+                ], 400);
+            }
+
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            // retrieve the intent
+            $paymentIntent = PaymentIntent::retrieve($order->payment_intent_id);
+
+            if ($paymentIntent->status === 'requires_capture') {
+                // ✅ Capture reserved funds (manual capture)
+
+                // $paymentIntent = \Stripe\PaymentIntent::retrieve($order->payment_intent_id);
+                // $capturedIntent = $paymentIntent->capture();
+
+                $capturedIntent = $paymentIntent->capture(
+                    [
+                        'amount_to_capture' => (int) ($order->balance_amount * 100), // amount in cents
+                    ]
+                );
+
+            } elseif (in_array($paymentIntent->status, ['succeeded', 'canceled'])) {
+                // ❌ Old intent already done, create a new one if needed
+                if (empty($order->payment_method)) {
+                    throw new \Exception("No payment method available for this order.");
+                }
+
+                $capturedIntent = PaymentIntent::create([
+                    'amount' => (int) ($order->balance_amount * 100),
+                    'currency' => $order->currency,
+                    'customer' => $order->stripe_customer_id,
+                    'payment_method' => $order->payment_method, // must be pm_xxx
+                    'off_session' => true, // ⚡ charge without customer re-entering details
+                    'confirm' => true,
+                    'capture_method' => 'manual',
+                    'metadata' => [
+                        'order_id' => $order->id,
+                        'order_num' => $order->order_number,
+                    ],
+                ]);
+            } else {
+                // Intent exists but not in capture mode
+
+                $capturedIntent = $paymentIntent->confirm();
+                // $capturedIntent = PaymentIntent::confirm($order->payment_intent_id);
+                // $paymentIntent->confirm([
+                //     'payment_method' => $paymentMethodId, // if needed
+                // ]);
+
+                // $capturedIntent = $stripe->paymentIntents->confirm(
+                //                     $order->payment_intent_id
+                //                 );
+            }
+
+            // ✅ update order amounts
+            $order->total_amount += $order->balance_amount;
+            $order->balance_amount = 0;
+            $order->payment_status = 1; // Paid
+            $order->transaction_id = $capturedIntent->id;
+            $order->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order charged successfully',
+                'data'    => $capturedIntent
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+             \Log::error('Order processing failed', [
+                'message'   => $e->getMessage(),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'trace'     => $e->getTraceAsString(),
+                'request'   => request()->all(), // log incoming request data too
+            ]);
+        
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 
 
     

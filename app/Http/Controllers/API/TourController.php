@@ -740,8 +740,10 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
         $repeatUnit    = max(1, (int)($schedule->repeat_period_unit ?? 1)); // interval
         $durationMin   = $this->minutesFromUnit($schedule->estimated_duration_num, $schedule->estimated_duration_unit);
         $noticeMin     = $this->minutesFromUnit($schedule->minimum_notice_num, $schedule->minimum_notice_unit);
-        $earliestAllow = now()->copy()->addMinutes($noticeMin);
 
+
+        $earliestAllow = now()->copy()->addMinutes($noticeMin);
+        // dd($earliestAllow);
         // Times for this date
         $allDay = (bool)($schedule->sesion_all_day ?? false);
         $dayStr = $date->toDateString();
@@ -749,7 +751,7 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
         // Helper: window available?
         // dd($earliestAllow);
         $windowOk = function (Carbon $slotStart, Carbon $slotEnd) use ($earliestAllow): bool {
-            if ($slotEnd->lte($slotStart)) return false;
+            if ($slotEnd->lt($slotStart)) return false;
             // A slot exists if some timepoint within [slotStart, slotEnd] is >= earliestAllow
             return $slotEnd->gte($earliestAllow);
         };
@@ -759,16 +761,17 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
 
         // NONE: one-off date
         if ($repeatType === 'NONE') {
-
+            // dd(23423);
+            // dd($date->isSameDay($startDate));
             if (!$date->isSameDay($startDate)) return false;
             $slotStart = $allDay
                 ? $date->copy()->startOfDay()
                 : $at($schedule->session_start_time ?? '00:00');
             $slotEnd = $allDay
                 ? $date->copy()->endOfDay()
-                : (isset($schedule->session_end_time)
-                    ? $at($schedule->session_end_time)
-                    : $slotStart->copy()->addMinutes(max(1, $durationMin)));
+                : (isset($schedule->session_start_time)
+                    ? $at($schedule->session_start_time)
+                    : $slotStart->copy()->addMinutes(0));
 
                 // dd($slotStart, $slotEnd);
             return $windowOk($slotStart, $slotEnd);
@@ -856,11 +859,15 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
                 if ($hoursSinceStart % $repeatUnit !== 0) continue;
 
                 // Keep only every Nth slot index; find first candidate index >= earliestAllow
-                $dur = max(1, $durationMin);
-                $m0  = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false) / $dur));
+                // $dur = max(1, $durationMin);
+                // $m0  = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false) / $dur));
                 // move to next index that is a multiple of interval
-                $m   = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
-                $candidate = $slotStart0->copy()->addMinutes($m * $dur);
+                // $m   = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
+                // $candidate = $slotStart0->copy()->addMinutes($m * $dur);
+
+                $m0 = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false)));
+                $m = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
+                $candidate = $slotStart0->copy()->addMinutes($m);
                 if ($candidate->lte($slotEnd)) {
                     return true;
                 }
@@ -871,6 +878,7 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
         // MINUTELY: entries per weekday, keep every Nth slot index (index % interval == 0)
         if ($repeatType === 'MINUTELY') {
             $dayName = $date->format('l');
+
             $entries = $repeatsByDay[$dayName] ?? $repeatsByDay[$dayName] = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
                 ->where('day', $dayName)
                 ->get();
@@ -878,13 +886,26 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
             foreach ($entries as $rep) {
                 $slotStart0 = $at($rep->start_time);
                 $slotEnd    = $at($rep->end_time);
-
+                // dd($slotStart0, $slotEnd);
+                // dd($slotEnd->gt($slotStart0));
                 if (!$slotEnd->gt($slotStart0)) continue;
 
-                $dur = max(1, $durationMin);
-                $m0  = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false) / $dur));
-                $m   = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
-                $candidate = $slotStart0->copy()->addMinutes($m * $dur);
+                // $dur = max(1, $durationMin);
+                // $m0  = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false)));
+                // $m   = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
+
+                // $m0 = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false)));
+
+// Round $m0 up to the nearest multiple of repeatUnit
+                // $m = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
+                // $candidate = $slotStart0->copy()->addMinutes($m);
+                // dd($m0, $dur);
+
+                // $candidate = $slotStart0->copy()->addMinutes($m * $dur);
+                // dd($candidate, $candidate->lte($slotEnd));
+                $m0 = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false)));
+                $m = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
+                $candidate = $slotStart0->copy()->addMinutes($m);
                 if ($candidate->lte($slotEnd)) {
                     return true;
                 }
@@ -903,6 +924,7 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
     {
         // $start = Carbon::parse($schedule->session_start_date); $today->copy()->startOfDay()->max(Carbon::parse($schedule->session_start_date)->startOfDay());
         $start = Carbon::parse($schedule->session_start_date);
+        $start = Carbon::today();
         $end   = Carbon::parse($schedule->until_date)->endOfDay();
 
         if ($start->gt($end)) return [];
@@ -912,10 +934,11 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
 
         $disabled = [];
         $period = CarbonPeriod::create($start->toDateString(), '1 day', $end->toDateString());
-
+        // dd($period);
         foreach ($period as $d) {
             /** @var Carbon $d */
             if (!$this->isDateAvailable($schedule, $d, $repeats)) {
+
                 $disabled[] = $d->toDateString();
             }
         }
