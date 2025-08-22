@@ -169,7 +169,12 @@ class PaymentController extends Controller
             // Retrieve payment intent from Stripe
             $paymentIntent = PaymentIntent::retrieve($intentId);
 
-            if ($paymentIntent->status === 'succeeded') {
+            //  return response()->json([
+            //             'status'  => 'succeeded',
+            //             'booking' => $paymentIntent,
+            //         ]); 
+
+            if ($paymentIntent->status === 'succeeded' || $paymentIntent->status === 'requires_payment_method' || $paymentIntent->status === "requires_capture") {
 
                 $cacheKey = 'booking_' . $paymentIntent->id;
 
@@ -184,8 +189,10 @@ class PaymentController extends Controller
                 });
 
                 if ($booking) {
+                    $booking->payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
+                    $booking->total_amount   = $paymentIntent->status === 'requires_capture' ? 0 : $booking->total_amount;
+                    $booking->balance_amount = $paymentIntent->status === 'requires_capture' ? $booking->balance_amount : 0;
                     $booking->order_status   = 3;
-                    $booking->payment_status = 1;
                     $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
                     $booking->updated_at     = now();
                     $booking->save();
