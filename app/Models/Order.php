@@ -28,7 +28,7 @@ class Order extends Model
 
     protected $fillable = [
         'tour_id', 'user_id', 'session_id', 'order_number', 'tour_date', 'tour_time', 'number_of_guests', 'payment_status', 
-        'payment_method', 'total_amount', 'currency', 'order_status'
+        'payment_method', 'total_amount', 'currency', 'order_status', 'action_name'
     ];
 
     public function tour_detail($id, $label='all') {

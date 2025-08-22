@@ -61,7 +61,7 @@ class PaymentController extends Controller
             \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
             $amount     = floatval($request->amount) * 100; // cents
-            $currency   = $request->currency ?? 'USD';
+            $currency   = $request->currency ?? 'CAD';
             $order_id   = $request->order_id;
             $order_num  = $request->order_number;
             $description= $request->description;
@@ -91,7 +91,7 @@ class PaymentController extends Controller
                             'amount' => $amount,
                             'currency' => $currency,
                             'description' => $description,
-                            'statement_descriptor' => 'TOURBEEZ',
+                            // 'statement_descriptor' => 'TOURBEEZ',
                             'statement_descriptor_suffix' =>  $order_num,
                             'automatic_payment_methods' => ['enabled' => true],
                             'metadata' => [
@@ -99,6 +99,7 @@ class PaymentController extends Controller
                                 'order_num' => $order_num // This lets webhook identify the order
                             ]
                         ]);
+                        $order->payment_intent_client_secret = $paymentIntent->client_secret;
                         $order->payment_intent_id = $paymentIntent->id;
                         $order->save();
                     }
@@ -108,7 +109,7 @@ class PaymentController extends Controller
                         'amount' => $amount,
                         'currency' => $currency,
                         'description' => $description,
-                        'statement_descriptor' => 'TOURBEEZ',
+                        // 'statement_descriptor' => 'TOURBEEZ',
                         'statement_descriptor_suffix' =>  $order_num,
                         'automatic_payment_methods' => ['enabled' => true],
                         'metadata' => [
@@ -116,6 +117,7 @@ class PaymentController extends Controller
                             'order_num' => $order_num // This lets webhook identify the order
                         ]
                     ]);
+                    $order->payment_intent_client_secret = $paymentIntent->client_secret;
                     $order->payment_intent_id = $paymentIntent->id;
                     $order->save();
                 }
@@ -125,7 +127,7 @@ class PaymentController extends Controller
                     'amount' => $amount,
                     'currency' => $currency,
                     'description' => $description,
-                    'statement_descriptor' => 'TOURBEEZ',
+                    // 'statement_descriptor' => 'TOURBEEZ',
                     'statement_descriptor_suffix' =>  $order_num,
                     'automatic_payment_methods' => ['enabled' => true],
                     'metadata' => [
@@ -133,6 +135,8 @@ class PaymentController extends Controller
                         'order_num' => $order_num // This lets webhook identify the order
                     ]
                 ]);
+                
+                $order->payment_intent_client_secret = $paymentIntent->client_secret;
                 $order->payment_intent_id = $paymentIntent->id;
                 $order->save();
             }
