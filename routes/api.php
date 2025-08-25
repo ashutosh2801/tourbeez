@@ -65,10 +65,21 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/forgot', [AuthController::class, 'forgot']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    // // ----- Book Now -----
+    // Route::post('/payments/create-payment-intent', [PaymentController::class, 'createPaymentIntent']); // create PI for book now
+    // Route::post('/payments/verify-payment', [PaymentController::class, 'verifyPayment']);               // confirm/verify result
+
+    // // ----- Reserve (Save Card) -----
+    // Route::post('/payments/create-setup-intent', [PaymentController::class, 'createSetupIntent']);     // reserve – save card
+    // Route::post('/payments/charge-later', [PaymentController::class, 'chargeLater']);                  // admin/auto charge later
+
+    // // ----- Order flows (integrate with your existing) -----
+    // Route::post('/cart/update', [OrderController::class, 'updateCart']); // adjust to your current signature if different
+    // Route::post('/orders/store', [OrderController::class, 'store']);     // store “book” or “reserve” meta
 });
 
-Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
-Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
+// Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
+// Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
 Route::post('/verify-payment', [PaymentController::class, 'verifyPayment']);
 
 Route::middleware(['auth:sanctum'])->group(function () {

@@ -27,8 +27,14 @@ class Order extends Model
     }
 
     protected $fillable = [
+<<<<<<< HEAD
         'tour_id', 'user_id', 'session_id', 'order_number', 'tour_date', 'tour_time', 'number_of_guests', 'payment_status', 
         'payment_method', 'total_amount', 'currency', 'order_status', 'action_name'
+=======
+        'tour_id', 'user_id', 'session_id', 'order_number', 'number_of_guests', 'payment_status', 
+        'payment_method', 'payment_intent_id', 'payment_intent_client_secret', 'stripe_customer_id', 
+        'total_amount', 'balance_amount', 'currency', 'order_status', 'action_name', 'email_sent'
+>>>>>>> 70ba1be4e37d55b33145101f62cf016f6548cb8e
     ];
 
     public function tour_detail($id, $label='all') {
