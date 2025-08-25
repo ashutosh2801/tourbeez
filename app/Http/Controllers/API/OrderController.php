@@ -345,11 +345,10 @@ class OrderController extends Controller
     /**
      * Update cart
      */
-    public function update_cart(Request $request)
+    public function update_cart(Request $request, $id)
     {
-        
         $validated = $request->validate([
-            'orderId' => 'required|integer|exists:orders,id',
+            // 'orderId' => 'required|integer|exists:orders,id',
             'tourId' => 'required|integer|exists:tours,id',
             'selectedDate' => 'required|date_format:Y-m-d',
             'selectedTime' => 'nullable',
@@ -369,8 +368,7 @@ class OrderController extends Controller
             'formData.pickup_name' => 'nullable|string|max:255',
         ]);
 
-
-        $order = Order::find($request->orderId);
+        $order = Order::find($id);
         if (!$order) {
             return response()->json([
                 'status' => false,
@@ -379,16 +377,16 @@ class OrderController extends Controller
         }
 
         $tour = Tour::with(['pricings'])->find($request->tourId);
-            if (!$tour) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Tour not found.'
-                ], 404);
-            }
+        if (!$tour) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tour not found.'
+            ], 404);
+        }
 
         try {
             // Save or update customer
-            $customer = OrderCustomer::where('order_id', $request->orderId)->first() ?? new OrderCustomer();
+            $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
             $data = $request->input('formData');
 
             $customer->order_id     = $order->id;
@@ -399,52 +397,23 @@ class OrderController extends Controller
             $customer->phone        = $data['phone'];
             $customer->instructions = isset($data['instructions']) ? $data['instructions'] : '';
             $customer->pickup_id    = isset($data['pickup_id']) ?  $data['pickup_id'] : '';
-            $customer->pickup_name  = isset($data['pickup_name']) ? ucwords($data['pickup_name']) : '';
-            
+            $customer->pickup_name  = isset($data['pickup_name']) ? ucwords($data['pickup_name']) : '';            
             $customer->save();
 
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
             if (!$order->stripe_customer_id) {
+                $name = $data['first_name'].' '.$data['last_name'];
+
                 $stripeCustomer = Customer::create([
-                    'name'  => $data['first_name'].' '.$data['last_name'],
+                    'name'  => $name,
                     'email' => $data['email'],
                     'phone' => $data['phone'],
-                    'metadata' => [
-                        'order_id' => $order->id,
-                    ]
                 ]);
-
-                // $customer->stripe_customer_id = $stripeCustomer->id;
-                // $customer->save();
-
-                // Also store in main order for quick access
-                $order->stripe_customer_id = $stripeCustomer->id;
-                $order->save();
-
-                $updatedIntent = \Stripe\PaymentIntent::update(
-                    $order->payment_intent_id,
-                    [
-                        'customer' => $stripeCustomer->id,
-                        'metadata' => [
-                            'bookedDate' => $order->created_at,
-                            'tourDate' => $tour->tour_date,
-                            'tourTime' => $tour->tour_time,
-                            'planName' => "TourBeez Plan",
-                            'product' => $tour->title,
-                            'customerEmail'  => $data['email'],
-                            'customerName' => $data['first_name'].' '.$data['last_name'],
-                            'status' => 'Pending supplier',
-                            'total_amount' => $order->total_amount
-
-                        ],
-                    ]
-                );
             }
-            
-
-
-            
+            else {
+                $stripeCustomer = Customer::retrieve($order->stripe_customer_id);
+            }
 
             // Initialize
             $quantity = 0;
@@ -476,8 +445,7 @@ class OrderController extends Controller
             // Add-ons
             if (!empty($request->cartAdons)) {
                 foreach ($request->cartAdons as $addon) {
-                    if (isset($addon['id'], $addon['quantity'], $addon['price'], $addon['total_price'], $addon['label']) &&
-    $addon['quantity'] != 0) {
+                    if (isset($addon['id'], $addon['quantity'], $addon['price'], $addon['total_price'], $addon['label']) && $addon['quantity'] != 0) {
                         $extra[] = [
                             'tour_id'           => $request->tourId,
                             'tour_extra_id'     => $addon['id'],
@@ -518,7 +486,10 @@ class OrderController extends Controller
                 'tour_extra'        => json_encode($extra ?? []),
                 'tour_fees'         => json_encode($fees ?? []),
                 'number_of_guests'  => $quantity,
-                'total_amount'      => $item_total,
+                'total_amount'      => ($request->action_name == 'book') ? $item_total  : 0,
+                'balance_amount'    => ($request->action_name == 'reserve') ? $item_total : 0,
+                'updated_at'        => now(),
+                'action_name'       => $request->action_name
             ];
 
             if ($orderTour) {
@@ -542,17 +513,68 @@ class OrderController extends Controller
             }
 
             // Final update to main order
-            $order->tour_id            = $request->tourId;
-            $order->number_of_guests   = $quantity;
-            $order->total_amount       = $item_total;
-            $order->updated_at         = now();
-            $order->save();
+            // $order->tour_id            = $request->tourId;
+            // $order->number_of_guests   = $quantity;
+            // $order->total_amount       = ($request->action_name == 'reserve') ? 0 : $item_total;
+            // $order->balance_amount     = ($request->action_name == 'reserve') ? $item_total : 0;
+            // $order->updated_at         = now();
+            // $order->action_name        = $request->action_name;
+            // $order->save();
+
+             $metaData = [
+                        'bookedDate'    => $order->created_at,
+                        'orderId'       => $order->id,
+                        'orderNumber'   => $order->order_number,
+                        'tourName'      => $tour->title,
+                        'tourDate'      => $tour->tour_date,
+                        'tourTime'      => $tour->tour_time,
+                        'customerId'    => $customer->id,
+                        'customerEmail' => $customer->email,
+                        'customerName'  => $customer->name,
+                        'planName'      => "TourBeez Plan",
+                        'status'        => 'Pending supplier',
+                        'totalAmount'   => $order->total_amount
+            ];
+
+
+            if($request->action_name == "reserve") {
+                $si = \Stripe\SetupIntent::create([
+                    'customer'  => $stripeCustomer->id,
+                    'automatic_payment_methods' => ['enabled' => true],
+                    'usage'     => 'off_session',
+                    'metadata'  => $metaData
+                ]);               
+                $order->payment_intent_client_secret = $si->client_secret;
+                $order->payment_intent_id = $si->id;
+            }
+            else if($request->action_name == "book") {
+                $pi = \Stripe\PaymentIntent::create([
+                        'customer'  => $stripeCustomer->id,
+                        'amount' => intval(round($order->total_amount * 100)),
+                        'currency' => $order->currency,
+                        'automatic_payment_methods' => ['enabled' => true],
+                        'receipt_email' => $data['email'],
+                        'capture_method' => 'manual',
+                        'description' => $tour->title,
+                        // 'statement_descriptor' => 'TOURBEEZ',
+                        'statement_descriptor_suffix' =>  $order->order_number,
+                        'metadata'  => $metaData
+                    ]);
+                $order->payment_intent_client_secret = $pi->client_secret;
+                $order->payment_intent_id = $pi->id;
+            }
+            // Also store in main order for quick access
+            $order->stripe_customer_id = $stripeCustomer->id;
+            $order->save();           
 
             return response()->json([
-                'status' => true,
-                'message' => 'Cart updated successfully',
-                'data' => $order,
-                'data_detail' => $order->orderTours
+                'status'            => true,
+                'message'           => 'Cart updated successfully',
+                'data'              => $order,
+                'data_detail'       => $order->orderTours,
+                'stripe_customer_id'=> $order->stripe_customer_id,
+                'payment_intent_id' => $order->payment_intent_id,
+                'payment_intent_client_secret' => $order->payment_intent_client_secret,
             ], 200);
         } catch (\Exception $e) {
             Log::error('Cart Update Error: ' . $e->getMessage());

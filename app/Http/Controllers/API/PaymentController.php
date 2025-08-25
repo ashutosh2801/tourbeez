@@ -61,7 +61,7 @@ class PaymentController extends Controller
             \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
             $amount     = floatval($request->amount) * 100; // cents
-            $currency   = $request->currency ?? 'USD';
+            $currency   = $request->currency ?? 'CAD';
             $order_id   = $request->order_id;
             $order_num  = $request->order_number;
             $description= $request->description;
@@ -91,7 +91,7 @@ class PaymentController extends Controller
                             'amount' => $amount,
                             'currency' => $currency,
                             'description' => $description,
-                            'statement_descriptor' => 'TOURBEEZ',
+                            // 'statement_descriptor' => 'TOURBEEZ',
                             'statement_descriptor_suffix' =>  $order_num,
                             'automatic_payment_methods' => ['enabled' => true],
                             'metadata' => [
@@ -99,6 +99,7 @@ class PaymentController extends Controller
                                 'order_num' => $order_num // This lets webhook identify the order
                             ]
                         ]);
+                        $order->payment_intent_client_secret = $paymentIntent->client_secret;
                         $order->payment_intent_id = $paymentIntent->id;
                         $order->save();
                     }
@@ -108,7 +109,7 @@ class PaymentController extends Controller
                         'amount' => $amount,
                         'currency' => $currency,
                         'description' => $description,
-                        'statement_descriptor' => 'TOURBEEZ',
+                        // 'statement_descriptor' => 'TOURBEEZ',
                         'statement_descriptor_suffix' =>  $order_num,
                         'automatic_payment_methods' => ['enabled' => true],
                         'metadata' => [
@@ -116,6 +117,7 @@ class PaymentController extends Controller
                             'order_num' => $order_num // This lets webhook identify the order
                         ]
                     ]);
+                    $order->payment_intent_client_secret = $paymentIntent->client_secret;
                     $order->payment_intent_id = $paymentIntent->id;
                     $order->save();
                 }
@@ -125,7 +127,7 @@ class PaymentController extends Controller
                     'amount' => $amount,
                     'currency' => $currency,
                     'description' => $description,
-                    'statement_descriptor' => 'TOURBEEZ',
+                    // 'statement_descriptor' => 'TOURBEEZ',
                     'statement_descriptor_suffix' =>  $order_num,
                     'automatic_payment_methods' => ['enabled' => true],
                     'metadata' => [
@@ -133,6 +135,8 @@ class PaymentController extends Controller
                         'order_num' => $order_num // This lets webhook identify the order
                     ]
                 ]);
+                
+                $order->payment_intent_client_secret = $paymentIntent->client_secret;
                 $order->payment_intent_id = $paymentIntent->id;
                 $order->save();
             }
@@ -158,182 +162,201 @@ class PaymentController extends Controller
 
         Stripe::setApiKey(env('STRIPE_SECRET'));
 
-        //try {
+        try {
             $clientSecret = $request->client_secret;
+            $action_name = $request->action_name;
             $intentId = explode('_secret_', $clientSecret)[0];
 
-            // Retrieve payment intent from Stripe
-            $paymentIntent = PaymentIntent::retrieve($intentId);
+            $payment_status = 0;
+            $balance_amount = 0;
+            $payment_method = null;
+            $order_status   = 3;
 
-            if ($paymentIntent->status === 'succeeded') {
+            if ($action_name === "book") {
+                // Retrieve PaymentIntent
+                $paymentIntent = PaymentIntent::retrieve($intentId);
+
+                $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
+                $payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
 
                 $cacheKey = 'booking_' . $paymentIntent->id;
-
-                // Try retrieving from cache or load and store it
                 $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($paymentIntent) {
                     return Order::with([
-                        'tour',
-                        'tour.location',
-                        'tour.detail',
-                        'customer'
-                    ])->where('payment_intent_id', $paymentIntent->id)->first();
+                                'tour',
+                                'tour.location',
+                                'tour.detail',
+                                'customer'
+                            ])->where('payment_intent_id', $paymentIntent->id)->first();
                 });
 
-                if ($booking && $booking->order_status !== 1) {
-                    $booking->order_status   = 3;
-                    $booking->payment_status = 1;
-                    $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
-                    $booking->updated_at     = now();
-                    $booking->save();
+                $total_amount   = $booking->total_amount;
+                $balance_amount = 0;
 
-                    // Refresh cache after updating the order
-                    // Cache::put($cacheKey, $booking->fresh(['tour.location', 'tour.detail', 'tour.addons', 'tour.fees', 'tour.pickups', 'customer']), now()->addMinutes(10));
-                }
-                
-                $tour_pricing = json_decode($booking->order_tour->tour_pricing);
-                $pricing=[]; $total = 0;
-                if(!empty($tour_pricing) && is_array($tour_pricing)) {
-                    foreach($tour_pricing as $tp) {
-                        $tourPricing = TourPricing::find($tp->tour_pricing_id);
-                        $label = str_ireplace('Group', 'Participants', $tourPricing->label);
-                        //$total = ($tp->quantity * $tp->price);
-                        $pricing[] = [
-                            'lable' => $label,
-                            'qty'   => $tp->quantity,
-                            'price' => $tp->price,
-                            'total' => $tp->total_price
-                        ];
-                    }
-                }
+            } else {
+                // Reserve flow → Retrieve SetupIntent
+                $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
 
-                $extra_pricing = json_decode($booking->order_tour->tour_extra);
-                $extra=[]; $total = 0;
-                if(!empty($extra_pricing) && is_array($extra_pricing)) {
-                    foreach($extra_pricing as $ep) {
-                        $extraAddon = Addon::find($ep->tour_extra_id);
-                        //$total = ($ep->quantity * $ep->price);
-                        $extra[] = [
-                            'lable' => $extraAddon->name,
-                            'qty'   => $ep->quantity,
-                            'price' => $ep->price,
-                            'total' => $ep->total_price
-                        ];
-                    }
-                }
+                $payment_status = 0; // Not paid yet
+                $total_amount   = 0;
+                $balance_amount = 0; // Full amount still pending
+                $payment_method = ''; // future use
 
-                $fees_pricing = json_decode($booking->order_tour->tour_fees);
-                $fees = [];
-                if (!empty($fees_pricing) && is_array($fees_pricing)) {
-                    foreach ($fees_pricing as $fp) {
-                        // $labelText = $fp->price_type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
-
-                        $labelText = $fp->label;
-
-                        $fees[] = [
-                            'lable' => $fp->label, // fixed spelling
-                            'price' => $fp->price,
-                            'total' => $fp->price
-                        ];
-                    }
-                }
-
-                // $metas=[]; 
-                // if($booking->orderMetas) {
-                //     foreach($booking->orderMetas as $om) {
-                //         $metas[] = [
-                //             'lable' => $om->name,
-                //             'qty'   => '',
-                //             'price' => $om->value,
-                //             'total' => $om->value,
-                //         ];
-                //     }
-                // }
-
-
-                $image = uploaded_asset($booking->tour?->main_image->id ?? 0, 'medium');
-                $pickName = '';
-                if($booking->customer && $booking->customer->pickup_name){
-                    $pickName = $booking->customer->pickup_name;
-                } elseif($booking->customer && $booking->customer->pickup_id) {
-                    $pickLocation = PickupLocation::find($booking->customer->pickup_id);
-                    $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
-                }
-                
-
-                $detail = [
-                    'order_number'      => $booking->order_number,
-                    'number_of_guests'  => $booking->number_of_guests,
-                    //'total_amount'      => price_format_with_currency($booking->total_amount, $booking->currency) ?? '',
-                    'total_amount'      => $booking->total_amount ?? '',
-                    'currency'          => $booking->currency,
-                    'payment_method'    => ucfirst($booking->payment_method),
-                    'customer'          => $booking->customer,
-                    'pickup'            => $pickName,
-                    'tour_date'         => date('D, M d, Y', strtotime($booking->order_tour->tour_date)),
-                    'tour_time'         => $booking->order_tour->tour_time,
-                    'created_at'        => date('Y-m-d', strtotime($booking->created_at)),
-                    'tour'      => [
-                        'image'         => $image,
-                        'title'         => $booking->tour?->title,
-                        'address'       => $booking->tour?->location->address,
-                        'pricing'       => $pricing,
-                        'extra'         => $extra,
-                        'fees'          => $fees,
-                        't_and_c'       => $booking->tour?->terms_and_conditions,
-                        'order_email'   => $booking->tour?->order_email,
-                    ],
-                ];
-
-                $order = Order::where('order_number',$booking->order_number)->first();
-
-                Log::info('order_email_sent' . $order->email_sent);
-                if ($order && $booking->tour->order_email && !$order->email_sent) {                    
-                    $mailsent = self::sendOrderDetailMail($detail);
-                    Log::info('order_email_sentqwwqdwqqdqwdqw' . $order->email_sent);
-                    $order->email_sent = true;
-                    $order->save();
-                }
-                Log::info('order_email_sentqwwqdwq' . $order->email_sent);
-
-                return response()->json([
-                        'status'  => 'succeeded',
-                        'booking' => $detail,
-                    ]);               
-
+                $cacheKey = 'booking_' . $setupIntent->id;
+                $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($setupIntent) {
+                    return Order::with([
+                                'tour',
+                                'tour.location',
+                                'tour.detail',
+                                'customer'
+                            ])->where('payment_intent_id', $setupIntent->id)->first();
+                });
             }
 
-            return response()->json([
-                'status'  => 'failed',
-                'message' => 'Payment not successful',
-            ], 400);
+            if (!$booking) {
+                return response()->json([
+                    'status'  => 'failed',
+                    'message' => 'Order not found!',
+                ], 400);
+            }
+            
+            // Update booking
+            $booking->payment_status = $payment_status;
+            $booking->total_amount   = $total_amount;
+            $booking->balance_amount = $balance_amount;
+            $booking->order_status   = $order_status;
+            $booking->payment_method = $payment_method;
+            $booking->updated_at     = now();
+            $booking->save();
 
-        // } catch (\Exception $e) {
-        //     return response()->json([
-        //         'status'  => 'failed',
-        //         'message' => $e->getMessage(),
-        //     ], 500);
-        // }
+            if (!$booking) {
+                return response()->json([
+                    'status'  => 'failed',
+                    'message' => 'Order not found!',
+                ], 400);
+            }
+                
+            $tour_pricing = json_decode($booking->order_tour->tour_pricing);
+            $pricing=[]; $total = 0;
+            if(!empty($tour_pricing) && is_array($tour_pricing)) {
+                foreach($tour_pricing as $tp) {
+                    $tourPricing = TourPricing::find($tp->tour_pricing_id);
+                    $label = str_ireplace('Group', 'Participants', $tourPricing->label);
+                    //$total = ($tp->quantity * $tp->price);
+                    $pricing[] = [
+                        'lable' => $label,
+                        'qty'   => $tp->quantity,
+                        'price' => $tp->price,
+                        'total' => $tp->total_price
+                    ];
+                }
+            }
+
+            $extra_pricing = json_decode($booking->order_tour->tour_extra);
+            $extra=[]; $total = 0;
+            if(!empty($extra_pricing) && is_array($extra_pricing)) {
+                foreach($extra_pricing as $ep) {
+                    $extraAddon = Addon::find($ep->tour_extra_id);
+                    //$total = ($ep->quantity * $ep->price);
+                    $extra[] = [
+                        'lable' => $extraAddon->name,
+                        'qty'   => $ep->quantity,
+                        'price' => $ep->price,
+                        'total' => $ep->total_price
+                    ];
+                }
+            }
+
+            $fees_pricing = json_decode($booking->order_tour->tour_fees);
+            $fees = [];
+            if (!empty($fees_pricing) && is_array($fees_pricing)) {
+                foreach ($fees_pricing as $fp) {
+                    // $labelText = $fp->price_type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
+
+                    $labelText = $fp->label;
+
+                    $fees[] = [
+                        'lable' => $fp->label, // fixed spelling
+                        'price' => $fp->price,
+                        'total' => $fp->price
+                    ];
+                }
+            }
+
+            $image = uploaded_asset($booking->tour?->main_image->id ?? 0, 'medium');
+            $pickName = '';
+            if($booking->customer && $booking->customer->pickup_name){
+                $pickName = $booking->customer->pickup_name;
+            } elseif($booking->customer && $booking->customer->pickup_id) {
+                $pickLocation = PickupLocation::find($booking->customer->pickup_id);
+                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+            }
+            
+
+            $detail = [
+                'action_name'       => $booking->action_name,
+                'order_number'      => $booking->order_number,
+                'number_of_guests'  => $booking->number_of_guests,
+                'total_amount'      => $booking->total_amount ?? 0,
+                'balance_amount'    => $booking->balance_amount ?? 0,
+                'currency'          => $booking->currency,
+                'payment_method'    => ucfirst($booking->payment_method),
+                'customer'          => $booking->customer,
+                'pickup'            => $pickName,
+                'tour_date'         => date('D, M d, Y', strtotime($booking->order_tour->tour_date)),
+                'tour_time'         => $booking->order_tour->tour_time,
+                'created_at'        => date('Y-m-d', strtotime($booking->created_at)),
+                'tour'      => [
+                    'image'         => $image,
+                    'title'         => $booking->tour?->title,
+                    'address'       => $booking->tour?->location->address,
+                    'pricing'       => $pricing,
+                    'extra'         => $extra,
+                    'fees'          => $fees,
+                    't_and_c'       => $booking->tour?->terms_and_conditions,
+                    'order_email'   => $booking->tour?->order_email,
+                ],
+            ];
+            
+
+            Log::info('order_email_sent' . $booking->email_sent);
+            if ($booking && $booking->tour->order_email && !$booking->email_sent) {                    
+                $mailsent = self::sendOrderDetailMail($detail, $action_name);
+                Log::info('order_email_sentqwwqdwqqdqwdqw' . $booking->email_sent);
+                $booking->email_sent = true;
+                $booking->save();
+            }
+            Log::info('order_email_sentqwwqdwq' . $booking->email_sent);
+
+            return response()->json([
+                    'status'  => 'succeeded',
+                    'booking' => $detail,
+                ]);  
+        }
+        catch (\Exception $e) {
+            Log::error('VerifyPayment Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+           
     }
 
-
-    public static function sendOrderDetailMail($detail)
+    //this function need name should should change
+    public static function sendOrderDetailMail($detail, $action_name = 'book')
     {
         
         try{
             $order_id = $detail['order_number'];
-            // $order_template_id = $request->order_template_id;
             $order = Order::where('order_number',$order_id)->first();
-            $email_template = EmailTemplate::where('identifier', 'order_detail')->first();
-
+            $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_pending';
+            $email_template = EmailTemplate::where('identifier', $identifier)->first();
             $template = $email_template->body;
-
             $template_footer = $email_template->footer;
-
             $template_subject = $email_template->subject;
-
             $header = $email_template->header;
-            $pickup_address = '';
 
+            $pickup_address = '';
             $system_logo = get_setting('system_logo');
             $logo = uploaded_asset($system_logo);
 
@@ -409,7 +432,7 @@ class PaymentController extends Controller
                                     <tr>
                                       <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
                                       <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail["created_at"] . '</td>
-                                      <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:10px;" valign="top"><strong>' . $detail["total_amount"] . '</strong></td>
+                                      <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:10px;" valign="top"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency) . '</strong></td>
                                     </tr>
 
                                     <tr>
@@ -418,7 +441,7 @@ class PaymentController extends Controller
                                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
                                       </td>
                                       <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                        <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . $detail["total_amount"] . '</strong></h3>
+                                        <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency). '</strong></h3>
                                       </td>
                                     </tr>
                                   </tbody>
@@ -543,6 +566,13 @@ class PaymentController extends Controller
             else if($order->customer->pickup_id) {
                 $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
+            if($pickup_address) {
+                $pickup_address = '
+                  <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
+                  <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
+                    <strong>' . $pickup_address . '</strong>
+                  </h3>';
+                            }
 
             $to_address = $tour->location->destination ?? '';
             $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
@@ -601,7 +631,7 @@ class PaymentController extends Controller
                 ),
                 'title' => $tour->title,
                 'description' => $email_template->subject,
-                'location' => $toAddress,
+                'location' => $to_address,
             ];
 
             Log::info('order_mail_send' . $customer->email);
