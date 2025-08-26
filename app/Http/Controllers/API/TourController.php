@@ -788,7 +788,7 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
 
             // Your code forms a single window using start_time and +duration
             $slotStart = $at($schedule->session_start_time ?? '00:00');
-            $slotEnd   = $slotStart->copy()->addMinutes(max(1, $durationMin));
+            $slotEnd   = $slotStart->copy()->addMinutes(0);
             return $windowOk($slotStart, $slotEnd);
         }
 

@@ -98,7 +98,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/followup', [TourController::class, 'editFollowup'])->name('tour.edit.message.followup');
     Route::get('/tour/{id}/edit/paymentrequest', [TourController::class, 'editPaymentRequest'])->name('tour.edit.message.paymentrequest');
     Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
-
+    Route::get('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit.special.deposit');
 
     // Tour Preview
     Route::get('/tour/clone/{id}', [TourController::class, 'clone'])->name('tour.clone');
@@ -130,6 +130,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');
 
     Route::post('/tours/toggle-status', [TourController::class, 'toggleStatus'])->name('tour.toggleStatus');
+    // Route::post('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit..special.deposit');
+    Route::put('/tour/special-deposit/{id}', [TourController::class, 'specialDepositUpdate'])->name('tour.special-deposit');
+
 
 
 

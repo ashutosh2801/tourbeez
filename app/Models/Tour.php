@@ -76,7 +76,7 @@ class Tour extends Model
 
     public function itineraries(): BelongsToMany
     {
-        return $this->belongsToMany(Itinerary::class);
+        return $this->belongsToMany(Itinerary::class)->withPivot('sort_by');
     }
 
     public function itinerariesAll()

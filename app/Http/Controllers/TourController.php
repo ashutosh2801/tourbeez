@@ -1074,12 +1074,13 @@ class TourController extends Controller
             $itinerary->save();
 
             $itineraryIds[] = $itinerary->id;
+            $pivotData[$itinerary->id] = [
+                'sort_by' => $option['sort_by'] ?? 0
+            ];
         }
 
-        // Sycc itineraries
-        if ( !empty($itineraryIds) ) {
-            //$tour->itineraries()->attach([1, 2, 3]);
-            $tour->itineraries()->sync($itineraryIds);
+        if (!empty($pivotData)) {
+            $tour->itineraries()->sync($pivotData); 
         }
 
         return redirect()->back()->with('success','Itineraries saved successfully.');
@@ -1557,8 +1558,33 @@ class TourController extends Controller
         // dd($tourIds, $status);
         Tour::whereIn('id', $tourIds)->update(['status' => $status]);
 
-        return redirect()->back()->with('success', 'Selected tours updated successfullydew!');
+        return redirect()->back()->with('success', 'Selected tours updated successfully!');
     }
+
+    public function specialdeposit($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        // dd(2342);
+        //$metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        return view('admin.tours.feature.special-deposit', compact( 'data', 'detail'));
+    }
+
+
+    public function specialDepositUpdate(Request $request, $id) {
+        $tour  = Tour::findOrFail($id);
+        // Save tour types
+
+        dd($request->all());
+        if ($request->has('taxes') && is_array($request->taxes)) {
+            $tour->taxes_fees()->sync($request->taxes);
+
+            return redirect()->back()->withInput()->with('success','Tax and fee saved successfully.'); 
+        }
+
+        return back()->withInput()->with('error','OOPs! something went wrong!');
+    }
+    
 
 
 }
