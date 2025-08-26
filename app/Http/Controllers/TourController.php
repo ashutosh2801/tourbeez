@@ -1564,22 +1564,45 @@ class TourController extends Controller
     public function specialdeposit($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        // dd(2342);
-        //$metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
-        $detail     = $data->detail ? $data->detail : new TourDetail();
-        return view('admin.tours.feature.special-deposit', compact( 'data', 'detail'));
+
+        $specialDeposit = $data->specialDeposit ?? new \App\Models\TourSpecialDeposit();
+
+        return view('admin.tours.feature.special-deposit', compact( 'data', 'specialDeposit'));
     }
 
 
-    public function specialDepositUpdate(Request $request, $id) {
+    public function specialDepositUpdate(Request $request, $id)
+    {
         $tour  = Tour::findOrFail($id);
-        // Save tour types
 
-        dd($request->all());
-        if ($request->has('taxes') && is_array($request->taxes)) {
-            $tour->taxes_fees()->sync($request->taxes);
+        $validated = $request->validate([
+            'tour.use_deposit'        => 'nullable|boolean',
+            'tour.charge'             => 'nullable|in:FULL,DEPOSIT_PERCENT,DEPOSIT_FIXED,DEPOSIT_FIXED_PER_ORDER,NONE',
+            'tour.deposit_amount'     => 'nullable|numeric|min:0',
+            'tour.allow_full_payment' => 'nullable|boolean',
+            'tour.use_minimum_notice' => 'nullable|boolean',
+            'tour.notice_days'        => 'nullable|integer|min:0',
+        ]);
 
-            return redirect()->back()->withInput()->with('success','Tax and fee saved successfully.'); 
+        if ($request->has('tour') && is_array($request->tour)) {
+            $data = $request->tour;
+
+            // Update or create record in tour_special_deposits
+            \DB::table('tour_special_deposits')->updateOrInsert(
+                ['tour_id' => $tour->id], // condition
+                [
+                    'use_deposit'        => $data['use_deposit'] ?? null,
+                    'charge'             => $data['charge'] ?? null,
+                    'deposit_amount'     => $data['deposit_amount'] ?? null,
+                    'allow_full_payment' => $data['allow_full_payment'] ?? null,
+                    'use_minimum_notice' => $data['use_minimum_notice'] ?? null,
+                    'notice_days'        => $data['notice_days'] ?? null,
+                    'updated_at'         => now(),
+                    'created_at'         => now(),
+                ]
+            );
+
+            return redirect()->back()->with('success', 'Special deposit settings saved successfully.');
         }
 
         return back()->withInput()->with('error','OOPs! something went wrong!');

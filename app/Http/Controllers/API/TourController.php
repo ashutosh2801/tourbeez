@@ -344,6 +344,7 @@ class TourController extends Controller
                 'galleries'     => $galleries,
                 'addons'        => $addons,
                 'offer_ends_in'        => $tour->offer_ends_in,
+                'tour_special_deposits'        => $tour->specialDeposit,
 
                 'discount'       =>  $tour->coupon_value,
                 'discount_type'       =>  strtoupper($tour->coupon_type),

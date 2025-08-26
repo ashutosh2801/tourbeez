@@ -46,84 +46,84 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                          
 							            @method('PUT')
 							            @csrf
-	                                    <div class="card">
+	                                    <div class="card card-primary">
 										    <div class="card-header">
 										        <h3 class="card-title card-primary">Deposit Rules</h3>
 										    </div>
 										    <div class="card-body">
 										        {{-- Use special deposit rules --}}
-										        <div class="form-group form-check">
-										            <input type="hidden" name="tour[use_deposit]" value="0">
-										            <input type="checkbox" class="form-check-input" id="use_deposit"
-										                   name="tour[use_deposit]" value="1"
-										                   {{ old('tour.use_deposit', $data->detail?->use_deposit) ? 'checked' : '' }}>
-										            <label class="form-check-label" for="use_deposit">
-										                Use special deposit rules
-										            </label>
-										        </div>
+<div class="form-group form-check">
+    <input type="hidden" name="tour[use_deposit]" value="0">
+    <input type="checkbox" class="form-check-input" id="use_deposit"
+           name="tour[use_deposit]" value="1"
+           {{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? 'checked' : '' }}>
+    <label class="form-check-label" for="use_deposit">
+        Use special deposit rules
+    </label>
+</div>
 
-										        {{-- Deposit Type --}}
-										        <div id="deposit_options" class="{{ old('tour.use_deposit', $data->detail?->use_deposit) ? '' : 'd-none' }}">
-										            <div class="form-row">
-										                <div class="col-md-6">
-										                    <select class="form-control" name="tour[charge]" id="tour_charge">
-										                        <option value="FULL" {{ old('tour.charge', $data->detail?->charge) == 'FULL' ? 'selected' : '' }}>Full amount</option>
-										                        <option value="DEPOSIT_PERCENT" {{ old('tour.charge', $data->detail?->charge) == 'DEPOSIT_PERCENT' ? 'selected' : '' }}>Deposit (% of order total amount)</option>
-										                        <option value="DEPOSIT_FIXED" {{ old('tour.charge', $data->detail?->charge) == 'DEPOSIT_FIXED' ? 'selected' : '' }}>Deposit (Fixed amount per person/quantity)</option>
-										                        <option value="DEPOSIT_FIXED_PER_ORDER" {{ old('tour.charge', $data->detail?->charge) == 'DEPOSIT_FIXED_PER_ORDER' ? 'selected' : '' }}>Deposit (Fixed amount per order)</option>
-										                        <option value="NONE" {{ old('tour.charge', $data->detail?->charge) == 'NONE' ? 'selected' : '' }}>No charge</option>
-										                    </select>
-										                </div>
-										                <div class="col-md-3">
-										                    <input type="number" name="tour[deposit_amount]" class="form-control"
-										                           placeholder="Deposit"
-										                           value="{{ old('tour.deposit_amount', $data->detail?->deposit_amount) }}">
-										                </div>
-										                <div class="col-md-1">
-										                    <span id="deposit_unit">
-										                        {{-- Dynamically updated (% or fixed symbol) --}}
-										                        @php
-										                            $unit = match($data->detail?->charge) {
-										                                'DEPOSIT_PERCENT' => '%',
-										                                'DEPOSIT_FIXED', 'DEPOSIT_FIXED_PER_ORDER' => '$',
-										                                default => ''
-										                            };
-										                        @endphp
-										                        {{ $unit }}
-										                    </span>
-										                </div>
-										            </div>
-										        </div>
+{{-- Deposit Type --}}
+<div id="deposit_options" class="{{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? '' : 'd-none' }}">
+    <div class="form-row">
+        <div class="col-md-6">
+            <select class="form-control" name="tour[charge]" id="tour_charge">
+                <option value="FULL" {{ old('tour.charge', $specialDeposit?->charge) == 'FULL' ? 'selected' : '' }}>Full amount</option>
+                <option value="DEPOSIT_PERCENT" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_PERCENT' ? 'selected' : '' }}>Deposit (% of order total amount)</option>
+                <option value="DEPOSIT_FIXED" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED' ? 'selected' : '' }}>Deposit (Fixed amount per person/quantity)</option>
+                <option value="DEPOSIT_FIXED_PER_ORDER" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED_PER_ORDER' ? 'selected' : '' }}>Deposit (Fixed amount per order)</option>
+                <option value="NONE" {{ old('tour.charge', $specialDeposit?->charge) == 'NONE' ? 'selected' : '' }}>No charge</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="number" name="tour[deposit_amount]" class="form-control"
+                   placeholder="Deposit"
+                   value="{{ old('tour.deposit_amount', $specialDeposit?->deposit_amount) }}">
+												        </div>
+												        <div class="col-md-1">
+												            <span id="deposit_unit">
+												                @php
+												                    $unit = match($specialDeposit?->charge) {
+												                        'DEPOSIT_PERCENT' => '%',
+												                        'DEPOSIT_FIXED', 'DEPOSIT_FIXED_PER_ORDER' => '$',
+												                        default => ''
+												                    };
+												                @endphp
+												                {{ $unit }}
+												            </span>
+												        </div>
+												    </div>
+												</div>
 
-										        {{-- Allow customers to pay full amount --}}
-										        <div class="form-group form-check mt-3">
-										            <input type="hidden" name="tour[allow_full_payment]" value="0">
-										            <input type="checkbox" class="form-check-input" id="allow_full_payment"
-										                   name="tour[allow_full_payment]" value="1"
-										                   {{ old('tour.allow_full_payment', $data->detail?->allow_full_payment) ? 'checked' : '' }}>
-										            <label class="form-check-label" for="allow_full_payment">
-										                Allow customers to pay full amount
-										            </label>
-										        </div>
+												{{-- Allow customers to pay full amount --}}
+												<div class="form-group form-check mt-3">
+												    <input type="hidden" name="tour[allow_full_payment]" value="0">
+												    <input type="checkbox" class="form-check-input" id="allow_full_payment"
+												           name="tour[allow_full_payment]" value="1"
+												           {{ old('tour.allow_full_payment', $specialDeposit?->allow_full_payment) ? 'checked' : '' }}>
+												    <label class="form-check-label" for="allow_full_payment">
+												        Allow customers to pay full amount
+												    </label>
+												</div>
 
-										        {{-- Add minimum notice --}}
-										        <div class="form-group form-check">
-										            <input type="hidden" name="tour[use_minimum_notice]" value="0">
-										            <input type="checkbox" class="form-check-input" id="use_minimum_notice"
-										                   name="tour[use_minimum_notice]" value="1"
-										                   {{ old('tour.use_minimum_notice', $data->detail?->use_minimum_notice) ? 'checked' : '' }}>
-										            <label class="form-check-label" for="use_minimum_notice">
-										                Add minimum notice
-										            </label>
-										        </div>
+												{{-- Add minimum notice --}}
+												<div class="form-group form-check">
+												    <input type="hidden" name="tour[use_minimum_notice]" value="0">
+												    <input type="checkbox" class="form-check-input" id="use_minimum_notice"
+												           name="tour[use_minimum_notice]" value="1"
+												           {{ old('tour.use_minimum_notice', $specialDeposit?->use_minimum_notice) ? 'checked' : '' }}>
+												    <label class="form-check-label" for="use_minimum_notice">
+												        Add minimum notice
+												    </label>
+												</div>
 
-										        <div id="minimum_notice_days" class="{{ old('tour.use_minimum_notice', $data->detail?->use_minimum_notice) ? '' : 'd-none' }}">
-										            <label for="notice_days">Charge full amount if booking</label>
-										            <input type="number" name="tour[notice_days]" id="notice_days"
-										                   class="form-control d-inline-block w-auto"
-										                   value="{{ old('tour.notice_days', $data->detail?->notice_days) }}">
-										            <span>days before tour date</span>
-										        </div>
+												<div id="minimum_notice_days" class="{{ old('tour.use_minimum_notice', $specialDeposit?->use_minimum_notice) ? '' : 'd-none' }}">
+												    <label for="notice_days">Charge full amount if booking</label>
+												    <input type="number" name="tour[notice_days]" id="notice_days"
+												           class="form-control d-inline-block w-auto"
+												           value="{{ old('tour.notice_days', $specialDeposit?->notice_days) }}">
+												    <span>days before tour date</span>
+												</div>
+
 										    </div>
 										</div>
 										<div class="card-footer" style="display:block">
@@ -158,13 +158,13 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
         });
 
         // update unit dynamically
-        $('#tour_charge').on('change', function () {
-            let val = $(this).val();
-            let unit = '';
-            if (val === 'DEPOSIT_PERCENT') unit = '%';
-            else if (val === 'DEPOSIT_FIXED' || val === 'DEPOSIT_FIXED_PER_ORDER') unit = '$';
-            $('#deposit_unit').text(unit);
-        }).trigger('change');
+        // $('#tour_charge').on('change', function () {
+        //     let val = $(this).val();
+        //     let unit = '';
+        //     if (val === 'DEPOSIT_PERCENT') unit = '%';
+        //     else if (val === 'DEPOSIT_FIXED' || val === 'DEPOSIT_FIXED_PER_ORDER') unit = '$';
+        //     $('#deposit_unit').text(unit);
+        // }).trigger('change');
     });
 </script>
 
