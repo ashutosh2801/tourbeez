@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Optional;
+use App\Models\TourSpecialDeposit;
 use App\Upload;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -189,5 +190,10 @@ class Tour extends Model
     public function orderTours()
     {
         return $this->hasMany(OrderTour::class);
+    }
+
+    public function specialDeposit()
+    {
+        return $this->hasOne(TourSpecialDeposit::class, 'tour_id');
     }
 }
