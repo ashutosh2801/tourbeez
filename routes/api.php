@@ -52,7 +52,6 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/checkout', [OrderController::class, 'checkout']);
     Route::get('/orders/{id}',[OrderController::class,'index']);
     Route::get('/order/{id}',[OrderController::class,'view']);
-
     Route::post('/tour-sessions', [OrderController::class, 'getSessionTimes']);
 
     Route::get('/wishlist', [WishlistController::class, 'index']);
@@ -65,22 +64,11 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/forgot', [AuthController::class, 'forgot']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // // ----- Book Now -----
-    // Route::post('/payments/create-payment-intent', [PaymentController::class, 'createPaymentIntent']); // create PI for book now
-    // Route::post('/payments/verify-payment', [PaymentController::class, 'verifyPayment']);               // confirm/verify result
-
-    // // ----- Reserve (Save Card) -----
-    // Route::post('/payments/create-setup-intent', [PaymentController::class, 'createSetupIntent']);     // reserve – save card
-    // Route::post('/payments/charge-later', [PaymentController::class, 'chargeLater']);                  // admin/auto charge later
-
-    // // ----- Order flows (integrate with your existing) -----
-    // Route::post('/cart/update', [OrderController::class, 'updateCart']); // adjust to your current signature if different
-    // Route::post('/orders/store', [OrderController::class, 'store']);     // store “book” or “reserve” meta
+    Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
+    Route::post('/verify-payment', [PaymentController::class, 'verifyPayment']);
+    Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
 });
 
-// Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
-// Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
-Route::post('/verify-payment', [PaymentController::class, 'verifyPayment']);
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/profile/update/{id}', [AuthController::class, 'update']);
