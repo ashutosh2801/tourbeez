@@ -7,6 +7,7 @@ use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Models\OrderEmailHistory;
 use App\Models\Pickup;
 use App\Models\PickupLocation;
 use App\Models\TourPricing;
@@ -221,8 +222,8 @@ class PaymentController extends Controller
             
             // Update booking
             $booking->payment_status = $payment_status;
-            $booking->total_amount   = $total_amount;
-            $booking->balance_amount = $balance_amount;
+            //$booking->total_amount   = $total_amount;
+            //$booking->balance_amount = $balance_amount;
             $booking->order_status   = $order_status;
             $booking->payment_method = $payment_method;
             $booking->updated_at     = now();
@@ -635,8 +636,22 @@ class PaymentController extends Controller
             ];
 
             Log::info('order_mail_send' . $customer->email);
-            $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event);
 
+
+            $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event);
+            Log::info('OrderEmailHistorythishere' . $mailSend);
+            if(true){
+                Log::info('OrderEmailHistory' . $mailSend);
+                OrderEmailHistory::create([
+                    'order_id'  => $order->id,
+                    'to_email'  => $customer->email,
+                    'from_email'=> env('MAIL_FROM_ADDRESS'),
+                    'subject'   => $subject,
+                    'body'      => $header.$body.$footer,
+                    'status'    => 'sent'
+                ]);
+
+            }
             return response()->json([
                     'success' => false,
                     'message' => $mailSend
