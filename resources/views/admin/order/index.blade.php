@@ -63,6 +63,10 @@
                             <option value="this_year" {{ request('tour_date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
                         </select>
                     </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                        <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+                    </div>
                     
                 </div>
                
@@ -73,10 +77,10 @@
                         <button type="submit" class="btn btn-primary btn-sm">Search</button>
                         <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
                     </div> -->
-                    <div class="col-md-2">
+                    <!-- <div class="col-md-2">
                         <button type="submit" class="btn btn-primary btn-sm">Search</button>
                         <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </form>
