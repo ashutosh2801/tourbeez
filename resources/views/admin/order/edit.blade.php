@@ -170,6 +170,8 @@
                             <option value="Paid" >Paid {{ price_format_with_currency($order->total_amount, $order->currency) }}</option>
                             <option value="Refunded" >Refunded $0.00</option>
                         </select>
+
+
                     </div>
                     <div class="col-lg-2 text-ceneter">
                         <label class="d-block" for="">Order Status</label>
@@ -182,17 +184,33 @@
                     <div class="col-lg-5 btngroup">
                         <div class="justify-center item-center">
                             <div class="payment-status order-balance paid">
-                                <div class="btn-group">
-                                    <label for="totalDue">Balance</label>
-                                    <button type="button" class="btn dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
-                                        <li class="payment-details-breakdown--item"><strong class="payment-details-breakdown--text">Paid</strong> <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->total_amount, $order->currency) }}</strong></li>
-                                        <li class="payment-details-breakdown--item"><strong class="payment-details-breakdown--text">Refunded</strong> <strong class="payment-details-breakdown--text">$0.00</strong></li>
-                                    </ul>
-                                </div>
+                            <div class="btn-group">
+                                <label for="totalDue">Balance</label>
+                                <button type="button" class="btn dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
+                                </button>
+                                <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
+                                    <li class="payment-details-breakdown--item">
+                                        <strong class="payment-details-breakdown--text">Paid</strong>
+                                        <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->total_amount, $order->currency) }}</strong>
+                                    </li>
+                                    <li class="payment-details-breakdown--item">
+                                        <strong class="payment-details-breakdown--text">Refunded</strong>
+                                        <strong class="payment-details-breakdown--text">$0.00</strong>
+                                    </li>
+
+                                    <!-- Divider -->
+                                    <li role="separator" class="divider"></li>
+
+                                    <!-- Action Button -->
+                                    <li class="text-center p-2">
+                                        <button class="btn btn-sm btn-primary charge-btn" data-order-id="{{ $order->id }}">
+                                            Charge
+                                        </button>
+                                    </li>
+                                </ul>
                             </div>
+                        </div>
                             <!-- <div class="order-status" >
                                 <div class="btn-group open">
                                     <label for="order_status">Order Status </label>
@@ -606,6 +624,7 @@
                                 <table class="table">    
                                     <tr>
                                         <td>Total: {{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        <td>Balance: {{ price_format_with_currency($order->balance_amount) }}</td>
                                     </tr>
 
                                     <tr>
@@ -614,6 +633,46 @@
                                         <td>STRIPE</td>
                                         <td>{{ $order->transaction_id }}</td>
                                     </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header bg-secondary py-0" id="headingThree">
+                            <h2 class="my-0 py-0">
+                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Order Email History</button>                     
+                            </h2>
+                        </div>
+                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+                            <div class="card-body">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>To</th>
+                                            <th>From</th>
+                                            <th>Subject</th>
+                                            <th>Status</th>
+                                            <!-- <th>Content</th> -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
+                                            @foreach($order->emailHistories as $email)
+                                                <tr>
+                                                    <td>{{ $email->created_at }}</td>
+                                                    <td>{{ $email->to_email }}</td>
+                                                    <td>{{ $email->from_email }}</td>
+                                                    <td>{{ $email->subject }}</td>
+                                                    <td>{{ ucwords($email->status) }}</td>
+                                                </tr>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="5">No email history found</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
@@ -983,8 +1042,8 @@
             // now update backend via fetch()
             const order_id = document.getElementById('order_id').value;
             const status = this.value;
-
-            fetch(`/admin/orders/${order_id}/update-status`, {
+            
+            fetch(`/tbadmin/admin/orders/${order_id}/update-status`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -992,26 +1051,50 @@
                 },
                 body: JSON.stringify({ status: status })
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Status updated.');
-                } else {
-                    console.error('Failed to update status.');
-                    alert('Could not update order status.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Something went wrong while updating status.');
-            });
+            .then(async res => {
+              if (!res.ok) {
+                  const errText = await res.text();
+                  throw new Error(`HTTP ${res.status}: ${errText}`);
+              }
+              return res.json();
+          })
+          .then(data => {
+            console.log("Status updated:", data);
+            location.reload(); // 🔄 reload page after successful update
+        })
+          .catch(err => console.error("Fetch error:", err));
         });
     });
 
     // ✅ Only update UI on page load, not backend
+
     const init = document.querySelector('input[name="order_status"]:checked');
     if (init) updateStatusUI(init);
 });
+
+    $(document).on('click', '.charge-btn', function(e) {
+        e.preventDefault();
+        let orderId = $(this).data('order-id');
+
+        $.ajax({
+            url: '/tbadmin/admin/orders/' + orderId + '/charge',  // Your Laravel API route
+            type: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content') // CSRF protection
+            },
+            success: function(response) {
+                console.log("Charge successful:", response);
+                alert("Payment captured successfully!");
+                location.reload();
+            },
+            error: function(xhr) {
+                console.error("Charge failed:", xhr.responseText);
+                alert("Payment capture failed. Please try again.");
+            }
+        });
+        // Trigger your charge API call
+        console.log("Charge triggered for Order:", orderId);
+    });
 
 </script>
 <script>

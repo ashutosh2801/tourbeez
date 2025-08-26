@@ -2,23 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ManifestExport;
 use App\Mail\EmailManager;
 use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Models\OrderEmailHistory;
 use App\Models\OrderTour;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
 use App\Models\TourPricing;
 use App\Services\TwilioService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Barryvdh\DomPDF\Facade\Pdf;
-use App\Exports\ManifestExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
+
 
 
 class OrderController extends Controller
@@ -232,7 +236,9 @@ class OrderController extends Controller
             'order_detail',
             'order_cancelled',
             'order_confirmed',
-            'payment_receipt'
+            'payment_receipt',
+            'order_pending',
+            'payment_required'
         ])->get();
         $sms_templates = SmsTemplate::get();
         return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates']));
@@ -405,12 +411,25 @@ class OrderController extends Controller
             $array['header'] = $header;
             $array['from'] = env('MAIL_FROM_ADDRESS');
             $array['content'] =  $header.$body.$footer;
-
+            // dd($event);
             $array['event'] = json_decode($event, true);
  
             try {
 
                 if(Mail::to($request->email)->send(new EmailManager($array))){
+                    if($request->has('order')){
+                        $order = $request->order;
+                        OrderEmailHistory::create([
+                            'order_id'  => $order->id,
+                            'to_email'  => $request->email,
+                            'from_email'=> env('MAIL_FROM_ADDRESS'),
+                            'subject'   => $subject,
+                            'body'      => $header.$body.$footer,
+                            'status'    => 'sent'
+                        ]);
+
+                    }
+                    
                     return response()->json(['status' => 'success']);
                 }else{
                      return response()->json(['status' => 'Failed']);
@@ -785,17 +804,19 @@ class OrderController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
-
+        // dd($id);
         $order = Order::findOrFail($id);
-
-        $request->validate([
-            'status' => 'required|string|max:50',
-        ]);
-
+        // dd($order);
+        // $request->validate([
+        //     'status' => 'required|string|max:50',
+        // ]);
+        // dd($request->status);
         $order->order_status = $request->status;
 
 
         $order->save();
+
+        $this->sendOrderStatusEmail($order);
 
         return response()->json(['success' => true]);
     }
@@ -957,6 +978,171 @@ class OrderController extends Controller
 
         return Excel::download(new ManifestExport($sessions, $date), "Manifest_{$date}.xlsx");
     }
+
+
+    protected function sendOrderStatusEmail($order)
+    {
+        $statusToTemplate = [
+            'New'               => 'order_detail',
+            'On Hold'           => 'order_pending',
+            'Pending supplier'  => 'order_pending',
+            'Pending customer'  => 'order_pending',
+            'Confirmed'         => 'order_confirmed',
+            'Cancelled'         => 'order_cancelled',
+            'Abandoned cart'    => 'payment_required',
+        ];
+
+        $status = $order->status;
+
+        if (!isset($statusToTemplate[$status])) {
+            \Log::info("No email template mapped for status: " . $status);
+            return;
+        }
+
+        $templateIdentifier = $statusToTemplate[$status];
+
+        // dd($templateIdentifier);
+        $emailTemplate = EmailTemplate::where('identifier', $templateIdentifier)->first();
+
+        if (!$emailTemplate) {
+            \Log::warning("Email template not found for identifier: " . $templateIdentifier);
+            return;
+        }
+
+        // Now reuse your function
+        $request = new Request([
+            'order_id' => $order->id,
+            'order_template_id' => $emailTemplate->id
+        ]);
+
+        // This will return the JSON with compiled template
+        $response = $this->order_template_details($request);
+
+        // Convert response to array
+        $data = $response->getData(true);
+
+       if (!isset($data['success']) || !$data['success']) {
+            \Log::error("Failed to build email template for order " . $order->id);
+            return false;
+        }
+
+        $request = new Request([
+            'order' => $order,
+            'email' => $data['email'],
+            'subject' => $data['email_template']['subject'],
+            'header' => $data['email_template']['header'] ?? '',
+            'body' => $data['email_template']['body'] ?? '',
+            'footer' => $data['footer'],
+            'event' => $data['event'] ? json_encode($data['event']) : null
+        ]);
+
+
+        // Call your static mail function
+        return self::order_mail_send($request
+        );
+    }
+
+
+    public function capturePayment($orderId)
+    {
+        DB::beginTransaction();
+
+        try {
+            $order = Order::findOrFail($orderId);
+
+            // check if order has pending balance
+            if ($order->balance_amount <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No pending amount to charge.'
+                ], 400);
+            }
+
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            // retrieve the intent
+            $paymentIntent = PaymentIntent::retrieve($order->payment_intent_id);
+
+            if ($paymentIntent->status === 'requires_capture') {
+                // ✅ Capture reserved funds (manual capture)
+
+                // $paymentIntent = \Stripe\PaymentIntent::retrieve($order->payment_intent_id);
+                // $capturedIntent = $paymentIntent->capture();
+
+                $capturedIntent = $paymentIntent->capture(
+                    [
+                        'amount_to_capture' => (int) ($order->balance_amount * 100), // amount in cents
+                    ]
+                );
+
+            } elseif (in_array($paymentIntent->status, ['succeeded', 'canceled'])) {
+                // ❌ Old intent already done, create a new one if needed
+                if (empty($order->payment_method)) {
+                    throw new \Exception("No payment method available for this order.");
+                }
+
+                $capturedIntent = PaymentIntent::create([
+                    'amount' => (int) ($order->balance_amount * 100),
+                    'currency' => $order->currency,
+                    'customer' => $order->stripe_customer_id,
+                    'payment_method' => $order->payment_method, // must be pm_xxx
+                    'off_session' => true, // ⚡ charge without customer re-entering details
+                    'confirm' => true,
+                    'capture_method' => 'manual',
+                    'metadata' => [
+                        'order_id' => $order->id,
+                        'order_num' => $order->order_number,
+                    ],
+                ]);
+            } else {
+                // Intent exists but not in capture mode
+
+                $capturedIntent = $paymentIntent->confirm();
+                // $capturedIntent = PaymentIntent::confirm($order->payment_intent_id);
+                // $paymentIntent->confirm([
+                //     'payment_method' => $paymentMethodId, // if needed
+                // ]);
+
+                // $capturedIntent = $stripe->paymentIntents->confirm(
+                //                     $order->payment_intent_id
+                //                 );
+            }
+
+            // ✅ update order amounts
+            $order->total_amount += $order->balance_amount;
+            $order->balance_amount = 0;
+            $order->payment_status = 1; // Paid
+            $order->transaction_id = $capturedIntent->id;
+            $order->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order charged successfully',
+                'data'    => $capturedIntent
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+             \Log::error('Order processing failed', [
+                'message'   => $e->getMessage(),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'trace'     => $e->getTraceAsString(),
+                'request'   => request()->all(), // log incoming request data too
+            ]);
+        
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
 
     
 
