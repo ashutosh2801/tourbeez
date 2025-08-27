@@ -1256,7 +1256,7 @@ class OrderController extends Controller
             foreach ($orders as $order) {
                 foreach ($order->orderTours as $ot) {
                     $tourTitle = $ot->tour->title ?? 'Unknown Tour';
-                    $key = "{$slot['label']} {$tourTitle} ";
+                    $key = "{$slot['label']} || {$tourTitle} ";
 
                     // Parse guest pricing
                     $guests = collect();
