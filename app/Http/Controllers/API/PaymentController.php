@@ -222,8 +222,8 @@ class PaymentController extends Controller
             
             // Update booking
             $booking->payment_status = $payment_status;
-            $booking->total_amount   = $total_amount;
-            $booking->balance_amount = $balance_amount;
+            //$booking->total_amount   = $total_amount;
+            //$booking->balance_amount = $balance_amount;
             $booking->order_status   = $order_status;
             $booking->payment_method = $payment_method;
             $booking->updated_at     = now();
