@@ -533,7 +533,6 @@ class OrderController extends Controller
                         'totalAmount'   => $order->total_amount
             ];
 
-
             if($request->action_name == "reserve") {
                 $si = \Stripe\SetupIntent::create([
                     'customer'  => $stripeCustomer->id,

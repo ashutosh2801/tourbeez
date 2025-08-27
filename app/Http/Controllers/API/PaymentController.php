@@ -56,8 +56,30 @@ class PaymentController extends Controller
         return response()->json(['status' => 'success']);
     }
 
+    public function createSetupIntent()
+    {
+        try {
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            $setupIntent = \Stripe\SetupIntent::create([
+                'automatic_payment_methods' => ['enabled' => true],
+            ]);
+
+            return response()->json([
+                'clientSecret' => $setupIntent->client_secret,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Unable to create SetupIntent',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function createOrUpdate(Request $request)
     {
+        return $this->createSetupIntent();
+        
         try {
             \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
