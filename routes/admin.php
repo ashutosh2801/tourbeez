@@ -51,7 +51,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/order-manifest', [OrderController::class, 'manifest'])->name('orders.manifest');
     Route::get('/ordersmanifest/download', [OrderController::class, 'downloadManifest'])->name('orders.manifest.download');
 
-
+    Route::get('/tour-manifest', [OrderController::class, 'tourManifest'])->name('orders.tour.manifest');
+    Route::get('toursmanifest/download', [OrderController::class, 'downloadTourManifest'])->name('orders.tour.manifest.download');
     
     // Country
     Route::resource('/countries', CountryController::class);
