@@ -1043,197 +1043,153 @@ class OrderController extends Controller
     }
 
 
-    // public function capturePayment($orderId)
-    // {
-    //     // dd(32423);
-    //     DB::beginTransaction();
-
-    //     try {
-    //         $order = Order::findOrFail($orderId);
-
-    //         // check if order has pending balance
-    //         if ($order->balance_amount <= 0) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'No pending amount to charge.'
-    //             ], 400);
-    //         }
-
-    //         Stripe::setApiKey(env('STRIPE_SECRET'));
-
-    //         // retrieve the intent
-    //         $paymentIntent = PaymentIntent::retrieve($order->payment_intent_id);
-    //         // dd($paymentIntent->status);
-
-    //         if ($paymentIntent->status === 'requires_capture') {
-    //             // ✅ Capture reserved funds (manual capture)
-
-    //             // $paymentIntent = \Stripe\PaymentIntent::retrieve($order->payment_intent_id);
-    //             // $capturedIntent = $paymentIntent->capture();
-
-    //             $capturedIntent = $paymentIntent->capture(
-    //                 [
-    //                     'amount_to_capture' => (int) ($order->balance_amount * 100), // amount in cents
-    //                 ]
-    //             );
-
-    //         } elseif (in_array($paymentIntent->status, ['succeeded', 'canceled'])) {
-    //             // ❌ Old intent already done, create a new one if needed
-    //             if (empty($order->payment_method)) {
-    //                 throw new \Exception("No payment method available for this order.");
-    //             }
-
-    //             $capturedIntent = PaymentIntent::create([
-    //                 'amount' => (int) ($order->balance_amount * 100),
-    //                 'currency' => $order->currency,
-    //                 'customer' => $order->stripe_customer_id,
-    //                 'payment_method' => $order->payment_method, // must be pm_xxx
-    //                 'off_session' => true, // ⚡ charge without customer re-entering details
-    //                 'confirm' => true,
-    //                 'capture_method' => 'manual',
-    //                 'metadata' => [
-    //                     'order_id' => $order->id,
-    //                     'order_num' => $order->order_number,
-    //                 ],
-    //             ]);
-    //         } else {
-    //             // Intent exists but not in capture mode
-
-    //             $capturedIntent = $paymentIntent->confirm();
-
-    //         }
-
-    //         // ✅ update order amounts
-    //         $order->total_amount += $order->balance_amount;
-    //         $order->balance_amount = 0;
-    //         $order->payment_status = 1; // Paid
-    //         $order->transaction_id = $capturedIntent->id;
-    //         $order->save();
-
-    //         DB::commit();
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Order charged successfully',
-    //             'data'    => $capturedIntent
-    //         ]);
-
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-
-    //          \Log::error('Order processing failed', [
-    //             'message'   => $e->getMessage(),
-    //             'file'      => $e->getFile(),
-    //             'line'      => $e->getLine(),
-    //             'trace'     => $e->getTraceAsString(),
-    //             'request'   => request()->all(), // log incoming request data too
-    //         ]);
-        
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
 
 
-
-    public function capturePayment($orderId, $action_name = 'book')
+   public function capturePayment($orderId, $action_name = 'book')
     {
         DB::beginTransaction();
 
         try {
             $order = Order::findOrFail($orderId);
 
-            if ($order->balance_amount <= 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No pending amount to charge.'
-                ], 400);
-            }
+            // if ($order->balance_amount <= 0) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'No pending amount to charge.'
+            //     ], 400);
+            // }
 
             \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-
             $capturedIntent = null;
-
-            // 🟢 Case 1: Reserve funds only (authorization)
+            $action_name = $order->action_name;
+            // ✅ Decide flow from $action_name only
+            // dd($action_name);
             if ($action_name === 'reserve') {
-                $paymentIntent = \Stripe\PaymentIntent::create([
-                    'amount' => (int) ($order->balance_amount * 100),
-                    'currency' => $order->currency,
-                    'customer' => $order->stripe_customer_id,
-                    'payment_method' => $order->payment_method, // pm_xxx
-                    'off_session' => true,
-                    'confirm' => true,
-                    'capture_method' => 'manual', // IMPORTANT: reserve only
-                    'metadata' => [
-                        'order_id'   => $order->id,
-                        'order_num'  => $order->order_number,
-                        'customer'   => $order->customer_name,
-                        'email'      => $order->customer_email,
-                        'phone'      => $order->customer_phone,
-                        'action'     => 'reserve'
-                    ],
-                ]);
+                // dd(23423);
 
-                $order->payment_intent_id = $paymentIntent->id;
-                $order->payment_intent_client_secret = $paymentIntent->client_secret;
-                $order->save();
+                
+                // $paymentIntent = \Stripe\PaymentIntent::retrieve($order->payment_intent_id);
+                // dd( $paymentIntent);
+                // // Reserve funds only (manual capture later)
+                // $paymentIntent = \Stripe\PaymentIntent::create([
+                //     'amount' => (int) ($order->balance_amount * 100),
+                //     'currency' => $order->currency,
+                //     'customer' => $order->stripe_customer_id,
+                //     'automatic_payment_methods' => ['enabled' => true], // stored from verifyPayment
+                    
+                //     // 'confirm' => true,
+                //     // 'capture_method' => 'manual',
+                //     'metadata' => [
+                //         'order_id'   => $order->id,
+                //         'order_num'  => $order->order_number,
+                //         'customer'   => $order->customer_name,
+                //         'email'      => $order->customer_email,
+                //         'phone'      => $order->customer_phone,
+                //         'action'     => 'reserve'
+                //     ],
+                // ]);
 
-                $capturedIntent = $paymentIntent; // Not captured yet
+                // $order->payment_intent_id = $paymentIntent->id;
+                // $order->payment_intent_client_secret = $paymentIntent->client_secret;
+                // $order->save();
 
+                // $capturedIntent = $paymentIntent; // reserved, not yet captured
+
+
+
+
+                // dd($order->payment_intent_id);
+                $setupIntent = \Stripe\SetupIntent::retrieve($order->payment_intent_id);
+
+
+// Get the saved payment method
+                    $paymentMethodId = $setupIntent->payment_method;
+
+                    if (!$paymentMethodId) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'No payment method saved in SetupIntent.'
+                        ], 400);
+                    }
+
+                    // Now create a PaymentIntent to charge
+                    $paymentIntent = \Stripe\PaymentIntent::create([
+                        'customer' => $setupIntent->customer,
+                        'amount'   => $order->balance_amount * 100, // in cents
+                        'currency' => 'usd',
+                        'payment_method' => $paymentMethodId,
+                        'off_session' => true,
+                        'confirm' => true,
+                    ]);
+
+                    // $order->payment_intent_id = $paymentIntent->id; // pi_...
+                    // $order->save();
+
+                    $order->payment_intent_id = $paymentIntent->id;
+                    $order->payment_intent_client_secret = $paymentIntent->client_secret;
+                    $order->total_amount += $order->total_amount;
+                    $order->balance_amount = 0;
+                    $order->save();
+
+                    $capturedIntent = $paymentIntent; // reserved, not yet captured
+
+                    // $capturedIntent = $paymentIntent->capture([
+                    //         'amount_to_capture' => (int) ($order->balance_amount * 100),
+                    //     ]);
             }
-            // 🟢 Case 2: Book (capture or charge new)
+
             elseif ($action_name === 'book') {
                 if ($order->payment_intent_id) {
                     $paymentIntent = \Stripe\PaymentIntent::retrieve($order->payment_intent_id);
 
                     if ($paymentIntent->status === 'requires_capture') {
-                        // capture the reserved funds
+                        // capture reserved funds
                         $capturedIntent = $paymentIntent->capture([
-                            'amount_to_capture' => (int) ($order->balance_amount * 100),
+                            'amount_to_capture' => (int) ($order->total_amount * 100),
                         ]);
-                    } elseif (in_array($paymentIntent->status, ['succeeded', 'canceled'])) {
-                        // make a new charge if old one is invalid
-                        $capturedIntent = \Stripe\PaymentIntent::create([
-                            'amount' => (int) ($order->balance_amount * 100),
-                            'currency' => $order->currency,
-                            'customer' => $order->stripe_customer_id,
-                            'payment_method' => $order->payment_method,
-                            'off_session' => true,
-                            'confirm' => true,
-                            'capture_method' => 'automatic',
-                            'metadata' => [
-                                'order_id'   => $order->id,
-                                'order_num'  => $order->order_number,
-                                'action'     => 'book'
-                            ],
-                        ]);
-                    } else {
-                        // confirm if stuck in requires_confirmation
-                        $capturedIntent = $paymentIntent->confirm();
                     }
-                } else {
-                    // fallback: no intent, create one fresh
-                    $capturedIntent = \Stripe\PaymentIntent::create([
-                        'amount' => (int) ($order->balance_amount * 100),
-                        'currency' => $order->currency,
-                        'customer' => $order->stripe_customer_id,
-                        'payment_method' => $order->payment_method,
-                        'off_session' => true,
-                        'confirm' => true,
-                        'capture_method' => 'automatic',
-                        'metadata' => [
-                            'order_id'   => $order->id,
-                            'order_num'  => $order->order_number,
-                            'action'     => 'book'
-                        ],
-                    ]);
                 }
+                //     } elseif (in_array($paymentIntent->status, ['succeeded', 'canceled'])) {
+                //         // old intent not usable, create fresh
+                //         $capturedIntent = \Stripe\PaymentIntent::create([
+                //             'amount' => (int) ($order->total_amount * 100),
+                //             'currency' => $order->currency,
+                //             'customer' => $order->stripe_customer_id,
+                //             'payment_method' => $order->payment_method,
+                //             'off_session' => true,
+                //             'confirm' => true,
+                //             'capture_method' => 'automatic',
+                //             'metadata' => [
+                //                 'order_id'   => $order->id,
+                //                 'order_num'  => $order->order_number,
+                //                 'action'     => 'book'
+                //             ],
+                //         ]);
+                //     } else {
+                //         // confirm if stuck in requires_confirmation
+                //         $capturedIntent = $paymentIntent->confirm();
+                //     }
+                // } else {
+                //     // No previous intent, create new
+                //     $capturedIntent = \Stripe\PaymentIntent::create([
+                //         'amount' => (int) ($order->total_amount * 100),
+                //         'currency' => $order->currency,
+                //         'customer' => $order->stripe_customer_id,
+                //         'payment_method' => $order->payment_method,
+                //         'off_session' => true,
+                //         'confirm' => true,
+                //         'capture_method' => 'automatic',
+                //         'metadata' => [
+                //             'order_id'   => $order->id,
+                //             'order_num'  => $order->order_number,
+                //             'action'     => 'book'
+                //         ],
+                //     ]);
+                // }
 
-                // update order after successful booking
-                $order->total_amount += $order->balance_amount;
-                $order->balance_amount = 0;
+                // ✅ Update order after capture
+                // $order->total_amount += $order->total_amount;
+                // $order->balance_amount = 0;
                 $order->payment_status = 1; // Paid
                 $order->transaction_id = $capturedIntent->id;
                 $order->save();
@@ -1266,6 +1222,184 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+
+    public function tourManifest(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        // Preload pricing labels indexed by ID
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+
+        // Create 48 half-hour slots
+        $timeSlots = collect();
+        $start = Carbon::createFromTime(0, 0);
+        for ($i = 0; $i < 48; $i++) {
+            $slotStart = $start->copy()->addMinutes($i * 30);
+            $slotEnd = $slotStart->copy()->addMinutes(30);
+            $timeSlots->push([
+                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                'start' => $slotStart->format('H:i:s'),
+                'end' => $slotEnd->format('H:i:s'),
+            ]);
+        }
+
+        $sessions = [];
+
+        foreach ($timeSlots as $slot) {
+            $orders = Order::with(['customer', 'orderTours.tour']) // ensure tour is loaded
+                ->whereDate('created_at', $date)
+                ->whereTime('created_at', '>=', $slot['start'])
+                ->whereTime('created_at', '<', $slot['end'])
+                ->get();
+
+            foreach ($orders as $order) {
+                foreach ($order->orderTours as $ot) {
+                    $tourTitle = $ot->tour->title ?? 'Unknown Tour';
+                    $key = "{$slot['label']} || {$tourTitle} ";
+
+                    // Parse guest pricing
+                    $guests = collect();
+                    $extras = collect();
+                    $pricingItems = json_decode($ot->tour_pricing, true);
+                    if (is_array($pricingItems)) {
+                        foreach ($pricingItems as $p) {
+                            $qty = $p['quantity'] ?? 0;
+                            $pricingId = $p['tour_pricing_id'] ?? null;
+                            $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                            if ($qty && $label) {
+                                $guests->push("{$qty} {$label}");
+                            }
+                        }
+                    }
+
+                    // Parse extras
+                    $extraItems = json_decode($ot->tour_extra, true);
+                    if (is_array($extraItems)) {
+                        foreach ($extraItems as $e) {
+                            $qty = $e['quantity'] ?? 0;
+                            $label = $e['label'] ?? null;
+                            if ($qty && $label) {
+                                $extras->push("{$qty} {$label}");
+                            }
+                        }
+                    }
+
+                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+                    // $sessions[$key]['orders'] = 'wq';
+                    $sessions[$key]['slot_time'] = $key;
+                    $sessions[$key]['orders'][] = $order;
+                }
+            }
+        }
+
+        // dd($sessions); // for debugging
+
+        return view('admin.order.tour-manifest', compact('sessions', 'date'));
+    }
+
+
+
+
+   public function downloadTourManifest(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        // Preload pricing labels
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+
+        // Load all orders for the date with their tours
+        $orders = Order::with(['customer', 'orderTours.tour'])
+            ->whereDate('created_at', $date)
+            ->get();
+
+        // Build as a plain array (NOT a Collection)
+        $sessions = [];
+
+        foreach ($orders as $order) {
+            // ---- enrich order once (guest/extras/paid) ----
+            $guests = collect();
+            $extras = collect();
+            $guestCount = 0;
+
+            foreach ($order->orderTours as $ot) {
+                // pricing
+                $pricingItems = json_decode($ot->tour_pricing, true);
+                if (is_array($pricingItems)) {
+                    foreach ($pricingItems as $p) {
+                        $qty = (int) ($p['quantity'] ?? 0);
+                        $pricingId = $p['tour_pricing_id'] ?? null;
+                        $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+                        if ($qty && $label) {
+                            $guests->push("{$qty} {$label}");
+                            $guestCount += $qty;
+                        }
+                    }
+                }
+                // extras
+                $extraItems = json_decode($ot->tour_extra, true);
+                if (is_array($extraItems)) {
+                    foreach ($extraItems as $e) {
+                        $qty = (int) ($e['quantity'] ?? 0);
+                        $label = $e['label'] ?? null;
+                        if ($qty && $label) {
+                            $extras->push("{$qty} {$label}");
+                        }
+                    }
+                }
+            }
+
+            $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+            $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+            $order->paid_amount    = $order->total_amount - ($order->balance_amount ?? 0);
+            $order->guest_count    = $guestCount;
+
+            // ---- group per tour + half-hour slot ----
+            foreach ($order->orderTours as $ot) {
+                $tourTitle = optional($ot->tour)->title ?? 'Unknown Tour';
+
+                // slot from created_at (change to your scheduled time if you have one)
+                $createdAt = $order->created_at instanceof \Carbon\Carbon
+                    ? $order->created_at
+                    : \Carbon\Carbon::parse($order->created_at);
+
+                $slotStart = $createdAt->copy()->second(0);
+                $slotStart->minute($slotStart->minute >= 30 ? 30 : 0);
+                $slotEnd   = $slotStart->copy()->addMinutes(30);
+
+                $slotLabel = $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A');
+                $key       = "{$slotLabel} {$tourTitle}";
+
+                if (!isset($sessions[$key])) {
+                    $sessions[$key] = [
+                        'slot_time' => $key,   // "Tour A 08:00 - 08:30"
+                        'orders'    => [],     // we’ll index by order id to avoid duplicates
+                    ];
+                }
+
+                // Avoid duplicate same order under same tour+slot
+
+                $sessions[$key]['slot_time'] = $slotLabel;
+                $sessions[$key]['title'] = $tourTitle;
+
+                $sessions[$key]['orders'][$order->id] = $order;
+            }
+        }
+        // dd($sessions);
+        // Reindex inner orders numerically for the view/export
+        foreach ($sessions as &$bucket) {
+            $bucket['orders'] = array_values($bucket['orders']);
+        }
+        unset($bucket);
+
+        // If your ManifestExport expects a collection, wrap with collect($sessions)
+        return Excel::download(new ManifestExport($sessions, $date, 'tour'), "Manifest_{$date}.xlsx");
+    }
+
+
 
     
 
