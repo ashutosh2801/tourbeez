@@ -1224,6 +1224,183 @@ class OrderController extends Controller
     }
 
 
+    public function tourManifest(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        // Preload pricing labels indexed by ID
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+
+        // Create 48 half-hour slots
+        $timeSlots = collect();
+        $start = Carbon::createFromTime(0, 0);
+        for ($i = 0; $i < 48; $i++) {
+            $slotStart = $start->copy()->addMinutes($i * 30);
+            $slotEnd = $slotStart->copy()->addMinutes(30);
+            $timeSlots->push([
+                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                'start' => $slotStart->format('H:i:s'),
+                'end' => $slotEnd->format('H:i:s'),
+            ]);
+        }
+
+        $sessions = [];
+
+        foreach ($timeSlots as $slot) {
+            $orders = Order::with(['customer', 'orderTours.tour']) // ensure tour is loaded
+                ->whereDate('created_at', $date)
+                ->whereTime('created_at', '>=', $slot['start'])
+                ->whereTime('created_at', '<', $slot['end'])
+                ->get();
+
+            foreach ($orders as $order) {
+                foreach ($order->orderTours as $ot) {
+                    $tourTitle = $ot->tour->title ?? 'Unknown Tour';
+                    $key = "{$tourTitle} {$slot['label']}";
+
+                    // Parse guest pricing
+                    $guests = collect();
+                    $extras = collect();
+                    $pricingItems = json_decode($ot->tour_pricing, true);
+                    if (is_array($pricingItems)) {
+                        foreach ($pricingItems as $p) {
+                            $qty = $p['quantity'] ?? 0;
+                            $pricingId = $p['tour_pricing_id'] ?? null;
+                            $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                            if ($qty && $label) {
+                                $guests->push("{$qty} {$label}");
+                            }
+                        }
+                    }
+
+                    // Parse extras
+                    $extraItems = json_decode($ot->tour_extra, true);
+                    if (is_array($extraItems)) {
+                        foreach ($extraItems as $e) {
+                            $qty = $e['quantity'] ?? 0;
+                            $label = $e['label'] ?? null;
+                            if ($qty && $label) {
+                                $extras->push("{$qty} {$label}");
+                            }
+                        }
+                    }
+
+                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+                    // $sessions[$key]['orders'] = 'wq';
+                    $sessions[$key]['slot_time'] = $key;
+                    $sessions[$key]['orders'][] = $order;
+                }
+            }
+        }
+
+        // dd($sessions); // for debugging
+
+        return view('admin.order.tour-manifest', compact('sessions', 'date'));
+    }
+
+
+
+
+   public function downloadTourManifest(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        // Preload pricing labels
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+
+        // Load all orders for the date with their tours
+        $orders = Order::with(['customer', 'orderTours.tour'])
+            ->whereDate('created_at', $date)
+            ->get();
+
+        // Build as a plain array (NOT a Collection)
+        $sessions = [];
+
+        foreach ($orders as $order) {
+            // ---- enrich order once (guest/extras/paid) ----
+            $guests = collect();
+            $extras = collect();
+            $guestCount = 0;
+
+            foreach ($order->orderTours as $ot) {
+                // pricing
+                $pricingItems = json_decode($ot->tour_pricing, true);
+                if (is_array($pricingItems)) {
+                    foreach ($pricingItems as $p) {
+                        $qty = (int) ($p['quantity'] ?? 0);
+                        $pricingId = $p['tour_pricing_id'] ?? null;
+                        $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+                        if ($qty && $label) {
+                            $guests->push("{$qty} {$label}");
+                            $guestCount += $qty;
+                        }
+                    }
+                }
+                // extras
+                $extraItems = json_decode($ot->tour_extra, true);
+                if (is_array($extraItems)) {
+                    foreach ($extraItems as $e) {
+                        $qty = (int) ($e['quantity'] ?? 0);
+                        $label = $e['label'] ?? null;
+                        if ($qty && $label) {
+                            $extras->push("{$qty} {$label}");
+                        }
+                    }
+                }
+            }
+
+            $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+            $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+            $order->paid_amount    = $order->total_amount - ($order->balance_amount ?? 0);
+            $order->guest_count    = $guestCount;
+
+            // ---- group per tour + half-hour slot ----
+            foreach ($order->orderTours as $ot) {
+                $tourTitle = optional($ot->tour)->title ?? 'Unknown Tour';
+
+                // slot from created_at (change to your scheduled time if you have one)
+                $createdAt = $order->created_at instanceof \Carbon\Carbon
+                    ? $order->created_at
+                    : \Carbon\Carbon::parse($order->created_at);
+
+                $slotStart = $createdAt->copy()->second(0);
+                $slotStart->minute($slotStart->minute >= 30 ? 30 : 0);
+                $slotEnd   = $slotStart->copy()->addMinutes(30);
+
+                $slotLabel = $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A');
+                $key       = "{$tourTitle} {$slotLabel}";
+
+                if (!isset($sessions[$key])) {
+                    $sessions[$key] = [
+                        'slot_time' => $key,   // "Tour A 08:00 - 08:30"
+                        'orders'    => [],     // we’ll index by order id to avoid duplicates
+                    ];
+                }
+
+                // Avoid duplicate same order under same tour+slot
+
+                $sessions[$key]['slot_time'] = $slotLabel;
+                $sessions[$key]['title'] = $tourTitle;
+
+                $sessions[$key]['orders'][$order->id] = $order;
+            }
+        }
+        // dd($sessions);
+        // Reindex inner orders numerically for the view/export
+        foreach ($sessions as &$bucket) {
+            $bucket['orders'] = array_values($bucket['orders']);
+        }
+        unset($bucket);
+
+        // If your ManifestExport expects a collection, wrap with collect($sessions)
+        return Excel::download(new ManifestExport($sessions, $date, 'tour'), "Manifest_{$date}.xlsx");
+    }
+
+
+
     
 
 }
