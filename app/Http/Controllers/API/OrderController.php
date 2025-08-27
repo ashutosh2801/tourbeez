@@ -481,15 +481,12 @@ class OrderController extends Controller
             $tourData = [
                 'tour_id'           => $request->tourId,
                 'tour_date'         => $validated['selectedDate'],
-                // 'tour_time'         => $validated['selectedTime'] ?? null,
+                'tour_time'         => $validated['selectedTime'] ?? null,
                 'tour_pricing'      => json_encode($pricing ?? []),
                 'tour_extra'        => json_encode($extra ?? []),
                 'tour_fees'         => json_encode($fees ?? []),
                 'number_of_guests'  => $quantity,
-                'total_amount'      => ($request->action_name == 'book') ? $item_total  : 0,
-                'balance_amount'    => ($request->action_name == 'reserve') ? $item_total : 0,
-                'updated_at'        => now(),
-                'action_name'       => $request->action_name
+                'total_amount'      => $item_total,
             ];
 
             if ($orderTour) {
@@ -513,13 +510,13 @@ class OrderController extends Controller
             }
 
             // Final update to main order
-            // $order->tour_id            = $request->tourId;
-            // $order->number_of_guests   = $quantity;
-            // $order->total_amount       = ($request->action_name == 'reserve') ? 0 : $item_total;
-            // $order->balance_amount     = ($request->action_name == 'reserve') ? $item_total : 0;
-            // $order->updated_at         = now();
-            // $order->action_name        = $request->action_name;
-            // $order->save();
+            //$order->tour_id            = $request->tourId;
+            $order->action_name        = $request->action_name;
+            $order->number_of_guests   = $quantity;
+            $order->total_amount       = ($request->action_name == 'book') ? $item_total : 0;
+            $order->balance_amount     = ($request->action_name == 'reserve') ? $item_total : 0;
+            $order->updated_at         = now();
+            $order->save();
 
              $metaData = [
                         'bookedDate'    => $order->created_at,
