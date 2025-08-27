@@ -1256,7 +1256,7 @@ class OrderController extends Controller
             foreach ($orders as $order) {
                 foreach ($order->orderTours as $ot) {
                     $tourTitle = $ot->tour->title ?? 'Unknown Tour';
-                    $key = "{$tourTitle} {$slot['label']}";
+                    $key = "{$slot['label']} {$tourTitle} ";
 
                     // Parse guest pricing
                     $guests = collect();
@@ -1371,7 +1371,7 @@ class OrderController extends Controller
                 $slotEnd   = $slotStart->copy()->addMinutes(30);
 
                 $slotLabel = $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A');
-                $key       = "{$tourTitle} {$slotLabel}";
+                $key       = "{$slotLabel} {$tourTitle}";
 
                 if (!isset($sessions[$key])) {
                     $sessions[$key] = [
