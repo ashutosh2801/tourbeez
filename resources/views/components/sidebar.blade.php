@@ -125,13 +125,34 @@
         @endcan 
 
         @can('show_orders') 
+
+
         <li class="nav-item">
-            <a href="{{ route('admin.orders.manifest') }}"
-                class="nav-link {{ areActiveRoutes(['uploaded-files.create']) }}">
-                <i class="nav-icon fas fa-tasks"></i>
-                <p>{{ translate('Manifest') }}</p>
+            <a href="javascript:void(0);" class="nav-link aiz-side-nav-link ">
+                <i class="nav-icon fas fa-briefcase"></i>
+                <p>{{ translate('Manifest') }}
+                    <span class="aiz-side-nav-arrow right"></span>
+                </p>
+                
             </a>
-        </li>
+            <ul class="aiz-side-nav-list level-2">
+                <li class="nav-item">
+                    <a href="{{ route('admin.orders.manifest') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.manifest') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tasks"></i>
+                        <p>{{ translate('Order Manifest') }}</p>
+                    </a>
+                </li>
+
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.orders.tour.manifest') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.tour.manifest') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tasks"></i>
+                        <p>{{ translate('Tour Manifest') }}</p>
+                    </a>
+                </li>
+            </ul>
+            </li>
         @endcan
         @can('show_customers') 
         <li class="nav-item">
