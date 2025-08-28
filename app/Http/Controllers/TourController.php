@@ -452,8 +452,9 @@ class TourController extends Controller
     {
         $data       = Tour::findOrFail(decrypt($id));
         $detail     = $data->detail ? $data->detail : new TourDetail();
-        $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
-        return view('admin.tours.feature.scheduling', compact( 'data', 'detail', 'schedule'));
+        $schedules   = $data->schedules ? $data->schedules :  new TourSchedule();
+        // dd($schedule);
+        return view('admin.tours.feature.scheduling', compact( 'data', 'detail', 'schedules'));
     }
 
     public function editLocation($id)
@@ -930,111 +931,191 @@ class TourController extends Controller
         return redirect()->back()->withInput()->with('error', 'Something went wrong!');
     }
 
-    public function schedule_update(Request $request, $id) {
-        //echo $request->session_start_time;   exit;
-        $request->validate([
-            'minimum_notice_num'        => 'required|integer|min:0',
-            'minimum_notice_unit'       => 'required',
-            'estimated_duration_num'    => 'required|integer|min:0',
-            'estimated_duration_unit'   => 'required',
-            'session_start_date'        => 'required|date_format:Y-m-d',
-            'session_start_time'        => 'required',
-            'session_end_date'          => 'required|date_format:Y-m-d',
-            'session_end_time'          => 'required',
+    // public function schedule_update(Request $request, $id) {
+    //     //echo $request->session_start_time;   exit;
 
-            'repeat_period'             => 'required|string|in:NONE,MINUTELY,HOURLY,DAILY,WEEKLY,MONTHLY,YEARLY', 
-            'repeat_period_unit'        => 'required_if:repeat_period,MINUTELY,HOURLY|integer',
-            'until_date'                => 'required_if:repeat_period,MINUTELY,HOURLY|date',  
-        ],
-        [
-            'minimum_notice_num.required'       => 'Please enter a minimum notice number',
-            'minimum_notice_unit.required'      => 'Please select a minimum notice unit',
-            'estimated_duration_num.required'   => 'Please enter a minimum notice number',
-            'estimated_duration_unit.required'  => 'Please select a minimum notice unit',
-            'session_start_date.required'       => 'Please enter a start date',
-            'session_start_time.required'       => 'Please enter a start time',
-            'session_end_date.required'         => 'Please enter a to date',
-            'session_end_time.required'         => 'Please enter a to time',
-            'repeat_period.required'            => 'Please select a repeat',
-        ]);
+    //     $request->validate([
+    //         'minimum_notice_num'        => 'required|integer|min:0',
+    //         'minimum_notice_unit'       => 'required',
+    //         'estimated_duration_num'    => 'required|integer|min:0',
+    //         'estimated_duration_unit'   => 'required',
+    //         'session_start_date'        => 'required|date_format:Y-m-d',
+    //         'session_start_time'        => 'required',
+    //         'session_end_date'          => 'required|date_format:Y-m-d',
+    //         'session_end_time'          => 'required',
 
-        // If repeat_period is MINUTELY or HOURLY, validate Repeat[]
-        if (in_array($request->repeat_period, ['MINUTELY', 'HOURLY'])) {
-            foreach ($request->input('Repeat', []) as $index => $repeat) {
-                $request->validate([
-                    'num'        => ['nullable'], // checkbox, might not be checked
-                    'day'        => ['required_if:num,on', 'string'],
-                    'start_time' => ['required_if:num,on'], // required only if num is checked
-                    'end_time'   => ['required_if:num,on', 'after:start_time'],
-                ], [
-                    'start_time.required_if'=> "Start time is required for {$repeat['day']} when selected.",
-                    'end_time.required_if'  => "End time is required for {$repeat['day']} when selected.",
-                    'end_time.after'        => "End time must be after start time for {$repeat['day']}.",
-                ]);
-            }
-        }
+    //         'repeat_period'             => 'required|string|in:NONE,MINUTELY,HOURLY,DAILY,WEEKLY,MONTHLY,YEARLY', 
+    //         'repeat_period_unit'        => 'required_if:repeat_period,MINUTELY,HOURLY|integer',
+    //         'until_date'                => 'required_if:repeat_period,MINUTELY,HOURLY|date',  
+    //     ],
+    //     [
+    //         'minimum_notice_num.required'       => 'Please enter a minimum notice number',
+    //         'minimum_notice_unit.required'      => 'Please select a minimum notice unit',
+    //         'estimated_duration_num.required'   => 'Please enter a minimum notice number',
+    //         'estimated_duration_unit.required'  => 'Please select a minimum notice unit',
+    //         'session_start_date.required'       => 'Please enter a start date',
+    //         'session_start_time.required'       => 'Please enter a start time',
+    //         'session_end_date.required'         => 'Please enter a to date',
+    //         'session_end_time.required'         => 'Please enter a to time',
+    //         'repeat_period.required'            => 'Please select a repeat',
+    //     ]);
 
-        // If repeat_period is MINUTELY or HOURLY, validate Repeat[]
-        if (in_array($request->repeat_period, ['WEEKLY'])) {
-            foreach ($request->input('Repeat', []) as $index => $repeat) {
-                $request->validate([
-                    'num'        => ['nullable'], // checkbox, might not be checked
-                    'day'        => ['required_if:num,on', 'string'],
-                ]);
-            }
-        }
+    //     // If repeat_period is MINUTELY or HOURLY, validate Repeat[]
+    //     if (in_array($request->repeat_period, ['MINUTELY', 'HOURLY'])) {
+    //         foreach ($request->input('Repeat', []) as $index => $repeat) {
+    //             $request->validate([
+    //                 'num'        => ['nullable'], // checkbox, might not be checked
+    //                 'day'        => ['required_if:num,on', 'string'],
+    //                 'start_time' => ['required_if:num,on'], // required only if num is checked
+    //                 'end_time'   => ['required_if:num,on', 'after:start_time'],
+    //             ], [
+    //                 'start_time.required_if'=> "Start time is required for {$repeat['day']} when selected.",
+    //                 'end_time.required_if'  => "End time is required for {$repeat['day']} when selected.",
+    //                 'end_time.after'        => "End time must be after start time for {$repeat['day']}.",
+    //             ]);
+    //         }
+    //     }
 
-        $tour  = Tour::findOrFail($id);
+    //     // If repeat_period is MINUTELY or HOURLY, validate Repeat[]
+    //     if (in_array($request->repeat_period, ['WEEKLY'])) {
+    //         foreach ($request->input('Repeat', []) as $index => $repeat) {
+    //             $request->validate([
+    //                 'num'        => ['nullable'], // checkbox, might not be checked
+    //                 'day'        => ['required_if:num,on', 'string'],
+    //             ]);
+    //         }
+    //     }
 
-        $schedule = $tour->schedule;
-        if( !$schedule ) {
-            $schedule = new TourSchedule();
-        }
+    //     $tour  = Tour::findOrFail($id);
 
-        $schedule->tour_id                  = $tour->id;
-        $schedule->minimum_notice_num       = $request->minimum_notice_num;
-        $schedule->minimum_notice_unit      = $request->minimum_notice_unit;
-        $schedule->estimated_duration_num   = $request->estimated_duration_num;
-        $schedule->estimated_duration_unit  = $request->estimated_duration_unit;
-        $schedule->session_start_date       = $request->session_start_date;
-        $schedule->session_start_time       = $request->session_start_time;
-        $schedule->session_end_date         = $request->session_end_date;
-        $schedule->session_end_time         = $request->session_end_time;
-        $schedule->sesion_all_day           = $request->sesion_all_day?1:0;
-        $schedule->repeat_period            = $request->repeat_period;
-        $schedule->repeat_period_unit       = $request->repeat_period_unit;
-        $schedule->until_date               = $request->until_date;
-        if ($schedule->save() ) {
-            // First delete old repeats
-            $schedule->repeats()->delete();
+    //     $schedule = $tour->schedule;
+    //     if( !$schedule ) {
+    //         $schedule = new TourSchedule();
+    //     }
 
-            if (in_array($request->repeat_period, ['MINUTELY', 'HOURLY'])) {
-                foreach ($request->input('Repeat', []) as $repeat) {
-                    if(isset($repeat['num']) && $repeat['num']=='on') {
-                        $schedule->repeats()->create([
-                            'tour_schedule_id'  => $schedule->id,
-                            'day'               => $repeat['day'],
-                            'start_time'        => $repeat['start_time'],
-                            'end_time'          => $repeat['end_time'],
-                        ]);
-                    }
-                }
-            }
+    //     $schedule->tour_id                  = $tour->id;
+    //     $schedule->minimum_notice_num       = $request->minimum_notice_num;
+    //     $schedule->minimum_notice_unit      = $request->minimum_notice_unit;
+    //     $schedule->estimated_duration_num   = $request->estimated_duration_num;
+    //     $schedule->estimated_duration_unit  = $request->estimated_duration_unit;
+    //     $schedule->session_start_date       = $request->session_start_date;
+    //     $schedule->session_start_time       = $request->session_start_time;
+    //     $schedule->session_end_date         = $request->session_end_date;
+    //     $schedule->session_end_time         = $request->session_end_time;
+    //     $schedule->sesion_all_day           = $request->sesion_all_day?1:0;
+    //     $schedule->repeat_period            = $request->repeat_period;
+    //     $schedule->repeat_period_unit       = $request->repeat_period_unit;
+    //     $schedule->until_date               = $request->until_date;
+    //     if ($schedule->save() ) {
+    //         // First delete old repeats
+    //         $schedule->repeats()->delete();
 
-            if (in_array($request->repeat_period, ['WEEKLY'])) {
-                foreach ($request->input('Repeat', []) as $repeat) {
-                    if(isset($repeat['num']) && $repeat['num']=='on') {
-                        $schedule->repeats()->create([
-                            'tour_schedule_id'  => $schedule->id,
-                            'day'               => $repeat['day'],
-                        ]);
-                    }
-                }
-            }
-        }
+    //         if (in_array($request->repeat_period, ['MINUTELY', 'HOURLY'])) {
+    //             foreach ($request->input('Repeat', []) as $repeat) {
+    //                 if(isset($repeat['num']) && $repeat['num']=='on') {
+    //                     $schedule->repeats()->create([
+    //                         'tour_schedule_id'  => $schedule->id,
+    //                         'day'               => $repeat['day'],
+    //                         'start_time'        => $repeat['start_time'],
+    //                         'end_time'          => $repeat['end_time'],
+    //                     ]);
+    //                 }
+    //             }
+    //         }
 
-        return back()->withInput()->with('success','Schedule saved successfully.');
+    //         if (in_array($request->repeat_period, ['WEEKLY'])) {
+    //             foreach ($request->input('Repeat', []) as $repeat) {
+    //                 if(isset($repeat['num']) && $repeat['num']=='on') {
+    //                     $schedule->repeats()->create([
+    //                         'tour_schedule_id'  => $schedule->id,
+    //                         'day'               => $repeat['day'],
+    //                     ]);
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     return back()->withInput()->with('success','Schedule saved successfully.');
+    // }
+
+
+    public function schedule_update(Request $request, $id)
+{
+    $tour = Tour::findOrFail($id);
+
+    // ✅ Validate all schedules
+    $request->validate([
+        'schedules' => 'required|array|min:1',
+
+        'schedules.*.minimum_notice_num'      => 'required|integer|min:0',
+        'schedules.*.minimum_notice_unit'     => 'required',
+        'schedules.*.estimated_duration_num'  => 'required|integer|min:0',
+        'schedules.*.estimated_duration_unit' => 'required',
+
+        'schedules.*.session_start_date'      => 'required|date_format:Y-m-d',
+        'schedules.*.session_start_time'      => 'required',
+        'schedules.*.session_end_date'        => 'required|date_format:Y-m-d',
+        'schedules.*.session_end_time'        => 'required',
+
+        'schedules.*.repeat_period'           => 'required|string|in:NONE,MINUTELY,HOURLY,DAILY,WEEKLY,MONTHLY,YEARLY',
+        'schedules.*.repeat_period_unit'      => 'required_if:schedules.*.repeat_period,MINUTELY,HOURLY|integer|nullable',
+        'schedules.*.until_date'              => 'nullable|date',
+    ]);
+
+    // ✅ Delete old schedules & repeats
+    foreach ($tour->schedules as $oldSchedule) {
+        $oldSchedule->repeats()->delete();
+        $oldSchedule->delete();
     }
+
+    // ✅ Save new schedules
+    foreach ($request->schedules as $scheduleData) {
+        $schedule = new TourSchedule();
+        $schedule->tour_id                 = $tour->id;
+        $schedule->minimum_notice_num      = $scheduleData['minimum_notice_num'];
+        $schedule->minimum_notice_unit     = $scheduleData['minimum_notice_unit'];
+        $schedule->estimated_duration_num  = $scheduleData['estimated_duration_num'];
+        $schedule->estimated_duration_unit = $scheduleData['estimated_duration_unit'];
+        $schedule->session_start_date      = $scheduleData['session_start_date'];
+        $schedule->session_start_time      = $scheduleData['session_start_time'];
+        $schedule->session_end_date        = $scheduleData['session_end_date'];
+        $schedule->session_end_time        = $scheduleData['session_end_time'];
+        $schedule->sesion_all_day          = !empty($scheduleData['sesion_all_day']) ? 1 : 0;
+        $schedule->repeat_period           = $scheduleData['repeat_period'];
+        $schedule->repeat_period_unit      = $scheduleData['repeat_period_unit'] ?? null;
+        $schedule->until_date              = $scheduleData['until_date'] ?? null;
+        $schedule->save();
+
+        // ✅ Handle repeats for this schedule
+        if (in_array($schedule->repeat_period, ['MINUTELY', 'HOURLY'])) {
+            foreach ($scheduleData['Repeat'] ?? [] as $repeat) {
+                if (isset($repeat['num']) && $repeat['num'] == 'on') {
+                    $schedule->repeats()->create([
+                        'tour_schedule_id' => $schedule->id,
+                        'day'              => $repeat['day'],
+                        'start_time'       => $repeat['start_time'],
+                        'end_time'         => $repeat['end_time'],
+                    ]);
+                }
+            }
+        }
+
+        if ($schedule->repeat_period === 'WEEKLY') {
+            foreach ($scheduleData['Repeat'] ?? [] as $repeat) {
+                if (isset($repeat['num']) && $repeat['num'] == 'on') {
+                    $schedule->repeats()->create([
+                        'tour_schedule_id' => $schedule->id,
+                        'day'              => $repeat['day'],
+                    ]);
+                }
+            }
+        }
+    }
+
+    return back()->with('success', 'Schedules saved successfully.');
+}
+
+
 
     public function itinerary_update(Request $request, $id) {
         $tour  = Tour::findOrFail($id);

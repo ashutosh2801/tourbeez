@@ -2,8 +2,9 @@
     <div class="card card-primary">
         <form class="needs-validation" novalidate action="{{ route('admin.tour.schedule_update', $data->id) }}" method="POST"
     enctype="multipart/form-data" autocomplete="off">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">Scheduling</h3>
+            <button type="button" id="add-schedule" class="btn btn-sm btn-success">+ Add Schedule</button>
         </div>
         <div class="card-body">
 
@@ -20,219 +21,284 @@
             @csrf
             <input type="hidden" name="id" value="{{ $data->id }}">
 
-                <div class="row mb-4">
-                    <label for="minimum_notice_num" class="form-label col-lg-2">Minimum notice *</label>
-                    <div class="col-lg-3">
-                        <input type="text" name="minimum_notice_num" id="minimum_notice_num" 
-                        value="{{ old('minimum_notice_num', $schedule?->minimum_notice_num) }}"
-                            class="form-control " placeholder="Before session start time">
-                        @error('minimum_notice_num')
-                            <small class="form-text text-danger">{{ $message }}</small>
-                        @enderror
+            <div class="accordion" id="scheduleAccordion">
+                @foreach($data->schedules as $index => $schedule)
+                <div class="card mb-3 schedule-card" data-index="{{ $index }}">
+                    <div class="card-header d-flex justify-content-between" id="heading{{ $index }}">
+                        <h5 class="mb-0">
+                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ $index }}" aria-expanded="true" aria-controls="collapse{{ $index }}">
+                                Schedule #{{ $index+1 }}
+                            </button>
+                        </h5>
+                        <button type="button" class="btn btn-danger btn-sm remove-schedule">Remove</button>
                     </div>
-                    <div class="col-lg-3">
-                        <select class="form-control " name="minimum_notice_unit" id="minimum_notice_unit">
-                            <option {{ old('minimum_notice_unit', $schedule?->minimum_notice_unit) === 'MINUTES' ? 'selected' : '' }} value="MINUTES">Minutes</option>
-                            <option {{ old('minimum_notice_unit', $schedule?->minimum_notice_unit) === 'HOURS' ? 'selected' : '' }} value="HOURS">Hours</option>
-                        </select>
-                        @error('minimum_notice_unit')
-                            <small class="form-text text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                </div>
 
-                <div class="row mb-4">
-                    <label for="estimated_duration_num" class="form-label col-lg-2">Estimated duration *</label>
-                    <div class="col-lg-3">
-                        <input type="text" name="estimated_duration_num" id="estimated_duration_num" 
-                        value="{{ old('estimated_duration_num', $schedule?->estimated_duration_num) }}"
-                            class="form-control " placeholder="Session time">
-                        @error('estimated_duration_num')
-                            <small class="form-text text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                    <div class="col-lg-3">
-                        <select class="form-control " name="estimated_duration_unit" id="estimated_duration_unit">
-                            <option {{ old('estimated_duration_unit', $schedule?->estimated_duration_unit) === 'MINUTES' ? 'selected' : '' }} value="MINUTES">Minutes</option>
-                            <option {{ old('estimated_duration_unit', $schedule?->estimated_duration_unit) === 'HOURS' ? 'selected' : '' }} value="HOURS">Hours</option>
-                            <option {{ old('estimated_duration_unit', $schedule?->estimated_duration_unit) === 'DAYS' ? 'selected' : '' }} value="DAYS">Days</option>
-                        </select>
-                        @error('mestimated_duration_unit')
-                            <small class="form-text text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                </div>
-               
-                <div class="mb-4">
-                    <div class="row">
-                        <label for="session_start_date" class="form-label col-lg-2">Next available session *</label>
-                        <div class="col-lg-4">
-                            <div class="input-group">
-                                <div class="input-group-prepend" >
-                                    <span class="input-group-text" id="basic-addon-from" style="width:70px;">Form</span>
+                    <div id="collapse{{ $index }}" class="collapse {{ $index==0 ? 'show' : '' }}" aria-labelledby="heading{{ $index }}" data-parent="#scheduleAccordion">
+                        <div class="card-body">
+
+                            <div class="row mb-4">
+                                <label for="minimum_notice_num_{{ $index }}" class="form-label col-lg-2">Minimum notice *</label>
+                                <div class="col-lg-3">
+                                    <input type="text" name="schedules[{{ $index }}][minimum_notice_num]" id="minimum_notice_num_{{ $index }}" 
+                                    value="{{ old("schedules.$index.minimum_notice_num", $schedule?->minimum_notice_num) }}"
+                                        class="form-control " placeholder="Before session start time">
+                                    @if($errors->has("schedules.$index.minimum_notice_num"))
+                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.minimum_notice_num") }}</small>
+                                    @else
+                                        @error('minimum_notice_num')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
+                                    @endif
                                 </div>
-                                <input type="text" placeholder="Date" name="session_start_date" id="session_start_date" 
-                                value="{{ old('session_start_date', $schedule->session_start_date) }}" class="form-control aiz-date-range" data-single="true" 
-                                data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text calendar-icon-start" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
-                                </div>                       
-                            </div>
-                            @error('session_start_date')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                        <div class="col-lg-3 not-all-date">
-                            <div class="input-group">
-                                <input type="text" placeholder="Time" name="session_start_time" id="session_start_time" 
-                                value="{{ old('session_start_time', $schedule->session_start_time) }}" class="form-control aiz-time-picker"> 
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text time-icon-start" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
-                                </div>                       
-                            </div>
-                            @error('session_start_time')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                    </div>
-                    <div class="row mb-4">
-                        <label for="session_end_date" class="form-label col-lg-2"></label>
-                        <div class="col-lg-4">
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon-from"  style="width:70px;">To</span>
+                                <div class="col-lg-3">
+                                    <select class="form-control minimum_notice_unit" name="schedules[{{ $index }}][minimum_notice_unit]" id="minimum_notice_unit_{{ $index }}">
+                                        <option {{ old("schedules.$index.minimum_notice_unit", $schedule?->minimum_notice_unit) === 'MINUTES' ? 'selected' : '' }} value="MINUTES">Minutes</option>
+                                        <option {{ old("schedules.$index.minimum_notice_unit", $schedule?->minimum_notice_unit) === 'HOURS' ? 'selected' : '' }} value="HOURS">Hours</option>
+                                    </select>
+                                    @if($errors->has("schedules.$index.minimum_notice_unit"))
+                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.minimum_notice_unit") }}</small>
+                                    @else
+                                        @error('minimum_notice_unit')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
+                                    @endif
                                 </div>
-                                <input type="text" placeholder="Date" name="session_end_date" id="session_end_date" 
-                                value="{{ old('session_end_date', $schedule->session_end_date) }}" class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text calendar-icon-end" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
-                                </div>                       
                             </div>
-                            @error('session_end_date')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                        <div class="col-lg-3 not-all-date">
-                            <div class="input-group">
-                                <input type="text" placeholder="Time" name="session_end_time" id="session_end_time" 
-                                value="{{ old('session_end_time', $schedule->session_end_time) }}" class="form-control aiz-time-picker"> 
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text time-icon-end" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
-                                </div>                       
-                            </div>
-                            @error('session_end_time')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                    </div>
-                    <div class="row mb-5">
-                        <label for="session_start_date" class="form-label col-lg-2"></label>
-                        <div class="col-lg-6">
-                            <label><input {{ old('sesion_all_day', $schedule->sesion_all_day) ? 'checked' : '' }} 
-                            type="checkbox" name="sesion_all_day" id="sesion_all_day" style="width:17px;height:17px"> All day</label>
-                        </div>                    
-                    </div>
-                </div>
-                
-                <div class="row mb-5">
-                    <label for="minimum_notice" class="form-label col-lg-2">Repeat *</label>
-                    <div class="col-lg-3">
-                        <select class="form-control" name="repeat_period" id="repeat_period">
-                            <option {{ old('repeat_period', $schedule->repeat_period) === 'NONE' ? 'selected' : '' }} value="NONE">Do not repeat</option>
-                            <option {{ old('repeat_period', $schedule->repeat_period) === 'MINUTELY' ? 'selected' : '' }} value="MINUTELY">Repeat minute-by-minute</option>
-                            <option {{ old('repeat_period', $schedule->repeat_period) === 'HOURLY' ? 'selected' : '' }} value="HOURLY">Repeat hourly</option>
-                            <option {{ old('repeat_period', $schedule->repeat_period) === 'DAILY' ? 'selected' : '' }} value="DAILY">Repeat daily</option>
-                            <option {{ old('repeat_period', $schedule->repeat_period) === 'WEEKLY' ? 'selected' : '' }} value="WEEKLY">Repeat weekly</option>
-                            <option {{ old('repeat_period', $schedule->repeat_period) === 'MONTHLY' ? 'selected' : '' }} value="MONTHLY">Repeat monthly</option>
-                            <option {{ old('repeat_period', $schedule->repeat_period) === 'YEARLY' ? 'selected' : '' }} value="YEARLY">Repeat yearly</option>
-                        </select>
-                        @error('repeat_period')
-                            <small class="form-text text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                    <div class="col-lg-3 d-none not-repeat-period not-repeat-period3">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text" id="basic-addon-from"  style="width:70px;">Every</span>
-                            </div>
-                            <select class="form-control" name="repeat_period_unit" id="repeat_period_unit">
-                                @for ($i=1; $i<=31; $i++)
-                                <option {{ old('repeat_period_unit', $schedule->repeat_period_unit) == $i ? 'selected' : '' }} value="{{ $i }}">{{ $i }}</option>                            
-                                @endfor
-                            </select>
-                            <div class="input-group-prepend">
-                                <span class="input-group-text" id="basic-repeat_period_unit">minutes</span>
-                            </div>                       
-                        </div>
-                        @error('repeat_period_unit')
-                            <small class="form-text text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                    <div class="col-lg-4 d-none not-repeat-period not-repeat-period3">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text" id="basic-addon-until">Until</span>
-                            </div>
-                            <input type="text" placeholder="Date" name="until_date" id="until_date" 
-                            value="{{ old('until_date', $schedule->until_date) }}" 
-                            class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
-                            <div class="input-group-prepend">
-                                <span class="input-group-text calendar-icon-util" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
-                            </div>                       
-                        </div>
-                        @error('until_date')
-                            <small class="form-text text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-                </div>
 
-                @php
-                $i = 0;
-                $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-                //$schedules = $schedule->repeats()->pluck('');
-                @endphp
+                            <div class="row mb-4">
+                                <label for="estimated_duration_num_{{ $index }}" class="form-label col-lg-2">Estimated duration *</label>
+                                <div class="col-lg-3">
+                                    <input type="text" name="schedules[{{ $index }}][estimated_duration_num]" id="estimated_duration_num_{{ $index }}" 
+                                    value="{{ old("schedules.$index.estimated_duration_num", $schedule?->estimated_duration_num) }}"
+                                        class="form-control " placeholder="Session time">
+                                    @if($errors->has("schedules.$index.estimated_duration_num"))
+                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.estimated_duration_num") }}</small>
+                                    @else
+                                        @error('estimated_duration_num')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
+                                    @endif
+                                </div>
+                                <div class="col-lg-3">
+                                    <select class="form-control estimated_duration_unit" name="schedules[{{ $index }}][estimated_duration_unit]" id="estimated_duration_unit_{{ $index }}">
+                                        <option {{ old("schedules.$index.estimated_duration_unit", $schedule?->estimated_duration_unit) === 'MINUTES' ? 'selected' : '' }} value="MINUTES">Minutes</option>
+                                        <option {{ old("schedules.$index.estimated_duration_unit", $schedule?->estimated_duration_unit) === 'HOURS' ? 'selected' : '' }} value="HOURS">Hours</option>
+                                        <option {{ old("schedules.$index.estimated_duration_unit", $schedule?->estimated_duration_unit) === 'DAYS' ? 'selected' : '' }} value="DAYS">Days</option>
+                                    </select>
+                                    @if($errors->has("schedules.$index.estimated_duration_unit"))
+                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.estimated_duration_unit") }}</small>
+                                    @else
+                                        @error('mestimated_duration_unit')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
+                                    @endif
+                                </div>
+                            </div>
 
-                @foreach ($days as $day)
-                @php
-                $repeat = [];
-                $repeat = $schedule->repeats?->firstWhere('day', $day);
-                @endphp
-                <div class="row mb-3 d-none not-repeat-period not-repeat-period2">
-                    <input type="hidden" name="Repeat[{{ $i }}][day]" id="Repeat_{{ $i }}_day" value="{{ $day }}" />
-                    <label for="Repeat_{{ $i }}_num" class="form-label col-lg-2">{{ $day }}</label>
-                    <div class="col-lg-1">
-                        <input type="checkbox" {{ old("Repeat.$i.num", isset($repeat['day'])) ? 'checked' : '' }} name="Repeat[{{ $i }}][num]" id="Repeat_{{ $i }}_num" style="width:17px;height:17px">
-                    </div> 
-                    <div class="col-lg-3 not-repeat-weekly">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text" id="basic-addon-until">From</span>
+                            <div class="mb-4">
+                                <div class="row">
+                                    <label for="session_start_date_{{ $index }}" class="form-label col-lg-2">Next available session *</label>
+                                    <div class="col-lg-4">
+                                        <div class="input-group">
+                                            <div class="input-group-prepend" >
+                                                <span class="input-group-text" id="basic-addon-from" style="width:70px;">Form</span>
+                                            </div>
+                                            <input type="text" placeholder="Date" name="schedules[{{ $index }}][session_start_date]" id="session_start_date_{{ $index }}" 
+                                            value="{{ old("schedules.$index.session_start_date", $schedule?->session_start_date) }}" class="form-control aiz-date-range" data-single="true" 
+                                            data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text calendar-icon-start" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                            </div>                       
+                                        </div>
+                                        @if($errors->has("schedules.$index.session_start_date"))
+                                            <small class="form-text text-danger">{{ $errors->first("schedules.$index.session_start_date") }}</small>
+                                        @else
+                                            @error('session_start_date')
+                                                <small class="form-text text-danger">{{ $message }}</small>
+                                            @enderror
+                                        @endif
+                                    </div>
+                                    <div class="col-lg-3 not-all-date">
+                                        <div class="input-group">
+                                            <input type="text" placeholder="Time" name="schedules[{{ $index }}][session_start_time]" id="session_start_time_{{ $index }}" 
+                                            value="{{ old("schedules.$index.session_start_time", $schedule?->session_start_time) }}" class="form-control aiz-time-picker"> 
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text time-icon-start" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                            </div>                       
+                                        </div>
+                                        @if($errors->has("schedules.$index.session_start_time"))
+                                            <small class="form-text text-danger">{{ $errors->first("schedules.$index.session_start_time") }}</small>
+                                        @else
+                                            @error('session_start_time')
+                                                <small class="form-text text-danger">{{ $message }}</small>
+                                            @enderror
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="row mb-4">
+                                    <label for="session_end_date_{{ $index }}" class="form-label col-lg-2"></label>
+                                    <div class="col-lg-4">
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text" id="basic-addon-from"  style="width:70px;">To</span>
+                                            </div>
+                                            <input type="text" placeholder="Date" name="schedules[{{ $index }}][session_end_date]" id="session_end_date_{{ $index }}" 
+                                            value="{{ old("schedules.$index.session_end_date", $schedule?->session_end_date) }}" class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text calendar-icon-end" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                            </div>                       
+                                        </div>
+                                        @if($errors->has("schedules.$index.session_end_date"))
+                                            <small class="form-text text-danger">{{ $errors->first("schedules.$index.session_end_date") }}</small>
+                                        @else
+                                            @error('session_end_date')
+                                                <small class="form-text text-danger">{{ $message }}</small>
+                                            @enderror
+                                        @endif
+                                    </div>
+                                    <div class="col-lg-3 not-all-date">
+                                        <div class="input-group">
+                                            <input type="text" placeholder="Time" name="schedules[{{ $index }}][session_end_time]" id="session_end_time_{{ $index }}" 
+                                            value="{{ old("schedules.$index.session_end_time", $schedule?->session_end_time) }}" class="form-control aiz-time-picker"> 
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text time-icon-end" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                            </div>                       
+                                        </div>
+                                        @if($errors->has("schedules.$index.session_end_time"))
+                                            <small class="form-text text-danger">{{ $errors->first("schedules.$index.session_end_time") }}</small>
+                                        @else
+                                            @error('session_end_time')
+                                                <small class="form-text text-danger">{{ $message }}</small>
+                                            @enderror
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="row mb-5">
+                                    <label for="session_start_date_{{ $index }}" class="form-label col-lg-2"></label>
+                                    <div class="col-lg-6">
+                                        <label>
+                                            <input type="checkbox" class="sesion_all_day" name="schedules[{{ $index }}][sesion_all_day]" id="sesion_all_day_{{ $index }}" value="1" {{ old("schedules.$index.sesion_all_day", $schedule?->sesion_all_day) ? 'checked' : '' }} style="width:17px;height:17px"> All day
+                                        </label>
+                                    </div>                    
+                                </div>
                             </div>
-                            <input type="text" placeholder="Time" name="Repeat[{{ $i }}][start_time]" id="Repeat_{{ $i }}_start_time" 
-                            class="form-control start_time aiz-time-picker" value="{{ old("Repeat.$i.start_time", isset($repeat) ? $repeat['start_time'] : '') }}" > 
-                            <div class="input-group-prepend">
-                                <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
-                            </div>                       
-                        </div>
-                    </div>
-                    <div class="col-lg-3 not-repeat-weekly">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text" id="basic-addon-until">To</span>
+
+                            <div class="row mb-5">
+                                <label for="repeat_period_{{ $index }}" class="form-label col-lg-2">Repeat *</label>
+                                <div class="col-lg-3">
+                                    <select class="form-control repeat_period" name="schedules[{{ $index }}][repeat_period]" id="repeat_period_{{ $index }}">
+                                        <option {{ old("schedules.$index.repeat_period", $schedule?->repeat_period) === 'NONE' ? 'selected' : '' }} value="NONE">Do not repeat</option>
+                                        <option {{ old("schedules.$index.repeat_period", $schedule?->repeat_period) === 'MINUTELY' ? 'selected' : '' }} value="MINUTELY">Repeat minute-by-minute</option>
+                                        <option {{ old("schedules.$index.repeat_period", $schedule?->repeat_period) === 'HOURLY' ? 'selected' : '' }} value="HOURLY">Repeat hourly</option>
+                                        <option {{ old("schedules.$index.repeat_period", $schedule?->repeat_period) === 'DAILY' ? 'selected' : '' }} value="DAILY">Repeat daily</option>
+                                        <option {{ old("schedules.$index.repeat_period", $schedule?->repeat_period) === 'WEEKLY' ? 'selected' : '' }} value="WEEKLY">Repeat weekly</option>
+                                        <option {{ old("schedules.$index.repeat_period", $schedule?->repeat_period) === 'MONTHLY' ? 'selected' : '' }} value="MONTHLY">Repeat monthly</option>
+                                        <option {{ old("schedules.$index.repeat_period", $schedule?->repeat_period) === 'YEARLY' ? 'selected' : '' }} value="YEARLY">Repeat yearly</option>
+                                    </select>
+                                    @if($errors->has("schedules.$index.repeat_period"))
+                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.repeat_period") }}</small>
+                                    @else
+                                        @error('repeat_period')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
+                                    @endif
+                                </div>
+
+                                <div class="col-lg-3 d-none not-repeat-period not-repeat-period3">
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="basic-addon-from"  style="width:70px;">Every</span>
+                                        </div>
+                                        <select class="form-control repeat_period_unit" name="schedules[{{ $index }}][repeat_period_unit]" id="repeat_period_unit_{{ $index }}">
+                                            @for ($i=1; $i<=31; $i++)
+                                            <option {{ old("schedules.$index.repeat_period_unit", $schedule?->repeat_period_unit) == $i ? 'selected' : '' }} value="{{ $i }}">{{ $i }}</option>                            
+                                            @endfor
+                                        </select>
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text basic-repeat_period_unit" id="basic-repeat_period_unit_{{ $index }}">minutes</span>
+                                        </div>                       
+                                    </div>
+                                    @if($errors->has("schedules.$index.repeat_period_unit"))
+                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.repeat_period_unit") }}</small>
+                                    @else
+                                        @error('repeat_period_unit')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
+                                    @endif
+                                </div>
+                                <div class="col-lg-4 d-none not-repeat-period not-repeat-period3">
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="basic-addon-until">Until</span>
+                                        </div>
+                                        <input type="text" placeholder="Date" name="schedules[{{ $index }}][until_date]" id="until_date_{{ $index }}" 
+                                        value="{{ old("schedules.$index.until_date", $schedule?->until_date) }}" 
+                                        class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text calendar-icon-util" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                        </div>                       
+                                    </div>
+                                    @if($errors->has("schedules.$index.until_date"))
+                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.until_date") }}</small>
+                                    @else
+                                        @error('until_date')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
+                                    @endif
+                                </div>
                             </div>
-                            <input type="text" placeholder="Time" name="Repeat[{{ $i }}][end_time]" id="Repeat_{{ $i }}_end_time" 
-                            class="form-control end_time aiz-time-picker" value="{{ old("Repeat.$i.end_time", isset($repeat) ? $repeat['end_time'] : '') }}" > 
-                            <div class="input-group-prepend">
-                                <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
-                            </div>                       
+
+                            @php
+                            $i = 0;
+                            $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                            @endphp
+
+                            @foreach ($days as $day)
+                            @php
+                            $repeat = [];
+                            $repeat = $schedule->repeats?->firstWhere('day', $day);
+                            @endphp
+                            <div class="row mb-3 d-none not-repeat-period not-repeat-period2">
+                                <input type="hidden" name="schedules[{{ $index }}][Repeat][{{ $i }}][day]" id="Repeat_{{ $index }}_{{ $i }}_day" value="{{ $day }}" />
+                                <label for="Repeat_{{ $index }}_{{ $i }}_num" class="form-label col-lg-2">{{ $day }}</label>
+                                <div class="col-lg-1">
+                                    <input type="checkbox" {{ old("schedules.$index.Repeat.$i.num", isset($repeat['day'])) ? 'checked' : '' }} name="schedules[{{ $index }}][Repeat][{{ $i }}][num]" id="Repeat_{{ $index }}_{{ $i }}_num" style="width:17px;height:17px">
+                                </div> 
+                                <div class="col-lg-3 not-repeat-weekly">
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="basic-addon-until">From</span>
+                                        </div>
+                                        <input type="text" placeholder="Time" name="schedules[{{ $index }}][Repeat][{{ $i }}][start_time]" id="Repeat_{{ $index }}_{{ $i }}_start_time" 
+                                        class="form-control start_time aiz-time-picker" value="{{ old("schedules.$index.Repeat.$i.start_time", isset($repeat) ? $repeat['start_time'] : '') }}" > 
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                        </div>                       
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 not-repeat-weekly">
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="basic-addon-until">To</span>
+                                        </div>
+                                        <input type="text" placeholder="Time" name="schedules[{{ $index }}][Repeat][{{ $i }}][end_time]" id="Repeat_{{ $index }}_{{ $i }}_end_time" 
+                                        class="form-control end_time aiz-time-picker" value="{{ old("schedules.$index.Repeat.$i.end_time", isset($repeat) ? $repeat['end_time'] : '') }}" > 
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
+                                        </div>                       
+                                    </div>
+                                </div>
+                            </div>
+                            @php
+                            $i++;
+                            @endphp
+                            @endforeach
+
                         </div>
                     </div>
                 </div>
-                @php
-                $i++;
-                @endphp
                 @endforeach
-
+            </div>
 
         </div>
         <div class="card-footer" style="display:block">
@@ -244,307 +310,427 @@
     </div>
 </div>
 
+{{-- Hidden template for new schedule (use __INDEX__ placeholder) --}}
+<template id="schedule-template">
+    <div class="card mb-3 schedule-card" data-index="__INDEX__">
+        <div class="card-header d-flex justify-content-between">
+            <h5 class="mb-0">
+                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse__INDEX__" aria-expanded="true">Schedule #__INDEX__</button>
+            </h5>
+            <button type="button" class="btn btn-danger btn-sm remove-schedule">Remove</button>
+        </div>
+        <div id="collapse__INDEX__" class="collapse" data-parent="#scheduleAccordion">
+            <div class="card-body">
+                <div class="row mb-4">
+                    <label class="form-label col-lg-2">Minimum notice *</label>
+                    <div class="col-lg-3">
+                        <input type="text" name="schedules[__INDEX__][minimum_notice_num]" id="minimum_notice_num___INDEX__" class="form-control" placeholder="Before session start time">
+                    </div>
+                    <div class="col-lg-3">
+                        <select class="form-control minimum_notice_unit" name="schedules[__INDEX__][minimum_notice_unit]" id="minimum_notice_unit___INDEX__">
+                            <option value="MINUTES">Minutes</option>
+                            <option value="HOURS">Hours</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <label class="form-label col-lg-2">Estimated duration *</label>
+                    <div class="col-lg-3">
+                        <input type="text" name="schedules[__INDEX__][estimated_duration_num]" id="estimated_duration_num___INDEX__" class="form-control" placeholder="Session time">
+                    </div>
+                    <div class="col-lg-3">
+                        <select class="form-control estimated_duration_unit" name="schedules[__INDEX__][estimated_duration_unit]" id="estimated_duration_unit___INDEX__">
+                            <option value="MINUTES">Minutes</option>
+                            <option value="HOURS">Hours</option>
+                            <option value="DAYS">Days</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="row">
+                        <label class="form-label col-lg-2">Next available session *</label>
+                        <div class="col-lg-4">
+                            <div class="input-group">
+                                <div class="input-group-prepend" >
+                                    <span class="input-group-text" style="width:70px;">Form</span>
+                                </div>
+                                <input type="text" name="schedules[__INDEX__][session_start_date]" id="session_start_date___INDEX__" class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}" placeholder="Date">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text calendar-icon-start"><i class="fa fa-calendar"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 not-all-date">
+                            <div class="input-group">
+                                <input type="text" name="schedules[__INDEX__][session_start_time]" id="session_start_time___INDEX__" class="form-control aiz-time-picker" placeholder="Time">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text time-icon-start"><i class="fa fa-calendar"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <label class="form-label col-lg-2"></label>
+                        <div class="col-lg-4">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" style="width:70px;">To</span>
+                                </div>
+                                <input type="text" name="schedules[__INDEX__][session_end_date]" id="session_end_date___INDEX__" class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}" placeholder="Date">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text calendar-icon-end"><i class="fa fa-calendar"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 not-all-date">
+                            <div class="input-group">
+                                <input type="text" name="schedules[__INDEX__][session_end_time]" id="session_end_time___INDEX__" class="form-control aiz-time-picker" placeholder="Time">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text time-icon-end"><i class="fa fa-calendar"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-5">
+                        <label class="form-label col-lg-2"></label>
+                        <div class="col-lg-6">
+                            <label><input type="checkbox" class="sesion_all_day" name="schedules[__INDEX__][sesion_all_day]" id="sesion_all_day___INDEX__" value="1" style="width:17px;height:17px"> All day</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-5">
+                    <label class="form-label col-lg-2">Repeat *</label>
+                    <div class="col-lg-3">
+                        <select class="form-control repeat_period" name="schedules[__INDEX__][repeat_period]" id="repeat_period___INDEX__">
+                            <option value="NONE">Do not repeat</option>
+                            <option value="MINUTELY">Repeat minute-by-minute</option>
+                            <option value="HOURLY">Repeat hourly</option>
+                            <option value="DAILY">Repeat daily</option>
+                            <option value="WEEKLY">Repeat weekly</option>
+                            <option value="MONTHLY">Repeat monthly</option>
+                            <option value="YEARLY">Repeat yearly</option>
+                        </select>
+                    </div>
+
+                    <div class="col-lg-3 d-none not-repeat-period not-repeat-period3">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" style="width:70px;">Every</span>
+                            </div>
+                            <select class="form-control repeat_period_unit" name="schedules[__INDEX__][repeat_period_unit]" id="repeat_period_unit___INDEX__">
+                                @for ($i=1; $i<=31; $i++)
+                                <option value="{{ $i }}">{{ $i }}</option>
+                                @endfor
+                            </select>
+                            <div class="input-group-prepend">
+                                <span class="input-group-text basic-repeat_period_unit">minutes</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 d-none not-repeat-period not-repeat-period3">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="basic-addon-until">Until</span>
+                            </div>
+                            <input type="text" placeholder="Date" name="schedules[__INDEX__][until_date]" id="until_date___INDEX__" class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text calendar-icon-util"><i class="fa fa-calendar"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @php
+                $i = 0;
+                $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                @endphp
+
+                @foreach ($days as $day)
+                <div class="row mb-3 d-none not-repeat-period not-repeat-period2">
+                    <input type="hidden" name="schedules[__INDEX__][Repeat][{{ $i }}][day]" value="{{ $day }}" />
+                    <label class="form-label col-lg-2">{{ $day }}</label>
+                    <div class="col-lg-1">
+                        <input type="checkbox" name="schedules[__INDEX__][Repeat][{{ $i }}][num]" id="Repeat___INDEX___{{ $i }}_num" style="width:17px;height:17px">
+                    </div>
+                    <div class="col-lg-3 not-repeat-weekly">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">From</span>
+                            </div>
+                            <input type="text" placeholder="Time" name="schedules[__INDEX__][Repeat][{{ $i }}][start_time]" id="Repeat___INDEX___{{ $i }}_start_time" class="form-control start_time aiz-time-picker">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 not-repeat-weekly">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">To</span>
+                            </div>
+                            <input type="text" placeholder="Time" name="schedules[__INDEX__][Repeat][{{ $i }}][end_time]" id="Repeat___INDEX___{{ $i }}_end_time" class="form-control end_time aiz-time-picker">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @php $i++; @endphp
+                @endforeach
+
+            </div>
+        </div>
+    </div>
+</template>
+
 @section('js')
 @parent
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-function setValueTime( value ) {
-    let step10 = step1 = '';
-    for(i=10; i<91; i+=5) 
-    step10+= `<option value="${i}">${i}</option>`;
-
-    for(i=1; i<32; i++) 
-    step1+= `<option value="${i}">${i}</option>`;
-
-   
-    if( value == 'MINUTELY' ) {
- 
-        $('#basic-repeat_period_unit').text('minutes');
+    function setValueTimeLocal($card, value) {
+        // update the text 'minutes/hours/days' for this card
+        const $unitLabel = $card.find('.basic-repeat_period_unit');
+        if (! $unitLabel.length) return;
+        if (value == 'MINUTELY') $unitLabel.text('minutes');
+        else if (value == 'HOURLY') $unitLabel.text('hours');
+        else if (value == 'DAILY') $unitLabel.text('days');
+        else if (value == 'WEEKLY') $unitLabel.text('weeks');
+        else if (value == 'MONTHLY') $unitLabel.text('months');
+        else if (value == 'YEARLY') $unitLabel.text('years');
     }
-    else if( value == 'HOURLY' ) {
-        $('#basic-repeat_period_unit').text('hours');
+
+    function repeat_period_local($card) {
+        const val = $card.find('.repeat_period').val();
+        setValueTimeLocal($card, val);
+
+        if (val == 'NONE') {
+            $card.find('.not-repeat-period').addClass('d-none');
+        } else if (val == 'MONTHLY' || val == 'YEARLY' || val == 'DAILY') {
+            $card.find('.not-repeat-period2').addClass('d-none');
+            $card.find('.not-repeat-period3').removeClass('d-none');
+        } else {
+            if (val == 'MINUTELY' || val == 'HOURLY' || val == 'WEEKLY')
+                $card.find('.not-repeat-period').removeClass('d-none');
+
+            if (val == 'WEEKLY')
+                $card.find('.not-repeat-weekly').addClass('d-none');
+            else
+                $card.find('.not-repeat-weekly').removeClass('d-none');
+        }
     }
-    else if( value == 'DAILY' ) {
-        $('#basic-repeat_period_unit').text('days');
+
+    function initDateRangeFor($card) {
+        $card.find('.aiz-date-range').each(function() {
+            var $input = $(this);
+            // destroy existing if reinitialized (safe check)
+            if ($input.data('daterangepicker')) {
+                $input.data('daterangepicker').remove();
+            }
+            $input.daterangepicker({
+                singleDatePicker: true,
+                showDropdowns: true,
+                minDate: $input.data('min-date'),
+                locale: { format: 'YYYY-MM-DD' }
+            });
+        });
     }
-    else if( value == 'WEEKLY' ) {
-        $('#basic-repeat_period_unit').text('weeks');
+
+    function initFlatpickrFor($card) {
+        // Start time
+        const startSel = $card.find('.aiz-time-picker').filter(function(){ return $(this).attr('id') && $(this).attr('id').includes('session_start_time'); });
+        const endSel = $card.find('.aiz-time-picker').filter(function(){ return $(this).attr('id') && $(this).attr('id').includes('session_end_time'); });
+
+        startSel.each(function(){
+            if ($(this)[0]._flatpickr) return; // already initialized
+            const inst = flatpickr(this, { enableTime: true, noCalendar: true, dateFormat: "h:i K", time_24hr: false });
+            const $icon = $(this).closest('.input-group').find('.time-icon-start');
+            $icon.off('click').on('click', function(){ if (!inst.isOpen) inst.open(); $(this).closest('.schedule-card').find(this).focus(); });
+        });
+
+        endSel.each(function(){
+            if ($(this)[0]._flatpickr) return;
+            const inst = flatpickr(this, { enableTime: true, noCalendar: true, dateFormat: "h:i K", time_24hr: false });
+            const $icon = $(this).closest('.input-group').find('.time-icon-end');
+            $icon.off('click').on('click', function(){ if (!inst.isOpen) inst.open(); $(this).closest('.schedule-card').find(this).focus(); });
+        });
     }
-    else if( value == 'MONTHLY' ) {
-        $('#basic-repeat_period_unit').text('months');
-    }
-    else if( value == 'YEARLY' ) {
-        $('#basic-repeat_period_unit').text('years');
-    }
-}   
 
-function repeat_period(){
+    function updateEndDateTimeLocal($card) {
+        const idx = $card.data('index');
+        const durationNum = parseInt($card.find('#estimated_duration_num_' + idx).val());
+        const durationUnit = $card.find('#estimated_duration_unit_' + idx).val();
+        const sessionStartTime = $card.find('#session_start_time_' + idx).val();
+        const sessionStartDate = $card.find('#session_start_date_' + idx).val();
 
-    let repeat_period_val = $('#repeat_period').val();
+        if (!durationNum || !sessionStartTime || !sessionStartDate) return;
 
-    setValueTime(repeat_period_val)
-    if(repeat_period_val == 'NONE') {
-        $('.not-repeat-period').addClass('d-none');
-    }
-    else if(repeat_period_val == 'MONTHLY' || repeat_period_val == 'YEARLY' || repeat_period_val == 'DAILY') {
-        console.log(23423);
-        $('.not-repeat-period2').addClass('d-none');
-
-        // if(repeat_period_val == 'DAILY')
-        $('.not-repeat-period3').removeClass('d-none');
-    }
-    else {
-        if(repeat_period_val == 'MINUTELY' || repeat_period_val == 'HOURLY' || repeat_period_val == 'WEEKLY')
-            $('.not-repeat-period').removeClass('d-none');
-
-        if(repeat_period_val == 'WEEKLY')
-            $('.not-repeat-weekly').addClass('d-none');
-        else 
-            $('.not-repeat-weekly').removeClass('d-none');
-    }
-};
-
-$(document).ready(function(){
-    $('#sesion_all_day').click(function(){
-        $('.not-all-date').toggleClass('hidden');
-    });
-
-    repeat_period(); 
-
-    $('#repeat_period').change(function(){
-        repeat_period();
-    });
-    
-    $('.aiz-date-range').on('apply.daterangepicker', function(ev, picker) {
-        var selectedDate = picker.startDate.format('YYYY-MM-DD');
-        var endDate = picker.endDate.format('YYYY-MM-DD');
-      //  $(this).val(selectedDate); // If needed
-    // Update visible input with selected range
-        $(this).val(endDate);
-
-       // $('#session_end_date').val(endDate);
-        $('#until_date').val(endDate); // Applies the end date to the until_date input
-
-       // $('#session_end_date').val(selectedDate);
-
-        // $('#session_start_time, .start_time').val('09:00 AM');
-        // $('#session_end_time, .end_time').val('05:00 PM');
-    });
-    
-});
-
-$(document).ready(function() {
-    $('#estimated_duration_num, #estimated_duration_unit, #session_start_time').on('input', function() {
-        let durationNum = parseInt($('#estimated_duration_num').val());
-        let durationUnit = $('#estimated_duration_unit').val();
-        let sessionStartTime = $('#session_start_time').val(); // e.g., "9:00 AM"
-
-        if (!durationNum || !sessionStartTime) return;
-
-        // Parse "9:00 AM" (or "9:00 AM YYYY-MM-DD" if you add dates)
-        let timeParts = sessionStartTime.match(/(\d+):(\d+)\s?(AM|PM)/i);
+        const timeParts = sessionStartTime.match(/(\d+):(\d+)\s?(AM|PM)/i);
         if (!timeParts) return;
 
         let hours = parseInt(timeParts[1]);
         let minutes = parseInt(timeParts[2]);
         let period = timeParts[3].toUpperCase();
 
-        // Convert to 24-hour time
         if (period === 'PM' && hours < 12) hours += 12;
         if (period === 'AM' && hours === 12) hours = 0;
 
-        // Create Date object for today
-        let date = new Date();
+        let date = new Date(sessionStartDate + 'T00:00:00');
         date.setHours(hours);
         date.setMinutes(minutes);
         date.setSeconds(0);
 
-        // Add based on durationUnit
-        if (durationUnit === 'HOURS') {
-            date.setHours(date.getHours() + durationNum);
-        } else if (durationUnit === 'MINUTES') {
-            date.setMinutes(date.getMinutes() + durationNum);
-        } else if (durationUnit === 'DAYS') {
-            date.setDate(date.getDate() + durationNum);
-        }
+        if (durationUnit === 'HOURS') date.setHours(date.getHours() + durationNum);
+        else if (durationUnit === 'MINUTES') date.setMinutes(date.getMinutes() + durationNum);
+        else if (durationUnit === 'DAYS') date.setDate(date.getDate() + durationNum);
 
-        // Format to 12-hour with AM/PM
         let newHours = date.getHours();
         let newMinutes = date.getMinutes();
         let newPeriod = newHours >= 12 ? 'PM' : 'AM';
 
-        newHours = newHours % 12;
-        newHours = newHours ? newHours : 12; // Handle midnight
+        newHours = newHours % 12; newHours = newHours ? newHours : 12;
         newMinutes = newMinutes < 10 ? '0' + newMinutes : newMinutes;
 
-        let formattedTime = newHours + ':' + newMinutes + ' ' + newPeriod;
+        const formattedTime = newHours + ':' + newMinutes + ' ' + newPeriod;
+        const month = date.getMonth() + 1; const day = date.getDate(); const year = date.getFullYear();
+        const formattedDate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
 
-        // Optional: include date
-        let month = date.getMonth() + 1;
-        let day = date.getDate();
-        let year = date.getFullYear();
-        let formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-        
-        
-        let fullFormatted = formattedTime;
-        
-        $('#session_end_time').val(fullFormatted);
-        $('#session_end_date').val(formattedDate);
-    });
-});     
-$(document).ready(function() {
-        $('.calendar-icon-start').on('click', function () {
-            
-        const startdate = $('#session_start_date').data('daterangepicker');
-        if (!startdate.isShowing) {
-            $('#session_start_date').focus();
-        }
-     //   $('#session_start_date').focus(); // focus input
-       // $('#session_end_date').focus(); // focus input
-        
-    });
-          $('.calendar-icon-end').on('click', function () {
-        const enddate = $('#session_end_date').data('daterangepicker');
-        if (!enddate.isShowing) {
-            $('#session_end_date').focus();
-        }
-     //   $('#session_start_date').focus(); // focus input
-       // $('#session_end_date').focus(); // focus input
-        
-    });
-    $('.calendar-icon-util').on('click', function () {
-        const enddate = $('#until_date').data('daterangepicker');
-        if (!enddate.isShowing) {
-            $('#until_date').focus();
-        }
-     //   $('#session_start_date').focus(); // focus input
-       // $('#session_end_date').focus(); // focus input
-        
-    });
-});   
- $(document).ready(function () {
-  // Initialize flatpickr and save instance in a variable
-  const startpickr = flatpickr("#session_start_time", {
-  enableTime: true,
-  noCalendar: true,
-  dateFormat: "h:i K",     // Format shown to user
-  time_24hr: false,        // 12-hour format
-    // Set default time
-});
-
-  // On icon click, open the picker ONLY if it's not already open
-  $('.time-icon-start').on('click', function () {
-    if (!startpickr.isOpen) {
-      startpickr.open();
-    }
-    // Focus input as well, optional
-    $('#session_start_time').focus();
-  });
-  const endpickr = flatpickr("#session_end_time", {
-  enableTime: true,
-  noCalendar: true,
-  dateFormat: "h:i K",     // Format shown to user
-  time_24hr: false,        // 12-hour format
-   // Set default time
-});
-  // On icon click, open the picker ONLY if it's not already open
-  $('.time-icon-end').on('click', function () {
-    if (!endpickr.isOpen) {
-      endpickr.open();
-    }
-    // Focus input as well, optional
-    $('#session_end_time').focus();
-  });
-});
-
-
-function updateEndDateTime() {
-    
-    let durationNum = parseInt($('#estimated_duration_num').val());
-    let durationUnit = $('#estimated_duration_unit').val();
-    let sessionStartTime = $('#session_start_time').val(); // e.g., "9:00 AM"
-    let sessionStartDate = $('#session_start_date').val(); // e.g., "2025-08-10"
-    
-    if (!durationNum || !sessionStartTime || !sessionStartDate) return;
-    
-    // Parse time: "9:00 AM"
-    let timeParts = sessionStartTime.match(/(\d+):(\d+)\s?(AM|PM)/i);
-    if (!timeParts) return;
-
-    let hours = parseInt(timeParts[1]);
-    let minutes = parseInt(timeParts[2]);
-    let period = timeParts[3].toUpperCase();
-
-    if (period === 'PM' && hours < 12) hours += 12;
-    if (period === 'AM' && hours === 12) hours = 0;
-
-    // Create Date object with both date and time
-    let date = new Date(`${sessionStartDate}T00:00:00`);
-    date.setHours(hours);
-    date.setMinutes(minutes);
-    date.setSeconds(0);
-
-    // Add duration
-    if (durationUnit === 'HOURS') {
-        date.setHours(date.getHours() + durationNum);
-    } else if (durationUnit === 'MINUTES') {
-        date.setMinutes(date.getMinutes() + durationNum);
-    } else if (durationUnit === 'DAYS') {
-        date.setDate(date.getDate() + durationNum);
+        $card.find('#session_end_time_' + idx).val(formattedTime);
+        $card.find('#session_end_date_' + idx).val(formattedDate);
+        const dr = $card.find('#session_end_date_' + idx).data('daterangepicker');
+        if (dr) { dr.setStartDate(formattedDate); dr.setEndDate(formattedDate); }
     }
 
-    // Format time to 12-hour AM/PM
-    let newHours = date.getHours();
-    let newMinutes = date.getMinutes();
-    let newPeriod = newHours >= 12 ? 'PM' : 'AM';
+    function initScheduleCard($card) {
+        // ensure data-index exists
+        const idx = $card.data('index');
+        if (typeof idx === 'undefined') return;
 
-    newHours = newHours % 12;
-    newHours = newHours ? newHours : 12;
-    newMinutes = newMinutes < 10 ? '0' + newMinutes : newMinutes;
+        // initialize datepickers
+        initDateRangeFor($card);
 
-    let formattedTime = newHours + ':' + newMinutes + ' ' + newPeriod;
+        // initialize flatpickr
+        initFlatpickrFor($card);
 
-    // Format date to yyyy-mm-dd
-    let month = date.getMonth() + 1;
-    let day = date.getDate();
-    let year = date.getFullYear();
-    let formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-    
-    // Update inputs
-    $('#session_end_time').val(formattedTime);
-    $('#session_end_date').val(formattedDate);
-    $('#session_end_date').data('daterangepicker').setStartDate(formattedDate);
-    $('#session_end_date').data('daterangepicker').setEndDate(formattedDate);
-}
+        // bind repeat change
+        $card.find('.repeat_period').off('change').on('change', function(){ repeat_period_local($card); });
+        // initial run
+        repeat_period_local($card);
+
+        // bind all day toggle
+        $card.find('.sesion_all_day').off('click').on('click', function(){ $card.find('.not-all-date').toggleClass('hidden'); });
+
+        // bind calendar icon clicks
+        $card.find('.calendar-icon-start').off('click').on('click', function(){ const input = $card.find('#session_start_date_' + idx); const dr = input.data('daterangepicker'); if (dr && !dr.isShowing) input.focus(); });
+        $card.find('.calendar-icon-end').off('click').on('click', function(){ const input = $card.find('#session_end_date_' + idx); const dr = input.data('daterangepicker'); if (dr && !dr.isShowing) input.focus(); });
+        $card.find('.calendar-icon-util').off('click').on('click', function(){ const input = $card.find('#until_date_' + idx); const dr = input.data('daterangepicker'); if (dr && !dr.isShowing) input.focus(); });
+
+        // bind apply.daterangepicker for until_date to set value
+        $card.find('.aiz-date-range').off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker){
+            const selDate = picker.endDate.format('YYYY-MM-DD');
+            $(this).val(selDate);
+            if ($(this).attr('id') && $(this).attr('id').includes('session_start_date')) {
+                // nothing extra here
+            }
+        });
+
+        // bind duration/time change to update end time
+        $card.find('#estimated_duration_num_' + idx + ', #estimated_duration_unit_' + idx + ', #session_start_time_' + idx).off('input change').on('input change', function(){ updateEndDateTimeLocal($card); });
+
+        // when session_start_date changes
+        $card.find('#session_start_date_' + idx).off('change input blur').on('change input blur', function(){ updateEndDateTimeLocal($card); });
+
+    }
+
+    $(document).ready(function(){
+        // initialize existing schedule cards
+        $('.schedule-card').each(function(){ initScheduleCard($(this)); });
+
+        // add schedule
+        $('#add-schedule').on('click', function(){
+            const index = $('.schedule-card').length;
+            let tpl = $('#schedule-template').html();
+            tpl = tpl.replace(/__INDEX__/g, index);
+            $('#scheduleAccordion').append(tpl);
+            const $new = $('#scheduleAccordion').find('.schedule-card').last();
+            $new.attr('data-index', index);
+            // ensure collapse IDs are unique
+            $new.find('[id*="__INDEX__"]').each(function(){
+                const id = $(this).attr('id');
+                if (!id) return;
+                $(this).attr('id', id.replace('__INDEX__', index));
+            });
+            // initialize datepickers and pickers for new card
+            initScheduleCard($new);
+        });
+
+        // remove schedule
+        $(document).on('click', '.remove-schedule', function(){
+            if ($('.schedule-card').length > 1) {
+                $(this).closest('.schedule-card').remove();
+            } else {
+                alert('At least one schedule is required.');
+            }
+        });
 
 
-$(document).ready(function () {
-    // When duration, time, or unit changes
-    $('#estimated_duration_num, #estimated_duration_unit, #session_start_time').on('input change', updateEndDateTime);
+             // Initialize flatpickr and save instance in a variable
+              const startpickr = flatpickr("#session_start_time", {
+              enableTime: true,
+              noCalendar: true,
+              dateFormat: "h:i K",     // Format shown to user
+              time_24hr: false,        // 12-hour format
+                // Set default time
+            });
 
-    // When session_start_date changes via AIZ datepicker
-    $(document).on('apply.daterangepicker', '#session_start_date', updateEndDateTime);
+              // On icon click, open the picker ONLY if it's not already open
+              $('.time-icon-start').on('click', function () {
+                if (!startpickr.isOpen) {
+                  startpickr.open();
+                }
+                // Focus input as well, optional
+                $('#session_start_time').focus();
+              });
+              const endpickr = flatpickr("#session_end_time", {
+              enableTime: true,
+              noCalendar: true,
+              dateFormat: "h:i K",     // Format shown to user
+              time_24hr: false,        // 12-hour format
+               // Set default time
+            });
+              // On icon click, open the picker ONLY if it's not already open
+              $('.time-icon-end').on('click', function () {
+                if (!endpickr.isOpen) {
+                  endpickr.open();
+                }
+                // Focus input as well, optional
+                $('#session_end_time').focus();
+              });
 
-    // Also fallback for manual input
-    $('#session_start_date').on('change input blur', updateEndDateTime);
-});
+    });
 
+
+
+
+
+     
 
 </script>
 
 <script>
+    // ensure existing date range inputs are initialized on page load (for any remaining non-initialized)
     $(document).ready(function () {
         if ($('.aiz-date-range').length > 0) {
             $('.aiz-date-range').each(function () {
-                // reinitialize the date picker with fresh settings if needed
                 var $input = $(this);
+                if ($input.data('daterangepicker')) return;
                 $input.daterangepicker({
                     singleDatePicker: true,
                     showDropdowns: true,
                     minDate: $input.data('min-date'),
-                    locale: {
-                        format: 'YYYY-MM-DD'
-                    }
+                    locale: { format: 'YYYY-MM-DD' }
                 });
             });
         }
