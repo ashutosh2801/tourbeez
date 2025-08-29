@@ -169,12 +169,12 @@
                             <td>{!! main_image_html($tour->main_image?->id) !!}</td>
                             <td>
                                 @can('edit_tour')     
-                                <a target="_blank" class="text-info text-hover" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
+                                <a target="_blank" class="text-info text-hover" href="{{ $tour->parent_id ? route('admin.tour.sub-tour.edit', encrypt($tour->id)) : route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
                                 @else
                                 {{ $tour->title }}
                                 @endcan
 
-                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-info text-hover" target="_blank">{{translate('View Tour Online')}}</a></div>
+                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-info text-hover" target="_blank">{{translate('View Tour Online')}}</a> | <a href="{{ route('admin.tours.sub-create', encrypt($tour->id)) }}" class="text-info text-hover" target="_blank">{{translate('Create Sub Tour')}}</a></div>
                                 <div class="text-sm text-gray-500"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
                             </td>    
                             <td>{{ price_format_with_currency($tour->price) }}</td>

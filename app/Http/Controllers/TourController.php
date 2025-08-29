@@ -140,6 +140,142 @@ class TourController extends Controller
         return view('admin.tours.create');
     }
 
+    public function createSubTour($id)
+    {
+        $data  = Tour::findOrFail(decrypt($id));
+        return view('admin.tours.sub-tour.create', compact('data'));
+    }
+
+    public function editSubTour($id)
+    {
+        $data  = Tour::findOrFail(decrypt($id));
+
+        //$data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+
+        // return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule', 'metaData'));
+
+        return view('admin.tours.sub-tour.edit.index', compact('data', 'detail', 'schedule', 'metaData'));
+    }
+
+
+    public function subTourStore(Request $request, $id)
+    {
+        $validator = FacadesValidator::make($request->all(), [
+            'title'                 => 'required|max:255',
+            'description'           => 'required',
+            'long_description'      => 'required',
+            'price_type'            => 'required',
+            'PriceOption'           => 'required|array',
+            'PriceOption.*.label'   => 'required|string|max:255',
+            'PriceOption.*.price'   => 'required|numeric|min:0',
+            'PriceOption.*.qty_used'=> 'required|integer|min:0',
+            'advertised_price'      => 'required',
+            'category'              => 'required|array',
+            'category.*'            => 'integer|exists:categories,id',
+            'tour_type'             => 'required|array',
+            'tour_type.*'           => 'integer|exists:tourtypes,id',
+            'image'                 => 'required|integer',
+        ],
+        [
+            'title.required' => 'Please enter a title',
+            'description.required' => 'Please enter a description',
+            'long_description.required' => 'Please enter a long description',
+            'price_type.required' => 'Please select a price type',
+            'PriceOption.*.label.required' => 'Please enter a label for the price option',
+            'PriceOption.*.price.required' => 'Please enter a price for the price option',
+            'PriceOption.*.qty_used.required' => 'Please enter a quantity used for the price option',
+            'advertised_price.required' => 'Please enter an advertised price',
+            'category.required' => 'Please select at least one category',
+            'image.required' => 'Please select at featured image',
+        ]);
+
+        if ($validator->fails()) {
+            // Validation failed
+            return back()->withInput()->withErrors($validator)->with('error','Something went wrong!');
+        }
+        
+        // Generate unique slug
+        $baseSlug = Str::slug($request->title);
+        $uniqueSlug = $baseSlug;
+        $counter = 1;
+        while (Tour::where('slug', $uniqueSlug)->exists()) {
+            $uniqueSlug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        // Create new product instance
+        $tour = new Tour();
+        $tour->user_id    = auth()->id();
+        $tour->parent_id    = $id;
+        $tour->title      = $request->title;
+        $tour->slug       = $uniqueSlug;
+        $tour->unique_code= $request->unique_code;
+        $tour->price      = $request->advertised_price;
+        $tour->price_type = $request->price_type;
+        $tour->order_email       = $request->order_email;
+
+        if($tour->save()) {
+
+            // Save categories
+            if ($request->has('category') && is_array($request->category)) {
+                $tour->categories()->sync($request->category);
+            }
+            // Save tour types
+            if ($request->has('tour_type') && is_array($request->tour_type)) {
+                $tour->tourtypes()->sync($request->tour_type);
+            }
+
+            if ($request->has('PriceOption') && is_array($request->PriceOption)) {
+                foreach ($request->PriceOption as $option) {
+                    $pricing = new TourPricing();
+                    $pricing->tour_id       = $tour->id;
+                    $pricing->label         = $option['label'] ?? null;
+                    $pricing->price         = $option['price'] ?? null;
+                    $pricing->quantity_used = $option['qty_used'] ?? 0;
+                    $pricing->save();
+                }
+            }
+            
+            $tour_detail = new TourDetail();
+            $tour_detail->tour_id               = $tour->id;
+            $tour_detail->description           = $request->description;
+            $tour_detail->long_description      = $request->long_description;
+            $tour_detail->other_description     = $request->other_description;
+            $tour_detail->quantity_min          = $request->quantity_min;
+            $tour_detail->quantity_max          = $request->quantity_max;
+            $tour_detail->IsPurchasedAsAGift    = $request->IsPurchasedAsAGift?1:0;
+            $tour_detail->IsExpiryDays          = $request->IsExpiryDays?1:0;
+            $tour_detail->expiry_days           = $request->expiry_days;
+            $tour_detail->IsExpiryDate          = $request->IsExpiryDate?1:0;
+            $tour_detail->expiry_date           = $request->expiry_date;
+            $tour_detail->gift_tax_fees         = $request->gift_tax_fees?1:0;
+            $tour_detail->IsTerms               = $request->IsTerms?1:0;
+            $tour_detail->terms_and_conditions  = $request->terms_and_conditions;
+            $tour_detail->meta_title            = $request->title;
+            $tour_detail->meta_description      = $request->title;
+            $tour_detail->focus_keyword         = $request->title;
+            $tour_detail->save();
+        }
+        
+        $tourId = $tour->id;
+        if( $request->has('image') ) { 
+            $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
+            // Check if the requested image is already attached to the tour
+            if ($tour->galleries->contains($request->image)) {
+                // Just update pivot
+                $tour->galleries()->detach($request->image);
+            } 
+            // Attach and set is_main = 1
+            $tour->galleries()->attach($request->image, ['is_main' => 1]);
+        }
+
+        return redirect()->route('admin.tour.sub-tour.edit', encrypt($tour->id))->with('success', 'Tour created successfully.');
+    }
+    
+
     /**
      * Store a newly created resource in storage.
      */
@@ -1576,7 +1712,6 @@ class TourController extends Controller
 
     public function bulkDelete(Request $request)
     {
-        dd(324);
         $ids = $request->ids;
 
         if (!$ids || count($ids) === 0) {

@@ -63,6 +63,18 @@
                                         @enderror
                                     @endif
                                 </div>
+                                <div class="col-lg-3">
+                                    <input type="text" name="schedules[{{ $index }}][price]" id="price_{{ $index }}" 
+                                    value="{{ old("schedules.$index.price", $schedule?->price) }}"
+                                        class="form-control " placeholder="Schedule Price">
+                                    @if($errors->has("schedules.$index.price"))
+                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.price") }}</small>
+                                    @else
+                                        @error('price')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
+                                    @endif
+                                </div>
                             </div>
 
                             <div class="row mb-4">
