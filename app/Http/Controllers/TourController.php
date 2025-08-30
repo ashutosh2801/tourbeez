@@ -105,7 +105,8 @@ class TourController extends Controller
             
         }
 
-        $query->orderBy('sort_order');
+        $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
+
 
         // Set items per page
         $perPage = $request->input('per_page', 10);
@@ -1495,7 +1496,6 @@ class TourController extends Controller
 
     public function bulkDelete(Request $request)
     {
-        dd(324);
         $ids = $request->ids;
 
         if (!$ids || count($ids) === 0) {
