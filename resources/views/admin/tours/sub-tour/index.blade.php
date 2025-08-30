@@ -54,14 +54,15 @@
 </style>
 
 <x-admin>
-    @section('title','Tours')
+    @section('title','Tours' . ' / '.  $parentTour->title)
     <div class="card">
 
         <!-- Search Form (GET) -->
-        <form method="GET" action="{{ route('admin.tour.index') }}">
+
+        <form method="GET" action="{{ route('admin.tour.sub-tour.index', [encrypt($parentTour->id)]) }}">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
-                    <h3 class="card-title mb-0">{{ translate('Tours') }}</h3>
+                    <h3 class="card-title mb-0">{{ translate('Sub Tours') }} </h3>
 
                     <div class="d-flex gap-2 flex">
 
@@ -124,13 +125,13 @@
             <div class="d-flex justify-content-between align-items-center w-100">
                 <h3 class="card-title mb-0"></h3>
                 <div class="card-tools">
-                    <button id="enableDisableTour" type="button" class="btn btn-sm btn-primary">Enable/Disable</button>
+                    <button id="enableDisableTour" type="button" class="btn btn-sm btn-info">Enable/Disable</button>
 
-                    <button id="saveTourCoupon" type="button" class="btn btn-sm btn-info">Create Discount</button>
+                    <!-- <button id="saveTourCoupon" type="button" class="btn btn-sm btn-info">Create Discount</button> -->
                     <button id="saveSortOrder" type="button" class="btn btn-sm btn-primary">Save Sort Order</button>
 
                     @can('add_tour') 
-                    <a href="{{ route('admin.tour.create') }}" class="btn btn-sm btn-info">Create New Tour</a>
+                    <a target="_blank" href="{{ route('admin.tours.sub-create', [encrypt($parentTour->id)]) }}" class="btn btn-sm btn-info">Create New Sub Tour</a>
                     @endcan
                     @can('delete_tour') 
                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure to delete selected orders?')">
@@ -174,7 +175,7 @@
                                 {{ $tour->title }}
                                 @endcan
 
-                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-info text-hover" target="_blank">{{translate('View Tour Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-info text-hover" target="_blank">{{translate('Sub Tours')}}</a></div>
+                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-info text-hover" target="_blank">{{translate('View Tour Online')}}</a></div>
                                 <div class="text-sm text-gray-500"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
                             </td>    
                             <td>{{ price_format_with_currency($tour->price) }}</td>

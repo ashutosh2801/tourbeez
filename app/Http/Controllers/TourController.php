@@ -105,7 +105,8 @@ class TourController extends Controller
             
         }
 
-        $query->orderBy('sort_order');
+        $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
+
 
         // Set items per page
         $perPage = $request->input('per_page', 10);
@@ -121,6 +122,64 @@ class TourController extends Controller
 
 
         return view('admin.tours.index', compact(['tours', 'categories', 'cities']));
+    }
+
+    public function subTourIndex(Request $request, $id)
+    { 
+        
+        $parentTour = Tour::findOrFail(decrypt($id));
+        // dd($query);
+
+
+        $query =  $parentTour->subTours();
+
+        // dd($query);
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                ->orWhere('unique_code', "%{$search}%");
+            });
+        }
+
+        if ($request->has('category') && $request->category != '') {
+            $query->whereHas('categories', function ($q) use ($request) {
+                $q->where('category_id', $request->category);
+            });
+        }
+
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status', $request->status);
+        }
+        // if ($request->has('city') && $request->city != '') {
+        //     $query->where('city', $request->city)->orderBy('sort_order');
+        // }
+
+        if ($request->has('city') && $request->city != '') {
+
+            $query->whereHas('location', function ($q) use ($request) {
+                    $q->where('city_id', $request->city);
+                });
+
+            
+        }
+
+        $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
+
+
+        // Set items per page
+        $perPage = $request->input('per_page', 10);
+
+        if($perPage != "All"){
+            $tours = $query->with('categories')->paginate($perPage)->withQueryString();
+        } else {
+            $tours = $query->with('categories')->paginate(100000)->withQueryString();
+        }
+        
+        $categories = Category::all();
+        $cities = City::limit(10)->get();
+
+        // dd($tours->get(), $id, $parentTour);
+        return view('admin.tours.sub-tour.index', compact(['parentTour','tours', 'categories', 'cities']));
     }
 
     public function reorder(Request $request)
@@ -173,10 +232,10 @@ class TourController extends Controller
             'PriceOption.*.price'   => 'required|numeric|min:0',
             'PriceOption.*.qty_used'=> 'required|integer|min:0',
             'advertised_price'      => 'required',
-            'category'              => 'required|array',
-            'category.*'            => 'integer|exists:categories,id',
-            'tour_type'             => 'required|array',
-            'tour_type.*'           => 'integer|exists:tourtypes,id',
+            // 'category'              => 'required|array',
+            // 'category.*'            => 'integer|exists:categories,id',
+            // 'tour_type'             => 'required|array',
+            // 'tour_type.*'           => 'integer|exists:tourtypes,id',
             'image'                 => 'required|integer',
         ],
         [
