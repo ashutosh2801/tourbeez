@@ -174,7 +174,7 @@
                                 {{ $tour->title }}
                                 @endcan
 
-                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-info text-hover" target="_blank">{{translate('View Tour Online')}}</a></div>
+                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-info text-hover" target="_blank">{{translate('View Tour Online')}}</a></div>
                                 <div class="text-sm text-gray-500"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
                             </td>    
                             <td>{{ price_format_with_currency($tour->price) }}</td>
