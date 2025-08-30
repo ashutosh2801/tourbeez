@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Tour;
 use App\Models\Wishlist;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -75,63 +76,95 @@ class WishlistController extends Controller
 
     public function wishlist_tours(Request $request)
     {
-        $userId = $request->user_id;
-        $sessionId = $request->session_id;
 
-        $tours = Tour::whereHas('wishlists', function ($query) use ($userId, $sessionId) {
-                    if($userId) {
-                        $query->where('user_id', $userId);
+        try {
+            $userId = $request->user_id;
+            $sessionId = $request->session_id;
+
+            $tours = Tour::whereHas('wishlists', function ($query) use ($userId, $sessionId) {
+                        if($userId) {
+                            $query->where('user_id', $userId);
+                        }
+                        if($sessionId) {
+                            $query->where('session_id', $sessionId);
+                        }
+                    })
+                    ->paginate(12);
+            
+            //dd($tours->toSql());
+
+            $items = [];
+            foreach ($tours->items() as $d) {
+
+                $galleries = [];
+                if(count($d->galleries)>0) {
+                    foreach( $d->galleries as $g ) {
+                        $image      = uploaded_asset($g->id);
+                        $medium_url = str_replace($g->file_name, $g->medium_name, $image);
+                        $thumb_url  = str_replace($g->file_name, $g->thumb_name, $image);
+                        $galleries[] = [
+                            'original_image' => $image,
+                            'medium_image'   => $medium_url,
+                            'thumb_image'    => $thumb_url,
+                        ];
                     }
-                    if($sessionId) {
-                        $query->where('session_id', $sessionId);
-                    }
-                })
-                ->paginate(12);
-        
-        //dd($tours->toSql());
-
-        $items = [];
-        foreach ($tours->items() as $d) {
-
-            $galleries = [];
-            if(count($d->galleries)>0) {
-                foreach( $d->galleries as $g ) {
-                    $image      = uploaded_asset($g->id);
-                    $medium_url = str_replace($g->file_name, $g->medium_name, $image);
-                    $thumb_url  = str_replace($g->file_name, $g->thumb_name, $image);
+                }
+                else {
+                    $image      = uploaded_asset($d->main_image->id);
+                    $medium_url = str_replace($d->main_image->file_name, $d->main_image->medium_name, $image);
+                    $thumb_url  = str_replace($d->main_image->file_name, $d->main_image->thumb_name, $image);
                     $galleries[] = [
                         'original_image' => $image,
                         'medium_image'   => $medium_url,
                         'thumb_image'    => $thumb_url,
                     ];
                 }
-            }
-            else {
-                $image      = uploaded_asset($d->main_image->id);
-                $medium_url = str_replace($d->main_image->file_name, $d->main_image->medium_name, $image);
-                $thumb_url  = str_replace($d->main_image->file_name, $d->main_image->thumb_name, $image);
-                $galleries[] = [
-                    'original_image' => $image,
-                    'medium_image'   => $medium_url,
-                    'thumb_image'    => $thumb_url,
+
+                $duration = $d->schedule?->estimated_duration_num . ' ' ?? '';
+                $duration .= ucfirst($d->schedule?->estimated_duration_unit ?? '');
+
+                $discount         = $d->coupon_value ?? 0;
+                $original_price   = $d->price;
+                $discounted_price = $d->price;
+    
+                if ($discount && $discount > 0) {
+                    if ($d->coupon_type == 'fixed') {
+                        // Original price = price + coupon value
+                        $original_price   = round($d->price + $discount);
+                        $discounted_price = $d->price;
+                    } elseif ($d->coupon_type == 'percentage') {
+                        // Original price = inflated by coupon percentage
+                        $original = $d->price / (1 - ($discount / 100));
+                        $original_price = round($original);
+                        $discounted_price = $d->price;
+                    }
+                }
+
+                $items[] = [
+                    'id'                => $d->id,
+                    'title'             => $d->title,
+                    'slug'              => $d->slug,
+                    'unique_code'       => $d->unique_code,
+                    'all_images'        => $galleries,
+                    'duration'          => strtolower(trim($duration)),
+                    'rating'            => randomFloat(4, 5),
+                    'comment'           => rand(50, 100),
+                    'price'             => price_format($d->price),
+                    'original_price'    => $original_price,
+                    'discount'          => $discount,
+                    'discount_type'     => strtoupper($d->coupon_type),
+                    'discounted_price'  => $discounted_price,
+                    'offer_ends_in'     => $d->offer_ends_in,
                 ];
             }
-
-            $duration = $d->schedule?->estimated_duration_num . ' ' ?? '';
-            $duration .= ucfirst($d->schedule?->estimated_duration_unit ?? '');
-
-            $items[] = [
-                'id'             => $d->id,
-                'title'          => $d->title,
-                'slug'           => $d->slug,
-                'unique_code'    => $d->unique_code,
-                'all_images'     => $galleries,
-                'price'          => price_format($d->price),
-                'original_price' => $d->price,
-                'duration'       => strtolower($duration),
-                'rating'         => randomFloat(4, 5),
-                'comment'        => rand(50, 100),
-            ];
+        }
+        catch (Exception $e) {
+           return response()->json([
+            'status'    => false,
+            'requested' => $request->all(),
+            'data'      => [],
+            'message'   => $e->getMessage()
+           ]);
         }
 
         // Return the transformed data along with pagination info

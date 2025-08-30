@@ -128,7 +128,7 @@
 
 
         <li class="nav-item">
-            <a href="javascript:void(0);" class="nav-link aiz-side-nav-link ">
+            <a href="javascript:void(0);" class="nav-link">
                 <i class="nav-icon fas fa-briefcase"></i>
                 <p>{{ translate('Manifest') }}
                     <span class="aiz-side-nav-arrow right"></span>
