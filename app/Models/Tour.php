@@ -201,4 +201,9 @@ class Tour extends Model
     {
         return $this->hasMany(TourSchedule::class);
     } 
+
+    public function subTours()
+    {
+        return $this->hasMany(Tour::class, 'parent_id');
+    }
 }

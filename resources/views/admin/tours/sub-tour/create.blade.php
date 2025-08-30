@@ -207,7 +207,7 @@
                                     </div>
                                 </div>
                                                                 
-                                <div class="col-lg-6">
+                                <!-- <div class="col-lg-6">
                                     <div class="form-group">
                                         <label for="category" class="form-label">Category *</label>
                                         <select name="category[]" id="category" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
@@ -234,7 +234,7 @@
                                             <small class="form-text text-danger">{{ $message }}</small>
                                         @enderror
                                     </div>
-                                </div>
+                                </div> -->
                                 
 
                                 <div class="col-lg-12">
