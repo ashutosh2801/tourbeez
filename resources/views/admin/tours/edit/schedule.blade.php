@@ -37,6 +37,23 @@
                         <div class="card-body">
 
                             <div class="row mb-4">
+                                <label for="schedule_price{{ $index }}" class="form-label col-lg-2">Schedule Price</label>
+                                <div class="col-lg-3">
+                                    <input type="text" name="schedules[{{ $index }}][schedule_price]" id="schedule_price_{{ $index }}" 
+                                    value="{{ old("schedules.$index.schedule_price", $schedule?->schedule_price) }}"
+                                        class="form-control " placeholder="Schedule Price">
+                                    @if($errors->has("schedules.$index.schedule_price"))
+                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.schedule_price") }}</small>
+                                    @else
+                                        @error('schedule_price')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
+                                    @endif
+                                </div>
+
+                            </div>
+
+                            <div class="row mb-4">
                                 <label for="minimum_notice_num_{{ $index }}" class="form-label col-lg-2">Minimum notice *</label>
                                 <div class="col-lg-3">
                                     <input type="text" name="schedules[{{ $index }}][minimum_notice_num]" id="minimum_notice_num_{{ $index }}" 
@@ -63,18 +80,7 @@
                                         @enderror
                                     @endif
                                 </div>
-                                <div class="col-lg-3">
-                                    <input type="text" name="schedules[{{ $index }}][price]" id="price_{{ $index }}" 
-                                    value="{{ old("schedules.$index.price", $schedule?->price) }}"
-                                        class="form-control " placeholder="Schedule Price">
-                                    @if($errors->has("schedules.$index.price"))
-                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.price") }}</small>
-                                    @else
-                                        @error('price')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    @endif
-                                </div>
+                                
                             </div>
 
                             <div class="row mb-4">
@@ -333,6 +339,18 @@
         </div>
         <div id="collapse__INDEX__" class="collapse" data-parent="#scheduleAccordion">
             <div class="card-body">
+
+                <div class="row mb-4">
+
+                    <label class="form-label col-lg-2">Schedule Price</label>
+                    <div class="col-lg-3">
+                        <input type="text" name="schedules[__INDEX__][schedule_price]" id="schedule_price___INDEX__" class="form-control " placeholder="Schedule Price">
+
+                    </div>
+
+                </div>
+
+
                 <div class="row mb-4">
                     <label class="form-label col-lg-2">Minimum notice *</label>
                     <div class="col-lg-3">
@@ -500,10 +518,14 @@
 
 @section('js')
 @parent
+
+<!-- Flatpickr CSS -->
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" crossorigin="anonymous">
+
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
     function setValueTimeLocal($card, value) {
-        // update the text 'minutes/hours/days' for this card
         const $unitLabel = $card.find('.basic-repeat_period_unit');
         if (! $unitLabel.length) return;
         if (value == 'MINUTELY') $unitLabel.text('minutes');
@@ -537,7 +559,6 @@
     function initDateRangeFor($card) {
         $card.find('.aiz-date-range').each(function() {
             var $input = $(this);
-            // destroy existing if reinitialized (safe check)
             if ($input.data('daterangepicker')) {
                 $input.data('daterangepicker').remove();
             }
@@ -551,23 +572,37 @@
     }
 
     function initFlatpickrFor($card) {
-        // Start time
-        const startSel = $card.find('.aiz-time-picker').filter(function(){ return $(this).attr('id') && $(this).attr('id').includes('session_start_time'); });
-        const endSel = $card.find('.aiz-time-picker').filter(function(){ return $(this).attr('id') && $(this).attr('id').includes('session_end_time'); });
-
-        startSel.each(function(){
-            if ($(this)[0]._flatpickr) return; // already initialized
-            const inst = flatpickr(this, { enableTime: true, noCalendar: true, dateFormat: "h:i K", time_24hr: false });
+        // start time
+        $card.find('.aiz-time-picker').each(function(){
+            if (this._flatpickr) this._flatpickr.destroy();
+            const inst = flatpickr(this, {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "h:i K",
+                time_24hr: false
+            });
             const $icon = $(this).closest('.input-group').find('.time-icon-start');
-            $icon.off('click').on('click', function(){ if (!inst.isOpen) inst.open(); $(this).closest('.schedule-card').find(this).focus(); });
+            $icon.off('click').on('click', () => {
+                if (!inst.isOpen) inst.open();
+                $(this).focus();
+            });
         });
 
-        endSel.each(function(){
-            if ($(this)[0]._flatpickr) return;
-            const inst = flatpickr(this, { enableTime: true, noCalendar: true, dateFormat: "h:i K", time_24hr: false });
-            const $icon = $(this).closest('.input-group').find('.time-icon-end');
-            $icon.off('click').on('click', function(){ if (!inst.isOpen) inst.open(); $(this).closest('.schedule-card').find(this).focus(); });
-        });
+        // end time
+        // $card.find('.aiz-time-picker').each(function(){
+        //     if (this._flatpickr) this._flatpickr.destroy();
+        //     const inst = flatpickr(this, {
+        //         enableTime: true,
+        //         noCalendar: true,
+        //         dateFormat: "h:i K",
+        //         time_24hr: false
+        //     });
+        //     const $icon = $(this).closest('.input-group').find('.time-icon-end');
+        //     $icon.off('click').on('click', () => {
+        //         if (!inst.isOpen) inst.open();
+        //         $(this).focus();
+        //     });
+        // });
     }
 
     function updateEndDateTimeLocal($card) {
@@ -602,83 +637,70 @@
         let newMinutes = date.getMinutes();
         let newPeriod = newHours >= 12 ? 'PM' : 'AM';
 
-        newHours = newHours % 12; newHours = newHours ? newHours : 12;
+        newHours = newHours % 12 || 12;
         newMinutes = newMinutes < 10 ? '0' + newMinutes : newMinutes;
 
         const formattedTime = newHours + ':' + newMinutes + ' ' + newPeriod;
-        const month = date.getMonth() + 1; const day = date.getDate(); const year = date.getFullYear();
-        const formattedDate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const formattedDate = date.toISOString().slice(0,10);
 
         $card.find('#session_end_time_' + idx).val(formattedTime);
         $card.find('#session_end_date_' + idx).val(formattedDate);
+
         const dr = $card.find('#session_end_date_' + idx).data('daterangepicker');
-        if (dr) { dr.setStartDate(formattedDate); dr.setEndDate(formattedDate); }
+        if (dr) dr.setStartDate(formattedDate).setEndDate(formattedDate);
     }
 
     function initScheduleCard($card) {
-        // ensure data-index exists
         const idx = $card.data('index');
         if (typeof idx === 'undefined') return;
 
-        // initialize datepickers
         initDateRangeFor($card);
-
-        // initialize flatpickr
         initFlatpickrFor($card);
 
-        // bind repeat change
-        $card.find('.repeat_period').off('change').on('change', function(){ repeat_period_local($card); });
-        // initial run
+        $card.find('.repeat_period').off('change').on('change', () => repeat_period_local($card));
         repeat_period_local($card);
 
-        // bind all day toggle
-        $card.find('.sesion_all_day').off('click').on('click', function(){ $card.find('.not-all-date').toggleClass('hidden'); });
+        $card.find('.sesion_all_day').off('click').on('click', () => $card.find('.not-all-date').toggleClass('hidden'));
 
-        // bind calendar icon clicks
-        $card.find('.calendar-icon-start').off('click').on('click', function(){ const input = $card.find('#session_start_date_' + idx); const dr = input.data('daterangepicker'); if (dr && !dr.isShowing) input.focus(); });
-        $card.find('.calendar-icon-end').off('click').on('click', function(){ const input = $card.find('#session_end_date_' + idx); const dr = input.data('daterangepicker'); if (dr && !dr.isShowing) input.focus(); });
-        $card.find('.calendar-icon-util').off('click').on('click', function(){ const input = $card.find('#until_date_' + idx); const dr = input.data('daterangepicker'); if (dr && !dr.isShowing) input.focus(); });
-
-        // bind apply.daterangepicker for until_date to set value
-        $card.find('.aiz-date-range').off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker){
-            const selDate = picker.endDate.format('YYYY-MM-DD');
-            $(this).val(selDate);
-            if ($(this).attr('id') && $(this).attr('id').includes('session_start_date')) {
-                // nothing extra here
-            }
+        $card.find('.calendar-icon-start').off('click').on('click', () => {
+            const input = $card.find('#session_start_date_' + idx);
+            const dr = input.data('daterangepicker');
+            if (dr && !dr.isShowing) input.focus();
         });
 
-        // bind duration/time change to update end time
-        $card.find('#estimated_duration_num_' + idx + ', #estimated_duration_unit_' + idx + ', #session_start_time_' + idx).off('input change').on('input change', function(){ updateEndDateTimeLocal($card); });
+        $card.find('.calendar-icon-end').off('click').on('click', () => {
+            const input = $card.find('#session_end_date_' + idx);
+            const dr = input.data('daterangepicker');
+            if (dr && !dr.isShowing) input.focus();
+        });
 
-        // when session_start_date changes
-        $card.find('#session_start_date_' + idx).off('change input blur').on('change input blur', function(){ updateEndDateTimeLocal($card); });
+        $card.find('#estimated_duration_num_' + idx + ', #estimated_duration_unit_' + idx + ', #session_start_time_' + idx)
+            .off('input change').on('input change', () => updateEndDateTimeLocal($card));
 
+        $card.find('#session_start_date_' + idx).off('change input blur')
+            .on('change input blur', () => updateEndDateTimeLocal($card));
     }
 
     $(document).ready(function(){
-        // initialize existing schedule cards
+        // init existing cards
         $('.schedule-card').each(function(){ initScheduleCard($(this)); });
 
-        // add schedule
+        // add new card
         $('#add-schedule').on('click', function(){
             const index = $('.schedule-card').length;
-            let tpl = $('#schedule-template').html();
-            tpl = tpl.replace(/__INDEX__/g, index);
+            let tpl = $('#schedule-template').html().replace(/__INDEX__/g, index);
             $('#scheduleAccordion').append(tpl);
-            const $new = $('#scheduleAccordion').find('.schedule-card').last();
-            $new.attr('data-index', index);
-            // ensure collapse IDs are unique
-            $new.find('[id*="__INDEX__"]').each(function(){
-                const id = $(this).attr('id');
-                if (!id) return;
-                $(this).attr('id', id.replace('__INDEX__', index));
+            $('#schedule .aiz-time-picker').last().flatpickr({
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "H:i",
             });
-            // initialize datepickers and pickers for new card
+            const $new = $('#scheduleAccordion .schedule-card').last();
+            $new.attr('data-index', index);
             initScheduleCard($new);
         });
 
-        // remove schedule
+        // remove card
         $(document).on('click', '.remove-schedule', function(){
             if ($('.schedule-card').length > 1) {
                 $(this).closest('.schedule-card').remove();
@@ -686,67 +708,26 @@
                 alert('At least one schedule is required.');
             }
         });
-
-
-             // Initialize flatpickr and save instance in a variable
-              const startpickr = flatpickr("#session_start_time", {
-              enableTime: true,
-              noCalendar: true,
-              dateFormat: "h:i K",     // Format shown to user
-              time_24hr: false,        // 12-hour format
-                // Set default time
-            });
-
-              // On icon click, open the picker ONLY if it's not already open
-              $('.time-icon-start').on('click', function () {
-                if (!startpickr.isOpen) {
-                  startpickr.open();
-                }
-                // Focus input as well, optional
-                $('#session_start_time').focus();
-              });
-              const endpickr = flatpickr("#session_end_time", {
-              enableTime: true,
-              noCalendar: true,
-              dateFormat: "h:i K",     // Format shown to user
-              time_24hr: false,        // 12-hour format
-               // Set default time
-            });
-              // On icon click, open the picker ONLY if it's not already open
-              $('.time-icon-end').on('click', function () {
-                if (!endpickr.isOpen) {
-                  endpickr.open();
-                }
-                // Focus input as well, optional
-                $('#session_end_time').focus();
-              });
-
     });
 
-
-
-
-
-     
-
-</script>
-
-<script>
-    // ensure existing date range inputs are initialized on page load (for any remaining non-initialized)
+    // fallback init for daterangepicker
     $(document).ready(function () {
-        if ($('.aiz-date-range').length > 0) {
-            $('.aiz-date-range').each(function () {
-                var $input = $(this);
-                if ($input.data('daterangepicker')) return;
+        $('.aiz-date-range').each(function () {
+            var $input = $(this);
+            if (!$input.data('daterangepicker')) {
                 $input.daterangepicker({
                     singleDatePicker: true,
                     showDropdowns: true,
                     minDate: $input.data('min-date'),
                     locale: { format: 'YYYY-MM-DD' }
                 });
-            });
-        }
+            }
+        });
     });
 </script>
+
+
+
+
 
 @endsection

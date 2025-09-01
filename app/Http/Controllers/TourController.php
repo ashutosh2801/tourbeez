@@ -1268,6 +1268,8 @@ class TourController extends Controller
         $schedule = new TourSchedule();
         $schedule->tour_id                 = $tour->id;
         $schedule->minimum_notice_num      = $scheduleData['minimum_notice_num'];
+        $schedule->schedule_price      = $scheduleData['schedule_price'];
+        
         $schedule->minimum_notice_unit     = $scheduleData['minimum_notice_unit'];
         $schedule->estimated_duration_num  = $scheduleData['estimated_duration_num'];
         $schedule->estimated_duration_unit = $scheduleData['estimated_duration_unit'];
