@@ -9,7 +9,7 @@
                 <div class="card-header">
                     <h5 class="mb-0 h6">{{ $data->title }}</h5>
                     <div class="card-tools">
-                        <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-primary btn-sm" target="_blank">{{translate('View Tour Onlinedds')}}</a>
+                        <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-primary btn-sm" target="_blank">{{translate('View Tour Online')}}</a>
                         <a href="{{ route('admin.tour.preview', encrypt($data->id)) }}" class="btn btn-success btn-sm">{{translate('Preview')}}</a>
                         <a href="{{ route('admin.tour.index') }}" class="btn btn-info btn-sm">Back</a>
                     </div>
