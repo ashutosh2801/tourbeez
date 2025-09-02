@@ -36,7 +36,7 @@
                     <div id="collapse{{ $index }}" class="collapse {{ $index==0 ? 'show' : '' }}" aria-labelledby="heading{{ $index }}" data-parent="#scheduleAccordion">
                         <div class="card-body">
 
-                            <div class="row mb-4">
+                            <!-- <div class="row mb-4">
                                 <label for="schedule_price{{ $index }}" class="form-label col-lg-2">Schedule Price</label>
                                 <div class="col-lg-3">
                                     <input type="text" name="schedules[{{ $index }}][schedule_price]" id="schedule_price_{{ $index }}" 
@@ -51,7 +51,7 @@
                                     @endif
                                 </div>
 
-                            </div>
+                            </div> -->
 
                             <div class="row mb-4">
                                 <label for="minimum_notice_num_{{ $index }}" class="form-label col-lg-2">Minimum notice *</label>
@@ -340,7 +340,7 @@
         <div id="collapse__INDEX__" class="collapse" data-parent="#scheduleAccordion">
             <div class="card-body">
 
-                <div class="row mb-4">
+   <!--              <div class="row mb-4">
 
                     <label class="form-label col-lg-2">Schedule Price</label>
                     <div class="col-lg-3">
@@ -348,7 +348,7 @@
 
                     </div>
 
-                </div>
+                </div> -->
 
 
                 <div class="row mb-4">

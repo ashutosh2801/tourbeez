@@ -334,7 +334,7 @@
 
                     <div class="col-lg-12">
                         <div class="form-group">
-                            <label for="description" class="form-label">Brief description *</label>
+                            <label for="description" class="form-label">Description *</label>
                             <textarea name="description" id="description" rows="3" class="form-control aiz-text-editor">{{ old('description') ?: $data->detail?->description }}</textarea>
                             <small class="form-text text-right">{{ ('Max 240 characters') }}</small>
                             @error('description')
@@ -343,7 +343,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-12">
+                    <!-- <div class="col-lg-12">
                         <div class="form-group">
                             <label for="long_description" class="form-label">Long description *</label>
                             <textarea name="long_description" id="long_description" class="form-control aiz-text-editor" >{{ old('long_description') ?: $data->detail?->long_description }}</textarea>
@@ -360,7 +360,7 @@
                                 <small class="form-text text-danger">{{ $message }}</small>
                             @enderror
                         </div>
-                    </div>
+                    </div> -->
  
 
                     <div class="col-lg-6">
