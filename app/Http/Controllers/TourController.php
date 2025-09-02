@@ -225,7 +225,7 @@ class TourController extends Controller
         $validator = FacadesValidator::make($request->all(), [
             'title'                 => 'required|max:255',
             'description'           => 'required',
-            'long_description'      => 'required',
+            // 'long_description'      => 'required',
             'price_type'            => 'required',
             'PriceOption'           => 'required|array',
             'PriceOption.*.label'   => 'required|string|max:255',
@@ -241,7 +241,7 @@ class TourController extends Controller
         [
             'title.required' => 'Please enter a title',
             'description.required' => 'Please enter a description',
-            'long_description.required' => 'Please enter a long description',
+            // 'long_description.required' => 'Please enter a long description',
             'price_type.required' => 'Please select a price type',
             'PriceOption.*.label.required' => 'Please enter a label for the price option',
             'PriceOption.*.price.required' => 'Please enter a price for the price option',
@@ -1268,7 +1268,7 @@ class TourController extends Controller
         $schedule = new TourSchedule();
         $schedule->tour_id                 = $tour->id;
         $schedule->minimum_notice_num      = $scheduleData['minimum_notice_num'];
-        $schedule->schedule_price      = $scheduleData['schedule_price'];
+        // $schedule->schedule_price      = $scheduleData['schedule_price'];
         
         $schedule->minimum_notice_unit     = $scheduleData['minimum_notice_unit'];
         $schedule->estimated_duration_num  = $scheduleData['estimated_duration_num'];
