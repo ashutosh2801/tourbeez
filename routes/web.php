@@ -4,6 +4,7 @@ use App\Http\Controllers\AizUploadController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\LoginWithOTPController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SocialiteController;
 use App\Http\Controllers\StateController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,11 @@ Route::get('/', function () {
         'readmeContent' => Str::markdown(file_get_contents($readmePath)),
     ]);
 });
+
+Route::get('/sitemap.xml', [SitemapController::class, 'index']);
+Route::get('/sitemaps/categories.xml', [SitemapController::class, 'categories']);
+Route::get('/sitemaps/destinations.xml', [SitemapController::class, 'destinations']);
+Route::get('/sitemaps/tours.xml', [SitemapController::class, 'tours']);
 
 Route::post('/tour/single', [TourController::class,'single'])->name('tour.single');
 
