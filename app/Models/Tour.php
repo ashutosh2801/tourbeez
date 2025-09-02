@@ -196,4 +196,14 @@ class Tour extends Model
     {
         return $this->hasOne(TourSpecialDeposit::class, 'tour_id');
     }
+
+    public function schedules()
+    {
+        return $this->hasMany(TourSchedule::class);
+    } 
+
+    public function subTours()
+    {
+        return $this->hasMany(Tour::class, 'parent_id');
+    }
 }
