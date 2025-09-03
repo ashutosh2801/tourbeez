@@ -1100,6 +1100,75 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
         return $disabled;
     }
 
+    public function getSubTour(Request $request)
+    {
+        $parentId = $request->input('id');   // parent tour id
+        $date     = $request->input('date'); // date in Y-m-d format
+
+        if (!$parentId) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Parent ID'
+            ], 400);
+        }
+
+        // Fetch sub tours under the parent
+        $subTours = Tour::where('parent_id', $parentId)
+            ->where('status', 1)
+            ->whereNull('deleted_at')
+            ->with(['galleries', 'categories', 'location'])
+            ->get();
+
+        if ($subTours->isEmpty()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'No sub tours found for given parent'
+            ], 404);
+        }
+        
+        // Filter subTours based on next available date
+        $filtered = $subTours->filter(function ($tour) use ($date) {
+            $nextAvailable = $this->getNextAvailableDate($tour->id);
+
+            return $nextAvailable && isset($nextAvailable['date']) && $nextAvailable['date'] === $date;
+        });
+
+        if ($filtered->isEmpty()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'No sub tours available on the given date'
+            ], 404);
+        }
+
+        // Format response
+        $formatted = $filtered->map(function ($tour) use ($date) {
+            $galleries = $tour->galleries->map(function ($g) {
+                $image      = uploaded_asset($g->id);
+                $medium_url = str_replace($g->file_name, $g->medium_name, $image);
+                $thumb_url  = str_replace($g->file_name, $g->thumb_name, $image);
+                return [
+                    'original_url' => $image,
+                    'medium_url'   => $medium_url,
+                    'thumb_url'    => $thumb_url
+                ];
+            });
+
+            return [
+                'id'         => $tour->id,
+                'title'      => $tour->title,
+                'slug'       => $tour->slug,
+                'price'      => format_price($tour->price),
+                'next_date'  => $date, // the requested available date
+                'galleries'  => $galleries,
+            ];
+        });
+
+        return response()->json([
+            'status' => true,
+            'data'   => $formatted->values() // reindex collection
+        ]);
+    }
+
 
 
 }

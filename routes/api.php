@@ -29,6 +29,9 @@ use Illuminate\Support\Facades\Route;
 
 
 
+
+
+
 Route::middleware(['api.key'])->group(function () {
     Route::get('/categories',[CategoryController::class,'index'])->name('categories');
     Route::post('/sub-cateogries',[CategoryController::class,'subcategory'])->name('sub.category');
@@ -46,6 +49,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/tour/search', [TourController::class, 'search']);
     Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
     Route::get('/tour/{id}/deposit-rule', [TourController::class, 'fetch_deposit_rule']);
+    Route::get('/sub-tours', [TourController::class, 'getSubTour']);
 
     Route::post('/cart/add', [OrderController::class, 'add_to_cart']);
     Route::post('/cart/update/{id}', [OrderController::class, 'update_cart']);
