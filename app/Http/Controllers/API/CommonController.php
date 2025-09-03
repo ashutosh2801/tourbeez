@@ -30,9 +30,11 @@ class CommonController extends Controller
         $data = Cache::remember('cities_home_list', 86400, function () {
             return DB::table('tour_locations as tl')
                 ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                ->join('uploads as u', 'u.id', '=', 'c.upload_id')
                 ->select('c.id', 'c.name', 'c.upload_id')
                 ->groupBy('c.id', 'c.name', 'c.upload_id') 
                 ->orderByRaw('RAND()') 
+                ->where('c.upload_id', '>=', 1)
                 ->limit(50)
                 ->get();
         });
@@ -129,13 +131,15 @@ class CommonController extends Controller
             //         ->get();
         // });
 
-            $data = DB::table('tour_locations as tl')
-                ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                ->select('c.id', 'c.name', 'c.upload_id')
-                ->distinct()
-                ->orderByRaw('RAND()') // ✅ Correct way to randomize rows
-                ->limit(25)
-                ->get();
+        $data = DB::table('tour_locations as tl')
+            ->join('cities as c', 'c.id', '=', 'tl.city_id')
+            ->join('uploads as u', 'u.id', '=', 'c.upload_id')
+            ->select('c.id', 'c.name', 'c.upload_id')
+            ->distinct()
+            ->orderByRaw('RAND()') // ✅ Correct way to randomize rows
+            ->where('c.upload_id', '>=', 1)
+            ->limit(25)
+            ->get();
 
         $cities = [];
         foreach($data as $d) {
@@ -208,6 +212,7 @@ class CommonController extends Controller
                 'co.name as country_name'
             )
             ->distinct()
+            ->where('c.upload_id' , '>=', 1)
             ->orderByRaw('RAND()');
 
         $paginated = $query->paginate($limit, ['*'], 'page', $page);
