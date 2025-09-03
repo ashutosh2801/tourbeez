@@ -203,69 +203,15 @@
                                     <li role="separator" class="divider"></li>
 
                                     <!-- Action Button -->
-                                    <li class="text-center p-2">
-                                        <button class="btn btn-sm btn-primary charge-btn" data-order-id="{{ $order->id }}">
-                                            Charge
-                                        </button>
-                                    </li>
+                                    
                                 </ul>
                             </div>
                         </div>
-                            <!-- <div class="order-status" >
-                                <div class="btn-group open">
-                                    <label for="order_status">Order Status </label>
-                                    <button type="button" class="btn dropdown-toggle arrow childOrderEnabled" data-element-to-update=".payment-status" data-selected="CONFIRMED" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Confirmed</button>
-                                    <ul class="dropdown-menu dropdown-value">
-                                        <li>
-                                            <input type="radio" id="NEW" name="order_status" value="NEW" autocomplete="off">
-                                            <label for="NEW" class="NEW">
-                                                <i class="fa fa-circle" aria-hidden="true"></i>
-                                                New                                    </label>
-                                        </li>
-                                        <li>
-                                            <input type="radio" id="ON_HOLD" name="order_status" value="ON_HOLD" autocomplete="off">
-                                            <label for="ON_HOLD" class="ON_HOLD">
-                                                <i class="fa fa-circle" aria-hidden="true"></i>
-                                                On Hold                                    </label>
-                                        </li>
-                                        <li>
-                                            <input type="radio" id="PENDING_SUPPLIER" name="order_status" value="PENDING_SUPPLIER" autocomplete="off">
-                                            <label for="PENDING_SUPPLIER" class="PENDING_SUPPLIER">
-                                                <i class="fa fa-circle" aria-hidden="true"></i>
-                                                Pending supplier                                    </label>
-                                        </li>
-                                        <li>
-                                            <input type="radio" id="PENDING_CUSTOMER" name="order_status" value="PENDING_CUSTOMER" autocomplete="off">
-                                            <label for="PENDING_CUSTOMER" class="PENDING_CUSTOMER">
-                                                <i class="fa fa-circle" aria-hidden="true"></i>
-                                                Pending customer                                    </label>
-                                        </li>
-                                        <li>
-                                            <input type="radio" id="CONFIRMED" name="order_status" value="CONFIRMED" autocomplete="off" checked="checked">
-                                            <label for="CONFIRMED" class="CONFIRMED">
-                                                <i class="fa fa-circle" aria-hidden="true"></i>
-                                                Confirmed                                    </label>
-                                        </li>
-                                        <li>
-                                            <input type="radio" id="CANCELLED" name="order_status" value="CANCELLED" autocomplete="off">
-                                            <label for="CANCELLED" class="CANCELLED">
-                                                <i class="fa fa-circle" aria-hidden="true"></i>
-                                                Cancelled                                    </label>
-                                        </li>
-                                        <li>
-                                            <input type="radio" id="ABANDONED_CART" name="order_status" value="ABANDONED_CART" autocomplete="off">
-                                            <label for="ABANDONED_CART" class="ABANDONED_CART">
-                                                <i class="fa fa-circle" aria-hidden="true"></i>
-                                                Abandoned cart                                    </label>
-                                        </li>
-                                                                </ul>
-                                </div>
-                            </div> -->
 
 
                             <div class="order-status">
                                 <div class="btn-group open">
-                                    <label for="order_status">Order Status</label>
+                                    <label for="order_status">Order Statusd</label>
                                     <button type="button" class="btn dropdown-toggle arrow childOrderEnabled"
                                         data-element-to-update=".payment-status"
                                         data-selected="{{ $order->status }}"
@@ -296,6 +242,13 @@
                         </div>
                     </div>
                     <div class="col-lg-7 text-right">
+                        <button class="form-control btn btn-sm btn-primary charge-btn" style="width:150px; display:inline-block;" data-order-id="{{ $order->id }}">
+                            
+                                Charge
+                        </button>
+                        
+                                            
+                                    
                         <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
                             <option value="" >Email</option>
                             @foreach($email_templates as $email_template)
@@ -891,6 +844,73 @@
     </div>
   </div>
 </div>
+
+<!-- Charge Modal -->
+<!-- <div class="modal fade" id="chargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="chargeModalLabel">Capture Payment</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="chargeForm">
+          <input type="hidden" id="chargeOrderId" name="order_id">
+
+          <div class="mb-3">
+            <label class="form-label">Card</label>
+            <p id="cardDetails" class="fw-bold">Loading...</p>
+          </div>
+
+          <div class="mb-3">
+            <label for="chargeAmount" class="form-label">Amount</label>
+            <input type="number" class="form-control" id="chargeAmount" name="amount" required>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" form="chargeForm" class="btn btn-primary">Charge</button>
+      </div>
+
+    </div>
+  </div>
+</div> -->
+
+
+
+<div class="modal fade" id="chargeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Capture Payment</h5>
+      </div>
+      <div class="modal-body">
+        <form id="chargeForm">
+          <input type="hidden" id="chargeOrderId" name="order_id">
+        <!-- Amount field -->
+        <div class="mb-3">
+          <label>Amount</label>
+          <input type="text" id="chargeAmount" class="form-control"  name="amount" required>
+        </div>
+
+        <!-- Card details block (will be shown/hidden) -->
+        <div class="mb-3" id="cardDetailsBlock" style="display:none;"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <!-- <button type="button" class="btn btn-primary" id="confirmCharge">Confirm Charge</button> -->
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="submit" form="chargeForm" class="btn btn-primary">Charge</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 @endsection
 
 @section('js') 
@@ -1072,29 +1092,107 @@
     if (init) updateStatusUI(init);
 });
 
-    $(document).on('click', '.charge-btn', function(e) {
-        e.preventDefault();
-        let orderId = $(this).data('order-id');
+    // $(document).on('click', '.charge-btn', function(e) {
+    //     e.preventDefault();
+    //     let orderId = $(this).data('order-id');
 
-        $.ajax({
-            url: '/tbadmin/admin/orders/' + orderId + '/charge',  // Your Laravel API route
-            type: 'POST',
-            data: {
-                _token: $('meta[name="csrf-token"]').attr('content') // CSRF protection
-            },
-            success: function(response) {
-                console.log("Charge successful:", response);
-                alert("Payment captured successfully!");
-                location.reload();
-            },
-            error: function(xhr) {
-                console.error("Charge failed:", xhr.responseText);
-                alert("Payment capture failed. Please try again.");
+    //     $.ajax({
+    //         url: '/tbadmin/admin/orders/' + orderId + '/charge',  // Your Laravel API route
+    //         type: 'POST',
+    //         data: {
+    //             _token: $('meta[name="csrf-token"]').attr('content') // CSRF protection
+    //         },
+    //         success: function(response) {
+    //             console.log("Charge successful:", response);
+    //             alert("Payment captured successfully!");
+    //             location.reload();
+    //         },
+    //         error: function(xhr) {
+    //             console.error("Charge failed:", xhr.responseText);
+    //             alert("Payment capture failed. Please try again.");
+    //         }
+    //     });
+    //     // Trigger your charge API call
+    //     console.log("Charge triggered for Order:", orderId);
+    // });
+
+
+    $(document).on('click', '.charge-btn', function(e) {
+    e.preventDefault();
+    let orderId = $(this).data('order-id');
+
+    $('#chargeOrderId').val(orderId);
+    $('#cardDetails').text("Loading...");
+    $('#chargeAmount').val("");
+
+    // Fetch payment details
+    $.ajax({
+        url: '/admin/orders/' + orderId + '/payment-details',
+        type: 'POST',
+        data: {
+            _token: $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            let data = response.data;
+
+            // Fill amount
+            $('#chargeAmount').val(data.amount);
+
+            // Handle card block
+            if (data.brand && data.last4 && data.exp_month && data.exp_year) {
+                $('#cardDetailsBlock').show().html(`
+                    ${data.brand.toUpperCase()} •••• ${data.last4} (Exp: ${data.exp_month}/${data.exp_year})
+                `);
+            } else {
+                // Hide card block if no details
+                $('#cardDetailsBlock').hide();
+                // Or show message
+                // $('#cardDetailsBlock').show().html("Payment method not available");
             }
-        });
-        // Trigger your charge API call
-        console.log("Charge triggered for Order:", orderId);
+
+            // Show modal
+            $('#chargeModal').modal('show');
+        },
+        error: function() {
+            $('#cardDetails').text("Failed to fetch card details");
+        }
     });
+
+    // Show modal
+    $('#chargeModal').modal('show');
+});
+
+// Handle charge form submit
+$('#chargeForm').on('submit', function(e) {
+
+    e.preventDefault();
+
+    let orderId = $('#chargeOrderId').val();
+    let amount  = $('#chargeAmount').val();
+
+    $.ajax({
+        url: '/admin/orders/' + orderId + '/charge',
+        type: 'POST',
+        data: {
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            amount: amount
+        },
+        success: function(response) {
+            $('#chargeModal').modal('hide');
+            if(response.message){
+                alert(response.message);
+            } else{
+                alert("Payment captured successfully!");
+            }
+            
+            location.reload();
+        },
+        error: function(xhr) {
+            alert("Payment capture failed: " + xhr.responseJSON.message);
+        }
+    });
+});
+
 
 </script>
 <script>
