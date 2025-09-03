@@ -1165,15 +1165,10 @@
 // Handle charge form submit
 $('#chargeForm').on('submit', function(e) {
 
-    alert(2342);
     e.preventDefault();
 
     let orderId = $('#chargeOrderId').val();
     let amount  = $('#chargeAmount').val();
-    alert(2342);
-    alert(orderId);
-    alert(amount);
-    alert(2342234);
 
     $.ajax({
         url: '/admin/orders/' + orderId + '/charge',
@@ -1184,11 +1179,16 @@ $('#chargeForm').on('submit', function(e) {
         },
         success: function(response) {
             $('#chargeModal').modal('hide');
-            alert("Payment captured successfully!");
+            if(response.message){
+                alert(response.message);
+            } else{
+                alert("Payment captured successfully!");
+            }
+            
             location.reload();
         },
         error: function(xhr) {
-            alert("Payment capture failed: " + xhr.responseText);
+            alert("Payment capture failed: " + xhr.responseJSON.message);
         }
     });
 });
