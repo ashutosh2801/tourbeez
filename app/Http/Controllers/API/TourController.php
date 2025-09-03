@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Tour;
 use App\Models\TourSchedule;
 use App\Models\TourScheduleRepeats;
+use App\Models\TourSpecialDeposit;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -343,14 +344,14 @@ class TourController extends Controller
                 'category'      => $tour->category,
                 'galleries'     => $galleries,
                 'addons'        => $addons,
-                'offer_ends_in'        => $tour->offer_ends_in,
-                'tour_special_deposits'        => $tour->specialDeposit,
+                'offer_ends_in' => $tour->offer_ends_in,
+                //'tour_special_deposits'        => $tour->specialDeposit,
 
-                'discount'       =>  $tour->coupon_value,
-                'discount_type'       =>  strtoupper($tour->coupon_type),
-                'discounted_price'     => $discounted_price,
-                'tour_start_date'      => $this->getNextAvailableDate($tour->id),
-                'disabled_tour_dates'      => $this->getDisabledTourDates($tour->id),
+                'discount'              =>  $tour->coupon_value,
+                'discount_type'         =>  strtoupper($tour->coupon_type),
+                'discounted_price'      => $discounted_price,
+                'tour_start_date'       => $this->getNextAvailableDate($tour->id),
+                'disabled_tour_dates'   => $this->getDisabledTourDates($tour->id),
             ];
 
             //discounted_price
@@ -370,6 +371,27 @@ class TourController extends Controller
     function highlightMatch($string, $keyword) {
         $string = ucfirst($string);
         return preg_replace("/(" . preg_quote($keyword, '/') . ")/i", '<mark>$1</mark>', $string);
+    }
+
+    /**
+     * Fetch a deposit rule by tour id.
+     */
+    public function fetch_deposit_rule($id)
+    {
+        $cacheKey = 'deposit_rule_' . $id;
+
+        $tourDepositRule = Cache::remember($cacheKey, 86400, function () use ($id) {
+            return TourSpecialDeposit::where('tour_id', $id)->first();
+        });
+
+        if (!$tourDepositRule) {
+            return response()->json(['status' => false, 'message' => 'Tour deposit rule not found'], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data'   => $tourDepositRule
+        ]);
     }
 
     /** 
