@@ -1100,10 +1100,8 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
         return $disabled;
     }
 
-    public function getSubTour(Request $request)
+    public function getSubTour($parentId, $date)
     {
-        $parentId = $request->input('id');   // parent tour id
-        $date     = $request->input('date'); // date in Y-m-d format
 
         if (!$parentId) {
             return response()->json([
@@ -1125,7 +1123,7 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
                 'message' => 'No sub tours found for given parent'
             ], 404);
         }
-        
+
         // Filter subTours based on next available date
         $filtered = $subTours->filter(function ($tour) use ($date) {
             $nextAvailable = $this->getNextAvailableDate($tour->id);
