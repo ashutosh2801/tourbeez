@@ -1022,6 +1022,58 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
 
 
 
+    // private function getDisabledTourDates(int $tourId): array
+    // {
+    //     $today = Carbon::today();
+
+    //     // ✅ Fetch ALL schedules instead of one
+    //     $schedules = TourSchedule::where('tour_id', $tourId)
+    //         ->where(function ($q) use ($today) {
+    //             $q->whereDate('session_start_date', '<=', $today)
+    //               ->whereDate('until_date', '>=', $today)
+    //               ->orWhereDate('session_start_date', '>=', $today);
+    //         })
+    //         ->orderBy('session_start_date')
+    //         ->get();
+    //     // dd($schedules);
+    //     if ($schedules->isEmpty()) {
+    //         return ['disabled_tour_dates' => []];
+    //     }
+
+    //     $disabled = [];
+    //     $startDate = null;
+    //     $untilDate = null;
+    //     $allDisabled = [];
+
+    //     foreach ($schedules as $schedule) {
+    //         $disabledForSchedule = $this->calculateDisabledDates($schedule, $today);
+
+    //         // $disabled = array_merge($disabled, $disabledForSchedule);
+
+    //          if (empty($allDisabled)) {
+    //             $allDisabled = $disabledForSchedule;
+    //         } else {
+    //             // ✅ Keep only common disabled dates across schedules
+    //             $allDisabled = array_intersect($allDisabled, $disabledForSchedule);
+    //         }
+
+    //         // Track overall min start and max until
+    //         if (!$startDate || Carbon::parse($schedule->session_start_date)->lt(Carbon::parse($startDate))) {
+    //             $startDate = $schedule->session_start_date;
+    //         }
+    //         if (!$untilDate || Carbon::parse($schedule->until_date)->gt(Carbon::parse($untilDate))) {
+    //             $untilDate = $schedule->until_date;
+    //         }
+    //     }
+
+    //     return [
+    //         'disabled_tour_dates' => array_values(array_unique($allDisabled)), // ✅ ensure unique dates
+    //         'start_date' => $startDate,
+    //         'until_date' => $untilDate,
+    //     ];
+    // }
+
+
     private function getDisabledTourDates(int $tourId): array
     {
         $today = Carbon::today();
@@ -1035,22 +1087,28 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
             })
             ->orderBy('session_start_date')
             ->get();
-        // dd($schedules);
+
         if ($schedules->isEmpty()) {
             return ['disabled_tour_dates' => []];
         }
 
-        $disabled = [];
         $startDate = null;
         $untilDate = null;
-        $allDisabled = [];
+        $allDisabled = null; // start with null so we can set the first schedule’s disabled list
 
         foreach ($schedules as $schedule) {
             $disabledForSchedule = $this->calculateDisabledDates($schedule, $today);
 
-            // $disabled = array_merge($disabled, $disabledForSchedule);
+            // 🚨 If any schedule has no disabled dates → result should be empty
+            if (empty($disabledForSchedule)) {
+                return [
+                    'disabled_tour_dates' => [],
+                    'start_date' => $schedule->session_start_date,
+                    'until_date' => $schedule->until_date,
+                ];
+            }
 
-             if (empty($allDisabled)) {
+            if (is_null($allDisabled)) {
                 $allDisabled = $disabledForSchedule;
             } else {
                 // ✅ Keep only common disabled dates across schedules
@@ -1067,11 +1125,12 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
         }
 
         return [
-            'disabled_tour_dates' => array_values(array_unique($allDisabled)), // ✅ ensure unique dates
+            'disabled_tour_dates' => array_values(array_unique($allDisabled ?? [])),
             'start_date' => $startDate,
             'until_date' => $untilDate,
         ];
     }
+
 
     private function calculateDisabledDates($schedule, Carbon $today): array
     {
