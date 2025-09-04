@@ -1466,8 +1466,8 @@ class OrderController extends Controller
         return response()->json([
             'status' => true,
             'data' => [
-                'customer_name' => ucwords($order->customer->name),
-                'amount'      => $order->balance_amount / 100, // Stripe stores in cents
+                'customer_name' => $customer = $order->user ?ucwords($order->user->name) : ucwords($order->customer->name),
+                'amount'      => $order->balance_amount, // Stripe stores in cents
                 'currency'    => strtoupper($paymentIntent->currency),
                 'brand'       => $card?->brand,
                 'last4'       => $card?->last4,
