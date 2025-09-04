@@ -392,6 +392,7 @@ class OrderController extends Controller
             $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
             $data = $request->input('formData');
             $adv_deposite = $data['adv_deposite'];
+            \Log::info($adv_deposite);
             $customer->order_id     = $order->id;
             $customer->user_id      = $request->userId ?? 0;
             $customer->first_name   = $data['first_name'];
@@ -511,16 +512,20 @@ class OrderController extends Controller
                     }
                 }
             }
+            
+            // \Log::info($item_total);
+            // \Log::info(($adv_deposite == 'deposit'));
 
             // Final update to main order
             //$order->tour_id            = $request->tourId;
             $order->action_name        = $request->action_name;
             $order->number_of_guests   = $quantity;
-            $order->total_amount       = ($adv_deposite == 'full') ? $item_total : 0;
+            $order->total_amount       = $item_total ?? 0;
             $order->balance_amount     = ($adv_deposite == 'deposit') ? $item_total : 0;
+            $order->adv_deposite       = $adv_deposite;
             $order->updated_at         = now();
             $order->save();
-
+            // dd(242);
              $metaData = [
                         'bookedDate'    => $order->created_at,
                         'orderId'       => $order->id,
@@ -539,8 +544,10 @@ class OrderController extends Controller
 
             if ($adv_deposite == "deposit") {
                 $depositRule = TourSpecialDeposit::where('tour_id', $tour->id)->first();
-
+               \Log::info($depositRule);
                 $chargeAmount = 0;
+                
+               \Log::info($depositRule->charge);
 
                 if ($depositRule && $depositRule->use_deposit) {
                     switch ($depositRule->charge) {
@@ -566,7 +573,7 @@ class OrderController extends Controller
                     }
 
                     // ✅ Minimum notice check
-                    if ($depositRule->use_minimum_notice && $depositRule->notice_days) {
+                    if ($depositRule->use_minimum_notice && $depositRule->notice_days && $adv_deposite == "full") {
                         $daysUntilTour = \Carbon\Carbon::today()->diffInDays($tour->start_date, false);
                         if ($daysUntilTour < $depositRule->notice_days) {
                             $chargeAmount = $order->total_amount; // Force full
@@ -581,7 +588,8 @@ class OrderController extends Controller
                 $order->booked_amount  = $chargeAmount;        // what’s being charged now
                 $order->balance_amount = $order->total_amount - $order->booked_amount;
 
-
+                \Log::info($chargeAmount);
+                // dd($chargeAmount);
                 if ($chargeAmount > 0) {
                     $pi = \Stripe\PaymentIntent::create([
                         'customer'  => $stripeCustomer->id,
@@ -592,7 +600,8 @@ class OrderController extends Controller
                         'capture_method' => 'manual',
                         'description' => $tour->title,
                         'statement_descriptor_suffix' =>  $order->order_number,
-                        'metadata'  => $metaData
+                        'metadata'  => $metaData,
+                        'setup_future_usage'=> 'off_session',
                     ]);
 
                     $order->payment_intent_client_secret = $pi->client_secret;
@@ -619,7 +628,8 @@ class OrderController extends Controller
                         'description' => $tour->title,
                         // 'statement_descriptor' => 'TOURBEEZ',
                         'statement_descriptor_suffix' =>  $order->order_number,
-                        'metadata'  => $metaData
+                        'metadata'  => $metaData,
+                        'setup_future_usage'=> 'off_session',
                     ]);
                 $order->payment_intent_client_secret = $pi->client_secret;
                 $order->payment_intent_id = $pi->id;
