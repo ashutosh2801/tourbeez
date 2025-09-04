@@ -582,6 +582,7 @@
                                 <table class="table">    
                                     <tr>
                                         <td>Total: {{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        <td></td>
                                         <td>Balance: {{ price_format_with_currency($order->balance_amount) }}</td>
                                         <td>Paid: {{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
                                     </tr>
@@ -1143,7 +1144,10 @@
 
     // Fetch payment details
     $.ajax({
-        url: '/admin/orders/' + orderId + '/payment-details',
+
+        url: "{{ route('admin.orders.payment-details', ['order' => '__ORDER_ID__']) }}".replace('__ORDER_ID__', orderId),
+
+
         type: 'POST',
         data: {
             _token: $('meta[name="csrf-token"]').attr('content')
@@ -1189,7 +1193,8 @@ $('#chargeForm').on('submit', function(e) {
     let amount  = $('#chargeAmount').val();
 
     $.ajax({
-        url: '/admin/orders/' + orderId + '/charge',
+        // url: 'staging/admin/orders/' + orderId + '/charge',
+        url: "{{ route('admin.orders.charge', ['order' => '__ORDER_ID__']) }}".replace('__ORDER_ID__', orderId),
         type: 'POST',
         data: {
             _token: $('meta[name="csrf-token"]').attr('content'),

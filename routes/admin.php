@@ -214,9 +214,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/order/order_sms_send/', [OrderController::class, 'order_sms_send'])->name('order_sms_send');
     Route::delete('/order/bulk-delete', [OrderController::class, 'bulkDelete'])->name('order.bulkDelete');
 
-    Route::post('/orders/{order}/charge', [OrderController::class, 'capturePayment']);
-    Route::post('/orders/{order}/payment-details', [OrderController::class, 'getPaymentDetails']);
+    Route::post('/orders/{order}/charge', [OrderController::class, 'capturePayment'])->name('orders.charge');
 
+    Route::post('/orders/{order}/payment-details', [OrderController::class, 'getPaymentDetails'])->name('orders.payment-details');
      // SMS Templates
     Route::resource('/sms-templates', SmsTemplateController::class);
     Route::post('/sms-templates/update', [SmsTemplateController::class, 'update'])->name('sms-templates.update');
