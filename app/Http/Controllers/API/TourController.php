@@ -251,23 +251,23 @@ class TourController extends Controller
         }
 
         $breadcrumbs[] = [
-            'url' => '',
+            'url' => '/',
             'label'=> 'Home'
         ];
         $breadcrumbs[] = [
-            'url' => 'destinations',
+            'url' => '/destinations',
             'label'=> 'Destinations'
         ];
         if($tour->location) {
             $location = $tour->location;
             if($location->country) {
-                $breadcrumbs[] = ['url' => 'c2/'.$location->country->id.'/'.Str::slug($location->country->name), 'label' => 'Things To Do in '.$location->country->name];
+                $breadcrumbs[] = ['url' => '/'.Str::slug($location->country->name).'/'.$location->country->id.'/c2', 'label' => 'Things To Do in '.$location->country->name];
             }
             if($location->state) {
-                $breadcrumbs[] = ['url' => 's1/'.$location->state->id.'/'.Str::slug($location->state->name), 'label' => 'Things To Do in '.$location->state->name];
+                $breadcrumbs[] = ['url' => '/'.Str::slug($location->state->name).'/'.$location->state->id.'/s1', 'label' => 'Things To Do in '.$location->state->name];
             }
             if($location->city) {
-                $breadcrumbs[] = ['url' => 'c1/'.$location->city->id.'/'.Str::slug($location->city->name), 'label' => 'Things To Do in '.$location->city->name];
+                $breadcrumbs[] = ['url' => '/'.Str::slug($location->city->name).'/'.$location->city->id.'/c1', 'label' => 'Things To Do in '.$location->city->name];
             }
         }
         $breadcrumbs[] = [
@@ -452,7 +452,7 @@ class TourController extends Controller
         $data = [];
         if($total_cities>0) {
             foreach($cities as $city) {
-                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => 'c1/'.$city->id.'/'.Str::slug($city->name), 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
+                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
             }
         }
         // if($total_categories>0) {
@@ -464,7 +464,7 @@ class TourController extends Controller
             foreach($tours as $tour) {
                 $image_id = $tour->main_image->id ?? 0;
                 $image  = uploaded_asset($image_id, 'thumb');
-                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => 'tour/'.$tour->slug, 'address' => $tour->location->address];
+                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => '/tour/'.$tour->slug, 'address' => $tour->location->address];
             }
         }
         

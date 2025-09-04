@@ -45,7 +45,7 @@ class CommonController extends Controller
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
                 // 'url'   => '/'.$d->id.'/'.Str::slug( $d->name ),
-                'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
+                'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
                 'image' => uploaded_asset( $d->upload_id ),
                 'extra' => ''
             ];
