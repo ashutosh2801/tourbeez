@@ -367,6 +367,8 @@ class OrderController extends Controller
             'formData.instructions' => 'nullable|string|max:255',
             'formData.pickup_id' => 'nullable|numeric|max:255',
             'formData.pickup_name' => 'nullable|string|max:255',
+            'formData.adv_deposite' => 'nullable|string|max:255',
+
         ]);
 
         $order = Order::find($id);
@@ -389,7 +391,7 @@ class OrderController extends Controller
             // Save or update customer
             $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
             $data = $request->input('formData');
-
+            $adv_deposite = $data['adv_deposite'];
             $customer->order_id     = $order->id;
             $customer->user_id      = $request->userId ?? 0;
             $customer->first_name   = $data['first_name'];
@@ -514,8 +516,8 @@ class OrderController extends Controller
             //$order->tour_id            = $request->tourId;
             $order->action_name        = $request->action_name;
             $order->number_of_guests   = $quantity;
-            $order->total_amount       = ($request->adv_deposite == 'full') ? $item_total : 0;
-            $order->balance_amount     = ($request->adv_deposite == 'deposit') ? $item_total : 0;
+            $order->total_amount       = ($adv_deposite == 'full') ? $item_total : 0;
+            $order->balance_amount     = ($adv_deposite == 'deposit') ? $item_total : 0;
             $order->updated_at         = now();
             $order->save();
 
@@ -535,7 +537,7 @@ class OrderController extends Controller
             ];
 
 
-            if ($request->adv_deposite == "deposit") {
+            if ($adv_deposite == "deposit") {
                 $depositRule = TourSpecialDeposit::where('tour_id', $tour->id)->first();
 
                 $chargeAmount = 0;
@@ -606,7 +608,7 @@ class OrderController extends Controller
                     $order->payment_intent_client_secret = $si->client_secret;
                     $order->payment_intent_id = $si->id;
                 }
-            }else if($request->adv_deposite == "full") {
+            }else if($adv_deposite == "full") {
                 $pi = \Stripe\PaymentIntent::create([
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($order->total_amount * 100)),
