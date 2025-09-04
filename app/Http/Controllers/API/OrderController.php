@@ -600,7 +600,8 @@ class OrderController extends Controller
                         'capture_method' => 'manual',
                         'description' => $tour->title,
                         'statement_descriptor_suffix' =>  $order->order_number,
-                        'metadata'  => $metaData
+                        'metadata'  => $metaData,
+                        'setup_future_usage'=> 'off_session',
                     ]);
 
                     $order->payment_intent_client_secret = $pi->client_secret;
@@ -611,7 +612,7 @@ class OrderController extends Controller
                         'customer'  => $stripeCustomer->id,
                         'automatic_payment_methods' => ['enabled' => true],
                         'usage'     => 'off_session',
-                        'metadata'  => $metaData,
+                        'metadata'  => $metaData
                     ]);               
                     $order->payment_intent_client_secret = $si->client_secret;
                     $order->payment_intent_id = $si->id;
@@ -628,6 +629,7 @@ class OrderController extends Controller
                         // 'statement_descriptor' => 'TOURBEEZ',
                         'statement_descriptor_suffix' =>  $order->order_number,
                         'metadata'  => $metaData,
+                        'setup_future_usage'=> 'off_session',
                     ]);
                 $order->payment_intent_client_secret = $pi->client_secret;
                 $order->payment_intent_id = $pi->id;
