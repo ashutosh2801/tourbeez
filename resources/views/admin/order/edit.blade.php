@@ -889,11 +889,19 @@
         <h5 class="modal-title">Capture Payment</h5>
       </div>
       <div class="modal-body">
+
+        
+        <div class="mb-3">
+          <label>Customer Name:  <span id="customerName"></span> </label>
+          
+        </div>
         <form id="chargeForm">
           <input type="hidden" id="chargeOrderId" name="order_id">
         <!-- Amount field -->
+
+
         <div class="mb-3">
-          <label>Amount</label>
+          <label>Amount (current order balance: CAD <span id="showChargeAmount"></span> )</label>
           <input type="text" id="chargeAmount" class="form-control"  name="amount" required>
         </div>
 
@@ -1124,6 +1132,8 @@
     $('#chargeOrderId').val(orderId);
     $('#cardDetails').text("Loading...");
     $('#chargeAmount').val("");
+    $('#showChargeAmount').val("");
+    $('#customerName').val("");
 
     // Fetch payment details
     $.ajax({
@@ -1137,6 +1147,8 @@
 
             // Fill amount
             $('#chargeAmount').val(data.amount);
+            $('#showChargeAmount').html(data.amount);
+            $('#customerName').html(data.customer_name);
 
             // Handle card block
             if (data.brand && data.last4 && data.exp_month && data.exp_year) {
