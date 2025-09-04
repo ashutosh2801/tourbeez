@@ -255,8 +255,8 @@ class TourController extends Controller
             'label'=> 'Home'
         ];
         $breadcrumbs[] = [
-            'url' => 'tours',
-            'label'=> 'Tours'
+            'url' => 'destinations',
+            'label'=> 'Destinations'
         ];
         if($tour->location) {
             $location = $tour->location;
