@@ -167,7 +167,8 @@
                         <label class="d-block" for="">Balance</label>
                         <select class="form-control" style="border:0" name="order_balance" id="order_balance">
                             <option value="$0.00" >$0.00</option>
-                            <option value="Paid" >Paid {{ price_format_with_currency($order->total_amount, $order->currency) }}</option>
+                            <option value="Paid" >Paid {{ price_format_with_currency($order->booked_amount, $order->currency) }}</option>
+                            <option value="Paid" >Total {{ price_format_with_currency($order->total_amount, $order->currency) }}</option>
                             <option value="Refunded" >Refunded $0.00</option>
                         </select>
 
@@ -192,6 +193,10 @@
                                 <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
                                     <li class="payment-details-breakdown--item">
                                         <strong class="payment-details-breakdown--text">Paid</strong>
+                                        <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
+                                    </li>
+                                    <li class="payment-details-breakdown--item">
+                                        <strong class="payment-details-breakdown--text">Total</strong>
                                         <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->total_amount, $order->currency) }}</strong>
                                     </li>
                                     <li class="payment-details-breakdown--item">
@@ -578,6 +583,7 @@
                                     <tr>
                                         <td>Total: {{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                         <td>Balance: {{ price_format_with_currency($order->balance_amount) }}</td>
+                                        <td>Paid: {{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
                                     </tr>
 
                                     <tr>
