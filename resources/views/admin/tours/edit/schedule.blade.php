@@ -5,6 +5,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title">Scheduling</h3>
             <button type="button" id="add-schedule" class="btn btn-sm btn-success">+ Add Schedule</button>
+            <a type="button" href="{{ route('admin.tour.edit.schedule-calendar', $data->id) }}" class="btn btn-sm btn-success">Schedule Calendar</a>
         </div>
         <div class="card-body">
 

@@ -333,8 +333,18 @@ class TourController extends Controller
             return TourSpecialDeposit::where('tour_id', $id)->first();
         });
 
+        // If no rule found for specific tour, check global rule (tour_id = 0)
         if (!$tourDepositRule) {
-            return response()->json(['status' => false, 'message' => 'Tour deposit rule not found'], 404);
+            $tourDepositRule = Cache::remember('deposit_rule_global', 86400, function () {
+                return TourSpecialDeposit::where('type', 'global')->first();
+            });
+        }
+
+        if (!$tourDepositRule) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Tour deposit rule not found (including global rule)'
+            ], 404);
         }
 
         return response()->json([
@@ -342,6 +352,7 @@ class TourController extends Controller
             'data'   => $tourDepositRule
         ]);
     }
+
 
     /** 
      * Search home page tour  

@@ -167,7 +167,8 @@
                         <label class="d-block" for="">Balance</label>
                         <select class="form-control" style="border:0" name="order_balance" id="order_balance">
                             <option value="$0.00" >$0.00</option>
-                            <option value="Paid" >Paid {{ price_format_with_currency($order->total_amount, $order->currency) }}</option>
+                            <option value="Paid" >Paid {{ price_format_with_currency($order->booked_amount, $order->currency) }}</option>
+                            <option value="Paid" >Total {{ price_format_with_currency($order->total_amount, $order->currency) }}</option>
                             <option value="Refunded" >Refunded $0.00</option>
                         </select>
 
@@ -192,6 +193,10 @@
                                 <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
                                     <li class="payment-details-breakdown--item">
                                         <strong class="payment-details-breakdown--text">Paid</strong>
+                                        <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
+                                    </li>
+                                    <li class="payment-details-breakdown--item">
+                                        <strong class="payment-details-breakdown--text">Total</strong>
                                         <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->total_amount, $order->currency) }}</strong>
                                     </li>
                                     <li class="payment-details-breakdown--item">
@@ -211,7 +216,7 @@
 
                             <div class="order-status">
                                 <div class="btn-group open">
-                                    <label for="order_status">Order Statusd</label>
+                                    <label for="order_status">Order Status</label>
                                     <button type="button" class="btn dropdown-toggle arrow childOrderEnabled"
                                         data-element-to-update=".payment-status"
                                         data-selected="{{ $order->status }}"
@@ -577,7 +582,9 @@
                                 <table class="table">    
                                     <tr>
                                         <td>Total: {{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        <td></td>
                                         <td>Balance: {{ price_format_with_currency($order->balance_amount) }}</td>
+                                        <td>Paid: {{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
                                     </tr>
 
                                     <tr>
@@ -889,11 +896,19 @@
         <h5 class="modal-title">Capture Payment</h5>
       </div>
       <div class="modal-body">
+
+        
+        <div class="mb-3">
+          <label>Customer Name:  <span id="customerName"></span> </label>
+          
+        </div>
         <form id="chargeForm">
           <input type="hidden" id="chargeOrderId" name="order_id">
         <!-- Amount field -->
+
+
         <div class="mb-3">
-          <label>Amount</label>
+          <label>Amount (current order balance: CAD <span id="showChargeAmount"></span> )</label>
           <input type="text" id="chargeAmount" class="form-control"  name="amount" required>
         </div>
 
@@ -1124,10 +1139,15 @@
     $('#chargeOrderId').val(orderId);
     $('#cardDetails').text("Loading...");
     $('#chargeAmount').val("");
+    $('#showChargeAmount').val("");
+    $('#customerName').val("");
 
     // Fetch payment details
     $.ajax({
-        url: '/admin/orders/' + orderId + '/payment-details',
+
+        url: "{{ route('admin.orders.payment-details', ['order' => '__ORDER_ID__']) }}".replace('__ORDER_ID__', orderId),
+
+
         type: 'POST',
         data: {
             _token: $('meta[name="csrf-token"]').attr('content')
@@ -1137,6 +1157,8 @@
 
             // Fill amount
             $('#chargeAmount').val(data.amount);
+            $('#showChargeAmount').html(data.amount);
+            $('#customerName').html(data.customer_name);
 
             // Handle card block
             if (data.brand && data.last4 && data.exp_month && data.exp_year) {
@@ -1171,7 +1193,8 @@ $('#chargeForm').on('submit', function(e) {
     let amount  = $('#chargeAmount').val();
 
     $.ajax({
-        url: '/admin/orders/' + orderId + '/charge',
+        // url: 'staging/admin/orders/' + orderId + '/charge',
+        url: "{{ route('admin.orders.charge', ['order' => '__ORDER_ID__']) }}".replace('__ORDER_ID__', orderId),
         type: 'POST',
         data: {
             _token: $('meta[name="csrf-token"]').attr('content'),
