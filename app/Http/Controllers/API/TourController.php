@@ -13,6 +13,7 @@ use App\Models\TourSpecialDeposit;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Dompdf\Helpers;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -23,37 +24,42 @@ class TourController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Tour::query()
-                ->where('status', 1)
-                ->whereNull('deleted_at');
+        $query = Tour::select([
+                'id', 'title', 'slug', 'unique_code', 'price',
+                'coupon_type', 'coupon_value', 'offer_ends_in'
+            ])
+            ->with([
+                'galleries:id,file_name,medium_name,thumb_name',
+                'mainImage:id,file_name,medium_name,thumb_name',
+                'schedule:id,tour_id,estimated_duration_num,estimated_duration_unit',
+                'categories:id',
+                'location:id,city_id,state_id,country_id',
+            ])
+            ->where('status', 1)
+            ->whereNull('deleted_at');
 
-        if ($request->title) {
-            $query->where('title', 'like', '%' . $request->title . '%');
-        }
-        if ($request->q) {
-            $query->where('title', 'like', '%' . $request->q . '%');
-        }
-
-        if ($request->slug) {
-            $query->where('slug', 'like', '%' . $request->slug . '%');
-        }
+        // Filters
+        $query->when($request->title, fn($q, $title) => $q->where('title', 'like', "%$title%"))
+            ->when($request->q, fn($q, $qstr) => $q->where('title', 'like', "%$qstr%"));
+            // ->when($request->slug, fn($q, $slug) => $q->where('slug', 'like', "%$slug%"));
 
         if ($request->categories) {
-            $query->whereHas('categories', function ($q) use ($request) {
-                $categories = explode(',', $request->categories);
-                $q->whereIn('categories.id', $categories);
+            $categories = explode(',', $request->categories);
+            $query->whereHas('categories', fn($q) => $q->whereIn('categories.id', $categories));
+        }
+
+        if ($request->city_id) {
+            $type = $request->input('type');
+            $query->whereHas('location', function ($q) use ($request, $type) {
+                match($type) {
+                    'c1' => $q->where('city_id', $request->city_id),
+                    's1' => $q->where('state_id', $request->city_id),
+                    'c2' => $q->where('country_id', $request->city_id),
+                    default => null
+                };
             });
         }
 
-        // Filter by city_id via location relationship
-        if ($request->city_id) {
-            $query->whereHas('location', function ($q) use ($request) {
-                $q->where('city_id', $request->city_id);
-                $q->orWhere('state_id', $request->city_id);
-                $q->orWhere('country_id', $request->city_id);
-            });
-        }
- 
         if ($request->min_price && $request->max_price) {
             $query->whereBetween('price', [(float)$request->min_price, (float)$request->max_price]);
         } elseif ($request->min_price) {
@@ -62,109 +68,51 @@ class TourController extends Controller
             $query->where('price', '<=', (float)$request->max_price);
         }
 
-        $order_by = $request->input('order_by');
-        if( $order_by == 'lowtohigh' ) {
-            $query->orderBy('price', 'ASC');
-        }
-        else if( $order_by == 'hightolow' ) {
-            $query->orderBy('price', 'DESC');
-        }
-        else {
-            $query->orderBy('sort_order', 'ASC');
-        }
+        // Sorting
+        // match($request->input('order_by')) {
+        //     'lowtohigh' => $query->orderBy('price', 'ASC'),
+        //     'hightolow' => $query->orderBy('price', 'DESC'),
+        //     default     => $query->orderBy('sort_order', 'ASC'),
+        // };
+        match ($request->input('order_by')) {
+            'lowtohigh' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
+                                ->orderBy('price', 'ASC'),
 
+            'hightolow' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
+                                ->orderBy('price', 'DESC'),
+
+            default     => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC'),
+        };
+
+        // Cache paginated
         $page = $request->get('page', 1);
         $cacheKey = 'tour_list_' . md5(json_encode($request->all()) . '_page_' . $page);
 
-        // dd($query->toSql(), $query->getBindings(), $query->get());
-        $paginated = Cache::remember($cacheKey, 86400, function () use ($query) {
-            return $query->paginate(12);
-        });
+        // dd(getFullSql($query));
 
-        // Transform the paginated data
-        $items = [];
-        foreach ($paginated->items() as $d) {
+        $paginated = Cache::tags(['tours'])->remember($cacheKey, 86400, fn() => $query->paginate(12));
+        // $paginated = Cache::remember($cacheKey, 86400, function () use ($query) {
+        //     return $query->paginate(12);
+        // });
 
-            $galleries = [];
-            if(count($d->galleries)>0) {
-                foreach( $d->galleries as $g ) {
-                    $image      = uploaded_asset($g->id);
-                    $medium_url = str_replace($g->file_name, $g->medium_name, $image);
-                    $thumb_url  = str_replace($g->file_name, $g->thumb_name, $image);
-                    $galleries[] = [
-                        'original_image' => $image,
-                        'medium_image'   => $medium_url,
-                        'thumb_image'    => $thumb_url,
-                    ];
-                }
-            }
-            else {
-                $image      = uploaded_asset($d->main_image->id);
-                $medium_url = str_replace($d->main_image->file_name, $d->main_image->medium_name, $image);
-                $thumb_url  = str_replace($d->main_image->file_name, $d->main_image->thumb_name, $image);
-                $galleries[] = [
-                    'original_image' => $image,
-                    'medium_image'   => $medium_url,
-                    'thumb_image'    => $thumb_url,
-                ];
-            }
+        // Transform response
+        $items = $paginated->map(fn($d) => [
+            'id'              => $d->id,
+            'title'           => $d->title,
+            'slug'            => $d->slug,
+            'unique_code'     => $d->unique_code,
+            'all_images'      => $d->formatted_images,
+            'price'           => price_format($d->price),
+            'original_price'  => $d->discounted_data['original_price'],
+            'discount'        => $d->discounted_data['discount'],
+            'discount_type'   => $d->discounted_data['discount_type'],
+            'discounted_price'=> $d->discounted_data['discounted_price'],
+            'duration'        => $d->duration,
+            'rating'          => randomFloat(4, 5),
+            'comment'         => rand(50, 100),
+            'offer_ends_in'   => $d->offer_ends_in,
+        ]);
 
-            $duration = $d->schedule?->estimated_duration_num.' ' ?? '';
-            $duration.= ucfirst($d->schedule?->estimated_duration_unit ?? '');
-
-            // $items[] = [
-            //     'id'             => $d->id,
-            //     'title'          => $d->title,
-            //     'slug'           => $d->slug,
-            //     'unique_code'    => $d->unique_code,
-            //     'all_images'     => $galleries,
-            //     //'catogory'       => $d->catogory,
-            //     'price'          => price_format($d->price),
-            //     'original_price' => $d->price,
-            //     'duration'       => strtolower(trim($duration)),
-            //     'rating'         => randomFloat(4, 5),
-            //     'comment'        => rand(50, 100),
-            // ];
-
-
-            $discount         = $d->coupon_value;
-            $original_price   = $d->price;
-            $discounted_price = $d->price;
- 
-            if ($discount && $discount > 0) {
-                if ($d->coupon_type == 'fixed') {
-                    // Original price = price + coupon value
-                    $original_price   = round($d->price + $discount);
-                    $discounted_price = $d->price;
-                } elseif ($d->coupon_type == 'percentage') {
-                    // Original price = inflated by coupon percentage
-                    $original = $d->price / (1 - ($discount / 100));
-                    $original_price = round($original);
-                    $discounted_price = $d->price;
-                }
-            }
- 
-            $items[] = [
-                'id'             => $d->id,
-                'title'          => $d->title,
-                'slug'           => $d->slug,
-                'unique_code'    => $d->unique_code,
-                'all_images'     => $galleries,
-                //'catogory'       => $d->catogory,
-                'price'          => price_format($d->price),
-                'original_price' => $original_price,
-                'duration'       => strtolower(trim($duration)),
-                'rating'         => randomFloat(4, 5),
-                'comment'        => rand(50, 100),
-                'discount'          =>  $discount,
-                'discount_type'     =>  strtoupper($d->coupon_type),
-                'discounted_price'  => $discounted_price,
-                'offer_ends_in'        => $d->offer_ends_in,
- 
-            ];
-        }
-
-        // Return the transformed data along with pagination info
         return response()->json([
             'status'         => true,
             'data'           => $items,
@@ -177,6 +125,7 @@ class TourController extends Controller
             'prev_page_url'  => $paginated->previousPageUrl(),
         ]);
     }
+
     
     /**
      * Fetch a single tour.
@@ -384,8 +333,18 @@ class TourController extends Controller
             return TourSpecialDeposit::where('tour_id', $id)->first();
         });
 
+        // If no rule found for specific tour, check global rule (tour_id = 0)
         if (!$tourDepositRule) {
-            return response()->json(['status' => false, 'message' => 'Tour deposit rule not found'], 404);
+            $tourDepositRule = Cache::remember('deposit_rule_global', 86400, function () {
+                return TourSpecialDeposit::where('type', 'global')->first();
+            });
+        }
+
+        if (!$tourDepositRule) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Tour deposit rule not found (including global rule)'
+            ], 404);
         }
 
         return response()->json([
@@ -393,6 +352,7 @@ class TourController extends Controller
             'data'   => $tourDepositRule
         ]);
     }
+
 
     /** 
      * Search home page tour  
