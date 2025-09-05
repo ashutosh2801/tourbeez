@@ -30,9 +30,11 @@ class CommonController extends Controller
         $data = Cache::remember('cities_home_list', 86400, function () {
             return DB::table('tour_locations as tl')
                 ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                ->join('uploads as u', 'u.id', '=', 'c.upload_id')
                 ->select('c.id', 'c.name', 'c.upload_id')
                 ->groupBy('c.id', 'c.name', 'c.upload_id') 
                 ->orderByRaw('RAND()') 
+                ->where('c.upload_id', '>=', 1)
                 ->limit(50)
                 ->get();
         });
@@ -43,7 +45,7 @@ class CommonController extends Controller
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
                 // 'url'   => '/'.$d->id.'/'.Str::slug( $d->name ),
-                'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
+                'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
                 'image' => uploaded_asset( $d->upload_id ),
                 'extra' => ''
             ];
@@ -129,20 +131,22 @@ class CommonController extends Controller
             //         ->get();
         // });
 
-            $data = DB::table('tour_locations as tl')
-                ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                ->select('c.id', 'c.name', 'c.upload_id')
-                ->distinct()
-                ->orderByRaw('RAND()') // ✅ Correct way to randomize rows
-                ->limit(25)
-                ->get();
+        $data = DB::table('tour_locations as tl')
+            ->join('cities as c', 'c.id', '=', 'tl.city_id')
+            ->join('uploads as u', 'u.id', '=', 'c.upload_id')
+            ->select('c.id', 'c.name', 'c.upload_id')
+            ->distinct()
+            ->orderByRaw('RAND()') // ✅ Correct way to randomize rows
+            ->where('c.upload_id', '>=', 1)
+            ->limit(25)
+            ->get();
 
         $cities = [];
         foreach($data as $d) {
             $cities[] = [
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
-                'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
+                'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
                 'image' => uploaded_asset( $d->upload_id ),
                 'extra' => ''
             ];
@@ -208,6 +212,7 @@ class CommonController extends Controller
                 'co.name as country_name'
             )
             ->distinct()
+            ->where('c.upload_id' , '>=', 1)
             ->orderByRaw('RAND()');
 
         $paginated = $query->paginate($limit, ['*'], 'page', $page);
@@ -217,7 +222,7 @@ class CommonController extends Controller
             $cities[] = [
                 'id'    => $d->id,
                 'name'  => 'Things to do in ' . ucfirst($d->name),
-                'url'   => '/c1/' . $d->id . '/' . Str::slug($d->name),
+                'url'   => '/' . Str::slug($d->name) . '/' . $d->id . '/c1',
                 'image' => uploaded_asset($d->upload_id),
                 'extra' => ucwords($d->state_name) . ', ' . ucwords($d->country_name),
             ];
@@ -256,7 +261,7 @@ class CommonController extends Controller
                 $data['city'] = [
                     'id'    => $d->id,
                     'name'  => ucfirst( $d->name ),
-                    'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
+                    'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
                     'image' => uploaded_asset( $d->upload_id ),
             ];
         }
@@ -266,7 +271,7 @@ class CommonController extends Controller
             $data['state'] = [
                 'id'    => $d->state->id,
                 'name'  => 'Things to do in '.ucfirst( $d->state->name ),
-                'url'   => '/s1/'.$d->state->id.'/'.Str::slug( $d->state->name ),
+                'url'   => '/'.Str::slug( $d->state->name ).'/'.$d->state->id.'/s1',
                 'image' => $d->state->upload_id ? uploaded_asset( $d->state->upload_id ) : '',
             ];
         }
@@ -276,7 +281,7 @@ class CommonController extends Controller
             $data['country'] = [
                 'id'    => $d->state->country->id,
                 'name'  => 'Things to do in '.ucfirst( $d->state->country->name ),
-                'url'   => '/c2/'.$d->state->country->id.'/'.Str::slug( $d->state->country->name ),
+                'url'   => '/'.Str::slug( $d->state->country->name ).'/'.$d->state->country->id.'/c2',
                 'image' => $d->state?->country?->upload_id ? uploaded_asset( $d->state->country->upload_id ) : '',
             ];
         }

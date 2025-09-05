@@ -14,13 +14,14 @@ use App\Models\Tour;
 use App\Models\TourPricing;
 use App\Models\TourSchedule;
 use App\Models\TourScheduleRepeats;
+use App\Models\TourSpecialDeposit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Support\Carbon;
-use Stripe\Stripe;
 use Stripe\Customer;
+use Stripe\Stripe;
 
 class OrderController extends Controller
 {
@@ -366,6 +367,8 @@ class OrderController extends Controller
             'formData.instructions' => 'nullable|string|max:255',
             'formData.pickup_id' => 'nullable|numeric|max:255',
             'formData.pickup_name' => 'nullable|string|max:255',
+            'formData.adv_deposite' => 'nullable|string|max:255',
+
         ]);
 
         $order = Order::find($id);
@@ -388,7 +391,8 @@ class OrderController extends Controller
             // Save or update customer
             $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
             $data = $request->input('formData');
-
+            $adv_deposite = $data['adv_deposite'];
+            \Log::info($adv_deposite);
             $customer->order_id     = $order->id;
             $customer->user_id      = $request->userId ?? 0;
             $customer->first_name   = $data['first_name'];
@@ -508,16 +512,20 @@ class OrderController extends Controller
                     }
                 }
             }
+            
+            // \Log::info($item_total);
+            // \Log::info(($adv_deposite == 'deposit'));
 
             // Final update to main order
             //$order->tour_id            = $request->tourId;
             $order->action_name        = $request->action_name;
             $order->number_of_guests   = $quantity;
-            $order->total_amount       = ($request->action_name == 'book') ? $item_total : 0;
-            $order->balance_amount     = ($request->action_name == 'reserve') ? $item_total : 0;
+            $order->total_amount       = $item_total ?? 0;
+            $order->balance_amount     = ($adv_deposite == 'deposit') ? $item_total : 0;
+            $order->adv_deposite       = $adv_deposite;
             $order->updated_at         = now();
             $order->save();
-
+            // dd(242);
              $metaData = [
                         'bookedDate'    => $order->created_at,
                         'orderId'       => $order->id,
@@ -533,17 +541,83 @@ class OrderController extends Controller
                         'totalAmount'   => $order->total_amount
             ];
 
-            if($request->action_name == "reserve") {
-                $si = \Stripe\SetupIntent::create([
-                    'customer'  => $stripeCustomer->id,
-                    'automatic_payment_methods' => ['enabled' => true],
-                    'usage'     => 'off_session',
-                    'metadata'  => $metaData
-                ]);               
-                $order->payment_intent_client_secret = $si->client_secret;
-                $order->payment_intent_id = $si->id;
-            }
-            else if($request->action_name == "book") {
+
+            if ($adv_deposite == "deposit") {
+                $depositRule = TourSpecialDeposit::where('tour_id', $tour->id)->first();
+               \Log::info($depositRule);
+                $chargeAmount = 0;
+                
+               \Log::info($depositRule->charge);
+
+                if ($depositRule && $depositRule->use_deposit) {
+                    switch ($depositRule->charge) {
+                        case 'FULL':
+                            $chargeAmount = $order->total_amount;
+                            break;
+
+                        case 'DEPOSIT_PERCENT':
+                            $chargeAmount = ($order->total_amount * ($depositRule->deposit_amount / 100));
+                            break;
+
+                        case 'DEPOSIT_FIXED':
+                            $chargeAmount = $depositRule->deposit_amount;
+                            break;
+
+                        case 'DEPOSIT_FIXED_PER_ORDER':
+                            $chargeAmount = $depositRule->deposit_amount; // per order, not per person
+                            break;
+
+                        case 'NONE':
+                            $chargeAmount = 0;
+                            break;
+                    }
+
+                    // ✅ Minimum notice check
+                    if ($depositRule->use_minimum_notice && $depositRule->notice_days && $adv_deposite == "full") {
+                        $daysUntilTour = \Carbon\Carbon::today()->diffInDays($tour->start_date, false);
+                        if ($daysUntilTour < $depositRule->notice_days) {
+                            $chargeAmount = $order->total_amount; // Force full
+                        }
+                    }
+                } else {
+                    // Deposit not enabled → fallback to full
+                    $chargeAmount = $order->total_amount;
+                }
+                // ✅ Update amounts in order
+                $order->total_amount   = $order->total_amount; // full tour price (unchanged)
+                $order->booked_amount  = $chargeAmount;        // what’s being charged now
+                $order->balance_amount = $order->total_amount - $order->booked_amount;
+
+                \Log::info($chargeAmount);
+                // dd($chargeAmount);
+                if ($chargeAmount > 0) {
+                    $pi = \Stripe\PaymentIntent::create([
+                        'customer'  => $stripeCustomer->id,
+                        'amount' => intval(round($chargeAmount * 100)),
+                        'currency' => $order->currency,
+                        'automatic_payment_methods' => ['enabled' => true],
+                        'receipt_email' => $data['email'],
+                        'capture_method' => 'manual',
+                        'description' => $tour->title,
+                        'statement_descriptor_suffix' =>  $order->order_number,
+                        'metadata'  => $metaData,
+                        'setup_future_usage'=> 'off_session',
+                    ]);
+
+                    $order->payment_intent_client_secret = $pi->client_secret;
+                    $order->payment_intent_id = $pi->id;
+                } else {
+                    // No charge needed
+                    $si = \Stripe\SetupIntent::create([
+                        'customer'  => $stripeCustomer->id,
+                        'automatic_payment_methods' => ['enabled' => true],
+                        'usage'     => 'off_session',
+                        'metadata'  => $metaData
+                    ]);               
+                    $order->payment_intent_client_secret = $si->client_secret;
+                    $order->payment_intent_id = $si->id;
+                }
+            }else if($adv_deposite == "full") {
                 $pi = \Stripe\PaymentIntent::create([
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($order->total_amount * 100)),
@@ -554,11 +628,44 @@ class OrderController extends Controller
                         'description' => $tour->title,
                         // 'statement_descriptor' => 'TOURBEEZ',
                         'statement_descriptor_suffix' =>  $order->order_number,
-                        'metadata'  => $metaData
+                        'metadata'  => $metaData,
+                        'setup_future_usage'=> 'off_session',
                     ]);
                 $order->payment_intent_client_secret = $pi->client_secret;
                 $order->payment_intent_id = $pi->id;
             }
+
+
+
+
+
+
+            // if($request->action_name == "reserve") {
+            //     $si = \Stripe\SetupIntent::create([
+            //         'customer'  => $stripeCustomer->id,
+            //         'automatic_payment_methods' => ['enabled' => true],
+            //         'usage'     => 'off_session',
+            //         'metadata'  => $metaData
+            //     ]);               
+            //     $order->payment_intent_client_secret = $si->client_secret;
+            //     $order->payment_intent_id = $si->id;
+            // }
+            // else if($request->action_name == "book") {
+            //     $pi = \Stripe\PaymentIntent::create([
+            //             'customer'  => $stripeCustomer->id,
+            //             'amount' => intval(round($order->total_amount * 100)),
+            //             'currency' => $order->currency,
+            //             'automatic_payment_methods' => ['enabled' => true],
+            //             'receipt_email' => $data['email'],
+            //             'capture_method' => 'manual',
+            //             'description' => $tour->title,
+            //             // 'statement_descriptor' => 'TOURBEEZ',
+            //             'statement_descriptor_suffix' =>  $order->order_number,
+            //             'metadata'  => $metaData
+            //         ]);
+            //     $order->payment_intent_client_secret = $pi->client_secret;
+            //     $order->payment_intent_id = $pi->id;
+            // }
             // Also store in main order for quick access
             $order->stripe_customer_id = $stripeCustomer->id;
             $order->save();           

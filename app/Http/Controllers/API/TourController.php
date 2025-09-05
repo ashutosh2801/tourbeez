@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Tour;
 use App\Models\TourSchedule;
 use App\Models\TourScheduleRepeats;
+use App\Models\TourSpecialDeposit;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -250,23 +251,23 @@ class TourController extends Controller
         }
 
         $breadcrumbs[] = [
-            'url' => '',
+            'url' => '/',
             'label'=> 'Home'
         ];
         $breadcrumbs[] = [
-            'url' => 'tours',
-            'label'=> 'Tours'
+            'url' => '/destinations',
+            'label'=> 'Destinations'
         ];
         if($tour->location) {
             $location = $tour->location;
             if($location->country) {
-                $breadcrumbs[] = ['url' => 'c2/'.$location->country->id.'/'.Str::slug($location->country->name), 'label' => 'Things To Do in '.$location->country->name];
+                $breadcrumbs[] = ['url' => '/'.Str::slug($location->country->name).'/'.$location->country->id.'/c2', 'label' => 'Things To Do in '.$location->country->name];
             }
             if($location->state) {
-                $breadcrumbs[] = ['url' => 's1/'.$location->state->id.'/'.Str::slug($location->state->name), 'label' => 'Things To Do in '.$location->state->name];
+                $breadcrumbs[] = ['url' => '/'.Str::slug($location->state->name).'/'.$location->state->id.'/s1', 'label' => 'Things To Do in '.$location->state->name];
             }
             if($location->city) {
-                $breadcrumbs[] = ['url' => 'c1/'.$location->city->id.'/'.Str::slug($location->city->name), 'label' => 'Things To Do in '.$location->city->name];
+                $breadcrumbs[] = ['url' => '/'.Str::slug($location->city->name).'/'.$location->city->id.'/c1', 'label' => 'Things To Do in '.$location->city->name];
             }
         }
         $breadcrumbs[] = [
@@ -343,14 +344,14 @@ class TourController extends Controller
                 'category'      => $tour->category,
                 'galleries'     => $galleries,
                 'addons'        => $addons,
-                'offer_ends_in'        => $tour->offer_ends_in,
-                'tour_special_deposits'        => $tour->specialDeposit,
+                'offer_ends_in' => $tour->offer_ends_in,
+                //'tour_special_deposits'        => $tour->specialDeposit,
 
-                'discount'       =>  $tour->coupon_value,
-                'discount_type'       =>  strtoupper($tour->coupon_type),
-                'discounted_price'     => $discounted_price,
-                'tour_start_date'      => $this->getNextAvailableDate($tour->id),
-                'disabled_tour_dates'      => $this->getDisabledTourDates($tour->id),
+                'discount'              =>  $tour->coupon_value,
+                'discount_type'         =>  strtoupper($tour->coupon_type),
+                'discounted_price'      => $discounted_price,
+                'tour_start_date'       => $this->getNextAvailableDate($tour->id),
+                'disabled_tour_dates'   => $this->getDisabledTourDates($tour->id),
             ];
 
             //discounted_price
@@ -370,6 +371,27 @@ class TourController extends Controller
     function highlightMatch($string, $keyword) {
         $string = ucfirst($string);
         return preg_replace("/(" . preg_quote($keyword, '/') . ")/i", '<mark>$1</mark>', $string);
+    }
+
+    /**
+     * Fetch a deposit rule by tour id.
+     */
+    public function fetch_deposit_rule($id)
+    {
+        $cacheKey = 'deposit_rule_' . $id;
+
+        $tourDepositRule = Cache::remember($cacheKey, 86400, function () use ($id) {
+            return TourSpecialDeposit::where('tour_id', $id)->first();
+        });
+
+        if (!$tourDepositRule) {
+            return response()->json(['status' => false, 'message' => 'Tour deposit rule not found'], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data'   => $tourDepositRule
+        ]);
     }
 
     /** 
@@ -430,7 +452,7 @@ class TourController extends Controller
         $data = [];
         if($total_cities>0) {
             foreach($cities as $city) {
-                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => 'c1/'.$city->id.'/'.Str::slug($city->name), 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
+                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
             }
         }
         // if($total_categories>0) {
@@ -442,7 +464,7 @@ class TourController extends Controller
             foreach($tours as $tour) {
                 $image_id = $tour->main_image->id ?? 0;
                 $image  = uploaded_asset($image_id, 'thumb');
-                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => 'tour/'.$tour->slug, 'address' => $tour->location->address];
+                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => '/tour/'.$tour->slug, 'address' => $tour->location->address];
             }
         }
         
@@ -575,14 +597,14 @@ private function getNextAvailableDate($tourId)
             return ['date' => ""];
             
         }   
-        // dd($schedule, $today);
 
         $nextDate = $this->calculateNextDate($schedule, $today);
-        // dd($nextDate);
+
         if ($nextDate) {
             $nextDates[] = $nextDate;
         }
-    }
+    }   
+
 
     if (!empty($nextDates)) {
         usort($nextDates, fn($a, $b) => strtotime($a['date']) <=> strtotime($b['date']));
@@ -596,7 +618,7 @@ private function calculateNextDate($schedule, Carbon $today)
 {
     $interval = $schedule->repeat_period_unit ?? 1;
     $repeatType = $schedule->repeat_period;
-
+    // dd($repeatType);
     if($repeatType == 'none'){
         return false;
     }
@@ -608,14 +630,14 @@ private function calculateNextDate($schedule, Carbon $today)
 
     while ($next->lte($scheduleEndDate)) {
 
-        if ($repeatType === 'WEEKLY' || $repeatType === 'MINUTELY') {
+        if ($repeatType === 'WEEKLY' || $repeatType === 'MINUTELY' || $repeatType === 'HOURLY') {
             // ✅ check if this weekday is allowed
             $dayName = $next->format('l');
-
+            // dd($next, $dayName);
             $allowed = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
                 ->where('day', $dayName)
                 ->exists();
-                // var_dump($allowed);
+                // dd($allowed);
             if (!$allowed) {
                 $next->addDay(); // move to next day if not allowed
                 continue;
@@ -631,8 +653,9 @@ private function calculateNextDate($schedule, Carbon $today)
               
         }
 
-        if ($this->hasValidSlot($schedule, $next)) {
-            return ['date' => $next->toDateString()];
+        if ($this->hasValidSlot($schedule, $next, )) {
+
+            return ['date'  => $next->toDateString()];
         }
 
         switch ($repeatType) {
@@ -651,11 +674,30 @@ private function calculateNextDate($schedule, Carbon $today)
 
 private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $minimumNoticePeriod = 0)
 {
+
+    $repeatType = $schedule->repeat_period;
+
     $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
     $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
 
+    if ($repeatType === 'MINUTELY' || $repeatType === 'HOURLY') {
+            // ✅ check if this weekday is allowed
+            $dayName = $date->format('l');
+            // dd($next, $dayName);
+            $tourScheduleRepeats = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+                ->where('day', $dayName)
+                ->first();
+
+            $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $tourScheduleRepeats->start_time);
+            $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $tourScheduleRepeats->end_time);
+              
+    }
+
+
+
     $minimumNoticePeriod = $schedule->minimum_notice_unit == "HOURS" ? $schedule->minimum_notice_num * 60 : $schedule->minimum_notice_num ;
     $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
+    // dd($earliestAllowed, $endTime->lt($earliestAllowed), $endTime);
     // If the entire session is already in the past, skip
     if ($endTime->lt($earliestAllowed)) {
         return false;
@@ -921,25 +963,195 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
      * Build disabled dates from TODAY to until_date.
      * One pass over days, constant-time availability check per day.
      */
+    // private function calculateDisabledDates($schedule, Carbon $today): array
+    // {
+    //     // $start = Carbon::parse($schedule->session_start_date); $today->copy()->startOfDay()->max(Carbon::parse($schedule->session_start_date)->startOfDay());
+    //     $start = Carbon::parse($schedule->session_start_date);
+    //     $start = Carbon::today();
+    //     $end   = Carbon::parse($schedule->until_date)->endOfDay();
+
+    //     if ($start->gt($end)) return [];
+
+    //     // Prefetch repeats once; group by weekday to avoid DB hits per day
+    //     $repeats = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)->get()->groupBy('day')->all();
+
+    //     $disabled = [];
+    //     $period = CarbonPeriod::create($start->toDateString(), '1 day', $end->toDateString());
+    //     // dd($period);
+    //     foreach ($period as $d) {
+    //         /** @var Carbon $d */
+    //         if (!$this->isDateAvailable($schedule, $d, $repeats)) {
+
+    //             $disabled[] = $d->toDateString();
+    //         }
+    //     }
+
+    //     return $disabled;
+    // }
+
+    /**
+     * Public entry: returns all disabled dates for the tour (today → until_date).
+     */
+    // private function getDisabledTourDates(int $tourId): array
+    // {
+    //     $today = Carbon::today();
+
+    //     // One active schedule per tour at a time (as you stated)
+    //     $schedule = TourSchedule::where('tour_id', $tourId)
+    //         ->where(function ($q) use ($today) {
+    //             $q->whereDate('session_start_date', '<=', $today)
+    //               ->whereDate('until_date', '>=', $today)
+    //               ->orWhereDate('session_start_date', '>=', $today);
+    //         })
+    //         ->orderBy('session_start_date')
+    //         ->first();
+
+    //     if (!$schedule) {
+    //         return ['disabled_tour_dates' => []];
+    //     }
+
+    //     $disabled = $this->calculateDisabledDates($schedule, $today);
+
+    //     return [
+    //         'disabled_tour_dates' => $disabled,
+    //         'start_date' => $schedule->session_start_date,
+    //         'untill_date' => $schedule->until_date,
+
+    //     ];
+    // }
+
+
+
+    // private function getDisabledTourDates(int $tourId): array
+    // {
+    //     $today = Carbon::today();
+
+    //     // ✅ Fetch ALL schedules instead of one
+    //     $schedules = TourSchedule::where('tour_id', $tourId)
+    //         ->where(function ($q) use ($today) {
+    //             $q->whereDate('session_start_date', '<=', $today)
+    //               ->whereDate('until_date', '>=', $today)
+    //               ->orWhereDate('session_start_date', '>=', $today);
+    //         })
+    //         ->orderBy('session_start_date')
+    //         ->get();
+    //     // dd($schedules);
+    //     if ($schedules->isEmpty()) {
+    //         return ['disabled_tour_dates' => []];
+    //     }
+
+    //     $disabled = [];
+    //     $startDate = null;
+    //     $untilDate = null;
+    //     $allDisabled = [];
+
+    //     foreach ($schedules as $schedule) {
+    //         $disabledForSchedule = $this->calculateDisabledDates($schedule, $today);
+
+    //         // $disabled = array_merge($disabled, $disabledForSchedule);
+
+    //          if (empty($allDisabled)) {
+    //             $allDisabled = $disabledForSchedule;
+    //         } else {
+    //             // ✅ Keep only common disabled dates across schedules
+    //             $allDisabled = array_intersect($allDisabled, $disabledForSchedule);
+    //         }
+
+    //         // Track overall min start and max until
+    //         if (!$startDate || Carbon::parse($schedule->session_start_date)->lt(Carbon::parse($startDate))) {
+    //             $startDate = $schedule->session_start_date;
+    //         }
+    //         if (!$untilDate || Carbon::parse($schedule->until_date)->gt(Carbon::parse($untilDate))) {
+    //             $untilDate = $schedule->until_date;
+    //         }
+    //     }
+
+    //     return [
+    //         'disabled_tour_dates' => array_values(array_unique($allDisabled)), // ✅ ensure unique dates
+    //         'start_date' => $startDate,
+    //         'until_date' => $untilDate,
+    //     ];
+    // }
+
+
+    private function getDisabledTourDates(int $tourId): array
+    {
+        $today = Carbon::today();
+
+        // ✅ Fetch ALL schedules instead of one
+        $schedules = TourSchedule::where('tour_id', $tourId)
+            ->where(function ($q) use ($today) {
+                $q->whereDate('session_start_date', '<=', $today)
+                  ->whereDate('until_date', '>=', $today)
+                  ->orWhereDate('session_start_date', '>=', $today);
+            })
+            ->orderBy('session_start_date')
+            ->get();
+
+        if ($schedules->isEmpty()) {
+            return ['disabled_tour_dates' => []];
+        }
+
+        $startDate = null;
+        $untilDate = null;
+        $allDisabled = null; // start with null so we can set the first schedule’s disabled list
+
+        foreach ($schedules as $schedule) {
+            $disabledForSchedule = $this->calculateDisabledDates($schedule, $today);
+
+            // 🚨 If any schedule has no disabled dates → result should be empty
+            if (empty($disabledForSchedule)) {
+                return [
+                    'disabled_tour_dates' => [],
+                    'start_date' => $schedule->session_start_date,
+                    'until_date' => $schedule->until_date,
+                ];
+            }
+
+            if (is_null($allDisabled)) {
+                $allDisabled = $disabledForSchedule;
+            } else {
+                // ✅ Keep only common disabled dates across schedules
+                $allDisabled = array_intersect($allDisabled, $disabledForSchedule);
+            }
+
+            // Track overall min start and max until
+            if (!$startDate || Carbon::parse($schedule->session_start_date)->lt(Carbon::parse($startDate))) {
+                $startDate = $schedule->session_start_date;
+            }
+            if (!$untilDate || Carbon::parse($schedule->until_date)->gt(Carbon::parse($untilDate))) {
+                $untilDate = $schedule->until_date;
+            }
+        }
+
+        return [
+            'disabled_tour_dates' => array_values(array_unique($allDisabled ?? [])),
+            'start_date' => $startDate,
+            'until_date' => $untilDate,
+        ];
+    }
+
+
     private function calculateDisabledDates($schedule, Carbon $today): array
     {
-        // $start = Carbon::parse($schedule->session_start_date); $today->copy()->startOfDay()->max(Carbon::parse($schedule->session_start_date)->startOfDay());
-        $start = Carbon::parse($schedule->session_start_date);
-        $start = Carbon::today();
+        $start = Carbon::parse($schedule->session_start_date)->max($today);
         $end   = Carbon::parse($schedule->until_date)->endOfDay();
 
-        if ($start->gt($end)) return [];
+        if ($start->gt($end)) {
+            return [];
+        }
 
-        // Prefetch repeats once; group by weekday to avoid DB hits per day
-        $repeats = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)->get()->groupBy('day')->all();
+        // Prefetch repeats once; group by weekday
+        $repeats = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+            ->get()
+            ->groupBy('day')
+            ->all();
 
         $disabled = [];
         $period = CarbonPeriod::create($start->toDateString(), '1 day', $end->toDateString());
-        // dd($period);
-        foreach ($period as $d) {
-            /** @var Carbon $d */
-            if (!$this->isDateAvailable($schedule, $d, $repeats)) {
 
+        foreach ($period as $d) {
+            if (!$this->isDateAvailable($schedule, $d, $repeats)) {
                 $disabled[] = $d->toDateString();
             }
         }
@@ -947,36 +1159,73 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
         return $disabled;
     }
 
-    /**
-     * Public entry: returns all disabled dates for the tour (today → until_date).
-     */
-    private function getDisabledTourDates(int $tourId): array
+    public function getSubTour($parentId, $date)
     {
-        $today = Carbon::today();
 
-        // One active schedule per tour at a time (as you stated)
-        $schedule = TourSchedule::where('tour_id', $tourId)
-            ->where(function ($q) use ($today) {
-                $q->whereDate('session_start_date', '<=', $today)
-                  ->whereDate('until_date', '>=', $today)
-                  ->orWhereDate('session_start_date', '>=', $today);
-            })
-            ->orderBy('session_start_date')
-            ->first();
-
-        if (!$schedule) {
-            return ['disabled_tour_dates' => []];
+        if (!$parentId) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Parent ID'
+            ], 400);
         }
 
-        $disabled = $this->calculateDisabledDates($schedule, $today);
+        // Fetch sub tours under the parent
+        $subTours = Tour::where('parent_id', $parentId)
+            ->where('status', 1)
+            ->whereNull('deleted_at')
+            ->with(['galleries', 'categories', 'location'])
+            ->get();
 
-        return [
-            'disabled_tour_dates' => $disabled,
-            'start_date' => $schedule->session_start_date,
-            'untill_date' => $schedule->until_date,
+        if ($subTours->isEmpty()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'No sub tours found for given parent'
+            ], 404);
+        }
 
-        ];
+        // Filter subTours based on next available date
+        $filtered = $subTours->filter(function ($tour) use ($date) {
+            $nextAvailable = $this->getNextAvailableDate($tour->id);
+
+            return $nextAvailable && isset($nextAvailable['date']) && $nextAvailable['date'] === $date;
+        });
+
+        if ($filtered->isEmpty()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'No sub tours available on the given date'
+            ], 404);
+        }
+
+        // Format response
+        $formatted = $filtered->map(function ($tour) use ($date) {
+            $galleries = $tour->galleries->map(function ($g) {
+                $image      = uploaded_asset($g->id);
+                $medium_url = str_replace($g->file_name, $g->medium_name, $image);
+                $thumb_url  = str_replace($g->file_name, $g->thumb_name, $image);
+                return [
+                    'original_url' => $image,
+                    'medium_url'   => $medium_url,
+                    'thumb_url'    => $thumb_url
+                ];
+            });
+
+            return [
+                'id'         => $tour->id,
+                'title'      => $tour->title,
+                'slug'       => $tour->slug,
+                'price'      => format_price($tour->price),
+                'next_date'  => $date, // the requested available date
+                'galleries'  => $galleries,
+            ];
+        });
+
+        return response()->json([
+            'status' => true,
+            'data'   => $formatted->values() // reindex collection
+        ]);
     }
+
 
 
 }
