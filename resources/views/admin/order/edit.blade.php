@@ -216,7 +216,7 @@
 
                             <div class="order-status">
                                 <div class="btn-group open">
-                                    <label for="order_status">Order Statusd</label>
+                                    <label for="order_status">Order Status</label>
                                     <button type="button" class="btn dropdown-toggle arrow childOrderEnabled"
                                         data-element-to-update=".payment-status"
                                         data-selected="{{ $order->status }}"
