@@ -1180,7 +1180,10 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
 
         return [
             'disabled_tour_dates' => $overallDisabled, // ✅ correct global disabled
-            'per_schedule' => $perSchedule,            // ✅ meta for debugging
+            'per_schedule' => collect($perSchedule)->map(function ($data) {
+                                $data['disabled'] = array_slice($data['disabled'], 0, 90);
+                                return $data;
+                            })->toArray(),          // ✅ meta for debugging
             'start_date' => $globalStart->toDateString(),
             'until_date' => $globalEnd->toDateString(),
         ];
