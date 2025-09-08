@@ -26,20 +26,44 @@
                         </div>
                         <div class="form-group row {{ get_setting('price_booking_fee') == 1 ?? 'hidden' }}" id="include_fee">
                             <input type="hidden" name="types[]" value="tour_booking_fee">
-                            <div class="desc">
+                            <input type="hidden" name="types[]" value="tour_booking_fee_type">
+
+                            <div id="deposit_options" class="">
                                 <label for="tour_booking_fee">Booking Fee Amount</label>
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">$</span>
-                                    </div>                       
+                            <div class="form-row">
+
+                                <div class="col-md-6">
+                                    <select class="form-control" name="tour_booking_fee_type" id="tour_booking_fee_type">   
+                                        <option value="PERCENT" {{ old('tour_booking_fee_type', get_setting('tour_booking_fee_type')) == 'PERCENT' ? 'selected' : '' }}>PERCENT</option>
+                                        <option value="FIXED" {{ old('tour_booking_fee_type', get_setting('tour_booking_fee_type')) == 'FIXED' ? 'selected' : '' }}>FIXED</option>
+        
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
                                     <input type="text" 
                                         placeholder="Enter fee amount" 
                                         name="tour_booking_fee" 
                                         value="{{ get_setting('tour_booking_fee') }}" 
                                         class="form-control" id="tour_booking_fee" 
-                                    /> 
+                                    />
                                 </div>
+                                <!-- <div class="col-md-1">
+                                    <span id="deposit_unit">
+                                        @php
+                                            $unit = match($specialDeposit?->charge) {
+                                                'DEPOSIT_PERCENT' => '%',
+                                                'DEPOSIT_FIXED', 'DEPOSIT_FIXED_PER_ORDER' => '$',
+                                                default => ''
+                                            };
+                                        @endphp
+                                        {{ $unit }}
+                                    </span>
+                                </div> -->
                             </div>
+                        </div>
+
+                            
                         </div>
                         <div class="form-group row">
                               <div class="option">
