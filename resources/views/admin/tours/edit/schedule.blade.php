@@ -324,12 +324,18 @@
 {{-- Hidden template for new schedule (use __INDEX__ placeholder) --}}
 <template id="schedule-template">
     <div class="card mb-3 schedule-card" data-index="__INDEX__">
-        <div class="card-header d-flex justify-content-between"  style="background-color:#343a41; cursor: pointer; padding-right:15px;">
+
+        <div class="card-primary" id="heading__INDEX__" style="background-color:#343a41; cursor: pointer; padding-right:15px;">
+            <div class="d-flex justify-content-between align-items-center w-100">
+
+
+        <!-- <div class="card-header d-flex justify-content-between"  style="background-color:#343a41; cursor: pointer; padding-right:15px;"> -->
             <h5 class="mb-0">
-                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse__INDEX__" aria-expanded="true">Schedule #__INDEX__</button>
+                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse__INDEX__" aria-expanded="true" style="color:#fff;">Schedule #__INDEX__</button>
             </h5>
             <button type="button" class="btn btn-danger btn-sm remove-schedule">Remove</button>
         </div>
+    </div>
         <div id="collapse__INDEX__" class="collapse" data-parent="#scheduleAccordion">
             <div class="card-body">
 
@@ -514,9 +520,9 @@
 
 <!-- Flatpickr CSS -->
 <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"> -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" crossorigin="anonymous">
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" crossorigin="anonymous"> -->
 
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script> -->
 <script>
     function setValueTimeLocal($card, value) {
         const $unitLabel = $card.find('.basic-repeat_period_unit');
@@ -566,20 +572,20 @@
 
     function initFlatpickrFor($card) {
         // start time
-        $card.find('.aiz-time-picker').each(function(){
-            if (this._flatpickr) this._flatpickr.destroy();
-            const inst = flatpickr(this, {
-                enableTime: true,
-                noCalendar: true,
-                dateFormat: "h:i K",
-                time_24hr: false
-            });
-            const $icon = $(this).closest('.input-group').find('.time-icon-start');
-            $icon.off('click').on('click', () => {
-                if (!inst.isOpen) inst.open();
-                $(this).focus();
-            });
-        });
+        // $card.find('.aiz-time-picker').each(function(){
+        //     if (this._flatpickr) this._flatpickr.destroy();
+        //     const inst = flatpickr(this, {
+        //         enableTime: true,
+        //         noCalendar: true,
+        //         dateFormat: "h:i K",
+        //         time_24hr: false
+        //     });
+        //     const $icon = $(this).closest('.input-group').find('.time-icon-start');
+        //     $icon.off('click').on('click', () => {
+        //         if (!inst.isOpen) inst.open();
+        //         $(this).focus();
+        //     });
+        // });
 
         // end time
         // $card.find('.aiz-time-picker').each(function(){
@@ -683,14 +689,42 @@
             const index = $('.schedule-card').length + 1;
             let tpl = $('#schedule-template').html().replace(/__INDEX__/g, index);
             $('#scheduleAccordion').append(tpl);
-            $('#schedule .aiz-time-picker').last().flatpickr({
-                enableTime: true,
-                noCalendar: true,
-                dateFormat: "H:i",
-            });
+            // $('#schedule .aiz-time-picker').last().flatpickr({
+            //     enableTime: true,
+            //     noCalendar: true,
+            //     dateFormat: "H:i",
+            // });
+
+                $('#scheduleAccordion .schedule-card:last .aiz-time-picker').each(function () {
+                    var $this = $(this);
+                    var minuteStep = $this.data("minute-step") || 5;
+                    var defaultTime = $this.data("default") || "00:00";
+
+                    $this.timepicker({
+                        template: "dropdown",
+                        minuteStep: minuteStep,
+                        defaultTime: defaultTime,
+                        icons: {
+                            up: "las la-angle-up",
+                            down: "las la-angle-down",
+                        },
+                        showInputs: false,
+                    });
+                });
             const $new = $('#scheduleAccordion .schedule-card').last();
             $new.attr('data-index', index);
             initScheduleCard($new);
+
+              // 🔹 Expand it if inside accordion (Bootstrap example)
+            $new.find('.collapse').collapse('show');
+
+            // 🔹 Scroll into view smoothly
+            $('html, body').animate({
+                scrollTop: $new.offset().top - 100
+            }, 500);
+
+            // 🔹 Focus on first input inside new schedule
+            $new.find('input, textarea, select').filter(':visible:first').focus();
         });
 
         // remove card
