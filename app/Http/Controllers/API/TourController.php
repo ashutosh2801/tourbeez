@@ -334,29 +334,44 @@ class TourController extends Controller
     {
         $cacheKey = 'deposit_rule_' . $id;
 
-        $tourDepositRule = Cache::remember($cacheKey, 86400, function () use ($id) {
+        $depositRule = Cache::remember($cacheKey, 86400, function () use ($id) {
             return TourSpecialDeposit::where('tour_id', $id)->first();
         });
 
-        // If no rule found for specific tour, check global rule (tour_id = 0)
-        if (!$tourDepositRule) {
-            $tourDepositRule = Cache::remember('deposit_rule_global', 86400, function () {
+        // If no rule found for specific tour, check global rule
+        if (!$depositRule) {
+            $depositRule = Cache::remember('deposit_rule_global', 86400, function () {
                 return TourSpecialDeposit::where('type', 'global')->first();
             });
         }
 
-        if (!$tourDepositRule) {
+        // ✅ Booking fee data (always included)
+        $bookingFees = [
+            'price_booking_fee'     => get_setting('price_booking_fee'),
+            'tour_booking_fee'      => get_setting('tour_booking_fee'),
+            'tour_booking_fee_type' => get_setting('tour_booking_fee_type'),
+        ];
+
+        if (!$depositRule) {
             return response()->json([
-                'status'  => false,
-                'message' => 'Tour deposit rule not found (including global rule)'
+                'status' => false,
+                'message' => 'Tour deposit rule not found (including global rule)',
+                'data' => [
+                    'deposit_rule' => null,
+                    'booking_fees' => $bookingFees
+                ]
             ], 404);
         }
 
         return response()->json([
             'status' => true,
-            'data'   => $tourDepositRule
+            'data'   => [
+                'deposit_rule' => $depositRule,
+                'booking_fees' => $bookingFees
+            ]
         ]);
     }
+
 
 
     /** 
