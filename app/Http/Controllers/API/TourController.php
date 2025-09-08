@@ -50,14 +50,19 @@ class TourController extends Controller
 
         if ($request->city_id) {
             $type = $request->input('type');
-            $query->whereHas('location', function ($q) use ($request, $type) {
-                match($type) {
-                    'c1' => $q->where('city_id', $request->city_id),
-                    's1' => $q->where('state_id', $request->city_id),
-                    'c2' => $q->where('country_id', $request->city_id),
-                    default => null
-                };
-            });
+            if($type == 'c3') {
+                $query->whereHas('categories', fn($q) => $q->where('categories.id', $request->city_id));
+            }
+            else {
+                $query->whereHas('location', function ($q) use ($request, $type) {
+                    match($type) {
+                        'c1' => $q->where('city_id', $request->city_id),
+                        's1' => $q->where('state_id', $request->city_id),
+                        'c2' => $q->where('country_id', $request->city_id),
+                        default => null
+                    };
+                });
+            }
         }
 
         if ($request->min_price && $request->max_price) {
@@ -357,13 +362,14 @@ class TourController extends Controller
     /** 
      * Search home page tour  
      */
-    public function search(Request $request) {
+    public function search(Request $request) 
+    {
         
         $search = $request->input('q', '');
         $date = $request->input('date', '');
 
         // Build cache key
-        //$cacheKey = 'search_tours_' . md5($search . '_' . $date);
+        $cacheKey = 'search_tours_' . md5($search . '_' . $date);
 
         $cities = City::where('status', 'active')
             ->when($search, function ($query, $search) {
@@ -377,23 +383,23 @@ class TourController extends Controller
 
 
             
-        // $categories = Category::orderBy('name', 'asc')
-        //     ->when($search, function ($query, $search) {
-        //         $query->where(function ($q) use ($search) {
-        //             $q->where('name', 'LIKE', '' . $search . '%');
-        //         });
-        //     })
-        //     ->limit(3)
-        //     ->get();    
+        $categories = Category::orderBy('name', 'asc')
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'LIKE', '' . $search . '%');
+                });
+            })
+            ->limit(3)
+            ->get();    
         
         $total_cities       = $cities->count();
-        // $total_categories   = $categories->count();
-        // $total_tours        = 8 - ($total_cities + $total_categories);
+        $total_categories   = $categories->count();
+        $total_tours        = 8 - ($total_cities + $total_categories);
 
-        $total_tours        = 8 - ($total_cities);
-        //$tours = Cache::remember($cacheKey, now()->addMinutes(20), function () use ($search, $date) {
+        // $total_tours        = 8 - ($total_cities);
+        $tours = Cache::remember($cacheKey, now()->addMinutes(20), function () use ($search, $total_tours) {
             //return 
-        $tours = Tour::with(['location' => function ($query) {
+            return Tour::with(['location' => function ($query) {
                     $query->select('id', 'tour_id', 'address');
                 }])
                 ->select('id', 'title', 'slug', 'unique_code', 'price')
@@ -407,7 +413,7 @@ class TourController extends Controller
                 ->limit($total_tours)
                 ->get();
 
-        //});
+        });
 
         $data = [];
         if($total_cities>0) {
@@ -415,11 +421,11 @@ class TourController extends Controller
                 $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
             }
         }
-        // if($total_categories>0) {
-        //     foreach($categories as $category) {
-        //         $data[] = ['icon'=>'category', 'title' => $this->highlightMatch($category->name, $search), 'slug' => 'c3/'.$category->id.'/'.$category->slug , 'address' => ''];
-        //     }
-        // }
+        if($total_categories>0) {
+            foreach($categories as $category) {
+                $data[] = ['icon'=>'category', 'title' => $this->highlightMatch($category->name, $search), 'slug' => '/'.$category->slug.'/'.$category->id.'/c3', 'address' => ''];
+            }
+        }
         if($tours->count()>0) {
             foreach($tours as $tour) {
                 $image_id = $tour->main_image->id ?? 0;

@@ -1,5 +1,5 @@
 <x-admin>
-    @section('title', 'Order '.$order->order_number)
+@section('title', 'Order '.$order->order_number)
 
 @section('css')
 <style>
@@ -247,9 +247,8 @@
                         </div>
                     </div>
                     <div class="col-lg-7 text-right">
-                        <button class="form-control btn btn-sm btn-primary charge-btn" style="width:150px; display:inline-block;" data-order-id="{{ $order->id }}">
-                            
-                                Charge
+                        <button class="form-control btn btn-sm btn-primary charge-btn" style="width:150px; display:inline-block;" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
+                            Charge now
                         </button>
                         
                                             
@@ -327,7 +326,7 @@
 
                                         <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a></li>
                                         <li>{{ $order->customer?->email }}</li>
-                                        <li>{{ $order->customer?->phone }}</li>
+                                        <li>+{{ $order->customer?->phone }}</li>
                                     </ul>
                                 
                             </div>
@@ -489,13 +488,23 @@
 
                                 <div style="border:1px solid #e1a604; margin-bottom:10px">
                                     <table class="table">
-                                        <tr>
+                                        @if ($order->bookingFee->value('value'))
+                                            <tr>
+                                                <td><b>Booking fee</b> (included in price)</td>
+                                                <td class="text-right">{{ price_format_with_currency($order->bookingFee->value('value'), $order->currency) }}</td>
+                                            </tr>
+                                        @endif
+                                        {{-- <tr>
                                             <td><b>Booking fee</b> (included in price)</td>
                                             <td class="text-right">{{ $order->bookingFee ? price_format_with_currency($order->bookingFee->value('value'), $order->currency) : "NA" }} </td>
-                                        </tr>
+                                        </tr> --}}
                                         <tr>
                                             <td><b>Total</b></td>
                                             <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }} {{ $order->currency}}</td>
+                                        </tr>
+                                        <tr style="color: red">
+                                            <td><b>Balance</b></td>
+                                            <td class="text-right"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }} {{ $order->currency}}</b></td>
                                         </tr>
                                     </table>
                                 </div>
@@ -1135,14 +1144,18 @@
     $(document).on('click', '.charge-btn', function(e) {
     e.preventDefault();
     let orderId = $(this).data('order-id');
+    let customerName = $(this).data('customer-name');
+    let balance = $(this).data('balance');
 
-    $('#chargeOrderId').val(orderId);
     $('#cardDetails').text("Loading...");
-    $('#chargeAmount').val("");
-    $('#showChargeAmount').val("");
-    $('#customerName').val("");
+    $('#customerName').html(customerName);
+    $('#showChargeAmount').html(balance);
+    $('#chargeOrderId').val(orderId);
+    $('#chargeAmount').val(balance);
+    $('#chargeModal').modal('show');
 
     // Fetch payment details
+    /*
     $.ajax({
 
         url: "{{ route('admin.orders.payment-details', ['order' => '__ORDER_ID__']) }}".replace('__ORDER_ID__', orderId),
@@ -1179,9 +1192,8 @@
             $('#cardDetails').text("Failed to fetch card details");
         }
     });
-
-    // Show modal
-    $('#chargeModal').modal('show');
+    */
+    
 });
 
 // Handle charge form submit

@@ -1,11 +1,18 @@
 <div class="card">
+    <form class="needs-validation" novalidate action="{{ route('admin.tour.schedule_update', $data->id) }}" method="POST" enctype="multipart/form-data" autocomplete="off">
     <div class="card card-primary">
-        <form class="needs-validation" novalidate action="{{ route('admin.tour.schedule_update', $data->id) }}" method="POST"
-    enctype="multipart/form-data" autocomplete="off">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title">Scheduling</h3>
-            <button type="button" id="add-schedule" class="btn btn-sm btn-success">+ Add Schedule</button>
-            <a type="button" href="{{ route('admin.tour.edit.schedule-calendar', $data->id) }}" class="btn btn-sm btn-success">Schedule Calendar</a>
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <h3 class="card-title mb-0">Scheduling</h3>
+                <div>
+                    <button type="button" id="add-schedule" class="btn btn-sm btn-success">
+                        + Add Schedule
+                    </button>
+                    <a href="{{ route('admin.tour.edit.schedule-calendar', $data->id) }}" class="btn btn-sm btn-success">
+                        Schedule Calendar
+                    </a>
+                </div>
+            </div>
         </div>
         <div class="card-body">
 
@@ -25,34 +32,20 @@
             <div class="accordion" id="scheduleAccordion">
                 @foreach($data->schedules as $index => $schedule)
                 <div class="card mb-3 schedule-card" data-index="{{ $index }}">
-                    <div class="card-header d-flex justify-content-between" id="heading{{ $index }}">
-                        <h5 class="mb-0">
-                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ $index }}" aria-expanded="true" aria-controls="collapse{{ $index }}">
-                                Schedule #{{ $index+1 }}
-                            </button>
-                        </h5>
-                        <button type="button" class="btn btn-danger btn-sm remove-schedule">Remove</button>
+                    <div class="card-primary" id="heading{{ $index }}" style="background-color:#343a41; cursor: pointer; padding-right:15px;">
+                        <div class="d-flex justify-content-between align-items-center w-100">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ $index }}" aria-expanded="true" aria-controls="collapse{{ $index }}" style="color:#fff;">
+                                    Schedule #{{ $index+1 }}
+                                </button>
+                            </h5>
+                            @if ($index > 0)
+                            <button type="button" class="btn btn-danger btn-sm remove-schedule">Remove</button>
+                            @endif
+                        </div>
                     </div>
 
-                    <div id="collapse{{ $index }}" class="collapse {{ $index==0 ? 'show' : '' }}" aria-labelledby="heading{{ $index }}" data-parent="#scheduleAccordion">
-                        <div class="card-body">
-
-                            <!-- <div class="row mb-4">
-                                <label for="schedule_price{{ $index }}" class="form-label col-lg-2">Schedule Price</label>
-                                <div class="col-lg-3">
-                                    <input type="text" name="schedules[{{ $index }}][schedule_price]" id="schedule_price_{{ $index }}" 
-                                    value="{{ old("schedules.$index.schedule_price", $schedule?->schedule_price) }}"
-                                        class="form-control " placeholder="Schedule Price">
-                                    @if($errors->has("schedules.$index.schedule_price"))
-                                        <small class="form-text text-danger">{{ $errors->first("schedules.$index.schedule_price") }}</small>
-                                    @else
-                                        @error('schedule_price')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    @endif
-                                </div>
-
-                            </div> -->
+                    <div id="collapse{{ $index }}" class="card-body collapse {{ $index==0 ? 'show' : '' }}" aria-labelledby="heading{{ $index }}" data-parent="#scheduleAccordion">
 
                             <div class="row mb-4">
                                 <label for="minimum_notice_num_{{ $index }}" class="form-label col-lg-2">Minimum notice *</label>
@@ -313,7 +306,6 @@
                             @endphp
                             @endforeach
 
-                        </div>
                     </div>
                 </div>
                 @endforeach
@@ -325,14 +317,14 @@
             <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
             <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.location', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
         </div>
-        </form>
     </div>
+    </form>
 </div>
 
 {{-- Hidden template for new schedule (use __INDEX__ placeholder) --}}
 <template id="schedule-template">
     <div class="card mb-3 schedule-card" data-index="__INDEX__">
-        <div class="card-header d-flex justify-content-between">
+        <div class="card-header d-flex justify-content-between"  style="background-color:#343a41; cursor: pointer; padding-right:15px;">
             <h5 class="mb-0">
                 <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse__INDEX__" aria-expanded="true">Schedule #__INDEX__</button>
             </h5>
@@ -688,7 +680,7 @@
 
         // add new card
         $('#add-schedule').on('click', function(){
-            const index = $('.schedule-card').length;
+            const index = $('.schedule-card').length + 1;
             let tpl = $('#schedule-template').html().replace(/__INDEX__/g, index);
             $('#scheduleAccordion').append(tpl);
             $('#schedule .aiz-time-picker').last().flatpickr({

@@ -136,17 +136,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Route::post('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit..special.deposit');
     Route::put('/tour/special-deposit/{id}', [TourController::class, 'specialDepositUpdate'])->name('tour.special-deposit');
 
-
     Route::get('/tours/{id}/sub-create', [TourController::class, 'createSubTour'])->name('tours.sub-create');
     Route::post('/tours/{id}/sub-tour-store', [TourController::class, 'subTourStore'])->name('tour.sub-tour-store');
 
     Route::get('/tours/{id}/sub-edit', [TourController::class, 'editSubTour'])->name('tour.sub-tour.edit');
     Route::get('/tours/{id}/sub-index', [TourController::class, 'subTourIndex'])->name('tour.sub-tour.index');
-
-
-
-
-
 
     Route::resource('itineraries',ItineraryController::class);
     Route::post('/itinerary/single', [ItineraryController::class, 'single'])->name('itinerary.single');
@@ -202,11 +196,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/payment_method_update', [SettingController::class, 'payment_method_update'])->name('payment_method.update');
     Route::get('/third-party-settings', [SettingController::class, 'third_party_settings'])->name('third_party_settings');
     Route::post('/third-party-settings/update', [SettingController::class, 'third_party_settings_update'])->name('third_party_settings.update');
-    
+    Route::put('/global/special-deposit', [SettingController::class, 'specialDepositGlobal'])->name('global.special-deposit');
+    // Route::post('/global/special-deposit', [SettingController::class, 'specialDepositGlobal'])->name('global.special-deposit');
     // env Update
     Route::post('/env_key_update', [SettingController::class, 'env_key_update'])->name('env_key_update.update');
     Route::post('/settings/test/mail', [SettingController::class, 'testEmail'])->name('test.mail');
-
     Route::post('/settings/test/send', [SettingController::class, 'testSend'])->name('third_party_settings.send');
 
     Route::post('/order', [OrderController::class, 'index'])->name('order.index');
@@ -215,11 +209,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/order/order_confirmation_message/', [OrderController::class, 'order_confirmation_message'])->name('order_confirmation_message');
     Route::post('/order/order_sms_send/', [OrderController::class, 'order_sms_send'])->name('order_sms_send');
     Route::delete('/order/bulk-delete', [OrderController::class, 'bulkDelete'])->name('order.bulkDelete');
-
     Route::post('/orders/{order}/charge', [OrderController::class, 'capturePayment'])->name('orders.charge');
-
     Route::post('/orders/{order}/payment-details', [OrderController::class, 'getPaymentDetails'])->name('orders.payment-details');
-     // SMS Templates
+
+    // SMS Templates
     Route::resource('/sms-templates', SmsTemplateController::class);
     Route::post('/sms-templates/update', [SmsTemplateController::class, 'update'])->name('sms-templates.update');
     Route::post('/sms-templates/preview/{id}', [SmsTemplateController::class, 'preview'])->name('sms-templates.preview');

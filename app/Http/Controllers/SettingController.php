@@ -7,8 +7,10 @@ use App\Models\Setting;
 use Artisan;
 use MehediIitdu\CoreComponentRepository\CoreComponentRepository;
 use App\Mail\EmailManager;
+use App\Models\TourSpecialDeposit;
 use Mail;
 use App\Services\TwilioService;
+use Illuminate\Support\Facades\DB;
 
 class SettingController extends Controller
 {
@@ -40,7 +42,8 @@ class SettingController extends Controller
 
     public function payment_method_settings()
     {
-        return view('admin.settings.payment_method_settings');
+        $specialDeposit = TourSpecialDeposit::findOrFail(1);
+        return view('admin.settings.payment_method_settings', compact('specialDeposit'));
     }
 
     public function third_party_settings(){
@@ -78,6 +81,46 @@ class SettingController extends Controller
     public function system_server()
     {
       return view('admin.system.server_status');
+    }
+
+    public function specialDepositGlobal(Request $request)
+    {
+        $request->validate([
+            'tour.use_deposit'        => 'nullable|boolean',
+            'tour.charge'             => 'nullable|in:FULL,DEPOSIT_PERCENT,DEPOSIT_FIXED,DEPOSIT_FIXED_PER_ORDER,NONE',
+            'tour.deposit_amount'     => 'nullable|numeric|min:0',
+            'tour.allow_full_payment' => 'nullable|boolean',
+            'tour.use_minimum_notice' => 'nullable|boolean',
+            'tour.notice_days'        => 'nullable|integer|min:0',
+        ]);
+
+        if ($request->has('tour') && is_array($request->tour)) {
+            $data = $request->tour;
+
+            $notice_days = $data['use_minimum_notice'] ? $data['notice_days'] : 0;
+
+            // Update or create record in tour_special_deposits
+            DB::update('update tour_special_deposits set 
+                use_deposit = ?, 
+                charge = ?, 
+                deposit_amount = ?, 
+                allow_full_payment = ?, 
+                use_minimum_notice = ?, 
+                notice_days = ? 
+                where id = 1', [
+                $data['use_deposit'] ?? null,
+                $data['charge'] ?? null,
+                $data['deposit_amount'] ?? null,
+                $data['allow_full_payment'] ?? null,
+                $data['use_minimum_notice'] ?? null,
+                $notice_days ?? null,
+            ]);
+            
+
+            return redirect()->back()->with('success', 'Special deposit settings saved successfully.');
+        }
+
+        return back()->withInput()->with('error','OOPs! something went wrong!');
     }
 
 
