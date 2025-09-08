@@ -1040,7 +1040,7 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
     // }
 
 
-    private function getDisabledTourDates(int $tourId): array
+    private function getDisabledTourDates3534(int $tourId): array
     {
         $today = Carbon::today();
 
@@ -1096,6 +1096,82 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
             'until_date' => $untilDate,
         ];
     }
+
+    private function getDisabledTourDates(int $tourId): array
+    {
+        $schedules = TourSchedule::where('tour_id', $tourId)
+            ->orderBy('session_start_date')
+            ->get();
+
+        if ($schedules->isEmpty()) {
+            return [
+                'disabled_tour_dates' => [],
+                'per_schedule' => [],
+            ];
+        }
+
+        // Global start & end
+        $globalStart = Carbon::parse($schedules->min('session_start_date'));
+        $globalEnd   = Carbon::parse($schedules->max('until_date'));
+
+        $perSchedule = [];
+        $scheduleMeta = [];
+
+        // Collect per schedule availability
+        foreach ($schedules as $schedule) {
+            $start = Carbon::parse($schedule->session_start_date);
+            $end   = Carbon::parse($schedule->until_date);
+
+            // Custom disabled list comes from calculateDisabledDates()
+            $customDisabled = $this->calculateDisabledDates($schedule, Carbon::today());
+
+            $perSchedule[$schedule->id] = [
+                'start_date' => $start->toDateString(),
+                'until_date' => $end->toDateString(),
+                'disabled'   => $customDisabled,
+            ];
+
+            $scheduleMeta[$schedule->id] = [
+                'start' => $start,
+                'end' => $end,
+                'disabled' => $customDisabled,
+            ];
+        }
+
+        // ✅ Compute overall disabled dates
+        $overallDisabled = [];
+        $cursor = $globalStart->copy();
+        while ($cursor->lte($globalEnd)) {
+            $date = $cursor->toDateString();
+
+            $openSomewhere = false;
+
+            foreach ($scheduleMeta as $meta) {
+                if ($cursor->between($meta['start'], $meta['end'])) {
+                    // If inside this schedule range, but NOT in its disabled list → it's open
+                    if (!in_array($date, $meta['disabled'])) {
+                        $openSomewhere = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!$openSomewhere) {
+                $overallDisabled[] = $date;
+            }
+
+            $cursor->addDay();
+        }
+
+        return [
+            'disabled_tour_dates' => $overallDisabled, // ✅ correct global disabled
+            'per_schedule' => $perSchedule,            // ✅ meta for debugging
+            'start_date' => $globalStart->toDateString(),
+            'until_date' => $globalEnd->toDateString(),
+        ];
+    }
+
+
 
 
     private function calculateDisabledDates($schedule, Carbon $today): array
