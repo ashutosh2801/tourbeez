@@ -229,7 +229,7 @@
                                     </div>
                                 </div>
                                                                 
-                                <div class="col-lg-6">
+                                <div class="col-lg-12">
                                     <div class="form-group">
                                         <label for="category" class="form-label">Category *</label>
                                         <select name="category[]" id="category" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
@@ -243,7 +243,7 @@
                                         @enderror
                                     </div>
                                 </div>
-                                <div class="col-lg-6">
+                                <div class="col-lg-12">
                                     <div class="form-group">
                                         <label for="tour_type" class="form-label">Tour Types *</label>
                                         <select name="tour_type[]" id="tour_type" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
