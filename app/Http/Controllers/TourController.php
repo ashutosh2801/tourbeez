@@ -12,6 +12,7 @@ use App\Models\Inclusion;
 use App\Models\Itinerary;
 use App\Models\Optional;
 use App\Models\Pickup;
+use App\Models\ScheduleDeleteSlot;
 use App\Models\TaxesFee;
 use App\Models\Tour;
 use App\Models\TourDetail;
@@ -23,11 +24,11 @@ use App\Models\TourUpload;
 use App\Models\Tourtype;
 use App\Services\ImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Redirect;
 use Str;
 use Validator;
-use Illuminate\Support\Carbon;
 
 class TourController extends Controller
 {
@@ -790,7 +791,7 @@ class TourController extends Controller
         // dd($id, $selectedDate);
         $response = $this->getWeeklySessionTimes($id, $selectedDate);
 
-
+        dd($response);
         $events = [];
         $slotDuration = 10;
         foreach ($response['data'] as $date => $slots) {
@@ -809,6 +810,21 @@ class TourController extends Controller
             }
         }
         return response()->json($events);
+    }
+
+    public function storeDeleteSlot(Request $request)
+    {
+        $request->validate([
+            'tour_id' => 'nullable|exists:tours,id',
+            'slot_date' => 'required|date',
+            'slot_start_time' => 'required|string',
+            'slot_end_time' => 'required|string',
+            'delete_type' => 'required|string'
+        ]);
+
+        ScheduleDeleteSlot::create($request->only(['tour_id','slot_date','slot_start_time','slot_end_time', 'delete_type']));
+
+        return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
     }
     /**
      * Update the specified resource in storage.
@@ -1902,20 +1918,26 @@ class TourController extends Controller
         if ($request->has('tour') && is_array($request->tour)) {
             $data = $request->tour;
 
+            if(!$data['use_deposit']){
+                \DB::table('tour_special_deposits')->where('tour_id', $id)->delete();
+            } else{
+                \DB::table('tour_special_deposits')->updateOrInsert(
+                    ['tour_id' => $tour->id], // condition
+                    [
+                        'use_deposit'        => $data['use_deposit'] ?? null,
+                        'charge'             => $data['charge'] ?? null,
+                        'deposit_amount'     => $data['deposit_amount'] ?? null,
+                        'allow_full_payment' => $data['allow_full_payment'] ?? null,
+                        'use_minimum_notice' => $data['use_minimum_notice'] ?? null,
+                        'notice_days'        => $data['notice_days'] ?? null,
+                        'updated_at'         => now(),
+                        'created_at'         => now(),
+                    ]
+                );
+            }
+
             // Update or create record in tour_special_deposits
-            \DB::table('tour_special_deposits')->updateOrInsert(
-                ['tour_id' => $tour->id], // condition
-                [
-                    'use_deposit'        => $data['use_deposit'] ?? null,
-                    'charge'             => $data['charge'] ?? null,
-                    'deposit_amount'     => $data['deposit_amount'] ?? null,
-                    'allow_full_payment' => $data['allow_full_payment'] ?? null,
-                    'use_minimum_notice' => $data['use_minimum_notice'] ?? null,
-                    'notice_days'        => $data['notice_days'] ?? null,
-                    'updated_at'         => now(),
-                    'created_at'         => now(),
-                ]
-            );
+            
 
             return redirect()->back()->with('success', 'Special deposit settings saved successfully.');
         }
