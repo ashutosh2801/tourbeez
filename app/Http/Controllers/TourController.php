@@ -791,7 +791,6 @@ class TourController extends Controller
         // dd($id, $selectedDate);
         $response = $this->getWeeklySessionTimes($id, $selectedDate);
 
-        dd($response);
         $events = [];
         $slotDuration = 10;
         foreach ($response['data'] as $date => $slots) {
