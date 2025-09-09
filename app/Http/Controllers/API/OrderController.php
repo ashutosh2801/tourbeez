@@ -368,6 +368,7 @@ class OrderController extends Controller
             'formData.pickup_id' => 'nullable|numeric|max:255',
             'formData.pickup_name' => 'nullable|string|max:255',
             'formData.adv_deposite' => 'nullable|string|max:255',
+            'formData.booking_fee' => 'nullable|string|max:255',
 
         ]);
 
@@ -392,7 +393,7 @@ class OrderController extends Controller
             $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
             $data = $request->input('formData');
             $adv_deposite = $data['adv_deposite'];
-            \Log::info($adv_deposite);
+
             $customer->order_id     = $order->id;
             $customer->user_id      = $request->userId ?? 0;
             $customer->first_name   = $data['first_name'];
@@ -544,10 +545,9 @@ class OrderController extends Controller
 
             if ($adv_deposite == "deposit") {
                 $depositRule = TourSpecialDeposit::where('tour_id', $tour->id)->first();
-               \Log::info($depositRule);
                 $chargeAmount = 0;
                 
-               \Log::info($depositRule->charge);
+
 
                 if ($depositRule && $depositRule->use_deposit) {
                     switch ($depositRule->charge) {
@@ -588,7 +588,6 @@ class OrderController extends Controller
                 $order->booked_amount  = $chargeAmount;        // what’s being charged now
                 $order->balance_amount = $order->total_amount - $order->booked_amount;
 
-                \Log::info($chargeAmount);
                 // dd($chargeAmount);
                 if ($chargeAmount > 0) {
                     $pi = \Stripe\PaymentIntent::create([
@@ -638,35 +637,18 @@ class OrderController extends Controller
 
 
 
+            $booking_fee = $data['booking_fee'];
+            if($booking_fee > 0 && get_setting('price_booking_fee')){
+               $bookingFeeType = get_setting('tour_booking_fee_type'); 
 
+               if($bookingFeeType == 'FIXED'){
+                   $booking_fee = get_setting('tour_booking_fee');
+               } elseif($bookingFeeType == 'PERCENT') {
+                   $booking_fee = $order->total_amount * get_setting('tour_booking_fee')/100;
+               }
+            }
 
-            // if($request->action_name == "reserve") {
-            //     $si = \Stripe\SetupIntent::create([
-            //         'customer'  => $stripeCustomer->id,
-            //         'automatic_payment_methods' => ['enabled' => true],
-            //         'usage'     => 'off_session',
-            //         'metadata'  => $metaData
-            //     ]);               
-            //     $order->payment_intent_client_secret = $si->client_secret;
-            //     $order->payment_intent_id = $si->id;
-            // }
-            // else if($request->action_name == "book") {
-            //     $pi = \Stripe\PaymentIntent::create([
-            //             'customer'  => $stripeCustomer->id,
-            //             'amount' => intval(round($order->total_amount * 100)),
-            //             'currency' => $order->currency,
-            //             'automatic_payment_methods' => ['enabled' => true],
-            //             'receipt_email' => $data['email'],
-            //             'capture_method' => 'manual',
-            //             'description' => $tour->title,
-            //             // 'statement_descriptor' => 'TOURBEEZ',
-            //             'statement_descriptor_suffix' =>  $order->order_number,
-            //             'metadata'  => $metaData
-            //         ]);
-            //     $order->payment_intent_client_secret = $pi->client_secret;
-            //     $order->payment_intent_id = $pi->id;
-            // }
-            // Also store in main order for quick access
+            $order->booking_fee = $booking_fee;
             $order->stripe_customer_id = $stripeCustomer->id;
             $order->save();           
 
