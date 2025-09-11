@@ -786,10 +786,21 @@ class TourController extends Controller
 
     public function scheduleCalendarEvent($id)
     {
-        $selectedDate = request()->query('selectedDate', now()->toDateString());
+        // $selectedDate = request()->query('date');
 
-        // dd($id, $selectedDate);
+
+        $selectedDate = request()->query('date');
+        if(!$selectedDate) {
+            $selectedDate = request()->query('selectedDate');
+        } else{
+            $selectedDate = request()->query('date', now()->toDateString());
+        }
+
         $response = $this->getWeeklySessionTimes($id, $selectedDate);
+
+        $storeDeleteSlot =$this->fetchDeletedSlot($id);
+        $response = $this->applySlotDeletions($response, $storeDeleteSlot);
+        // dd($response);
 
         $events = [];
         $slotDuration = 10;
@@ -822,6 +833,14 @@ class TourController extends Controller
         ]);
 
         ScheduleDeleteSlot::create($request->only(['tour_id','slot_date','slot_start_time','slot_end_time', 'delete_type']));
+
+        return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
+    }
+
+    public function fetchDeletedSlot($id)
+    {
+
+        return ScheduleDeleteSlot::where('tour_id', $id)->get();
 
         return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
     }
@@ -2116,6 +2135,72 @@ class TourController extends Controller
 
         return $slots;
     }
+
+    /**
+     * Apply slot deletions to the response data
+     *
+     * @param array $response   Existing slots grouped by date
+     * @param \Illuminate\Support\Collection|array $storeDeleteSlot  Slots marked for deletion
+     * @return array Updated response data with deletions applied
+     */
+    function applySlotDeletions(array $response, $storeDeleteSlot): array
+    {
+        $clearAll = false;
+
+        foreach ($storeDeleteSlot as $deleteSlot) {
+            $date      = $deleteSlot->slot_date;
+            $startTime = $deleteSlot->slot_start_time;
+            $endTime   = $deleteSlot->slot_end_time;
+            $type      = $deleteSlot->delete_type;
+
+            if ($type === 'all') {
+                $clearAll = true;
+                break;
+            }
+
+            
+
+            if ($type === 'single') {
+                if (!isset($response['data'][$date])) {
+                    continue;
+                }
+                // remove only this slot range
+                $response['data'][$date] = array_filter(
+                    $response['data'][$date],
+                    fn($slot) => !($slot >= $startTime && $slot < $endTime)
+                );
+
+            } elseif ($type === 'after') {
+                // dd(2423);
+                // remove slots for this date and all future dates
+                foreach ($response['data'] as $d => $slots) {
+                    if ($d < $date) continue;
+
+                    $response['data'][$d] = array_filter(
+                        $slots,
+                        function ($slot) use ($startTime, $d, $date) {
+                            if ($d == $date) {
+                                return $slot < $startTime;
+                            }
+                            return false; // future dates → clear all
+                        }
+                    );
+                }
+            }
+        }
+
+        // if 'all' deletion was found → clear everything
+        if ($clearAll) {
+            foreach ($response['data'] as $d => $slots) {
+                $response['data'][$d] = [];
+            }
+        }
+
+        return $response;
+    }
+
+
+
 
     
 
