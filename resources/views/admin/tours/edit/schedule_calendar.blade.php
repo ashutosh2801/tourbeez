@@ -119,6 +119,7 @@
                 const endDate   = info.event.end ? new Date(info.event.end) : null;
 
                 // Fill modal inputs
+      
                 document.getElementById('modalSlotId').value = info.event.id;
                 document.getElementById('modalDate').value = startDate.toISOString().slice(0,10);
                 document.getElementById('slotStartTime').value = startDate.toTimeString().slice(0,5);
@@ -159,7 +160,11 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    calendar.refetchEvents();
+                    // calendar.refetchEvents();
+                    // calendar.render();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 500);
 
                     $('#slotModal').modal('hide');
 
