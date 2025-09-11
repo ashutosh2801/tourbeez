@@ -58,7 +58,7 @@
     <div class="card">
 
         <!-- Search Form (GET) -->
-        <form method="GET" action="{{ route('admin.tour.index') }}">
+        <form class="my-0" method="GET" action="{{ route('admin.tour.index') }}">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
                     <h3 class="card-title mb-0">{{ translate('Tours') }}</h3>
@@ -116,10 +116,10 @@
             </div>
         </form>
         
-        <form id="bulkDeleteForm" method="POST" action="{{ route('admin.tour.bulkDelete') }}">
+        {{-- <form id="bulkDeleteForm" method="POST" action="{{ route('admin.tour.bulkDelete') }}">
         @csrf
         @method('DELETE')
-         </form>
+         </form> --}}
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center w-100">
                 <h3 class="card-title mb-0"></h3>
@@ -151,7 +151,7 @@
                         <th>{{ translate('Title') }}</th>
                         <th width="150">{{ translate('Price') }}</th>
                         <th width="150">{{ translate('Code') }}</th>
-                        <th width="150">{{ translate('Category') }}</th>
+                        <th width="200">{{ translate('Category') }}</th>
                         <th width="150">{{ translate('Actions') }}</th>
                     </tr>
                 </thead>
@@ -174,8 +174,8 @@
                                 {{ $tour->title }}
                                 @endcan
 
-                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-info text-hover" target="_blank">{{translate('View Tour Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-info text-hover" target="_blank">{{translate('Sub Tours')}}</a></div>
-                                <div class="text-sm text-gray-500"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
+                                <div class="text-sm mt-2">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-success text-hover" target="_blank">{{translate('View Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-success text-hover" target="_blank">{{translate('Sub Tours')}}</a></div>
+                                <div class="text-sm text-gray-500 mt-2"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
                             </td>    
                             <td>{{ price_format_with_currency($tour->price) }}</td>
                             <td>{{ $tour->unique_code }}</td>

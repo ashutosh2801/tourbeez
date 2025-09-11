@@ -12,6 +12,7 @@ use App\Models\Inclusion;
 use App\Models\Itinerary;
 use App\Models\Optional;
 use App\Models\Pickup;
+use App\Models\ScheduleDeleteSlot;
 use App\Models\TaxesFee;
 use App\Models\Tour;
 use App\Models\TourDetail;
@@ -23,6 +24,7 @@ use App\Models\TourUpload;
 use App\Models\Tourtype;
 use App\Services\ImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Redirect;
 use Str;
@@ -771,6 +773,76 @@ class TourController extends Controller
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
         return view('admin.tours.feature.message.paymentrequest', compact( 'data', 'detail', 'metaData'));
+    }
+    public function scheduleCalendar($id)
+    {
+        $data       = Tour::findOrFail($id);
+
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        $selectedDate = request()->query('date', now()->toDateString());
+        return view('admin.tours.feature.schedule_calendar', compact( 'data', 'detail', 'metaData', 'selectedDate'));
+    }
+
+    public function scheduleCalendarEvent($id)
+    {
+        // $selectedDate = request()->query('date');
+
+
+        $selectedDate = request()->query('date');
+        if(!$selectedDate) {
+            $selectedDate = request()->query('selectedDate');
+        } else{
+            $selectedDate = request()->query('date', now()->toDateString());
+        }
+
+        $response = $this->getWeeklySessionTimes($id, $selectedDate);
+
+        $storeDeleteSlot =$this->fetchDeletedSlot($id);
+        $response = $this->applySlotDeletions($response, $storeDeleteSlot);
+        // dd($response);
+
+        $events = [];
+        $slotDuration = 10;
+        foreach ($response['data'] as $date => $slots) {
+            foreach ($slots as $slot) {
+                // Pre-format the start
+                $start = "$date $slot:00";
+
+                // Faster than Carbon parse in loop
+                $end = date("Y-m-d H:i:s", strtotime($start) + ($slotDuration * 60));
+
+                $events[] = [
+                    'title' => $slot,
+                    'start' => str_replace(' ', 'T', $start),
+                    'end'   => $end,
+                ];
+            }
+        }
+        return response()->json($events);
+    }
+
+    public function storeDeleteSlot(Request $request)
+    {
+        $request->validate([
+            'tour_id' => 'nullable|exists:tours,id',
+            'slot_date' => 'required|date',
+            'slot_start_time' => 'required|string',
+            'slot_end_time' => 'required|string',
+            'delete_type' => 'required|string'
+        ]);
+
+        ScheduleDeleteSlot::create($request->only(['tour_id','slot_date','slot_start_time','slot_end_time', 'delete_type']));
+
+        return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
+    }
+
+    public function fetchDeletedSlot($id)
+    {
+
+        return ScheduleDeleteSlot::where('tour_id', $id)->get();
+
+        return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
     }
     /**
      * Update the specified resource in storage.
@@ -1864,26 +1936,272 @@ class TourController extends Controller
         if ($request->has('tour') && is_array($request->tour)) {
             $data = $request->tour;
 
+            if(!$data['use_deposit']){
+                \DB::table('tour_special_deposits')->where('tour_id', $id)->delete();
+            } else{
+                \DB::table('tour_special_deposits')->updateOrInsert(
+                    ['tour_id' => $tour->id], // condition
+                    [
+                        'use_deposit'        => $data['use_deposit'] ?? null,
+                        'charge'             => $data['charge'] ?? null,
+                        'deposit_amount'     => $data['deposit_amount'] ?? null,
+                        'allow_full_payment' => $data['allow_full_payment'] ?? null,
+                        'use_minimum_notice' => $data['use_minimum_notice'] ?? null,
+                        'notice_days'        => $data['notice_days'] ?? null,
+                        'updated_at'         => now(),
+                        'created_at'         => now(),
+                    ]
+                );
+            }
+
             // Update or create record in tour_special_deposits
-            \DB::table('tour_special_deposits')->updateOrInsert(
-                ['tour_id' => $tour->id], // condition
-                [
-                    'use_deposit'        => $data['use_deposit'] ?? null,
-                    'charge'             => $data['charge'] ?? null,
-                    'deposit_amount'     => $data['deposit_amount'] ?? null,
-                    'allow_full_payment' => $data['allow_full_payment'] ?? null,
-                    'use_minimum_notice' => $data['use_minimum_notice'] ?? null,
-                    'notice_days'        => $data['notice_days'] ?? null,
-                    'updated_at'         => now(),
-                    'created_at'         => now(),
-                ]
-            );
+            
 
             return redirect()->back()->with('success', 'Special deposit settings saved successfully.');
         }
 
         return back()->withInput()->with('error','OOPs! something went wrong!');
     }
+
+
+    public function getWeeklySessionTimes($tour_id, $date = null)
+{
+    $date = $date ? Carbon::parse($date) : now();
+
+    $startOfWeek = $date->copy()->startOfWeek(Carbon::MONDAY);
+    $endOfWeek   = $date->copy()->endOfWeek(Carbon::SUNDAY);
+
+    $allSlots = [];
+
+    $currentDate = $startOfWeek->copy();
+    while ($currentDate->lte($endOfWeek)) {
+        $dayName = $currentDate->format('l');
+        $slots   = [];
+
+        $schedules = TourSchedule::where('tour_id', $tour_id)
+            ->where(function ($query) use ($currentDate) {
+                $query->orWhere(function ($q) use ($currentDate) {
+                    $q->whereDate('session_start_date', '<=', $currentDate)
+                      ->whereDate('until_date', '>=', $currentDate);
+                });
+            })
+            ->get();
+
+        foreach ($schedules as $schedule) {
+            // --- Duration & Notice handling ---
+            $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
+                'minute', 'minutes' => $schedule->estimated_duration_num,
+                'hour', 'hours' => $schedule->estimated_duration_num * 60,
+                'day', 'days', 'daily' => $schedule->estimated_duration_num * 60 * 24,
+                'weekly' => $schedule->estimated_duration_num * 60,
+                'monthly' => $schedule->estimated_duration_num * 60 * 24 * 30,
+                'yearly' => $schedule->estimated_duration_num * 60,
+                default => 0
+            };
+
+            $minimumNoticePeriod = match (strtolower($schedule->minimum_notice_unit)) {
+                'minute', 'minutes' => $schedule->minimum_notice_num,
+                'hour', 'hours' => $schedule->minimum_notice_num * 60,
+                default => 0
+            };
+
+            // --- Repeat handling ---
+            switch (strtoupper($schedule->repeat_period)) {
+                case 'NONE':
+                    $valid = $currentDate->isSameDay(Carbon::parse($schedule->session_start_date));
+                    if ($valid) {
+                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
+
+                        $slots = array_merge($slots, $this->generateSlots(
+                            $start, $end, $durationMinutes, $minimumNoticePeriod
+                        ));
+                    }
+                    break;
+
+                case 'DAILY':
+                    $daysSinceStart = Carbon::parse($schedule->session_start_date)->diffInDays($currentDate);
+                    $repeatInterval = $schedule->repeat_period_unit ?? 1;
+
+                    if ($daysSinceStart % $repeatInterval === 0) {
+                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+
+                        $slots = array_merge($slots, $this->generateSlots(
+                            $start, $end, $durationMinutes, $minimumNoticePeriod
+                        ));
+                    }
+                    break;
+
+                case 'WEEKLY':
+                    $weekInterval = $schedule->repeat_period_unit ?? 1;
+                    $startWeek    = Carbon::parse($schedule->session_start_date)->startOfWeek();
+                    $currentWeek  = $currentDate->copy()->startOfWeek();
+                    $weeksDiff    = $startWeek->diffInWeeks($currentWeek);
+
+                    if ($weeksDiff % $weekInterval === 0 && $dayName === $schedule->weekly_repeat_day) {
+                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+
+                        $slots = array_merge($slots, $this->generateSlots(
+                            $start, $end, $durationMinutes, $minimumNoticePeriod
+                        ));
+                    }
+                    break;
+
+                case 'MONTHLY':
+                    $monthInterval = $schedule->repeat_period_unit ?? 1;
+                    $monthsDiff    = Carbon::parse($schedule->session_start_date)->diffInMonths($currentDate);
+
+                    if ($monthsDiff % $monthInterval === 0 && $currentDate->day == $schedule->monthly_repeat_day) {
+                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+
+                        $slots = array_merge($slots, $this->generateSlots(
+                            $start, $end, $durationMinutes, $minimumNoticePeriod
+                        ));
+                    }
+                    break;
+
+                case 'YEARLY':
+                    $yearInterval = $schedule->repeat_period_unit ?? 1;
+                    $yearsDiff    = Carbon::parse($schedule->session_start_date)->diffInYears($currentDate);
+
+                    if ($yearsDiff % $yearInterval === 0 &&
+                        $currentDate->isSameDay(Carbon::parse($schedule->session_start_date))) {
+                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+
+                        $slots = array_merge($slots, $this->generateSlots(
+                            $start, $end, $durationMinutes, $minimumNoticePeriod
+                        ));
+                    }
+                    break;
+
+                case 'HOURLY':
+                    $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
+                    $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+
+                    $hourInterval = $schedule->repeat_period_unit ?? 1;
+                    $hour = $start->copy();
+                    while ($hour->lte($end)) {
+                        $slots[] = $hour->format('H:i');
+                        $hour->addHours($hourInterval);
+                    }
+                    break;
+
+                case 'MINUTELY':
+                    $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
+                    $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+
+                    $minuteInterval = $schedule->repeat_period_unit ?? 1;
+                    $minute = $start->copy();
+                    while ($minute->lte($end)) {
+                        $slots[] = $minute->format('H:i');
+                        $minute->addMinutes($minuteInterval);
+                    }
+                    break;
+            }
+        }
+
+        if (!empty($slots)) {
+            $allSlots[$currentDate->toDateString()] = $slots;
+        }
+
+        $currentDate->addDay();
+    }
+
+    return [
+        'data' => $allSlots,
+        'schedule_set' => !empty($allSlots)
+    ];
+}
+
+
+    private function generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
+    {
+        $slots = [];
+        
+        $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
+        // dd($earliestAllowed);
+        while ($start->lte($end)) {
+
+            if ($start->gte($earliestAllowed)) {
+                $slots[] = $start->format('g:i A');
+            }
+
+            $start = $start->copy()->addMinutes($durationMinutes);
+        }
+
+        return $slots;
+    }
+
+    /**
+     * Apply slot deletions to the response data
+     *
+     * @param array $response   Existing slots grouped by date
+     * @param \Illuminate\Support\Collection|array $storeDeleteSlot  Slots marked for deletion
+     * @return array Updated response data with deletions applied
+     */
+    function applySlotDeletions(array $response, $storeDeleteSlot): array
+    {
+        $clearAll = false;
+
+        foreach ($storeDeleteSlot as $deleteSlot) {
+            $date      = $deleteSlot->slot_date;
+            $startTime = $deleteSlot->slot_start_time;
+            $endTime   = $deleteSlot->slot_end_time;
+            $type      = $deleteSlot->delete_type;
+
+            if ($type === 'all') {
+                $clearAll = true;
+                break;
+            }
+
+            
+
+            if ($type === 'single') {
+                if (!isset($response['data'][$date])) {
+                    continue;
+                }
+                // remove only this slot range
+                $response['data'][$date] = array_filter(
+                    $response['data'][$date],
+                    fn($slot) => !($slot >= $startTime && $slot < $endTime)
+                );
+
+            } elseif ($type === 'after') {
+                // dd(2423);
+                // remove slots for this date and all future dates
+                foreach ($response['data'] as $d => $slots) {
+                    if ($d < $date) continue;
+
+                    $response['data'][$d] = array_filter(
+                        $slots,
+                        function ($slot) use ($startTime, $d, $date) {
+                            if ($d == $date) {
+                                return $slot < $startTime;
+                            }
+                            return false; // future dates → clear all
+                        }
+                    );
+                }
+            }
+        }
+
+        // if 'all' deletion was found → clear everything
+        if ($clearAll) {
+            foreach ($response['data'] as $d => $slots) {
+                $response['data'][$d] = [];
+            }
+        }
+
+        return $response;
+    }
+
+
+
+
     
 
 

@@ -21,6 +21,18 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 //use Illuminate\Support\Facades\Storage;
 
+if(!function_exists('getFullSql')) {
+    function getFullSql($query)
+    {
+        $sql = $query->toSql();
+        foreach ($query->getBindings() as $binding) {
+            $value = is_numeric($binding) ? $binding : "'{$binding}'";
+            $sql = preg_replace('/\?/', $value, $sql, 1);
+        }
+        return $sql;
+    }
+}
+
 if(!function_exists('parseTemplate')) {
     function parseTemplate($body, $data)
     {

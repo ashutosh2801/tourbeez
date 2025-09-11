@@ -4,7 +4,7 @@
     @endsection
     <div class="row">
 
-         <div class="col-lg-12 mx-auto">
+        <div class="col-lg-6 mx-auto">
             <div class="card card-primary">
                 <div class="card-header">
                     <h1 class="mb-0 h6">{{ __('Online Booking Fee') }}</h1>
@@ -26,20 +26,44 @@
                         </div>
                         <div class="form-group row {{ get_setting('price_booking_fee') == 1 ?? 'hidden' }}" id="include_fee">
                             <input type="hidden" name="types[]" value="tour_booking_fee">
-                            <div class="desc">
+                            <input type="hidden" name="types[]" value="tour_booking_fee_type">
+
+                            <div id="deposit_options" class="">
                                 <label for="tour_booking_fee">Booking Fee Amount</label>
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text">$</span>
-                                    </div>                       
+                            <div class="form-row">
+
+                                <div class="col-md-6">
+                                    <select class="form-control" name="tour_booking_fee_type" id="tour_booking_fee_type">   
+                                        <option value="PERCENT" {{ old('tour_booking_fee_type', get_setting('tour_booking_fee_type')) == 'PERCENT' ? 'selected' : '' }}>PERCENT</option>
+                                        <option value="FIXED" {{ old('tour_booking_fee_type', get_setting('tour_booking_fee_type')) == 'FIXED' ? 'selected' : '' }}>FIXED</option>
+        
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
                                     <input type="text" 
                                         placeholder="Enter fee amount" 
                                         name="tour_booking_fee" 
                                         value="{{ get_setting('tour_booking_fee') }}" 
                                         class="form-control" id="tour_booking_fee" 
-                                    /> 
+                                    />
                                 </div>
+                                <!-- <div class="col-md-1">
+                                    <span id="deposit_unit">
+                                        @php
+                                            $unit = match($specialDeposit?->charge) {
+                                                'DEPOSIT_PERCENT' => '%',
+                                                'DEPOSIT_FIXED', 'DEPOSIT_FIXED_PER_ORDER' => '$',
+                                                default => ''
+                                            };
+                                        @endphp
+                                        {{ $unit }}
+                                    </span>
+                                </div> -->
                             </div>
+                        </div>
+
+                            
                         </div>
                         <div class="form-group row">
                               <div class="option">
@@ -54,13 +78,109 @@
                         
                        
                        
-                        <div class="text-left">
+                        <div style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;">
                             <button type="submit" class="btn btn-sm btn-primary">{{ __('Save') }}</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
+
+        {{-- Special Deposit --}}
+        <div class="col-lg-6 mx-auto">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h1 class="mb-0 h6">{{ __('Deposit Rules') }}</h1>
+                </div>
+                <div class="card-body">
+                    <form class="needs-validation" novalidate action="{{ route('admin.global.special-deposit') }}" method="POST" enctype="multipart/form-data">
+                         
+                        @method('PUT')
+                        @csrf
+                        
+                        {{-- Use special deposit rules --}}
+                        <div class="form-group form-check">
+                            <input type="hidden" name="tour[use_deposit]" value="0">
+                            <input type="checkbox" class="form-check-input" id="use_deposit"
+                                name="tour[use_deposit]" value="1"
+                                {{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="use_deposit">
+                                Use special deposit rules
+                            </label>
+                        </div>
+
+                        {{-- Deposit Type --}}
+                        <div id="deposit_options" class="{{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? '' : 'd-none' }}">
+                            <div class="form-row">
+                                <div class="col-md-6">
+                                    <select class="form-control" name="tour[charge]" id="tour_charge">
+                                        <option value="FULL" {{ old('tour.charge', $specialDeposit?->charge) == 'FULL' ? 'selected' : '' }}>Full amount</option>
+                                        <option value="DEPOSIT_PERCENT" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_PERCENT' ? 'selected' : '' }}>Deposit (% of order total amount)</option>
+                                        <option value="DEPOSIT_FIXED" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED' ? 'selected' : '' }}>Deposit (Fixed amount per person/quantity)</option>
+                                        <option value="DEPOSIT_FIXED_PER_ORDER" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED_PER_ORDER' ? 'selected' : '' }}>Deposit (Fixed amount per order)</option>
+                                        <option value="NONE" {{ old('tour.charge', $specialDeposit?->charge) == 'NONE' ? 'selected' : '' }}>No charge</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" name="tour[deposit_amount]" class="form-control"
+                                        placeholder="Deposit"
+                                        value="{{ old('tour.deposit_amount', $specialDeposit?->deposit_amount) }}">
+                                </div>
+                                <div class="col-md-1">
+                                    <span id="deposit_unit">
+                                        @php
+                                            $unit = match($specialDeposit?->charge) {
+                                                'DEPOSIT_PERCENT' => '%',
+                                                'DEPOSIT_FIXED', 'DEPOSIT_FIXED_PER_ORDER' => '$',
+                                                default => ''
+                                            };
+                                        @endphp
+                                        {{ $unit }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Allow customers to pay full amount --}}
+                        <div class="form-group form-check mt-3">
+                            <input type="hidden" name="tour[allow_full_payment]" value="0">
+                            <input type="checkbox" class="form-check-input" id="allow_full_payment"
+                                    name="tour[allow_full_payment]" value="1"
+                                    {{ old('tour.allow_full_payment', $specialDeposit?->allow_full_payment) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="allow_full_payment">
+                                Allow customers to pay full amount
+                            </label>
+                        </div>
+
+                        {{-- Add minimum notice --}}
+                        <div class="form-group form-check">
+                            <input type="hidden" name="tour[use_minimum_notice]" value="0">
+                            <input type="checkbox" class="form-check-input" id="use_minimum_notice"
+                                    name="tour[use_minimum_notice]" value="1"
+                                    {{ old('tour.use_minimum_notice', $specialDeposit?->use_minimum_notice) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="use_minimum_notice">
+                                Add minimum notice
+                            </label>
+                        </div>
+
+                        <div id="minimum_notice_days" class="{{ old('tour.use_minimum_notice', $specialDeposit?->use_minimum_notice) ? '' : 'd-none' }}">
+                            <label for="notice_days">Charge full amount if booking</label>
+                            <input type="number" name="tour[notice_days]" id="notice_days"
+                                    class="form-control d-inline-block w-auto"
+                                    value="{{ old('tour.notice_days', $specialDeposit?->notice_days) }}">
+                            <span>days before tour date</span>
+                        </div>
+                            
+                        <div style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;">
+                            <button type="submit" class="btn btn-sm btn-primary">{{ __('Save') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {{-- End Special Deposit --}}
+
 
         <!-- Paypal -->
         <div class="col-md-6">
@@ -120,7 +240,7 @@
                                 </label>
                             </div>
                         </div>
-                        <div class="form-group mb-0 text-right">
+                        <div class="form-group mb-0 text-left">
                             <button type="submit" class="btn btn-sm btn-primary">{{ translate('Save') }}</button>
                         </div>
                     </form>
@@ -173,7 +293,7 @@
                                     placeholder="{{ translate('STRIPE SECRET') }}">
                             </div>
                         </div>
-                        <div class="form-group mb-0 text-right">
+                        <div class="form-group mb-0 text-left">
                             <button type="submit" class="btn btn-sm btn-primary">{{ translate('Save') }}</button>
                         </div>
                     </form>
@@ -622,6 +742,20 @@
 
 @section('js')
 @parent()
+<script>
+    $(function () {
+        // toggle deposit section
+        $('#use_deposit').on('change', function () {
+        	console.log(23423);
+            $('#deposit_options').toggleClass('d-none', !this.checked);
+        });
+
+        // toggle minimum notice section
+        $('#use_minimum_notice').on('change', function () {
+            $('#minimum_notice_days').toggleClass('d-none', !this.checked);
+        });
+    });
+</script>
 <script>
 function toggleBookingFeeField() {
     if ($("#includes").is(":checked")) {

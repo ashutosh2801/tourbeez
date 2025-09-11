@@ -52,32 +52,32 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 										    </div>
 										    <div class="card-body">
 										        {{-- Use special deposit rules --}}
-<div class="form-group form-check">
-    <input type="hidden" name="tour[use_deposit]" value="0">
-    <input type="checkbox" class="form-check-input" id="use_deposit"
-           name="tour[use_deposit]" value="1"
-           {{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? 'checked' : '' }}>
-    <label class="form-check-label" for="use_deposit">
-        Use special deposit rules
-    </label>
-</div>
+                                            <div class="form-group form-check">
+                                                <input type="hidden" name="tour[use_deposit]" value="0">
+                                                <input type="checkbox" class="form-check-input" id="use_deposit"
+                                                       name="tour[use_deposit]" value="1"
+                                                       {{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="use_deposit">
+                                                    Use special deposit rules
+                                                </label>
+                                            </div>
 
-{{-- Deposit Type --}}
-<div id="deposit_options" class="{{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? '' : 'd-none' }}">
-    <div class="form-row">
-        <div class="col-md-6">
-            <select class="form-control" name="tour[charge]" id="tour_charge">
-                <option value="FULL" {{ old('tour.charge', $specialDeposit?->charge) == 'FULL' ? 'selected' : '' }}>Full amount</option>
-                <option value="DEPOSIT_PERCENT" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_PERCENT' ? 'selected' : '' }}>Deposit (% of order total amount)</option>
-                <option value="DEPOSIT_FIXED" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED' ? 'selected' : '' }}>Deposit (Fixed amount per person/quantity)</option>
-                <option value="DEPOSIT_FIXED_PER_ORDER" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED_PER_ORDER' ? 'selected' : '' }}>Deposit (Fixed amount per order)</option>
-                <option value="NONE" {{ old('tour.charge', $specialDeposit?->charge) == 'NONE' ? 'selected' : '' }}>No charge</option>
-            </select>
-        </div>
-        <div class="col-md-3">
-            <input type="number" name="tour[deposit_amount]" class="form-control"
-                   placeholder="Deposit"
-                   value="{{ old('tour.deposit_amount', $specialDeposit?->deposit_amount) }}">
+                                            {{-- Deposit Type --}}
+                                            <div id="deposit_options" class="{{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? '' : 'd-none' }}">
+                                                <div class="form-row">
+                                                    <div class="col-md-6">
+                                                        <select class="form-control" name="tour[charge]" id="tour_charge">
+                                                            <option value="FULL" {{ old('tour.charge', $specialDeposit?->charge) == 'FULL' ? 'selected' : '' }}>Full amount</option>
+                                                            <option value="DEPOSIT_PERCENT" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_PERCENT' ? 'selected' : '' }}>Deposit (% of order total amount)</option>
+                                                            <option value="DEPOSIT_FIXED" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED' ? 'selected' : '' }}>Deposit (Fixed amount per person/quantity)</option>
+                                                            <option value="DEPOSIT_FIXED_PER_ORDER" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED_PER_ORDER' ? 'selected' : '' }}>Deposit (Fixed amount per order)</option>
+                                                            <option value="NONE" {{ old('tour.charge', $specialDeposit?->charge) == 'NONE' ? 'selected' : '' }}>No charge</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <input type="number" name="tour[deposit_amount]" class="form-control"
+                                                               placeholder="Deposit"
+                                                               value="{{ old('tour.deposit_amount', $specialDeposit?->deposit_amount) }}">
 												        </div>
 												        <div class="col-md-1">
 												            <span id="deposit_unit">
@@ -92,7 +92,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 												            </span>
 												        </div>
 												    </div>
-												</div>
+												
 
 												{{-- Allow customers to pay full amount --}}
 												<div class="form-group form-check mt-3">
@@ -123,6 +123,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 												           value="{{ old('tour.notice_days', $specialDeposit?->notice_days) }}">
 												    <span>days before tour date</span>
 												</div>
+                                                </div>
 
 										    </div>
 										</div>
@@ -148,7 +149,6 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
     $(function () {
         // toggle deposit section
         $('#use_deposit').on('change', function () {
-        	console.log(23423);
             $('#deposit_options').toggleClass('d-none', !this.checked);
         });
 
