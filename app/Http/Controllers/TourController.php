@@ -20,6 +20,7 @@ use App\Models\TourImage;
 use App\Models\TourLocation;
 use App\Models\TourPricing;
 use App\Models\TourSchedule;
+use App\Models\TourScheduleRepeats;
 use App\Models\TourUpload;
 use App\Models\Tourtype;
 use App\Services\ImageService;
@@ -780,42 +781,53 @@ class TourController extends Controller
 
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
-        $selectedDate = request()->query('date', now()->toDateString());
+        $selectedDate = request()->query('selectedDate', now()->toDateString());
         return view('admin.tours.feature.schedule_calendar', compact( 'data', 'detail', 'metaData', 'selectedDate'));
     }
 
     public function scheduleCalendarEvent($id)
     {
-        // $selectedDate = request()->query('date');
-
-
-        $selectedDate = request()->query('date');
-        if(!$selectedDate) {
-            $selectedDate = request()->query('selectedDate');
-        } else{
-            $selectedDate = request()->query('date', now()->toDateString());
-        }
-
+        $selectedDate = request()->query('selectedDate', now()->toDateString());
+        
         $response = $this->getWeeklySessionTimes($id, $selectedDate);
-
+        
         $storeDeleteSlot =$this->fetchDeletedSlot($id);
         $response = $this->applySlotDeletions($response, $storeDeleteSlot);
-        // dd($response);
+        
 
         $events = [];
         $slotDuration = 10;
+        
         foreach ($response['data'] as $date => $slots) {
+
+            if (count($slots) > 1) {
+                $first  = "$date {$slots[0]}";
+                $second = "$date {$slots[1]}";
+                $slotDuration = (strtotime($second) - strtotime($first)) / 60;
+            } else {
+                $slotDuration = 60; // default 1 hour
+            }
+
+            // $slotDuration = 60;
             foreach ($slots as $slot) {
                 // Pre-format the start
-                $start = "$date $slot:00";
+
+                $start = "$date $slot";
+                
+                
 
                 // Faster than Carbon parse in loop
-                $end = date("Y-m-d H:i:s", strtotime($start) + ($slotDuration * 60));
+                // $end = date("Y-m-d H:i:s", strtotime($start) + ($slotDuration * 60));
+                
+
+                $start = date("Y-m-d\TH:i:s", strtotime("$date $slot"));
+
+                $end   = date("Y-m-d\TH:i:s", strtotime($start) + ($slotDuration * 60));
 
                 $events[] = [
                     'title' => $slot,
                     'start' => str_replace(' ', 'T', $start),
-                    'end'   => $end,
+                    'end'   => str_replace(' ', 'T', $end),
                 ];
             }
         }
@@ -1968,25 +1980,27 @@ class TourController extends Controller
 {
     $date = $date ? Carbon::parse($date) : now();
 
-    $startOfWeek = $date->copy()->startOfWeek(Carbon::MONDAY);
-    $endOfWeek   = $date->copy()->endOfWeek(Carbon::SUNDAY);
+    $startOfWeek = $date->copy()->startOfWeek(Carbon::SUNDAY);
+    $endOfWeek   = $date->copy()->endOfWeek(Carbon::SATURDAY);
 
     $allSlots = [];
 
-    $currentDate = $startOfWeek->copy();
-    while ($currentDate->lte($endOfWeek)) {
-        $dayName = $currentDate->format('l');
+    $carbonDate = $startOfWeek->copy();
+
+
+    while ($carbonDate->lte($endOfWeek)) {
+        $dayName = $carbonDate->format('l');
         $slots   = [];
 
         $schedules = TourSchedule::where('tour_id', $tour_id)
-            ->where(function ($query) use ($currentDate) {
-                $query->orWhere(function ($q) use ($currentDate) {
-                    $q->whereDate('session_start_date', '<=', $currentDate)
-                      ->whereDate('until_date', '>=', $currentDate);
+            ->where(function ($query) use ($carbonDate) {
+                $query->orWhere(function ($q) use ($carbonDate) {
+                    $q->whereDate('session_start_date', '<=', $carbonDate)
+                      ->whereDate('until_date', '>=', $carbonDate);
                 });
             })
             ->get();
-
+            // dd($schedules);
         foreach ($schedules as $schedule) {
             // --- Duration & Notice handling ---
             $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
@@ -2079,15 +2093,45 @@ class TourController extends Controller
                     break;
 
                 case 'HOURLY':
-                    $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                    $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
 
-                    $hourInterval = $schedule->repeat_period_unit ?? 1;
-                    $hour = $start->copy();
-                    while ($hour->lte($end)) {
-                        $slots[] = $hour->format('H:i');
-                        $hour->addHours($hourInterval);
-                    }
+
+                        $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 2 hours
+                        $scheduleStartDate = Carbon::parse($schedule->session_start_date);
+                        $scheduleEndDate = Carbon::parse($schedule->until_date);
+
+                        if ($carbonDate->between($scheduleStartDate, $scheduleEndDate)) {
+                            $dayName = $carbonDate->format('l'); // e.g., 'Tuesday'
+
+                            $repeatEntries = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+                                ->where('day', $dayName)
+                                ->get();
+                                // dd($repeatEntries);
+                            foreach ($repeatEntries as $repeat) {
+                                $slotStart = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
+                                $slotEnd   = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
+
+                                // Check if start time matches the "every X hours" rule
+                                $hoursSinceStart = floor($scheduleStartDate->diffInHours($slotStart));
+                                // dd($hoursSinceStart % $interval, $hoursSinceStart , $interval);
+                                // if ($hoursSinceStart % $interval !== 0) {
+                                //     continue; // Skip this slot if not matching the interval
+                                // }
+                                // dd($schedule->repeat_period_unit);
+                                $durationMinutes = $schedule->repeat_period_unit * 60;
+                                // dd($durationMinutes);
+                                // dd($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod);
+                                $slots = array_merge(
+                                    $slots,
+                                    $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod)
+                                );
+                                // dd($allSlots);
+                                // foreach ($allSlots as $index => $slot) {
+                                //     // if ($index % $interval === 0) { // keep only every Nth slot
+                                //         $slots[] = $slot;
+                                //     // }
+                                // }
+                            }
+                        }
                     break;
 
                 case 'MINUTELY':
@@ -2105,10 +2149,14 @@ class TourController extends Controller
         }
 
         if (!empty($slots)) {
-            $allSlots[$currentDate->toDateString()] = $slots;
+
+            $allSlots[$carbonDate->toDateString()] = $slots;
+
+        }else{
+            $allSlots[$carbonDate->toDateString()] = [];
         }
 
-        $currentDate->addDay();
+        $carbonDate->addDay();
     }
 
     return [
@@ -2120,6 +2168,8 @@ class TourController extends Controller
 
     private function generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
     {
+
+        // dd($start, $end, $durationMinutes, $minimumNoticePeriod);
         $slots = [];
         
         $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
