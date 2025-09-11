@@ -267,7 +267,7 @@ class TourController extends Controller
         if ($tour) {
             // 💡 You can now format or transform fields as needed
             // return $this->getNextAvailableDate($tour->id);
-            return $this->getDisabledTourDates($tour->id);
+            // return $this->getDisabledTourDates($tour->id);
             // return $this->getDisabledTourDates($tour->id);
             $formattedTour = [
                 'id'            => $tour->id,
