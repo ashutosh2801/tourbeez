@@ -49,6 +49,14 @@
     height: 0px !important;
 }
 
+#city-select {
+    width: 200px !important; /* input width */
+}
+
+.select2-container {
+    min-width: 200px !important; /* dropdown width */
+}
+
 
 
 </style>
@@ -381,6 +389,9 @@ $(document).ready(function () {
             url: '{{ route("admin.city.search") }}',
             dataType: 'json',
             delay: 300,
+            width: '250px',
+            dropdownAutoWidth: true,
+            dropdownParent: $('#city-select').parent(),
             data: function (params) {
                 return { term: params.term };
             },
