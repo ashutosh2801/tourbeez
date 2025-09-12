@@ -12,6 +12,6 @@ class TourDetail extends Model
     public $timestamps  = false;
 
     protected $casts = [
-        'video' => 'array',
+        'videos' => 'array',
     ];
 }
