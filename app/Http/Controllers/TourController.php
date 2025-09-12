@@ -1886,18 +1886,21 @@ class TourController extends Controller
     public function citySearch(Request $request)
     {
         $term = $request->get('term', '');
-
+        // dd(32432, $term);
         $results = City::where('name', 'LIKE', "%{$term}%")
                     ->orderBy('name')
                     ->limit(10)
                     ->get()
                     ->map(function ($city) {
+
+                        $state   = $city->state ? ucwords($city->state->name) : null;
+                        $country = $city->state && $city->state->country ? ucwords($city->state->country->name) : null;
                         return [
                             'id' => $city->id,
-                            'text' => ucwords($city->name),
+                            'text' => ucwords($city->name) . " " .  ucwords($state) . " "  . ucwords($country),
                         ];
                     });
-
+ 
         return response()->json(['results' => $results]);
     }
 
