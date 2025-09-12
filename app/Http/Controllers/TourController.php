@@ -442,6 +442,7 @@ class TourController extends Controller
             $tour_detail->meta_title            = $request->title;
             $tour_detail->meta_description	    = $request->title;
             $tour_detail->focus_keyword         = $request->title;
+            $tour_detail->videos         = $request->videos;
             $tour_detail->save();
 
             $location = new TourLocation();
