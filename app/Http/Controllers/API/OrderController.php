@@ -369,7 +369,7 @@ class OrderController extends Controller
             'formData.pickup_id' => 'nullable|numeric|max:255',
             'formData.pickup_name' => 'nullable|string|max:255',
             'formData.adv_deposite' => 'nullable|string|max:255',
-            'formData.booking_fee' => 'nullable|string|max:255',
+            'formData.booking_fee' => 'nullable|numeric|max:255',
 
         ]);
 
