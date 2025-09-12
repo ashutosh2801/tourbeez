@@ -255,6 +255,13 @@
                     <h5 class="mb-0 h6 ">{{ translate('Stripe Credential') }}</h5>
                 </div>
                 <div class="card-body">
+                    @php
+                        $stripeKey = env('STRIPE_KEY');
+                        $stripeSecret = env('STRIPE_SECRET');
+
+                        $maskedKey = $stripeKey ? substr($stripeKey, 0, 6) . '********' . substr($stripeKey, -4) : '';
+                        $maskedSecret = $stripeSecret ? substr($stripeSecret, 0, 6) . '********' . substr($stripeSecret, -4) : '';
+                    @endphp
                     <form action="{{ route('admin.payment_method.update') }}" method="POST">
                         @csrf
                         <input type="hidden" name="payment_method" value="stripe">
@@ -279,7 +286,7 @@
                             </div>
                             <div class="col-md-8">
                                 <input type="text" class="form-control" name="STRIPE_KEY"
-                                    value="{{ env('STRIPE_KEY') }}" placeholder="{{ translate('STRIPE KEY') }}">
+                                    value="{{ $maskedKey }}" placeholder="{{ translate('STRIPE KEY') }}">
                             </div>
                         </div>
                         <div class="form-group row">
@@ -289,7 +296,7 @@
                             </div>
                             <div class="col-md-8">
                                 <input type="text" class="form-control" name="STRIPE_SECRET"
-                                    value="{{ env('STRIPE_SECRET') }}"
+                                    value="{{ $maskedSecret }}"
                                     placeholder="{{ translate('STRIPE SECRET') }}">
                             </div>
                         </div>

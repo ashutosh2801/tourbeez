@@ -10,4 +10,8 @@ class TourDetail extends Model
     use HasFactory;
 
     public $timestamps  = false;
+
+    protected $casts = [
+        'video' => 'array',
+    ];
 }

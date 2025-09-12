@@ -218,12 +218,23 @@ class SettingController extends Controller
 
     public function payment_method_update(Request $request)
     {
+  
         foreach ($request->types as $key => $type) {
+            if (strpos($request[$type], '*****') !== false) {
+                continue; // skip update, leave existing key/secret unchanged
+            }
+
             $this->overWriteEnvFile($type, $request[$type]);
-        }
+        }   
+
         
         foreach ($request->types as $key => $type) {
+            if (strpos($request[$type], '*****') !== false) {
+                continue; // skip update, leave existing key/secret unchanged
+            }
+            
             $settings = Setting::where('type', $type)->first();
+
             if($settings != null){
                 if(gettype($request[$type]) == 'array'){
                     $settings->value = json_encode($request[$type]);
