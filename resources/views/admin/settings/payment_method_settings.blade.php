@@ -28,7 +28,7 @@
                             <input type="hidden" name="types[]" value="tour_booking_fee">
                             <input type="hidden" name="types[]" value="tour_booking_fee_type">
 
-                            <div id="deposit_options" class="">
+                            <div id="tour_booking_fee_id" class="">
                                 <label for="tour_booking_fee">Booking Fee Amount</label>
                             <div class="form-row">
 
@@ -121,12 +121,12 @@
                                         <option value="NONE" {{ old('tour.charge', $specialDeposit?->charge) == 'NONE' ? 'selected' : '' }}>No charge</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3" id="deposit_amount">
                                     <input type="number" name="tour[deposit_amount]" class="form-control"
                                         placeholder="Deposit"
                                         value="{{ old('tour.deposit_amount', $specialDeposit?->deposit_amount) }}">
                                 </div>
-                                <div class="col-md-1">
+                                <!-- <div class="col-md-1">
                                     <span id="deposit_unit">
                                         @php
                                             $unit = match($specialDeposit?->charge) {
@@ -137,9 +137,9 @@
                                         @endphp
                                         {{ $unit }}
                                     </span>
-                                </div>
+                                </div> -->
                             </div>
-                        </div>
+                        
 
                         {{-- Allow customers to pay full amount --}}
                         <div class="form-group form-check mt-3">
@@ -170,7 +170,7 @@
                                     value="{{ old('tour.notice_days', $specialDeposit?->notice_days) }}">
                             <span>days before tour date</span>
                         </div>
-                            
+                        </div>
                         <div style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;">
                             <button type="submit" class="btn btn-sm btn-primary">{{ __('Save') }}</button>
                         </div>
@@ -746,7 +746,7 @@
     $(function () {
         // toggle deposit section
         $('#use_deposit').on('change', function () {
-        	console.log(23423);
+        	
             $('#deposit_options').toggleClass('d-none', !this.checked);
         });
 
@@ -754,6 +754,9 @@
         $('#use_minimum_notice').on('change', function () {
             $('#minimum_notice_days').toggleClass('d-none', !this.checked);
         });
+
+        // 
+
     });
 </script>
 <script>
@@ -778,6 +781,26 @@ $(document).ready(function () {
         toggleBookingFeeField();
     });
 });
+
+$(document).ready(function () {
+    function toggleDeposit() {
+        let val = $('#tour_charge').val();
+        if (val === 'NONE' || val === 'FULL') {
+            $('#deposit_amount').addClass('d-none');
+            $('#deposit_unit').addClass('d-none');
+        } else {
+            $('#deposit_amount').removeClass('d-none');
+            $('#deposit_unit').removeClass('d-none');
+        }
+    }
+
+    // Run on change
+    $('#tour_charge').on('change', toggleDeposit);
+
+    // Run on page load (to handle old values)
+    toggleDeposit();
+});
+
 </script>
 @endsection    
 </x-admin>
