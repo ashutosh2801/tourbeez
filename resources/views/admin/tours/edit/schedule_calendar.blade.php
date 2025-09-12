@@ -7,13 +7,13 @@
 
 
 <div class="card">
-    <div class="card card-primary">
+    
         <form class="needs-validation" novalidate action="{{ route('admin.tour.schedule_update', $data->id) }}" method="POST"
     enctype="multipart/form-data" autocomplete="off">
+    <div class="card card-primary">
         <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h3 class="card-title">Scheduling</h3>
-                <!-- <button type="button" id="add-schedule" class="btn btn-sm btn-success">+ Add Schedule</button> -->
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <h3 class="card-title mb-0">Scheduling</h3>
                 <div>
                     <a class="btn btn-sm btn-success" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}">{{translate('Scheduling')}}</a>
 
@@ -32,7 +32,9 @@
             <div id="calendar"></div>
 
         </div>
-    </form>
+    
+    </div>
+</form>
 </div>
 
 
@@ -91,10 +93,14 @@
             headerToolbar: false,
             nowIndicator: true,
             allDaySlot: false,
+            displayEventTime: false,
+            eventContent: function(arg) {
+                return { html: arg.event.title }; // 👈 show only title
+            },
 
             events: function(fetchInfo, successCallback, failureCallback) {
                 let url = "{{ route('admin.tour.edit.schedule-calendar-event', $data->id) }}";
-                url += "?date=" + selectedDate;
+                url += "?selectedDate=" + selectedDate;
                 fetch(url)
                     .then(response => response.json())
                     .then(data => {
@@ -103,8 +109,7 @@
                             return {
                                 ...e,
                                 display: 'block',
-                                title: new Date(e.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) +
-                                       (e.end ? ' - ' + new Date(e.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')
+                                
                             };
                         });
                         successCallback(formatted);
@@ -136,7 +141,9 @@
 
         document.getElementById('datePicker').addEventListener('change', function (e) {
             var newDate = e.target.value || new Date().toISOString().slice(0, 10);
-            window.location.href = "{{ route('admin.tour.edit.schedule-calendar', $data->id) }}?date=" + newDate;
+
+            console.log(newDate);
+            window.location.href = "{{ route('admin.tour.edit.schedule-calendar', $data->id) }}?selectedDate=" + newDate;
         });
 // Save slot via AJAX
         document.querySelectorAll('.delete-slot-btn').forEach(btn => {
