@@ -941,7 +941,6 @@ class TourController extends Controller
     public function basic_detail_update(Request $request, $id)
     {
         
-        // dd($request->all());
         $request->validate([
             'title'                 => 'required|max:255',
             'description'           => 'required',
@@ -1065,6 +1064,7 @@ class TourController extends Controller
             $tour_detail->gift_tax_fees         = $request->gift_tax_fees?1:0;
             $tour_detail->IsTerms               = $request->IsTerms?1:0;
             $tour_detail->terms_and_conditions  = $request->terms_and_conditions;
+            $tour_detail->videos  = $request->videos;
             $tour_detail->save();
 
             $tourId = $tour->id;
@@ -1886,18 +1886,21 @@ class TourController extends Controller
     public function citySearch(Request $request)
     {
         $term = $request->get('term', '');
-
+        // dd(32432, $term);
         $results = City::where('name', 'LIKE', "%{$term}%")
                     ->orderBy('name')
                     ->limit(10)
                     ->get()
                     ->map(function ($city) {
+
+                        $state   = $city->state ? ucwords($city->state->name) : null;
+                        $country = $city->state && $city->state->country ? ucwords($city->state->country->name) : null;
                         return [
                             'id' => $city->id,
-                            'text' => ucwords($city->name),
+                            'text' => ucwords($city->name) . " " .  ucwords($state) . " "  . ucwords($country),
                         ];
                     });
-
+ 
         return response()->json(['results' => $results]);
     }
 
