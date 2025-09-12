@@ -790,29 +790,37 @@ class TourController extends Controller
         $selectedDate = request()->query('selectedDate', now()->toDateString());
         
         $response = $this->getWeeklySessionTimes($id, $selectedDate);
-        
+        // dd($response);
         $storeDeleteSlot =$this->fetchDeletedSlot($id);
+
         $response = $this->applySlotDeletions($response, $storeDeleteSlot);
-        
 
         $events = [];
         $slotDuration = 10;
         
         foreach ($response['data'] as $date => $slots) {
 
-            if (count($slots) > 1) {
-                $first  = "$date {$slots[0]}";
-                $second = "$date {$slots[1]}";
-                $slotDuration = (strtotime($second) - strtotime($first)) / 60;
-            } else {
-                $slotDuration = 60; // default 1 hour
-            }
+            // if (count($slots) > 1) {
+            //     $first  = "$date {$slots[0]}";
+            //     $second = "$date {$slots[1]}";
+            //     $slotDuration = (strtotime($second) - strtotime($first)) / 60;
+            // } else {
+            //     $slotDuration = 60; // default 1 hour
+            // }
 
             // $slotDuration = 60;
-            foreach ($slots as $slot) {
+            foreach ($slots as $index => $slot) {
                 // Pre-format the start
 
                 $start = "$date $slot";
+
+                if (isset($slots[$index + 1])) {
+                    $first  = "$date {$slots[$index]}";
+                    $second = "$date {$slots[$index + 1]}";
+                    $slotDuration = (strtotime($second) - strtotime($first)) / 60;
+                } else {
+                    $slotDuration = 60; // default 1 hour
+                }
                 
                 
 
@@ -2022,73 +2030,118 @@ class TourController extends Controller
             // --- Repeat handling ---
             switch (strtoupper($schedule->repeat_period)) {
                 case 'NONE':
-                    $valid = $currentDate->isSameDay(Carbon::parse($schedule->session_start_date));
+                    $valid = $carbonDate->isSameDay(Carbon::parse($schedule->session_start_date));
                     if ($valid) {
-                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-
-                        $slots = array_merge($slots, $this->generateSlots(
-                            $start, $end, $durationMinutes, $minimumNoticePeriod
-                        ));
+                        $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        
+                        $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod));
                     }
                     break;
 
                 case 'DAILY':
-                    $daysSinceStart = Carbon::parse($schedule->session_start_date)->diffInDays($currentDate);
-                    $repeatInterval = $schedule->repeat_period_unit ?? 1;
+                    $daysSinceStart = floor(Carbon::parse($schedule->session_start_date)->diffInDays($carbonDate));
+                    $repeatInterval = $schedule->repeat_period_unit ?? 1; // 1 means every day
 
-                    if ($daysSinceStart % $repeatInterval === 0) {
-                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+                    if ($daysSinceStart % $repeatInterval !== 0) {
+                        $slots = [];
 
-                        $slots = array_merge($slots, $this->generateSlots(
-                            $start, $end, $durationMinutes, $minimumNoticePeriod
-                        ));
+                    } else{
+                        $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        // $end = $end->copy()->addMinutes($durationMinutes);
+                        $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod));
+
+                        $slots = array_slice($slots, 0, 1);
                     }
                     break;
 
                 case 'WEEKLY':
-                    $weekInterval = $schedule->repeat_period_unit ?? 1;
-                    $startWeek    = Carbon::parse($schedule->session_start_date)->startOfWeek();
-                    $currentWeek  = $currentDate->copy()->startOfWeek();
-                    $weeksDiff    = $startWeek->diffInWeeks($currentWeek);
+                    $repeats = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+                    ->where('day', $dayName)
+                    ->get();
+                    // dd($repeats);
+                    foreach ($repeats as $repeat) {
 
-                    if ($weeksDiff % $weekInterval === 0 && $dayName === $schedule->weekly_repeat_day) {
-                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
 
-                        $slots = array_merge($slots, $this->generateSlots(
-                            $start, $end, $durationMinutes, $minimumNoticePeriod
-                        ));
+                        $weeksSinceStart = floor(Carbon::parse($schedule->session_start_date)->diffInWeeks($carbonDate));
+                        $repeatInterval = $schedule->repeat_period_unit ?? 1; // 1 means every week
+
+                        // Skip if not matching the interval
+                        if ($weeksSinceStart % $repeatInterval !== 0) {
+                            continue;
+                        }
+
+
+                        // $selectedDate = Carbon::parse($request->date)->format('Y-m-d'); // or $carbonDate
+                        // dd($repeat->session_start_time);
+                        $slotStart = Carbon::parse($carbonDate->toDateString() . ' ' . ($schedule->session_start_time));
+                        // dd($slotStart);
+                        $slotEnd   = Carbon::parse($carbonDate->toDateString() . ' ' . ($schedule->session_start_time));
+                        // dd($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod);
+
+                        $slots = array_merge($slots, $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod));
+                        // dd($slots);
                     }
+                    $slots = array_slice($slots, 0, 1);
                     break;
 
                 case 'MONTHLY':
-                    $monthInterval = $schedule->repeat_period_unit ?? 1;
-                    $monthsDiff    = Carbon::parse($schedule->session_start_date)->diffInMonths($currentDate);
+                    $monthsSinceStart = floor(Carbon::parse($schedule->session_start_date)->diffInMonths($carbonDate));
+                    $repeatInterval = $schedule->repeat_period_unit ?? 1; // 1 means every month
 
-                    if ($monthsDiff % $monthInterval === 0 && $currentDate->day == $schedule->monthly_repeat_day) {
-                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+                    if ($monthsSinceStart % $repeatInterval !== 0) {
+                        $slots = [];
+                    } else{
+                        $startDate = Carbon::parse($schedule->session_start_date);
 
-                        $slots = array_merge($slots, $this->generateSlots(
-                            $start, $end, $durationMinutes, $minimumNoticePeriod
-                        ));
+                        // Match same day of the month
+
+                        if ((int)$carbonDate->format('d') === (int)$startDate->format('d')) {
+                            $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                            $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+
+                            $slots = array_merge(
+                                $slots,
+                                $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
+                            );
+                        }
+                        $slots = array_slice($slots, 0, 1);
                     }
                     break;
 
                 case 'YEARLY':
-                    $yearInterval = $schedule->repeat_period_unit ?? 1;
-                    $yearsDiff    = Carbon::parse($schedule->session_start_date)->diffInYears($currentDate);
+                    $yearsSinceStart = floor(Carbon::parse($schedule->session_start_date)->diffInYears($carbonDate));
+                    $repeatInterval = $schedule->repeat_period_unit ?? 1; // 1 means every year
 
-                    if ($yearsDiff % $yearInterval === 0 &&
-                        $currentDate->isSameDay(Carbon::parse($schedule->session_start_date))) {
-                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+                    if ($yearsSinceStart % $repeatInterval !== 0) {
+                        $slots = [];
+                    } else{
+                        $startDate = Carbon::parse($schedule->session_start_date);
+                    // dd($minimumNoticePeriod);
+                    // Match same day and same month
+                    if (
+                        (int)$carbonDate->format('d') === (int)$startDate->format('d') &&
+                        (int)$carbonDate->format('m') === (int)$startDate->format('m')
+                    ) {
+                        $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        // $end = $end->copy()->addMinutes($durationMinutes);
+                        // dd($start, $end, $durationMinutes, $minimumNoticePeriod);
+                        // dd(now(), $minimumNoticePeriod);
+                        $slots = array_merge(
+                            $slots,
 
-                        $slots = array_merge($slots, $this->generateSlots(
-                            $start, $end, $durationMinutes, $minimumNoticePeriod
-                        ));
+
+                            $this->generateSlots($start, $end, 24*60, $minimumNoticePeriod)
+                        );
+                        // dd($slots);
+                        $slots = array_slice($slots, 0, 1);
+                    }
+        
+                    
+
+
                     }
                     break;
 
@@ -2105,44 +2158,48 @@ class TourController extends Controller
                             $repeatEntries = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
                                 ->where('day', $dayName)
                                 ->get();
-                                // dd($repeatEntries);
+
                             foreach ($repeatEntries as $repeat) {
                                 $slotStart = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
                                 $slotEnd   = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
 
                                 // Check if start time matches the "every X hours" rule
                                 $hoursSinceStart = floor($scheduleStartDate->diffInHours($slotStart));
-                                // dd($hoursSinceStart % $interval, $hoursSinceStart , $interval);
-                                // if ($hoursSinceStart % $interval !== 0) {
-                                //     continue; // Skip this slot if not matching the interval
-                                // }
-                                // dd($schedule->repeat_period_unit);
+                                
                                 $durationMinutes = $schedule->repeat_period_unit * 60;
-                                // dd($durationMinutes);
-                                // dd($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod);
+                                
                                 $slots = array_merge(
                                     $slots,
                                     $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod)
                                 );
-                                // dd($allSlots);
-                                // foreach ($allSlots as $index => $slot) {
-                                //     // if ($index % $interval === 0) { // keep only every Nth slot
-                                //         $slots[] = $slot;
-                                //     // }
-                                // }
                             }
                         }
                     break;
 
                 case 'MINUTELY':
-                    $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                    $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+                    $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 15 minutes
+                    $scheduleStartDate = Carbon::parse($schedule->session_start_date);
+                    $scheduleEndDate = Carbon::parse($schedule->until_date);
 
-                    $minuteInterval = $schedule->repeat_period_unit ?? 1;
-                    $minute = $start->copy();
-                    while ($minute->lte($end)) {
-                        $slots[] = $minute->format('H:i');
-                        $minute->addMinutes($minuteInterval);
+                    // Check if the selected date is between session_start_date and until_date
+                    if ($carbonDate->between($scheduleStartDate, $scheduleEndDate)) {
+                        $dayName = $carbonDate->format('l'); // e.g., 'Monday'
+                        
+                        $repeatEntries = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+                            ->where('day', $dayName)
+                            ->get();
+                           
+                        foreach ($repeatEntries as $repeat) {
+                            $start = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
+                            $end = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
+                            $durationMinutes = $schedule->repeat_period_unit;
+                            
+                            $slots = array_merge(
+                                $slots,
+                                $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
+                            );
+
+                        }
                     }
                     break;
             }
@@ -2153,7 +2210,7 @@ class TourController extends Controller
             $allSlots[$carbonDate->toDateString()] = $slots;
 
         }else{
-            $allSlots[$carbonDate->toDateString()] = [];
+            // $allSlots[$carbonDate->toDateString()] = [];
         }
 
         $carbonDate->addDay();
@@ -2211,14 +2268,21 @@ class TourController extends Controller
             
 
             if ($type === 'single') {
+
                 if (!isset($response['data'][$date])) {
+
                     continue;
                 }
                 // remove only this slot range
                 $response['data'][$date] = array_filter(
                     $response['data'][$date],
-                    fn($slot) => !($slot >= $startTime && $slot < $endTime)
+                    // fn($slot) => !($slot >= $startTime && $slot < $endTime)
+                    fn($slot) => !(
+                            strtotime($slot) >= strtotime($startTime) &&
+                            strtotime($slot) < strtotime($endTime)
+                        )
                 );
+
 
             } elseif ($type === 'after') {
                 // dd(2423);

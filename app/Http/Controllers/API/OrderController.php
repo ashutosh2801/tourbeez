@@ -1840,7 +1840,7 @@ function normalizeTime(string $time): string
                 // $temp    = [$next->toDateString() => $slots];
                 $temp = [
                             'data' => [
-                                $next->toDateString() => array_unique($allSlots)
+                                $next->toDateString() => array_unique($slots)
                             ]
                         ];
                 $temp    = $this->applySlotDeletions($temp, $storeDeleteSlot);
