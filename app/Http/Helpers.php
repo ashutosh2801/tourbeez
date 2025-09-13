@@ -33,6 +33,38 @@ if(!function_exists('getFullSql')) {
     }
 }
 
+if(!function_exists('countThingsToDo')) {
+    function countThingsToDo($id, $type) {
+        $query = Tour::select(['id'])
+            ->with([
+                'categories:id',
+                'location:id,city_id,state_id,country_id',
+            ])
+            ->where('status', 1)
+            ->whereNull('deleted_at');
+
+        if ($id) {
+            if($type == 'c3') {
+                $query->whereHas('categories', fn($q) => $q->where('categories.id', $id));
+            }
+            else {
+                $query->whereHas('location', function ($q) use ($id, $type) {
+                    match($type) {
+                        'c1' => $q->where('city_id', $id),
+                        's1' => $q->where('state_id', $id),
+                        'c2' => $q->where('country_id', $id),
+                        default => null
+                    };
+                });
+            }
+        }        
+
+        $cacheKey = 'things_to_do_count_' . md5(json_encode($id.$type));
+        $count = Cache::tags(['things_to_do_count'])->remember($cacheKey, 86400, fn() => $query->count());
+        return $count ?? 0;        
+    }
+}
+
 if(!function_exists('parseTemplate')) {
     function parseTemplate($body, $data)
     {
