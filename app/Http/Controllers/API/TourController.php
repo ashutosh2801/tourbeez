@@ -305,8 +305,8 @@ class TourController extends Controller
                 'discount'              =>  $tour->coupon_value,
                 'discount_type'         =>  strtoupper($tour->coupon_type),
                 'discounted_price'      => $discounted_price,
-                'tour_start_date'       => $this->getNextAvailableDate($tour->id),
-                'disabled_tour_dates'   => $this->getDisabledTourDates($tour->id),
+                'tour_start_date'       => [],
+                'disabled_tour_dates'   => [],
             ];
 
             //discounted_price
@@ -320,6 +320,41 @@ class TourController extends Controller
         return response()->json([
             'status' => true,
             'data'   => $formattedTour
+        ]);
+    }
+
+
+    public function fetch_booking(Request $request, $slug)
+    {
+        $cacheKey = 'tour_booking_' . $slug;
+
+        $tour = Cache::remember($cacheKey, 86400, function () use ($slug) {
+            return Tour::where('slug', $slug)
+                ->where('status', 1)
+                ->whereNull('deleted_at')
+                ->with([
+                    'schedule', // for getNextAvailableDate
+                ])
+                ->first();
+        });
+
+        if (!$tour) {
+            return response()->json(['status' => false, 'message' => 'Tour not found'], 404);
+        }
+
+        $tour_start_date = $this->getNextAvailableDate($tour->id);
+        $disabled_dates  = $this->getDisabledTourDates($tour->id);
+
+        $data = [
+            'id'                   => $tour->id,
+            'title'                => $tour->title,
+            'tour_start_date'      => $tour_start_date,
+            'disabled_tour_dates'  => $disabled_dates,
+        ];
+
+        return response()->json([
+            'status' => true,
+            'data'   => $data
         ]);
     }
 
@@ -601,7 +636,7 @@ private function calculateNextDate($schedule, Carbon $today)
     $interval = $schedule->repeat_period_unit ?? 1;
     $repeatType = $schedule->repeat_period;
     // dd($repeatType);
-    if($repeatType == 'none'){
+    if($repeatType == 'NONE'){
         return false;
     }
     $scheduleStartDate = Carbon::parse($schedule->session_start_date);
@@ -635,7 +670,7 @@ private function calculateNextDate($schedule, Carbon $today)
               
         }
 
-        if ($this->hasValidSlot($schedule, $next, )) {
+        if ($this->hasValidSlot($schedule, $next )) {
 
             return ['date'  => $next->toDateString()];
         }
