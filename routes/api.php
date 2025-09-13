@@ -27,7 +27,6 @@ use Illuminate\Support\Facades\Route;
 
 // Route::get('/tour-sessions', [OrderController::class, 'getSessionTimes']);
 // Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
-// Route::get('/tour/{slug}/booking', [TourController::class, 'fetch_booking']);
 
 
 
