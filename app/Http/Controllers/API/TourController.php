@@ -117,6 +117,9 @@ class TourController extends Controller
             'rating'          => randomFloat(4, 5),
             'comment'         => rand(50, 100),
             'offer_ends_in'   => $d->offer_ends_in,
+            // 'meta_title'      => $paginated->total().' Things To Do In ' .ucfirst( $d->title ).' | ' .env('APP_NAME') ,
+            // 'meta_description'=> 'Discover tour in '.ucfirst( $d->title ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.',
+            
         ]);
 
         return response()->json([
@@ -637,7 +640,7 @@ private function calculateNextDate($schedule, Carbon $today)
     $repeatType = $schedule->repeat_period;
     // dd($repeatType);
     if($repeatType == 'NONE'){
-        return false;
+        return null;
     }
     $scheduleStartDate = Carbon::parse($schedule->session_start_date);
     $scheduleEndDate   = Carbon::parse($schedule->until_date);
@@ -670,7 +673,7 @@ private function calculateNextDate($schedule, Carbon $today)
               
         }
 
-        if ($this->hasValidSlot($schedule, $next )) {
+        if ($this->hasValidSlot($schedule, $next, )) {
 
             return ['date'  => $next->toDateString()];
         }

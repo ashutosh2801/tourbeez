@@ -250,10 +250,15 @@ class CommonController extends Controller
                 return State::findOrFail($id);
             } elseif ($type == 'c2') {
                 return Country::findOrFail($id);
+            } elseif ($type == 'c3') {
+                return Category::findOrFail($id);
             }
             // Default case for 'city'
             return City::findOrFail( $id );
         });
+        
+        $meta_title = countThingsToDo($id, $type).' Things To Do In ' .ucfirst( $d->name ).' | ' .env('APP_NAME');
+        $meta_description = 'Discover tour in '.ucfirst( $d->name ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.';
 
         $data = [];
         // Prepare the response data based on the  city type
@@ -263,26 +268,43 @@ class CommonController extends Controller
                     'name'  => ucfirst( $d->name ),
                     'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
                     'image' => uploaded_asset( $d->upload_id ),
-            ];
+                    'meta_title'      => $meta_title,
+                    'meta_description'=> $meta_description,
+                ];
         }
 
         // Prepare the response data based on the  city and state type
-        if ( $type == 's1' || $type == 'c1' ) {
+        if ( $type == 's1' ) {
             $data['state'] = [
                 'id'    => $d->state->id,
                 'name'  => 'Things to do in '.ucfirst( $d->state->name ),
                 'url'   => '/'.Str::slug( $d->state->name ).'/'.$d->state->id.'/s1',
                 'image' => $d->state->upload_id ? uploaded_asset( $d->state->upload_id ) : '',
+                'meta_title'      => $meta_title,
+                'meta_description'=> $meta_description,
             ];
         }
 
         // Prepare the response data based on the  city, state and country type
-        if ( $type == 'c2' || $type == 's1' || $type == 'c1' ) {
+        if ( $type == 'c2' ) {
             $data['country'] = [
                 'id'    => $d->state->country->id,
                 'name'  => 'Things to do in '.ucfirst( $d->state->country->name ),
                 'url'   => '/'.Str::slug( $d->state->country->name ).'/'.$d->state->country->id.'/c2',
                 'image' => $d->state?->country?->upload_id ? uploaded_asset( $d->state->country->upload_id ) : '',
+                'meta_title'      => $meta_title,
+                'meta_description'=> $meta_description,
+            ];
+        }
+
+        if ( $type == 'c3' ) {
+            $data['country'] = [
+                'id'    => $d->id,
+                'name'  => 'Things to do in '.ucfirst( $d->name ),
+                'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c3',
+                // 'image' => $d->upload_id ? uploaded_asset( $d->upload_id ) : '',
+                'meta_title'      => $meta_title,
+                'meta_description'=> $meta_description,
             ];
         }
 
