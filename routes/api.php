@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Route;
 // });
 
 // Route::get('/tour-sessions', [OrderController::class, 'getSessionTimes']);
+// Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
 
 
 
@@ -48,6 +49,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/tours',[TourController::class,'index']);
     Route::get('/tour/search', [TourController::class, 'search']);
     Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
+    Route::get('/tour/{slug}/booking', [TourController::class, 'fetch_booking']);
     Route::get('/tour/{id}/deposit-rule', [TourController::class, 'fetch_deposit_rule']);
     Route::get('/sub-tours/{id}/date/{date}', [TourController::class, 'getSubTour']);
 
