@@ -250,6 +250,7 @@ class TourController extends Controller
         else if (!empty($tour->pickups) && isset($tour->pickups[0])) {
             $pickups = $tour->pickups[0]?->locations ?? [];
         }
+
         $original_price   = $tour->price;
         $discounted_price = $tour->price;
 
@@ -287,8 +288,6 @@ class TourController extends Controller
                 'categories'    => $tour->categories,
                 'tourtypes'     => $tour->tourtypes,
                 'itineraries'   => $tour->itineraries,
-                //'itinerariesAll'=> $tour->itinerariesAll,
-                //'schedule'      => $tour->schedule,
                 'faqs'          => $tour->faqs,
                 'inclusions'    => $tour->inclusions,
                 'optionals'     => $tour->optionals,
@@ -298,26 +297,21 @@ class TourController extends Controller
                 'detail'        => $tour->detail,
                 'location'      => $tour->location,
                 'breadcrumbs'   => $breadcrumbs,
-                // 'pricings'      => $tour->pricings,
                 'category'      => $tour->category,
                 'galleries'     => $galleries,
                 'addons'        => $addons,
                 'offer_ends_in' => $tour->offer_ends_in,
-                //'tour_special_deposits'        => $tour->specialDeposit,
+                // 'pricings'      => $tour->pricings,
+                // 'tour_special_deposits'        => $tour->specialDeposit,
+                // 'itinerariesAll'=> $tour->itinerariesAll,
+                // 'schedule'      => $tour->schedule,
 
                 'discount'              =>  $tour->coupon_value,
                 'discount_type'         =>  strtoupper($tour->coupon_type),
                 'discounted_price'      => $discounted_price,
                 'tour_start_date'       => [],
                 'disabled_tour_dates'   => [],
-            ];
-
-            //discounted_price
-            //discount
-            //discount_type
-            // tour_start_date -> inhich solt available (same as the slots and avalable slots)
-            // disabled_tour_dates -> [array of date in which slot is not availble,  // repeate _tour_type
-           
+            ];           
         }
 
         return response()->json([
@@ -338,6 +332,7 @@ class TourController extends Controller
                 ->where('status', 1)
                 ->whereNull('deleted_at')
                 ->with([
+                    'detail',   // for tour detail 
                     'schedule', // for getNextAvailableDate
                     'pricings', // for pricings
                 ])
@@ -350,11 +345,31 @@ class TourController extends Controller
 
         $tour_start_date = $this->getNextAvailableDate($tour->id);
         $disabled_dates  = $this->getDisabledTourDates($tour->id);
+        $original_price   = $tour->price;
+        $discounted_price = $tour->price;
+
+        if ($tour->coupon_value && $tour->coupon_value > 0) {
+            if ($tour->coupon_type == 'fixed') {
+                $original_price   = $tour->price + $tour->coupon_value;
+                $discounted_price = $tour->price;
+            } elseif ($tour->coupon_type == 'percentage') {
+                $original_price = $tour->price / (1 - ($tour->coupon_value / 100));
+                $original_price = round($original_price);
+                $discounted_price = $tour->price;
+            }
+        }
 
         $data = [
             'id'                   => $tour->id,
             'title'                => $tour->title,
+            'slug'                 => $tour->slug,
+            'price_type'           => $tour->price_type,
             'pricings'             => $tour->pricings,
+            'detail'               => $tour->detail,
+            'original_price'       => $tour->price,
+            'discount'             => $tour->coupon_value,
+            'discount_type'        => strtoupper($tour->coupon_type),
+            'discounted_price'     => $discounted_price,
             'tour_start_date'      => $tour_start_date,
             'disabled_tour_dates'  => $disabled_dates,
         ];
