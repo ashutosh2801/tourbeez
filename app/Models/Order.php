@@ -112,7 +112,7 @@ class Order extends Model
             5 => 'Confirmed',
             6 => 'Cancelled',
             7 => 'Abandoned cart',
-            default => 'New',
+            default => 'Abandoned cart',
         };
     }
 
