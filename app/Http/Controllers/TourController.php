@@ -801,15 +801,6 @@ class TourController extends Controller
         
         foreach ($response['data'] as $date => $slots) {
 
-            // if (count($slots) > 1) {
-            //     $first  = "$date {$slots[0]}";
-            //     $second = "$date {$slots[1]}";
-            //     $slotDuration = (strtotime($second) - strtotime($first)) / 60;
-            // } else {
-            //     $slotDuration = 60; // default 1 hour
-            // }
-
-            // $slotDuration = 60;
             foreach ($slots as $index => $slot) {
                 // Pre-format the start
 
@@ -819,14 +810,14 @@ class TourController extends Controller
                     $first  = "$date {$slots[$index]}";
                     $second = "$date {$slots[$index + 1]}";
                     $slotDuration = (strtotime($second) - strtotime($first)) / 60;
+                    if($slotDuration > 60){
+                        $slotDuration = 60;
+                    }
+
                 } else {
                     $slotDuration = 60; // default 1 hour
                 }
-                
-                
 
-                // Faster than Carbon parse in loop
-                // $end = date("Y-m-d H:i:s", strtotime($start) + ($slotDuration * 60));
                 
 
                 $start = date("Y-m-d\TH:i:s", strtotime("$date $slot"));
@@ -1358,6 +1349,12 @@ class TourController extends Controller
 
     // ✅ Save new schedules
     foreach ($request->schedules as $scheduleData) {
+
+        $until_date = $scheduleData['until_date'];
+
+        if($scheduleData['repeat_period'] == 'NONE'){
+            $until_date = $scheduleData['session_start_date'];
+        }
         $schedule = new TourSchedule();
         $schedule->tour_id                 = $tour->id;
         $schedule->minimum_notice_num      = $scheduleData['minimum_notice_num'];
@@ -1373,7 +1370,7 @@ class TourController extends Controller
         $schedule->sesion_all_day          = !empty($scheduleData['sesion_all_day']) ? 1 : 0;
         $schedule->repeat_period           = $scheduleData['repeat_period'];
         $schedule->repeat_period_unit      = $scheduleData['repeat_period_unit'] ?? null;
-        $schedule->until_date              = $scheduleData['until_date'] ?? null;
+        $schedule->until_date              = $until_date ?? null;
         $schedule->save();
 
         // ✅ Handle repeats for this schedule
@@ -2012,7 +2009,8 @@ class TourController extends Controller
                 });
             })
             ->get();
-            // dd($schedules);
+
+        
         foreach ($schedules as $schedule) {
             // --- Duration & Notice handling ---
             $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
@@ -2030,10 +2028,10 @@ class TourController extends Controller
                 'hour', 'hours' => $schedule->minimum_notice_num * 60,
                 default => 0
             };
-
             // --- Repeat handling ---
             switch (strtoupper($schedule->repeat_period)) {
                 case 'NONE':
+                
                     $valid = $carbonDate->isSameDay(Carbon::parse($schedule->session_start_date));
                     if ($valid) {
                         $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
@@ -2056,7 +2054,7 @@ class TourController extends Controller
                         // $end = $end->copy()->addMinutes($durationMinutes);
                         $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod));
 
-                        $slots = array_slice($slots, 0, 1);
+                        // $slots = array_slice($slots, 0, 1);
                     }
                     break;
 
@@ -2087,7 +2085,7 @@ class TourController extends Controller
                         $slots = array_merge($slots, $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod));
                         // dd($slots);
                     }
-                    $slots = array_slice($slots, 0, 1);
+                    // $slots = array_slice($slots, 0, 1);
                     break;
 
                 case 'MONTHLY':
@@ -2110,7 +2108,7 @@ class TourController extends Controller
                                 $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
                             );
                         }
-                        $slots = array_slice($slots, 0, 1);
+                        // $slots = array_slice($slots, 0, 1);
                     }
                     break;
 
@@ -2140,7 +2138,7 @@ class TourController extends Controller
                             $this->generateSlots($start, $end, 24*60, $minimumNoticePeriod)
                         );
                         // dd($slots);
-                        $slots = array_slice($slots, 0, 1);
+                        // $slots = array_slice($slots, 0, 1);
                     }
         
                     
