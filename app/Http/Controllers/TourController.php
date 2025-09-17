@@ -1319,10 +1319,18 @@ class TourController extends Controller
 
 
     public function schedule_update(Request $request, $id)
-{
+    {
     $tour = Tour::findOrFail($id);
 
     // ✅ Validate all schedules
+
+    if(!$request->schedules){
+        foreach ($tour->schedules as $oldSchedule) {
+            $oldSchedule->repeats()->delete();
+            $oldSchedule->delete();
+        }
+        return back()->with('success', 'Schedules deleted successfully.');
+    }
     $request->validate([
         'schedules' => 'required|array|min:1',
 
@@ -1407,6 +1415,8 @@ class TourController extends Controller
     public function itinerary_update(Request $request, $id) {
         $tour  = Tour::findOrFail($id);
 
+        // dd($request->all());
+
         $request->validate([
             'ItineraryOptions'               => 'required|array',
             'ItineraryOptions.*.title'       => 'required|string|max:255',
@@ -1439,6 +1449,7 @@ class TourController extends Controller
             $itinerary->datetime    = $option['datetime'] ?? null;
             $itinerary->address     = $option['address'] ?? null;
             $itinerary->description = $option['description'] ?? null;
+            $itinerary->order = $option['order'] ?? null;
             $itinerary->save();
 
             $itineraryIds[] = $itinerary->id;

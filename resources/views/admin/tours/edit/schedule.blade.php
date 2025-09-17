@@ -39,9 +39,9 @@
                                     Schedule #{{ $index+1 }}
                                 </button>
                             </h5>
-                            @if ($index > 0)
+                            
                             <button type="button" class="btn btn-danger btn-sm remove-schedule">Remove</button>
-                            @endif
+                           
                         </div>
                     </div>
 
@@ -728,11 +728,20 @@
         });
 
         // remove card
-        $(document).on('click', '.remove-schedule', function(){
+       $(document).on('click', '.remove-schedule', function () {
+            let $scheduleCard = $(this).closest('.schedule-card');
+
             if ($('.schedule-card').length > 1) {
-                $(this).closest('.schedule-card').remove();
+                // Just remove the clicked one
+                $scheduleCard.remove();
             } else {
-                alert('At least one schedule is required.');
+                // Last schedule left → confirmation
+                if (confirm('This will delete the last schedule. Are you sure you want to continue?')) {
+                    $scheduleCard.remove();
+                } else {
+                    // User cancelled → don’t remove
+                    return false;
+                }
             }
         });
     });

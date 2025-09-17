@@ -684,14 +684,25 @@ class OrderController extends Controller
         $dayName = $carbonDate->format('l');
         $slots = [];
 
-        $schedules = TourSchedule::where('tour_id', $request->tour_id)
+        $schedulesQuery = TourSchedule::where('tour_id', $request->tour_id);
+
+        // ✅ Check if schedules exist without loading full collection
+        if (!$schedulesQuery->exists()) {
+            return response()->json([
+                'status' => 'success',
+                'data' => array_unique($slots),
+                'schedule_set' => true
+            ]);
+        }
+
+        // ✅ Fetch schedules only if needed
+        $schedules = $schedulesQuery
             ->where(function ($query) use ($carbonDate) {
-                $query->orWhere(function ($q) use ($carbonDate) {
-                          $q->whereDate('session_start_date', '<=', $carbonDate)
-                            ->whereDate('until_date', '>=', $carbonDate);
-                      });
+                $query->whereDate('session_start_date', '<=', $carbonDate)
+                      ->whereDate('until_date', '>=', $carbonDate);
             })
             ->get();
+
 
 
         foreach ($schedules as $schedule) {
@@ -921,6 +932,9 @@ class OrderController extends Controller
                 }
             }
         }
+
+
+
         $fetchDeletedSlot = null;
         if (!empty($slots)) {
             $fetchDeletedSlot = $this->fetchDeletedSlot($request->tour_id);
