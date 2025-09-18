@@ -176,6 +176,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/uploaded-files/destroy/{id}', [AizUploadController::class, 'destroy'])->name('uploaded-files.destroy');
 
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity.logs');
+    Route::get('/banner', [AizUploadController::class, 'showBanner'])->name('banner.index');
+
+    
+    Route::get('banners/create', [AizUploadController::class, 'bannerCreate'])->name('banners.create');
+    Route::post('banners/store', [AizUploadController::class, 'bannerStoreOrUpdate'])->name('banners.store');
+    Route::get('banners/{id}/edit', [AizUploadController::class, 'bannerEdit'])->name('banners.edit');
+    Route::post('banners/{id}/update', [AizUploadController::class, 'bannerStoreOrUpdate'])->name('banners.update');
+    Route::get('banners/{id}/delete', [AizUploadController::class, 'bannerDestroy'])->name('banners.destroy');
+
 
     // Uploader
     Route::get('/refresh-csrf', function(){ return csrf_token(); });

@@ -56,7 +56,12 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        $query = Order::with(['customer', 'orderTours.tour'])->orderBy('created_at', 'DESC');
+        $query = Order::with(['customer', 'orderTours.tour'])
+            ->whereHas('customer', function ($q) {
+                $q->whereNotNull('first_name')
+                  ->where('first_name', '!=', ''); // exclude empty strings
+            })
+            ->orderBy('created_at', 'DESC');
 
         // Search by order number or customer name
         if ($search = $request->input('search')) {

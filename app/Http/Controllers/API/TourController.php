@@ -168,7 +168,7 @@ class TourController extends Controller
                     'user',
                     'location',
                     'schedule',
-                    'pricings',
+                    // 'pricings',
                     'category',
                 ])
                 ->first();
@@ -250,6 +250,7 @@ class TourController extends Controller
         else if (!empty($tour->pickups) && isset($tour->pickups[0])) {
             $pickups = $tour->pickups[0]?->locations ?? [];
         }
+
         $original_price   = $tour->price;
         $discounted_price = $tour->price;
 
@@ -287,8 +288,6 @@ class TourController extends Controller
                 'categories'    => $tour->categories,
                 'tourtypes'     => $tour->tourtypes,
                 'itineraries'   => $tour->itineraries,
-                //'itinerariesAll'=> $tour->itinerariesAll,
-                //'schedule'      => $tour->schedule,
                 'faqs'          => $tour->faqs,
                 'inclusions'    => $tour->inclusions,
                 'optionals'     => $tour->optionals,
@@ -298,26 +297,21 @@ class TourController extends Controller
                 'detail'        => $tour->detail,
                 'location'      => $tour->location,
                 'breadcrumbs'   => $breadcrumbs,
-                'pricings'      => $tour->pricings,
                 'category'      => $tour->category,
                 'galleries'     => $galleries,
                 'addons'        => $addons,
                 'offer_ends_in' => $tour->offer_ends_in,
-                //'tour_special_deposits'        => $tour->specialDeposit,
+                // 'pricings'      => $tour->pricings,
+                // 'tour_special_deposits'        => $tour->specialDeposit,
+                // 'itinerariesAll'=> $tour->itinerariesAll,
+                // 'schedule'      => $tour->schedule,
 
                 'discount'              =>  $tour->coupon_value,
                 'discount_type'         =>  strtoupper($tour->coupon_type),
                 'discounted_price'      => $discounted_price,
                 'tour_start_date'       => [],
                 'disabled_tour_dates'   => [],
-            ];
-
-            //discounted_price
-            //discount
-            //discount_type
-            // tour_start_date -> inhich solt available (same as the slots and avalable slots)
-            // disabled_tour_dates -> [array of date in which slot is not availble,  // repeate _tour_type
-           
+            ];           
         }
 
         return response()->json([
@@ -326,7 +320,9 @@ class TourController extends Controller
         ]);
     }
 
-
+    /**
+     * Fetch booking related info for a tour.
+     */
     public function fetch_booking(Request $request, $slug)
     {
         $cacheKey = 'tour_booking_' . $slug;
@@ -336,7 +332,9 @@ class TourController extends Controller
                 ->where('status', 1)
                 ->whereNull('deleted_at')
                 ->with([
+                    'detail',   // for tour detail 
                     'schedule', // for getNextAvailableDate
+                    'pricings', // for pricings
                 ])
                 ->first();
         });
@@ -347,10 +345,31 @@ class TourController extends Controller
 
         $tour_start_date = $this->getNextAvailableDate($tour->id);
         $disabled_dates  = $this->getDisabledTourDates($tour->id);
+        $original_price   = $tour->price;
+        $discounted_price = $tour->price;
+
+        if ($tour->coupon_value && $tour->coupon_value > 0) {
+            if ($tour->coupon_type == 'fixed') {
+                $original_price   = $tour->price + $tour->coupon_value;
+                $discounted_price = $tour->price;
+            } elseif ($tour->coupon_type == 'percentage') {
+                $original_price = $tour->price / (1 - ($tour->coupon_value / 100));
+                $original_price = round($original_price);
+                $discounted_price = $tour->price;
+            }
+        }
 
         $data = [
             'id'                   => $tour->id,
             'title'                => $tour->title,
+            'slug'                 => $tour->slug,
+            'price_type'           => $tour->price_type,
+            'pricings'             => $tour->pricings,
+            'detail'               => $tour->detail,
+            'original_price'       => $tour->price,
+            'discount'             => $tour->coupon_value,
+            'discount_type'        => strtoupper($tour->coupon_type),
+            'discounted_price'     => $discounted_price,
             'tour_start_date'      => $tour_start_date,
             'disabled_tour_dates'  => $disabled_dates,
         ];
@@ -361,9 +380,38 @@ class TourController extends Controller
         ]);
     }
 
-    function highlightMatch($string, $keyword) {
-        $string = ucfirst($string);
-        return preg_replace("/(" . preg_quote($keyword, '/') . ")/i", '<mark>$1</mark>', $string);
+    /**
+     * Fetch sub tours by tour id and date.
+     */
+    public function fetch_sub_tours($id, $date)
+    {
+        $cacheKey = 'sub_tour_' . $id . '_' . $date;
+
+        $subTour = Cache::remember($cacheKey, 86400, function () use ($id, $date) {
+            return Tour::where('parent_id', $id)
+                ->where('status', 1)
+                ->whereNull('deleted_at')
+                ->with([
+                    'subTours' => function ($q) use ($date) {
+                        $q->where('status', 1)
+                            ->whereNull('deleted_at')
+                            ->whereDate('start_date', '<=', $date)
+                            ->whereDate('end_date', '>=', $date);
+                    },
+                    'subTours.pricings',
+                    'subTours.schedule',
+                ])
+                ->first();
+        });
+
+        if (!$subTour || $subTour->subTours->isEmpty()) {
+            return response()->json(['status' => false, 'message' => 'No sub tours found for the given date'], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data'   => $subTour->subTours
+        ]);
     }
 
     /**
@@ -499,7 +547,14 @@ class TourController extends Controller
         ]);
     }
 
-
+    function highlightMatch($string, $keyword) {
+        $string = ucfirst($string);
+        return preg_replace("/(" . preg_quote($keyword, '/') . ")/i", '<mark>$1</mark>', $string);
+    }
+    
+    /**
+     * Fetch tours by category id.
+     */
     public function toursByCategory(Request $request)
     {
         $category_id = $request->input('category_id');
@@ -1026,11 +1081,13 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
             $daysSinceStart = (int) floor($startDate->diffInDays($date));
 
             if ($daysSinceStart % $repeatUnit === 0) {
+                $slotStart = $at($schedule->session_start_time ?? '00:00');
+                $slotEnd   = $slotStart->copy()->addMinutes(0);
                 if ($allDay) {
+
                     $available = $windowOk($date->copy()->startOfDay(), $date->copy()->endOfDay());
                 } else {
-                    $slotStart = $at($schedule->session_start_time ?? '00:00');
-                    $slotEnd   = $slotStart->copy()->addMinutes(0);
+                    
 
                     // dd($slotStart, $slotEnd );
                     $available = $windowOk($slotStart, $slotEnd);

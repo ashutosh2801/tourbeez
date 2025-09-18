@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Banner;
 use App\Upload;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
-// use Response;
-// use Auth;
-// use Storage;
-//use Image;
 use Illuminate\Support\Str;
 use Intervention\Image\Laravel\Facades\Image;
 
@@ -307,5 +304,140 @@ class AizUploadController extends Controller
             return redirect()->back()->withInput()->with('success','Image Info saved successfully.'); 
         }
     }
+
+
+    public function showBanner(Request $request)
+    {
+        $data = Banner::latest()->get();
+        return view('admin.settings.banner.index', compact('data'));
+    }
+
+
+
+    // public function bannerStoreOrUpdate(Request $request, $id = null)
+    // {
+    //     $request->validate([
+    //         'location_id' => 'nullable|integer',
+    //         'heading'     => 'nullable|string|max:255',
+    //         'sub_heading' => 'nullable|string|max:255',
+    //         'images.*'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    //         'videos'      => 'nullable|array',
+    //         'videos.*'    => 'nullable|url',
+    //     ]);
+
+    //     // If ID exists → update, else create new
+    //     $banner = $id ? Banner::findOrFail($id) : new Banner();
+
+    //     $banner->location_id = $request->location_id;
+    //     $banner->heading     = $request->heading;
+    //     $banner->sub_heading = $request->sub_heading;
+
+    //     // Handle images
+    //     $storedImages = $banner->image ? json_decode($banner->image, true) : [];
+
+    //     if ($request->hasFile('images')) {
+    //         foreach ($request->file('images') as $file) {
+    //             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+    //             $file->storeAs('public/banners', $filename);
+    //             $storedImages[] = $filename;
+    //         }
+    //     }
+    //     $banner->image = !empty($storedImages) ? json_encode($storedImages) : null;
+
+    //     // Handle videos
+    //     $banner->videos = $request->videos ? json_encode($request->videos) : null;
+
+    //     $banner->save();
+
+    //     return redirect()
+    //         ->route('admin.banners.index')
+    //         ->with('success', $id ? 'Banner updated successfully' : 'Banner created successfully');
+    // }
+
+    // public function bannerStoreOrUpdate(Request $request, $id = null)
+    // {
+    //     $request->validate([
+    //         'location_id' => 'nullable|integer',
+    //         'heading'     => 'nullable|string|max:255',
+    //         'sub_heading' => 'nullable|string|max:255',
+    //         'images.*'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+    //         'videos'      => 'nullable|array',
+    //         'videos.*'    => 'nullable|string',
+    //     ]);
+
+    //     $banner = $id ? Banner::findOrFail($id) : new Banner();
+
+    //     $banner->location_id = $request->location_id;
+    //     $banner->heading     = $request->heading;
+    //     $banner->sub_heading = $request->sub_heading;
+
+    //     // Keep old images if any
+    //     $storedImages = $banner->image ? json_decode($banner->image, true) : [];
+
+    //     if ($request->hasFile('images')) {
+    //         foreach ($request->file('images') as $file) {
+    //             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+    //             $file->storeAs('public/banners', $filename);
+    //             $storedImages[] = $filename;
+    //         }
+    //     }
+    //     $banner->image = !empty($storedImages) ? json_encode($storedImages) : null;
+
+    //     // Videos
+    //     $banner->videos = $request->videos ? json_encode($request->videos) : null;
+
+    //     $banner->save();
+
+    //     return redirect()
+    //         ->route('admin.banner.index')
+    //         ->with('success', $id ? 'Banner updated successfully' : 'Banner created successfully');
+    // }
+
+    public function bannerStoreOrUpdate(Request $request, $id = null)
+    {
+        $request->validate([
+            'location_id' => 'nullable|string|max:255',
+            'heading'     => 'nullable|string|max:255',
+            'sub_heading' => 'nullable|string|max:255',
+            'images'      => 'nullable|array',
+            'videos'      => 'nullable|array',
+        ]);
+
+        $banner = $id ? Banner::findOrFail($id) : new Banner();
+
+        $banner->location_id = $request->location_id;
+        $banner->heading     = $request->heading;
+        $banner->sub_heading = $request->sub_heading;
+        $banner->images      = $request->has('images') ? json_encode($request->images) : null;
+        $banner->videos      = $request->has('videos') ? json_encode($request->videos) : null;
+
+        $banner->save();
+
+        return redirect()->route('admin.banner.index')
+            ->with('success', $id ? 'Banner updated successfully' : 'Banner created successfully');
+    }
+
+     public function bannerCreate()
+    {
+        return view('admin.settings.banner.create');
+    }
+
+    // Edit page
+    public function bannerEdit($id)
+    {
+        $banner = Banner::findOrFail(decrypt($id));
+        return view('admin.settings.banner.create', compact('banner'));
+    }
+
+    public function bannerDestroy($id)
+    {
+        $banner = Banner::findOrFail(decrypt($id));
+        $banner->delete();
+
+        return redirect()
+            ->route('admin.banner.index')
+            ->with('success', 'Banner deleted successfully');
+    }
+
 
 }

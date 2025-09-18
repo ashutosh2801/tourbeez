@@ -421,11 +421,12 @@
                                 @php
 
                                     $videos = old('videos', $data->detail?->videos ?? []); 
-                                    if($videos){
+                                    if($videos && ! is_array($videos)){
 
-                                      $videos = old('videos', json_decode($videos ?? '[]', true));
+                                        $videos = old('videos', json_decode($videos ?? '[]', true));
                                     }
-                                    
+                      
+                                                 
                                 @endphp
 
                                 @foreach($videos as $index => $video)

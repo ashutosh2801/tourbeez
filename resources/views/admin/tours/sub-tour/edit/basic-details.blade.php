@@ -56,8 +56,11 @@
                 </ul>
             </div>
         @endif
-        <form class="needs-validation" novalidate action="{{ route('admin.tour.basic_detail_update', $data->id) }}" method="POST"
-            enctype="multipart/form-data">
+        <!-- <form class="needs-validation" novalidate action="{{ route('admin.tour.basic_detail_update', $data->id) }}" method="POST"
+            enctype="multipart/form-data"> -->
+
+            <form class="needs-validation" novalidate action="{{ route('admin.tour.sub-tour-store', [$data->id, $data->parent_id]) }}" method="POST"
+                        enctype="multipart/form-data">
             @csrf
             <div class="card-body">
                 <div class="row">
