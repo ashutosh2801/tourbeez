@@ -308,4 +308,45 @@ class AizUploadController extends Controller
         }
     }
 
+    public function storeYoutube(Request $request)
+    {
+        $request->validate([
+            'youtube_url' => 'required|url'
+        ]);
+
+        $videoId = $this->getYoutubeVideoId($request->youtube_url);
+
+        if (!$videoId) {
+            return response()->json(['error' => 'Invalid YouTube URL'], 400);
+        }
+
+        // Thumbnail URLs
+        $largeThumbnail = "https://img.youtube.com/vi/{$videoId}/maxresdefault.jpg";
+        $mediumThumbnail = "https://img.youtube.com/vi/{$videoId}/mqdefault.jpg";
+        // $smallThumbnail = "https://img.youtube.com/vi/{$videoId}/default.jpg";
+
+        // Save to DB
+        $upload = new Upload();
+        $upload->file_original_name = $videoId; // Using video ID as original name
+        $upload->file_name = $request->youtube_url; // Storing the URL
+        $upload->medium_name = $largeThumbnail; // Large thumbnail
+        $upload->thumb_name = $mediumThumbnail; // Medium thumbnail
+        $upload->user_id = auth()->id();
+        $upload->type = 'youtube';
+        $upload->caption = $request->caption ?? null;
+        $upload->description = $request->description ?? null;
+        $upload->save();
+
+        return response()->json([
+            'message' => 'YouTube video saved successfully!',
+            'data' => $upload
+        ]);
+    }
+
+    private function getYoutubeVideoId($url)
+    {
+        preg_match('/(youtu\.be\/|v=)([A-Za-z0-9_-]{11})/', $url, $matches);
+        return $matches[2] ?? null;
+    }
+
 }

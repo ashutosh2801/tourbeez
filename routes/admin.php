@@ -186,6 +186,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/aiz-uploader/download/{id}', [AizUploadController::class,'attachment_download'])->name('download_attachment');
     Route::get('/migrate/database', [AizUploadController::class,'migrate_database']);
 
+    Route::post('/aiz-uploader/youtube', [AizUploadController::class, 'storeYoutube'])
+    ->name('aiz-uploader.youtube');
+
     // Setting
     Route::resource('/settings', SettingController::class);
     Route::post('/settings/update', [SettingController::class, 'update'])->name('settings.update');

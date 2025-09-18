@@ -1,3 +1,17 @@
+<style>
+.youtube-thumb {
+    position: relative;
+}
+.youtube-play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px;
+    color: red;
+    opacity: 0.8;
+}
+</style>
 <div class="modal fade" id="aizUploaderModal" data-backdrop="static" role="dialog" aria-hidden="true" >
 	<div class="modal-dialog modal-adaptive" role="document">
 		<div class="modal-content h-100">
@@ -9,6 +23,9 @@
 						</li>
 						<li class="nav-item">
 							<a class="nav-link font-weight-medium text-dark" data-toggle="tab" href="#aiz-upload-new">{{ translate('Upload New') }}</a>
+						</li>
+						<li class="nav-item">
+							<a class="nav-link font-weight-medium text-dark" data-toggle="tab" href="#aiz-upload-youtube">{{ translate('Videos') }}</a>
 						</li>
 					</ul>
 				</div>
@@ -62,6 +79,30 @@
 						<div id="aiz-upload-files" class="h-100">
 						</div>
 					</div>
+
+
+					<div class="tab-pane h-100" id="aiz-upload-youtube">
+						<form id="youtubeUploadForm" method="POST">
+							@csrf
+							<div class="form-group">
+								<label for="youtube_url">{{ translate('YouTube URL') }}</label>
+								<input type="url" name="youtube_url" id="youtube_url" class="form-control" placeholder="https://www.youtube.com/watch?v=xxxxx" required>
+							</div>
+							<div class="form-group">
+								<label for="caption">{{ translate('Caption') }}</label>
+								<input type="text" name="caption" id="caption" class="form-control">
+							</div>
+							<div class="form-group">
+								<label for="description">{{ translate('Description') }}</label>
+								<textarea name="description" id="description" rows="3" class="form-control"></textarea>
+							</div>
+							<button type="submit" class="btn btn-primary">{{ translate('Save Video') }}</button>
+						</form>
+					</div>
+
+
+
+
 				</div>
 			</div>
 			<div class="modal-footer justify-content-between bg-light">
@@ -75,7 +116,9 @@
 						<button type="button" class="btn btn-sm btn-primary" id="uploader_next_btn">{{ translate('Next') }}</button>
 					</div>
 				</div>
-				<button type="button" class="btn btn-sm btn-primary" data-toggle="aizUploaderAddSelected">{{ translate('Add Files') }}</button>
+				<button type="button" class="btn btn-sm btn-primary" data-toggle="aizUploaderAddSelected">
+				{{ translate('Add Files') }}
+				</button>
 			</div>
 		</div>
 	</div>
