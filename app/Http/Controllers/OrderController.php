@@ -209,7 +209,8 @@ class OrderController extends Controller
      */
     public function create()
     {
-        //
+       $products = Tour::select('id', 'title')->get();
+       return view('admin.order.internal-order', compact('products'));
     }
 
     /**

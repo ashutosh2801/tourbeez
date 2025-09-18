@@ -93,9 +93,15 @@
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center w-100">
                     <h3 class="card-title mb-0">Orders</h3>
-                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure to delete selected orders?')">
-                        Delete Selected
-                    </button>
+
+                    <div class="d-flex justify-content-end align-items-center">
+                        <a type="button" class="btn btn-success btn-sm" href="{{ route('admin.orders.create') }}">
+                            Internal Order
+                        </a>
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure to delete selected orders?')">
+                            Delete Selected
+                        </button>
+                    </div>
                 </div>
             </div>
             

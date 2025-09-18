@@ -49,6 +49,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/order/rezdy-manifest', [OrderController::class, 'showPdfFiles']);
     Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus']);
     Route::get('/order-manifest', [OrderController::class, 'manifest'])->name('orders.manifest');
+    Route::post('/internal-order/store', [OrderController::class, 'internalOrderStore'])->name('orders.internal.store');
     Route::get('/ordersmanifest/download', [OrderController::class, 'downloadManifest'])->name('orders.manifest.download');
 
     Route::get('/tour-manifest', [OrderController::class, 'tourManifest'])->name('orders.tour.manifest');
@@ -139,6 +140,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::get('/tours/{id}/sub-create', [TourController::class, 'createSubTour'])->name('tours.sub-create');
     Route::post('/tours/{id}/sub-tour-store', [TourController::class, 'subTourStore'])->name('tour.sub-tour-store');
+
 
     Route::get('/tours/{id}/sub-edit', [TourController::class, 'editSubTour'])->name('tour.sub-tour.edit');
     Route::get('/tours/{id}/sub-index', [TourController::class, 'subTourIndex'])->name('tour.sub-tour.index');
