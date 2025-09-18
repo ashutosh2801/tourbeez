@@ -1081,11 +1081,12 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
             $daysSinceStart = (int) floor($startDate->diffInDays($date));
 
             if ($daysSinceStart % $repeatUnit === 0) {
+                $slotStart = $at($schedule->session_start_time ?? '00:00');
+                $slotEnd   = $slotStart->copy()->addMinutes(0);
                 if ($allDay) {
+
                     $available = $windowOk($date->copy()->startOfDay(), $date->copy()->endOfDay());
                 } else {
-                    $slotStart = $at($schedule->session_start_time ?? '00:00');
-                    $slotEnd   = $slotStart->copy()->addMinutes(0);
 
                     // dd($slotStart, $slotEnd );
                     $available = $windowOk($slotStart, $slotEnd);

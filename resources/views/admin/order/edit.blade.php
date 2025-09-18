@@ -125,6 +125,16 @@
     background-color: rgba(40,167,69,0.1);
     }
 
+
+    /* Due (red) */
+    .payment-status.due .btn.dropdown-toggle {
+        border-color: #dc3545 !important;
+        color: #dc3545 !important;
+    }
+    .payment-status.due .btn.dropdown-toggle:hover {
+        background-color: rgba(220,53,69,0.1);
+    }
+
     /* Order‐status color map */
     .status-NEW           { --status-color: #6c757d; } /* gray */
     .status-ON_HOLD       { --status-color: #ffc107; } /* yellow */
@@ -184,7 +194,7 @@
                     </div> --}}
                     <div class="col-lg-5 btngroup">
                         <div class="justify-center item-center">
-                            <div class="payment-status order-balance paid">
+                            <div class="payment-status order-balance {{ $order->balance_amount > 0 ? 'due' : 'paid' }}">
                             <div class="btn-group">
                                 <label for="totalDue">Balance</label>
                                 <button type="button" class="btn dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -201,7 +211,11 @@
                                     </li>
                                     <li class="payment-details-breakdown--item">
                                         <strong class="payment-details-breakdown--text">Refunded</strong>
-                                        <strong class="payment-details-breakdown--text">$0.00</strong>
+                                        <strong class="payment-details-breakdown--text">{{ price_format_with_currency(0, $order->currency) }}</strong>
+                                    </li>
+                                    <li class="payment-details-breakdown--item">
+                                        <strong class="payment-details-breakdown--text">Balance</strong>
+                                        <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
                                     </li>
 
                                     <!-- Divider -->
@@ -917,8 +931,8 @@
 
 
         <div class="mb-3">
-          <label>Amount (current order balance: CAD <span id="showChargeAmount"></span> )</label>
-          <input type="text" id="chargeAmount" class="form-control"  name="amount" required>
+          <label>Amount (current order balance: {{ price_format_with_currency($order->balance_amount, $order->currency) }}) </label>
+          <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required>
         </div>
 
         <!-- Card details block (will be shown/hidden) -->

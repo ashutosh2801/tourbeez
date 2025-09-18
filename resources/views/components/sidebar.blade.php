@@ -275,6 +275,17 @@
                         </p>
                     </a>
                 </li>
+                @endcan 
+                 @can('general_settings')
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.banner.index') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.banner.index') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-list"></i>
+                        <p>{{  translate('Banner') }}
+                            <!-- <span class="badge badge-warning right">{{ $TaxesCount }}</span> -->
+                        </p>
+                    </a>
+                </li>
                 @endcan   
             </ul>
         </li>

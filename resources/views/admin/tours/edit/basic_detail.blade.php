@@ -399,7 +399,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-12">
+                    <!-- <div class="col-lg-12">
                         <div class="form-group mb-5">
                             <label for="videos" class="form-label">Videos</label>
                             <div class="input-group mb-3">
@@ -410,6 +410,40 @@
                                 <button type="button" class="btn btn-sm btn-success " onclick="addVideos()"><i class="fa fa-plus"></i></button>
                             </div>
                             <div id="videosContainer"></div>
+                        </div>
+                    </div> -->
+
+
+                    <div class="col-lg-12">
+                        <div class="form-group mb-5">
+                            <label for="videos" class="form-label">Videos</label>
+                            <div id="videosContainer">
+                                @php
+
+                                    $videos = old('videos', $data->detail?->videos ?? []); 
+                                    if($videos && ! is_array($videos)){
+
+                                        $videos = old('videos', json_decode($videos ?? '[]', true));
+                                    }
+                      
+                                                 
+                                @endphp
+
+                                @foreach($videos as $index => $video)
+                                    <div class="input-group mb-3 video-input">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">https://www.youtube.com/watch?v=</span>
+                                        </div>
+                                        <input type="text" name="videos[]" class="form-control" value="{{ $video }}">
+                                        <button type="button" class="btn btn-sm btn-primary mr-2" onclick="previewVideo('{{ $video }}')">Preview</button>
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="removeVideo(this)"><i class="fa fa-minus"></i></button>
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-success mt-2" onclick="addVideos()">
+                                <i class="fa fa-plus"></i> Add Video
+                            </button>
                         </div>
                     </div>
 
@@ -492,7 +526,22 @@
                     </div> -->
                     
                 </div>
-            </div>            
+            </div> 
+            <div class="modal fade" id="videoPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+              <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Video Preview</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="stopPreview()">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div class="modal-body text-center">
+                    <iframe id="videoPreviewFrame" width="100%" height="400" frameborder="0" allowfullscreen></iframe>
+                  </div>
+                </div>
+              </div>
+            </div>           
 
             <div class="card-footer" style="display:block">
                 <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.index') }}" class="btn btn-secondary">Back</a>
@@ -686,35 +735,70 @@ function removePriceOption(id) {
 }
 
 let videosCount = 0;
+// function addVideos() {
+//     const container = document.getElementById('videosContainer');
+
+//     const newRow = document.createElement('div');
+//     newRow.classList.add('row', 'align-items-end', 'mb-2');
+//     newRow.setAttribute('id', `videosRow_${videosCount}`);
+
+//     newRow.innerHTML = `
+//         <div class="col-lg-12">
+//             <div class="input-group mb-3">
+//                 <div class="input-group-prepend">
+//                     <span class="input-group-text">https://www.youtube.com/watch?v=</span>
+//                 </div>
+//                 <input type="text" placeholder="" name="videos[]" id="videos_${videosCount}" value="{{ old('videos[]') }}" class="form-control mr-2" >
+//                 <button type="button" class="btn btn-sm btn-success mr-2" onclick="addVideos()"><i class="fa fa-plus"></i></button>
+//                 <button type="button" class="btn btn-sm btn-danger" onclick="removeVideos(${videosCount})"><i class="fa fa-minus"></i></button>
+//             </div>
+//         </div>`;
+
+//     container.appendChild(newRow);
+//     videosCount++;
+// }
+
+// function removeVideos(id) {
+//     const row = document.getElementById(`videosRow_${id}`);
+//     if (row) {
+//         row.remove();
+//     }
+// }
+
+
 function addVideos() {
-    const container = document.getElementById('videosContainer');
-
-    const newRow = document.createElement('div');
-    newRow.classList.add('row', 'align-items-end', 'mb-2');
-    newRow.setAttribute('id', `videosRow_${videosCount}`);
-
-    newRow.innerHTML = `
-        <div class="col-lg-12">
-            <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                    <span class="input-group-text">https://www.youtube.com/watch?v=</span>
-                </div>
-                <input type="text" placeholder="" name="videos[]" id="videos_${videosCount}" value="{{ old('videos[]') }}" class="form-control mr-2" >
-                <button type="button" class="btn btn-sm btn-success mr-2" onclick="addVideos()"><i class="fa fa-plus"></i></button>
-                <button type="button" class="btn btn-sm btn-danger" onclick="removeVideos(${videosCount})"><i class="fa fa-minus"></i></button>
+    let html = `
+        <div class="input-group mb-3 video-input">
+            <div class="input-group-prepend">
+                <span class="input-group-text">https://www.youtube.com/watch?v=</span>
             </div>
+            <input type="text" name="videos[]" class="form-control">
+            <button type="button" class="btn btn-sm btn-primary mr-2" onclick="previewVideo('')">Preview</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeVideo(this)"><i class="fa fa-minus"></i></button>
         </div>`;
-
-    container.appendChild(newRow);
-    videosCount++;
+    document.getElementById('videosContainer').insertAdjacentHTML('beforeend', html);
 }
 
-function removeVideos(id) {
-    const row = document.getElementById(`videosRow_${id}`);
-    if (row) {
-        row.remove();
+function removeVideo(btn) {
+    btn.closest('.video-input').remove();
+}
+
+function previewVideo(videoId) {
+    let frame = document.getElementById('videoPreviewFrame');
+    if (videoId) {
+        frame.src = "https://www.youtube.com/embed/" + videoId;
+    } else {
+        // if empty input, take value from input field
+        let input = event.target.closest('.video-input').querySelector('input').value;
+        frame.src = "https://www.youtube.com/embed/" + input;
     }
+    $('#videoPreviewModal').modal('show');
 }
+
+function stopPreview() {
+    document.getElementById('videoPreviewFrame').src = "";
+}
+
 
 </script>
 @endsection

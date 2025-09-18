@@ -33,6 +33,8 @@ use Illuminate\Support\Facades\Route;
 
 
 
+
+
 Route::middleware(['api.key'])->group(function () {
     Route::get('/categories',[CategoryController::class,'index'])->name('categories');
     Route::post('/sub-cateogries',[CategoryController::class,'subcategory'])->name('sub.category');
@@ -44,6 +46,9 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/contact',[CommonController::class,'contact']);
     Route::post('/careers',[CommonController::class,'careers']);
     Route::get('/recommendations', [CommonController::class, 'recommendations']);
+    
+    Route::get('/location-banner', [CommonController::class, 'getLocationBanner']);
+
     Route::get('/category-tours', [TourController::class, 'toursByCategory'])->name('tour.category');
 
     Route::get('/tours',[TourController::class,'index']);

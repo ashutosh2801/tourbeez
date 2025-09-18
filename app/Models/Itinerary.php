@@ -10,6 +10,6 @@ class Itinerary extends Model
     use HasFactory;
 
     protected $fillable = [
-        'tour_id', 'created_by', 'title', 'description', 'address', 'datetime', 'latitude', 'longitude', 'status'
+        'tour_id', 'created_by', 'title', 'description', 'address', 'datetime', 'latitude', 'longitude', 'status', 'order'
     ];
 }

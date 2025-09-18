@@ -12,6 +12,7 @@ use App\Models\Inclusion;
 use App\Models\Itinerary;
 use App\Models\Optional;
 use App\Models\Pickup;
+use App\Models\ScheduleDeleteSlot;
 use App\Models\TaxesFee;
 use App\Models\Tour;
 use App\Models\TourDetail;
@@ -19,15 +20,16 @@ use App\Models\TourImage;
 use App\Models\TourLocation;
 use App\Models\TourPricing;
 use App\Models\TourSchedule;
+use App\Models\TourScheduleRepeats;
 use App\Models\TourUpload;
 use App\Models\Tourtype;
 use App\Services\ImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Redirect;
 use Str;
 use Validator;
-use Illuminate\Support\Carbon;
 
 class TourController extends Controller
 {
@@ -208,41 +210,150 @@ class TourController extends Controller
 
     public function editSubTour($id)
     {
-        $data  = Tour::findOrFail(decrypt($id));
 
+
+        $data  = Tour::findOrFail(decrypt($id));
         //$data       = Tour::findOrFail(decrypt($id));
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
-
         // return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule', 'metaData'));
 
         return view('admin.tours.sub-tour.edit.index', compact('data', 'detail', 'schedule', 'metaData'));
     }
 
 
-    public function subTourStore(Request $request, $id)
+    // public function subTourStore(Request $request, $id)
+    // {
+    //     $validator = FacadesValidator::make($request->all(), [
+    //         'title'                 => 'required|max:255',
+    //         'description'           => 'required',
+    //         // 'long_description'      => 'required',
+    //         'price_type'            => 'required',
+    //         'PriceOption'           => 'required|array',
+    //         'PriceOption.*.label'   => 'required|string|max:255',
+    //         'PriceOption.*.price'   => 'required|numeric|min:0',
+    //         'PriceOption.*.qty_used'=> 'required|integer|min:0',
+    //         'advertised_price'      => 'required',
+    //         // 'category'              => 'required|array',
+    //         // 'category.*'            => 'integer|exists:categories,id',
+    //         // 'tour_type'             => 'required|array',
+    //         // 'tour_type.*'           => 'integer|exists:tourtypes,id',
+    //         'image'                 => 'required|integer',
+    //     ],
+    //     [
+    //         'title.required' => 'Please enter a title',
+    //         'description.required' => 'Please enter a description',
+    //         // 'long_description.required' => 'Please enter a long description',
+    //         'price_type.required' => 'Please select a price type',
+    //         'PriceOption.*.label.required' => 'Please enter a label for the price option',
+    //         'PriceOption.*.price.required' => 'Please enter a price for the price option',
+    //         'PriceOption.*.qty_used.required' => 'Please enter a quantity used for the price option',
+    //         'advertised_price.required' => 'Please enter an advertised price',
+    //         'category.required' => 'Please select at least one category',
+    //         'image.required' => 'Please select at featured image',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         // Validation failed
+    //         return back()->withInput()->withErrors($validator)->with('error','Something went wrong!');
+    //     }
+        
+    //     // Generate unique slug
+    //     $baseSlug = Str::slug($request->title);
+    //     $uniqueSlug = $baseSlug;
+    //     $counter = 1;
+    //     while (Tour::where('slug', $uniqueSlug)->exists()) {
+    //         $uniqueSlug = $baseSlug . '-' . $counter;
+    //         $counter++;
+    //     }
+
+    //     // Create new product instance
+    //     $tour = new Tour();
+    //     $tour->user_id    = auth()->id();
+    //     $tour->parent_id    = $id;
+    //     $tour->title      = $request->title;
+    //     $tour->slug       = $uniqueSlug;
+    //     $tour->unique_code= $request->unique_code;
+    //     $tour->price      = $request->advertised_price;
+    //     $tour->price_type = $request->price_type;
+    //     $tour->order_email       = $request->order_email;
+
+    //     if($tour->save()) {
+
+    //         // Save categories
+    //         if ($request->has('category') && is_array($request->category)) {
+    //             $tour->categories()->sync($request->category);
+    //         }
+    //         // Save tour types
+    //         if ($request->has('tour_type') && is_array($request->tour_type)) {
+    //             $tour->tourtypes()->sync($request->tour_type);
+    //         }
+
+    //         if ($request->has('PriceOption') && is_array($request->PriceOption)) {
+    //             foreach ($request->PriceOption as $option) {
+    //                 $pricing = new TourPricing();
+    //                 $pricing->tour_id       = $tour->id;
+    //                 $pricing->label         = $option['label'] ?? null;
+    //                 $pricing->price         = $option['price'] ?? null;
+    //                 $pricing->quantity_used = $option['qty_used'] ?? 0;
+    //                 $pricing->save();
+    //             }
+    //         }
+            
+    //         $tour_detail = new TourDetail();
+    //         $tour_detail->tour_id               = $tour->id;
+    //         $tour_detail->description           = $request->description;
+    //         $tour_detail->long_description      = $request->long_description;
+    //         $tour_detail->other_description     = $request->other_description;
+    //         $tour_detail->quantity_min          = $request->quantity_min;
+    //         $tour_detail->quantity_max          = $request->quantity_max;
+    //         $tour_detail->IsPurchasedAsAGift    = $request->IsPurchasedAsAGift?1:0;
+    //         $tour_detail->IsExpiryDays          = $request->IsExpiryDays?1:0;
+    //         $tour_detail->expiry_days           = $request->expiry_days;
+    //         $tour_detail->IsExpiryDate          = $request->IsExpiryDate?1:0;
+    //         $tour_detail->expiry_date           = $request->expiry_date;
+    //         $tour_detail->gift_tax_fees         = $request->gift_tax_fees?1:0;
+    //         $tour_detail->IsTerms               = $request->IsTerms?1:0;
+    //         $tour_detail->terms_and_conditions  = $request->terms_and_conditions;
+    //         $tour_detail->meta_title            = $request->title;
+    //         $tour_detail->meta_description      = $request->title;
+    //         $tour_detail->focus_keyword         = $request->title;
+    //         $tour_detail->save();
+    //     }
+        
+    //     $tourId = $tour->id;
+    //     if( $request->has('image') ) { 
+    //         $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
+    //         // Check if the requested image is already attached to the tour
+    //         if ($tour->galleries->contains($request->image)) {
+    //             // Just update pivot
+    //             $tour->galleries()->detach($request->image);
+    //         } 
+    //         // Attach and set is_main = 1
+    //         $tour->galleries()->attach($request->image, ['is_main' => 1]);
+    //     }
+
+    //     return redirect()->route('admin.tour.sub-tour.edit', encrypt($tour->id))->with('success', 'Tour created successfully.');
+    // }
+
+
+    public function subTourStore(Request $request, $id, $tourId = null)
     {
+        
         $validator = FacadesValidator::make($request->all(), [
             'title'                 => 'required|max:255',
             'description'           => 'required',
-            // 'long_description'      => 'required',
             'price_type'            => 'required',
             'PriceOption'           => 'required|array',
             'PriceOption.*.label'   => 'required|string|max:255',
             'PriceOption.*.price'   => 'required|numeric|min:0',
             'PriceOption.*.qty_used'=> 'required|integer|min:0',
             'advertised_price'      => 'required',
-            // 'category'              => 'required|array',
-            // 'category.*'            => 'integer|exists:categories,id',
-            // 'tour_type'             => 'required|array',
-            // 'tour_type.*'           => 'integer|exists:tourtypes,id',
             'image'                 => 'required|integer',
-        ],
-        [
+        ], [
             'title.required' => 'Please enter a title',
             'description.required' => 'Please enter a description',
-            // 'long_description.required' => 'Please enter a long description',
             'price_type.required' => 'Please select a price type',
             'PriceOption.*.label.required' => 'Please enter a label for the price option',
             'PriceOption.*.price.required' => 'Please enter a price for the price option',
@@ -253,42 +364,45 @@ class TourController extends Controller
         ]);
 
         if ($validator->fails()) {
-            // Validation failed
             return back()->withInput()->withErrors($validator)->with('error','Something went wrong!');
         }
-        
-        // Generate unique slug
+
+        // Generate unique slug only for create
         $baseSlug = Str::slug($request->title);
         $uniqueSlug = $baseSlug;
         $counter = 1;
-        while (Tour::where('slug', $uniqueSlug)->exists()) {
+        while (Tour::where('slug', $uniqueSlug)->when($tourId, fn($q) => $q->where('id','!=',$tourId))->exists()) {
             $uniqueSlug = $baseSlug . '-' . $counter;
             $counter++;
         }
 
-        // Create new product instance
-        $tour = new Tour();
+        // If tourId exists, update else create
+        // $tour = $tourId ? Tour::findOrFail($id) : new Tour();
+
+        // dd($tour, $id, Tour::findOrFail($id));
+
+        if(Tour::find($id)?->exists() && Tour::find($id)->parent_id){
+            $tour = Tour::find($id);
+            $parentID = $tour->parent_id;
+        } else{
+            $tour = new Tour();
+            $parentID = $id;
+        }
+        
         $tour->user_id    = auth()->id();
-        $tour->parent_id    = $id;
+        $tour->parent_id  = $parentID;
         $tour->title      = $request->title;
         $tour->slug       = $uniqueSlug;
         $tour->unique_code= $request->unique_code;
         $tour->price      = $request->advertised_price;
         $tour->price_type = $request->price_type;
-        $tour->order_email       = $request->order_email;
+        $tour->order_email= $request->order_email;
 
         if($tour->save()) {
-
-            // Save categories
-            if ($request->has('category') && is_array($request->category)) {
-                $tour->categories()->sync($request->category);
-            }
-            // Save tour types
-            if ($request->has('tour_type') && is_array($request->tour_type)) {
-                $tour->tourtypes()->sync($request->tour_type);
-            }
-
+            
             if ($request->has('PriceOption') && is_array($request->PriceOption)) {
+                // clear old pricing if updating
+                $tour->pricings()->delete();
                 foreach ($request->PriceOption as $option) {
                     $pricing = new TourPricing();
                     $pricing->tour_id       = $tour->id;
@@ -298,9 +412,18 @@ class TourController extends Controller
                     $pricing->save();
                 }
             }
-            
-            $tour_detail = new TourDetail();
-            $tour_detail->tour_id               = $tour->id;
+
+            // $tour_detail = TourDetail::firstOrNew(['tour_id' => $tour->id]);
+
+            if(TourDetail::where('tour_id', $tour->id)->first()){
+                $tour_detail = TourDetail::where('tour_id', $id)->first();
+                // $tour_detail->tour_id = $tour->id;
+            } else{
+                $tour_detail = new TourDetail();
+                $tour_detail->tour_id = $tour->id;
+            }
+
+            // $tour_detail = $tour->id ? TourDetail::where('tour_id', $tour->id)->first() : new TourDetail();
             $tour_detail->description           = $request->description;
             $tour_detail->long_description      = $request->long_description;
             $tour_detail->other_description     = $request->other_description;
@@ -319,21 +442,23 @@ class TourController extends Controller
             $tour_detail->focus_keyword         = $request->title;
             $tour_detail->save();
         }
-        
-        $tourId = $tour->id;
-        if( $request->has('image') ) { 
+
+        if( $request->has('image') ) {
             $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
-            // Check if the requested image is already attached to the tour
             if ($tour->galleries->contains($request->image)) {
-                // Just update pivot
                 $tour->galleries()->detach($request->image);
-            } 
-            // Attach and set is_main = 1
+            }
             $tour->galleries()->attach($request->image, ['is_main' => 1]);
         }
 
-        return redirect()->route('admin.tour.sub-tour.edit', encrypt($tour->id))->with('success', 'Tour created successfully.');
+        return redirect()->route('admin.tour.sub-tour.edit', encrypt($tour->id))
+                         ->with('success', $tourId ? 'Tour updated successfully.' : 'Tour created successfully.');
     }
+
+
+
+
+
     
 
     /**
@@ -440,6 +565,7 @@ class TourController extends Controller
             $tour_detail->meta_title            = $request->title;
             $tour_detail->meta_description	    = $request->title;
             $tour_detail->focus_keyword         = $request->title;
+            $tour_detail->videos         = $request->videos;
             $tour_detail->save();
 
             $location = new TourLocation();
@@ -779,36 +905,79 @@ class TourController extends Controller
 
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
-        $selectedDate = request()->query('date', now()->toDateString());
+        $selectedDate = request()->query('selectedDate', now()->toDateString());
         return view('admin.tours.feature.schedule_calendar', compact( 'data', 'detail', 'metaData', 'selectedDate'));
     }
 
     public function scheduleCalendarEvent($id)
     {
         $selectedDate = request()->query('selectedDate', now()->toDateString());
-
-        // dd($id, $selectedDate);
+        
         $response = $this->getWeeklySessionTimes($id, $selectedDate);
+        // dd($response);
+        $storeDeleteSlot =$this->fetchDeletedSlot($id);
 
+        $response = $this->applySlotDeletions($response, $storeDeleteSlot);
 
         $events = [];
         $slotDuration = 10;
+        
         foreach ($response['data'] as $date => $slots) {
-            foreach ($slots as $slot) {
-                // Pre-format the start
-                $start = "$date $slot:00";
 
-                // Faster than Carbon parse in loop
-                $end = date("Y-m-d H:i:s", strtotime($start) + ($slotDuration * 60));
+            foreach ($slots as $index => $slot) {
+                // Pre-format the start
+
+                $start = "$date $slot";
+
+                if (isset($slots[$index + 1])) {
+                    $first  = "$date {$slots[$index]}";
+                    $second = "$date {$slots[$index + 1]}";
+                    $slotDuration = (strtotime($second) - strtotime($first)) / 60;
+                    if($slotDuration > 60){
+                        $slotDuration = 60;
+                    }
+
+                } else {
+                    $slotDuration = 60; // default 1 hour
+                }
+
+                
+
+                $start = date("Y-m-d\TH:i:s", strtotime("$date $slot"));
+
+                $end   = date("Y-m-d\TH:i:s", strtotime($start) + ($slotDuration * 60));
 
                 $events[] = [
                     'title' => $slot,
                     'start' => str_replace(' ', 'T', $start),
-                    'end'   => $end,
+                    'end'   => str_replace(' ', 'T', $end),
                 ];
             }
         }
         return response()->json($events);
+    }
+
+    public function storeDeleteSlot(Request $request)
+    {
+        $request->validate([
+            'tour_id' => 'nullable|exists:tours,id',
+            'slot_date' => 'required|date',
+            'slot_start_time' => 'required|string',
+            'slot_end_time' => 'required|string',
+            'delete_type' => 'required|string'
+        ]);
+
+        ScheduleDeleteSlot::create($request->only(['tour_id','slot_date','slot_start_time','slot_end_time', 'delete_type']));
+
+        return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
+    }
+
+    public function fetchDeletedSlot($id)
+    {
+
+        return ScheduleDeleteSlot::where('tour_id', $id)->get();
+
+        return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
     }
     /**
      * Update the specified resource in storage.
@@ -887,7 +1056,6 @@ class TourController extends Controller
     public function basic_detail_update(Request $request, $id)
     {
         
-        // dd($request->all());
         $request->validate([
             'title'                 => 'required|max:255',
             'description'           => 'required',
@@ -1011,6 +1179,7 @@ class TourController extends Controller
             $tour_detail->gift_tax_fees         = $request->gift_tax_fees?1:0;
             $tour_detail->IsTerms               = $request->IsTerms?1:0;
             $tour_detail->terms_and_conditions  = $request->terms_and_conditions;
+            $tour_detail->videos  = $request->videos;
             $tour_detail->save();
 
             $tourId = $tour->id;
@@ -1273,10 +1442,18 @@ class TourController extends Controller
 
 
     public function schedule_update(Request $request, $id)
-{
+    {
     $tour = Tour::findOrFail($id);
 
     // ✅ Validate all schedules
+
+    if(!$request->schedules){
+        foreach ($tour->schedules as $oldSchedule) {
+            $oldSchedule->repeats()->delete();
+            $oldSchedule->delete();
+        }
+        return back()->with('success', 'Schedules deleted successfully.');
+    }
     $request->validate([
         'schedules' => 'required|array|min:1',
 
@@ -1303,6 +1480,12 @@ class TourController extends Controller
 
     // ✅ Save new schedules
     foreach ($request->schedules as $scheduleData) {
+
+        $until_date = $scheduleData['until_date'];
+
+        if($scheduleData['repeat_period'] == 'NONE'){
+            $until_date = $scheduleData['session_start_date'];
+        }
         $schedule = new TourSchedule();
         $schedule->tour_id                 = $tour->id;
         $schedule->minimum_notice_num      = $scheduleData['minimum_notice_num'];
@@ -1318,7 +1501,7 @@ class TourController extends Controller
         $schedule->sesion_all_day          = !empty($scheduleData['sesion_all_day']) ? 1 : 0;
         $schedule->repeat_period           = $scheduleData['repeat_period'];
         $schedule->repeat_period_unit      = $scheduleData['repeat_period_unit'] ?? null;
-        $schedule->until_date              = $scheduleData['until_date'] ?? null;
+        $schedule->until_date              = $until_date ?? null;
         $schedule->save();
 
         // ✅ Handle repeats for this schedule
@@ -1355,6 +1538,8 @@ class TourController extends Controller
     public function itinerary_update(Request $request, $id) {
         $tour  = Tour::findOrFail($id);
 
+        // dd($request->all());
+
         $request->validate([
             'ItineraryOptions'               => 'required|array',
             'ItineraryOptions.*.title'       => 'required|string|max:255',
@@ -1387,6 +1572,7 @@ class TourController extends Controller
             $itinerary->datetime    = $option['datetime'] ?? null;
             $itinerary->address     = $option['address'] ?? null;
             $itinerary->description = $option['description'] ?? null;
+            $itinerary->order = $option['order'] ?? null;
             $itinerary->save();
 
             $itineraryIds[] = $itinerary->id;
@@ -1832,18 +2018,21 @@ class TourController extends Controller
     public function citySearch(Request $request)
     {
         $term = $request->get('term', '');
-
+        // dd(32432, $term);
         $results = City::where('name', 'LIKE', "%{$term}%")
                     ->orderBy('name')
                     ->limit(10)
                     ->get()
                     ->map(function ($city) {
+
+                        $state   = $city->state ? ucwords($city->state->name) : null;
+                        $country = $city->state && $city->state->country ? ucwords($city->state->country->name) : null;
                         return [
                             'id' => $city->id,
-                            'text' => ucwords($city->name),
+                            'text' => ucwords($city->name) . " " .  ucwords($state) . " "  . ucwords($country),
                         ];
                     });
-
+ 
         return response()->json(['results' => $results]);
     }
 
@@ -1902,20 +2091,26 @@ class TourController extends Controller
         if ($request->has('tour') && is_array($request->tour)) {
             $data = $request->tour;
 
+            if(!$data['use_deposit']){
+                \DB::table('tour_special_deposits')->where('tour_id', $id)->delete();
+            } else{
+                \DB::table('tour_special_deposits')->updateOrInsert(
+                    ['tour_id' => $tour->id], // condition
+                    [
+                        'use_deposit'        => $data['use_deposit'] ?? null,
+                        'charge'             => $data['charge'] ?? null,
+                        'deposit_amount'     => $data['deposit_amount'] ?? null,
+                        'allow_full_payment' => $data['allow_full_payment'] ?? null,
+                        'use_minimum_notice' => $data['use_minimum_notice'] ?? null,
+                        'notice_days'        => $data['notice_days'] ?? null,
+                        'updated_at'         => now(),
+                        'created_at'         => now(),
+                    ]
+                );
+            }
+
             // Update or create record in tour_special_deposits
-            \DB::table('tour_special_deposits')->updateOrInsert(
-                ['tour_id' => $tour->id], // condition
-                [
-                    'use_deposit'        => $data['use_deposit'] ?? null,
-                    'charge'             => $data['charge'] ?? null,
-                    'deposit_amount'     => $data['deposit_amount'] ?? null,
-                    'allow_full_payment' => $data['allow_full_payment'] ?? null,
-                    'use_minimum_notice' => $data['use_minimum_notice'] ?? null,
-                    'notice_days'        => $data['notice_days'] ?? null,
-                    'updated_at'         => now(),
-                    'created_at'         => now(),
-                ]
-            );
+            
 
             return redirect()->back()->with('success', 'Special deposit settings saved successfully.');
         }
@@ -1928,25 +2123,28 @@ class TourController extends Controller
 {
     $date = $date ? Carbon::parse($date) : now();
 
-    $startOfWeek = $date->copy()->startOfWeek(Carbon::MONDAY);
-    $endOfWeek   = $date->copy()->endOfWeek(Carbon::SUNDAY);
+    $startOfWeek = $date->copy()->startOfWeek(Carbon::SUNDAY);
+    $endOfWeek   = $date->copy()->endOfWeek(Carbon::SATURDAY);
 
     $allSlots = [];
 
-    $currentDate = $startOfWeek->copy();
-    while ($currentDate->lte($endOfWeek)) {
-        $dayName = $currentDate->format('l');
+    $carbonDate = $startOfWeek->copy();
+
+
+    while ($carbonDate->lte($endOfWeek)) {
+        $dayName = $carbonDate->format('l');
         $slots   = [];
 
         $schedules = TourSchedule::where('tour_id', $tour_id)
-            ->where(function ($query) use ($currentDate) {
-                $query->orWhere(function ($q) use ($currentDate) {
-                    $q->whereDate('session_start_date', '<=', $currentDate)
-                      ->whereDate('until_date', '>=', $currentDate);
+            ->where(function ($query) use ($carbonDate) {
+                $query->orWhere(function ($q) use ($carbonDate) {
+                    $q->whereDate('session_start_date', '<=', $carbonDate)
+                      ->whereDate('until_date', '>=', $carbonDate);
                 });
             })
             ->get();
 
+        
         foreach ($schedules as $schedule) {
             // --- Duration & Notice handling ---
             $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
@@ -1964,111 +2162,194 @@ class TourController extends Controller
                 'hour', 'hours' => $schedule->minimum_notice_num * 60,
                 default => 0
             };
-
             // --- Repeat handling ---
             switch (strtoupper($schedule->repeat_period)) {
                 case 'NONE':
-                    $valid = $currentDate->isSameDay(Carbon::parse($schedule->session_start_date));
+                
+                    $valid = $carbonDate->isSameDay(Carbon::parse($schedule->session_start_date));
                     if ($valid) {
-                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-
-                        $slots = array_merge($slots, $this->generateSlots(
-                            $start, $end, $durationMinutes, $minimumNoticePeriod
-                        ));
+                        $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        
+                        $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod));
                     }
                     break;
 
                 case 'DAILY':
-                    $daysSinceStart = Carbon::parse($schedule->session_start_date)->diffInDays($currentDate);
-                    $repeatInterval = $schedule->repeat_period_unit ?? 1;
+                    $daysSinceStart = floor(Carbon::parse($schedule->session_start_date)->diffInDays($carbonDate));
+                    $repeatInterval = $schedule->repeat_period_unit ?? 1; // 1 means every day
 
-                    if ($daysSinceStart % $repeatInterval === 0) {
-                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+                    if ($daysSinceStart % $repeatInterval !== 0) {
+                        $slots = [];
 
-                        $slots = array_merge($slots, $this->generateSlots(
-                            $start, $end, $durationMinutes, $minimumNoticePeriod
-                        ));
+                    } else{
+                        $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        // $end = $end->copy()->addMinutes($durationMinutes);
+                        $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod));
+
+                        // $slots = array_slice($slots, 0, 1);
                     }
                     break;
 
                 case 'WEEKLY':
-                    $weekInterval = $schedule->repeat_period_unit ?? 1;
-                    $startWeek    = Carbon::parse($schedule->session_start_date)->startOfWeek();
-                    $currentWeek  = $currentDate->copy()->startOfWeek();
-                    $weeksDiff    = $startWeek->diffInWeeks($currentWeek);
+                    $repeats = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+                    ->where('day', $dayName)
+                    ->get();
+                    // dd($repeats);
+                    foreach ($repeats as $repeat) {
 
-                    if ($weeksDiff % $weekInterval === 0 && $dayName === $schedule->weekly_repeat_day) {
-                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
 
-                        $slots = array_merge($slots, $this->generateSlots(
-                            $start, $end, $durationMinutes, $minimumNoticePeriod
-                        ));
+                        $weeksSinceStart = floor(Carbon::parse($schedule->session_start_date)->diffInWeeks($carbonDate));
+                        $repeatInterval = $schedule->repeat_period_unit ?? 1; // 1 means every week
+
+                        // Skip if not matching the interval
+                        if ($weeksSinceStart % $repeatInterval !== 0) {
+                            continue;
+                        }
+
+
+                        // $selectedDate = Carbon::parse($request->date)->format('Y-m-d'); // or $carbonDate
+                        // dd($repeat->session_start_time);
+                        $slotStart = Carbon::parse($carbonDate->toDateString() . ' ' . ($schedule->session_start_time));
+                        // dd($slotStart);
+                        $slotEnd   = Carbon::parse($carbonDate->toDateString() . ' ' . ($schedule->session_start_time));
+                        // dd($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod);
+
+                        $slots = array_merge($slots, $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod));
+                        // dd($slots);
                     }
+                    // $slots = array_slice($slots, 0, 1);
                     break;
 
                 case 'MONTHLY':
-                    $monthInterval = $schedule->repeat_period_unit ?? 1;
-                    $monthsDiff    = Carbon::parse($schedule->session_start_date)->diffInMonths($currentDate);
+                    $monthsSinceStart = floor(Carbon::parse($schedule->session_start_date)->diffInMonths($carbonDate));
+                    $repeatInterval = $schedule->repeat_period_unit ?? 1; // 1 means every month
 
-                    if ($monthsDiff % $monthInterval === 0 && $currentDate->day == $schedule->monthly_repeat_day) {
-                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+                    if ($monthsSinceStart % $repeatInterval !== 0) {
+                        $slots = [];
+                    } else{
+                        $startDate = Carbon::parse($schedule->session_start_date);
 
-                        $slots = array_merge($slots, $this->generateSlots(
-                            $start, $end, $durationMinutes, $minimumNoticePeriod
-                        ));
+                        // Match same day of the month
+
+                        if ((int)$carbonDate->format('d') === (int)$startDate->format('d')) {
+                            $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                            $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+
+                            $slots = array_merge(
+                                $slots,
+                                $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
+                            );
+                        }
+                        // $slots = array_slice($slots, 0, 1);
                     }
                     break;
 
                 case 'YEARLY':
-                    $yearInterval = $schedule->repeat_period_unit ?? 1;
-                    $yearsDiff    = Carbon::parse($schedule->session_start_date)->diffInYears($currentDate);
+                    $yearsSinceStart = floor(Carbon::parse($schedule->session_start_date)->diffInYears($carbonDate));
+                    $repeatInterval = $schedule->repeat_period_unit ?? 1; // 1 means every year
 
-                    if ($yearsDiff % $yearInterval === 0 &&
-                        $currentDate->isSameDay(Carbon::parse($schedule->session_start_date))) {
-                        $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                        $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+                    if ($yearsSinceStart % $repeatInterval !== 0) {
+                        $slots = [];
+                    } else{
+                        $startDate = Carbon::parse($schedule->session_start_date);
+                    // dd($minimumNoticePeriod);
+                    // Match same day and same month
+                    if (
+                        (int)$carbonDate->format('d') === (int)$startDate->format('d') &&
+                        (int)$carbonDate->format('m') === (int)$startDate->format('m')
+                    ) {
+                        $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        // $end = $end->copy()->addMinutes($durationMinutes);
+                        // dd($start, $end, $durationMinutes, $minimumNoticePeriod);
+                        // dd(now(), $minimumNoticePeriod);
+                        $slots = array_merge(
+                            $slots,
 
-                        $slots = array_merge($slots, $this->generateSlots(
-                            $start, $end, $durationMinutes, $minimumNoticePeriod
-                        ));
+
+                            $this->generateSlots($start, $end, 24*60, $minimumNoticePeriod)
+                        );
+                        // dd($slots);
+                        // $slots = array_slice($slots, 0, 1);
+                    }
+        
+                    
+
+
                     }
                     break;
 
                 case 'HOURLY':
-                    $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                    $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
 
-                    $hourInterval = $schedule->repeat_period_unit ?? 1;
-                    $hour = $start->copy();
-                    while ($hour->lte($end)) {
-                        $slots[] = $hour->format('H:i');
-                        $hour->addHours($hourInterval);
-                    }
+
+                        $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 2 hours
+                        $scheduleStartDate = Carbon::parse($schedule->session_start_date);
+                        $scheduleEndDate = Carbon::parse($schedule->until_date);
+
+                        if ($carbonDate->between($scheduleStartDate, $scheduleEndDate)) {
+                            $dayName = $carbonDate->format('l'); // e.g., 'Tuesday'
+
+                            $repeatEntries = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+                                ->where('day', $dayName)
+                                ->get();
+
+                            foreach ($repeatEntries as $repeat) {
+                                $slotStart = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
+                                $slotEnd   = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
+
+                                // Check if start time matches the "every X hours" rule
+                                $hoursSinceStart = floor($scheduleStartDate->diffInHours($slotStart));
+                                
+                                $durationMinutes = $schedule->repeat_period_unit * 60;
+                                
+                                $slots = array_merge(
+                                    $slots,
+                                    $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod)
+                                );
+                            }
+                        }
                     break;
 
                 case 'MINUTELY':
-                    $start = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_start_time);
-                    $end   = Carbon::parse($currentDate->toDateString() . ' ' . $schedule->session_end_time);
+                    $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 15 minutes
+                    $scheduleStartDate = Carbon::parse($schedule->session_start_date);
+                    $scheduleEndDate = Carbon::parse($schedule->until_date);
 
-                    $minuteInterval = $schedule->repeat_period_unit ?? 1;
-                    $minute = $start->copy();
-                    while ($minute->lte($end)) {
-                        $slots[] = $minute->format('H:i');
-                        $minute->addMinutes($minuteInterval);
+                    // Check if the selected date is between session_start_date and until_date
+                    if ($carbonDate->between($scheduleStartDate, $scheduleEndDate)) {
+                        $dayName = $carbonDate->format('l'); // e.g., 'Monday'
+                        
+                        $repeatEntries = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
+                            ->where('day', $dayName)
+                            ->get();
+                           
+                        foreach ($repeatEntries as $repeat) {
+                            $start = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->start_time);
+                            $end = Carbon::parse($carbonDate->toDateString() . ' ' . $repeat->end_time);
+                            $durationMinutes = $schedule->repeat_period_unit;
+                            
+                            $slots = array_merge(
+                                $slots,
+                                $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
+                            );
+
+                        }
                     }
                     break;
             }
         }
 
         if (!empty($slots)) {
-            $allSlots[$currentDate->toDateString()] = $slots;
+
+            $allSlots[$carbonDate->toDateString()] = $slots;
+
+        }else{
+            // $allSlots[$carbonDate->toDateString()] = [];
         }
 
-        $currentDate->addDay();
+        $carbonDate->addDay();
     }
 
     return [
@@ -2080,6 +2361,8 @@ class TourController extends Controller
 
     private function generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
     {
+
+        // dd($start, $end, $durationMinutes, $minimumNoticePeriod);
         $slots = [];
         
         $earliestAllowed = now()->addMinutes($minimumNoticePeriod);
@@ -2095,6 +2378,79 @@ class TourController extends Controller
 
         return $slots;
     }
+
+    /**
+     * Apply slot deletions to the response data
+     *
+     * @param array $response   Existing slots grouped by date
+     * @param \Illuminate\Support\Collection|array $storeDeleteSlot  Slots marked for deletion
+     * @return array Updated response data with deletions applied
+     */
+    function applySlotDeletions(array $response, $storeDeleteSlot): array
+    {
+        $clearAll = false;
+
+        foreach ($storeDeleteSlot as $deleteSlot) {
+            $date      = $deleteSlot->slot_date;
+            $startTime = $deleteSlot->slot_start_time;
+            $endTime   = $deleteSlot->slot_end_time;
+            $type      = $deleteSlot->delete_type;
+
+            if ($type === 'all') {
+                $clearAll = true;
+                break;
+            }
+
+            
+
+            if ($type === 'single') {
+
+                if (!isset($response['data'][$date])) {
+
+                    continue;
+                }
+                // remove only this slot range
+                $response['data'][$date] = array_filter(
+                    $response['data'][$date],
+                    // fn($slot) => !($slot >= $startTime && $slot < $endTime)
+                    fn($slot) => !(
+                            strtotime($slot) >= strtotime($startTime) &&
+                            strtotime($slot) < strtotime($endTime)
+                        )
+                );
+
+
+            } elseif ($type === 'after') {
+                // dd(2423);
+                // remove slots for this date and all future dates
+                foreach ($response['data'] as $d => $slots) {
+                    if ($d < $date) continue;
+
+                    $response['data'][$d] = array_filter(
+                        $slots,
+                        function ($slot) use ($startTime, $d, $date) {
+                            if ($d == $date) {
+                                return $slot < $startTime;
+                            }
+                            return false; // future dates → clear all
+                        }
+                    );
+                }
+            }
+        }
+
+        // if 'all' deletion was found → clear everything
+        if ($clearAll) {
+            foreach ($response['data'] as $d => $slots) {
+                $response['data'][$d] = [];
+            }
+        }
+
+        return $response;
+    }
+
+
+
 
     
 
