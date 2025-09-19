@@ -96,7 +96,7 @@
 
                     <div class="d-flex justify-content-end align-items-center">
                         <a type="button" class="btn btn-success btn-sm" href="{{ route('admin.orders.create') }}">
-                            Internal Order
+                            Internal order
                         </a>
                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure to delete selected orders?')">
                             Delete Selected

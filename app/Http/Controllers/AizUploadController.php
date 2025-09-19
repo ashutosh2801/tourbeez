@@ -207,7 +207,14 @@ class AizUploadController extends Controller
 
     public function get_uploaded_files(Request $request)
     {
-        $uploads = Upload::where('user_id', Auth::user()->id);
+        $allAllowed = ['admin', 'staff'];
+
+        if(Auth::user()->user_type && in_array(Auth::user()->user_type, $allAllowed)){
+            $uploads = Upload::query();
+        } else {
+            $uploads = Upload::where('user_id', Auth::user()->id);
+        }
+        
         if ($request->search != null) {
             $uploads->where('file_original_name', 'like', '%'.$request->search.'%');
         }
@@ -313,85 +320,6 @@ class AizUploadController extends Controller
     }
 
 
-
-    // public function bannerStoreOrUpdate(Request $request, $id = null)
-    // {
-    //     $request->validate([
-    //         'location_id' => 'nullable|integer',
-    //         'heading'     => 'nullable|string|max:255',
-    //         'sub_heading' => 'nullable|string|max:255',
-    //         'images.*'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-    //         'videos'      => 'nullable|array',
-    //         'videos.*'    => 'nullable|url',
-    //     ]);
-
-    //     // If ID exists → update, else create new
-    //     $banner = $id ? Banner::findOrFail($id) : new Banner();
-
-    //     $banner->location_id = $request->location_id;
-    //     $banner->heading     = $request->heading;
-    //     $banner->sub_heading = $request->sub_heading;
-
-    //     // Handle images
-    //     $storedImages = $banner->image ? json_decode($banner->image, true) : [];
-
-    //     if ($request->hasFile('images')) {
-    //         foreach ($request->file('images') as $file) {
-    //             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-    //             $file->storeAs('public/banners', $filename);
-    //             $storedImages[] = $filename;
-    //         }
-    //     }
-    //     $banner->image = !empty($storedImages) ? json_encode($storedImages) : null;
-
-    //     // Handle videos
-    //     $banner->videos = $request->videos ? json_encode($request->videos) : null;
-
-    //     $banner->save();
-
-    //     return redirect()
-    //         ->route('admin.banners.index')
-    //         ->with('success', $id ? 'Banner updated successfully' : 'Banner created successfully');
-    // }
-
-    // public function bannerStoreOrUpdate(Request $request, $id = null)
-    // {
-    //     $request->validate([
-    //         'location_id' => 'nullable|integer',
-    //         'heading'     => 'nullable|string|max:255',
-    //         'sub_heading' => 'nullable|string|max:255',
-    //         'images.*'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-    //         'videos'      => 'nullable|array',
-    //         'videos.*'    => 'nullable|string',
-    //     ]);
-
-    //     $banner = $id ? Banner::findOrFail($id) : new Banner();
-
-    //     $banner->location_id = $request->location_id;
-    //     $banner->heading     = $request->heading;
-    //     $banner->sub_heading = $request->sub_heading;
-
-    //     // Keep old images if any
-    //     $storedImages = $banner->image ? json_decode($banner->image, true) : [];
-
-    //     if ($request->hasFile('images')) {
-    //         foreach ($request->file('images') as $file) {
-    //             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-    //             $file->storeAs('public/banners', $filename);
-    //             $storedImages[] = $filename;
-    //         }
-    //     }
-    //     $banner->image = !empty($storedImages) ? json_encode($storedImages) : null;
-
-    //     // Videos
-    //     $banner->videos = $request->videos ? json_encode($request->videos) : null;
-
-    //     $banner->save();
-
-    //     return redirect()
-    //         ->route('admin.banner.index')
-    //         ->with('success', $id ? 'Banner updated successfully' : 'Banner created successfully');
-    // }
 
     public function bannerStoreOrUpdate(Request $request, $id = null)
     {

@@ -233,6 +233,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/email-templates', EmailTemplateController::class);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
     Route::post('/email-templates/preview/{id}', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
+
+
+    Route::get('/tour/{slug}/fetch_one', [\App\Http\Controllers\API\TourController::class, 'fetch_one']);
+    Route::get('/tour-sessions', [\App\Http\Controllers\API\OrderController::class, 'getSessionTimes']);
+    Route::get('/tour/{slug}/booking', [\App\Http\Controllers\API\TourController::class, 'fetch_booking']);
+
     
     Route::get('/clear-cache', function() {
         Artisan::call('cache:clear');

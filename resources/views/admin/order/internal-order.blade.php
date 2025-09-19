@@ -1,19 +1,20 @@
 <x-admin>
-@section('title', 'Orders List')
-
+@section('title', 'Internal Orders Create')
 
 <div class="card">
-    <form id="order-form" action="{{ route('admin.orders.internal.store') }}" method="POST">
+    <form action="{{ route('admin.orders.store') }}" method="POST">
         @csrf
 
-        <!-- Top Header -->
-        <div class="d-flex justify-between items-center bg-dark text-white p-3 mb-3 rounded">
-            <div>
+        <!-- ================= Header ================= -->
+        <div class="card-header d-flex justify-content-between align-items-center bg-secondary p-3 mb-3 rounded text-black">
+            <div class="form-group">
                 <h4 class="m-0">New Order</h4>
                 <small>Created by {{ auth()->user()->name }}</small>
             </div>
         </div>
-        <div class="d-flex justify-content-between align-items-center bg-dark text-white p-3 mb-3 rounded">
+
+        <!-- ================= Balance + Status ================= -->
+        <div class="d-flex justify-content-between align-items-center bg-secondary p-3 mb-3 rounded">
             <div>
                 <strong id="totalDue">$0.00</strong><br>
                 <small>Balance</small>
@@ -32,171 +33,239 @@
             <button type="submit" class="btn btn-primary">Create Order</button>
         </div>
 
+        <div class="accordion" id="accordionExample">
 
-        <!-- Accordion Sections -->
-        <div class="accordion" id="orderAccordion">
-
-            <!-- Customer Section -->
-            <div class="card mb-2">
-                <div class="card-header" id="headingCustomer">
-                    <h5 class="mb-0">
-                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseCustomer">
-                            Customer
-                        </button>
-                    </h5>
+            <!-- ================= Customer Details ================= -->
+            <div class="card">
+                <div class="card-header bg-secondary py-0" id="headingOne">
+                    <h2 class="my-0 py-0">
+                        <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                            data-toggle="collapse" data-target="#collapseOne">
+                            <i class="fa fa-angle-right"></i> Customer Details
+                        </button>                                  
+                    </h2>
                 </div>
-                <div id="collapseCustomer" class="collapse show" data-parent="#orderAccordion">
-                    <div class="card-body row">
-                        <div class="col-md-3"><input type="text" name="Order[customer][firstName]" class="form-control" placeholder="First Name"></div>
-                        <div class="col-md-3"><input type="text" name="Order[customer][lastName]" class="form-control" placeholder="Last Name"></div>
-                        <div class="col-md-3"><input type="email" name="Order[customer][email]" class="form-control" placeholder="Email"></div>
-                        <div class="col-md-3"><input type="text" name="Order[customer][mobile]" class="form-control" placeholder="Mobile"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Agent Section -->
-            <div class="card mb-2">
-                <div class="card-header" id="headingAgent">
-                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseAgent">
-                        Agent
-                    </button>
-                </div>
-                <div id="collapseAgent" class="collapse" data-parent="#orderAccordion">
+                <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
                     <div class="card-body">
-                        <input type="text" name="Order[agent]" class="form-control" placeholder="Search for agent companies">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Products Section -->
-            <div class="card mb-2">
-                <div class="card-header" id="headingProducts">
-                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseProducts">
-                        Products
-                    </button>
-                </div>
-                <div id="collapseProducts" class="collapse" data-parent="#orderAccordion">
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <select name="Order[product]" id="productSelect" class="form-control">
-                                    <option value="">-- Select Product --</option>
-                                    @foreach($products as $product)
-                                        <option value="{{ $product->id }}" data-price="{{ $product->price }}">{{ $product->title }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6 text-right">
-                                <strong>Total: $<span id="productTotal">0.00</span></strong>
-                            </div>
-                        </div>
-
-                        <!-- Addons -->
-                        <div id="addonsWrapper" style="display:none;">
-                            <h6>Addons</h6>
-                            <div id="addonsContainer"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Additional Information -->
-            <div class="card mb-2">
-                <div class="card-header" id="headingInfo">
-                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseInfo">
-                        Additional Information
-                    </button>
-                </div>
-                <div id="collapseInfo" class="collapse" data-parent="#orderAccordion">
-                    <div class="card-body">
-                        <textarea name="Order[specialRequirements]" class="form-control" placeholder="Special Requirements"></textarea>
-                        <textarea name="Order[internalNotes]" class="form-control mt-2" placeholder="Internal Notes (only visible by supplier)"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Payment Section -->
-            <div class="card mb-2">
-                <div class="card-header" id="headingPayment">
-                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapsePayment">
-                        Customer Payment
-                    </button>
-                </div>
-                <div id="collapsePayment" class="collapse" data-parent="#orderAccordion">
-                    <div class="card-body">
-                        <div class="form-inline mb-2">
-                            <select name="payment[type]" class="form-control mr-2">
-                                <option value="">Payment type...</option>
-                                <option value="cash">Cash</option>
-                                <option value="card">Card</option>
-                                <option value="bank">Bank Transfer</option>
+                        <div class="form-group">
+                            <label for="customer">Select Customer</label>
+                            <select name="customer_id" id="customer" class="form-control aiz-selectpicker" data-live-search="true">
+                                <option value="">Select Customer</option>
+                                @foreach($customers as $customer)
+                                    <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->email }}</option>
+                                @endforeach
                             </select>
-                            <input type="text" name="payment[reference]" class="form-control mr-2" placeholder="Reference number">
-                            <input type="date" name="payment[date]" class="form-control mr-2">
-                            <input type="number" name="payment[amount]" class="form-control" placeholder="Amount">
                         </div>
-                        <strong>Total Payment: $<span id="paymentTotal">0.00</span></strong>
                     </div>
                 </div>
             </div>
 
-        </div>
+            <!-- ================= Tour Details ================= -->
+            <div class="card">
+                <div class="card-header bg-secondary py-0" id="headingTwo">
+                    <h2 class="my-0 py-0">
+                        <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                            data-toggle="collapse" data-target="#collapseTwo">
+                            <i class="fa fa-angle-down"></i> Tour Details
+                        </button>
+                    </h2>
+                </div>
+                <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                    <div class="card-body">
+                        <div id="tourContainer"></div>
+                        <button type="button" onclick="addTour()" class="btn btn-info mb-2">+ Add Tour</button>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Submit -->
-        <div class="mt-3">
-            <button type="submit" class="btn btn-success">Create Order</button>
-            <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary">Cancel</a>
+            <!-- ================= Additional Information ================= -->
+            <div class="card">
+                <div class="card-header bg-secondary py-0" id="headingFour">
+                    <h2 class="my-0 py-0">
+                        <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                            data-toggle="collapse" data-target="#collapseFour">
+                            <i class="fa fa-angle-right"></i> Additional Information
+                        </button>
+                    </h2>
+                </div>
+                <div id="collapseFour" class="collapse show" aria-labelledby="headingFour" data-parent="#accordionExample">
+                    <div class="card-body">
+                        <textarea class="form-control" name="additional_info" rows="4" placeholder="Additional information"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= Payment Details ================= -->
+            <div class="card">
+                <div class="card-header bg-secondary py-0" id="headingThree">
+                    <h2 class="my-0 py-0">
+                        <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                            data-toggle="collapse" data-target="#collapseThree">
+                            <i class="fa fa-angle-right"></i> Payment Details
+                        </button>                     
+                    </h2>
+                </div>
+                <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+                    <div class="card-body">
+                        <table class="table">
+                            <tr>
+                                <td>Total:</td>
+                                <td id="totalAmount">0</td>
+                                <td>Balance:</td>
+                                <td id="balanceAmount">0</td>
+                                <td>Paid:</td>
+                                <td id="paidAmount">0</td>
+                            </tr>
+                            <tr>
+                                <td>Stored Credit Card:</td>
+                                <td id="cardInfo">N/A</td>
+                                <td>STRIPE Transaction ID:</td>
+                                <td id="transactionId">N/A</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= Form Actions ================= -->
+            <div class="card-footer" style="display:block">
+                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Create Order</button>
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
         </div>
     </form>
 </div>
 
-
-@section('scripts')
+@section('js')
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    let productSelect = document.getElementById('productSelect');
-    let productTotal = document.getElementById('productTotal');
-    let totalDue = document.getElementById('totalDue');
+let tourCount = 1;
 
-    productSelect.addEventListener('change', function() {
-        let price = this.options[this.selectedIndex].getAttribute('data-price') || 0;
-        productTotal.innerText = parseFloat(price).toFixed(2);
-        totalDue.innerText = '$' + parseFloat(price).toFixed(2);
+// ================= Tour Options =================
+function tourOptions() {
+    let options = '';
+    @foreach($tours as $tour)
+        options += `<option value="{{ $tour->id }}">{{ $tour->title }}</option>`;
+    @endforeach
+    return options;
+}
 
-        // Show addons if product has any (mockup logic)
-        let addonsWrapper = document.getElementById('addonsWrapper');
-        if (this.value) {
-            addonsWrapper.style.display = 'block';
-            document.getElementById('addonsContainer').innerHTML = `
-                <div class="form-check">
-                    <input class="form-check-input addon" type="checkbox" data-price="10" value="1">
-                    <label class="form-check-label">Addon 1 ($10)</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input addon" type="checkbox" data-price="20" value="2">
-                    <label class="form-check-label">Addon 2 ($20)</label>
-                </div>
-            `;
-        } else {
-            addonsWrapper.style.display = 'none';
+// ================= Add Tour Row =================
+function addTour() {
+    const container = document.getElementById('tourContainer');
+    const newRow = document.createElement('div');
+    newRow.setAttribute('id', `row_${tourCount}`);
+
+    newRow.innerHTML = `
+    <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px">
+        <table class="table">
+            <tr>
+                <td>
+                    <select onchange="loadTourDetails(this.value, ${tourCount})" 
+                        name="tour_id[]" 
+                        class="form-control aiz-selectpicker" data-live-search="true">
+                        <option value="">Select Tour</option>` + tourOptions() + `</select>
+                </td>
+                <td>
+                    <button type="button" onclick="removeTour('row_${tourCount}')" class="btn btn-danger">Remove</button>
+                </td>
+            </tr>
+        </table>
+        <div id="tour_details_${tourCount}"></div>
+    </div>`;
+
+    container.appendChild(newRow);
+    TB.plugins.bootstrapSelect('refresh');
+    tourCount++;
+}
+
+// ================= Remove Tour Row =================
+function removeTour(id) {
+    const row = document.getElementById(id);
+    if(row) row.remove();
+}
+
+// ================= Load Single Tour Details =================
+function loadTourDetails(tourId, count) {
+    if(!tourId) return;
+
+    $.ajax({
+        url: '{{ route("tour.single") }}',
+        type: 'POST',
+        data: { id: tourId, tourCount: count, _token: '{{ csrf_token() }}' },
+        success: function(response){
+            const $container = $(`#tour_details_${count}`);
+            $container.html(response);
+
+            // Re-init plugins
+            TB.plugins.dateRange();
+            TB.plugins.timePicker();
+            TB.plugins.bootstrapSelect('refresh');
+
+            // Hook into the calendar selection event
+            $container.find(".aiz-date-range").each(function(){
+                $(this).off("apply.daterangepicker").on("apply.daterangepicker", function(ev, picker){
+                    const selectedDate = picker.startDate.format("YYYY-MM-DD");
+                    const tourId = $container.find("input[name='tour_id[]']").val();
+                    fetchTourSessions(tourId, selectedDate, count);
+                });
+            });
+        },
+        error: function(err){
+            console.error(err);
         }
     });
+}
 
-    // Dynamic addon calculation
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('addon')) {
-            let basePrice = parseFloat(productSelect.options[productSelect.selectedIndex].getAttribute('data-price')) || 0;
-            let addonTotal = 0;
-            document.querySelectorAll('.addon:checked').forEach(addon => {
-                addonTotal += parseFloat(addon.getAttribute('data-price'));
-            });
-            let grandTotal = basePrice + addonTotal;
-            productTotal.innerText = grandTotal.toFixed(2);
-            totalDue.innerText = '$' + grandTotal.toFixed(2);
+// ================= Fetch Tour Sessions =================
+function fetchTourSessions(tourId, selectedDate, count) {
+    const $container = $(`#tour_details_${count}`);
+    const $timeField = $container.find("input[name='tour_starttime[]'], select[name='tour_starttime[]']");
+
+    if(!tourId || !selectedDate) return;
+
+    $.ajax({
+        url: "/admin/tour-sessions",
+        type: "GET",
+        data: { tour_id: tourId, date: selectedDate },
+        dataType: "json",
+        success: function(resp) {
+            let options = '<option value="">-- Select Session --</option>';
+            if(resp.data && resp.data.length > 0){
+                $.each(resp.data, function(i, session){
+                    options += `<option value="${session}">${session}</option>`;
+                });
+            } else {
+                options = '<option value="">No sessions available</option>';
+            }
+
+            // Replace the time input with a select dynamically
+            $timeField.replaceWith(`<select name="tour_starttime[]" class="form-control">${options}</select>`);
+        },
+        error: function(xhr){
+            console.error("Failed to fetch sessions:", xhr.responseText);
         }
+    });
+}
+
+// ================= Collapse Icons =================
+$(document).ready(function(){
+    $(".collapse.show").each(function(){
+        $(this).prev(".card-header").find(".fa").addClass("fa-angle-down").removeClass("fa-angle-right");
+    });
+
+    $(".collapse").on('show.bs.collapse', function(){
+        $(this).prev(".card-header").find(".fa").removeClass("fa-angle-right").addClass("fa-angle-down");
+    }).on('hide.bs.collapse', function(){
+        $(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
     });
 });
+
+
+
+
+
 </script>
 @endsection
+
+
 </x-admin>
