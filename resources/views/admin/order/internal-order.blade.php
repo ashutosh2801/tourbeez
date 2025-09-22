@@ -96,7 +96,7 @@
             </div>
 
             <!-- ================= Payment Details ================= -->
-            <div class="card">
+            <!-- <div class="card">
                 <div class="card-header bg-secondary py-0" id="headingThree">
                     <h2 class="my-0 py-0">
                         <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
@@ -125,7 +125,87 @@
                         </table>
                     </div>
                 </div>
+            </div> -->
+            <div class="card">
+    <div class="card-header bg-secondary py-0" id="headingThree">
+        <h2 class="my-0 py-0">
+            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                data-toggle="collapse" data-target="#collapseThree">
+                <i class="fa fa-angle-right"></i> Payment Details
+            </button>                     
+        </h2>
+    </div>
+    <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+        <div class="card-body">
+            <table class="table">
+                <tr>
+                    <td>Total:</td>
+                    <td id="totalAmount">0</td>
+                    <td>Balance:</td>
+                    <td id="balanceAmount">0</td>
+                    <td>Paid:</td>
+                    <td id="paidAmount">0</td>
+                </tr>
+                <tr>
+                    <td>Stored Credit Card:</td>
+                    <td id="cardInfo">N/A</td>
+                    <td>STRIPE Transaction ID:</td>
+                    <td id="transactionId">N/A</td>
+                </tr>
+            </table>
+
+            <hr>
+
+            {{-- Choose Payment Option --}}
+            <div class="form-group">
+                <label><strong>Payment Method</strong></label><br>
+                <label class="mr-3">
+                    <input type="radio" name="payment_method" value="card" checked> Credit Card
+                </label>
+                <label>
+                    <input type="radio" name="payment_method" value="transaction"> Transaction
+                </label>
             </div>
+
+            {{-- Credit Card Fields --}}
+            <div id="cardFields">
+                <div class="form-group">
+                    <label for="card_number">Card Number</label>
+                    <input type="text" name="card_number" class="form-control" placeholder="Enter card number">
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="card_expiry">Expiry Date (MM/YY)</label>
+                        <input type="text" name="card_expiry" class="form-control" placeholder="MM/YY">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="card_cvv">CVV</label>
+                        <input type="text" name="card_cvv" class="form-control" placeholder="CVV">
+                    </div>
+                </div>
+            </div>
+
+            {{-- Transaction Fields --}}
+            <div id="transactionFields" style="display:none;">
+                <div class="form-group">
+                    <label for="transaction_id">Transaction ID</label>
+                    <input type="text" name="transaction_id" class="form-control" placeholder="Enter transaction ID">
+                </div>
+                <div class="form-group">
+                    <label for="payment_type">Payment Type</label>
+                    <select name="payment_type" class="form-control">
+                        <option value="">Select Type</option>
+                        <option value="stripe">Stripe</option>
+                        <option value="paypal">PayPal</option>
+                        <option value="bank">Bank Transfer</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
             <!-- ================= Form Actions ================= -->
             <div class="card-footer" style="display:block">
@@ -264,6 +344,79 @@ $(document).ready(function(){
 
 
 
+</script>
+
+<script>
+$(document).ready(function () {
+    // Toggle collapse icon and section
+    $(document).on("click", ".toggle-section", function () {
+        const target = $($(this).data("target"));
+        target.collapse("toggle");
+        $(this).find("i").toggleClass("fa-angle-right fa-angle-down");
+    });
+
+    // Add new payment row
+    $(document).on("click", ".add-payment", function () {
+        const container = $(".payment-container");
+        const lastRow = container.find(".payment-line").last();
+        const newIndex = container.find(".payment-line").length;
+
+        let newRow = lastRow.clone();
+        newRow.find("input, select").each(function () {
+            const name = $(this).attr("name");
+            if (name) {
+                $(this).attr("name", name.replace(/\[\d+\]/, `[${newIndex}]`));
+                $(this).val("");
+            }
+        });
+        container.append(newRow);
+    });
+
+    // Remove payment row
+    $(document).on("click", ".remove-payment", function () {
+        if ($(".payment-line").length > 1) {
+            $(this).closest(".payment-line").remove();
+        } else {
+            alert("At least one payment row is required.");
+        }
+    });
+
+    // Auto-calc Paid + Balance when amount changes
+    $(document).on("input", ".amount-field", function () {
+        let total = 0;
+        $(".amount-field").each(function () {
+            const val = parseFloat($(this).val()) || 0;
+            total += val;
+        });
+
+        $("#paidAmount").text(total.toFixed(2));
+        const grandTotal = parseFloat($("#totalAmount").text()) || 0;
+        const balance = grandTotal - total;
+        $("#balanceAmount").text(balance.toFixed(2));
+    });
+});
+
+
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const cardFields = document.getElementById("cardFields");
+    const transactionFields = document.getElementById("transactionFields");
+    const radios = document.querySelectorAll("input[name='payment_method']");
+
+    radios.forEach(radio => {
+        radio.addEventListener("change", function () {
+            if (this.value === "card") {
+                cardFields.style.display = "block";
+                transactionFields.style.display = "none";
+            } else {
+                cardFields.style.display = "none";
+                transactionFields.style.display = "block";
+            }
+        });
+    });
+});
 </script>
 @endsection
 

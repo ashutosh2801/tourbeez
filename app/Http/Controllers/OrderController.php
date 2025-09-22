@@ -226,10 +226,34 @@ class OrderController extends Controller
      */
  public function store(Request $request)
 {
+
+     $validated = $request->validate([
+        'customer_id'          => 'required|integer|exists:users,id',
+        'tour_id'              => 'required|array|min:1',
+        'tour_id.*'            => 'integer|exists:tours,id',
+
+        'customer_first_name'  => 'nullable|string|max:100',
+        'customer_last_name'   => 'nullable|string|max:100',
+        'customer_email'       => 'nullable|email|max:150',
+        'customer_phone'       => 'nullable|string|max:50',
+
+        'tour_startdate'       => 'required|array|min:1',
+        'tour_startdate.*'     => 'date',
+        'tour_starttime'       => 'required|array|min:1',
+        'tour_starttime.*'     => 'string',
+
+        'additional_info'      => 'nullable|string|max:500',
+    ], [
+        'customer_id.required' => 'Please select a customer.',
+        'tour_id.required'     => 'At least one tour must be selected.',
+        'tour_startdate.required' => 'Please provide a start date for the tour.',
+        'tour_starttime.required' => 'Please provide a start time for the tour.',
+    ]);
+
     $data = $request->all();
 
     // Make sure at least one tour is selected
-    $tourIds = unique($data['tour_id']) ?? [];
+    $tourIds = array_unique($data['tour_id']) ?? [];
     if (empty($tourIds)) {
         return response()->json([
             'status' => false,
@@ -253,16 +277,39 @@ class OrderController extends Controller
         ]);
 
         // ===== Customer =====
-        $customerId = $request->customer_id ?? 0;
-        $customer = OrderCustomer::create([
-            'order_id'     => $order->id,
-            'user_id'      => $customerId,
-            'first_name'   => $request->customer_first_name ?? 'N/A',
-            'last_name'    => $request->customer_last_name ?? 'N/A',
-            'email'        => $request->customer_email ?? 'N/A',
-            'phone'        => $request->customer_phone ?? 'N/A',
-            'instructions' => $request->additional_info ?? '',
-        ]);
+        $customerId = $request->customer_id ?? null;
+
+        if ($customerId) {
+            // Fetch from users table
+            $user = User::find($customerId);
+
+            $fullName = $user->name ?? 'N/A';
+            $nameParts = explode(' ', $fullName, 2);
+
+            $firstName = $nameParts[0] ?? 'N/A';
+            $lastName  = $nameParts[1] ?? ''; // empty if only one name provided
+
+            $customer = OrderCustomer::create([
+                'order_id'     => $order->id,
+                'user_id'      => $user->id,
+                'first_name'   => $firstName,
+                'last_name'    => $lastName,
+                'email'        => $user->email ?? 'N/A',
+                'phone'        => $user->phone ?? 'N/A',
+                'instructions' => $request->additional_info ?? '',
+            ]);
+        } else {
+            // Fallback to request inputs
+            $customer = OrderCustomer::create([
+                'order_id'     => $order->id,
+                'user_id'      => 0,
+                'first_name'   => $request->customer_first_name ?? 'N/A',
+                'last_name'    => $request->customer_last_name ?? 'N/A',
+                'email'        => $request->customer_email ?? 'N/A',
+                'phone'        => $request->customer_phone ?? 'N/A',
+                'instructions' => $request->additional_info ?? '',
+            ]);
+        }
 
         // ===== Loop Through Tours =====
         $totalOrderAmount = 0;
@@ -357,6 +404,15 @@ class OrderController extends Controller
         $order->save();
 
         DB::commit();
+
+        return redirect()->route('orders.edit', ['order' => encryt($request->id)]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('orders.edit', ['order' => encryt($request->id)])
+                ->withErrors($validator)
+                ->withInput();
+        }
 
         return response()->json([
             'status' => true,
