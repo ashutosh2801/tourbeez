@@ -44,7 +44,7 @@ if(!function_exists('countThingsToDo')) {
             ->whereNull('deleted_at');
 
         if ($id) {
-            if($type == 'c3') {
+            if($type === 'c3') {
                 $query->whereHas('categories', fn($q) => $q->where('categories.id', $id));
             }
             else {

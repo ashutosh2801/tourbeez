@@ -678,28 +678,32 @@ class OrderController extends Controller
     public function getSessionTimes(Request $request)
     {
         $carbonDate = Carbon::parse($request->date);
-        // dd(423, $request->all());
+
         $date = $request->date;
 
         $dayName = $carbonDate->format('l');
         $slots = [];
 
-        $schedules = TourSchedule::where('tour_id', $request->tour_id)
+        $schedulesQuery = TourSchedule::where('tour_id', $request->tour_id);
+
+        // ✅ Check if schedules exist without loading full collection
+        if (!$schedulesQuery->exists()) {
+            return response()->json([
+                'status' => 'success',
+                'data' => array_unique($slots),
+                'schedule_set' => true
+            ]);
+        }
+
+        // ✅ Fetch schedules only if needed
+        $schedules = $schedulesQuery
             ->where(function ($query) use ($carbonDate) {
-                $query->orWhere(function ($q) use ($carbonDate) {
-                          $q->whereDate('session_start_date', '<=', $carbonDate)
-                            ->whereDate('until_date', '>=', $carbonDate);
-                      });
+                $query->whereDate('session_start_date', '<=', $carbonDate)
+                      ->whereDate('until_date', '>=', $carbonDate);
             })
             ->get();
-            // dd($schedules);
-        // if ($schedules->isEmpty()) {
-        //     return response()->json([
-        //         'status' => 'warning',
-        //         'message' => 'No sessions available on this date.',
-        //         'schedule_set' => true
-        //     ]);
-        // }
+
+
 
         foreach ($schedules as $schedule) {
 
@@ -732,7 +736,6 @@ class OrderController extends Controller
                 default => 0
             };
 
-            // dd($durationMinutes, $schedule->estimated_duration_num, $schedule->estimated_duration_unit);
             // $startTime = $schedule->session_start_time ?? '00:00';
             $startTime = '00:00';
             // $endTime = $schedule->session_end_time ?? '23:59';
@@ -781,7 +784,7 @@ class OrderController extends Controller
                     // $end = $end->copy()->addMinutes($durationMinutes);
                     $slots = array_merge($slots, $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod));
 
-                    $slots = array_slice($slots, 0, 1);
+                    // $slots = array_slice($slots, 0, 1);
                 }
                 
             } elseif ($repeatType === 'WEEKLY') {
@@ -789,15 +792,16 @@ class OrderController extends Controller
                 $repeats = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
                     ->where('day', $dayName)
                     ->get();
-                // dd($repeats);
+               
                 foreach ($repeats as $repeat) {
 
 
                     $weeksSinceStart = floor(Carbon::parse($schedule->session_start_date)->diffInWeeks($carbonDate));
                     $repeatInterval = $schedule->repeat_period_unit ?? 1; // 1 means every week
-
+                    
                     // Skip if not matching the interval
                     if ($weeksSinceStart % $repeatInterval !== 0) {
+                        
                         continue;
                     }
 
@@ -807,12 +811,11 @@ class OrderController extends Controller
                     $slotStart = Carbon::parse($selectedDate . ' ' . ($schedule->session_start_time));
                     // dd($slotStart);
                     $slotEnd   = Carbon::parse($selectedDate . ' ' . ($schedule->session_start_time));
-                    // dd($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod);
-
+                    
                     $slots = array_merge($slots, $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod));
-                    // dd($slots);
-                }
-                $slots = array_slice($slots, 0, 1);
+
+                }                
+                // $slots = array_slice($slots, 0, 1);
             } elseif ($repeatType === 'MONTHLY') {
 
                 $monthsSinceStart = floor(Carbon::parse($schedule->session_start_date)->diffInMonths($carbonDate));
@@ -834,7 +837,7 @@ class OrderController extends Controller
                             $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
                         );
                     }
-                    $slots = array_slice($slots, 0, 1);
+                    // $slots = array_slice($slots, 0, 1);
                 }
 
                 
@@ -855,17 +858,15 @@ class OrderController extends Controller
                 ) {
                     $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
                     $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
-                    // $end = $end->copy()->addMinutes($durationMinutes);
-                    // dd($start, $end, $durationMinutes, $minimumNoticePeriod);
-                    // dd(now(), $minimumNoticePeriod);
+         
                     $slots = array_merge(
                         $slots,
 
 
                         $this->generateSlots($start, $end, 24*60, $minimumNoticePeriod)
                     );
-                    // dd($slots);
-                    $slots = array_slice($slots, 0, 1);
+                    
+                    // $slots = array_slice($slots, 0, 1);
                 }
     
                 
@@ -897,16 +898,10 @@ class OrderController extends Controller
                             $this->generateSlots($start, $end, $durationMinutes, $minimumNoticePeriod)
                         );
 
-                        // foreach ($allSlots as $index => $slot) {
-                        //     if ($index % $interval === 0) {
-                        //         $slots[] = $slot;
-                        //     }
-                        // }
                     }
                 }
             }
             elseif ($repeatType === 'HOURLY') {
-                // dd(3223);
 
                 $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 2 hours
                 $scheduleStartDate = Carbon::parse($schedule->session_start_date);
@@ -925,28 +920,19 @@ class OrderController extends Controller
 
                         // Check if start time matches the "every X hours" rule
                         $hoursSinceStart = floor($scheduleStartDate->diffInHours($slotStart));
-                        // dd($hoursSinceStart % $interval, $hoursSinceStart , $interval);
-                        // if ($hoursSinceStart % $interval !== 0) {
-                        //     continue; // Skip this slot if not matching the interval
-                        // }
-                        // dd($schedule->repeat_period_unit);
+
                         $durationMinutes = $schedule->repeat_period_unit * 60;
-                        // dd($durationMinutes);
-                        // dd($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod);
+  
                         $slots = array_merge(
                             $slots,
                             $this->generateSlots($slotStart, $slotEnd, $durationMinutes, $minimumNoticePeriod)
                         );
-                        // dd($allSlots);
-                        // foreach ($allSlots as $index => $slot) {
-                        //     // if ($index % $interval === 0) { // keep only every Nth slot
-                        //         $slots[] = $slot;
-                        //     // }
-                        // }
+
                     }
                 }
             }
         }
+
         $fetchDeletedSlot = null;
         if (!empty($slots)) {
             $fetchDeletedSlot = $this->fetchDeletedSlot($request->tour_id);

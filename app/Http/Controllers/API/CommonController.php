@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Mail\CommonMail;
 use App\Mail\ContactMail;
+use App\Models\Banner;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Country;
@@ -508,5 +509,17 @@ class CommonController extends Controller
        
         return response()->json(['message' => 'Message sent successfully.']);
     }
+
+    
+
+    public function getLocationBanner(Request $request){
+
+        $banner = Banner::where('location_id', $request->location_id)->first();
+
+        if(!$banner){
+            return Banner::first();
+        }
+    }
+
     
 }

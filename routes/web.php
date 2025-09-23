@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AizUploadController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\LoginWithOTPController;
@@ -20,15 +19,15 @@ use Illuminate\Support\Str;
 |
 */
 // Auth routes
-// require __DIR__.'/auth.php';
-require('auth.php');
+require __DIR__.'/auth.php';
+// require('auth.php');
 
 // Admin Routes
 require('admin.php');
 
-Route::get('/{any}', function () {
-    return file_get_contents(public_path('index.html'));
-})->where('any', '.*');
+// Route::get('/{any}', function () {
+//     return file_get_contents(public_path('index.html'));
+// })->where('any', '.*');
 
 
 // Route::get('/', function () {

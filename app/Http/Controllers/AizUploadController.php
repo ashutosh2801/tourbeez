@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Banner;
 use App\Upload;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
-// use Response;
-// use Auth;
-// use Storage;
-//use Image;
 use Illuminate\Support\Str;
 use Intervention\Image\Laravel\Facades\Image;
 
@@ -66,6 +63,7 @@ class AizUploadController extends Controller
     public function show_uploader(Request $request){
         return view('uploader.aiz-uploader');
     }
+
     public function upload(Request $request){
         $type = array(
             "jpg"=>"image",
@@ -278,6 +276,7 @@ class AizUploadController extends Controller
         }
 
     }
+    
     //Download project attachment
     public function file_info(Request $request)
     {
