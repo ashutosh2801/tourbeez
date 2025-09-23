@@ -19,17 +19,28 @@ use Illuminate\Support\Str;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+// Auth routes
+// require __DIR__.'/auth.php';
+require('auth.php');
 
-Route::get('/', function () {
-    $readmePath = base_path('WELCOME.md');
+// Admin Routes
+require('admin.php');
 
-    return view('welcome', [
-        'readmeContent' => Str::markdown(file_get_contents($readmePath)),
-    ]);
-});
+Route::get('/{any}', function () {
+    return file_get_contents(public_path('index.html'));
+})->where('any', '.*');
+
+
+// Route::get('/', function () {
+//     $readmePath = base_path('WELCOME.md');
+
+//     return view('welcome', [
+//         'readmeContent' => Str::markdown(file_get_contents($readmePath)),
+//     ]);
+// });
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index']);
-Route::get('/sitemaps/categories.xml', [SitemapController::class, 'categories']);
+Route::get('/sitemaps/categories', [SitemapController::class, 'categories']);
 Route::get('/sitemaps/destinations.xml', [SitemapController::class, 'destinations']);
 Route::get('/sitemaps/tours.xml', [SitemapController::class, 'tours']);
 
@@ -66,7 +77,4 @@ Route::prefix('oauth/')->group(function(){
 
 
 
-// Auth routes
-require __DIR__.'/auth.php';
-// Admin Routes
-require('admin.php');
+

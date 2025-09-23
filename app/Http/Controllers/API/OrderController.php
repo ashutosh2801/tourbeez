@@ -933,8 +933,6 @@ class OrderController extends Controller
             }
         }
 
-
-
         $fetchDeletedSlot = null;
         if (!empty($slots)) {
             $fetchDeletedSlot = $this->fetchDeletedSlot($request->tour_id);

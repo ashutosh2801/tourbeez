@@ -1141,7 +1141,6 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
 
                     $available = $windowOk($date->copy()->startOfDay(), $date->copy()->endOfDay());
                 } else {
-                    
 
                     // dd($slotStart, $slotEnd );
                     $available = $windowOk($slotStart, $slotEnd);
