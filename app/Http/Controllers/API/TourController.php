@@ -371,6 +371,7 @@ class TourController extends Controller
             'discounted_price'     => $discounted_price,
             'tour_start_date'      => $tour_start_date,
             'disabled_tour_dates'  => $disabled_dates,
+            'have_sub_tour'        => $tour->subTours()->exists(),
         ];
 
         return response()->json([
@@ -382,42 +383,90 @@ class TourController extends Controller
     /**
      * Fetch sub tours by tour id and date.
      */
+    // public function fetch_sub_tours(Request $request, $id, $date)
+    // {
+    //     $cacheKey = 'sub_tours_' . $id;
+
+    //     //$subTour = Cache::remember($cacheKey, 86400, function () use ($id) {
+    //         $subTour = Tour::select([
+    //                     "id",
+    //                     "user_id",
+    //                     "parent_id",
+    //                     "title",
+    //                     "slug",
+    //                     "unique_code",
+    //                     "price",
+    //                     "price_type"
+    //                 ])
+    //                 ->where('parent_id', $id)
+    //                 ->where('status', 1)
+    //                 ->whereNull('deleted_at')
+    //                 ->with([
+    //                     'detail:id,tour_id,description',  // select only needed fields
+    //                     'pricings',
+    //                     'schedule'
+    //                 ])
+    //                 ->get();
+                    
+    //     //});
+
+    //     if (!$subTour || $subTour->isEmpty()) {
+    //         return response()->json(['status' => false, 'message' => 'No sub tours found for the given date'], 404);
+    //     }
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'data'   => $subTour
+    //     ]);
+    // }
+
     public function fetch_sub_tours(Request $request, $id, $date)
     {
-        $cacheKey = 'sub_tours_' . $id;
 
-        //$subTour = Cache::remember($cacheKey, 86400, function () use ($id) {
-            $subTour = Tour::select([
-                        "id",
-                        "user_id",
-                        "parent_id",
-                        "title",
-                        "slug",
-                        "unique_code",
-                        "price",
-                        "price_type"
-                    ])
-                    ->where('parent_id', $id)
-                    ->where('status', 1)
-                    ->whereNull('deleted_at')
-                    ->with([
-                        'detail:id, tour_id, description, quantity_min, quantity_max',  // select only needed fields
-                        'pricings',
-                        'schedule'
-                    ])
-                    ->get();
-                    
-        //});
+        $subTours = Tour::select([
+                            "id",
+                            "user_id",
+                            "parent_id",
+                            "title",
+                            "slug",
+                            "unique_code",
+                            "price",
+                            "price_type"
+                        ])
+                        ->where('parent_id', $id)
+                        ->where('status', 1)
+                        ->whereNull('deleted_at')
+                        ->with(['detail:id,tour_id,description', 'pricings'])
+                        ->get();
 
-        if (!$subTour || $subTour->isEmpty()) {
-            return response()->json(['status' => false, 'message' => 'No sub tours found for the given date'], 404);
+        if ($subTours->isEmpty()) {
+            return response()->json(['status' => false, 'message' => 'No sub tours found'], 404);
         }
+       
+        // 👇 Reuse OrderController@getSessionTimes
+        $orderController = app(\App\Http\Controllers\API\OrderController::class);
+
+        $subTours->map(function ($tour) use ($date, $orderController) {
+
+            $req = new \Illuminate\Http\Request([
+                'tour_id' => $tour->id,
+                'date'    => $date,
+            ]);
+
+            // Call existing method
+            $response = $orderController->getSessionTimes($req);
+            $sessions = $response->getData(true);
+
+            $tour->sessions = $sessions;
+            return $tour;
+        });
 
         return response()->json([
             'status' => true,
-            'data'   => $subTour
+            'data'   => $subTours
         ]);
     }
+
 
     /**
      * Fetch a deposit rule by tour id.
