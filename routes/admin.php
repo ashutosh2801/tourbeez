@@ -101,6 +101,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/paymentrequest', [TourController::class, 'editPaymentRequest'])->name('tour.edit.message.paymentrequest');
     Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
     Route::get('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit.special.deposit');
+    Route::get('/tour/{id}/edit/review', [TourController::class, 'review'])->name('tour.edit.review');
     Route::get('/tour/{id}/edit/schedule-calendar', [TourController::class, 'scheduleCalendar'])->name('tour.edit.schedule-calendar');
     Route::get('/tour/{id}/edit/schedule-calendar-event', [TourController::class, 'scheduleCalendarEvent'])->name('tour.edit.schedule-calendar-event');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
@@ -137,6 +138,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/tours/toggle-status', [TourController::class, 'toggleStatus'])->name('tour.toggleStatus');
     // Route::post('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit..special.deposit');
     Route::put('/tour/special-deposit/{id}', [TourController::class, 'specialDepositUpdate'])->name('tour.special-deposit');
+    Route::put('/tour/review/{id}', [TourController::class, 'reviewUpdate'])->name('tour.review');
 
     Route::get('/tours/{id}/sub-create', [TourController::class, 'createSubTour'])->name('tours.sub-create');
     Route::post('/tours/{id}/sub-tour-store', [TourController::class, 'subTourStore'])->name('tour.sub-tour-store');
