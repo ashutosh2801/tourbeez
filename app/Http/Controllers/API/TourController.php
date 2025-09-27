@@ -245,7 +245,15 @@ class TourController extends Controller
             $pickups[] = 'No Pickup';
         }
         else if(!empty($tour->pickups) && isset($tour->pickups[0]) && $tour->pickups[0]?->name === 'Pickup') {
-            $pickups[] = 'Pickup';
+            $pickups[0] = 'Pickup';
+            
+            $comment = \DB::table('pickup_tour')
+                                            ->where('tour_id', $tour->id)
+                                            ->where('pickup_id', $tour->pickups[0]?->id)  // a single pickup ID
+                                            ->value('comment');
+
+
+            $pickups[1] = $comment ?? "Enter the pickup location";
         }
         else if (!empty($tour->pickups) && isset($tour->pickups[0])) {
             $pickups = $tour->pickups[0]?->locations ?? [];
@@ -323,11 +331,113 @@ class TourController extends Controller
         ]);
     }
 
+
+
+    public function fetch_booking_optimise(Request $request, $slug)
+    {
+        // Remove query logging to reduce overhead in production
+        // \DB::enableQueryLog();
+
+        $cacheKey = 'tour_booking_' . $slug;
+
+        // Optimize query: Select only necessary fields and reuse eager-loaded schedules
+        $tour = Cache::remember($cacheKey, 86400, function () use ($slug) {
+            return Tour::select([
+                    'id', 'title', 'slug', 'price', 'price_type',
+                    'coupon_value', 'coupon_type'
+                ])
+                ->where('slug', $slug)
+                ->where('status', 1)
+                ->whereNull('deleted_at')
+                ->with([
+                    'detail:id,tour_id,description', // Select specific fields
+                    'schedules' => function ($query) {
+                        $query->select([
+                            'id', 'tour_id', 'session_start_date', 'until_date',
+                            'session_start_time', 'session_end_time', 'repeat_period',
+                            'repeat_period_unit', 'minimum_notice_num', 'minimum_notice_unit',
+                            'estimated_duration_num', 'estimated_duration_unit', 'sesion_all_day'
+                        ])->orderBy('session_start_date');
+                    },
+                    'pricings:id,tour_id,price' // Select specific fields
+                ])
+                ->first();
+        });
+
+        if (!$tour) {
+            return response()->json(['status' => false, 'message' => 'Tour not found'], 404);
+        }
+
+        // Reuse eager-loaded schedules instead of querying again
+        $schedules = $tour->schedules;
+
+        // Cache next available date and disabled dates separately
+        $nextAvailableCacheKey = 'tour_next_available_' . $tour->id . '_' . Carbon::today()->toDateString();
+        $disabledDatesCacheKey = 'tour_disabled_dates_' . $tour->id . '_' . Carbon::today()->toDateString();
+
+        // $tour_start_date = Cache::remember($nextAvailableCacheKey, 3600, function () use ($tour, $schedules) {
+        //     return $this->getNextAvailableDate($tour->id, $schedules);
+        // });
+
+        // $disabled_dates = Cache::remember($disabledDatesCacheKey, 3600, function () use ($tour, $schedules) {
+        //     return $this->getDisabledTourDates($tour->id, $schedules);
+        // });
+
+        $tour_start_date = $this->getNextAvailableDate($tour->id, $schedules);
+        $disabled_dates = [];// $this->getDisabledTourDates($tour->id, $schedules);
+
+        // Calculate discount pricing (unchanged)
+        $original_price = $tour->price;
+        $discounted_price = $tour->price;
+
+        if ($tour->coupon_value && $tour->coupon_value > 0) {
+            if ($tour->coupon_type == 'fixed') {
+                $original_price = $tour->price + $tour->coupon_value;
+                $discounted_price = $tour->price;
+            } elseif ($tour->coupon_type == 'percentage') {
+                $original_price = $tour->price / (1 - ($tour->coupon_value / 100));
+                $original_price = round($original_price);
+                $discounted_price = $tour->price;
+            }
+        }
+
+        // Prepare response data (unchanged)
+        $data = [
+            'id'                   => $tour->id,
+            'title'                => $tour->title,
+            'slug'                 => $tour->slug,
+            'price_type'           => $tour->price_type,
+            'pricings'             => $tour->pricings,
+            'detail'               => $tour->detail,
+            'original_price'       => $tour->price,
+            'discount'             => $tour->coupon_value,
+            'discount_type'        => strtoupper($tour->coupon_type),
+            'discounted_price'     => $discounted_price,
+            'tour_start_date'      => $tour_start_date,
+            'disabled_tour_dates'  => $disabled_dates,
+            'have_sub_tour'        => $tour->subTours()->exists(),
+        ];
+        // dd($data);
+        $readmePath = base_path('WELCOME.md');
+
+        return view('welcome', [
+            'readmeContent' => \Illuminate\Support\Str::markdown(file_get_contents($readmePath)),
+        ]);
+
+        // Remove misplaced view return and return JSON
+        return response()->json([
+            'status' => true,
+            'data'   => $data
+        ]);
+    }
+
     /**
      * Fetch booking related info for a tour.
      */
     public function fetch_booking(Request $request, $slug)
     {
+        \DB::enableQueryLog();
+
         $cacheKey = 'tour_booking_' . $slug;
 
         $tour = Cache::remember($cacheKey, 86400, function () use ($slug) {
@@ -382,6 +492,12 @@ class TourController extends Controller
             'disabled_tour_dates'  => $disabled_dates,
             'have_sub_tour'        => $tour->subTours()->exists(),
         ];
+        // dd(\DB::getQueryLog());
+        $readmePath = base_path('WELCOME.md');
+
+        return view('welcome', [
+            'readmeContent' => \Illuminate\Support\Str::markdown(file_get_contents($readmePath)),
+        ]);
 
         return response()->json([
             'status' => true,
@@ -456,11 +572,21 @@ class TourController extends Controller
         }
 
         // ✅ Booking fee data (always included)
-        $bookingFees = [
-            'price_booking_fee'     => get_setting('price_booking_fee'),
-            'tour_booking_fee'      => get_setting('tour_booking_fee'),
-            'tour_booking_fee_type' => get_setting('tour_booking_fee_type'),
-        ];
+
+        if($depositRule && $depositRule->price_booking_fee){
+            $bookingFees = [
+                'price_booking_fee'     => $depositRule->price_booking_fee,
+                'tour_booking_fee'      => $depositRule->tour_booking_fee,
+                'tour_booking_fee_type' => $depositRule->tour_booking_fee_type,
+            ];
+        } else{
+            $bookingFees = [
+                'price_booking_fee'     => get_setting('price_booking_fee'),
+                'tour_booking_fee'      => get_setting('tour_booking_fee'),
+                'tour_booking_fee_type' => get_setting('tour_booking_fee_type'),
+            ];
+        }
+        
 
         if (!$depositRule) {
             return response()->json([
@@ -878,195 +1004,6 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
      * @param  $date      Carbon (Y-m-d for the “selected” day)
      * @param  $repeatsByDay  array<string, Collection<TourScheduleRepeats>>  // optional prefetch
      */
-    private function isDateAvailable2343($schedule, $date, array $repeatsByDay = []): bool
-    {
-        // Hard bounds
-        $startDate = Carbon::parse($schedule->session_start_date)->startOfDay();
-        $endDate   = Carbon::parse($schedule->until_date)->endOfDay();
-        if (!$date->between($startDate, $endDate)) {
-            return false;
-        }
-
-        // Config
-        $repeatType    = strtoupper((string)$schedule->repeat_period); // NONE, DAILY, WEEKLY...
-        $repeatUnit    = max(1, (int)($schedule->repeat_period_unit ?? 1)); // interval
-        $durationMin   = $this->minutesFromUnit($schedule->estimated_duration_num, $schedule->estimated_duration_unit);
-        $noticeMin     = $this->minutesFromUnit($schedule->minimum_notice_num, $schedule->minimum_notice_unit);
-
-
-        $earliestAllow = now()->copy()->addMinutes($noticeMin);
-        // dd($earliestAllow);
-        // Times for this date
-        $allDay = (bool)($schedule->sesion_all_day ?? false);
-        $dayStr = $date->toDateString();
-
-        // Helper: window available?
-        // dd($earliestAllow);
-        $windowOk = function (Carbon $slotStart, Carbon $slotEnd) use ($earliestAllow): bool {
-            if ($slotEnd->lt($slotStart)) return false;
-            // A slot exists if some timepoint within [slotStart, slotEnd] is >= earliestAllow
-            return $slotEnd->gte($earliestAllow);
-        };
-
-        // Helper: parse HH:MM onto $date
-        $at = fn(string $time) => Carbon::parse("{$dayStr} {$time}");
-
-        // NONE: one-off date
-        if ($repeatType === 'NONE') {
-            // dd(23423);
-            // dd($date->isSameDay($startDate));
-            if (!$date->isSameDay($startDate)) return false;
-            $slotStart = $allDay
-                ? $date->copy()->startOfDay()
-                : $at($schedule->session_start_time ?? '00:00');
-            $slotEnd = $allDay
-                ? $date->copy()->endOfDay()
-                : (isset($schedule->session_start_time)
-                    ? $at($schedule->session_start_time)
-                    : $slotStart->copy()->addMinutes(0));
-
-                // dd($slotStart, $slotEnd);
-            return $windowOk($slotStart, $slotEnd);
-        }
-
-        // DAILY: every N days from session_start_date
-        if ($repeatType === 'DAILY') {
-            $daysSinceStart = (int) floor($startDate->diffInDays($date));
-            if ($daysSinceStart % $repeatUnit !== 0) return false;
-
-            if ($allDay) {
-                return $windowOk($date->copy()->startOfDay(), $date->copy()->endOfDay());
-            }
-
-            // Your code forms a single window using start_time and +duration
-            $slotStart = $at($schedule->session_start_time ?? '00:00');
-            $slotEnd   = $slotStart->copy()->addMinutes(0);
-            return $windowOk($slotStart, $slotEnd);
-        }
-
-        // WEEKLY: check repeats for this weekday, weeks interval from session_start_date
-        if ($repeatType === 'WEEKLY') {
-            $weeksSinceStart = (int) floor($startDate->diffInWeeks($date));
-            if ($weeksSinceStart % $repeatUnit !== 0) return false;
-
-            $dayName = $date->format('l'); // Monday, ...
-            $entries = $repeatsByDay[$dayName] ?? $repeatsByDay[$dayName] = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
-                ->where('day', $dayName)
-                ->get();
-
-            foreach ($entries as $rep) {
-                $slotStart = $at($rep->start_time ?? ($schedule->session_start_time ?? '00:00'));
-                $slotEnd   = $at($rep->end_time   ?? ($schedule->session_end_time   ?? '23:59'));
-                if ($windowOk($slotStart, $slotEnd)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // MONTHLY: same day-of-month every N months
-        if ($repeatType === 'MONTHLY') {
-            $monthsSinceStart = (int) floor($startDate->diffInMonths($date));
-            if ($monthsSinceStart % $repeatUnit !== 0) return false;
-
-            // must match the start day-of-month (as your code does)
-            if ((int)$date->format('d') !== (int)$startDate->format('d')) return false;
-
-            $slotStart = $at($schedule->session_start_time ?? '00:00');
-            $slotEnd   = $at($schedule->session_end_time   ?? '23:59');
-            return $windowOk($slotStart, $slotEnd);
-        }
-
-        // YEARLY: same day & month every N years
-        if ($repeatType === 'YEARLY') {
-            $yearsSinceStart = (int) floor($startDate->diffInYears($date));
-            if ($yearsSinceStart % $repeatUnit !== 0) return false;
-
-            if ((int)$date->format('d') !== (int)$startDate->format('d')
-                || (int)$date->format('m') !== (int)$startDate->format('m')) {
-                return false;
-            }
-
-            $slotStart = $at($schedule->session_start_time ?? '00:00');
-            // Your code made YEARLY window as start + duration
-            $slotEnd   = $slotStart->copy()->addMinutes(max(1, $durationMin));
-            return $windowOk($slotStart, $slotEnd);
-        }
-
-        // HOURLY: entries per weekday, filter by start-hour alignment and then every Nth slot index
-        if ($repeatType === 'HOURLY') {
-            $dayName = $date->format('l');
-            $entries = $repeatsByDay[$dayName] ?? $repeatsByDay[$dayName] = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
-                ->where('day', $dayName)
-                ->get();
-
-            foreach ($entries as $rep) {
-                $slotStart0 = $at($rep->start_time);
-                $slotEnd    = $at($rep->end_time);
-
-                if (!$slotEnd->gt($slotStart0)) continue;
-
-                // Your code requires hoursSinceStart % interval == 0
-                $hoursSinceStart = (int) floor($startDate->diffInHours($slotStart0));
-                if ($hoursSinceStart % $repeatUnit !== 0) continue;
-
-                // Keep only every Nth slot index; find first candidate index >= earliestAllow
-                // $dur = max(1, $durationMin);
-                // $m0  = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false) / $dur));
-                // move to next index that is a multiple of interval
-                // $m   = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
-                // $candidate = $slotStart0->copy()->addMinutes($m * $dur);
-
-                $m0 = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false)));
-                $m = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
-                $candidate = $slotStart0->copy()->addMinutes($m);
-                if ($candidate->lte($slotEnd)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // MINUTELY: entries per weekday, keep every Nth slot index (index % interval == 0)
-        if ($repeatType === 'MINUTELY') {
-            $dayName = $date->format('l');
-
-            $entries = $repeatsByDay[$dayName] ?? $repeatsByDay[$dayName] = TourScheduleRepeats::where('tour_schedule_id', $schedule->id)
-                ->where('day', $dayName)
-                ->get();
-
-            foreach ($entries as $rep) {
-                $slotStart0 = $at($rep->start_time);
-                $slotEnd    = $at($rep->end_time);
-                // dd($slotStart0, $slotEnd);
-                // dd($slotEnd->gt($slotStart0));
-                if (!$slotEnd->gt($slotStart0)) continue;
-
-                // $dur = max(1, $durationMin);
-                // $m0  = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false)));
-                // $m   = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
-
-                // $m0 = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false)));
-
-// Round $m0 up to the nearest multiple of repeatUnit
-                // $m = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
-                // $candidate = $slotStart0->copy()->addMinutes($m);
-                // dd($m0, $dur);
-
-                // $candidate = $slotStart0->copy()->addMinutes($m * $dur);
-                // dd($candidate, $candidate->lte($slotEnd));
-                $m0 = max(0, (int)ceil($slotStart0->diffInMinutes($earliestAllow, false)));
-                $m = ($m0 % $repeatUnit === 0) ? $m0 : $m0 + ($repeatUnit - ($m0 % $repeatUnit));
-                $candidate = $slotStart0->copy()->addMinutes($m);
-                if ($candidate->lte($slotEnd)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        return false;
-    }
 
     private function isDateAvailable($schedule, $date, array $repeatsByDay = []): bool
     {
@@ -1246,150 +1183,6 @@ private function hasValidSlot($schedule, Carbon $date, $durationMinutes = 30, $m
         return false;
     }
 
-
-    private function isDateAvailable23($schedule, $date, array $repeatsByDay = []): bool
-    {
-        // Hard bounds
-        $startDate = Carbon::parse($schedule->session_start_date)->startOfDay();
-        $slotEndDate   = Carbon::parse($schedule->until_date)->endOfDay();
-        if (!$date->between($startDate, $slotEndDate)) {
-            return false;
-        }
-
-        // Config
-        $repeatType  = strtoupper((string)$schedule->repeat_period);
-        $repeatUnit  = max(1, (int)($schedule->repeat_period_unit ?? 1));
-        $durationMin = $this->minutesFromUnit($schedule->estimated_duration_num, $schedule->estimated_duration_unit);
-        $noticeMin   = $this->minutesFromUnit($schedule->minimum_notice_num, $schedule->minimum_notice_unit);
-
-        $earliestAllow = now()->copy()->addMinutes($noticeMin);
-        $dayStr = $date->toDateString();
-        $allDay = (bool)($schedule->sesion_all_day ?? false);
-
-        $at = fn(string $time) => Carbon::parse("{$dayStr} {$time}");
-
-        $slots = [];
-
-        // -------------------------------
-        // NONE
-        // -------------------------------
-        if ($repeatType === 'NONE') {
-            if ($date->isSameDay($startDate)) {
-                $slotStart = $allDay
-                    ? $date->copy()->startOfDay()
-                    : $at($schedule->session_start_time ?? '00:00');
-
-                if ($slotStart->gte($earliestAllow)) {
-                    $slots[] = $slotStart->format('g:i A');
-                }
-            }
-        }
-
-        // -------------------------------
-        // DAILY
-        // -------------------------------
-        if ($repeatType === 'DAILY') {
-            $daysSinceStart = (int) floor($startDate->diffInDays($date));
-            if ($daysSinceStart % $repeatUnit === 0) {
-                $slotStart = $at($schedule->session_start_time ?? '00:00');
-                if ($slotStart->gte($earliestAllow)) {
-                    $slots[] = $slotStart->format('g:i A');
-                }
-            }
-        }
-
-        // -------------------------------
-        // WEEKLY
-        // -------------------------------
-        if ($repeatType === 'WEEKLY') {
-            $weeksSinceStart = (int) floor($startDate->diffInWeeks($date));
-            if ($weeksSinceStart % $repeatUnit === 0) {
-                $dayName = strtolower($date->format('l'));
-                if (in_array($dayName, $repeatsByDay)) {
-                    $slotStart = $at($schedule->session_start_time ?? '00:00');
-                    if ($slotStart->gte($earliestAllow)) {
-                        $slots[] = $slotStart->format('g:i A');
-                    }
-                }
-            }
-        }
-
-        // -------------------------------
-        // MONTHLY
-        // -------------------------------
-        if ($repeatType === 'MONTHLY') {
-            $monthsSinceStart = $startDate->diffInMonths($date);
-            if ($monthsSinceStart % $repeatUnit === 0 && $startDate->day === $date->day) {
-                $slotStart = $at($schedule->session_start_time ?? '00:00');
-                if ($slotStart->gte($earliestAllow)) {
-                    $slots[] = $slotStart->format('g:i A');
-                }
-            }
-        }
-
-        // -------------------------------
-        // YEARLY
-        // -------------------------------
-        if ($repeatType === 'YEARLY') {
-            $yearsSinceStart = $startDate->diffInYears($date);
-            if ($yearsSinceStart % $repeatUnit === 0
-                && $startDate->day === $date->day
-                && $startDate->month === $date->month) {
-                $slotStart = $at($schedule->session_start_time ?? '00:00');
-                if ($slotStart->gte($earliestAllow)) {
-                    $slots[] = $slotStart->format('g:i A');
-                }
-            }
-        }
-
-        // -------------------------------
-        // HOURLY
-        // -------------------------------
-        if ($repeatType === 'HOURLY') {
-            $slotStart = $at($schedule->session_start_time ?? '00:00');
-            while ($slotStart->lte($date->copy()->endOfDay())) {
-                if ($slotStart->gte($earliestAllow)) {
-                    $slots[] = $slotStart->format('g:i A');
-                }
-                $slotStart->addHours($repeatUnit);
-            }
-        }
-
-        // -------------------------------
-        // MINUTELY
-        // -------------------------------
-        if ($repeatType === 'MINUTELY') {
-            $slotStart = $at($schedule->session_start_time ?? '00:00');
-            while ($slotStart->lte($date->copy()->endOfDay())) {
-                if ($slotStart->gte($earliestAllow)) {
-                    $slots[] = $slotStart->format('g:i A');
-                }
-                $slotStart->addMinutes($repeatUnit);
-            }
-        }
-
-        // -------------------------------
-        // ✅ Apply deleted slot filtering
-        // -------------------------------
-        $storeDeleteSlot = $this->fetchDeletedSlot($schedule->tour_id);
-
-        $response = [
-            'data' => [
-                $dayStr => $slots
-            ]
-        ];
-
-
-
-        $response = $this->applySlotDeletions($response, $storeDeleteSlot);
-
-        $slots    = $response['data'][$dayStr] ?? [];
-
-        // -------------------------------
-        // ✅ Return true if any slot remains
-        // -------------------------------
-        return count($slots) > 0;
-    }
 
 
     private function getDisabledTourDates(int $tourId, $schedules = null): array
