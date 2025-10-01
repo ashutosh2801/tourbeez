@@ -63,7 +63,6 @@ class AizUploadController extends Controller
     public function show_uploader(Request $request){
         return view('uploader.aiz-uploader');
     }
-
     public function upload(Request $request){
         $type = array(
             "jpg"=>"image",
@@ -208,9 +207,16 @@ class AizUploadController extends Controller
 
     public function get_uploaded_files(Request $request)
     {
-        $uploads = Upload::where('user_id', Auth::user()->id);
+        $allAllowed = ['admin', 'staff'];
+
+        if(Auth::user()->user_type && in_array(Auth::user()->user_type, $allAllowed)){
+            $uploads = Upload::query();
+        } else {
+            $uploads = Upload::where('user_id', Auth::user()->id);
+        }
+        
         if ($request->search != null) {
-            $uploads->where('file_original_name', 'like', '%'.$request->search.'%');
+            $uploads->where('medium_name', 'like', '%'.$request->search.'%');
         }
         if ($request->sort != null) {
             switch ($request->sort) {
@@ -276,7 +282,6 @@ class AizUploadController extends Controller
         }
 
     }
-    
     //Download project attachment
     public function file_info(Request $request)
     {
@@ -307,29 +312,85 @@ class AizUploadController extends Controller
         }
     }
 
+
+    public function showBanner(Request $request)
+    {
+        $data = Banner::latest()->get();
+        return view('admin.settings.banner.index', compact('data'));
+    }
+
+
+
+    public function bannerStoreOrUpdate(Request $request, $id = null)
+    {
+        $request->validate([
+            'location_id' => 'nullable|string|max:255',
+            'heading'     => 'nullable|string|max:255',
+            'sub_heading' => 'nullable|string|max:255',
+            'images'      => 'nullable|array',
+            'videos'      => 'nullable|array',
+        ]);
+
+        $banner = $id ? Banner::findOrFail($id) : new Banner();
+
+        $banner->location_id = $request->location_id;
+        $banner->heading     = $request->heading;
+        $banner->sub_heading = $request->sub_heading;
+        $banner->images      = $request->has('images') ? json_encode($request->images) : null;
+        $banner->videos      = $request->has('videos') ? json_encode($request->videos) : null;
+
+        $banner->save();
+
+        return redirect()->route('admin.banner.index')
+            ->with('success', $id ? 'Banner updated successfully' : 'Banner created successfully');
+    }
+
+     public function bannerCreate()
+    {
+        return view('admin.settings.banner.create');
+    }
+
+    // Edit page
+    public function bannerEdit($id)
+    {
+        $banner = Banner::findOrFail(decrypt($id));
+        return view('admin.settings.banner.create', compact('banner'));
+    }
+
+    public function bannerDestroy($id)
+    {
+        $banner = Banner::findOrFail(decrypt($id));
+        $banner->delete();
+
+        return redirect()
+            ->route('admin.banner.index')
+            ->with('success', 'Banner deleted successfully');
+    }
+
     public function storeYoutube(Request $request)
     {
         $request->validate([
-            'youtube_url' => 'required|url'
+            'youtube_url' => 'required|url',
         ]);
 
+        // Extract video id
         $videoId = $this->getYoutubeVideoId($request->youtube_url);
-
         if (!$videoId) {
-            return response()->json(['error' => 'Invalid YouTube URL'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid YouTube URL'
+            ], 422);
         }
 
         // Thumbnail URLs
         $largeThumbnail = "https://img.youtube.com/vi/{$videoId}/maxresdefault.jpg";
         $mediumThumbnail = "https://img.youtube.com/vi/{$videoId}/mqdefault.jpg";
-        // $smallThumbnail = "https://img.youtube.com/vi/{$videoId}/default.jpg";
 
-        // Save to DB
         $upload = new Upload();
-        $upload->file_original_name = $videoId; // Using video ID as original name
-        $upload->file_name = $request->youtube_url; // Storing the URL
-        $upload->medium_name = $largeThumbnail; // Large thumbnail
-        $upload->thumb_name = $mediumThumbnail; // Medium thumbnail
+        $upload->file_original_name = $request->youtube_url;
+        $upload->file_name = $videoId;
+        $upload->medium_name = $largeThumbnail;
+        $upload->thumb_name = $mediumThumbnail;
         $upload->user_id = auth()->id();
         $upload->type = 'youtube';
         $upload->caption = $request->caption ?? null;
@@ -337,7 +398,8 @@ class AizUploadController extends Controller
         $upload->save();
 
         return response()->json([
-            'message' => 'YouTube video saved successfully!',
+            'success' => true,
+            'message' => 'Video saved successfully',
             'data' => $upload
         ]);
     }

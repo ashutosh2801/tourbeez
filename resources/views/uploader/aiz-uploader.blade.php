@@ -80,7 +80,6 @@
 						</div>
 					</div>
 
-
 					<div class="tab-pane h-100" id="aiz-upload-youtube">
 						<form id="youtubeUploadForm" method="POST">
 							@csrf
@@ -123,3 +122,4 @@
 		</div>
 	</div>
 </div>
+
