@@ -226,9 +226,10 @@ class OrderController extends Controller
      */
  public function store(Request $request)
 {
+    dd(auth()->user()->id);
     // dd($request->all());
      $validated = $request->validate([
-        'customer_id'          => 'required|integer|exists:users,id',
+        'customer_id'          => 'nullable|integer',
         'tour_id'              => 'required|array|min:1',
         'tour_id.*'            => 'integer|exists:tours,id',
 
