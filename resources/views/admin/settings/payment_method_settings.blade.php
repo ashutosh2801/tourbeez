@@ -21,7 +21,7 @@
                                     checked
                                     @endif>
                                 </label>
-                                <label for="includes">Price includes booking fee</label>
+                                <label for="includes">Price excludes booking fee</label>
                             </div>
                         </div>
                         <div class="form-group row {{ get_setting('price_booking_fee') == 1 ?? 'hidden' }}" id="include_fee">
@@ -72,7 +72,7 @@
                                     checked
                                     @endif>
                                 </label>
-                                <label for="excludes">Price excludes booking fee</label>
+                                <label for="excludes">Price includes booking fee</label>
                             </div>
                         </div>
                         
@@ -142,7 +142,7 @@
                         
 
                         {{-- Allow customers to pay full amount --}}
-                        <div class="form-group form-check mt-3">
+                        <div class="form-group form-check mt-3 allow_full_payment_hide_show">
                             <input type="hidden" name="tour[allow_full_payment]" value="0">
                             <input type="checkbox" class="form-check-input" id="allow_full_payment"
                                     name="tour[allow_full_payment]" value="1"
@@ -153,7 +153,7 @@
                         </div>
 
                         {{-- Add minimum notice --}}
-                        <div class="form-group form-check">
+                        <div class="form-group form-check allow_full_payment_hide_show" >
                             <input type="hidden" name="tour[use_minimum_notice]" value="0">
                             <input type="checkbox" class="form-check-input" id="use_minimum_notice"
                                     name="tour[use_minimum_notice]" value="1"
@@ -798,6 +798,16 @@ $(document).ready(function () {
         } else {
             $('#deposit_amount').removeClass('d-none');
             $('#deposit_unit').removeClass('d-none');
+        }
+
+        if (val === 'FULL') {
+            
+            $('.allow_full_payment_hide_show').addClass('d-none');
+            
+            $('#minimum_notice_days').addClass('d-none');
+        } else{
+            $('.allow_full_payment_hide_show').removeClass('d-none');
+
         }
     }
 

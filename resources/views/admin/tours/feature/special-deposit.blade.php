@@ -36,7 +36,9 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                 <a class="nav-link" href="{{ route('admin.tour.edit.gallery', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Gallery')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.message.notification', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Message')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('SEO')}}</a> 
-                                <a class="nav-link active" href="{{ route('admin.tour.edit.special.deposit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate(' Special Deposit')}}</a>                               
+                                <a class="nav-link active" href="{{ route('admin.tour.edit.special.deposit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate(' Special Deposit')}}</a>   
+                                <a class="nav-link" href="{{ route('admin.tour.edit.review', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Review')}}</a>                               
+
                             </div>
                         </div>
                         <div class="col-10">
@@ -77,7 +79,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                                     <div class="col-md-3">
                                                         <input type="number" name="tour[deposit_amount]" class="form-control"
                                                                placeholder="Deposit"
-                                                               value="{{ old('tour.deposit_amount', $specialDeposit?->deposit_amount) }}">
+                                                               value="{{ old('tour.deposit_amount', $specialDeposit?->deposit_amount) }}" id="deposit_amount">
 												        </div>
 												        <div class="col-md-1">
 												            <span id="deposit_unit">
@@ -95,7 +97,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 												
 
 												{{-- Allow customers to pay full amount --}}
-												<div class="form-group form-check mt-3">
+												<div class="form-group form-check mt-3 allow_full_payment_hide_show">
 												    <input type="hidden" name="tour[allow_full_payment]" value="0">
 												    <input type="checkbox" class="form-check-input" id="allow_full_payment"
 												           name="tour[allow_full_payment]" value="1"
@@ -106,7 +108,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 												</div>
 
 												{{-- Add minimum notice --}}
-												<div class="form-group form-check">
+												<div class="form-group form-check allow_full_payment_hide_show">
 												    <input type="hidden" name="tour[use_minimum_notice]" value="0">
 												    <input type="checkbox" class="form-check-input" id="use_minimum_notice"
 												           name="tour[use_minimum_notice]" value="1"
@@ -116,7 +118,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 												    </label>
 												</div>
 
-												<div id="minimum_notice_days" class="{{ old('tour.use_minimum_notice', $specialDeposit?->use_minimum_notice) ? '' : 'd-none' }}">
+												<div id="minimum_notice_days" class="{{ old('tour.use_minimum_notice', $specialDeposit?->use_minimum_notice) ? '' : 'd-none' }} d-none " >
 												    <label for="notice_days">Charge full amount if booking</label>
 												    <input type="number" name="tour[notice_days]" id="notice_days"
 												           class="form-control d-inline-block w-auto"
@@ -127,7 +129,78 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 
 										    </div>
 										</div>
-										<div class="card-footer" style="display:block">
+
+                                         <div class="col-lg-12 mx-auto">
+                                            <div class="card card-primary">
+                                                <div class="card-header">
+                                                    <h1 class="mb-0 h6">{{ __('Online Booking Fee') }}</h1>
+                                                </div>
+                                                <div class="card-body">
+                                                    
+                                                  
+                                                        <div class="form-group row">
+                                                            <div class="option">
+                                                                <input type="hidden" name="types[]" value="price_booking_fee">
+                                                                  <label class="mb-0">
+                                                                    <input value="1" name="price_booking_fee" id="includes" type="radio" @if ($specialDeposit?->price_booking_fee == 1)
+                                                                    checked
+                                                                    @endif>
+                                                                </label>
+                                                                <label for="includes">Price excludes booking fee</label>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div class="form-group row {{ ($specialDeposit?->price_booking_fee != 1) ? 'hidden' : '' }}" id="include_fee">
+
+
+
+                                                            <input type="hidden" name="types[]" value="tour_booking_fee">
+                                                            <input type="hidden" name="types[]" value="tour_booking_fee_type">
+
+                                                            <div id="tour_booking_fee_id" class="">
+                                                                <label for="tour_booking_fee">Booking Fee Amount</label>
+                                                            <div class="form-row">
+
+                                                                <div class="col-md-6">
+                                                                    <select class="form-control" name="tour_booking_fee_type" id="tour_booking_fee_type">   
+                                                                        <option value="PERCENT" {{ old('tour_booking_fee_type', ($specialDeposit?->tour_booking_fee_type) == 'PERCENT') ? 'selected' : '' }}>PERCENT</option>
+                                                                        <option value="FIXED" {{ old('tour_booking_fee_type', ($specialDeposit?->tour_booking_fee_type == 'FIXED') ? 'selected' : '') }}>FIXED</option>
+                                        
+                                                                    </select>
+                                                                </div>
+
+                                                                <div class="col-md-6">
+                                                                    <input type="text" 
+                                                                        placeholder="Enter fee amount" 
+                                                                        name="tour_booking_fee" 
+                                                                        value="{{ get_setting('tour_booking_fee') }}" 
+                                                                        class="form-control" id="tour_booking_fee" 
+                                                                    />
+                                                                </div>
+                                                                
+                                                            </div>
+                                                        </div>
+
+                                                            
+                                                        </div>
+                                                        <div class="form-group row">
+                                                              <div class="option">
+                                                                <label class="mb-0">
+                                                                    <input value="0" name="price_booking_fee" id="excludes" type="radio" @if ($specialDeposit?->price_booking_fee == 0)
+                                                                    checked
+                                                                    @endif>
+                                                                </label>
+                                                                <label for="excludes">Price includes booking fee</label>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                       
+                                                       
+                                                        
+                                                </div>
+                                            </div>
+                                        </div>
+                                		<div class="card-footer" style="display:block">
 							                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
 							                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
 							                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.pickups', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
@@ -157,15 +230,67 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
             $('#minimum_notice_days').toggleClass('d-none', !this.checked);
         });
 
-        // update unit dynamically
-        // $('#tour_charge').on('change', function () {
-        //     let val = $(this).val();
-        //     let unit = '';
-        //     if (val === 'DEPOSIT_PERCENT') unit = '%';
-        //     else if (val === 'DEPOSIT_FIXED' || val === 'DEPOSIT_FIXED_PER_ORDER') unit = '$';
-        //     $('#deposit_unit').text(unit);
-        // }).trigger('change');
     });
+</script>
+
+<script>
+function toggleBookingFeeField() {
+    if ($("#includes").is(":checked")) {
+        $("#include_fee").removeClass('hidden');
+    }
+    else if($("#excludes").is(":checked")) {
+        $("#include_fee").addClass('hidden');
+    }
+    else {
+        $("#include_fee").addClass('hidden');
+    }
+}    
+$(document).ready(function () {
+
+    // Initial state
+    toggleBookingFeeField();
+
+    // On radio change
+    $("input[name='price_booking_fee']").change(function () {
+        toggleBookingFeeField();
+    });
+});
+
+$(document).ready(function () {
+    function toggleDeposit() {
+        let val = $('#tour_charge').val();
+        if (val === 'NONE' || val === 'FULL') {
+            $('#deposit_amount').addClass('d-none');
+            $('#deposit_unit').addClass('d-none');
+        } else {
+            $('#deposit_amount').removeClass('d-none');
+            $('#deposit_unit').removeClass('d-none');
+        }
+        if (val === 'FULL') {
+            
+            $('.allow_full_payment_hide_show').addClass('d-none');
+            
+            $('#minimum_notice_days').addClass('d-none');
+        } else{
+            $('.allow_full_payment_hide_show').removeClass('d-none');
+
+            if($('#use_minimum_notice').prop('checked')) {
+               $('#minimum_notice_days').removeClass('d-none'); 
+            } else {
+
+            }
+
+        }
+        
+    }
+
+    // Run on change
+    $('#tour_charge').on('change', toggleDeposit);
+
+    // Run on page load (to handle old values)
+    toggleDeposit();
+});
+
 </script>
 
 

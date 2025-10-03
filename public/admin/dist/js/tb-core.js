@@ -224,6 +224,8 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
                 if(typeof data == 'string'){
                     data = JSON.parse(data);
                 }
+
+
                 TB.uploader.data.allFiles = data.data;
                 TB.uploader.allowedFileType();
                 TB.uploader.addSelectedValue();
@@ -378,70 +380,127 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
             if (TB.uploader.data.type !== "all") {
                 TB.uploader.data.allFiles = TB.uploader.data.allFiles.filter(
                     function (item) {
-                        return item.type === TB.uploader.data.type;
+
+                        return item.type === TB.uploader.data.type || item.type === "youtube";
                     }
                 );
             }
         },
         updateUploaderFiles: function () {
+    $(".aiz-uploader-all").html(
+        '<div class="align-items-center d-flex h-100 justify-content-center w-100"><div class="spinner-border" role="status"></div></div>'
+    );
+
+    var data = TB.uploader.data.allFiles;
+    
+    setTimeout(function () {
+        $(".aiz-uploader-all").html(null);
+
+        if (data && data.length > 0) {
+            for (var i = 0; i < data.length; i++) {
+                var item = data[i];
+                var thumb = "";
+
+                if (item.type === "youtube") {
+
+                    // Image preview
+                    var ytThumb = item.thumb_name || ("https://img.youtube.com/vi/" + item.file_name + "/mqdefault.jpg");
+                    thumb =
+                        '<div class="youtube-thumb">' +
+                        '<img src="' + ytThumb + '" class="img-fit">' +
+                        '<div class="play-overlay"><i class="la la-youtube-play"></i></div>' +
+                        '</div>';
+                   
+                } else if (item.type === "image") {
+                     var src = item.thumb_name ? TB.data.fileBaseUrl + item.thumb_name : TB.data.fileBaseUrl + item.file_name;
+                    thumb = '<img src="' + src + '" class="img-fit">';
+                    // YouTube thumbnail
+                    
+                } else {
+                    thumb = '<i class="la la-file-text"></i>';
+                }
+
+                var html =
+                    '<div class="aiz-file-box-wrap">' +
+                    '<div class="aiz-file-box">' +
+                    '<div class="card card-file aiz-uploader-select" title="' + (item.file_original_name || "") + '">' +
+                    '<div class="card-file-thumb">' + thumb + '</div>' +
+                    '<div class="card-body">' +
+                    '<h6 class="d-flex">' +
+                    '<span class="text-truncate title">' + (item.file_original_name || "") + '</span>' +
+                    '<span class="ext">' + (item.extension ? "." + item.extension : "") + '</span>' +
+                    '</h6>' +
+                    '<p>' + (item.file_size ? TB.extra.bytesToSize(item.file_size) : "") + '</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>';
+
+                $(".aiz-uploader-all").append(html);
+            }
+        } else {
             $(".aiz-uploader-all").html(
-                '<div class="align-items-center d-flex h-100 justify-content-center w-100"><div class="spinner-border" role="status"></div></div>'
+                '<div class="align-items-center d-flex h-100 justify-content-center w-100 nav-tabs"><div class="text-center"><h3>No files found</h3></div></div>'
             );
+        }
 
-            var data = TB.uploader.data.allFiles;
+        TB.uploader.uploadSelect();
+        TB.uploader.deleteUploaderFile();
+    }, 300);
+},
 
-            setTimeout(function () {
-                $(".aiz-uploader-all").html(null);
+        inputSelectPreviewGenerate: function (elem) {
+    elem.find(".selected-files").val(TB.uploader.data.selectedFiles);
+    elem.next(".file-preview").html(null);
+
+    if (TB.uploader.data.selectedFiles.length > 0) {
+
+        $.post(
+            TB.data.appUrl + "/aiz-uploader/get_file_by_ids",
+            { _token: TB.data.csrf, ids: TB.uploader.data.selectedFiles.toString() },
+            function (data) {
+                console.log(data);
+                elem.next(".file-preview").html(null);
 
                 if (data.length > 0) {
+                    elem.find(".file-amount").html(
+                        TB.uploader.updateFileHtml(data)
+                    );
                     for (var i = 0; i < data.length; i++) {
                         var thumb = "";
-                        var hidden = "";
+
                         if (data[i].type === "image") {
                             thumb =
                                 '<img src="' +
                                 TB.data.fileBaseUrl +
                                 data[i].file_name +
                                 '" class="img-fit">';
-                        } else {
+                        } 
+                        else if (data[i].type === "youtube") {
+                            // YouTube thumbnail with play overlay
+                            var ytThumb = data[i].thumb_name || ("https://img.youtube.com/vi/" + data[i].file_name + "/mqdefault.jpg");
+                            thumb =
+                                '<div class="youtube-thumb">' +
+                                '<img src="' + ytThumb + '" class="img-fit">' +
+                                '<div class="play-overlay"><i class="la la-youtube-play"></i></div>' +
+                                '</div>';
+                        } 
+                        else {
                             thumb = '<i class="la la-file-text"></i>';
                         }
+
                         var html =
-                            '<div class="aiz-file-box-wrap" aria-hidden="' +
-                            data[i].aria_hidden +
-                            '" data-selected="' +
-                            data[i].selected +
-                            '">' +
-                            '<div class="aiz-file-box">' +
-                            // '<div class="dropdown-file">' +
-                            // '<a class="dropdown-link" data-toggle="dropdown">' +
-                            // '<i class="la la-ellipsis-v"></i>' +
-                            // "</a>" +
-                            // '<div class="dropdown-menu dropdown-menu-right">' +
-                            // '<a href="' +
-                            // TB.data.fileBaseUrl +
-                            // data[i].file_name +
-                            // '" target="_blank" download="' +
-                            // data[i].file_original_name +
-                            // "." +
-                            // data[i].extension +
-                            // '" class="dropdown-item"><i class="la la-download mr-2"></i>Download</a>' +
-                            // '<a href="#" class="dropdown-item aiz-uploader-delete" data-id="' +
-                            // data[i].id +
-                            // '"><i class="la la-trash mr-2"></i>Delete</a>' +
-                            // "</div>" +
-                            // "</div>" +
-                            '<div class="card card-file aiz-uploader-select" title="' +
+                            '<div class="d-flex justify-content-between align-items-center mt-2 file-preview-item" data-id="' +
+                            data[i].id +
+                            '" title="' +
                             data[i].file_original_name +
                             "." +
                             data[i].extension +
-                            '" data-value="' +
-                            data[i].id +
                             '">' +
-                            '<div class="card-file-thumb">' +
+                            '<div class="align-items-center align-self-stretch d-flex justify-content-center thumb">' +
                             thumb +
                             "</div>" +
-                            '<div class="card-body">' +
+                            '<div class="col body">' +
                             '<h6 class="d-flex">' +
                             '<span class="text-truncate title">' +
                             data[i].file_original_name +
@@ -454,158 +513,25 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
                             TB.extra.bytesToSize(data[i].file_size) +
                             "</p>" +
                             "</div>" +
-                            "</div>" +
+                            '<div class="remove">' +
+                            '<button class="btn btn-sm btn-link remove-attachment" type="button">' +
+                            '<i class="la la-close"></i>' +
+                            "</button>" +
                             "</div>" +
                             "</div>";
 
-                        $(".aiz-uploader-all").append(html);
+                        elem.next(".file-preview").append(html);
                     }
                 } else {
-                    $(".aiz-uploader-all").html(
-                        '<div class="align-items-center d-flex h-100 justify-content-center w-100 nav-tabs"><div class="text-center"><h3>No files found</h3></div></div>'
-                    );
+                    elem.find(".file-amount").html("Choose File");
                 }
-                TB.uploader.uploadSelect();
-                TB.uploader.deleteUploaderFile();
-            }, 300);
-        },
-        inputSelectPreviewGenerate: function (elem) {
-            elem.find(".selected-files").val(TB.uploader.data.selectedFiles);
-            elem.next(".file-preview").html(null);
-
-            if (TB.uploader.data.selectedFiles.length > 0) {
-
-                $.post(
-                    TB.data.appUrl + "/aiz-uploader/get_file_by_ids",
-                    { _token: TB.data.csrf, ids: TB.uploader.data.selectedFiles.toString() },
-                    function (data) {
-
-                        elem.next(".file-preview").html(null);
-
-                        if (data.length > 0) {
-                            elem.find(".file-amount").html(
-                                TB.uploader.updateFileHtml(data)
-                            );
-                            for (
-                                var i = 0;
-                                i < data.length;
-                                i++
-                            ) {
-                                var thumb = "";
-                                if (data[i].type === "image") {
-                                    thumb =
-                                        '<img src="' +
-                                        TB.data.fileBaseUrl +
-                                        data[i].file_name +
-                                        '" class="img-fit">';
-                                } else {
-                                    thumb = '<i class="la la-file-text"></i>';
-                                }
-                                var html =
-                                    '<div class="d-flex justify-content-between align-items-center mt-2 file-preview-item" data-id="' +
-                                    data[i].id +
-                                    '" title="' +
-                                    data[i].file_original_name +
-                                    "." +
-                                    data[i].extension +
-                                    '">' +
-                                    '<div class="align-items-center align-self-stretch d-flex justify-content-center thumb">' +
-                                    thumb +
-                                    "</div>" +
-                                    '<div class="col body">' +
-                                    '<h6 class="d-flex">' +
-                                    '<span class="text-truncate title">' +
-                                    data[i].file_original_name +
-                                    "</span>" +
-                                    '<span class="ext">.' +
-                                    data[i].extension +
-                                    "</span>" +
-                                    "</h6>" +
-                                    "<p>" +
-                                    TB.extra.bytesToSize(
-                                        data[i].file_size
-                                    ) +
-                                    "</p>" +
-                                    "</div>" +
-                                    '<div class="remove">' +
-                                    '<button class="btn btn-sm btn-link remove-attachment" type="button">' +
-                                    '<i class="la la-close"></i>' +
-                                    "</button>" +
-                                    "</div>" +
-                                    "</div>";
-
-                                elem.next(".file-preview").append(html);
-                            }
-                        } else {
-                            elem.find(".file-amount").html("Choose File");
-                        }
-                });
-            } else {
-                elem.find(".file-amount").html("Choose File");
             }
+        );
+    } else {
+        elem.find(".file-amount").html("Choose File");
+    }
+},
 
-            // if (TB.uploader.data.selectedFiles.length > 0) {
-            //     elem.find(".file-amount").html(
-            //         TB.uploader.updateFileHtml(TB.uploader.data.selectedFiles)
-            //     );
-            //     for (
-            //         var i = 0;
-            //         i < TB.uploader.data.selectedFiles.length;
-            //         i++
-            //     ) {
-            //         var index = TB.uploader.data.allFiles.findIndex(
-            //             (x) => x.id === TB.uploader.data.selectedFiles[i]
-            //         );
-            //         var thumb = "";
-            //         if (TB.uploader.data.allFiles[index].type == "image") {
-            //             thumb =
-            //                 '<img src="' +
-            //                 TB.data.appUrl +
-            //                 "/public/" +
-            //                 TB.uploader.data.allFiles[index].file_name +
-            //                 '" class="img-fit">';
-            //         } else {
-            //             thumb = '<i class="la la-file-text"></i>';
-            //         }
-            //         var html =
-            //             '<div class="d-flex justify-content-between align-items-center mt-2 file-preview-item" data-id="' +
-            //             TB.uploader.data.allFiles[index].id +
-            //             '" title="' +
-            //             TB.uploader.data.allFiles[index].file_original_name +
-            //             "." +
-            //             TB.uploader.data.allFiles[index].extension +
-            //             '">' +
-            //             '<div class="align-items-center align-self-stretch d-flex justify-content-center thumb">' +
-            //             thumb +
-            //             "</div>" +
-            //             '<div class="col body">' +
-            //             '<h6 class="d-flex">' +
-            //             '<span class="text-truncate title">' +
-            //             TB.uploader.data.allFiles[index].file_original_name +
-            //             "</span>" +
-            //             '<span class="ext">.' +
-            //             TB.uploader.data.allFiles[index].extension +
-            //             "</span>" +
-            //             "</h6>" +
-            //             "<p>" +
-            //             TB.extra.bytesToSize(
-            //                 TB.uploader.data.allFiles[index].file_size
-            //             ) +
-            //             "</p>" +
-            //             "</div>" +
-            //             '<div class="remove">' +
-            //             '<button class="btn btn-sm btn-link remove-attachment" type="button">' +
-            //             '<i class="la la-close"></i>' +
-            //             "</button>" +
-            //             "</div>" +
-            //             "</div>";
-
-            //         elem.next(".file-preview").append(html);
-            //     }
-            // } else {
-            //     elem.find(".file-amount").html("Choose File");
-            // }
-        },
         editorImageGenerate: function (elem) {
             if (TB.uploader.data.selectedFiles.length > 0) {
                 for (
@@ -715,6 +641,7 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
                     $('[data-toggle="aizUploaderAddSelected"]').on(
                         "click",
                         function () {
+
                             if (from === "input") {
                                 TB.uploader.inputSelectPreviewGenerate(elem);
                             } else if (from === "direct") {
@@ -1771,5 +1698,46 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
     // $(document).ajaxComplete(function(){
     //     TB.plugins.bootstrapSelect('refresh');
     // });
+
+    // ✅ New Code: Add Files button enable/disable based on active tab
+    $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
+        var target = $(e.target).attr("href"); // active tab id
+
+        if (target === '#aiz-select-file') {
+            $('#addFilesBtn').prop('disabled', false); // enable button
+        } else {
+            $('#addFilesBtn').prop('disabled', true); // disable button
+        }
+    });
+
+    // YouTube video form submit via AJAX
+    $(document).on('submit', '#youtubeUploadForm', function (e) {
+        e.preventDefault();
+
+        var form = $(this);
+        var url = TB.data.appUrl + "/aiz-uploader/youtube";
+        var formData = form.serialize();
+
+        $.post(url, formData, function (response) {
+            console.log(response);
+            if (response.data) {
+                // success message
+                TB.plugins.notify('success', '{{ translate("Video uploaded successfully") }}');
+
+                // form reset
+                form[0].reset();
+
+                // update listing with new video
+                TB.uploader.getAllUploads(
+                    TB.data.appUrl + "/aiz-uploader/get_uploaded_files"
+                );
+                
+            } else {
+                TB.plugins.notify('danger', '{{ translate("Invalid YouTube link") }}');
+            }
+        }).fail(function () {
+            TB.plugins.notify('danger', '{{ translate("Something went wrong") }}');
+        });
+    });
 
 })(jQuery);

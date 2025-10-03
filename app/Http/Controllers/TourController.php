@@ -24,6 +24,7 @@ use App\Models\TourScheduleRepeats;
 use App\Models\TourUpload;
 use App\Models\Tourtype;
 use App\Services\ImageService;
+use App\Traits\TourScheduleHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
@@ -34,6 +35,7 @@ use Validator;
 class TourController extends Controller
 {
     protected $imageService;
+    use TourScheduleHelper;
     /**
      * Display a listing of the resource.
      */
@@ -1287,17 +1289,42 @@ class TourController extends Controller
         return back()->withInput()->withErrors($request->all())->with('error','Something went wrong!');
     }
 
-    public function pickup_update(Request $request, $id) {
-        $tour  = Tour::findOrFail($id);
-        // Save tour types
-        if ($request->has('pickups') && is_array($request->pickups)) {
-            $tour->pickups()->sync($request->pickups);
+    // public function pickup_update(Request $request, $id) {
 
-            return redirect()->back()->withInput()->with('success','Pickup location saved successfully.'); 
+
+    //     $tour  = Tour::findOrFail($id);
+    //     // Save tour types
+    //     if ($request->has('pickups') && is_array($request->pickups)) {
+    //         $tour->pickups()->sync($request->pickups);
+
+    //         return redirect()->back()->withInput()->with('success','Pickup location saved successfully.'); 
+    //     }
+
+    //     return back()->withInput()->with('success','Addon saved successfully.');
+    // }
+
+    public function pickup_update(Request $request, $id) {
+        $tour = Tour::findOrFail($id);
+
+        if ($request->has('pickups') && is_array($request->pickups)) {
+            $syncData = [];
+
+            foreach ($request->pickups as $pickupId) {
+                $syncData[$pickupId] = [
+                    'comment' => $request->comment[$pickupId] ?? "Enter The Pickup Location"
+                ];
+            }
+
+            $tour->pickups()->sync($syncData);
+
+            return redirect()->back()
+                ->withInput()
+                ->with('success','Pickup location saved successfully.'); 
         }
 
         return back()->withInput()->with('success','Addon saved successfully.');
     }
+
 
     public function seo_update(Request $request, $id)
     {
@@ -1529,6 +1556,8 @@ class TourController extends Controller
             }
         }
     }
+
+    $this->updateTourScheduleMeta($tour->id);
 
     return back()->with('success', 'Schedules saved successfully.');
 }
@@ -2070,9 +2099,66 @@ class TourController extends Controller
         $data       = Tour::findOrFail(decrypt($id));
 
         $specialDeposit = $data->specialDeposit ?? new \App\Models\TourSpecialDeposit();
-
+        
         return view('admin.tours.feature.special-deposit', compact( 'data', 'specialDeposit'));
     }
+
+    public function review($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+
+
+        $tourReview = $data->review ?? new \App\Models\TourReview();
+
+        return view('admin.tours.feature.review', compact( 'data', 'tourReview'));
+    }
+
+    public function reviewUpdate(Request $request, $id)
+    {
+
+        $tour = Tour::findOrFail($id);
+
+        $validated = $request->validate([
+            'review.use_review'        => 'nullable|boolean',
+            'review.review_heading'    => 'nullable|string|max:255',
+            'review.review_text'       => 'nullable|string',
+            'review.review_rating'     => 'nullable|integer|min:0|max:5',
+            'review.review_count'      => 'nullable|integer|min:0',
+
+            'review.use_recommended'   => 'nullable|boolean',
+            'review.recommended_heading' => 'nullable|string|max:255',
+            'review.recommended_text'  => 'nullable|string',
+
+            'review.use_badge'         => 'nullable|boolean',
+            'review.badge_heading'     => 'nullable|string|max:255',
+            'review.badge_text'        => 'nullable|string',
+
+            'review.use_banner'        => 'nullable|boolean',
+            'review.banner_heading'    => 'nullable|string|max:255',
+            'review.banner_text'       => 'nullable|string',
+        ]);
+
+        if ($request->has('review') && is_array($request->review)) {
+            $data = $request->review;
+
+            if(!$data['use_review'] && !$data['use_recommended'] && !$data['use_badge'] && !$data['use_banner']){
+                \DB::table('tour_reviews')->where('tour_id', $id)->delete();
+            } else {
+                \DB::table('tour_reviews')->updateOrInsert(
+                    ['tour_id' => $tour->id],
+                    array_merge($data, [
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ])
+                );
+            }
+
+            return redirect()->back()->with('success', 'Tour review settings saved successfully.');
+        }
+
+        return back()->withInput()->with('error','OOPs! something went wrong!');
+    }
+
 
 
     public function specialDepositUpdate(Request $request, $id)
@@ -2086,13 +2172,31 @@ class TourController extends Controller
             'tour.allow_full_payment' => 'nullable|boolean',
             'tour.use_minimum_notice' => 'nullable|boolean',
             'tour.notice_days'        => 'nullable|integer|min:0',
+            'price_booking_fee'       => 'nullable',
+            'tour_booking_fee'        => 'nullable',
+            'tour_booking_fee_type'   => 'nullable',
         ]);
 
         if ($request->has('tour') && is_array($request->tour)) {
             $data = $request->tour;
 
             if(!$data['use_deposit']){
-                \DB::table('tour_special_deposits')->where('tour_id', $id)->delete();
+                \DB::table('tour_special_deposits')->updateOrInsert(
+                    ['tour_id' => $tour->id], // condition
+                    [
+                        'use_deposit'        => 0,
+                        'charge'             =>  null,
+                        'deposit_amount'     => null,
+                        'allow_full_payment' => null,
+                        'use_minimum_notice' => null,
+                        'notice_days'        => null,
+                        'price_booking_fee'  => $request->price_booking_fee,
+                        'tour_booking_fee_type'  => ($request->price_booking_fee != 0)? $request->tour_booking_fee_type : NULL,
+                        'tour_booking_fee'  => ($request->price_booking_fee != 0) ? $request->tour_booking_fee : NULL,
+                        'updated_at'         => now(),
+                        'created_at'         => now(),
+                    ]
+                );
             } else{
                 \DB::table('tour_special_deposits')->updateOrInsert(
                     ['tour_id' => $tour->id], // condition
@@ -2102,7 +2206,10 @@ class TourController extends Controller
                         'deposit_amount'     => $data['deposit_amount'] ?? null,
                         'allow_full_payment' => $data['allow_full_payment'] ?? null,
                         'use_minimum_notice' => $data['use_minimum_notice'] ?? null,
-                        'notice_days'        => $data['notice_days'] ?? null,
+                        'notice_days'        => $data['use_minimum_notice'] ? $data['notice_days'] ?? null : null,
+                        'price_booking_fee'  => $request->price_booking_fee,
+                        'tour_booking_fee_type'  => ($request->price_booking_fee != 0)? $request->tour_booking_fee_type : NULL,
+                        'tour_booking_fee'  => ($request->price_booking_fee != 0) ? $request->tour_booking_fee : NULL,
                         'updated_at'         => now(),
                         'created_at'         => now(),
                     ]

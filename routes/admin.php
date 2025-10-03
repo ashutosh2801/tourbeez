@@ -49,6 +49,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/order/rezdy-manifest', [OrderController::class, 'showPdfFiles']);
     Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus']);
     Route::get('/order-manifest', [OrderController::class, 'manifest'])->name('orders.manifest');
+    Route::post('/internal-order/store', [OrderController::class, 'internalOrderStore'])->name('orders.internal.store');
     Route::get('/ordersmanifest/download', [OrderController::class, 'downloadManifest'])->name('orders.manifest.download');
 
     Route::get('/tour-manifest', [OrderController::class, 'tourManifest'])->name('orders.tour.manifest');
@@ -100,6 +101,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/paymentrequest', [TourController::class, 'editPaymentRequest'])->name('tour.edit.message.paymentrequest');
     Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
     Route::get('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit.special.deposit');
+    Route::get('/tour/{id}/edit/review', [TourController::class, 'review'])->name('tour.edit.review');
     Route::get('/tour/{id}/edit/schedule-calendar', [TourController::class, 'scheduleCalendar'])->name('tour.edit.schedule-calendar');
     Route::get('/tour/{id}/edit/schedule-calendar-event', [TourController::class, 'scheduleCalendarEvent'])->name('tour.edit.schedule-calendar-event');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
@@ -127,19 +129,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('/tour/payment_request_update/{id}', [TourController::class, 'payment_request_update'])->name('tour.payment_request_update');
     Route::get('/tour/preview/{id}', [TourController::class, 'preview'])->name('tour.preview');
     Route::post('/tour/addfocus/{id}', [TourController::class, 'add_focus_keyword'])->name('tour.addfocus');
-
     Route::post('/tours/reorder', [TourController::class, 'reorder'])->name('tour.reorder');
-
     Route::post('/tours/save-coupon', [TourController::class, 'saveCoupon'])->name('tour.saveCoupon');
     Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');
-
     Route::post('/tours/toggle-status', [TourController::class, 'toggleStatus'])->name('tour.toggleStatus');
     // Route::post('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit..special.deposit');
     Route::put('/tour/special-deposit/{id}', [TourController::class, 'specialDepositUpdate'])->name('tour.special-deposit');
-
+    Route::put('/tour/review/{id}', [TourController::class, 'reviewUpdate'])->name('tour.review');
     Route::get('/tours/{id}/sub-create', [TourController::class, 'createSubTour'])->name('tours.sub-create');
     Route::post('/tours/{id}/sub-tour-store', [TourController::class, 'subTourStore'])->name('tour.sub-tour-store');
-
     Route::get('/tours/{id}/sub-edit', [TourController::class, 'editSubTour'])->name('tour.sub-tour.edit');
     Route::get('/tours/{id}/sub-index', [TourController::class, 'subTourIndex'])->name('tour.sub-tour.index');
 
@@ -177,14 +175,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity.logs');
     Route::get('/banner', [AizUploadController::class, 'showBanner'])->name('banner.index');
-
-    
+  
     Route::get('banners/create', [AizUploadController::class, 'bannerCreate'])->name('banners.create');
     Route::post('banners/store', [AizUploadController::class, 'bannerStoreOrUpdate'])->name('banners.store');
     Route::get('banners/{id}/edit', [AizUploadController::class, 'bannerEdit'])->name('banners.edit');
     Route::post('banners/{id}/update', [AizUploadController::class, 'bannerStoreOrUpdate'])->name('banners.update');
     Route::get('banners/{id}/delete', [AizUploadController::class, 'bannerDestroy'])->name('banners.destroy');
-
 
     // Uploader
     Route::get('/refresh-csrf', function(){ return csrf_token(); });
@@ -195,6 +191,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/aiz-uploader/get_file_by_ids', [AizUploadController::class,'get_preview_files']);
     Route::get('/aiz-uploader/download/{id}', [AizUploadController::class,'attachment_download'])->name('download_attachment');
     Route::get('/migrate/database', [AizUploadController::class,'migrate_database']);
+
+    Route::post('/aiz-uploader/youtube', [AizUploadController::class, 'storeYoutube'])->name('aiz-uploader.youtube');
 
     // Setting
     Route::resource('/settings', SettingController::class);
@@ -231,6 +229,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/email-templates', EmailTemplateController::class);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
     Route::post('/email-templates/preview/{id}', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
+
+
+    Route::get('/tour/{slug}/fetch_one', [\App\Http\Controllers\API\TourController::class, 'fetch_one']);
+    Route::get('/tour-sessions', [\App\Http\Controllers\API\OrderController::class, 'getSessionTimes']);
+    Route::get('/tour/{slug}/booking', [\App\Http\Controllers\API\TourController::class, 'fetch_booking']);
+
     
     Route::get('/clear-cache', function() {
         Artisan::call('cache:clear');

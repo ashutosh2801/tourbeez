@@ -40,6 +40,25 @@
     input:checked + .slider:before {
         transform: translateX(24px);
     }
+
+    .youtube-thumb {
+      position: relative;
+      display: inline-block;
+    }
+    .youtube-thumb img {
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+    }
+    .play-overlay {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 36px;
+      color: red;
+      opacity: 0.9;
+      pointer-events: none;
+    }
 </style>
 
 <div class="card">
@@ -165,6 +184,7 @@
                                         </div>
                                         <input type="text" placeholder="99.50" name="PriceOption[{{ $index }}][price]" id="PriceOption_price" 
                                         value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control" >
+                                        
                                         
                                     </div>  
                                     @error("PriceOption.$index.price")
