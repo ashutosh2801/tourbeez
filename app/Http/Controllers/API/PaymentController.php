@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AdminBookingMail;
 use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
@@ -203,14 +204,23 @@ class PaymentController extends Controller
                 $payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
 
                 $cacheKey = 'booking_' . $paymentIntent->id;
-                $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($paymentIntent) {
-                    return Order::with([
-                                'tour',
-                                'tour.location',
-                                'tour.detail',
-                                'customer'
-                            ])->where('payment_intent_id', $paymentIntent->id)->first();
-                });
+                // $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($paymentIntent) {
+                //     return Order::with([
+                //                 'tour',
+                //                 'tour.location',
+                //                 'tour.detail',
+                //                 'customer'
+                //             ])->where('payment_intent_id', $paymentIntent->id)->first();
+                // });
+
+                $booking = Order::with([
+                    'tour',
+                    'tour.location',
+                    'tour.detail',
+                    'customer'
+                ])
+                ->where('payment_intent_id', $paymentIntent->id)
+                ->first();
 
                 $total_amount   = $booking->total_amount;
                 $balance_amount = 0;
@@ -225,14 +235,21 @@ class PaymentController extends Controller
                 $payment_method = ''; // future use
 
                 $cacheKey = 'booking_' . $setupIntent->id;
-                $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($setupIntent) {
-                    return Order::with([
+                // $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($setupIntent) {
+                //     return Order::with([
+                //                 'tour',
+                //                 'tour.location',
+                //                 'tour.detail',
+                //                 'customer'
+                //             ])->where('payment_intent_id', $setupIntent->id)->first();
+                // });
+
+                $booking = Order::with([
                                 'tour',
                                 'tour.location',
                                 'tour.detail',
                                 'customer'
                             ])->where('payment_intent_id', $setupIntent->id)->first();
-                });
             }
 
             if (!$booking) {
@@ -344,10 +361,22 @@ class PaymentController extends Controller
             Log::info('order_email_sent' . $booking->email_sent);
             if ($booking && $booking->tour->order_email && !$booking->email_sent) {                    
                 $mailsent = self::sendOrderDetailMail($detail, $action_name);
+                
                 Log::info('order_email_sentqwwqdwqqdqwdqw' . $booking->email_sent);
                 $booking->email_sent = true;
-                $booking->save();
+                // $booking->save();
             }
+
+            Log::info('order_admin email' . $booking->admin_email_sent);
+            if ($booking && $booking->tour->order_email && !$booking->admin_email_sent) {                    
+                $mailsent = self::sendOrderDetailMail($detail, 'admin');
+                
+                Log::info('admin email sent' . $booking->admin_email_sent);
+                $booking->admin_email_sent = true;
+                // $booking->save();
+            }
+            $booking->save();
+
             Log::info('order_email_sentqwwqdwq' . $booking->email_sent);
 
             return response()->json([
@@ -368,11 +397,16 @@ class PaymentController extends Controller
     //this function need name should should change
     public static function sendOrderDetailMail($detail, $action_name = 'book')
     {
-        
+        Log::info('sendOrderDetailMail start');
         try{
             $order_id = $detail['order_number'];
             $order = Order::where('order_number',$order_id)->first();
-            $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_pending';
+            if($action_name == 'admin'){
+                $identifier = 'admin_order_booking';
+            } else{
+                $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_pending';
+            }
+            
             $email_template = EmailTemplate::where('identifier', $identifier)->first();
             $template = $email_template->body;
             $template_footer = $email_template->footer;
@@ -397,7 +431,7 @@ class PaymentController extends Controller
                     'message' => "customer not found"
                 ], 404);
             }
-            
+            Log::info('sendOrderDetailMail identifier');
             $orderTour  = $order->orderTours()->first();
 
             
@@ -599,7 +633,7 @@ class PaymentController extends Controller
 
             $to_address = $tour->location->destination ?? '';
             $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
-                    
+            $order_paid = $order->total_amount - $order->balance_amount;
             $replacements = [   
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
@@ -626,6 +660,7 @@ class PaymentController extends Controller
                 "[[ORDER_TOUR_TIME]]"       => $order->order_tour->tour_time ? date('H:i A', strtotime($order->order_tour->tour_time)) : '',
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
                 "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
+                "[[ORDER_PAID]]"            => price_format_with_currency($order_paid, $order->currency) ?? '',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
             ];
@@ -657,16 +692,23 @@ class PaymentController extends Controller
                 'location' => $to_address,
             ];
 
-            Log::info('order_mail_send' . $customer->email);
+            Log::info('order_mail_send 676' . env('MAIL_FROM_ADDRESS'));
+            Log::info('order_mail_send 676' . env('MAIL_FROM_ADMIN_ADDRESS'));
 
+          
+            if($action_name == 'admin'){
+                $mailSend = self::order_mail_send([env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_ADMIN_ADDRESS')],$subject, $header,  $body, $footer, $event, 'admin');
+            } else{
+                $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event);
+            }
+            
 
-            $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event);
             Log::info('OrderEmailHistorythishere' . $mailSend);
             if(true){
                 Log::info('OrderEmailHistory' . $mailSend);
                 OrderEmailHistory::create([
                     'order_id'  => $order->id,
-                    'to_email'  => $customer->email,
+                    'to_email'  => $action_name == 'admin' ? 'Admin' : $customer->email,
                     'from_email'=> env('MAIL_FROM_ADDRESS'),
                     'subject'   => $subject,
                     'body'      => $header.$body.$footer,
@@ -697,12 +739,14 @@ class PaymentController extends Controller
  
     }
 
-    public static function order_mail_send($email,$subject, $header,  $body, $footer, $event = null)
+    public static function order_mail_send($email,$subject, $header,  $body, $footer, $event = null, $recipient = 'customer' )
     {
-        
+         Log::info('order_mail_send' . 718);
         if (env('MAIL_FROM_ADDRESS') != null) {
+            Log::info('order_mail_send' . 2234242);
             $array['view'] = 'emails.newsletter';
             $array['subject'] = $subject;
+
             $array['header'] = $header;
             $array['from'] = env('MAIL_FROM_ADDRESS');
             $array['content'] =  $header.$body.$footer;
@@ -710,16 +754,24 @@ class PaymentController extends Controller
 
  
             try {
-                if(Mail::to($email)->queue(new EmailManager($array))){
-                    return true;
-                    return response()->json(['status' => 'success']);
-                }else{
-                     return false;
-                     return response()->json(['status' => 'Failed']);
+
+                if($recipient == 'admin'){
+                     Mail::to($email)->send(new AdminBookingMail($array));
+                     return true;
+                } else{
+                    if(Mail::to($email)->send(new EmailManager($array))){
+
+                        return true;
+                        return response()->json(['status' => 'success']);
+                    }else{
+                         return false;
+                         return response()->json(['status' => 'Failed']);
+                    }
                 }
+                
                  
             } catch (\Exception $e) {
-
+                Log::info('order_mail_sendweeeer' . 2234242453);
                 return response()->json([
                     'success' => false,
                     'message' => 'error'

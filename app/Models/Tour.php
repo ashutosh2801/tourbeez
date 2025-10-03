@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Optional;
+use App\Models\TourReview;
 use App\Models\TourSpecialDeposit;
 use App\Upload;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -75,8 +76,12 @@ class Tour extends Model
     public function wishlists() { return $this->hasMany(Wishlist::class); }
     public function orderTours() { return $this->hasMany(OrderTour::class); }
     public function specialDeposit() { return $this->hasOne(TourSpecialDeposit::class, 'tour_id'); }
+    public function review() { return $this->hasOne(TourReview::class, 'tour_id'); }
     public function schedules() { return $this->hasMany(TourSchedule::class); }
     public function subTours() { return $this->hasMany(Tour::class, 'parent_id'); }
+
+    public function parent() { return $this->belongsTo(Tour::class, 'parent_id'); }
+
 
     // ---------------- ACCESSORS ----------------
     public function getCategoryNamesAttribute(): string

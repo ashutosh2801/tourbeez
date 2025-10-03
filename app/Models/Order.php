@@ -29,7 +29,7 @@ class Order extends Model
     protected $fillable = [
         'tour_id', 'user_id', 'session_id', 'order_number', 'number_of_guests', 'payment_status', 
         'payment_method', 'payment_intent_id', 'payment_intent_client_secret', 'stripe_customer_id', 
-        'total_amount', 'balance_amount', 'currency', 'order_status', 'action_name', 'email_sent'
+        'total_amount', 'balance_amount', 'currency', 'order_status', 'action_name', 'email_sent','sub_tour_id', 'admin_email_sent'
 
     ];
 
@@ -58,6 +58,10 @@ class Order extends Model
 
     public function tour() {
         return $this->belongsTo(Tour::class);
+    }
+
+    public function subTour() {
+        return $this->belongsTo(Tour::class, 'sub_tour_id');
     }
 
     public function user() {

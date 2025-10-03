@@ -32,27 +32,41 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                     @endphp
                     @foreach ($pickups as $item)
                         <tr draggable="true" data-id="{{ $item->id }}">
-                            <th><input type="radio" class="check_all" name="pickups[]" value="{{ $item->id }}" style="width: 20px;height: 20px;"
-                            {{ (is_array($existing_pickups) && in_array($item->id, $existing_pickups)) ? 'checked' : '' }} /></th>
+                            <th>
+                                <input type="radio" class="check_all pickup-radio"
+                                       name="pickups[]" value="{{ $item->id }}"
+                                       {{ (is_array($existing_pickups) && in_array($item->id, $existing_pickups)) ? 'checked' : '' }}>
+                            </th>
 
-                            @if (strtolower($item->name) !== 'no pickups')
-                            <td>
-                                <a target="_blank" href="{{ route('admin.pickups.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a>
+                            <td colspan="2">
+                                <a target="_blank" href="{{ route('admin.pickups.edit', encrypt($item->id)) }}" class="text-info">
+                                    {{ $item->name }}
+                                </a>
                                 @foreach ($item->locations as $location)
                                     <p class="m-0 text-sm text-gray-100">{{ $location->location }}, {{ $location->address }}</p>
                                 @endforeach
+
+                                {{-- Only for pickup --}}
+                                @if (strtolower($item->name) == 'pickup')
+
+
+                                    @php
+                                        $comment = \DB::table('pickup_tour')
+                                            ->where('tour_id', $data->id)
+                                            ->where('pickup_id', $item->id)  // a single pickup ID
+                                            ->value('comment'); 
+
+                                    @endphp
+                                    <div class="pickup-comment-box mt-2" style="display: none;">
+                                        <textarea name="comment[{{ $item->id }}]"
+                                                  class="form-control"
+                                                  placeholder="Add a comment...">{{ $comment }}</textarea>
+                                    </div>
+                                @endif
                             </td>
-                            <td>{{ count($item->locations)  }} <span></span>{{ translate('Locations') }}</td>                                                  
-                            @else
-                            <td colspan="2">
-                                <a href="#" class="text-info">{{ $item->name }}</a>
-                                @foreach ($item->locations as $location)
-                                    <p class="m-0 text-sm text-gray-100">{{ $location->address }}</p>
-                                @endforeach
-                            </td>
-                            @endif
                         </tr>
                     @endforeach
+
                 </tbody>
             </table>
         </div>
@@ -164,5 +178,33 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     });
   });
+  document.addEventListener("DOMContentLoaded", function () {
+        const radios = document.querySelectorAll(".pickup-radio");
+
+        function toggleComments() {
+            // Hide all first
+            document.querySelectorAll(".pickup-comment-box").forEach(box => {
+                box.style.display = "none";
+            });
+
+            const selected = document.querySelector(".pickup-radio:checked");
+            if (selected) {
+                const row = selected.closest("tr");
+                const commentBox = row.querySelector(".pickup-comment-box");
+                if (commentBox) {
+                    commentBox.style.display = "block";
+                }
+            }
+        }
+
+        // Run once on load
+        toggleComments();
+
+        radios.forEach(radio => {
+            radio.addEventListener("change", toggleComments);
+        });
+    });
+
+
 </script>
 @endsection
