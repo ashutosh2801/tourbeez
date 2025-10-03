@@ -1057,6 +1057,7 @@ class TourController extends Controller
 
     public function basic_detail_update(Request $request, $id)
     {
+
         
         $request->validate([
             'title'                 => 'required|max:255',
@@ -1185,6 +1186,8 @@ class TourController extends Controller
             $tour_detail->save();
 
             $tourId = $tour->id;
+
+            
             if( $request->has('image') ) { 
 
                 $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
