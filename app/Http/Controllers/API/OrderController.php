@@ -519,7 +519,7 @@ class OrderController extends Controller
             // \Log::info(($adv_deposite == 'deposit'));
 
             // Final update to main order
-            //$order->tour_id            = $request->tourId;
+            $order->sub_tour_id            = $request->sub_tour_id;
             $order->action_name        = $request->action_name;
             $order->number_of_guests   = $quantity;
             $order->total_amount       = $item_total ?? 0;

@@ -224,7 +224,7 @@ class SettingController extends Controller
                 continue; // skip update, leave existing key/secret unchanged
             }
 
-            $this->overWriteEnvFile($type, $request[$type]);
+            // $this->overWriteEnvFile($type, $request[$type]);
         }   
 
         

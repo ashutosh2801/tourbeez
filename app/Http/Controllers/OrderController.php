@@ -6,11 +6,14 @@ use App\Exports\ManifestExport;
 use App\Mail\EmailManager;
 use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Models\OrderCustomer;
 use App\Models\OrderEmailHistory;
 use App\Models\OrderTour;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
 use App\Models\TourPricing;
+use App\Models\TourSpecialDeposit;
+use App\Models\User;
 use App\Services\TwilioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -20,8 +23,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
-use Stripe\Stripe;
 use Stripe\PaymentIntent;
+use Stripe\Stripe;
 
 
 
@@ -209,16 +212,605 @@ class OrderController extends Controller
      */
     public function create()
     {
-        //
+       // $products = Tour::select('id', 'title', 'slug')->get();
+       // $tours = $products;
+
+       $tours = Tour::with('pricings', 'addons', 'taxes_fees', 'pickups', 'location.country', 'location.state', 'location.city')->get();
+        $customers = User::all();
+
+       return view('admin.order.internal-order', compact('tours', 'customers'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        //
+ public function store(Request $request)
+{
+    // dd($request->all());
+     $validated = $request->validate([
+        'customer_id'          => 'required|integer|exists:users,id',
+        'tour_id'              => 'required|array|min:1',
+        'tour_id.*'            => 'integer|exists:tours,id',
+
+        'customer_first_name'  => 'nullable|string|max:100',
+        'customer_last_name'   => 'nullable|string|max:100',
+        'customer_email'       => 'nullable|email|max:150',
+        'customer_phone'       => 'nullable|string|max:50',
+
+        'tour_startdate'       => 'required|array|min:1',
+        'tour_startdate.*'     => 'date',
+        'tour_starttime'       => 'required|array|min:1',
+        'tour_starttime.*'     => 'string',
+
+        'additional_info'      => 'nullable|string|max:500',
+    ], [
+        'customer_id.required' => 'Please select a customer.',
+        'tour_id.required'     => 'At least one tour must be selected.',
+        'tour_startdate.required' => 'Please provide a start date for the tour.',
+        'tour_starttime.required' => 'Please provide a start time for the tour.',
+    ]);
+
+    $data = $request->all();
+
+    // Make sure at least one tour is selected
+    $tourIds = array_unique($data['tour_id']) ?? [];
+    if (empty($tourIds)) {
+        return response()->json([
+            'status' => false,
+            'message' => 'No tour selected.',
+        ], 422);
     }
+
+    $firstTourId = $tourIds[0]; // Keep this for orders.tour_id foreign key
+
+    DB::beginTransaction();
+    try {
+        // ===== Create Order =====
+        $order = Order::create([
+            'tour_id'       => $firstTourId,
+            'user_id'       => auth()->id() ?? 0,
+            'order_number'  => unique_order(),
+            'currency'      => $request->currency ?? 'CAD',
+            'order_status'  => $request->order_status,
+            'total_amount'  => 0,
+            'balance_amount'=> 0,
+            'created_by'    => auth()->user()->id,
+        ]);
+
+        // ===== Customer =====
+        $customerId = $request->customer_id ?? null;
+
+        if ($customerId) {
+            // Fetch from users table
+            $user = User::find($customerId);
+
+            $fullName = $user->name ?? 'N/A';
+            $nameParts = explode(' ', $fullName, 2);
+
+            $firstName = $nameParts[0] ?? 'N/A';
+            $lastName  = $nameParts[1] ?? ''; // empty if only one name provided
+
+            $customer = OrderCustomer::create([
+                'order_id'     => $order->id,
+                'user_id'      => $user->id,
+                'first_name'   => $firstName,
+                'last_name'    => $lastName,
+                'email'        => $user->email ?? 'N/A',
+                'phone'        => $user->phone ?? 'N/A',
+                'instructions' => $request->additional_info ?? '',
+            ]);
+        } else {
+            // Fallback to request inputs
+            $customer = OrderCustomer::create([
+                'order_id'     => $order->id,
+                'user_id'      => 0,
+                'first_name'   => $request->customer_first_name ?? 'N/A',
+                'last_name'    => $request->customer_last_name ?? 'N/A',
+                'email'        => $request->customer_email ?? 'N/A',
+                'phone'        => $request->customer_phone ?? 'N/A',
+                'instructions' => $request->additional_info ?? '',
+            ]);
+        }
+
+        // ===== Loop Through Tours =====
+        $totalOrderAmount = 0;
+        foreach ($tourIds as $index => $tourId) {
+            $tour = Tour::with(['pricings', 'addons', 'taxes_fees'])->findOrFail($tourId);
+
+            $tour_pricing_ids  = $data["tour_pricing_id_$tourId"] ?? [];
+            $tour_pricing_qtys = $data["tour_pricing_qty_$tourId"] ?? [];
+            $tour_pricing_prices = $data["tour_pricing_price_$tourId"] ?? [];
+
+            $tour_extra_ids    = $data["tour_extra_id_$tourId"] ?? [];
+            $tour_extra_qtys   = $data["tour_extra_qty_$tourId"] ?? [];
+            $tour_extra_prices = $data["tour_extra_price_$tourId"] ?? [];
+
+            $pricing = [];
+            $extras  = [];
+            $subtotal = 0;
+            $quantity = 0;
+
+            // ===== Pricing =====
+            foreach ($tour_pricing_ids as $i => $pricingId) {
+                $qty   = $tour_pricing_qtys[$i] ?? 0;
+                $price = $tour_pricing_prices[$i] ?? 0;
+                $pricing[] = [
+                    'tour_pricing_id' => $pricingId,
+                    'quantity'        => $qty,
+                    'price'           => $price,
+                    'total_price'     => $qty * $price,
+                ];
+                $subtotal += $qty * $price;
+                $quantity += $qty;
+            }
+
+            // ===== Extras =====
+            foreach ($tour_extra_ids as $i => $extraId) {
+                $qty   = $tour_extra_qtys[$i] ?? 0;
+                $price = $tour_extra_prices[$i] ?? 0;
+                $extras[] = [
+                    'tour_extra_id' => $extraId,
+                    'quantity'      => $qty,
+                    'price'         => $price,
+                    'total_price'   => $qty * $price,
+                ];
+                $subtotal += $qty * $price;
+            }
+
+            // ===== Taxes & Fees =====
+            $fees = [];
+            if ($tour->taxes_fees) {
+                foreach ($tour->taxes_fees as $fee) {
+                    $feePrice = get_tax($subtotal, $fee->fee_type, $fee->tax_fee_value);
+                    $fees[] = [
+                        'tour_taxes_id' => $fee->id,
+                        'label'         => $fee->label,
+                        'type'          => $fee->fee_type,
+                        'value'         => $fee->tax_fee_value,
+                        'price'         => $feePrice,
+                    ];
+                    $subtotal += $feePrice;
+                }
+            }
+
+            $totalOrderAmount += $subtotal;
+
+            $tourStartDates = $request->input('tour_startdate', []);
+            $tourStartTimes = $request->input('tour_starttime', []);
+
+            // For the current tour row (index 0 if only one tour)
+            $selectedDate = $tourStartDates[0] ?? null;
+            $selectedTime = $tourStartTimes[0] ?? null;
+
+            // ===== Save OrderTour =====
+            OrderTour::create([
+                'order_id'         => $order->id,
+                'tour_id'          => $tourId,
+                'tour_date'         => $selectedDate,
+                'tour_time'         => $selectedTime,
+                'tour_pricing'     => json_encode($pricing),
+                'tour_extra'       => json_encode($extras),
+                'tour_fees'        => json_encode($fees),
+                'number_of_guests' => $quantity,
+                'total_amount'     => $subtotal,
+
+                'tour_date'         => $selectedDate,
+                'tour_time'         => $selectedTime,
+            ]);
+        }
+
+        // ===== Update Order totals =====
+        $order->total_amount = $totalOrderAmount;
+        $order->balance_amount = $totalOrderAmount;
+        // $order->payment_type = $request->payment_type;
+        $order->save();
+
+
+        if($request->payment_type == 'transaction'){
+            // $order->payment_type = $request->payment_type;
+            $order->booked_amount = $totalOrderAmount;
+            $order->balance_amount = 0;
+            $order->transaction_id = $request->transaction_id;
+            $order->payment_method = $request->payment_method;
+            $order->save();
+        } else {
+    // ===== Stripe Payment Handling =====
+    try {
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        // Check if customer already linked
+        if (!$order->stripe_customer_id) {
+            $name = $customer->first_name.' '.$customer->last_name;
+            $stripeCustomer = \Stripe\Customer::create([
+                'name'  => $name,
+                'email' => $customer->email,
+                'phone' => $customer->phone,
+            ]);
+        } else {
+            $stripeCustomer = \Stripe\Customer::retrieve($order->stripe_customer_id);
+        }
+
+        $adv_deposite = $request->adv_deposite ?? 'full'; // or deposit/full
+
+        $metaData = [
+            'bookedDate'    => $order->created_at,
+            'orderId'       => $order->id,
+            'orderNumber'   => $order->order_number,
+            'tourName'      => $tour->title ?? 'Multiple Tours',
+            'customerId'    => $customer->id,
+            'customerEmail' => $customer->email,
+            'customerName'  => $customer->first_name.' '.$customer->last_name,
+            'planName'      => "TourBeez Plan",
+            'status'        => 'Pending supplier',
+            'totalAmount'   => $order->total_amount,
+        ];
+
+        $chargeAmount = 0;
+
+        // if ($adv_deposite == "deposit") {
+            $depositRule = \App\Models\TourSpecialDeposit::where('tour_id', $firstTourId)->first();
+            if(!$depositRule){
+                $depositRule = \App\Models\TourSpecialDeposit::where('type', 'global')->first();
+            }
+            if ($depositRule && $depositRule->use_deposit) {
+                switch ($depositRule->charge) {
+                    case 'FULL':
+                        $chargeAmount = $order->total_amount;
+                        break;
+                    case 'DEPOSIT_PERCENT':
+                        $chargeAmount = $order->total_amount * ($depositRule->deposit_amount / 100);
+                        break;
+                    case 'DEPOSIT_FIXED':
+                    case 'DEPOSIT_FIXED_PER_ORDER':
+                        $chargeAmount = $depositRule->deposit_amount;
+                        break;
+                    case 'NONE':
+                        $chargeAmount = 0;
+                        break;
+                }
+            } else {
+                $chargeAmount = $order->total_amount; // fallback full
+            }
+        // } 
+        // else {
+        //     $chargeAmount = $order->total_amount; // full payment
+        // }
+
+        if ($chargeAmount > 0) {
+            $pi = \Stripe\PaymentIntent::create([
+                'customer'  => $stripeCustomer->id,
+                'amount' => intval(round($chargeAmount * 100)),
+                'currency' => $order->currency,
+                'automatic_payment_methods' => ['enabled' => true],
+                'receipt_email' => $customer->email,
+                'capture_method' => 'manual',
+                'description' => 'TourBeez Booking',
+                'statement_descriptor_suffix' => $order->order_number,
+                'metadata'  => $metaData,
+                'setup_future_usage'=> 'off_session',
+            ]);
+
+            // Save intent details
+            $order->payment_intent_client_secret = $pi->client_secret;
+            $order->payment_intent_id = $pi->id;
+            $order->booked_amount = $chargeAmount;
+            $order->balance_amount = $order->total_amount - $chargeAmount;
+
+            // ✅ If frontend sent payment_method_id, confirm & capture immediately
+            if ($request->filled('payment_intent_id')) {
+                $pi = \Stripe\PaymentIntent::retrieve($pi->id);
+                $pi->confirm(['payment_method' => $request->payment_intent_id]);
+                $pi->capture();
+
+                $order->payment_status = 'paid';
+                $order->balance_amount = 0;
+            }
+        } else {
+            $si = \Stripe\SetupIntent::create([
+                'customer'  => $stripeCustomer->id,
+                'automatic_payment_methods' => ['enabled' => true],
+                'usage'     => 'off_session',
+                'metadata'  => $metaData
+            ]);
+            $order->payment_intent_client_secret = $si->client_secret;
+            $order->payment_intent_id = $si->id;
+        }
+
+        // Booking fee
+        $booking_fee = $request->booking_fee ?? 0;
+        if($booking_fee > 0 && get_setting('price_booking_fee')){
+            $bookingFeeType = get_setting('tour_booking_fee_type');
+            if($bookingFeeType == 'FIXED'){
+                $booking_fee = get_setting('tour_booking_fee');
+            } elseif($bookingFeeType == 'PERCENT') {
+                $booking_fee = $order->total_amount * get_setting('tour_booking_fee')/100;
+            }
+        }
+
+        $order->booking_fee = $booking_fee;
+        $order->stripe_customer_id = $stripeCustomer->id;
+        $order->save();
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Stripe Payment Error: '.$e->getMessage());
+        return response()->json([
+            'status' => false,
+            'message' => 'Payment setup failed: '.$e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+
+
+
+
+        DB::commit();
+
+        return redirect()->route('admin.orders.edit', [encrypt($order->id)]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('admin.orders.edit', [encrypt($order->id)])
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Order created successfully',
+            'order_id' => $order->id
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Order Store Error: '.$e->getMessage());
+        return response()->json([
+            'status' => false,
+            'message' => 'Something went wrong: '.$e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+    public function storesds(Request $request)
+    {
+        dd($request->all());
+
+        $validated = $request->validate([
+            'tourId'                    => 'required|integer|exists:tours,id',
+            'selectedDate'              => 'required|date_format:Y-m-d',
+            'selectedTime'              => 'nullable',
+            'cartItems'                 => 'required|array|min:1',
+            'cartItems.*.id'            => 'required|integer',
+            'cartItems.*.label'         => 'required|string|min:1',
+            'cartItems.*.quantity'      => 'required|integer|min:1',
+            'cartItems.*.price'         => 'required|numeric',
+
+            'formData.first_name'       => 'required|string|max:255',
+            'formData.last_name'        => 'required|string|max:255',
+            'formData.email'            => 'required|email|max:255',
+            'formData.phone'            => 'required|string|max:20',
+            'formData.instructions'     => 'nullable|string|max:255',
+            'formData.pickup_id'        => 'nullable|numeric|max:255',
+            'formData.pickup_name'      => 'nullable|string|max:255',
+            'formData.adv_deposite'     => 'nullable|string|max:255',
+            'formData.booking_fee'      => 'nullable|numeric|max:255',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $data = $request->input('formData');
+            $adv_deposite = $data['adv_deposite'] ?? 'full';
+
+            $tour = Tour::with(['pricings'])->findOrFail($request->tourId);
+
+            // ===== ORDER CREATION =====
+            $order = Order::create([
+                'tour_id'       => $request->tourId,
+                'user_id'       => $request->userId ?? 0,
+                'session_id'    => $request->sessionId ?? null,
+                'order_number'  => unique_order(),
+                'currency'      => $request->currency ?? 'CAD',
+                'order_status'  => 1,
+                'total_amount'  => 0,
+                'balance_amount'=> 0,
+            ]);
+
+            // ===== CUSTOMER =====
+            $customer = new OrderCustomer();
+            $customer->order_id     = $order->id;
+            $customer->user_id      = $request->userId ?? 0;
+            $customer->first_name   = $data['first_name'];
+            $customer->last_name    = $data['last_name'];
+            $customer->email        = $data['email'];
+            $customer->phone        = $data['phone'];
+            $customer->instructions = $data['instructions'] ?? '';
+            $customer->pickup_id    = $data['pickup_id'] ?? null;
+            $customer->pickup_name  = $data['pickup_name'] ?? null;
+            $customer->save();
+
+            // ===== STRIPE CUSTOMER =====
+            // Stripe::setApiKey(env('STRIPE_SECRET'));
+            $name = $data['first_name'].' '.$data['last_name'];
+            // $stripeCustomer = Customer::create([
+            //     'name'  => $name,
+            //     'email' => $data['email'],
+            //     'phone' => $data['phone'],
+            // ]);
+
+            // ===== CART ITEMS =====
+            $quantity = 0;
+            $pricing = [];
+            $extra = [];
+            $fees = [];
+            $item_total = 0;
+
+            foreach ($validated['cartItems'] as $item) {
+                $qty   = $item['quantity'];
+                $price = $item['price'];
+                $total = $item['quantity'] * $item['price'];
+
+                $quantity += $qty;
+                $item_total += $total;
+
+                $pricing[] = [
+                    'tour_id'         => $request->tourId,
+                    'tour_pricing_id' => $item['id'],
+                    'label'           => $item['label'],
+                    'quantity'        => $qty,
+                    'price'           => $price,
+                    'total_price'     => $total,
+                ];
+            }
+
+            // ===== EXTRAS =====
+            if (!empty($request->cartAdons)) {
+                foreach ($request->cartAdons as $addon) {
+                    if ($addon['quantity'] > 0) {
+                        $extraTotal = $addon['price'] * $addon['quantity'];
+                        $item_total += $extraTotal;
+                        $extra[] = [
+                            'tour_id'       => $request->tourId,
+                            'tour_extra_id' => $addon['id'],
+                            'quantity'      => $addon['quantity'],
+                            'label'         => $addon['label'],
+                            'price'         => $addon['price'],
+                            'total_price'   => $extraTotal,
+                        ];
+                    }
+                }
+            }
+
+            // ===== FEES =====
+            if (!empty($request->cartFees)) {
+                foreach ($request->cartFees as $fee) {
+                    $fees[] = [
+                        'tour_id'       => $request->tourId,
+                        'tour_taxes_id' => $fee['id'],
+                        'label'         => $fee['label'],
+                        'type'          => $fee['type'],
+                        'value'         => $fee['value'],
+                        'price'         => $fee['price'],
+                    ];
+                    $item_total += $fee['price'];
+                }
+            }
+
+            // ===== SAVE ORDER TOUR =====
+            OrderTour::create([
+                'order_id'          => $order->id,
+                'tour_id'           => $request->tourId,
+                'tour_date'         => $validated['selectedDate'],
+                'tour_time'         => $validated['selectedTime'] ?? null,
+                'tour_pricing'      => json_encode($pricing),
+                'tour_extra'        => json_encode($extra),
+                'tour_fees'         => json_encode($fees),
+                'number_of_guests'  => $quantity,
+                'total_amount'      => $item_total,
+            ]);
+
+            // ===== STRIPE PAYMENT =====
+            $metaData = [
+                'bookedDate'    => $order->created_at,
+                'orderId'       => $order->id,
+                'orderNumber'   => $order->order_number,
+                'tourName'      => $tour->title,
+                'tourDate'      => $validated['selectedDate'],
+                'tourTime'      => $validated['selectedTime'],
+                'customerId'    => $customer->id,
+                'customerEmail' => $customer->email,
+                'customerName'  => $customer->first_name.' '.$customer->last_name,
+                'planName'      => "TourBeez Plan",
+                'status'        => 'Pending supplier',
+                'totalAmount'   => $item_total
+            ];
+
+            if ($adv_deposite == "deposit") {
+                $depositRule = TourSpecialDeposit::where('tour_id', $tour->id)->first();
+                $chargeAmount = $depositRule ? calculate_deposit($depositRule, $item_total, $validated['selectedDate']) : $item_total;
+
+                // $pi = \Stripe\PaymentIntent::create([
+                //     'customer'  => $stripeCustomer->id,
+                //     'amount'    => intval(round($chargeAmount * 100)),
+                //     'currency'  => $order->currency,
+                //     'automatic_payment_methods' => ['enabled' => true],
+                //     'receipt_email' => $data['email'],
+                //     'capture_method' => 'manual',
+                //     'description'   => $tour->title,
+                //     'statement_descriptor_suffix' => $order->order_number,
+                //     'metadata'      => $metaData,
+                //     'setup_future_usage'=> 'off_session',
+                // ]);
+
+                $order->booked_amount  = $chargeAmount;
+                $order->balance_amount = $item_total - $chargeAmount;
+                $order->payment_intent_id = $pi->id;
+                $order->payment_intent_client_secret = $pi->client_secret;
+            } else {
+                // $pi = \Stripe\PaymentIntent::create([
+                //     'customer'  => $stripeCustomer->id,
+                //     'amount'    => intval(round($item_total * 100)),
+                //     'currency'  => $order->currency,
+                //     'automatic_payment_methods' => ['enabled' => true],
+                //     'receipt_email' => $data['email'],
+                //     'capture_method' => 'manual',
+                //     'description'   => $tour->title,
+                //     'statement_descriptor_suffix' => $order->order_number,
+                //     'metadata'      => $metaData,
+                //     'setup_future_usage'=> 'off_session',
+                // ]);
+                $order->booked_amount  = $item_total;
+                $order->balance_amount = 0;
+                $order->payment_intent_id = $pi->id;
+                $order->payment_intent_client_secret = $pi->client_secret;
+            }
+
+            // ===== BOOKING FEE =====
+            $booking_fee = $data['booking_fee'] ?? 0;
+            if ($booking_fee > 0 && get_setting('price_booking_fee')) {
+                $bookingFeeType = get_setting('tour_booking_fee_type');
+                if ($bookingFeeType == 'FIXED') {
+                    $booking_fee = get_setting('tour_booking_fee');
+                } elseif ($bookingFeeType == 'PERCENT') {
+                    $booking_fee = $item_total * get_setting('tour_booking_fee')/100;
+                }
+            }
+
+            $order->number_of_guests   = $quantity;
+            $order->total_amount       = $item_total;
+            $order->adv_deposite       = $adv_deposite;
+            $order->booking_fee        = $booking_fee;
+            $order->stripe_customer_id = $stripeCustomer->id;
+            $order->save();
+
+            DB::commit();
+
+            return response()->json([
+                'status'    => true,
+                'message'   => 'Order created successfully',
+                'data'      => $order,
+                'data_detail' => $order->orderTours,
+                'payment_intent_id' => $order->payment_intent_id,
+                'payment_intent_client_secret' => $order->payment_intent_client_secret,
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Order Store Error: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
 
     /**
      * Display the specified resource.
@@ -254,7 +846,6 @@ class OrderController extends Controller
      */
     public function update(Request $request, $id)
     {
-
         $validator = $request->validate([
             'order_status'   => 'required|max:255',
         ],

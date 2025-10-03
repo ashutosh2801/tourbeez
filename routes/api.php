@@ -57,6 +57,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/tour/{slug}/booking', [TourController::class, 'fetch_booking']);
     Route::get('/tour/{id}/deposit-rule', [TourController::class, 'fetch_deposit_rule']);
     Route::get('/sub-tours/{id}/date/{date}', [TourController::class, 'getSubTour']);
+    Route::get('/subtours/{id}/date/{date}', [TourController::class, 'fetch_sub_tours']);
 
     Route::post('/cart/add', [OrderController::class, 'add_to_cart']);
     Route::post('/cart/update/{id}', [OrderController::class, 'update_cart']);

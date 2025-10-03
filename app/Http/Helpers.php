@@ -674,7 +674,7 @@ if (! function_exists('order_status')) {
     {
         switch($val) {
             case 1:
-                return '<span class="badge badge-inline badge-success text-green-800 bg-green-100 px-4 py-2  rounded-full">New</span>';
+                return '<span class="badge badge-inline badge-warning text-green-800 bg-green-100 px-4 py-2  rounded-full">Abandoned</span>';
                 break;
             case 2:
                 return '<span class="badge badge-inline badge-danger text-red-800 bg-red-100 px-4 py-2  rounded-full">On Hold</span>';
