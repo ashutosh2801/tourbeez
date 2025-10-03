@@ -237,6 +237,7 @@ class AizUploadController extends Controller
                     break;
             }
         }
+
         return $uploads->paginate(60)->appends(request()->query());
     }
 
@@ -365,6 +366,49 @@ class AizUploadController extends Controller
         return redirect()
             ->route('admin.banner.index')
             ->with('success', 'Banner deleted successfully');
+    }
+
+    public function storeYoutube(Request $request)
+    {
+        $request->validate([
+            'youtube_url' => 'required|url',
+        ]);
+
+        // Extract video id
+        $videoId = $this->getYoutubeVideoId($request->youtube_url);
+        if (!$videoId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid YouTube URL'
+            ], 422);
+        }
+
+        // Thumbnail URLs
+        $largeThumbnail = "https://img.youtube.com/vi/{$videoId}/maxresdefault.jpg";
+        $mediumThumbnail = "https://img.youtube.com/vi/{$videoId}/mqdefault.jpg";
+
+        $upload = new Upload();
+        $upload->file_original_name = $request->youtube_url;
+        $upload->file_name = $videoId;
+        $upload->medium_name = $largeThumbnail;
+        $upload->thumb_name = $mediumThumbnail;
+        $upload->user_id = auth()->id();
+        $upload->type = 'youtube';
+        $upload->caption = $request->caption ?? null;
+        $upload->description = $request->description ?? null;
+        $upload->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Video saved successfully',
+            'data' => $upload
+        ]);
+    }
+
+    private function getYoutubeVideoId($url)
+    {
+        preg_match('/(youtu\.be\/|v=)([A-Za-z0-9_-]{11})/', $url, $matches);
+        return $matches[2] ?? null;
     }
 
 

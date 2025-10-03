@@ -2,7 +2,7 @@
 @section('title', 'Internal Orders Create')
 
 <div class="card">
-    <form action="{{ route('admin.orders.store') }}" method="POST">
+    <form id="orderForm" action="{{ route('admin.orders.store') }}" method="POST">
         @csrf
 
         <!-- ================= Header ================= -->
@@ -20,7 +20,7 @@
                 <small>Balance</small>
             </div>
             <div>
-                <select name="Order[status]" class="form-control">
+                <select name="order_status" class="form-control">
                     <option value="CONFIRMED" selected>Confirmed</option>
                     <option value="NEW">New</option>
                     <option value="ON_HOLD">On Hold</option>
@@ -96,7 +96,7 @@
             </div>
 
             <!-- ================= Payment Details ================= -->
-            <!-- <div class="card">
+            <div class="card">
                 <div class="card-header bg-secondary py-0" id="headingThree">
                     <h2 class="my-0 py-0">
                         <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
@@ -105,111 +105,55 @@
                         </button>                     
                     </h2>
                 </div>
+
                 <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
                     <div class="card-body">
-                        <table class="table">
-                            <tr>
-                                <td>Total:</td>
-                                <td id="totalAmount">0</td>
-                                <td>Balance:</td>
-                                <td id="balanceAmount">0</td>
-                                <td>Paid:</td>
-                                <td id="paidAmount">0</td>
-                            </tr>
-                            <tr>
-                                <td>Stored Credit Card:</td>
-                                <td id="cardInfo">N/A</td>
-                                <td>STRIPE Transaction ID:</td>
-                                <td id="transactionId">N/A</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            </div> -->
-            <div class="card">
-    <div class="card-header bg-secondary py-0" id="headingThree">
-        <h2 class="my-0 py-0">
-            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
-                data-toggle="collapse" data-target="#collapseThree">
-                <i class="fa fa-angle-right"></i> Payment Details
-            </button>                     
-        </h2>
-    </div>
-    <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
-        <div class="card-body">
-            <table class="table">
-                <tr>
-                    <td>Total:</td>
-                    <td id="totalAmount">0</td>
-                    <td>Balance:</td>
-                    <td id="balanceAmount">0</td>
-                    <td>Paid:</td>
-                    <td id="paidAmount">0</td>
-                </tr>
-                <tr>
-                    <td>Stored Credit Card:</td>
-                    <td id="cardInfo">N/A</td>
-                    <td>STRIPE Transaction ID:</td>
-                    <td id="transactionId">N/A</td>
-                </tr>
-            </table>
 
-            <hr>
+                        {{-- Choose Payment Option --}}
+                        <div class="form-group">
+                            <label><strong>Payment Method</strong></label><br>
+                            <label class="mr-3">
+                                <input type="radio" name="payment_type" value="card" checked> Credit Card (Stripe)
+                            </label>
+                            <label>
+                                <input type="radio" name="payment_type" value="transaction"> Transaction
+                            </label>
+                        </div>
 
-            {{-- Choose Payment Option --}}
-            <div class="form-group">
-                <label><strong>Payment Method</strong></label><br>
-                <label class="mr-3">
-                    <input type="radio" name="payment_method" value="card" checked> Credit Card
-                </label>
-                <label>
-                    <input type="radio" name="payment_method" value="transaction"> Transaction
-                </label>
-            </div>
+                        {{-- Stripe Credit Card Fields --}}
+                        <div id="cardFields">
+                            <div class="form-group">
+                                <label for="card-element">Card Details</label>
+                                <div id="card-element" class="form-control" style="padding: 10px; height: auto;"></div>
+                                <small id="card-errors" class="text-danger mt-2"></small>
+                            </div>
+                        </div>
 
-            {{-- Credit Card Fields --}}
-            <div id="cardFields">
-                <div class="form-group">
-                    <label for="card_number">Card Number</label>
-                    <input type="text" name="card_number" class="form-control" placeholder="Enter card number">
-                </div>
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="card_expiry">Expiry Date (MM/YY)</label>
-                        <input type="text" name="card_expiry" class="form-control" placeholder="MM/YY">
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label for="card_cvv">CVV</label>
-                        <input type="text" name="card_cvv" class="form-control" placeholder="CVV">
+                        {{-- Transaction Fields (inline) --}}
+                        <div id="transactionFields" style="display:none;">
+                            <div class="form-row align-items-center">
+                                <div class="form-group col-md-6">
+                                    <label for="transaction_id">Transaction ID</label>
+                                    <input type="text" name="transaction_id" class="form-control" placeholder="Enter transaction ID">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="payment_method">Payment Type</label>
+                                    <select name="payment_method" class="form-control">
+                                        <option value="">Select Type</option>
+                                        <option value="stripe">Stripe</option>
+                                        <option value="paypal">PayPal</option>
+                                        <option value="bank">Bank Transfer</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            {{-- Transaction Fields --}}
-            <div id="transactionFields" style="display:none;">
-                <div class="form-group">
-                    <label for="transaction_id">Transaction ID</label>
-                    <input type="text" name="transaction_id" class="form-control" placeholder="Enter transaction ID">
-                </div>
-                <div class="form-group">
-                    <label for="payment_type">Payment Type</label>
-                    <select name="payment_type" class="form-control">
-                        <option value="">Select Type</option>
-                        <option value="stripe">Stripe</option>
-                        <option value="paypal">PayPal</option>
-                        <option value="bank">Bank Transfer</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
 
             <!-- ================= Form Actions ================= -->
             <div class="card-footer" style="display:block">
-                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Create Order</button>
+                <button style="padding:0.6rem 2rem" type="submit" id="createOrderBtn" class="btn btn-success">Create Order</button>
                 <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </div>
@@ -276,16 +220,13 @@ function loadTourDetails(tourId, count) {
             const $container = $(`#tour_details_${count}`);
             $container.html(response);
 
-            // Re-init plugins
             TB.plugins.dateRange();
             TB.plugins.timePicker();
             TB.plugins.bootstrapSelect('refresh');
 
-            // Hook into the calendar selection event
             $container.find(".aiz-date-range").each(function(){
                 $(this).off("apply.daterangepicker").on("apply.daterangepicker", function(ev, picker){
                     const selectedDate = picker.startDate.format("YYYY-MM-DD");
-                    const tourId = $container.find("input[name='tour_id[]']").val();
                     fetchTourSessions(tourId, selectedDate, count);
                 });
             });
@@ -318,7 +259,6 @@ function fetchTourSessions(tourId, selectedDate, count) {
                 options = '<option value="">No sessions available</option>';
             }
 
-            // Replace the time input with a select dynamically
             $timeField.replaceWith(`<select name="tour_starttime[]" class="form-control">${options}</select>`);
         },
         error: function(xhr){
@@ -326,99 +266,60 @@ function fetchTourSessions(tourId, selectedDate, count) {
         }
     });
 }
-
-// ================= Collapse Icons =================
-$(document).ready(function(){
-    $(".collapse.show").each(function(){
-        $(this).prev(".card-header").find(".fa").addClass("fa-angle-down").removeClass("fa-angle-right");
-    });
-
-    $(".collapse").on('show.bs.collapse', function(){
-        $(this).prev(".card-header").find(".fa").removeClass("fa-angle-right").addClass("fa-angle-down");
-    }).on('hide.bs.collapse', function(){
-        $(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
-    });
-});
-
-
-
-
-
 </script>
 
+<script src="https://js.stripe.com/v3/"></script>
 <script>
-$(document).ready(function () {
-    // Toggle collapse icon and section
-    $(document).on("click", ".toggle-section", function () {
-        const target = $($(this).data("target"));
-        target.collapse("toggle");
-        $(this).find("i").toggleClass("fa-angle-right fa-angle-down");
+    const stripe = Stripe("{{ env('STRIPE_KEY') }}");
+    const elements = stripe.elements();
+    const style = {
+        base: { fontSize: '16px', color: '#32325d', fontFamily: 'Arial, sans-serif' },
+        invalid: { color: '#fa755a' }
+    };
+    const card = elements.create('card', { style });
+    card.mount('#card-element');
+
+    card.on('change', function(event) {
+        document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
     });
 
-    // Add new payment row
-    $(document).on("click", ".add-payment", function () {
-        const container = $(".payment-container");
-        const lastRow = container.find(".payment-line").last();
-        const newIndex = container.find(".payment-line").length;
+    // Handle form submit
+    const form = document.getElementById('orderForm');
+    form.addEventListener('submit', async function(event) {
+        const selectedPayment = document.querySelector("input[name='payment_type']:checked").value;
+        if (selectedPayment === "card") {
+            event.preventDefault();
 
-        let newRow = lastRow.clone();
-        newRow.find("input, select").each(function () {
-            const name = $(this).attr("name");
-            if (name) {
-                $(this).attr("name", name.replace(/\[\d+\]/, `[${newIndex}]`));
-                $(this).val("");
+            const { paymentMethod, error } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: card,
+            });
+
+            if (error) {
+                document.getElementById('card-errors').textContent = error.message;
+            } else {
+                let hiddenInput = document.createElement('input');
+                hiddenInput.setAttribute('type', 'hidden');
+                hiddenInput.setAttribute('name', 'payment_intent_id');
+                hiddenInput.setAttribute('value', paymentMethod.id);
+                form.appendChild(hiddenInput);
+                form.submit();
             }
-        });
-        container.append(newRow);
-    });
-
-    // Remove payment row
-    $(document).on("click", ".remove-payment", function () {
-        if ($(".payment-line").length > 1) {
-            $(this).closest(".payment-line").remove();
-        } else {
-            alert("At least one payment row is required.");
         }
     });
 
-    // Auto-calc Paid + Balance when amount changes
-    $(document).on("input", ".amount-field", function () {
-        let total = 0;
-        $(".amount-field").each(function () {
-            const val = parseFloat($(this).val()) || 0;
-            total += val;
-        });
-
-        $("#paidAmount").text(total.toFixed(2));
-        const grandTotal = parseFloat($("#totalAmount").text()) || 0;
-        const balance = grandTotal - total;
-        $("#balanceAmount").text(balance.toFixed(2));
-    });
-});
-
-
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const cardFields = document.getElementById("cardFields");
-    const transactionFields = document.getElementById("transactionFields");
-    const radios = document.querySelectorAll("input[name='payment_method']");
-
-    radios.forEach(radio => {
-        radio.addEventListener("change", function () {
+    // Toggle fields
+    document.querySelectorAll("input[name='payment_type']").forEach(el => {
+        el.addEventListener("change", function() {
             if (this.value === "card") {
-                cardFields.style.display = "block";
-                transactionFields.style.display = "none";
+                document.getElementById("cardFields").style.display = "block";
+                document.getElementById("transactionFields").style.display = "none";
             } else {
-                cardFields.style.display = "none";
-                transactionFields.style.display = "block";
+                document.getElementById("cardFields").style.display = "none";
+                document.getElementById("transactionFields").style.display = "block";
             }
         });
     });
-});
 </script>
 @endsection
-
-
 </x-admin>

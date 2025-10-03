@@ -96,7 +96,7 @@
 
                     <div class="d-flex justify-content-end align-items-center">
                         <a type="button" class="btn btn-success btn-sm" href="{{ route('admin.orders.create') }}">
-                            Internal order
+                            Create Internal order
                         </a>
                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure to delete selected orders?')">
                             Delete Selected
@@ -131,9 +131,20 @@
                                 <td>{!! order_status($order->order_status) !!}</td>
                                 <td>
                                     @foreach ($order->orderTours as $order_tour)
-                                        <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour_id)) }}" class="alink" target="_blank">
-                                            {{ $order_tour->tour?->title }}
-                                        </a><br>
+
+                                            <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour_id)) }}" class="alink" target="_blank" >
+                                                {{ $order_tour->tour?->title }}
+                                            </a>
+
+                                            @if($order->sub_tour_id  && $order->subTour)
+                                                <hr>
+                                                <a href="{{ route('admin.tour.edit', encrypt($order->subTour->tour_id)) }}" class="alink text-small" target="_blank" style="font-size: small;">
+                                                    {{ $order->subTour?->title }} 
+                                                </a>
+                                            @endif
+
+                                        <br>
+                                        
                                     @endforeach
                                 </td>
                                 <td>

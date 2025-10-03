@@ -385,6 +385,8 @@ class TourController extends Controller
 
         $tour_start_date = $this->getNextAvailableDate($tour->id, $schedules);
         $disabled_dates =  $this->getDisabledTourDates($tour->id, $schedules);
+        $disabled_dates =  [];// $this->getDisabledTourDates_fromdb($tour->id);
+
         
         // Calculate discount pricing (unchanged)
         $original_price   = $tour->price;
@@ -433,6 +435,63 @@ class TourController extends Controller
             'data'   => $data
         ]);
     }
+
+
+    private function getDisabledTourDates_fromdb(int $tourId): array
+    {
+        // ✅ Load the precomputed meta row for this tour
+        $meta = \DB::table('tour_schedule_meta')
+            ->where('tour_id', $tourId)
+            ->first();
+
+        if (!$meta) {
+            return [
+                'disabled_tour_dates' => [],
+                'start_date' => null,
+                'until_date' => null,
+            ];
+        }
+
+        $globalStart   = Carbon::parse($meta->start_date);
+        $globalEnd     = Carbon::parse($meta->until_date);
+        $disabledDates = json_decode($meta->disabled_dates, true) ?? [];
+        // dd($tourId, $disabledDates);
+        // ✅ Apply delete slots
+        $storeDeleteSlot = $this->fetchDeletedSlot($tourId);
+        $deleteTypes = collect($storeDeleteSlot)->pluck('delete_type');
+
+        if ($deleteTypes->contains('all')) {
+            return [
+                'disabled_tour_dates' => [], // fully blocked
+                'start_date' => $globalStart->toDateString(),
+                'until_date' => Carbon::yesterday()->toDateString(),
+            ];
+        }
+
+        if ($storeDeleteSlot->where('delete_type', 'after')->isNotEmpty()) {
+            $minAfterDate = $storeDeleteSlot
+                ->where('delete_type', 'after')
+                ->pluck('slot_date')
+                ->min();
+
+            $globalEnd = Carbon::parse($minAfterDate);
+        }
+
+        foreach ($storeDeleteSlot->where('delete_type', 'single_date') as $slot) {
+            $disabledDates[] = Carbon::parse($slot->slot_date)->toDateString();
+        }
+
+        // ✅ Deduplicate & sort
+        $disabledDates = array_values(array_unique($disabledDates));
+        sort($disabledDates);
+
+        return [
+            'disabled_tour_dates' => $disabledDates,
+            'start_date' => $globalStart->toDateString(),
+            'until_date' => $globalEnd->toDateString(),
+        ];
+    }
+
 
     /**
      * Fetch booking related info for a tour.
