@@ -379,6 +379,8 @@
                                             </td>
                                             <td class="text-right" width="200">
                                                 <div class="input-group">
+
+
                                                     <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="{{ $order_tour->tour_time }}" class="form-control aiz-time-picker" data-minute-step="1"> 
                                                     <div class="input-group-prepend">
                                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
@@ -574,14 +576,29 @@
                                             <td class="text-right">{{  $order->tour->location->city->name ?? '-' }}</td>
                                         </tr>
 
+                                        @php
+                                            $pickName = '';
+                                            if($order->customer && $order->customer->pickup_name){
+                                                $pickName = $order->customer->pickup_name;
+                                            } elseif($order->customer && $order->customer->pickup_id) {
+                                                $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
+                                                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                                            }
+                                        @endphp
+                                        <tr>
+                                            <td><b>Pickup Location</b></td>
+                                            <td class="text-right">{{ $pickName }}</td> 
+                                            
+
+                                        </tr>
                                          
                                         @foreach ($order->tour->pickups as $pickup)
-                                            <tr>
+                                            <!-- <tr>
                                                 <td><b>Pickup Location</b></td>
                                                 <td class="text-right">{{ $pickup->name }}</td> 
                                                 
 
-                                            </tr>
+                                            </tr> -->
                                             <tr>
                                                 <td><b>Pickup Charge</b></td>
                                                 <td class="text-right">{{ $pickup->pickup_charge }}</td>
@@ -600,22 +617,34 @@
                                 <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Payment Details</button>                     
                             </h2>
                         </div>
+
                         <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
                             <div class="card-body">
+                                <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div>
+                                
                                 <table class="table">    
                                     <tr>
-                                        <td>Total: {{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        <td>Payment Type</td>
+                                        <td>Ref number</td>
+                                        
+                                        <td>Total</td>
                                         <td></td>
-                                        <td>Balance: {{ price_format_with_currency($order->balance_amount) }}</td>
-                                        <td>Paid: {{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
+                                        <td>Balance</td>
+                                        <td>Paid</td>
+
+
+
+                                    </tr>
+                                    <tr>
+                                    <td>{{ ucwords($order->payment_method)}}</td>
+                                    <td>{{ ucwords($order->payment_intent_id)}}</td>
+                                    
+                                    <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        <td></td>
+                                        <td>{{ price_format_with_currency($order->balance_amount) }}</td>
+                                        <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
                                     </tr>
 
-                                    <tr>
-                                        <td>Stored Credit Card</td>
-                                        <td>{{ $order->card_info }}</td>
-                                        <td>STRIPE</td>
-                                        <td>{{ $order->transaction_id }}</td>
-                                    </tr>
                                 </table>
                             </div>
                         </div>

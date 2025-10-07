@@ -110,6 +110,13 @@ class TourController extends Controller
             
         }
 
+      if ($request->has('special_deposit') && $request->special_deposit  != '') {
+            $charge = $request->special_deposit;
+            $query->whereHas('specialDeposit', function ($q) use ($charge) {
+                $q->where('charge', $charge);
+            });
+        }
+
         $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
 
 

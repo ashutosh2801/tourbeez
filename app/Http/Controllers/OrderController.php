@@ -1372,7 +1372,6 @@ class OrderController extends Controller
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
                 "[[ORDER_STATUS]]"          => $order->status,
                 "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($orderTour->tour_date)),
-                "[[ORDER_TOUR_DATE]]"       => $orderTour->tour_date,
                 "[[ORDER_TOUR_TIME]]"       => $orderTour->tour_time,
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
                 "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',

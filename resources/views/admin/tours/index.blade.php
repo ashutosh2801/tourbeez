@@ -69,7 +69,7 @@
         <form class="my-0" method="GET" action="{{ route('admin.tour.index') }}">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
-                    <h3 class="card-title mb-0">{{ translate('Tours') }}</h3>
+                    <!-- <h3 class="card-title mb-0">{{ translate('Tours') }}</h3> -->
 
                     <div class="d-flex gap-2 flex">
 
@@ -114,6 +114,18 @@
                                     Active
                                 </option>
                             
+                        </select>
+
+                        
+
+                        <select name="special_deposit" class="ml-2 form-control form-control-sm mr-2">
+
+                            <option value="">Special Deposit</option>
+                            @foreach (['FULL','DEPOSIT_PERCENT','DEPOSIT_FIXED','DEPOSIT_FIXED_PER_ORDER','NONE'] as $special_deposit)
+                                <option value="{{ $special_deposit }}" {{ request('special_deposit') == $special_deposit ? 'selected' : '' }}>
+                                    {{ str_replace('_', ' ', $special_deposit) }} 
+                                </option>
+                            @endforeach
                         </select>
 
                         {{-- Submit Button --}}

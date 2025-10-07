@@ -385,7 +385,7 @@ class TourController extends Controller
 
         $tour_start_date = $this->getNextAvailableDate($tour->id, $schedules);
         $disabled_dates =  $this->getDisabledTourDates($tour->id, $schedules);
-        $disabled_dates =  [];// $this->getDisabledTourDates_fromdb($tour->id);
+        // $disabled_dates =  [];// $this->getDisabledTourDates_fromdb($tour->id);
 
         
         // Calculate discount pricing (unchanged)
