@@ -386,55 +386,70 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
                 );
             }
         },
-        updateUploaderFiles: function () {
+updateUploaderFiles: function () {
     $(".aiz-uploader-all").html(
         '<div class="align-items-center d-flex h-100 justify-content-center w-100"><div class="spinner-border" role="status"></div></div>'
     );
 
     var data = TB.uploader.data.allFiles;
-    
+
     setTimeout(function () {
         $(".aiz-uploader-all").html(null);
 
-        if (data && data.length > 0) {
+        if (data.length > 0) {
             for (var i = 0; i < data.length; i++) {
                 var item = data[i];
                 var thumb = "";
 
+                // === YouTube preview ===
                 if (item.type === "youtube") {
-
-                    // Image preview
                     var ytThumb = item.thumb_name || ("https://img.youtube.com/vi/" + item.file_name + "/mqdefault.jpg");
                     thumb =
                         '<div class="youtube-thumb">' +
                         '<img src="' + ytThumb + '" class="img-fit">' +
                         '<div class="play-overlay"><i class="la la-youtube-play"></i></div>' +
                         '</div>';
-                   
-                } else if (item.type === "image") {
-                     var src = item.thumb_name ? TB.data.fileBaseUrl + item.thumb_name : TB.data.fileBaseUrl + item.file_name;
+                } 
+                // === Image preview ===
+                else if (item.type === "image") {
+                    var src = item.thumb_name ? TB.data.fileBaseUrl + item.thumb_name : TB.data.fileBaseUrl + item.file_name;
                     thumb = '<img src="' + src + '" class="img-fit">';
-                    // YouTube thumbnail
-                    
-                } else {
-                    thumb = '<i class="la la-file-text"></i>';
+                } 
+                // === Other files ===
+                else {
+                    thumb = '<i class="la la-file-text wefewdew"></i>';
                 }
 
                 var html =
-                    '<div class="aiz-file-box-wrap">' +
+                    '<div class="aiz-file-box-wrap" aria-hidden="' +
+                    item.aria_hidden +
+                    '" data-selected="' +
+                    item.selected +
+                    '">' +
                     '<div class="aiz-file-box">' +
-                    '<div class="card card-file aiz-uploader-select" title="' + (item.file_original_name || "") + '">' +
-                    '<div class="card-file-thumb">' + thumb + '</div>' +
+                    '<div class="card card-file aiz-uploader-select" title="' +
+                    item.file_original_name +
+                    (item.extension ? "." + item.extension : "") +
+                    '" data-value="' +
+                    item.id +
+                    '">' +
+                    '<div class="card-file-thumb">' +
+                    thumb +
+                    "</div>" +
                     '<div class="card-body">' +
                     '<h6 class="d-flex">' +
-                    '<span class="text-truncate title">' + (item.file_original_name || "") + '</span>' +
-                    '<span class="ext">' + (item.extension ? "." + item.extension : "") + '</span>' +
-                    '</h6>' +
-                    '<p>' + (item.file_size ? TB.extra.bytesToSize(item.file_size) : "") + '</p>' +
-                    '</div>' +
-                    '</div>' +
-                    '</div>' +
-                    '</div>';
+                    '<span class="text-truncate title">' +
+                    item.file_original_name +
+                    "</span>" +
+                    (item.extension ? '<span class="ext">.' + item.extension + "</span>" : "") +
+                    "</h6>" +
+                    "<p>" +
+                    (item.file_size ? TB.extra.bytesToSize(item.file_size) : "") +
+                    "</p>" +
+                    "</div>" +
+                    "</div>" +
+                    "</div>" +
+                    "</div>";
 
                 $(".aiz-uploader-all").append(html);
             }
@@ -449,6 +464,7 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
     }, 300);
 },
 
+
         inputSelectPreviewGenerate: function (elem) {
     elem.find(".selected-files").val(TB.uploader.data.selectedFiles);
     elem.next(".file-preview").html(null);
@@ -459,7 +475,6 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
             TB.data.appUrl + "/aiz-uploader/get_file_by_ids",
             { _token: TB.data.csrf, ids: TB.uploader.data.selectedFiles.toString() },
             function (data) {
-                console.log(data);
                 elem.next(".file-preview").html(null);
 
                 if (data.length > 0) {
@@ -486,7 +501,7 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
                                 '</div>';
                         } 
                         else {
-                            thumb = '<i class="la la-file-text"></i>';
+                            thumb = '<i class="la la-file-text qdqdqwd"></i>';
                         }
 
                         var html =
@@ -641,7 +656,6 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
                     $('[data-toggle="aizUploaderAddSelected"]').on(
                         "click",
                         function () {
-
                             if (from === "input") {
                                 TB.uploader.inputSelectPreviewGenerate(elem);
                             } else if (from === "direct") {
@@ -700,14 +714,23 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
                                 i++
                             ) {
                                 var thumb = "";
-                                if (data[i].type === "image") {
+                                
+
+                                if (data[i].type === "youtube") {
+                                    var ytThumb = data[i].thumb_name || ("https://img.youtube.com/vi/" + data[i].file_name + "/mqdefault.jpg");
+                                    thumb =
+                                        '<div class="youtube-thumb">' +
+                                        '<img src="' + ytThumb + '" class="img-fit">' +
+                                        '<div class="play-overlay"><i class="la la-youtube-play"></i></div>' +
+                                        '</div>';
+                                }else if (data[i].type === "image") {
                                     thumb =
                                         '<img src="' +
                                         TB.data.fileBaseUrl +
                                         data[i].file_name +
                                         '" class="img-fit">';
                                 } else {
-                                    thumb = '<i class="la la-file-text"></i>';
+                                    thumb = '<i class="la la-file-text fweew"></i>';
                                 }
                                 var html =
                                     '<div class="d-flex justify-content-between align-items-center mt-2 file-preview-item" data-id="' +

@@ -36,7 +36,7 @@
         <div class="accordion" id="accordionExample">
 
             <!-- ================= Customer Details ================= -->
-            <div class="card">
+           <!--  <div class="card">
                 <div class="card-header bg-secondary py-0" id="headingOne">
                     <h2 class="my-0 py-0">
                         <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
@@ -58,7 +58,84 @@
                         </div>
                     </div>
                 </div>
+            </div> -->
+            <div class="card">
+<div class="card">
+    <div class="card-header bg-secondary py-0" id="headingOne">
+        <h2 class="my-0 py-0">
+            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                data-toggle="collapse" data-target="#collapseOne">
+                <i class="fa fa-angle-right"></i> Customer Details
+            </button>                                  
+        </h2>
+    </div>
+    <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
+        <div class="card-body">
+
+            {{-- Existing Customer Dropdown --}}
+            <div class="form-group">
+                <label for="customer">Select Existing Customer</label>
+                <select name="customer_id" id="customer" class="form-control aiz-selectpicker" data-live-search="true">
+                    <option value="">-- Select Customer --</option>
+                    @foreach($customers as $customer)
+                        <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->email }}</option>
+                    @endforeach
+                </select>
             </div>
+
+            <div class="text-center my-3">
+                <button type="button" id="addNewCustomerBtn" class="btn btn-sm btn-primary">
+                    <i class="fa fa-user-plus"></i> Add New Customer
+                </button>
+            </div>
+
+            {{-- New Customer Fields (hidden by default) --}}
+            <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
+                <h5 class="mb-3">New Customer Information</h5>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="customer_first_name">First Name</label>
+                        <input type="text" name="customer_first_name" id="customer_first_name" class="form-control">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="customer_last_name">Last Name</label>
+                        <input type="text" name="customer_last_name" id="customer_last_name" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="customer_email">Email</label>
+                        <input type="email" name="customer_email" id="customer_email" class="form-control">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="customer_phone">Phone</label>
+                        <input type="text" name="customer_phone" id="customer_phone" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="pickup_id">Pickup ID</label>
+                        <input type="text" name="pickup_id" id="pickup_id" class="form-control">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="pickup_name">Pickup Name</label>
+                        <input type="text" name="pickup_name" id="pickup_name" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="additional_info">Instructions <span class="text-danger">*</span></label>
+                    <textarea name="additional_info" id="additional_info" class="form-control" required></textarea>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 
             <!-- ================= Tour Details ================= -->
             <div class="card">
@@ -227,6 +304,8 @@ function loadTourDetails(tourId, count) {
             $container.find(".aiz-date-range").each(function(){
                 $(this).off("apply.daterangepicker").on("apply.daterangepicker", function(ev, picker){
                     const selectedDate = picker.startDate.format("YYYY-MM-DD");
+                    $('#tour_startdate').val(selectedDate).trigger('change');
+                    
                     fetchTourSessions(tourId, selectedDate, count);
                 });
             });
@@ -320,6 +399,22 @@ function fetchTourSessions(tourId, selectedDate, count) {
             }
         });
     });
+    $(document).ready(function () {
+        $('#addNewCustomerBtn').on('click', function () {
+            $('#newCustomerFields').removeClass('d-none');
+            $('#customer').val('').trigger('change'); // clear existing dropdown
+            $('#additional_info').attr('required', true); // make message field required
+        });
+
+        $('#customer').on('change', function () {
+            if ($(this).val()) {
+                // If existing customer selected → hide new fields
+                $('#newCustomerFields').addClass('d-none');
+                $('#additional_info').attr('required', false); // remove required
+            }
+        });
+    });
+
 </script>
 @endsection
 </x-admin>

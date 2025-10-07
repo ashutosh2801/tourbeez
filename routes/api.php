@@ -4,9 +4,10 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CategoryController;
 use App\Http\Controllers\API\CommonController;
 use App\Http\Controllers\API\OrderController;
+use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\TourController;
 use App\Http\Controllers\API\WishlistController;
-use App\Http\Controllers\API\PaymentController;
+use App\Http\Controllers\SupplierController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -80,6 +81,11 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
     Route::post('/verify-payment', [PaymentController::class, 'verifyPayment']);
     Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
+
+
+    Route::get('/supplier/register', [SupplierController::class, 'showForm'])->name('supplier.register');
+    Route::post('/supplier/register', [SupplierController::class, 'store'])->name('supplier.register.store');
+
 });
 
 
