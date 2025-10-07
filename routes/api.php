@@ -26,10 +26,6 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 
-// Route::get('/tour-sessions', [OrderController::class, 'getSessionTimes']);
-// Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
-// Route::get('/location-banner', [CommonController::class, 'getLocationBanner']);
-
 Route::middleware(['api.key'])->group(function () {
     Route::get('/categories',[CategoryController::class,'index'])->name('categories');
     Route::post('/sub-cateogries',[CategoryController::class,'subcategory'])->name('sub.category');
@@ -86,7 +82,3 @@ Route::middleware(['api.key'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/profile/update/{id}', [AuthController::class, 'update']);
 });
-
-// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-//     return $request->user();
-// });

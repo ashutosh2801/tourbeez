@@ -237,6 +237,7 @@ class AizUploadController extends Controller
                     break;
             }
         }
+
         return $uploads->paginate(60)->appends(request()->query());
     }
 
@@ -409,5 +410,9 @@ class AizUploadController extends Controller
         preg_match('/(youtu\.be\/|v=)([A-Za-z0-9_-]{11})/', $url, $matches);
         return $matches[2] ?? null;
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5313014781dcf44615d0b3a0de534125351c920e
 
 }

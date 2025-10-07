@@ -24,6 +24,7 @@ use App\Models\TourScheduleRepeats;
 use App\Models\TourUpload;
 use App\Models\Tourtype;
 use App\Services\ImageService;
+use App\Traits\TourScheduleHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
@@ -34,6 +35,7 @@ use Validator;
 class TourController extends Controller
 {
     protected $imageService;
+    use TourScheduleHelper;
     /**
      * Display a listing of the resource.
      */
@@ -1055,6 +1057,7 @@ class TourController extends Controller
 
     public function basic_detail_update(Request $request, $id)
     {
+
         
         $request->validate([
             'title'                 => 'required|max:255',
@@ -1183,6 +1186,8 @@ class TourController extends Controller
             $tour_detail->save();
 
             $tourId = $tour->id;
+
+            
             if( $request->has('image') ) { 
 
                 $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
@@ -1309,7 +1314,11 @@ class TourController extends Controller
 
             foreach ($request->pickups as $pickupId) {
                 $syncData[$pickupId] = [
+<<<<<<< HEAD
                     'comment' => $request->comment[$pickupId] ?? null
+=======
+                    'comment' => $request->comment[$pickupId] ?? "Enter The Pickup Location"
+>>>>>>> 5313014781dcf44615d0b3a0de534125351c920e
                 ];
             }
 
@@ -1554,6 +1563,8 @@ class TourController extends Controller
             }
         }
     }
+
+    $this->updateTourScheduleMeta($tour->id);
 
     return back()->with('success', 'Schedules saved successfully.');
 }

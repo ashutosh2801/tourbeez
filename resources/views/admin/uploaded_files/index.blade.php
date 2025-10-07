@@ -56,11 +56,21 @@
     							<i class="la la-ellipsis-v"></i>
     						</a>
     						<div class="dropdown-menu dropdown-menu-right">
-								<a href="javascript:void(0)" class="dropdown-item" onclick="imagedetailsInfo(this)" data-id="{{ $file->id }}" 
-								data-name="{{ $file_name }}" data-url="{{ url('/') . '/public/'.$file->file_name }}"  data-caption="{{ $file->caption }}" data-description="{{ $file->description }}">
-    								<i class="las la-info-circle mr-2"></i>
-    								<span>{{ translate('Image Info') }}</span>
-    							</a>
+    							@if($file->type == 'youtube')
+									<a href="javascript:void(0)" class="dropdown-item" onclick="imagedetailsInfo(this)" data-id="{{ $file->id }}" 
+									data-name="{{ $file_name }}" data-url="{{ $file->file_original_name }}"  data-caption="{{ $file->caption }}" data-description="{{ $file->description }}">
+	    								<i class="las la-info-circle mr-2"></i>
+	    								<span>{{ translate('Image Info') }}</span>
+	    							</a>
+
+    							@else
+	    							<a href="javascript:void(0)" class="dropdown-item" onclick="imagedetailsInfo(this)" data-id="{{ $file->id }}" 
+									data-name="{{ $file_name }}" data-url="{{ url('/') . '/public/'.$file->file_name }}"  data-caption="{{ $file->caption }}" data-description="{{ $file->description }}">
+	    								<i class="las la-info-circle mr-2"></i>
+	    								<span>{{ translate('Image Info') }}</span>
+	    							</a>
+
+    							@endif
     							<a href="javascript:void(0)" class="dropdown-item" onclick="detailsInfo(this)" data-id="{{ $file->id }}">
     								<i class="las la-info-circle mr-2"></i>
     								<span>{{ translate('Details Info') }}</span>
@@ -69,10 +79,18 @@
     								<i class="la la-download mr-2"></i>
     								<span>{{ translate('Download') }}</span>
     							</a>
-    							<a href="javascript:void(0)" class="dropdown-item" onclick="copyUrl(this)" data-url="{{ static_asset($file->file_name) }}">
+    						
+    							@if($file->type == 'youtube')
+    								<a href="javascript:void(0)" class="dropdown-item" onclick="copyUrl(this)" data-url="{{ $file->file_original_name }}">
     								<i class="las la-clipboard mr-2"></i>
     								<span>{{ translate('Copy Link') }}</span>
     							</a>
+    							@else
+    								<a href="javascript:void(0)" class="dropdown-item" onclick="copyUrl(this)" data-url="{{ static_asset($file->file_name) }}">
+    								<i class="las la-clipboard mr-2"></i>
+    								<span>{{ translate('Copy Link') }}</span>
+    							</a>
+    							@endif
     							<a href="javascript:void(0)" class="dropdown-item confirm-alert" data-href="{{ route('admin.uploaded-files.destroy', $file->id ) }}" data-target="#delete-modal">
     								<i class="las la-trash mr-2"></i>
     								<span>{{ translate('Delete') }}</span>
@@ -85,6 +103,8 @@
     								<img src="{{ static_asset($file->file_name) }}" class="img-fit">
     							@elseif($file->type == 'video')
     								<i class="las la-file-video"></i>
+    							@elseif($file->type == 'youtube')
+    								<img src="{{ $file->thumb_name }}" class="img-fit">
     							@else
     								<i class="las la-file"></i>
     							@endif
