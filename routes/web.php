@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\LoginWithOTPController;
@@ -28,6 +29,9 @@ require('admin.php');
 // Route::get('/{any}', function () {
 //     return file_get_contents(public_path('index.html'));
 // })->where('any', '.*');
+
+
+Route::get('/export', [ExportController::class, 'index']);
 
 
 // Route::get('/', function () {

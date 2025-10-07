@@ -50,7 +50,7 @@ class AuthController extends Controller
                 'password'  => Hash::make($request->password),
             ]);
 
-            $user->id  = $user->id;
+            // $user->id  = $user->id;
             $token = $user->createToken('auth_token')->plainTextToken;
 
             // Load template
@@ -58,11 +58,11 @@ class AuthController extends Controller
 
             // Parse placeholders
             $placeholders = [
-                'name' => $user->name,
-                'email' => $user->email,
-                'app_name' => config('app.name'),
+                'name'      => $user->name,
+                'email'     => $user->email,
+                'app_name'  => config('app.name'),
                 'login_url' => config('app.site_url') .  "/login",
-                'year' => date('Y')
+                'year'      => date('Y')
             ];
 
             $parsedBody = parseTemplate($template->body, $placeholders);
@@ -75,7 +75,11 @@ class AuthController extends Controller
             $template = fetch_email_template('user_registration_for_admin');
             $parsedBody = parseTemplate($template->body, $placeholders);
             $parsedSubject = parseTemplate($template->subject, $placeholders);
-            Mail::to( get_setting('MAIL_FROM_ADDRESS') )->send(new RegistrationMail($parsedSubject, $parsedBody));
+            $toRecipient = get_setting('MAIL_FROM_ADDRESS') ?? 'info@tourbeez.com';
+            $ccRecipient = 'kiran@tourbeez.com';
+            Mail::to( $toRecipient )
+            ->cc($ccRecipient)
+            ->send(new RegistrationMail($parsedSubject, $parsedBody));
 
             return response()->json([
                 'status' => true,
@@ -155,15 +159,6 @@ class AuthController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findorFail($id);
-
-        // $validated = $request->validate([
-        //     'first_name'=> 'required|string|max:100',
-        //     'last_name' => 'required|string|max:100',
-        //     'email'     => 'required|email|unique:users,email,' . $user->id,
-        //     'phone'     => 'nullable|string|max:20',
-        //     'dob'       => 'nullable|string|max:20',
-        //     'country'   => 'nullable|string|max:100',
-        // ]);
         
         $name = $request->input('first_name') ?? $user->first_name;
         $name.= ' '.$request->input('last_name') ?? $user->last_name;
@@ -179,5 +174,40 @@ class AuthController extends Controller
         ]);
 
         return response()->json(['status' => true, 'message' => 'Profile updated successfully', 'posted'=>$request->all(), 'user' => $user]);
+    }
+
+    public function password_update(Request $request, $id)
+    {
+        $user = User::findorFail($id);
+        
+        $rules = [
+            'password' => [
+                'required',
+                'confirmed', // expects `password_confirmation` field
+                'min:8',
+                'regex:/[A-Z]/', // uppercase
+                'regex:/[0-9]/', // number
+            ],
+            'password_confirmation' => 'required',
+        ];
+
+        $messages = [
+            'password.regex' => 'Password must contain at least one uppercase letter and one number.',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Current password is not accepted.'], 400);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json(['status' => true, 'message' => 'Password updated successfully', 'user' => $user]);
     }
 }

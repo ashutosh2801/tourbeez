@@ -226,9 +226,10 @@ class OrderController extends Controller
      */
  public function store(Request $request)
 {
+    dd(auth()->user()->id);
     // dd($request->all());
      $validated = $request->validate([
-        'customer_id'          => 'required|integer|exists:users,id',
+        'customer_id'          => 'nullable|integer',
         'tour_id'              => 'required|array|min:1',
         'tour_id.*'            => 'integer|exists:tours,id',
 
@@ -833,6 +834,7 @@ class OrderController extends Controller
             'order_detail',
             'order_cancelled',
             'order_confirmed',
+            'trip_completed',
             'payment_receipt',
             'order_pending',
             'payment_request'
@@ -1072,6 +1074,22 @@ class OrderController extends Controller
             $tour       = $orderTour->tour;
             //echo '<pre>'; print_r($orderTour->tour); exit;
 
+
+            $pickup_address = '';
+            if( $order->customer->pickup_name ) {
+                $pickup_address = $order->customer->pickup_name;
+            }
+            else if($order->customer->pickup_id) {
+                $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
+            }
+            if($pickup_address) {
+                $pickup_address = '
+                  <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
+                  <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
+                    <strong>' . $pickup_address . '</strong>
+                  </h3>';
+                            }
+
             $TOUR_PAYMENT_HISTORY = '
                     <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
                         <tbody>
@@ -1200,12 +1218,15 @@ class OrderController extends Controller
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
                 "[[CUSTOMER_PHONE]]"        => $customer->name ?? '',
 
+
+
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
                 "[[TOUR_MAP]]"              => $tour->location->address ?? '',
                 "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
                 "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
                 "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
                 "[[TOUR_TERMS_CONDITIONS]]"  => $tour->terms_and_conditions,
+                "[[PICKUP_ADDRESS]]"        => $pickup_address,
 
                 "[[APP_LOGO]]"              => $logo,
                 "[[APP_NAME]]"              => get_setting('site_name'),
@@ -1217,8 +1238,8 @@ class OrderController extends Controller
 
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
                 "[[ORDER_STATUS]]"          => $order->status,
-                "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($order->created_at)),
-                "[[ORDER_TOUR_TIME]]"       => date('H:i A', strtotime($order->created_at)),
+                "[[ORDER_TOUR_DATE]]"       => $orderTour->tour_date,
+                "[[ORDER_TOUR_TIME]]"       => $orderTour->tour_time,
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
                 "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
@@ -1240,10 +1261,10 @@ class OrderController extends Controller
                     'footer'=>$finalfooter,
                     'event' => [
                         'uid' => "TB" . $order->order_number,
-                        'start' => date('H:i A', strtotime($order->created_at)), // local time
-                        'end' => date('H:i A', strtotime($order->created_at)),
+                        'start' => $orderTour->tour_date, // local time
+                        'end' => $orderTour->tour_time,
                         'title' => $tour->title,
-                        'description' => $email_template->subject,
+                        'description' => $finalsubject,
                         'location' => $tour->location->address,
                     ],
                 ]);

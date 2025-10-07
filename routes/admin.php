@@ -129,21 +129,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('/tour/payment_request_update/{id}', [TourController::class, 'payment_request_update'])->name('tour.payment_request_update');
     Route::get('/tour/preview/{id}', [TourController::class, 'preview'])->name('tour.preview');
     Route::post('/tour/addfocus/{id}', [TourController::class, 'add_focus_keyword'])->name('tour.addfocus');
-
     Route::post('/tours/reorder', [TourController::class, 'reorder'])->name('tour.reorder');
-
     Route::post('/tours/save-coupon', [TourController::class, 'saveCoupon'])->name('tour.saveCoupon');
     Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');
-
     Route::post('/tours/toggle-status', [TourController::class, 'toggleStatus'])->name('tour.toggleStatus');
     // Route::post('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit..special.deposit');
     Route::put('/tour/special-deposit/{id}', [TourController::class, 'specialDepositUpdate'])->name('tour.special-deposit');
     Route::put('/tour/review/{id}', [TourController::class, 'reviewUpdate'])->name('tour.review');
-
     Route::get('/tours/{id}/sub-create', [TourController::class, 'createSubTour'])->name('tours.sub-create');
     Route::post('/tours/{id}/sub-tour-store', [TourController::class, 'subTourStore'])->name('tour.sub-tour-store');
-
-
     Route::get('/tours/{id}/sub-edit', [TourController::class, 'editSubTour'])->name('tour.sub-tour.edit');
     Route::get('/tours/{id}/sub-index', [TourController::class, 'subTourIndex'])->name('tour.sub-tour.index');
 
@@ -181,14 +175,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity.logs');
     Route::get('/banner', [AizUploadController::class, 'showBanner'])->name('banner.index');
-
-    
+  
     Route::get('banners/create', [AizUploadController::class, 'bannerCreate'])->name('banners.create');
     Route::post('banners/store', [AizUploadController::class, 'bannerStoreOrUpdate'])->name('banners.store');
     Route::get('banners/{id}/edit', [AizUploadController::class, 'bannerEdit'])->name('banners.edit');
     Route::post('banners/{id}/update', [AizUploadController::class, 'bannerStoreOrUpdate'])->name('banners.update');
     Route::get('banners/{id}/delete', [AizUploadController::class, 'bannerDestroy'])->name('banners.destroy');
-
 
     // Uploader
     Route::get('/refresh-csrf', function(){ return csrf_token(); });
@@ -250,4 +242,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Artisan::call('permission:cache-reset');
         return redirect()->back()->with('success', 'Cache cleared!');
     })->name('clear.cache');
+
+    Route::get('/uploaded-disable-date', function() {
+        Artisan::call('app:update-tour-disable-date');
+        
+        return redirect()->back()->with('success', 'Update disabled tour schedule meta for all tours');
+    })->name('clear.cache');
+
 });
