@@ -109,12 +109,24 @@ class TourController extends Controller
 
             
         }
-
-      if ($request->has('special_deposit') && $request->special_deposit  != '') {
-            $charge = $request->special_deposit;
-            $query->whereHas('specialDeposit', function ($q) use ($charge) {
-                $q->where('charge', $charge);
-            });
+        // dd($request->all());
+        if ($request->has('special_deposit') && $request->special_deposit != '') {
+            if ($request->special_deposit === 'active') {
+                // Tours that have a related special deposit
+                $query->whereHas('specialDeposit');
+            } elseif ($request->special_deposit === 'not_active') {
+                // Tours that do NOT have a related special deposit
+                $query->whereDoesntHave('specialDeposit');
+            }
+        }
+        if ($request->has('schedule') && $request->schedule != '') {
+            if ($request->schedule === 'active') {
+                // Tours that have a related special deposit
+                $query->whereHas('schedules');
+            } elseif ($request->schedule === 'not_active') {
+                // Tours that do NOT have a related special deposit
+                $query->whereDoesntHave('schedules');
+            }
         }
 
         $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');

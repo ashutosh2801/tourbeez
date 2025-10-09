@@ -59,6 +59,7 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
+        
         $query = Order::with(['customer', 'orderTours.tour'])
             ->whereHas('customer', function ($q) {
                 $q->whereNotNull('first_name')
@@ -995,50 +996,63 @@ class OrderController extends Controller
     }
 
     public function order_mail_send(Request $request)
-    {
-        $email = $request->input('email');
-        $subject = $request->input('subject');
-        $header = $request->input('header');
-        $body = $request->input('body');
-        $footer = $request->input('footer');
-        $event = $request->input('event');
+{
+    $email   = $request->input('email');
+    $subject = $request->input('subject');
+    $header  = $request->input('header');
+    $body    = $request->input('body');
+    $footer  = $request->input('footer');
+    $event   = $request->input('event');
 
-        if (env('MAIL_FROM_ADDRESS') != null) {
-            $array['view'] = 'emails.newsletter';
-            $array['subject'] = $subject;
-            $array['header'] = $header;
-            $array['from'] = env('MAIL_FROM_ADDRESS');
-            $array['content'] =  $header.$body.$footer;
-            // dd($event);
-            $array['event'] = json_decode($event, true);
- 
-            try {
+    if (env('MAIL_FROM_ADDRESS')) {
+        $array = [
+            'view'    => 'emails.newsletter',
+            'subject' => $subject,
+            'header'  => $header,
+            'from'    => env('MAIL_FROM_ADDRESS'),
+            'content' => $header . $body . $footer,
+            'event'   => json_decode($event, true),
+        ];
 
-                if(Mail::to($request->email)->send(new EmailManager($array))){
-                    if($request->has('order')){
-                        $order = $request->order;
-                        OrderEmailHistory::create([
-                            'order_id'  => $order->id,
-                            'to_email'  => $request->email,
-                            'from_email'=> env('MAIL_FROM_ADDRESS'),
-                            'subject'   => $subject,
-                            'body'      => $header.$body.$footer,
-                            'status'    => 'sent'
-                        ]);
+        try {
+            // Explicitly use Mailgun mailer
+            $mailer = Mail::mailer('mailgun');
 
-                    }
-                    
-                    return response()->json(['status' => 'success']);
-                }else{
-                     return response()->json(['status' => 'Failed']);
+            // Send email and capture message info
+            $sentMessage = $mailer->to($email)->send(new EmailManager($array));
+
+            $messageId = null;
+            if ($sentMessage instanceof \Illuminate\Mail\SentMessage) {
+                $symfonySent = $sentMessage->getSymfonySentMessage();
+                if ($symfonySent && method_exists($symfonySent, 'getMessageId')) {
+                    $messageId = $symfonySent->getMessageId();
+                    $messageId = trim($messageId, '<>');
                 }
-                 
-            } catch (\Exception $e) {
-                dd($e);
             }
+
+
+
+            // Get order_id from request
+            $order_id = $request->input('order_id') ?? optional($request->order)->id;
+
+            // Save to email history table
+            OrderEmailHistory::create([
+                'order_id'   => $order_id,
+                'to_email'   => $email,
+                'from_email' => env('MAIL_FROM_ADDRESS'),
+                'subject'    => $subject,
+                'body'       => $header . $body . $footer,
+                'message_id' => $messageId, // ✅ store for webhook tracking
+            ]);
+
+            return response()->json(['status' => 'success', 'message_id' => $messageId]);
+        } catch (\Exception $e) {
+            \Log::error('Mail send failed: ' . $e->getMessage());
+            return response()->json(['status' => 'failed', 'error' => $e->getMessage()]);
         }
-       
     }
+}
+
 
     public function order_template_details(Request $request)
     {

@@ -768,6 +768,7 @@
             <form id="order_mail" method="POST" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="identifier" id="identifier">
+                <input type="hidden" name="order_id" value="{{ $order->id }}">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-lg-12">

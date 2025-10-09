@@ -673,7 +673,7 @@ class TourController extends Controller
             foreach($tours as $tour) {
                 $image_id = $tour->main_image->id ?? 0;
                 $image  = uploaded_asset($image_id, 'thumb');
-                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => '/tour/'.$tour->slug, 'address' => $tour->location->address];
+                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => '/tour/'.$tour->slug, 'address' => $tour->location?->address];
             }
         }
         
