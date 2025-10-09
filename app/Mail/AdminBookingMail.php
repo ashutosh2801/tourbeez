@@ -30,6 +30,12 @@ class AdminBookingMail extends Mailable
                 'mime' => 'text/calendar',
             ]);
         }
+        $mail->withSwiftMessage(function ($message) {
+            $headers = $message->getHeaders();
+            $headers->addTextHeader('X-Mailgun-Track', 'yes');
+            $headers->addTextHeader('X-Mailgun-Track-Opens', 'yes');
+            $headers->addTextHeader('X-Mailgun-Track-Clicks', 'yes');
+        });
 
         return $mail;
     }

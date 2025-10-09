@@ -18,7 +18,8 @@ class IsAdmin
     {
         if (Auth::check() && (Auth::user()->user_type === 'admin' || 
                 Auth::user()->user_type === 'staff' || 
-                Auth::user()->user_type === 'tour listing associate')) {
+                Auth::user()->user_type === 'tour listing associate') || 
+                Auth::user()->user_type === 'Member') {
             return $next($request);
         }
         auth()->logout();

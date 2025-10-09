@@ -712,7 +712,7 @@ class PaymentController extends Controller
                     'from_email'=> env('MAIL_FROM_ADDRESS'),
                     'subject'   => $subject,
                     'body'      => $header.$body.$footer,
-                    'status'    => 'sent'
+                    'message_id' => $mailSend
                 ]);
 
             }
@@ -755,19 +755,32 @@ class PaymentController extends Controller
  
             try {
 
-                if($recipient == 'admin'){
-                     Mail::to($email)->send(new AdminBookingMail($array));
-                     return true;
-                } else{
-                    if(Mail::to($email)->send(new EmailManager($array))){
 
-                        return true;
-                        return response()->json(['status' => 'success']);
-                    }else{
-                         return false;
-                         return response()->json(['status' => 'Failed']);
+                $mailer = Mail::mailer('mailgun');
+
+                // Send email and capture message info
+                // $sentMessage = $mailer->to($email)->send(new EmailManager($array));
+
+                
+
+                if($recipient == 'admin'){
+                     $sentMessage = $mailer->to($email)->send(new AdminBookingMail($array));
+                } else{
+                        $sentMessage = $mailer->to($email)->send(new EmailManager($array));
+                        
+                        
+                }
+
+                $messageId = null;
+                if ($sentMessage instanceof \Illuminate\Mail\SentMessage) {
+                    $symfonySent = $sentMessage->getSymfonySentMessage();
+                    if ($symfonySent && method_exists($symfonySent, 'getMessageId')) {
+                        $messageId = $symfonySent->getMessageId();
+                        $messageId = trim($messageId, '<>');
                     }
                 }
+
+                return $messageId;
                 
                  
             } catch (\Exception $e) {

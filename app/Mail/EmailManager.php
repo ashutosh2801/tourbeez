@@ -49,6 +49,13 @@ class EmailManager extends Mailable
             ]);
         }
 
+        $mail->withSwiftMessage(function ($message) {
+            $headers = $message->getHeaders();
+            $headers->addTextHeader('X-Mailgun-Track', 'yes');
+            $headers->addTextHeader('X-Mailgun-Track-Opens', 'yes');
+            $headers->addTextHeader('X-Mailgun-Track-Clicks', 'yes');
+        });
+
         return $mail;
     }
     

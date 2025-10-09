@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\SupplierScope;
 use App\Models\Tour;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,8 +13,13 @@ class Pickup extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'location', 'address', 'time', 'additional_information'
+        'name', 'location', 'address', 'time', 'additional_information', 'user_id'
     ];
+    protected static function booted()
+    {
+        static::addGlobalScope(new SupplierScope('user_id'));
+    }
+
 
     public function locations()
     {
