@@ -59,7 +59,6 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        
         $query = Order::with(['customer', 'orderTours.tour'])
             ->whereHas('customer', function ($q) {
                 $q->whereNotNull('first_name')
@@ -1042,6 +1041,7 @@ class OrderController extends Controller
                 'from_email' => env('MAIL_FROM_ADDRESS'),
                 'subject'    => $subject,
                 'body'       => $header . $body . $footer,
+                'status'     => 'sent',
                 'message_id' => $messageId, // ✅ store for webhook tracking
             ]);
 
@@ -1225,7 +1225,7 @@ class OrderController extends Controller
             //                     </td>
             //                 </tr>
             //             </tbody>
-            //         </table>';
+            //         </table>';a
 
 
             $TOUR_ITEM_SUMMARY = '';
@@ -1368,6 +1368,7 @@ class OrderController extends Controller
 
 
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
+                "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
                 "[[TOUR_MAP]]"              => $tour->location->address ?? '',
                 "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
                 "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
@@ -1482,6 +1483,7 @@ class OrderController extends Controller
                 "[[CUSTOMER_LAST_NAME]]"   => $customer->last_name ?? '',
 
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
+                "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
                 "[[TOUR_MAP]]"              => $tour->location->address ?? '',
                 "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
                 // "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
@@ -1515,6 +1517,7 @@ class OrderController extends Controller
             //     "[[ORDER_STATUS]]"          => ucfirst($order->status) ?? '',
 
             //     "[[TOUR_TITLE]]"            => $order->user->name ?? '',
+            //     "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
             //     "[[TOUR_DATE]]"             => $order->user->name ?? '',
             //     "[[TOUR_TIME]]"             => $order->user->name ?? '',
             //     "[[TOUR_MAP]]"              => $order->user->name ?? '',
