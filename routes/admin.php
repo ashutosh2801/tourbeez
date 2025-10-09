@@ -242,4 +242,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Artisan::call('permission:cache-reset');
         return redirect()->back()->with('success', 'Cache cleared!');
     })->name('clear.cache');
+
+    Route::get('/uploaded-disable-date', function() {
+        Artisan::call('app:update-tour-disable-date');
+        
+        return redirect()->back()->with('success', 'Update disabled tour schedule meta for all tours');
+    })->name('clear.cache');
+
 });

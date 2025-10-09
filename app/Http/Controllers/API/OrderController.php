@@ -487,7 +487,7 @@ class OrderController extends Controller
             $tourData = [
                 'tour_id'           => $request->tourId,
                 'tour_date'         => $validated['selectedDate'],
-                'tour_time'         => $validated['selectedTime'] ?? null,
+                // 'tour_time'         => $validated['selectedTime'] ?? null,
                 'tour_pricing'      => json_encode($pricing ?? []),
                 'tour_extra'        => json_encode($extra ?? []),
                 'tour_fees'         => json_encode($fees ?? []),

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class OrderEmailHistory extends Model
 {
     protected $fillable = [
-        'order_id', 'to_email', 'from_email', 'subject', 'body', 'status'
+        'order_id', 'to_email', 'from_email', 'subject', 'body', 'status', 'message_id'
     ];
 
     public function order()

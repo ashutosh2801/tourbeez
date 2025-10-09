@@ -15,6 +15,7 @@
     box-shadow: none !important;
     widows: 150px !important;
 
+
 }
 
 /* Ensure focus style also matches */
@@ -55,6 +56,7 @@
 
 .select2-container {
     min-width: 200px !important; /* dropdown width */
+    margin-right: .5rem!important;
 }
 
 
@@ -69,25 +71,23 @@
         <form class="my-0" method="GET" action="{{ route('admin.tour.index') }}">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
-                    <h3 class="card-title mb-0">{{ translate('Tours') }}</h3>
+                    <!-- <h3 class="card-title mb-0">{{ translate('Tours') }}</h3> -->
 
                     <div class="d-flex gap-2 flex">
 
-                        {{-- City Dropdown --}}
-
-                    <select name="city" id="city-select" class="form-control form-control-sm">
-                        @if(request('city'))
-                            <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
-                        @endif
-                    </select>
+                        
 
 
                         {{-- Search Input --}}
-                        <input type="text" name="search" class="ml-2 form-control form-control-sm mr-2" placeholder="Search tour" value="{{ request('search') }}" />
+                        <input type="text" name="search" class="form-control form-control-sm ml-0 mr-2" placeholder="Search tour" value="{{ request('search') }}" />
+
+                        {{-- City Dropdown --}}
+
+                        
 
                         {{-- Category Dropdown --}}
 
-                        <select name="category" class="form-control form-control-sm mr-2 select-searchable">
+                        <select name="category" class="form-control form-control-sm select-searchable mx-2">
                             <option value="">All Categories</option>
                             @foreach ($categories as $category)
                                 <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
@@ -96,16 +96,14 @@
                             @endforeach
                         </select>
 
-                        {{-- Per Page Dropdown --}}
-                        <select name="per_page" class="ml-2 form-control form-control-sm mr-2">
-                            @foreach (['All',10, 25, 50, 100] as $number)
-                                <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                                    {{ $number }} per page
-                                </option>
-                            @endforeach
+                        <select name="city" id="city-select" class="mx-2 form-control form-control-sm">
+                            @if(request('city'))
+                                <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
+                            @endif
                         </select>
+                        
 
-                        <select name="status" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                        <select name="status" class="form-control form-control-sm mr-2 " onchange="this.form.submit()">
                             <option value="">All Status</option>
                                 <option value="0" {{ request('staus') === 0 ? 'selected' : '' }}>
                                     Pending
@@ -114,6 +112,35 @@
                                     Active
                                 </option>
                             
+                        </select>
+
+                        
+
+                        <select name="special_deposit" class="form-control form-control-sm mr-2">
+
+                            <option value="">Special Deposit</option>
+                            @foreach (['Active','Not_Active'] as $special_deposit)
+                                <option value="{{ strtolower($special_deposit) }}" {{ request('special_deposit') == strtolower($special_deposit) ? 'selected' : '' }}>
+                                    {{ str_replace('_', ' ', $special_deposit) }} 
+                                </option>
+                            @endforeach
+                        </select>
+                        <select name="schedule" class="form-control form-control-sm mr-2">
+
+                            <option value="">Schedule</option>
+                            @foreach (['Active','Not_Active'] as $schedule)
+                                <option value="{{ strtolower($schedule) }}" {{ request('schedule') == strtolower($schedule) ? 'selected' : '' }}>
+                                    {{ str_replace('_', ' ', $schedule) }} 
+                                </option>
+                            @endforeach
+                        </select>
+                        {{-- Per Page Dropdown --}}
+                        <select name="per_page" class="form-control form-control-sm mr-2">
+                            @foreach (['All',10, 25, 50, 100] as $number)
+                                <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                    {{ $number }} per page
+                                </option>
+                            @endforeach
                         </select>
 
                         {{-- Submit Button --}}

@@ -150,7 +150,9 @@
                                 <td>
 
                                     @foreach ($order->orderTours as $order_tour)
-                                        {{ \Carbon\Carbon::parse($order_tour->tour_date)->format('M d, Y h:i A') }}<br>
+                                        {{ \Carbon\Carbon::parse($order_tour->tour_date)->format('M d, Y') }}<br>
+
+                                         {{ $order_tour->tour_time }}
                                     @endforeach
                                 </td>
                                 <td>

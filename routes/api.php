@@ -7,6 +7,7 @@ use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\TourController;
 use App\Http\Controllers\API\WishlistController;
+use App\Http\Controllers\EmailController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -34,7 +35,7 @@ use Illuminate\Support\Facades\Route;
 
 
 
-
+Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
 
 Route::middleware(['api.key'])->group(function () {
     Route::get('/categories',[CategoryController::class,'index'])->name('categories');
@@ -84,7 +85,7 @@ Route::middleware(['api.key'])->group(function () {
 
 
     Route::get('/supplier/register', [SupplierController::class, 'showForm'])->name('supplier.register');
-    Route::post('/supplier/register', [SupplierController::class, 'store'])->name('supplier.register.store');
+    Route::post('/suppliers', [SupplierController::class, 'store'])->name('supplier.register.store');
 
 });
 
