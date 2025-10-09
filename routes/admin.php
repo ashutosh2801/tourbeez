@@ -35,6 +35,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/dashboard',[ProfileController::class,'dashboard'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/suplier_update', [ProfileController::class, 'suplierUpdate'])->name('profile.suplier_update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::resource('/user',UserController::class);
@@ -247,6 +248,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Artisan::call('app:update-tour-disable-date');
         
         return redirect()->back()->with('success', 'Update disabled tour schedule meta for all tours');
-    })->name('clear.cache');
+    })->name('uploaded-disable-date');
 
 });
