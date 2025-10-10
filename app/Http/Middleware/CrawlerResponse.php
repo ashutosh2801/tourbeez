@@ -169,6 +169,7 @@ class CrawlerResponse
                     else if ( $type == 'c3' ) {
                         $d = Category::findOrFail( $id );
                     }                    
+
                     if($d){
                         return response()->view('share.tour', [
                             'title' => countThingsToDo($id, $type).' Things To Do In ' .ucfirst( $d->name ).' | ' .env('APP_NAME') ,

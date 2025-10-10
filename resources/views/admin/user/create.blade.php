@@ -3,28 +3,33 @@
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Create User</h3>
-            <div class="card-tools"><a href="{{ route('admin.user.index') }}" class="btn btn-sm btn-dark">Back</a></div>
+            <div class="card-tools">
+                <a href="{{ route('admin.user.index') }}" class="btn btn-sm btn-dark">Back</a>
+            </div>
         </div>
+
         <div class="card-body">
-            <form action="{{ route('admin.user.store') }}" method="POST">
+            <form action="{{ route('admin.user.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
+
                 <div class="row">
+                    {{-- ================= BASIC USER INFO ================= --}}
                     <div class="col-lg-6">
                         <div class="form-group">
                             <label for="name" class="form-label">Name:*</label>
-                            <input type="text" class="form-control" name="name" required
-                                value="{{ old('name') }}">
-                                <x-error>name</x-error>
+                            <input type="text" class="form-control" name="name" required value="{{ old('name') }}">
+                            <x-error>name</x-error>
                         </div>
                     </div>
+
                     <div class="col-lg-6">
                         <div class="form-group">
                             <label for="Email" class="form-label">Email:*</label>
-                            <input type="email" class="form-control" name="email" required
-                                value="{{ old('email') }}">
-                                <x-error>email</x-error>
+                            <input type="email" class="form-control" name="email" required value="{{ old('email') }}">
+                            <x-error>email</x-error>
                         </div>
                     </div>
+
                     <div class="col-lg-6">
                         <div class="form-group">
                             <label for="Password" class="form-label">Password:*</label>
@@ -32,166 +37,161 @@
                             <x-error>password</x-error>
                         </div>
                     </div>
+
                     <div class="col-lg-6">
                         <div class="form-group">
                             <label for="role" class="form-label">Role:*</label>
                             <select name="role" id="role" class="form-control" required>
-                                <option value="" selected disabled>selecte the role</option>
+                                <option value="" selected disabled>Select the role</option>
                                 @foreach ($roles as $role)
-                                    @if($role->name!='Super Admin')
-                                    <option value="{{ $role->name }}"
-                                        {{ $role->name == old('role') ? 'selected' : '' }}>{{ $role->name }}</option>
+                                    @if($role->name != 'Super Admin')
+                                        <option value="{{ $role->name }}">{{ $role->name }}</option>
                                     @endif
                                 @endforeach
                             </select>
                             <x-error>role</x-error>
                         </div>
                     </div>
-                    {{-- ===== SUPPLIER INFO ===== --}}
-                @php
-                    $supplier = $user->supplier ?? null;
-                @endphp
-                @if($user->role == 'Supplier')
-                    <h4 class="mt-4 mb-3">Supplier Information</h4>
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <label>Business Name</label>
-                            <input type="text" name="business_name" class="form-control" value="{{ $supplier->business_name ?? '' }}">
-                        </div>
 
-                        <div class="col-lg-6">
-                            <label>Supplier Type</label>
-                            <!-- <input type="text" name="supplier_type" class="form-control" value="{{ $supplier->supplier_type ?? '' }}"> -->
+                    {{-- ================= SUPPLIER INFO SECTION ================= --}}
+                    <div id="supplier-section" class="col-12 mt-4" style="display: none;">
+                        <h4 class="mb-3">Supplier Information</h4>
+                        <div class="row">
 
+                            <div class="col-lg-6">
+                                <label>Business Name*</label>
+                                <input type="text" name="business_name" class="form-control">
+                            </div>
 
-                            <select name="supplier_type" id="supplier_type" class="form-control" required>
-                                <option value="" disabled>Supplier Type</option>
-                                    @foreach (['Tour Operator','Transportation', 'Hotel', 'Attraction','Restaurant', 'Other' ] as $type)
-                                        @if($role->name != 'Super Admin')
-                                            <option value="{{ $type }}" {{ $type == $supplier->supplier_type ? 'selected' : '' }}>
-                                                {{ $type }}
-                                            </option>
-                                        @endif
+                            <div class="col-lg-6">
+                                <label>Supplier Type*</label>
+                                <select name="supplier_type" class="form-control">
+                                    <option value="" disabled selected>Select Type</option>
+                                    @foreach (['Tour Operator','Transportation','Hotel','Attraction','Restaurant','Other'] as $type)
+                                        <option value="{{ $type }}">{{ $type }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
-                        <!-- <select class="w-full border border-gray-300 rounded-lg p-3 outline-none text-gray-700 text-base"><option value="">- Select -</option><option value="Tour Operator">Tour Operator</option><option value="Transportation">Transportation</option><option value="Hotel">Hotel</option><option value="Attraction">Attraction</option><option value="Restaurant">Restaurant</option><option value="Other">Other</option></select> -->
+                            <div class="col-lg-6">
+                                <label>Business Registration Number</label>
+                                <input type="text" name="business_registration_number" class="form-control">
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Business Registration Number</label>
-                            <input type="text" name="business_registration_number" class="form-control" value="{{ $supplier->business_registration_number ?? '' }}">
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Year Established</label>
+                                <input type="number" name="year_established" class="form-control">
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Year Established</label>
-                            <input type="number" name="year_established" class="form-control" value="{{ $supplier->year_established ?? '' }}">
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Website URL</label>
+                                <input type="url" name="website_url" class="form-control">
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Website URL</label>
-                            <input type="url" name="website_url" class="form-control" value="{{ $supplier->website_url ?? '' }}">
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Social Media Links</label>
+                                <input type="text" name="social_links" class="form-control">
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Social Links</label>
-                            <input type="text" name="social_links" class="form-control" value="{{ $supplier->social_links ?? '' }}">
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Designation</label>
+                                <input type="text" name="designation" class="form-control">
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Designation</label>
-                            <input type="text" name="designation" class="form-control" value="{{ $supplier->designation ?? '' }}">
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Secondary Contact</label>
+                                <input type="text" name="secondary_contact" class="form-control">
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Secondary Contact</label>
-                            <input type="text" name="secondary_contact" class="form-control" value="{{ $supplier->secondary_contact ?? '' }}">
-                        </div>
+                            <div class="col-lg-12">
+                                <label>Address</label>
+                                <textarea name="address" class="form-control"></textarea>
+                            </div>
 
-                        <div class="col-lg-12">
-                            <label>Address</label>
-                            <textarea name="address" class="form-control">{{ $supplier->address ?? '' }}</textarea>
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Operating Locations</label>
+                                <textarea name="operating_locations" class="form-control"></textarea>
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Operating Locations</label>
-                            <textarea name="operating_locations" class="form-control">{{ $supplier->operating_locations ?? '' }}</textarea>
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Insurance Details</label>
+                                <textarea name="insurance_details" class="form-control"></textarea>
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Insurance Details</label>
-                            <textarea name="insurance_details" class="form-control">{{ $supplier->insurance_details ?? '' }}</textarea>
-                        </div>
+                            <div class="col-lg-6">
+                                <label>License File</label>
+                                <input type="file" name="license_file" class="form-control">
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>License File</label>
-                            <input type="file" name="license_file" class="form-control">
-                            @if(!empty($supplier->license_file))
-                                <small class="text-muted">Current: {{ $supplier->license_file }}</small>
-                            @endif
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Certifications</label>
+                                <textarea name="certifications" class="form-control"></textarea>
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Certifications</label>
-                            <textarea name="certifications" class="form-control">{{ $supplier->certifications ?? '' }}</textarea>
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Payment Method</label>
+                                <select name="payment_method" class="form-control">
+                                    <option value="">Select Payment Method</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="PayPal">PayPal</option>
+                                    <option value="Stripe">Stripe</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Payment Method</label>
-                            <input type="text" name="payment_method" class="form-control" value="{{ $supplier->payment_method ?? '' }}">
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Bank Details</label>
+                                <textarea name="bank_details" class="form-control"></textarea>
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Bank Details</label>
-                            <textarea name="bank_details" class="form-control">{{ $supplier->bank_details ?? '' }}</textarea>
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Currency</label>
+                                <input type="text" name="currency" class="form-control" placeholder="e.g. USD, INR">
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Currency</label>
-                            <input type="text" name="currency" class="form-control" value="{{ $supplier->currency ?? '' }}">
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Company Logo</label>
+                                <input type="file" name="company_logo" class="form-control">
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Company Logo</label>
-                            <input type="file" name="company_logo" class="form-control">
-                            @if(!empty($supplier->company_logo))
-                                <small class="text-muted">Current: {{ $supplier->company_logo }}</small>
-                            @endif
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Service Images</label>
+                                <input type="file" name="service_images[]" class="form-control" multiple>
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Service Images</label>
-                            <textarea name="service_images" class="form-control">{{ $supplier->service_images ?? '' }}</textarea>
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Promotional Offers</label>
+                                <textarea name="promotional_offers" class="form-control"></textarea>
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Promotional Offers</label>
-                            <textarea name="promotional_offers" class="form-control">{{ $supplier->promotional_offers ?? '' }}</textarea>
-                        </div>
+                            <div class="col-lg-6">
+                                <label>Digital Signature / Name</label>
+                                <input type="text" name="digital_signature" class="form-control">
+                            </div>
 
-                        
+                            <div class="col-lg-6">
+                                <label>Date</label>
+                                <input type="date" name="submitted_date" class="form-control">
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Digital Signature</label>
-                            <input type="text" name="digital_signature" class="form-control" value="{{ $supplier->digital_signature ?? '' }}">
-                        </div>
+                            <div class="col-lg-3 mt-3">
+                                <label>
+                                    <input type="checkbox" name="consent_info" value="1">
+                                    Confirm information is accurate
+                                </label>
+                            </div>
 
-                        <div class="col-lg-6">
-                            <label>Submitted Date</label>
-                            <input type="date" name="submitted_date" class="form-control" value="{{ $supplier->submitted_date ?? '' }}">
-                        </div>
-                        <div class="col-lg-3 mt-3">
-                            <label>Consent Info</label>
-                            <input type="checkbox" name="consent_info" value="1" {{ !empty($supplier->consent_info) ? 'checked' : '' }}>
-                        </div>
-
-                        <div class="col-lg-3 mt-3">
-                            <label>Consent Terms</label>
-                            <input type="checkbox" name="consent_terms" value="1" {{ !empty($supplier->consent_terms) ? 'checked' : '' }}>
+                            <div class="col-lg-3 mt-3">
+                                <label>
+                                    <input type="checkbox" name="consent_terms" value="1">
+                                    Agree to Terms & Conditions
+                                </label>
+                            </div>
                         </div>
                     </div>
-                @endif
-                    <div class="col-lg-12">
+
+                    {{-- ================= SUBMIT BUTTON ================= --}}
+                    <div class="col-lg-12 mt-4">
                         <div class="float-right">
                             <button class="btn btn-primary" type="submit">Save</button>
                         </div>
@@ -200,4 +200,22 @@
             </form>
         </div>
     </div>
+
+    {{-- =============== TOGGLE SCRIPT =============== --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const roleSelect = document.getElementById('role');
+            const supplierSection = document.getElementById('supplier-section');
+
+            function toggleSupplierSection() {
+                if (roleSelect.value === 'Supplier') {
+                    supplierSection.style.display = 'block';
+                } else {
+                    supplierSection.style.display = 'none';
+                }
+            }
+
+            roleSelect.addEventListener('change', toggleSupplierSection);
+        });
+    </script>
 </x-admin>
