@@ -139,9 +139,16 @@
                             <textarea name="certifications" class="form-control">{{ $supplier->certifications ?? '' }}</textarea>
                         </div>
 
+                    
                         <div class="col-lg-6">
                             <label>Payment Method</label>
-                            <input type="text" name="payment_method" class="form-control" value="{{ $supplier->payment_method ?? '' }}">
+                            <select name="payment_method" class="form-control">
+                                <option value="">Select Payment Method</option>
+                                <option value="Bank Transfer" {{ $supplier->payment_method == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                                <option value="PayPal" {{ $supplier->payment_method == 'PayPal'? 'selected' : '' }}>PayPal</option>
+                                <option value="Stripe" {{ $supplier->payment_method == 'Stripe'? 'selected' : '' }}>Stripe</option>
+                                <option value="Other" {{ $supplier->payment_method == 'Other'? 'selected' : '' }}>Other</option>
+                            </select>
                         </div>
 
                         <div class="col-lg-6">

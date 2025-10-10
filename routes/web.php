@@ -28,6 +28,7 @@ require('auth.php');
 // Admin Routes
 require('admin.php');
 
+
 Route::get('/export', [ExportController::class, 'index']);
 
 Route::get('/{any}', function () {
