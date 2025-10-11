@@ -272,16 +272,6 @@
                             @foreach($email_templates as $email_template)
                                 <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
                             @endforeach
-                            <!-- <option value="14" >Order Details -> Send Now</option>
-                            <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
-                            <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
-                            <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
-                            <option value="Reminder 2nd" >Reminder 2nd -> Send Now</option>
-                            <option value="Reminder 3rd" >Reminder 3rd -> Send Now</option>
-                            <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
-                            <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
-                            <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
-                            <option value="Simple Email" >Simple Email -> Send Now</option> -->
                         </select>
 
                         <select class="form-control" style="width:150px; display:inline-block;" name="sms_template_name" id="sms_template_name">
@@ -789,13 +779,13 @@
                                                     <div class="form-group row">
                                                         <label class="col-md-12 col-form-label">{{translate('CC Mail')}}</label>
                                                         <div class="col-md-12">
-                                                            <input type="text" name="cc_mail" class="form-control" placeholder="{{translate('CC Mail')}}">
+                                                            <input type="text" name="cc_mail" id="cc_mail" class="form-control" placeholder="{{translate('CC Mail')}}">
                                                         </div>
                                                     </div>
                                                     <div class="form-group row">
                                                         <label class="col-md-12 col-form-label">{{translate('BCC Mail')}}</label>
                                                         <div class="col-md-12">
-                                                            <input type="text" name="bcc_mail" class="form-control" placeholder="{{translate('BCC Mail')}}">
+                                                            <input type="text" name="bcc_mail" id="bcc_mail" class="form-control" placeholder="{{translate('BCC Mail')}}">
                                                         </div>
                                                     </div>
 
@@ -1160,30 +1150,6 @@
     if (init) updateStatusUI(init);
 });
 
-    // $(document).on('click', '.charge-btn', function(e) {
-    //     e.preventDefault();
-    //     let orderId = $(this).data('order-id');
-
-    //     $.ajax({
-    //         url: '/tbadmin/admin/orders/' + orderId + '/charge',  // Your Laravel API route
-    //         type: 'POST',
-    //         data: {
-    //             _token: $('meta[name="csrf-token"]').attr('content') // CSRF protection
-    //         },
-    //         success: function(response) {
-    //             console.log("Charge successful:", response);
-    //             alert("Payment captured successfully!");
-    //             location.reload();
-    //         },
-    //         error: function(xhr) {
-    //             console.error("Charge failed:", xhr.responseText);
-    //             alert("Payment capture failed. Please try again.");
-    //         }
-    //     });
-    //     // Trigger your charge API call
-    //     console.log("Charge triggered for Order:", orderId);
-    // });
-
 
     $(document).on('click', '.charge-btn', function(e) {
     e.preventDefault();
@@ -1198,44 +1164,6 @@
     $('#chargeAmount').val(balance);
     $('#chargeModal').modal('show');
 
-    // Fetch payment details
-    /*
-    $.ajax({
-
-        url: "{{ route('admin.orders.payment-details', ['order' => '__ORDER_ID__']) }}".replace('__ORDER_ID__', orderId),
-
-
-        type: 'POST',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            let data = response.data;
-
-            // Fill amount
-            $('#chargeAmount').val(data.amount);
-            $('#showChargeAmount').html(data.amount);
-            $('#customerName').html(data.customer_name);
-
-            // Handle card block
-            if (data.brand && data.last4 && data.exp_month && data.exp_year) {
-                $('#cardDetailsBlock').show().html(`
-                    ${data.brand.toUpperCase()} •••• ${data.last4} (Exp: ${data.exp_month}/${data.exp_year})
-                `);
-            } else {
-                // Hide card block if no details
-                $('#cardDetailsBlock').hide();
-                // Or show message
-                // $('#cardDetailsBlock').show().html("Payment method not available");
-            }
-
-            // Show modal
-            $('#chargeModal').modal('show');
-        },
-        error: function() {
-            $('#cardDetails').text("Failed to fetch card details");
-        }
-    });
     */
     
 });
@@ -1299,6 +1227,8 @@ $(document).ready(function(){
             success: function(response) {
                 console.log(response.event);
                 $('#email').val(response.email);
+                $('#bcc_mail').val(response.bcc_mail);
+                $('#cc_mail').val(response.cc_mail);
                 $('#identifier').val(response.email_template.identifier);
                 $('#subject').val(response.email_template.subject);
                 $('#event').val(JSON.stringify(response.event));
@@ -1333,6 +1263,7 @@ $(document).ready(function(){
             processData: false,
             success: function(response) {
                 console.log('Success:', response);
+                toastr.success("Mail sent successfully")
                 $('.modal').modal('hide');
             },
             error: function(xhr, status, error) {
