@@ -173,25 +173,7 @@
             <div style="padding:0 15px;">
 
                 <div class="row">
-                    {{-- <div class="col-lg-2 text-ceneter">
-                        <label class="d-block" for="">Balance</label>
-                        <select class="form-control" style="border:0" name="order_balance" id="order_balance">
-                            <option value="$0.00" >$0.00</option>
-                            <option value="Paid" >Paid {{ price_format_with_currency($order->booked_amount, $order->currency) }}</option>
-                            <option value="Paid" >Total {{ price_format_with_currency($order->total_amount, $order->currency) }}</option>
-                            <option value="Refunded" >Refunded $0.00</option>
-                        </select>
-
-
-                    </div>
-                    <div class="col-lg-2 text-ceneter">
-                        <label class="d-block" for="">Order Status</label>
-                        <select class="form-control" style="border:0" name="order_status" id="order_status">
-                            @foreach( order_status_list() as $key => $status)
-                            <option value="{{ $key }}" >{{ $status }}</option>
-                            @endforeach
-                        </select>
-                    </div> --}}
+                    
                     <div class="col-lg-5 btngroup">
                         <div class="justify-center item-center">
                             <div class="payment-status order-balance {{ $order->balance_amount > 0 ? 'due' : 'paid' }}">
@@ -317,16 +299,10 @@
                             <div class="card-body">
 
                                 
-                                    <!-- <ul class="flex flex-row">
-
-                                        <li><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->user?->name }}</a></li>
-                                        <li>{{ $order->user?->email }}</li>
-                                        <li>{{ $order->user?->phonenumber }}</li>
-                                    </ul> -->
+                            
                                
                                     <ul class="flex flex-row">
 
-                                        <!-- <li><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a></li> -->
 
                                         <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a></li>
                                         <li>{{ $order->customer?->email }}</li>
@@ -528,7 +504,7 @@
                         </div>
                         <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
-                                <!-- <textarea class="form-control" name="additional_info" id="additional_info" rows="4" placeholder="Additional information">{{ $order->additional_info }}</textarea> -->
+                               
 
 
                                  <div style="border:1px solid #e1a604; margin-bottom:10px">
@@ -583,12 +559,7 @@
                                         </tr>
                                          
                                         @foreach ($order->tour->pickups as $pickup)
-                                            <!-- <tr>
-                                                <td><b>Pickup Location</b></td>
-                                                <td class="text-right">{{ $pickup->name }}</td> 
-                                                
-
-                                            </tr> -->
+                                           
                                             <tr>
                                                 <td><b>Pickup Charge</b></td>
                                                 <td class="text-right">{{ $pickup->pickup_charge }}</td>
@@ -687,64 +658,7 @@
                     </div>
                 </div>
             </div>
-            <!-- recent action need to update this -->
-            <!-- <div class="bs-example">
-                <div class="card">
-                    <div class="card-body">
-                        <h5>Recent actions</h5>
-                        <table class="table">    
-                            <tr>
-                                <th>Date</th>
-                                <th>Action</th>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:44 PM</td>
-                                <td>Vito G confirmed Arya Suresh's order</td>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:43 PM</td>
-                                <td>System charged {{ price_format_with_currency($order->total_amount) }} on credit card XXXXXXXXXXXX5959. Reference number is ch_3RSiaLEcMxhlmBMk0dT82PRI</td>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:43 PM</td>
-                                <td>Arya Suresh made a new order on your booking form</td>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:43 PM</td>
-                                <td>Order created with Credit card payment of {{ price_format_with_currency($order->total_amount) }}</td>
-                            </tr>
-                        </table>
-
-
-                        <h5 class="mt-5">Sent emails</h5>
-                        <table class="table">    
-                            <tr>
-                                <th>Sent</th>
-                                <th>To</th>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:44 PM</td>
-                                <td>info@discount.tours</td>
-                                <td>Discount.Tours</td>
-                                <td>Supplier Notification</td>
-                                <td>Opened</td>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:44 PM</td>
-                                <td>aryaofficial203@gmail.com</td>
-                                <td>Arya Suresh</td>
-                                <td>Online Booking Confirmation</td>
-                                <td>Opened</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            </div> -->
-
-            <!-- recent action -->
+            
         </div>
     </div>
     </form>
@@ -894,41 +808,6 @@
     </div>
   </div>
 </div>
-
-<!-- Charge Modal -->
-<!-- <div class="modal fade" id="chargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-
-      <div class="modal-header">
-        <h5 class="modal-title" id="chargeModalLabel">Capture Payment</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <form id="chargeForm">
-          <input type="hidden" id="chargeOrderId" name="order_id">
-
-          <div class="mb-3">
-            <label class="form-label">Card</label>
-            <p id="cardDetails" class="fw-bold">Loading...</p>
-          </div>
-
-          <div class="mb-3">
-            <label for="chargeAmount" class="form-label">Amount</label>
-            <input type="number" class="form-control" id="chargeAmount" name="amount" required>
-          </div>
-        </form>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" form="chargeForm" class="btn btn-primary">Charge</button>
-      </div>
-
-    </div>
-  </div>
-</div> -->
 
 
 
@@ -1115,13 +994,15 @@
         radio.addEventListener('change', function (e) {
 
             // update UI
+
+            
             updateStatusUI(this);
 
             // now update backend via fetch()
             const order_id = document.getElementById('order_id').value;
             const status = this.value;
             
-            fetch(`/tbadmin/admin/orders/${order_id}/update-status`, {
+            fetch(`/staging/admin/admin/orders/${order_id}/update-status`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1164,7 +1045,7 @@
     $('#chargeAmount').val(balance);
     $('#chargeModal').modal('show');
 
-    */
+
     
 });
 

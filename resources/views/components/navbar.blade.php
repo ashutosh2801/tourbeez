@@ -31,7 +31,7 @@
 
     <li class="nav-item dropdown">
         <a class="nav-link" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
-            <i class="far fa-bell"></i>
+            <i class="far fa-bell fa-lg"></i>
             @if($unreadCount > 0)
                 <span class="badge badge-danger navbar-badge">{{ $unreadCount }}</span>
             @endif

@@ -12,23 +12,12 @@ class EmailController extends Controller
     public function handle($event, Request $request)
     {
         $data = $request->all();
-        \Log::info("Mailgun Event: $event", $data);
-        // $payload = $request->all();
-
-
-
-        // $messageId = $payload['Message-Id'] ?? $payload['message']['headers']['message-id'] ?? null;
-        // $recipient = $payload['recipient'] ?? null;
 
 
         $payload = json_decode($request->getContent(), true); // or your JSON string
 
         $messageId = $payload['event-data']['message']['headers']['message-id'] ?? null;
         $recipient = $payload['event-data']['recipient'] ?? null;
-
-         \Log::info("Mailgun Event: $messageId ------ $recipient", );
-
-
 
 
         if ($messageId && $recipient) {

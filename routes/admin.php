@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AddonController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AizUploadController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CityController;
@@ -259,5 +260,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/notifications/fetch-all', [NotificationController::class, 'fetchAll'])->name('notifications.fetchAll');
 // Route::get('/notifications/read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.read');   
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
+
+    Route::resource('contacts', ContactController::class)->only(['index', 'show', 'destroy']);
 
 });

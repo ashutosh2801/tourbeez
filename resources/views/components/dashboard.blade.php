@@ -1,41 +1,48 @@
-@role('Super Admin')
+
 <div class="mb-5 mx-2">
     <h2 class="text-lg">Performance</h2>
-    <p>Last 7 Days</p>
-    <div class="py-2 d-flex bd-highlight text-center border-bottom">
-        <div class="pt-3 flex-fill bd-highlight border bg-white">
-            <p>Number of orders</p>
-            <h2>0</h2>
-            <p>0</p>
+    <form method="GET">
+        <select name="days" onchange="this.form.submit()" class="form-control-sm">
+            <option value="7" {{ request('days') == 7 ? 'selected' : '' }}>Last 7 Days</option>
+            <option value="15" {{ request('days') == 15 ? 'selected' : '' }}>Last 15 Days</option>
+            <option value="30" {{ request('days') == 30 ? 'selected' : '' }}>Last 30 Days</option>
+        </select>
+    </form>
+
+    <div class="py-2 d-flex bd-highlight text-center border-bottom flex-wrap">
+        <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
+            <p>Number of Orders</p>
+            <h2>{{ $performance['number_of_orders'] }}</h2>
+            <p>{{ $performance['number_of_orders'] }}</p>
         </div>
-        <div class="pt-3 flex-fill bd-highlight border bg-white">
-            <p>Value of orders</p>
-            <h2>0</h2>
-            <p>$0.00</p>
+
+        <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
+            <p>Value of Orders</p>
+            <h2>${{ number_format($performance['value_of_orders'], 2) }}</h2>
         </div>
-        <div class="pt-3 flex-fill bd-highlight border bg-white">
-            <p>Total paid</p>
-            <h2>0</h2>
-            <p>$0.00</p>
+
+        <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
+            <p>Total Paid</p>
+            <h2>${{ number_format($performance['total_paid'], 2) }}</h2>
         </div>
-        <div class="pt-3 flex-fill bd-highlight border bg-white">
-            <p>Total refund</p>
-            <h2>0</h2>
-            <p>$0.00</p>
+
+        <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
+            <p>Total Refund</p>
+            <h2>${{ number_format($performance['total_refund'], 2) }}</h2>
         </div>
-        <div class="pt-3 flex-fill bd-highlight border bg-white">
-            <p>Total discount</p>
-            <h2>0</h2>
-            <p>$0.00</p>
+
+        <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
+            <p>Total Discount</p>
+            <h2>${{ number_format($performance['total_discount'], 2) }}</h2>
         </div>
-        <div class="pt-3 flex-fill bd-highlight border bg-white">
-            <p>Total owed</p>
-            <h2>0</h2>
-            <p>$0.00</p>
+
+        <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
+            <p>Total Owed</p>
+            <h2>${{ number_format($performance['total_owed'], 2) }}</h2>
         </div>
     </div>
 </div>
-@endrole
+
 
 <div class="row mx-0">
     <div class="col-lg-3 col-6">
