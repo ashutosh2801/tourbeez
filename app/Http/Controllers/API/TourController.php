@@ -38,8 +38,10 @@ class TourController extends Controller
                 'location:id,city_id,state_id,country_id',
             ])
             ->where('status', 1)
+            ->whereHas('schedules', function ($sq) {
+                $sq->whereDate('until_date', '>=', now()->toDateString());
+            })
             ->whereNull('deleted_at');
-
         // Filters
         $query->when($request->title, fn($q, $title) => $q->where('title', 'like', "%$title%"))
             ->when($request->q, fn($q, $qstr) => $q->where('title', 'like', "%$qstr%"));
@@ -81,15 +83,32 @@ class TourController extends Controller
         //     'hightolow' => $query->orderBy('price', 'DESC'),
         //     default     => $query->orderBy('sort_order', 'ASC'),
         // };
-        match ($request->input('order_by')) {
-            'lowtohigh' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
-                                ->orderBy('price', 'ASC'),
+        // match ($request->input('order_by')) {
+        //     'lowtohigh' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
+        //                         ->orderBy('price', 'ASC'),
 
-            'hightolow' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
-                                ->orderBy('price', 'DESC'),
+        //     'hightolow' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
+        //                         ->orderBy('price', 'DESC'),
 
-            default     => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC'),
-        };
+        //     default     => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC'),
+        // };
+
+
+        $orderBy = strtolower($request->input('order_by', ''));
+
+        if ($request->input('order_by') === 'lowtohigh') {
+            // $query->orderByRaw('(CASE WHEN sort_order > 0 THEN 0 ELSE 1 END) ASC')
+            //       ->orderBy('price', 'ASC');
+            $query->orderBy('price', 'ASC');
+        } elseif ($request->input('order_by') === 'hightolow') {
+            // $query->orderByRaw('(CASE WHEN sort_order > 0 THEN 0 ELSE 1 END) ASC')
+            //       ->orderBy('price', 'DESC');
+            $query->orderBy('price', 'DESC');
+        } else {
+            $query->orderByRaw('(CASE WHEN sort_order > 0 THEN 0 ELSE 1 END) ASC')
+                  ->orderBy('sort_order', 'ASC'); // Only sort_order for default
+        }
+
 
         // Cache paginated
         $page = $request->get('page', 1);
@@ -557,7 +576,7 @@ class TourController extends Controller
         });
 
         // If no rule found for specific tour, check global rule
-        if (!$depositRule) {
+        if (!$depositRule || ($depositRule && $depositRule->use_deposit == 0)) {
             $depositRule = Cache::remember('deposit_rule_global', 86400, function () {
                 return TourSpecialDeposit::where('type', 'global')->first();
             });

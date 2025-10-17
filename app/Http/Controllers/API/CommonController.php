@@ -8,9 +8,12 @@ use App\Mail\ContactMail;
 use App\Models\Banner;
 use App\Models\Category;
 use App\Models\City;
+use App\Models\Contact;
 use App\Models\Country;
 use App\Models\State;
 use App\Models\Tour;
+use App\Models\User;
+use App\Notifications\NewContactNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -54,16 +57,30 @@ class CommonController extends Controller
 
 
         $tour_data = Cache::remember('tours_home_list', 86400, function () {
-            return  DB::table(DB::raw('(SELECT t.id, t.title as name, t.slug, t.price, t.created_at, u.upload_id 
-                    FROM tours t 
-                    JOIN tour_upload u ON u.tour_id = t.id 
-                    JOIN tour_locations l ON l.tour_id = t.id 
-                    WHERE t.status = 1 AND t.deleted_at IS NULL 
-                    AND l.city_id IS NOT NULL and l.city_id = 10519
-                    ORDER BY t.sort_order DESC) as sub'))
-                    //->groupBy('name')
-                    ->limit(25)
-                    ->get();
+            return DB::table(DB::raw('(SELECT 
+                    t.id, 
+                    t.title AS name, 
+                    t.slug, 
+                    t.price, 
+                    t.created_at, 
+                    u.upload_id
+                FROM tours t
+                JOIN tour_upload u ON u.tour_id = t.id
+                JOIN tour_locations l ON l.tour_id = t.id
+                WHERE t.status = 1 
+                  AND t.deleted_at IS NULL
+                  AND l.city_id IS NOT NULL 
+                  AND l.city_id = 10519
+                  -- include only tours having at least one non-expired schedule
+                  AND EXISTS (
+                      SELECT 1 
+                      FROM tour_schedules s 
+                      WHERE s.tour_id = t.id
+                        AND s.until_date >= CURDATE()
+                  )
+                ORDER BY t.sort_order DESC
+                LIMIT 25
+            ) AS sub'));
         });
 
         $tours = [];
@@ -421,6 +438,13 @@ class CommonController extends Controller
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
 
+         $contact = Contact::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'message' => $request->message,
+        ]);
+
         // Send to user
         Mail::to($request->email)->send(new CommonMail($parsedSubject, $parsedBody));
 
@@ -428,8 +452,19 @@ class CommonController extends Controller
         $template = fetch_email_template('contact_mail_for_admin');
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
-        Mail::to( get_setting('MAIL_FROM_ADDRESS') )->send(new CommonMail($parsedSubject, $parsedBody));
+        Mail::to( env('MAIL_FROM_ADDRESS') )->send(new CommonMail($parsedSubject, $parsedBody));
 
+        $admin = User::where('role', 'Super Admin')->first();
+
+        if ($admin) {
+            $admin->notify(new NewContactNotification([
+                'id' => $contact->id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'message' => $request->message,
+            ]));
+        }
         return response()->json(['message' => 'Message sent successfully.']);
     }
 
