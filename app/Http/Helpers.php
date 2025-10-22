@@ -118,7 +118,7 @@ if(!function_exists('price_format')) {
 
 
 if (!function_exists('price_format_with_currency')) {
-    function price_format_with_currency($amount, $currency = 'CAD')
+    function price_format_with_currency($amount, $currency = 'USD')
     {
         // // Define currency symbols (add more as needed)
         // $symbols = [
