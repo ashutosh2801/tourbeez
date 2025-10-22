@@ -7,8 +7,8 @@ use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\TourController;
 use App\Http\Controllers\API\WishlistController;
+use App\Http\Controllers\API\SupplierController;
 use App\Http\Controllers\EmailController;
-use App\Http\Controllers\SupplierController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Route;
 
 // Route::get('/tour-sessions', [OrderController::class, 'getSessionTimes']);
 // Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
-
+    // Route::get('/location-banner', [CommonController::class, 'getLocationBanner']);
 
 
 
@@ -78,14 +78,22 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/forgot', [AuthController::class, 'forgot']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::put('/password/update/{id}', [AuthController::class, 'password_update']);
 
     Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
     Route::post('/verify-payment', [PaymentController::class, 'verifyPayment']);
     Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
 
 
-    Route::get('/supplier/register', [SupplierController::class, 'showForm'])->name('supplier.register');
-    Route::post('/suppliers', [SupplierController::class, 'store'])->name('supplier.register.store');
+    // Route::get('/supplier/register', [SupplierController::class, 'showForm'])->name('supplier.register');
+    Route::post('/suppliers', [SupplierController::class, 'store']);
+
+    // Route::post('/supplier/register', function(Request $request){
+    //     return response()->json([
+    //             'status' => false,
+    //             'data' => $request->all()
+    //         ]);
+    //     });
 
 });
 

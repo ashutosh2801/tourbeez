@@ -13,6 +13,7 @@ use App\Models\Pickup;
 use App\Models\PickupLocation;
 use App\Models\TourPricing;
 use App\Models\User;
+use App\Notifications\NewOrderNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -360,7 +361,7 @@ class PaymentController extends Controller
 
             Log::info('order_email_sent' . $booking->email_sent);
             if ($booking && $booking->tour->order_email && !$booking->email_sent) {                    
-                $mailsent = self::sendOrderDetailMail($detail, $action_name);
+                // $mailsent = self::sendOrderDetailMail($detail, $action_name);
                 
                 Log::info('order_email_sentqwwqdwqqdqwdqw' . $booking->email_sent);
                 $booking->email_sent = true;
@@ -369,7 +370,7 @@ class PaymentController extends Controller
 
             Log::info('order_admin email' . $booking->admin_email_sent);
             if ($booking && $booking->tour->order_email && !$booking->admin_email_sent) {                    
-                $mailsent = self::sendOrderDetailMail($detail, 'admin');
+                // $mailsent = self::sendOrderDetailMail($detail, 'admin');
                 
                 Log::info('admin email sent' . $booking->admin_email_sent);
                 $booking->admin_email_sent = true;
@@ -379,6 +380,12 @@ class PaymentController extends Controller
 
             Log::info('order_email_sentqwwqdwq' . $booking->email_sent);
 
+
+            
+            $admin_id = $booking->tour->user_id;
+            $admin = User::findorFail($admin_id);
+            $admin->notify(new NewOrderNotification($booking));
+            Log::info('NewOrderNotification');
             return response()->json([
                     'status'  => 'succeeded',
                     'booking' => $detail,
