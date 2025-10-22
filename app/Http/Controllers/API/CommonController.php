@@ -33,14 +33,21 @@ class CommonController extends Controller
     {
         $data = Cache::remember('cities_home_list', 86400, function () {
             return DB::table('tour_locations as tl')
-                ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                ->join('uploads as u', 'u.id', '=', 'c.upload_id')
-                ->select('c.id', 'c.name', 'c.upload_id')
-                ->groupBy('c.id', 'c.name', 'c.upload_id') 
-                ->orderByRaw('RAND()') 
-                ->where('c.upload_id', '>=', 1)
-                ->limit(50)
-                ->get();
+                    ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                    ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                    ->join('uploads as u', 'u.id', '=', 'c.upload_id')
+                    ->select('c.id', 'c.name', 'c.upload_id')
+                    ->groupBy('c.id', 'c.name', 'c.upload_id')
+                    ->orderByRaw('RAND()')
+                    ->where('c.upload_id', '>=', 1)
+                    ->whereExists(function ($query) {
+                        $query->select(DB::raw(1))
+                            ->from('tour_schedules as ts')
+                            ->whereColumn('ts.tour_id', 't.id')
+                            ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                    })
+                    ->limit(50)
+                    ->get();
         });
 
         $cities = [];
@@ -48,7 +55,6 @@ class CommonController extends Controller
             $cities[] = [
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
-                // 'url'   => '/'.$d->id.'/'.Str::slug( $d->name ),
                 'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
                 'image' => uploaded_asset( $d->upload_id ),
                 'extra' => ''
@@ -78,33 +84,34 @@ class CommonController extends Controller
 
 
         $tour_data = Cache::remember('tours_home_list', 86400, function () {
-            return DB::table(DB::raw('(SELECT 
+            return DB::table(DB::raw("( 
+                SELECT 
                     t.id, 
                     t.title AS name, 
                     t.slug, 
                     t.price, 
                     t.created_at, 
+                    t.unique_code, 
                     u.upload_id
                 FROM tours t
                 JOIN tour_upload u ON u.tour_id = t.id
                 JOIN tour_locations l ON l.tour_id = t.id
                 WHERE t.status = 1 
-                  AND t.deleted_at IS NULL
-                  AND l.city_id IS NOT NULL 
-                  AND l.city_id = 10519
-                  AND EXISTS (
-                      SELECT 1 
-                      FROM tour_schedules s 
-                      WHERE s.tour_id = t.id
+                AND t.deleted_at IS NULL
+                AND l.city_id IS NOT NULL 
+                AND l.city_id = 10519
+                AND EXISTS (
+                    SELECT 1 
+                    FROM tour_schedules s 
+                    WHERE s.tour_id = t.id
                         AND s.until_date >= CURDATE()
-                  )
+                )
+                GROUP BY t.unique_code
                 ORDER BY t.sort_order DESC
-                LIMIT 25
-            ) AS sub'))
-            ->get(); // ✅ this executes the query and returns a collection
+                LIMIT 14
+            ) as sub"))  // ✅ NO semicolon here
+            ->get();
         });
-
-
 
 
         $tours = [];
@@ -114,7 +121,8 @@ class CommonController extends Controller
                 'name'  => ucfirst( $d->name ),
                 'url'   => '/tour/'.$d->slug,
                 'image' => uploaded_asset( $d->upload_id ),
-                'price' => $d->price
+                'price' => $d->price,
+                'sku'   => $d->unique_code,
             ];
         }  
         
@@ -174,14 +182,20 @@ class CommonController extends Controller
         // });
 
         $data = DB::table('tour_locations as tl')
-            ->join('cities as c', 'c.id', '=', 'tl.city_id')
-            ->join('uploads as u', 'u.id', '=', 'c.upload_id')
-            ->select('c.id', 'c.name', 'c.upload_id')
-            ->distinct()
-            ->orderByRaw('RAND()') // ✅ Correct way to randomize rows
-            ->where('c.upload_id', '>=', 1)
-            ->limit(25)
-            ->get();
+                ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                ->join('uploads as u', 'u.id', '=', 'c.upload_id')
+                ->select('c.id', 'c.name', 'c.upload_id')
+                ->distinct()
+                ->orderByRaw('RAND()') // ✅ Correct way to randomize rows
+                ->where('c.upload_id', '>=', 1)
+                ->whereExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('tour_schedules as ts')
+                        ->whereColumn('ts.tour_id', 't.id'); // ✅ corrected alias
+                    })            
+                ->limit(25)
+                ->get();
 
         $cities = [];
         foreach($data as $d) {
@@ -240,22 +254,81 @@ class CommonController extends Controller
         $limit = $request->input('limit', 15); 
         $page = $request->input('page', 1);  
 
+        /*$query = DB::table('tour_locations as tl')
+                ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
+                ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
+                ->select(
+                    'c.id',
+                    'c.name',
+                    'c.upload_id',
+                    'tl.state_id',
+                    'tl.country_id',
+                    's.name as state_name',
+                    'co.name as country_name',
+                    DB::raw('(
+                        SELECT COUNT(DISTINCT t2.id)
+                        FROM tours t2
+                        JOIN tour_locations tl2 ON tl2.tour_id = t2.id
+                        WHERE tl2.city_id = c.id
+                        AND t2.status = 1
+                        AND t2.deleted_at IS NULL
+                        AND EXISTS (
+                            SELECT 1
+                            FROM tour_schedules ts2
+                            WHERE ts2.tour_id = t2.id
+                                AND ts2.until_date >= CURDATE()
+                        )
+                    ) as total_tours')
+                )
+                ->distinct()
+                ->where('c.upload_id', '>=', 1)
+                ->whereExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('tour_schedules as ts')
+                        ->whereColumn('ts.tour_id', 't.id')
+                        ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                })
+                ->orderByRaw('RAND()');*/
+
         $query = DB::table('tour_locations as tl')
-            ->join('cities as c', 'c.id', '=', 'tl.city_id')
-            ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
-            ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
-            ->select(
-                'c.id',
-                'c.name',
-                'c.upload_id',
-                'tl.state_id',
-                'tl.country_id',
-                's.name as state_name',
-                'co.name as country_name'
-            )
-            ->distinct()
-            ->where('c.upload_id' , '>=', 1)
-            ->orderByRaw('RAND()');
+                ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
+                ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
+                ->select(
+                    'c.id',
+                    'c.name',
+                    'c.upload_id',
+                    'tl.state_id',
+                    'tl.country_id',
+                    's.name as state_name',
+                    'co.name as country_name',
+                    DB::raw('(
+                        SELECT COUNT(DISTINCT t2.id)
+                        FROM tours t2
+                        JOIN tour_locations tl2 ON tl2.tour_id = t2.id
+                        WHERE tl2.city_id = c.id
+                        AND t2.status = 1
+                        AND t2.deleted_at IS NULL
+                        AND EXISTS (
+                            SELECT 1
+                            FROM tour_schedules ts2
+                            WHERE ts2.tour_id = t2.id
+                                AND ts2.until_date >= CURDATE()
+                        )
+                    ) as total_tours')
+                )
+                ->distinct()
+                ->where('c.upload_id' , '>=', 1)
+                ->whereExists(function ($query) {
+                            $query->select(DB::raw(1))
+                                ->from('tour_schedules as ts')
+                                ->whereColumn('ts.tour_id', 't.id')
+                                ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                        })
+                ->orderByRaw('RAND()');
 
         $paginated = $query->paginate($limit, ['*'], 'page', $page);
 
@@ -267,6 +340,7 @@ class CommonController extends Controller
                 'url'   => '/' . Str::slug($d->name) . '/' . $d->id . '/c1',
                 'image' => uploaded_asset($d->upload_id),
                 'extra' => ucwords($d->state_name) . ', ' . ucwords($d->country_name),
+                'total_tours' => $d->total_tours
             ];
         }
 

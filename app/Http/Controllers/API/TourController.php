@@ -14,6 +14,7 @@ use App\Models\TourScheduleRepeats;
 use App\Models\TourSpecialDeposit;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use DB;
 use Dompdf\Helpers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -633,17 +634,39 @@ class TourController extends Controller
         // Build cache key
         $cacheKey = 'search_tours_' . md5($search . '_' . $date);
 
-        $cities = City::where('status', 'active')
-            ->when($search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'LIKE', '' . $search . '%');
-                });
-            })
-            ->orderBy('name', 'asc')
-            ->limit(2)
-            ->get();
+        // $cities = City::where('status', 'active')
+        //     ->when($search, function ($query, $search) {
+        //         $query->where(function ($q) use ($search) {
+        //             $q->where('name', 'LIKE', '' . $search . '%');
+        //         });
+        //     })
+        //     ->orderBy('name', 'asc')
+        //     ->limit(2)
+        //     ->get();
 
-
+        $cities = DB::table('tour_locations as tl')
+                    ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                    ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                    ->join('states as s', 's.id', '=', 'c.state_id')
+                    ->join('countries as cc', 'cc.id', '=', 's.country_id')
+                    ->join('uploads as u', 'u.id', '=', 'c.upload_id')
+                    ->select('c.id', 'c.name', 's.name as state_name', 'cc.name as country_name', 'u.file_name as image')
+                    ->groupBy('c.id', 'c.name')
+                    ->orderBy('name', 'asc')
+                    ->where('c.upload_id', '>=', 1)
+                    ->whereExists(function ($query) {
+                        $query->select(DB::raw(1))
+                            ->from('tour_schedules as ts')
+                            ->whereColumn('ts.tour_id', 't.id')
+                            ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                    })
+                    ->when($search, function ($query, $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('c.name', 'LIKE', '' . $search . '%');
+                        });
+                    })
+                    ->limit(2)
+                    ->get();
             
         $categories = Category::orderBy('name', 'asc')
             ->when($search, function ($query, $search) {
@@ -651,8 +674,8 @@ class TourController extends Controller
                     $q->where('name', 'LIKE', '' . $search . '%');
                 });
             })
-            ->limit(3)
-            ->get();    
+        ->limit(3)
+        ->get();    
         
         $total_cities       = $cities->count();
         $total_categories   = $categories->count();
@@ -680,7 +703,8 @@ class TourController extends Controller
         $data = [];
         if($total_cities>0) {
             foreach($cities as $city) {
-                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
+                //$data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
+                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state_name).', '.ucfirst($city->country_name)];
             }
         }
         if($total_categories>0) {
@@ -847,8 +871,7 @@ private function getNextAvailableDate($tourId, $schedules = null)
             if($today->lte(Carbon::parse($schedule->session_start_date))){
                 return ['date' => Carbon::parse($schedule->session_start_date)->toDateString()];
             } 
-            return ['date' => ""];
-            
+            return ['date' => ""];            
         }   
 
         $nextDate = $this->calculateNextDate($schedule, $today, $allRepeats);

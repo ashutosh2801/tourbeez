@@ -188,7 +188,7 @@ class AuthController extends Controller
                 'regex:/[0-9]/', // number
             ],
             'password_confirmation' => 'required',
-        ];
+        ];        
 
         $messages = [
             'password.regex' => 'Password must contain at least one uppercase letter and one number.',
@@ -199,14 +199,14 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Current password is not accepted.'], 400);
+        if (Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'New password cannot be the same as the current password.'], 422);
         }
 
         $user->update([
             'password' => Hash::make($request->password),
         ]);
 
-        return response()->json(['status' => true, 'message' => 'Password updated successfully', 'user' => $user]);
+        return response()->json(['status' => true, 'message' => 'Password updated successfully!', 'user' => $user]);
     }
 }
