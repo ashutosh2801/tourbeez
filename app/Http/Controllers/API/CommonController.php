@@ -56,6 +56,27 @@ class CommonController extends Controller
         }  
 
 
+        // $tour_data = Cache::remember('tours_home_list', 86400, function () {
+        //     return DB::table(DB::raw('(SELECT t.id, t.title AS name, t.slug, t.price, t.created_at, u.upload_id
+        //         FROM tours t
+        //         JOIN tour_upload u ON u.tour_id = t.id
+        //         JOIN tour_locations l ON l.tour_id = t.id
+        //         WHERE t.status = 1 
+        //           AND t.deleted_at IS NULL
+        //           AND l.city_id IS NOT NULL 
+        //           AND l.city_id = 10519
+        //           AND EXISTS (
+        //               SELECT 1 
+        //               FROM tour_schedules s 
+        //               WHERE s.tour_id = t.id
+        //           )
+        //         ORDER BY t.sort_order DESC
+        //     ) AS sub'))
+        //     ->limit(25)
+        //     ->get();
+        // });
+
+
         $tour_data = Cache::remember('tours_home_list', 86400, function () {
             return DB::table(DB::raw('(SELECT 
                     t.id, 
@@ -71,7 +92,6 @@ class CommonController extends Controller
                   AND t.deleted_at IS NULL
                   AND l.city_id IS NOT NULL 
                   AND l.city_id = 10519
-                  -- include only tours having at least one non-expired schedule
                   AND EXISTS (
                       SELECT 1 
                       FROM tour_schedules s 
@@ -80,8 +100,12 @@ class CommonController extends Controller
                   )
                 ORDER BY t.sort_order DESC
                 LIMIT 25
-            ) AS sub'));
+            ) AS sub'))
+            ->get(); // ✅ this executes the query and returns a collection
         });
+
+
+
 
         $tours = [];
         foreach($tour_data as $d) {
