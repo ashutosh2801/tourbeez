@@ -11,7 +11,6 @@ use Carbon\CarbonPeriod;
 
 trait TourScheduleHelper
 {
-
     protected function updateTourScheduleMeta(int $tourId)
     {
         $disabledData = $this->getDisabledTourDates($tourId);

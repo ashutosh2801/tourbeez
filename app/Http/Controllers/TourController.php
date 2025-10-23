@@ -1314,11 +1314,7 @@ class TourController extends Controller
 
             foreach ($request->pickups as $pickupId) {
                 $syncData[$pickupId] = [
-<<<<<<< HEAD
-                    'comment' => $request->comment[$pickupId] ?? null
-=======
                     'comment' => $request->comment[$pickupId] ?? "Enter The Pickup Location"
->>>>>>> 5313014781dcf44615d0b3a0de534125351c920e
                 ];
             }
 

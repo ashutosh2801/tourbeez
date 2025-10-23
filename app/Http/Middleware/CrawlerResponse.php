@@ -51,6 +51,8 @@ class CrawlerResponse
                     $path = substr($path, strlen($prefix));
                 }
 
+                $segments = explode('/', $path);
+
                 // Homepage
                 if ($path === '' || $path === '/') {
                     return response()->view('share.seo', [
@@ -60,7 +62,7 @@ class CrawlerResponse
                         'image' => asset('public/512x512.jpg'),
                     ]);
                 }
-                if ($path === 'destinations') {
+                else if ($path === 'destinations') {
                     return response()->view('share.seo', [
                         'title' => 'Explore Places Around The World | TourBeez Destinations',
                         'description' => 'Browse TourBeez’s curated list of destinations worldwide. Find travel inspiration, destination guides, and the best tours in every city you want to visit',
@@ -68,7 +70,7 @@ class CrawlerResponse
                         'image' => asset('public/images/destination.jpg'),
                     ]);
                 }
-                if ($path === 'tickets') {
+                else if ($path === 'tickets') {
                     return response()->view('share.seo', [
                         'title' => 'Book Your Tour & Activity Tickets Easily | TourBeez Tickets',
                         'description' => 'Buy tickets for tours, shows, and attractions via TourBeez. Find the best-priced tickets with secure booking and skip-the-line options for popular events',
@@ -76,7 +78,7 @@ class CrawlerResponse
                         'image' => asset('public/images/tickets.jpg'),
                     ]);
                 }
-                if ($path === 'about-us') {
+                else if ($path === 'about-us') {
                     return response()->view('share.seo', [
                         'title' => 'Our Story & Mission In Travel & Tours | About TourBeez',
                         'description' => 'Learn about TourBeez: our mission, values, and dedication to providing exceptional travel experiences. Meet the team behind the tours and tickets you love',
@@ -84,7 +86,7 @@ class CrawlerResponse
                         'image' => asset('public/images/about-us.jpg'),
                     ]);
                 }
-                if ($path === 'contact-us') {
+                else if ($path === 'contact-us') {
                     return response()->view('share.seo', [
                         'title' => 'Get In Touch For Tour Help & Support | Contact TourBeez',
                         'description' => 'Need assistance or have questions? Reach out to TourBeez. We’re here to help you with bookings, suggestions, and any travel-related support',
@@ -92,7 +94,7 @@ class CrawlerResponse
                         'image' => asset('public/images/contact-us.jpg'),
                     ]);
                 }
-                if ($path === 'wishlist') {
+                else if ($path === 'wishlist') {
                     return response()->view('share.seo', [
                         'title' => 'Save Your Favourite Tours & Tickets | TourBeez Wishlist',
                         'description' => 'Keep track of your favourite tours, attractions, and tickets with your TourBeez Wishlist. Easily revisit your favourites, compare options, and book when you\'re ready',
@@ -100,7 +102,7 @@ class CrawlerResponse
                         'image' => asset('public/images/wishlist.jpg'),
                     ]);
                 }
-                if ($path === 'terms-and-conditions') {
+                else if ($path === 'terms-and-conditions') {
                     return response()->view('share.seo', [
                         'title' => 'TourBeez Booking Rules & Agreements | Terms & Conditions',
                         'description' => 'Review the terms and conditions governing the use of TourBeez. Includes booking rules, user responsibilities, and service agreements',
@@ -108,7 +110,7 @@ class CrawlerResponse
                         'image' => asset('public/images/terms-condition.jpg'),
                     ]);
                 }
-                if ($path === 'privacy-policy') {
+                else if ($path === 'privacy-policy') {
                     return response()->view('share.seo', [
                         'title' => 'How TourBeez Protects Your Data | Privacy Policy',
                         'description' => 'Read TourBeez\'s privacy policy. Learn how we collect, use, and protect your personal data when you book tours or use our services',
@@ -116,7 +118,7 @@ class CrawlerResponse
                         'image' => asset('public/images/privacy-policy.jpg'),
                     ]);
                 }
-                if ($path === 'cancellation-policy') {
+                else if ($path === 'cancellation-policy') {
                     return response()->view('share.seo', [
                         'title' => 'TourBeez Bookings & Refunds | Cancellation Policy',
                         'description' => 'View TourBeez\'s cancellation policy. Understand how booking changes, refunds, and cancellations are handled for tours and tickets',
@@ -124,17 +126,25 @@ class CrawlerResponse
                         'image' => asset('public/images/cancel-policy.jpg'),
                     ]);
                 }
-                if ($path === 'login') {
+                else if ($path === 'login') {
                     return response()->view('share.seo', [
                         'title' => 'Access Your Account & Manage Bookings | TourBeez Login',
                         'description' => 'Log in to your TourBeez account to view and manage your tours, tickets, and wishlist. Secure access for fast booking history, updates, and personalized deals',
-                        'keywords' => 'lTourBeez login, account login, manage bookings, user account, tour booking account',
+                        'keywords' => 'TourBeez login, account login, manage bookings, user account, tour booking account',
                         'image' => asset('public/images/login-banner.jpg'),
+                    ]);
+                }
+                else if ($path === 'supplier') {
+                    return response()->view('share.seo', [
+                        'title' => 'Become a Supplier | TourBeez — Partner with Us for Tours & Experiences',
+                        'description' => 'Join TourBeez as a supplier. List your tours, experiences, and travel services on our platform to reach travelers worldwide. Partner with us today.',
+                        'keywords' => 'tour supplier, travel supplier, partner with TourBeez, list tours, travel experiences, tour operators, supplier portal, travel partners',
+                        'image' => asset('public/images/supplier.jpg'),
                     ]);
                 }
 
                 // ----- Tour Page -----
-                if (str_starts_with($path, 'tour/')) {
+                else if (str_starts_with($path, 'tour/')) {
                     $slug = explode('/', $path)[1];
                     $tour = Tour::where('slug', $slug)->first();
                     if ($tour) {
@@ -150,9 +160,7 @@ class CrawlerResponse
                         ]);
                     }
                 }
-
-                $segments = explode('/', $path);
-                if (count($segments) == 3) {
+                else if (count($segments) == 3) {
                     $citySlug = $segments[0];   // toronto
                     $id       = $segments[1];   // 10519
                     $type     = $segments[2];   // c1

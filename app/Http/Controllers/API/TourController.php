@@ -14,6 +14,7 @@ use App\Models\TourScheduleRepeats;
 use App\Models\TourSpecialDeposit;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use DB;
 use Dompdf\Helpers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -38,8 +39,10 @@ class TourController extends Controller
                 'location:id,city_id,state_id,country_id',
             ])
             ->where('status', 1)
+            ->whereHas('schedules', function ($sq) {
+                $sq->whereDate('until_date', '>=', now()->toDateString());
+            })
             ->whereNull('deleted_at');
-
         // Filters
         $query->when($request->title, fn($q, $title) => $q->where('title', 'like', "%$title%"))
             ->when($request->q, fn($q, $qstr) => $q->where('title', 'like', "%$qstr%"));
@@ -81,15 +84,32 @@ class TourController extends Controller
         //     'hightolow' => $query->orderBy('price', 'DESC'),
         //     default     => $query->orderBy('sort_order', 'ASC'),
         // };
-        match ($request->input('order_by')) {
-            'lowtohigh' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
-                                ->orderBy('price', 'ASC'),
+        // match ($request->input('order_by')) {
+        //     'lowtohigh' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
+        //                         ->orderBy('price', 'ASC'),
 
-            'hightolow' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
-                                ->orderBy('price', 'DESC'),
+        //     'hightolow' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
+        //                         ->orderBy('price', 'DESC'),
 
-            default     => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC'),
-        };
+        //     default     => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC'),
+        // };
+
+
+        $orderBy = strtolower($request->input('order_by', ''));
+
+        if ($request->input('order_by') === 'lowtohigh') {
+            // $query->orderByRaw('(CASE WHEN sort_order > 0 THEN 0 ELSE 1 END) ASC')
+            //       ->orderBy('price', 'ASC');
+            $query->orderBy('price', 'ASC');
+        } elseif ($request->input('order_by') === 'hightolow') {
+            // $query->orderByRaw('(CASE WHEN sort_order > 0 THEN 0 ELSE 1 END) ASC')
+            //       ->orderBy('price', 'DESC');
+            $query->orderBy('price', 'DESC');
+        } else {
+            $query->orderByRaw('(CASE WHEN sort_order > 0 THEN 0 ELSE 1 END) ASC')
+                  ->orderBy('sort_order', 'ASC'); // Only sort_order for default
+        }
+
 
         // Cache paginated
         $page = $request->get('page', 1);
@@ -385,11 +405,7 @@ class TourController extends Controller
 
         $tour_start_date = $this->getNextAvailableDate($tour->id, $schedules);
         $disabled_dates =  $this->getDisabledTourDates($tour->id, $schedules);
-<<<<<<< HEAD
         // $disabled_dates =  [];// $this->getDisabledTourDates_fromdb($tour->id);
-=======
-        $disabled_dates =  [];// $this->getDisabledTourDates_fromdb($tour->id);
->>>>>>> 5313014781dcf44615d0b3a0de534125351c920e
 
         
         // Calculate discount pricing (unchanged)
@@ -561,7 +577,7 @@ class TourController extends Controller
         });
 
         // If no rule found for specific tour, check global rule
-        if (!$depositRule) {
+        if (!$depositRule || ($depositRule && $depositRule->use_deposit == 0)) {
             $depositRule = Cache::remember('deposit_rule_global', 86400, function () {
                 return TourSpecialDeposit::where('type', 'global')->first();
             });
@@ -618,17 +634,39 @@ class TourController extends Controller
         // Build cache key
         $cacheKey = 'search_tours_' . md5($search . '_' . $date);
 
-        $cities = City::where('status', 'active')
-            ->when($search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'LIKE', '' . $search . '%');
-                });
-            })
-            ->orderBy('name', 'asc')
-            ->limit(2)
-            ->get();
+        // $cities = City::where('status', 'active')
+        //     ->when($search, function ($query, $search) {
+        //         $query->where(function ($q) use ($search) {
+        //             $q->where('name', 'LIKE', '' . $search . '%');
+        //         });
+        //     })
+        //     ->orderBy('name', 'asc')
+        //     ->limit(2)
+        //     ->get();
 
-
+        $cities = DB::table('tour_locations as tl')
+                    ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                    ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                    ->join('states as s', 's.id', '=', 'c.state_id')
+                    ->join('countries as cc', 'cc.id', '=', 's.country_id')
+                    ->join('uploads as u', 'u.id', '=', 'c.upload_id')
+                    ->select('c.id', 'c.name', 's.name as state_name', 'cc.name as country_name', 'u.file_name as image')
+                    ->groupBy('c.id', 'c.name')
+                    ->orderBy('name', 'asc')
+                    ->where('c.upload_id', '>=', 1)
+                    ->whereExists(function ($query) {
+                        $query->select(DB::raw(1))
+                            ->from('tour_schedules as ts')
+                            ->whereColumn('ts.tour_id', 't.id')
+                            ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                    })
+                    ->when($search, function ($query, $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('c.name', 'LIKE', '' . $search . '%');
+                        });
+                    })
+                    ->limit(2)
+                    ->get();
             
         $categories = Category::orderBy('name', 'asc')
             ->when($search, function ($query, $search) {
@@ -636,8 +674,8 @@ class TourController extends Controller
                     $q->where('name', 'LIKE', '' . $search . '%');
                 });
             })
-            ->limit(3)
-            ->get();    
+        ->limit(3)
+        ->get();    
         
         $total_cities       = $cities->count();
         $total_categories   = $categories->count();
@@ -665,7 +703,8 @@ class TourController extends Controller
         $data = [];
         if($total_cities>0) {
             foreach($cities as $city) {
-                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
+                //$data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
+                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state_name).', '.ucfirst($city->country_name)];
             }
         }
         if($total_categories>0) {
@@ -677,7 +716,7 @@ class TourController extends Controller
             foreach($tours as $tour) {
                 $image_id = $tour->main_image->id ?? 0;
                 $image  = uploaded_asset($image_id, 'thumb');
-                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => '/tour/'.$tour->slug, 'address' => $tour->location->address];
+                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => '/tour/'.$tour->slug, 'address' => $tour->location?->address];
             }
         }
         
@@ -832,8 +871,7 @@ private function getNextAvailableDate($tourId, $schedules = null)
             if($today->lte(Carbon::parse($schedule->session_start_date))){
                 return ['date' => Carbon::parse($schedule->session_start_date)->toDateString()];
             } 
-            return ['date' => ""];
-            
+            return ['date' => ""];            
         }   
 
         $nextDate = $this->calculateNextDate($schedule, $today, $allRepeats);
