@@ -164,7 +164,7 @@ class CrawlerResponse
                     $citySlug = $segments[0];   // toronto
                     $id       = $segments[1];   // 10519
                     $type     = $segments[2];   // c1
-                    
+                    $d = null;
                     if ($type == 'c1') {
                         $d = City::findOrFail( $id );
                     }
@@ -178,12 +178,15 @@ class CrawlerResponse
                         $d = Category::findOrFail( $id );
                     }                    
 
-                    return response()->view('share.tour', [
-                        'title' => countThingsToDo($id, $type).' Things To Do In ' .ucfirst( $d->name ).' | ' .env('APP_NAME') ,
-                        'description' => 'Discover tour in '.ucfirst( $d->name ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.',
-                        'image' => uploaded_asset( $d->upload_id ) ?? asset('public/512x512.jpg'),
-                        'url' => url()->current(),
-                    ]);                    
+                    if($d){
+                        return response()->view('share.tour', [
+                            'title' => countThingsToDo($id, $type).' Things To Do In ' .ucfirst( $d->name ).' | ' .env('APP_NAME') ,
+                            'description' => 'Discover tour in '.ucfirst( $d->name ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.',
+                            'image' => uploaded_asset( $d->upload_id ) ?? asset('public/512x512.jpg'),
+                            'url' => url()->current(),
+                        ]); 
+                    }
+                                       
                 }               
 
                 // ----- Static pages -----

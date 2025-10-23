@@ -8,43 +8,16 @@ use Illuminate\Support\Facades\Log;
 
 class EmailController extends Controller
 {
-    // public function handle($event, Request $request)
-    // {
-    //     $data = $request->all();
-    //     \Log::info("Mailgun Event: $event", $data);
-
-    //     // You can store these in DB (e.g., email_logs)
-    //     // Example:
-    //     // EmailLog::create([
-    //     //     'message_id' => $data['Message-Id'] ?? null,
-    //     //     'event' => $event,
-    //     //     'timestamp' => $data['timestamp'] ?? now(),
-    //     //     'recipient' => $data['recipient'] ?? null,
-    //     // ]);
-
-    //     return response()->json(['status' => 'ok']);
-    // }
 
     public function handle($event, Request $request)
     {
         $data = $request->all();
-        \Log::info("Mailgun Event: $event", $data);
-        // $payload = $request->all();
-
-
-
-        // $messageId = $payload['Message-Id'] ?? $payload['message']['headers']['message-id'] ?? null;
-        // $recipient = $payload['recipient'] ?? null;
 
 
         $payload = json_decode($request->getContent(), true); // or your JSON string
 
         $messageId = $payload['event-data']['message']['headers']['message-id'] ?? null;
         $recipient = $payload['event-data']['recipient'] ?? null;
-
-         \Log::info("Mailgun Event: $messageId ------ $recipient", );
-
-
 
 
         if ($messageId && $recipient) {

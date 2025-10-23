@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AddonController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AizUploadController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CityController;
@@ -14,20 +15,21 @@ use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeatureController;
 use App\Http\Controllers\InclusionController;
 use App\Http\Controllers\ItineraryController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PickupController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
-use App\Http\Controllers\StateController;
 use App\Http\Controllers\SmsTemplateController;
+use App\Http\Controllers\StateController;
+use App\Http\Controllers\SubCateoryController;
 use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\SubCateoryController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +37,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/dashboard',[ProfileController::class,'dashboard'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/suplier_update', [ProfileController::class, 'suplierUpdate'])->name('profile.suplier_update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::resource('/user',UserController::class);
@@ -247,6 +250,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Artisan::call('app:update-tour-disable-date');
         
         return redirect()->back()->with('success', 'Update disabled tour schedule meta for all tours');
-    })->name('clear.cache');
+    })->name('uploaded-disable-date');
+
+    Route::get('/notifications/navbar', [NotificationController::class, 'navbar'])
+    ->name('notifications.navbar');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+
+    Route::get('/notifications/fetch-all', [NotificationController::class, 'fetchAll'])->name('notifications.fetchAll');
+// Route::get('/notifications/read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.read');   
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
+
+    Route::resource('contacts', ContactController::class)->only(['index', 'show', 'destroy']);
 
 });

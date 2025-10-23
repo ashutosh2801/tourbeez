@@ -1,14 +1,12 @@
 <?php
 
 use App\Http\Controllers\AizUploadController;
+use App\Http\Controllers\TourController;
 use App\Http\Controllers\CityController;
-use App\Http\Controllers\EmailController;
-use App\Http\Controllers\ExportController;
 use App\Http\Controllers\LoginWithOTPController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SocialiteController;
 use App\Http\Controllers\StateController;
-use App\Http\Controllers\TourController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 /*
@@ -22,14 +20,11 @@ use Illuminate\Support\Str;
 |
 */
 // Auth routes
-require __DIR__.'/auth.php';
-// require('auth.php');
+// require __DIR__.'/auth.php';
+require('auth.php');
 
 // Admin Routes
 require('admin.php');
-
-
-Route::get('/export', [ExportController::class, 'index']);
 
 Route::get('/{any}', function () {
     return file_get_contents(public_path('index.html'));
@@ -43,7 +38,6 @@ Route::get('/{any}', function () {
 //         'readmeContent' => Str::markdown(file_get_contents($readmePath)),
 //     ]);
 // });
-
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index']);
 Route::get('/sitemaps/categories', [SitemapController::class, 'categories']);

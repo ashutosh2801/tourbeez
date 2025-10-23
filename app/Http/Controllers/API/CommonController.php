@@ -106,7 +106,7 @@ class CommonController extends Controller
                     WHERE s.tour_id = t.id
                         AND s.until_date >= CURDATE()
                 )
-                GROUP BY t.id, t.title, t.unique_code
+                GROUP BY t.unique_code
                 ORDER BY t.sort_order DESC
                 LIMIT 14
             ) as sub"))  // ✅ NO semicolon here

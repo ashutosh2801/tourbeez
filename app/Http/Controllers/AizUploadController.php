@@ -237,7 +237,6 @@ class AizUploadController extends Controller
                     break;
             }
         }
-
         return $uploads->paginate(60)->appends(request()->query());
     }
 

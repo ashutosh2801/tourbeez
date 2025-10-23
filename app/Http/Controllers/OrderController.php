@@ -14,6 +14,7 @@ use App\Models\Tour;
 use App\Models\TourPricing;
 use App\Models\TourSpecialDeposit;
 use App\Models\User;
+use App\Notifications\NewOrderNotification;
 use App\Services\TwilioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -827,6 +828,7 @@ class OrderController extends Controller
     public function edit($id)
     {
         $order = Order::findOrFail( decrypt($id) );
+        
         $tours = Tour::orderBy('title', 'ASC')->get();
         // $email_templates = EmailTemplate::get();
 
@@ -996,6 +998,7 @@ class OrderController extends Controller
 
     public function order_mail_send(Request $request)
 {
+
     $cc_mail   = $request->input('cc_mail');
     $bcc_mail   = $request->input('bcc_mail');
     $email   = $request->input('email');
@@ -1004,6 +1007,8 @@ class OrderController extends Controller
     $body    = $request->input('body');
     $footer  = $request->input('footer');
     $event   = $request->input('event');
+
+
 
     if (env('MAIL_FROM_ADDRESS')) {
         $array = [
@@ -1016,22 +1021,29 @@ class OrderController extends Controller
         ];
 
         try {
+
             // Explicitly use Mailgun mailer
             $mailer = Mail::mailer('mailgun');
 
-            // Send email and capture message info
-            // Send email and capture message info
-            $sentMessage = $mailer->to($email);
+            // Send email and capture message inf
 
+            $sentMessage = $mailer->to($email);
+            
             if( $cc_mail ) {
+                
                 $sentMessage->cc(explode(',', $cc_mail));
             }
             if( $bcc_mail ) {
                 $sentMessage->bcc(explode(',', $bcc_mail));
             }
             
+<<<<<<< HEAD
             $sentMessage->send(new EmailManager($array));
 
+=======
+            $sentMessage = $sentMessage->send(new EmailManager($array));
+           
+>>>>>>> 715cf4585717b903341775ec4faad90a537bdf59
             $messageId = null;
             if ($sentMessage instanceof \Illuminate\Mail\SentMessage) {
                 $symfonySent = $sentMessage->getSymfonySentMessage();
@@ -1161,83 +1173,6 @@ class OrderController extends Controller
                             </tr>
                         </tbody>
                     </table>';
-
-            // $TOUR_ITEM_SUMMARY = '
-            //         <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
-            //             <tbody>
-            //             <tr>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
-            //                     <h3 style="font-size:19px"><strong>Item Summary</strong></h3>
-            //                 </td>
-            //             </tr>
-            //             </tbody>
-            //         </table>
-        
-            //         <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
-            //             <tbody>
-            //                 <tr>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">
-            //                             &nbsp;
-            //                         </small>
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
-            //                     </td>
-            //                 </tr>
-
-            //                 <tr>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">
-            //                         5
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">
-            //                         Adult (13+)
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">
-            //                         $42.95
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">
-            //                         $214.75
-            //                     </td>
-            //                 </tr>
-
-            //                 <tr>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;;padding: 5px 0px;padding: 5px 0px;">
-            //                         &nbsp;
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;;padding: 5px 0px;padding: 5px 0px;">
-            //                         &nbsp;
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">HST ON</small>
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;padding: 5px 0px;">
-            //                         $27.92
-            //                     </td>
-            //                 </tr>
-
-            //                 <tr>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; ">
-            //                         &nbsp;
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; ">
-            //                         &nbsp;
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                         <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-            //                     </td>
-            //                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-            //                         <h3 style="color:#000; margin:0; font-size:19px"><strong>$242.67</strong></h3>
-            //                     </td>
-            //                 </tr>
-            //             </tbody>
-            //         </table>';a
 
 
             $TOUR_ITEM_SUMMARY = '';
@@ -1377,6 +1312,8 @@ class OrderController extends Controller
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
                 "[[CUSTOMER_PHONE]]"        => $customer->name ?? '',
 
+
+
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
                 "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
                 "[[TOUR_MAP]]"              => $tour->location->address ?? '',
@@ -1403,6 +1340,7 @@ class OrderController extends Controller
                 "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
+                "[[YEAR]]"                 => date('Y'),
             ];
  
             $finalMessage = strtr($template, $replacements);
@@ -1415,10 +1353,12 @@ class OrderController extends Controller
                 return response()->json([
                     'success' => true,
                     'email' => $customer->email,
+                    'bcc_mail' => $email_template->identifier == "trip_completed" ? 'tourbeez.com+9768a17f10@invite.trustpilot.com' : '',
+                    'email' => $customer->email,
                     'email_template' => $email_template,
                     'body'=>$finalMessage,
                     'footer'=>$finalfooter,
-                    'event' => [
+                    'event' => $email_template->identifier == "trip_completed" ? []: [
                         'uid' => "TB" . $order->order_number,
                         'start' => $orderTour->tour_date . ' ' . $orderTour->tour_time, // "2025-10-02 6:00 PM"
                         'end' => $orderTour->tour_date . ' ' . date(
@@ -1824,120 +1764,6 @@ class OrderController extends Controller
         );
     }
 
-
-
-
-    // public function capturePayment(Request $request, $orderId, $action_name = 'book')
-    // {
-    //     DB::beginTransaction();
-
-    //     try {
-    //         $order = Order::findOrFail($orderId);
-
-    //         if ($order->balance_amount <= 0) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'No pending amount to charge.'
-    //             ], 400);
-    //         }
-
-    //         \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-    //         $capturedIntent = null;
-    //         $action_name = $order->action_name;
-    //         // ✅ Decide flow from $action_name only
-    //         // dd($action_name);
-    //         if ($action_name === 'reserve') {
-    //             // ✅ Amount entered in modal
-    //             $chargeAmount = $request->input('amount');
-
-    //             if ($chargeAmount <= 0 || $chargeAmount > $order->balance_amount) {
-    //                 throw new \Exception("Invalid charge amount.");
-    //             }
-
-    //             $intentId = $order->payment_intent_id;
-    //             $paymentMethodId = null;
-    //             $customerId = null;
-
-    //             // ✅ Detect whether it's a SetupIntent or PaymentIntent
-    //             if (Str::startsWith($intentId, 'seti_')) {
-    //                 $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
-    //                 $paymentMethodId = $setupIntent->payment_method;
-    //                 $customerId = $setupIntent->customer;
-    //             } elseif (Str::startsWith($intentId, 'pi_')) {
-    //                 $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
-    //                 $paymentMethodId = $paymentIntent->payment_method;
-    //                 $customerId = $paymentIntent->customer;
-    //             }
-
-    //             if (!$paymentMethodId || !$customerId) {
-    //                 throw new \Exception("No valid payment method or customer found.");
-    //             }
-
-    //             // ✅ Create a new PaymentIntent for the entered amount
-    //             $paymentIntent = \Stripe\PaymentIntent::create([
-    //                 'customer'       => $customerId,
-    //                 'amount'         => (int) ($chargeAmount * 100), // cents
-    //                 'currency'       => 'usd',
-    //                 'payment_method' => $paymentMethodId,
-    //                 'off_session'    => true,
-    //                 'confirm'        => true,
-    //             ]);
-
-    //             // ✅ Update order amounts
-    //             $order->payment_intent_id = $paymentIntent->id;
-    //             $order->payment_intent_client_secret = $paymentIntent->client_secret;
-    //             $order->total_amount += $chargeAmount;
-    //             $order->balance_amount -= $chargeAmount;
-    //             $order->transaction_id = $paymentIntent->id; // keep track of latest txn
-    //             $order->save();
-
-    //             $capturedIntent = $paymentIntent;
-    //         }
-
-
-    //         elseif ($action_name === 'book') {
-    //             if ($order->payment_intent_id) {
-    //                 $paymentIntent = \Stripe\PaymentIntent::retrieve($order->payment_intent_id);
-
-    //                 if ($paymentIntent->status === 'requires_capture') {
-    //                     // capture reserved funds
-    //                     $capturedIntent = $paymentIntent->capture([
-    //                         'amount_to_capture' => (int) ($order->total_amount * 100),
-    //                     ]);
-    //                 }
-    //             }
-    //             $order->payment_status = 1; // Paid
-    //             $order->transaction_id = $capturedIntent->id;
-    //             $order->save();
-    //         }
-
-    //         DB::commit();
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => $action_name === 'reserve' 
-    //                 ? 'Payment reserved successfully' 
-    //                 : 'Order charged successfully',
-    //             'data'    => $capturedIntent
-    //         ]);
-
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-
-    //         \Log::error('Payment processing failed', [
-    //             'message'   => $e->getMessage(),
-    //             'file'      => $e->getFile(),
-    //             'line'      => $e->getLine(),
-    //             'trace'     => $e->getTraceAsString(),
-    //             'request'   => request()->all(),
-    //         ]);
-
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
 
 
     public function capturePayment3(Request $request, $orderId, $action_name = 'full')

@@ -40,9 +40,11 @@ class CategoryController extends Controller
             $uniqueSlug = $baseSlug . '-' . $counter;
             $counter++;
         }
+
         Category::create([
             'name'=>$request->name,
             'slug'=>$uniqueSlug,
+            'user_id' => $user->id
         ]);
         return redirect()->route('admin.category.index')->with('success','Category created successfully.');
     }

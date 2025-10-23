@@ -23,6 +23,7 @@ use App\Models\TourSchedule;
 use App\Models\TourScheduleRepeats;
 use App\Models\TourUpload;
 use App\Models\Tourtype;
+use App\Models\User;
 use App\Services\ImageService;
 use App\Traits\TourScheduleHelper;
 use Illuminate\Http\Request;
@@ -97,6 +98,11 @@ class TourController extends Controller
         if ($request->has('status') && $request->status != '') {
             $query->where('status', $request->status);
         }
+
+        if ($request->has('author') && $request->author != '') {
+
+            $query->where('user_id', $request->author);
+        }
         // if ($request->has('city') && $request->city != '') {
         //     $query->where('city', $request->city)->orderBy('sort_order');
         // }
@@ -109,6 +115,89 @@ class TourController extends Controller
 
             
         }
+        // dd($request->all());
+        // if ($request->has('special_deposit') && $request->special_deposit != '') {
+        //     if ($request->special_deposit === 'active') {
+        //         // Tours that have a related special deposit
+        //         $query->whereHas('specialDeposit');
+        //     } elseif ($request->special_deposit === 'not_active') {
+        //         // Tours that do NOT have a related special deposit
+        //         $query->whereDoesntHave('specialDeposit');
+        //     }
+        // }
+
+        if ($request->has('special_deposit') && $request->special_deposit != '') {
+            if ($request->special_deposit === 'active') {
+                // Tours that have a special deposit AND use_deposit = 1
+                $query->whereHas('specialDeposit', function ($q) {
+                    $q->where('use_deposit', 1);
+                });
+            } elseif ($request->special_deposit === 'not_active') {
+                // Tours that either have no special deposit OR use_deposit = 0
+                $query->where(function ($q) {
+                    $q->whereDoesntHave('specialDeposit')
+                      ->orWhereHas('specialDeposit', function ($sub) {
+                          $sub->where('use_deposit', 0);
+                      });
+                });
+            }
+        }
+
+        if ($request->has('schedule') && $request->schedule != '') {
+            if ($request->schedule === 'active') {
+                // Tours that have a related special deposit
+                $query->whereHas('schedules');
+            } elseif ($request->schedule === 'not_active') {
+                // Tours that do NOT have a related special deposit
+                $query->whereDoesntHave('schedules');
+            }
+        }
+
+        if ($request->filled('schedule_expiry')) {
+            $today = now()->startOfDay();
+
+            $query->whereHas('schedules', function ($q) use ($request, $today) {
+                switch ($request->schedule_expiry) {
+                    case 'today':
+                        $q->whereDate('until_date', $today->toDateString());
+                        break;
+
+                    case 'last_7':
+                        $q->whereBetween('until_date', [
+                            $today->clone()->subDays(7)->toDateString(),
+                            $today->toDateString(),
+                        ]);
+                        break;
+
+                    case 'last_15':
+                        $q->whereBetween('until_date', [
+                            $today->clone()->subDays(15)->toDateString(),
+                            $today->toDateString(),
+                        ]);
+                        break;
+
+                    case 'this_week':
+                        $q->whereBetween('until_date', [
+                            $today->clone()->startOfWeek()->toDateString(),
+                            $today->clone()->endOfWeek()->toDateString(),
+                        ]);
+                        break;
+
+                    case 'upcoming_15':
+                        $q->whereBetween('until_date', [
+                            $today->toDateString(),
+                            $today->clone()->addDays(15)->toDateString(),
+                        ]);
+                        break;
+
+                    case 'expired':
+                        // All schedules that have expired before today
+                        $q->where('until_date', '<', $today->toDateString());
+                        break;
+                }
+            });
+        }
+
 
         $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
 
@@ -121,12 +210,14 @@ class TourController extends Controller
         } else {
             $tours = $query->with('categories')->paginate(100000)->withQueryString();
         }
+
         
         $categories = Category::all();
+        $users = User::all();
         $cities = City::limit(10)->get();
 
 
-        return view('admin.tours.index', compact(['tours', 'categories', 'cities']));
+        return view('admin.tours.index', compact(['tours', 'categories', 'cities', 'users']));
     }
 
     public function subTourIndex(Request $request, $id)

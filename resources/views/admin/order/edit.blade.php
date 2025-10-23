@@ -173,25 +173,7 @@
             <div style="padding:0 15px;">
 
                 <div class="row">
-                    {{-- <div class="col-lg-2 text-ceneter">
-                        <label class="d-block" for="">Balance</label>
-                        <select class="form-control" style="border:0" name="order_balance" id="order_balance">
-                            <option value="$0.00" >$0.00</option>
-                            <option value="Paid" >Paid {{ price_format_with_currency($order->booked_amount, $order->currency) }}</option>
-                            <option value="Paid" >Total {{ price_format_with_currency($order->total_amount, $order->currency) }}</option>
-                            <option value="Refunded" >Refunded $0.00</option>
-                        </select>
-
-
-                    </div>
-                    <div class="col-lg-2 text-ceneter">
-                        <label class="d-block" for="">Order Status</label>
-                        <select class="form-control" style="border:0" name="order_status" id="order_status">
-                            @foreach( order_status_list() as $key => $status)
-                            <option value="{{ $key }}" >{{ $status }}</option>
-                            @endforeach
-                        </select>
-                    </div> --}}
+                    
                     <div class="col-lg-5 btngroup">
                         <div class="justify-center item-center">
                             <div class="payment-status order-balance {{ $order->balance_amount > 0 ? 'due' : 'paid' }}">
@@ -272,16 +254,6 @@
                             @foreach($email_templates as $email_template)
                                 <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
                             @endforeach
-                            <!-- <option value="14" >Order Details -> Send Now</option>
-                            <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
-                            <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
-                            <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
-                            <option value="Reminder 2nd" >Reminder 2nd -> Send Now</option>
-                            <option value="Reminder 3rd" >Reminder 3rd -> Send Now</option>
-                            <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
-                            <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
-                            <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
-                            <option value="Simple Email" >Simple Email -> Send Now</option> -->
                         </select>
 
                         <select class="form-control" style="width:150px; display:inline-block;" name="sms_template_name" id="sms_template_name">
@@ -327,16 +299,10 @@
                             <div class="card-body">
 
                                 
-                                    <!-- <ul class="flex flex-row">
-
-                                        <li><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->user?->name }}</a></li>
-                                        <li>{{ $order->user?->email }}</li>
-                                        <li>{{ $order->user?->phonenumber }}</li>
-                                    </ul> -->
+                            
                                
                                     <ul class="flex flex-row">
 
-                                        <!-- <li><a href="{{ route('admin.user.edit', encrypt($order->user_id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a></li> -->
 
                                         <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a></li>
                                         <li>{{ $order->customer?->email }}</li>
@@ -379,6 +345,8 @@
                                             </td>
                                             <td class="text-right" width="200">
                                                 <div class="input-group">
+
+
                                                     <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="{{ $order_tour->tour_time }}" class="form-control aiz-time-picker" data-minute-step="1"> 
                                                     <div class="input-group-prepend">
                                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
@@ -536,7 +504,7 @@
                         </div>
                         <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
-                                <!-- <textarea class="form-control" name="additional_info" id="additional_info" rows="4" placeholder="Additional information">{{ $order->additional_info }}</textarea> -->
+                               
 
 
                                  <div style="border:1px solid #e1a604; margin-bottom:10px">
@@ -574,14 +542,24 @@
                                             <td class="text-right">{{  $order->tour->location->city->name ?? '-' }}</td>
                                         </tr>
 
+                                        @php
+                                            $pickName = '';
+                                            if($order->customer && $order->customer->pickup_name){
+                                                $pickName = $order->customer->pickup_name;
+                                            } elseif($order->customer && $order->customer->pickup_id) {
+                                                $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
+                                                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                                            }
+                                        @endphp
+                                        <tr>
+                                            <td><b>Pickup Location</b></td>
+                                            <td class="text-right">{{ $pickName }}</td> 
+                                            
+
+                                        </tr>
                                          
                                         @foreach ($order->tour->pickups as $pickup)
-                                            <tr>
-                                                <td><b>Pickup Location</b></td>
-                                                <td class="text-right">{{ $pickup->name }}</td> 
-                                                
-
-                                            </tr>
+                                           
                                             <tr>
                                                 <td><b>Pickup Charge</b></td>
                                                 <td class="text-right">{{ $pickup->pickup_charge }}</td>
@@ -600,22 +578,34 @@
                                 <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Payment Details</button>                     
                             </h2>
                         </div>
+
                         <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
                             <div class="card-body">
+                                <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div>
+                                
                                 <table class="table">    
                                     <tr>
-                                        <td>Total: {{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        <td>Payment Type</td>
+                                        <td>Ref number</td>
+                                        
+                                        <td>Total</td>
                                         <td></td>
-                                        <td>Balance: {{ price_format_with_currency($order->balance_amount) }}</td>
-                                        <td>Paid: {{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
+                                        <td>Balance</td>
+                                        <td>Paid</td>
+
+
+
+                                    </tr>
+                                    <tr>
+                                    <td>{{ ucwords($order->payment_method)}}</td>
+                                    <td>{{ ucwords($order->payment_intent_id)}}</td>
+                                    
+                                    <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        <td></td>
+                                        <td>{{ price_format_with_currency($order->balance_amount) }}</td>
+                                        <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
                                     </tr>
 
-                                    <tr>
-                                        <td>Stored Credit Card</td>
-                                        <td>{{ $order->card_info }}</td>
-                                        <td>STRIPE</td>
-                                        <td>{{ $order->transaction_id }}</td>
-                                    </tr>
                                 </table>
                             </div>
                         </div>
@@ -668,64 +658,7 @@
                     </div>
                 </div>
             </div>
-            <!-- recent action need to update this -->
-            <!-- <div class="bs-example">
-                <div class="card">
-                    <div class="card-body">
-                        <h5>Recent actions</h5>
-                        <table class="table">    
-                            <tr>
-                                <th>Date</th>
-                                <th>Action</th>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:44 PM</td>
-                                <td>Vito G confirmed Arya Suresh's order</td>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:43 PM</td>
-                                <td>System charged {{ price_format_with_currency($order->total_amount) }} on credit card XXXXXXXXXXXX5959. Reference number is ch_3RSiaLEcMxhlmBMk0dT82PRI</td>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:43 PM</td>
-                                <td>Arya Suresh made a new order on your booking form</td>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:43 PM</td>
-                                <td>Order created with Credit card payment of {{ price_format_with_currency($order->total_amount) }}</td>
-                            </tr>
-                        </table>
-
-
-                        <h5 class="mt-5">Sent emails</h5>
-                        <table class="table">    
-                            <tr>
-                                <th>Sent</th>
-                                <th>To</th>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:44 PM</td>
-                                <td>info@discount.tours</td>
-                                <td>Discount.Tours</td>
-                                <td>Supplier Notification</td>
-                                <td>Opened</td>
-                            </tr>
-                            <tr>
-                                <td>May 25, 2025, 1:44 PM</td>
-                                <td>aryaofficial203@gmail.com</td>
-                                <td>Arya Suresh</td>
-                                <td>Online Booking Confirmation</td>
-                                <td>Opened</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            </div> -->
-
-            <!-- recent action -->
+            
         </div>
     </div>
     </form>
@@ -739,6 +672,7 @@
             <form id="order_mail" method="POST" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="identifier" id="identifier">
+                <input type="hidden" name="order_id" value="{{ $order->id }}">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-lg-12">
@@ -759,13 +693,13 @@
                                                     <div class="form-group row">
                                                         <label class="col-md-12 col-form-label">{{translate('CC Mail')}}</label>
                                                         <div class="col-md-12">
-                                                            <input type="text" name="cc_mail" class="form-control" placeholder="{{translate('CC Mail')}}">
+                                                            <input type="text" name="cc_mail" id="cc_mail" class="form-control" placeholder="{{translate('CC Mail')}}">
                                                         </div>
                                                     </div>
                                                     <div class="form-group row">
                                                         <label class="col-md-12 col-form-label">{{translate('BCC Mail')}}</label>
                                                         <div class="col-md-12">
-                                                            <input type="text" name="bcc_mail" class="form-control" placeholder="{{translate('BCC Mail')}}">
+                                                            <input type="text" name="bcc_mail" id="bcc_mail" class="form-control" placeholder="{{translate('BCC Mail')}}">
                                                         </div>
                                                     </div>
 
@@ -874,41 +808,6 @@
     </div>
   </div>
 </div>
-
-<!-- Charge Modal -->
-<!-- <div class="modal fade" id="chargeModal" tabindex="-1" aria-labelledby="chargeModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-
-      <div class="modal-header">
-        <h5 class="modal-title" id="chargeModalLabel">Capture Payment</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <form id="chargeForm">
-          <input type="hidden" id="chargeOrderId" name="order_id">
-
-          <div class="mb-3">
-            <label class="form-label">Card</label>
-            <p id="cardDetails" class="fw-bold">Loading...</p>
-          </div>
-
-          <div class="mb-3">
-            <label for="chargeAmount" class="form-label">Amount</label>
-            <input type="number" class="form-control" id="chargeAmount" name="amount" required>
-          </div>
-        </form>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" form="chargeForm" class="btn btn-primary">Charge</button>
-      </div>
-
-    </div>
-  </div>
-</div> -->
 
 
 
@@ -1095,13 +994,15 @@
         radio.addEventListener('change', function (e) {
 
             // update UI
+
+            
             updateStatusUI(this);
 
             // now update backend via fetch()
             const order_id = document.getElementById('order_id').value;
             const status = this.value;
             
-            fetch(`/tbadmin/admin/orders/${order_id}/update-status`, {
+            fetch(`/staging/admin/admin/orders/${order_id}/update-status`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1130,30 +1031,6 @@
     if (init) updateStatusUI(init);
 });
 
-    // $(document).on('click', '.charge-btn', function(e) {
-    //     e.preventDefault();
-    //     let orderId = $(this).data('order-id');
-
-    //     $.ajax({
-    //         url: '/tbadmin/admin/orders/' + orderId + '/charge',  // Your Laravel API route
-    //         type: 'POST',
-    //         data: {
-    //             _token: $('meta[name="csrf-token"]').attr('content') // CSRF protection
-    //         },
-    //         success: function(response) {
-    //             console.log("Charge successful:", response);
-    //             alert("Payment captured successfully!");
-    //             location.reload();
-    //         },
-    //         error: function(xhr) {
-    //             console.error("Charge failed:", xhr.responseText);
-    //             alert("Payment capture failed. Please try again.");
-    //         }
-    //     });
-    //     // Trigger your charge API call
-    //     console.log("Charge triggered for Order:", orderId);
-    // });
-
 
     $(document).on('click', '.charge-btn', function(e) {
     e.preventDefault();
@@ -1168,45 +1045,7 @@
     $('#chargeAmount').val(balance);
     $('#chargeModal').modal('show');
 
-    // Fetch payment details
-    /*
-    $.ajax({
 
-        url: "{{ route('admin.orders.payment-details', ['order' => '__ORDER_ID__']) }}".replace('__ORDER_ID__', orderId),
-
-
-        type: 'POST',
-        data: {
-            _token: $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            let data = response.data;
-
-            // Fill amount
-            $('#chargeAmount').val(data.amount);
-            $('#showChargeAmount').html(data.amount);
-            $('#customerName').html(data.customer_name);
-
-            // Handle card block
-            if (data.brand && data.last4 && data.exp_month && data.exp_year) {
-                $('#cardDetailsBlock').show().html(`
-                    ${data.brand.toUpperCase()} •••• ${data.last4} (Exp: ${data.exp_month}/${data.exp_year})
-                `);
-            } else {
-                // Hide card block if no details
-                $('#cardDetailsBlock').hide();
-                // Or show message
-                // $('#cardDetailsBlock').show().html("Payment method not available");
-            }
-
-            // Show modal
-            $('#chargeModal').modal('show');
-        },
-        error: function() {
-            $('#cardDetails').text("Failed to fetch card details");
-        }
-    });
-    */
     
 });
 
@@ -1269,6 +1108,8 @@ $(document).ready(function(){
             success: function(response) {
                 console.log(response.event);
                 $('#email').val(response.email);
+                $('#bcc_mail').val(response.bcc_mail);
+                $('#cc_mail').val(response.cc_mail);
                 $('#identifier').val(response.email_template.identifier);
                 $('#subject').val(response.email_template.subject);
                 $('#event').val(JSON.stringify(response.event));
@@ -1303,6 +1144,7 @@ $(document).ready(function(){
             processData: false,
             success: function(response) {
                 console.log('Success:', response);
+                toastr.success("Mail sent successfully")
                 $('.modal').modal('hide');
             },
             error: function(xhr, status, error) {

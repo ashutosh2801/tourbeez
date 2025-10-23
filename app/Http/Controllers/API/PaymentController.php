@@ -13,6 +13,7 @@ use App\Models\Pickup;
 use App\Models\PickupLocation;
 use App\Models\TourPricing;
 use App\Models\User;
+use App\Notifications\NewOrderNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -360,7 +361,7 @@ class PaymentController extends Controller
 
             Log::info('order_email_sent' . $booking->email_sent);
             if ($booking && $booking->tour->order_email && !$booking->email_sent) {                    
-                $mailsent = self::sendOrderDetailMail($detail, $action_name);
+                // $mailsent = self::sendOrderDetailMail($detail, $action_name);
                 
                 Log::info('order_email_sentqwwqdwqqdqwdqw' . $booking->email_sent);
                 $booking->email_sent = true;
@@ -369,7 +370,7 @@ class PaymentController extends Controller
 
             Log::info('order_admin email' . $booking->admin_email_sent);
             if ($booking && $booking->tour->order_email && !$booking->admin_email_sent) {                    
-                $mailsent = self::sendOrderDetailMail($detail, 'admin');
+                // $mailsent = self::sendOrderDetailMail($detail, 'admin');
                 
                 Log::info('admin email sent' . $booking->admin_email_sent);
                 $booking->admin_email_sent = true;
@@ -379,6 +380,12 @@ class PaymentController extends Controller
 
             Log::info('order_email_sentqwwqdwq' . $booking->email_sent);
 
+
+            
+            $admin_id = $booking->tour->user_id;
+            $admin = User::findorFail($admin_id);
+            $admin->notify(new NewOrderNotification($booking));
+            Log::info('NewOrderNotification');
             return response()->json([
                     'status'  => 'succeeded',
                     'booking' => $detail,
@@ -712,7 +719,7 @@ class PaymentController extends Controller
                     'from_email'=> env('MAIL_FROM_ADDRESS'),
                     'subject'   => $subject,
                     'body'      => $header.$body.$footer,
-                    'status'    => 'sent'
+                    'message_id' => $mailSend
                 ]);
 
             }
@@ -755,19 +762,32 @@ class PaymentController extends Controller
  
             try {
 
-                if($recipient == 'admin'){
-                     Mail::to($email)->send(new AdminBookingMail($array));
-                     return true;
-                } else{
-                    if(Mail::to($email)->send(new EmailManager($array))){
 
-                        return true;
-                        return response()->json(['status' => 'success']);
-                    }else{
-                         return false;
-                         return response()->json(['status' => 'Failed']);
+                $mailer = Mail::mailer('mailgun');
+
+                // Send email and capture message info
+                // $sentMessage = $mailer->to($email)->send(new EmailManager($array));
+
+                
+
+                if($recipient == 'admin'){
+                     $sentMessage = $mailer->to($email)->send(new AdminBookingMail($array));
+                } else{
+                        $sentMessage = $mailer->to($email)->send(new EmailManager($array));
+                        
+                        
+                }
+
+                $messageId = null;
+                if ($sentMessage instanceof \Illuminate\Mail\SentMessage) {
+                    $symfonySent = $sentMessage->getSymfonySentMessage();
+                    if ($symfonySent && method_exists($symfonySent, 'getMessageId')) {
+                        $messageId = $symfonySent->getMessageId();
+                        $messageId = trim($messageId, '<>');
                     }
                 }
+
+                return $messageId;
                 
                  
             } catch (\Exception $e) {
