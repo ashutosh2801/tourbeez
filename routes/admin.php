@@ -231,7 +231,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Email Templates
     Route::resource('/email-templates', EmailTemplateController::class);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
-    Route::post('/email-templates/preview/{id}', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
+    Route::get('/email-templates/preview/{id}', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
 
 
     Route::get('/tour/{slug}/fetch_one', [\App\Http\Controllers\API\TourController::class, 'fetch_one']);

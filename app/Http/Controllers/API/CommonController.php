@@ -62,27 +62,6 @@ class CommonController extends Controller
         }  
 
 
-        // $tour_data = Cache::remember('tours_home_list', 86400, function () {
-        //     return DB::table(DB::raw('(SELECT t.id, t.title AS name, t.slug, t.price, t.created_at, u.upload_id
-        //         FROM tours t
-        //         JOIN tour_upload u ON u.tour_id = t.id
-        //         JOIN tour_locations l ON l.tour_id = t.id
-        //         WHERE t.status = 1 
-        //           AND t.deleted_at IS NULL
-        //           AND l.city_id IS NOT NULL 
-        //           AND l.city_id = 10519
-        //           AND EXISTS (
-        //               SELECT 1 
-        //               FROM tour_schedules s 
-        //               WHERE s.tour_id = t.id
-        //           )
-        //         ORDER BY t.sort_order DESC
-        //     ) AS sub'))
-        //     ->limit(25)
-        //     ->get();
-        // });
-
-
         $tour_data = Cache::remember('tours_home_list', 86400, function () {
             return DB::table(DB::raw("( 
                 SELECT 
@@ -170,16 +149,6 @@ class CommonController extends Controller
 
     public function popular_cities(Request $request)
     {
-        // $cacheKey = 'popular_cities_list_'. $request->id;
-        // $data = Cache::remember($cacheKey, 86400, function () {
-            // $data =   DB::table('tour_locations as tl')
-            //         ->join('cities as c', 'c.id', '=', 'tl.city_id')
-            //         ->select('c.id', 'c.name', 'c.upload_id')
-            //         ->distinct()
-            //         ->orderBy( rand())
-            //         ->limit(25)
-            //         ->get();
-        // });
 
         $data = DB::table('tour_locations as tl')
                 ->join('tours as t', 't.id', '=', 'tl.tour_id')
@@ -211,86 +180,12 @@ class CommonController extends Controller
         return response()->json(['status' => true, 'popular_cities' => $cities], 200);
     }
 
-    // public function popular_destinations(Request $request)
-    // {
-
-    //     $data = DB::table('tour_locations as tl')
-    //         ->join('cities as c', 'c.id', '=', 'tl.city_id')
-    //         ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
-    //         ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
-    //         ->select(
-    //             'c.id',
-    //             'c.name',
-    //             'c.upload_id',
-    //             'tl.state_id',
-    //             'tl.country_id',
-    //             's.name as state_name',
-    //             'co.name as country_name'
-    //         )
-    //         ->distinct()
-    //         ->orderByRaw('RAND()')
-    //         ->limit(25)
-    //         ->get();
-
-    //     $cities = [];
-        
-    //     foreach($data as $d) {
-
-    //         $cities[] = [
-    //             'id'    => $d->id,
-    //             'name'  => 'Things to do in '.ucfirst( $d->name ),
-    //             'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
-    //             'image' => uploaded_asset( $d->upload_id ),
-    //             'extra' => '' . ucwords($d->state_name) . ', ' . ucwords($d->country_name) . '', 
-    //         ];
-    //     }  
-
-    //     return response()->json(['status' => true, 'popular_cities' => $cities], 200);
-    // }
 
 
     public function popular_destinations(Request $request)
     {
         $limit = $request->input('limit', 15); 
         $page = $request->input('page', 1);  
-
-        /*$query = DB::table('tour_locations as tl')
-                ->join('tours as t', 't.id', '=', 'tl.tour_id')
-                ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
-                ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
-                ->select(
-                    'c.id',
-                    'c.name',
-                    'c.upload_id',
-                    'tl.state_id',
-                    'tl.country_id',
-                    's.name as state_name',
-                    'co.name as country_name',
-                    DB::raw('(
-                        SELECT COUNT(DISTINCT t2.id)
-                        FROM tours t2
-                        JOIN tour_locations tl2 ON tl2.tour_id = t2.id
-                        WHERE tl2.city_id = c.id
-                        AND t2.status = 1
-                        AND t2.deleted_at IS NULL
-                        AND EXISTS (
-                            SELECT 1
-                            FROM tour_schedules ts2
-                            WHERE ts2.tour_id = t2.id
-                                AND ts2.until_date >= CURDATE()
-                        )
-                    ) as total_tours')
-                )
-                ->distinct()
-                ->where('c.upload_id', '>=', 1)
-                ->whereExists(function ($query) {
-                    $query->select(DB::raw(1))
-                        ->from('tour_schedules as ts')
-                        ->whereColumn('ts.tour_id', 't.id')
-                        ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
-                })
-                ->orderByRaw('RAND()');*/
 
         $query = DB::table('tour_locations as tl')
                 ->join('tours as t', 't.id', '=', 'tl.tour_id')
@@ -491,32 +386,32 @@ class CommonController extends Controller
             'email'   => 'required|email',
             'phone'   => 'required',
             'message' => 'required|string',
-            'recaptcha_token' => 'required',
+            // 'recaptcha_token' => 'required',
         ];
         $this->messages = [
             'name.required' => 'Name is required.',
             'email.required' => 'Email is required.',
             'phone.required' => 'Phone number is required.',    
             'message.required' => 'Message is required.',
-            'recaptcha_token.required' => 'reCAPTCHA token is required.',
+            // 'recaptcha_token.required' => 'reCAPTCHA token is required.',
         ];
 
-        $validated = Validator::make($request->all(), $this->rules, $this->messages);
-        if ($validated->fails()) {
-            return response()->json(['status' => false, 'errors' => $validated->errors()], 422);
-        }        
+        // $validated = Validator::make($request->all(), $this->rules, $this->messages);
+        // if ($validated->fails()) {
+        //     return response()->json(['status' => false, 'errors' => $validated->errors()], 422);
+        // }        
 
-        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret'   => env('RECAPTCHA_SECRET'),
-            'response' => $request->recaptcha_token,
-            'remoteip' => $request->ip(),
-        ]);
+        // $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+        //     'secret'   => env('RECAPTCHA_SECRET'),
+        //     'response' => $request->recaptcha_token,
+        //     'remoteip' => $request->ip(),
+        // ]);
 
-        $result = $response->json();
+        // $result = $response->json();
 
-        if (!($result['success'] ?? false)) {
-            return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
-        }
+        // if (!($result['success'] ?? false)) {
+        //     return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
+        // }
 
         // Send email using mailable and template
         //Mail::to('ashutosh2801@gmail.com')->send(new ContactMail($validated));
@@ -550,7 +445,7 @@ class CommonController extends Controller
         $template = fetch_email_template('contact_mail_for_admin');
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
-        Mail::to( env('MAIL_FROM_ADDRESS') )->send(new CommonMail($parsedSubject, $parsedBody));
+        Mail::to([ env('MAIL_FROM_ADDRESS'), 'kiran@tourbeez.com' ])->send(new CommonMail($parsedSubject, $parsedBody));
 
         $admin = User::where('role', 'Super Admin')->first();
 
@@ -568,6 +463,7 @@ class CommonController extends Controller
 
     public function careers(Request $request)
     {
+
         $validated = $request->validate([
             'first_name'       => 'required|string|max:255',
             'last_name'        => 'required|string|max:255',
@@ -593,7 +489,7 @@ class CommonController extends Controller
             // 'cv.file'                  => 'CV must be a file.',
             // 'cv.mimes'                 => 'CV must be a PDF or Word document.',
             // 'cv.max'                   => 'CV must not be larger than 2MB.',
-            'recaptcha_token.required' => 'reCAPTCHA token is required.',
+            // 'recaptcha_token.required' => 'reCAPTCHA token is required.',
         ]);
 
         if ($request->hasFile('cv')) {
@@ -630,6 +526,10 @@ class CommonController extends Controller
             'app_name' => get_setting('site_name'),
             'app_name' => get_setting('site_name'),
             'login_url' => config('app.site_url') .  "/login",
+            'speciality' => $request->speciality,
+            'experience' => $request->experience,
+            'phone' => $request->phone,
+            'gender' => $request->gender,
         ];
 
         $parsedBody = parseTemplate($template->body, $placeholders);
@@ -637,6 +537,11 @@ class CommonController extends Controller
      
         // Send to user
         Mail::to($request->email)->send(new CommonMail($parsedSubject, $parsedBody));
+        $template = fetch_email_template('career_mail_for_admin');
+        $parsedBody = parseTemplate($template->body, $placeholders);
+        $parsedSubject = parseTemplate($template->subject, $placeholders);
+
+        Mail::to([env('MAIL_FROM_ADMIN_ADDRESS'), 'kiran@tourbeez.com'])->send(new CommonMail($parsedSubject, $parsedBody));
         
         // Send email using mailable and template
        

@@ -61,7 +61,9 @@ class AuthController extends Controller
                 'email'     => $user->email,
                 'app_name'  => config('app.name'),
                 'login_url' => config('app.site_url') .  "/login",
-                'year'      => date('Y')
+                'year'      => date('Y'),
+                'phone'     => $user->phone
+
             ];
 
             $parsedBody = parseTemplate($template->body, $placeholders);

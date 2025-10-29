@@ -43,100 +43,158 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                         <div class="col-10">
                             <div class="tab-content" id="v-pills-tabContent">
                                 <div class="tab-pane fade show active" id="taxes_nd_fees" role="tabpanel" aria-labelledby="v-pills-messages-tab-10">
-                                	<form class="needs-validation" novalidate action="{{ route('admin.tour.review', $data->id) }}" method="POST" enctype="multipart/form-data">
-                         
-							            @method('PUT')
-							            @csrf
-	                                    <div class="card card-primary mt-4">
-                                            <div class="card-header">
-                                                <h3 class="card-title">Review & Highlights</h3>
-                                            </div>
-                                            <div class="card-body">
+                                <form class="needs-validation" novalidate 
+                                      action="{{ route('admin.tour.review', $data->id) }}" 
+                                      method="POST" enctype="multipart/form-data">
+                                    @csrf
+                                    @method('PUT')
 
-                                                {{-- Review Section --}}
-                                                <div class="form-group form-check">
-                                                    <input type="hidden" name="review[use_review]" value="0">
-                                                    <input type="checkbox" class="form-check-input" id="use_review"
-                                                           name="review[use_review]" value="1"
-                                                           {{ old('review.use_review', $tourReview?->use_review) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="use_review">Enable Review</label>
-                                                </div>
-                                                <div id="review_options" class="{{ old('review.use_review', $tourReview?->use_review) ? '' : 'd-none' }}">
-                                                    <input type="text" name="review[review_heading]" class="form-control mb-2"
-                                                           placeholder="Review Heading"
-                                                           value="{{ old('review.review_heading', $tourReview?->review_heading) }}">
-                                                    <textarea name="review[review_text]" class="form-control mb-2"
-                                                              placeholder="Review Text">{{ old('review.review_text', $tourReview?->review_text) }}</textarea>
-                                                    <select name="review[review_rating]" class="form-control mb-2">
-                                                        <option value="">Select Rating</option>
-                                                        @for($i = 1; $i <= 5; $i++)
-                                                            <option value="{{ $i }}" {{ old('review.review_rating', $tourReview?->review_rating) == $i ? 'selected' : '' }}>
-                                                                {{ $i }}
-                                                            </option>
-                                                        @endfor
-                                                    </select>
-                                                    <input type="number" name="review[review_count]" class="form-control mb-2"
-                                                           placeholder="Review Count"
-                                                           value="{{ old('review.review_count', $tourReview?->review_count) }}">
-                                                </div>
-
-                                                {{-- Recommended --}}
-                                                <div class="form-group form-check">
-                                                    <input type="hidden" name="review[use_recommended]" value="0">
-                                                    <input type="checkbox" class="form-check-input" id="use_recommended"
-                                                           name="review[use_recommended]" value="1"
-                                                           {{ old('review.use_recommended', $tourReview?->use_recommended) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="use_recommended">Enable Recommended</label>
-                                                </div>
-                                                <div id="recommended_options" class="{{ old('review.use_recommended', $tourReview?->use_recommended) ? '' : 'd-none' }}">
-                                                    <input type="text" name="review[recommended_heading]" class="form-control mb-2"
-                                                           placeholder="Recommended Heading"
-                                                           value="{{ old('review.recommended_heading', $tourReview?->recommended_heading) }}">
-                                                    <textarea name="review[recommended_text]" class="form-control mb-2"
-                                                              placeholder="Recommended Text">{{ old('review.recommended_text', $tourReview?->recommended_text) }}</textarea>
-                                                </div>
-
-                                                {{-- Badge --}}
-                                                <div class="form-group form-check">
-                                                    <input type="hidden" name="review[use_badge]" value="0">
-                                                    <input type="checkbox" class="form-check-input" id="use_badge"
-                                                           name="review[use_badge]" value="1"
-                                                           {{ old('review.use_badge', $tourReview?->use_badge) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="use_badge">Enable Badge</label>
-                                                </div>
-                                                <div id="badge_options" class="{{ old('review.use_badge', $tourReview?->use_badge) ? '' : 'd-none' }}">
-                                                    <input type="text" name="review[badge_heading]" class="form-control mb-2"
-                                                           placeholder="Badge Heading"
-                                                           value="{{ old('review.badge_heading', $tourReview?->badge_heading) }}">
-                                                    <textarea name="review[badge_text]" class="form-control mb-2"
-                                                              placeholder="Badge Text">{{ old('review.badge_text', $tourReview?->badge_text) }}</textarea>
-                                                </div>
-
-                                                {{-- Banner --}}
-                                                <div class="form-group form-check">
-                                                    <input type="hidden" name="review[use_banner]" value="0">
-                                                    <input type="checkbox" class="form-check-input" id="use_banner"
-                                                           name="review[use_banner]" value="1"
-                                                           {{ old('review.use_banner', $tourReview?->use_banner) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="use_banner">Enable Banner</label>
-                                                </div>
-                                                <div id="banner_options" class="{{ old('review.use_banner', $tourReview?->use_banner) ? '' : 'd-none' }}">
-                                                    <input type="text" name="review[banner_heading]" class="form-control mb-2"
-                                                           placeholder="Banner Heading"
-                                                           value="{{ old('review.banner_heading', $tourReview?->banner_heading) }}">
-                                                    <textarea name="review[banner_text]" class="form-control mb-2"
-                                                              placeholder="Banner Text">{{ old('review.banner_text', $tourReview?->banner_text) }}</textarea>
-                                                </div>
-
-                                            </div>
+                                    <div class="card card-primary mt-4">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Review & Highlights</h3>
                                         </div>
 
-										<div class="card-footer" style="display:block">
-							                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
-							                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
-							                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.pickups', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
-							            </div>
-									</form>
+                                        <div class="card-body">
+
+                                            {{-- ✅ Review Section --}}
+                                            <div class="form-group form-check mb-3">
+                                                <input type="hidden" name="review[use_review]" value="0">
+                                                <input type="checkbox" class="form-check-input" id="use_review"
+                                                       name="review[use_review]" value="1"
+                                                       {{ old('review.use_review', $tourReview?->use_review) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="use_review">Enable Review</label>
+                                            </div>
+
+                                            <div id="review_options" class="{{ old('review.use_review', $tourReview?->use_review) ? '' : 'd-none' }}">
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-2">
+                                                        <input type="text" name="review[review_heading]" class="form-control"
+                                                               placeholder="Review Heading"
+                                                               value="{{ old('review.review_heading', $tourReview?->review_heading) }}">
+                                                    </div>
+                                                    <div class="col-md-6 mb-2">
+                                                        <input type="text" name="review[review_text]" class="form-control"
+                                                               placeholder="Review Text"
+                                                               value="{{ old('review.review_text', $tourReview?->review_text) }}">
+                                                    </div>
+                                                    <div class="col-md-6 mb-2">
+                                                        <select name="review[review_rating]" class="form-control">
+                                                            <option value="">Select Rating</option>
+                                                            @for($i = 1; $i <= 5; $i++)
+                                                                <option value="{{ $i }}" {{ old('review.review_rating', $tourReview?->review_rating) == $i ? 'selected' : '' }}>
+                                                                    {{ $i }}
+                                                                </option>
+                                                            @endfor
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6 mb-2">
+                                                        <input type="number" name="review[review_count]" class="form-control"
+                                                               placeholder="Review Count"
+                                                               value="{{ old('review.review_count', $tourReview?->review_count) }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <hr>
+
+                                            {{-- ✅ Recommended Section --}}
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h5>Recommended Sections</h5>
+                                                <button type="button" id="add-recommended" class="btn btn-secondary btn-sm">Add Recommended</button>
+                                            </div>
+                                            <div id="recommended-sections" class="mt-3">
+                                                @php $recommended = old('review.recommended', $tourReview?->recommended ?? []); @endphp
+                                                @foreach($recommended as $i => $rec)
+                                                    <div class="recommended-item border rounded p-3 mb-2">
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-2">
+                                                                <input type="text" class="form-control"
+                                                                       name="review[recommended][{{ $i }}][heading]"
+                                                                       value="{{ $rec['heading'] ?? '' }}"
+                                                                       placeholder="Recommended Heading">
+                                                            </div>
+                                                            <div class="col-md-6 mb-2">
+                                                                <input type="text" class="form-control"
+                                                                       name="review[recommended][{{ $i }}][text]"
+                                                                       value="{{ $rec['text'] ?? '' }}"
+                                                                       placeholder="Recommended Text">
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" class="btn btn-danger btn-sm remove-recommended">Remove</button>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+
+                                            <hr>
+
+                                            {{-- ✅ Badge Section --}}
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h5>Badges</h5>
+                                                <button type="button" id="add-badges" class="btn btn-secondary btn-sm">Add Badge</button>
+                                            </div>
+                                            <div id="badges-sections" class="mt-3">
+                                                @php $badges = old('review.badges', $tourReview?->badges ?? []); @endphp
+                                                @foreach($badges as $i => $badge)
+                                                    <div class="badges-item border rounded p-3 mb-2">
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-2">
+                                                                <input type="text" class="form-control"
+                                                                       name="review[badges][{{ $i }}][heading]"
+                                                                       value="{{ $badge['heading'] ?? '' }}"
+                                                                       placeholder="Badge Heading">
+                                                            </div>
+                                                            <div class="col-md-6 mb-2">
+                                                                <input type="text" class="form-control"
+                                                                       name="review[badges][{{ $i }}][text]"
+                                                                       value="{{ $badge['text'] ?? '' }}"
+                                                                       placeholder="Badge Text">
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" class="btn btn-danger btn-sm remove-badges">Remove</button>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+
+                                            <hr>
+
+                                            {{-- ✅ Banner Section --}}
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h5>Banners</h5>
+                                                <button type="button" id="add-banners" class="btn btn-secondary btn-sm">Add Banner</button>
+                                            </div>
+                                            <div id="banners-sections" class="mt-3">
+                                                @php $banners = old('review.banners', $tourReview?->banners ?? []); @endphp
+                                                @foreach($banners as $i => $banner)
+                                                    <div class="banners-item border rounded p-3 mb-2">
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-2">
+                                                                <input type="text" class="form-control"
+                                                                       name="review[banners][{{ $i }}][heading]"
+                                                                       value="{{ $banner['heading'] ?? '' }}"
+                                                                       placeholder="Banner Heading">
+                                                            </div>
+                                                            <div class="col-md-6 mb-2">
+                                                                <input type="text" class="form-control"
+                                                                       name="review[banners][{{ $i }}][text]"
+                                                                       value="{{ $banner['text'] ?? '' }}"
+                                                                       placeholder="Banner Text">
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" class="btn btn-danger btn-sm remove-banners">Remove</button>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+
+                                        </div>
+
+                                        <div class="card-footer">
+                                            <a href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
+                                            <button type="submit" class="btn btn-success">Save</button>
+                                            <a href="{{ route('admin.tour.edit.pickups', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
+                                        </div>
+                                    </div>
+                                </form>
+
 
                                 </div>
                             </div>
@@ -185,6 +243,94 @@ $(function () {
     toggleSection('#use_banner', '#banner_options');
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // Toggle Review Section visibility
+    const useReview = document.getElementById('use_review');
+    if (useReview) {
+        useReview.addEventListener('change', function () {
+            document.getElementById('review_options').classList.toggle('d-none', !this.checked);
+        });
+    }
+
+    // Initialize indexes based on existing count
+    let recIndex = {{ count($recommended ?? []) }};
+    let badgeIndex = {{ count($badges ?? []) }};
+    let bannerIndex = {{ count($banners ?? []) }};
+
+    // Add Recommended
+    document.getElementById('add-recommended').addEventListener('click', function () {
+        const container = document.getElementById('recommended-sections');
+        const html = `
+            <div class="recommended-item border rounded p-3 mb-2">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <input type="text" class="form-control" name="review[recommended][${recIndex}][heading]" placeholder="Recommended Heading">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <input type="text" class="form-control" name="review[recommended][${recIndex}][text]" placeholder="Recommended Text">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-danger btn-sm remove-recommended">Remove</button>
+            </div>`;
+        container.insertAdjacentHTML('beforeend', html);
+        recIndex++;
+    });
+
+    // Add Badges
+    document.getElementById('add-badges').addEventListener('click', function () {
+        const container = document.getElementById('badges-sections');
+        const html = `
+            <div class="badges-item border rounded p-3 mb-2">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <input type="text" class="form-control" name="review[badges][${badgeIndex}][heading]" placeholder="Badge Heading">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <input type="text" class="form-control" name="review[badges][${badgeIndex}][text]" placeholder="Badge Text">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-danger btn-sm remove-badges">Remove</button>
+            </div>`;
+        container.insertAdjacentHTML('beforeend', html);
+        badgeIndex++;
+    });
+
+    // Add Banners
+    document.getElementById('add-banners').addEventListener('click', function () {
+        const container = document.getElementById('banners-sections');
+        const html = `
+            <div class="banners-item border rounded p-3 mb-2">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <input type="text" class="form-control" name="review[banners][${bannerIndex}][heading]" placeholder="Banner Heading">
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <input type="text" class="form-control" name="review[banners][${bannerIndex}][text]" placeholder="Banner Text">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-danger btn-sm remove-banners">Remove</button>
+            </div>`;
+        container.insertAdjacentHTML('beforeend', html);
+        bannerIndex++;
+    });
+
+    // Universal Remove (delegated)
+    document.addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-recommended')) {
+            e.target.closest('.recommended-item').remove();
+        }
+        if (e.target.classList.contains('remove-badges')) {
+            e.target.closest('.badges-item').remove();
+        }
+        if (e.target.classList.contains('remove-banners')) {
+            e.target.closest('.banners-item').remove();
+        }
+    });
+});
+</script>
+
 
 
 
