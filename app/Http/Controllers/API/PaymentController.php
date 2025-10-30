@@ -359,18 +359,17 @@ class PaymentController extends Controller
             ];
             
 
-            Log::info('order_email_sent' . $booking->email_sent);
+            
             if ($booking && $booking->tour->order_email && !$booking->email_sent) {                    
-                // $mailsent = self::sendOrderDetailMail($detail, $action_name);
+                $mailsent = self::sendOrderDetailMail($detail, $action_name);
                 
-                Log::info('order_email_sentqwwqdwqqdqwdqw' . $booking->email_sent);
+                
                 $booking->email_sent = true;
                 // $booking->save();
             }
 
-            Log::info('order_admin email' . $booking->admin_email_sent);
             if ($booking && $booking->tour->order_email && !$booking->admin_email_sent) {                    
-                // $mailsent = self::sendOrderDetailMail($detail, 'admin');
+                $mailsent = self::sendOrderDetailMail($detail, 'admin');
                 
                 Log::info('admin email sent' . $booking->admin_email_sent);
                 $booking->admin_email_sent = true;
@@ -378,7 +377,7 @@ class PaymentController extends Controller
             }
             $booking->save();
 
-            Log::info('order_email_sentqwwqdwq' . $booking->email_sent);
+        
 
 
             
@@ -704,7 +703,22 @@ class PaymentController extends Controller
 
           
             if($action_name == 'admin'){
-                $mailSend = self::order_mail_send([env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_ADMIN_ADDRESS')],$subject, $header,  $body, $footer, $event, 'admin');
+                $notifiableAdmins = User::where('email_notification', 1)
+                        ->pluck('email')
+                        ->toArray();
+
+                Log::info('order_mail_send 676' . env('MAIL_FROM_ADMIN_ADDRESS'));
+
+            // Always include fallback addresses from .env
+            $defaultEmails = [
+                env('MAIL_FROM_ADDRESS'),
+                env('MAIL_FROM_ADMIN_ADDRESS')
+            ];
+
+            // Merge both lists and remove duplicates
+            $recipients = array_unique(array_merge($defaultEmails, $notifiableAdmins));
+
+                $mailSend = self::order_mail_send($recipients,$subject, $header,  $body, $footer, $event, 'admin');
             } else{
                 $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event);
             }
@@ -750,7 +764,7 @@ class PaymentController extends Controller
     {
          Log::info('order_mail_send' . 718);
         if (env('MAIL_FROM_ADDRESS') != null) {
-            Log::info('order_mail_send' . 2234242);
+            
             $array['view'] = 'emails.newsletter';
             $array['subject'] = $subject;
 
@@ -771,6 +785,7 @@ class PaymentController extends Controller
                 
 
                 if($recipient == 'admin'){
+                    Log::info('Admin recipients:', $email);
                      $sentMessage = $mailer->to($email)->send(new AdminBookingMail($array));
                 } else{
                         $sentMessage = $mailer->to($email)->send(new EmailManager($array));

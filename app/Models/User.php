@@ -30,7 +30,9 @@ class User extends Authenticatable
         'provider_id',
         'avatar',
         'dob',
-        'country'
+        'country',
+        'email_notification',
+        'text_notification'
     ];
 
     /**
