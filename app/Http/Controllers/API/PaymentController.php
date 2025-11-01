@@ -629,13 +629,13 @@ class PaymentController extends Controller
             else if($order->customer->pickup_id) {
                 $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
-            if($pickup_address) {
-                $pickup_address = '
-                  <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
-                  <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
-                    <strong>' . $pickup_address . '</strong>
-                  </h3>';
-                            }
+            // if($pickup_address) {
+            //     $pickup_address = '
+            //       <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
+            //       <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
+            //         <strong>' . $pickup_address . '</strong>
+            //       </h3>';
+            // }
 
             $to_address = $tour->location->destination ?? '';
             $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
@@ -646,8 +646,9 @@ class PaymentController extends Controller
                 "[[CUSTOMER_PHONE]]"        => '+'.$customer->phone ?? '',
 
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
-                "[[TOUR_MAP]]"              => $to_address,
+                // "[[TOUR_MAP]]"              => $to_address,
                 "[[TOUR_ADDRESS]]"          => $to_address,
+                "[[TOUR_MAP]]"              => $pickup_address,
                 "[[PICKUP_ADDRESS]]"        => $pickup_address,
                 "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
                 "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
@@ -669,6 +670,7 @@ class PaymentController extends Controller
                 "[[ORDER_PAID]]"            => price_format_with_currency($order_paid, $order->currency) ?? '',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
+                "[[YEAR]]"                  => date('Y'),
             ];
 
 
@@ -703,6 +705,10 @@ class PaymentController extends Controller
 
           
             if($action_name == 'admin'){
+
+                $admin_subject = "[[ORDER_NUMBER]] : New Order Received";
+                $subject = strtr($admin_subject, $replacements);
+
                 $notifiableAdmins = User::where('email_notification', 1)
                         ->pluck('email')
                         ->toArray();
@@ -777,7 +783,9 @@ class PaymentController extends Controller
             try {
 
 
-                $mailer = Mail::mailer('mailgun');
+                // $mailer = Mail::mailer('mailgun');
+                $mailer = Mail::mailer();
+
 
                 // Send email and capture message info
                 // $sentMessage = $mailer->to($email)->send(new EmailManager($array));
@@ -786,7 +794,7 @@ class PaymentController extends Controller
 
                 if($recipient == 'admin'){
                     Log::info('Admin recipients:', $email);
-                     $sentMessage = $mailer->to($email)->send(new AdminBookingMail($array));
+                     $sentMessage = $mailer->to($email)->send(new AdminBookingMail($array, $event['uid']));
                 } else{
                         $sentMessage = $mailer->to($email)->send(new EmailManager($array));
                         
@@ -806,7 +814,6 @@ class PaymentController extends Controller
                 
                  
             } catch (\Exception $e) {
-                Log::info('order_mail_sendweeeer' . 2234242453);
                 return response()->json([
                     'success' => false,
                     'message' => 'error'

@@ -1068,7 +1068,7 @@ class TourController extends Controller
             'category.required' => 'Please select at least one category',
         ]);
 
-        $baseSlug = Str::slug($request->title);
+        $baseSlug = Str::slug($request->slug);
         $uniqueSlug = $baseSlug;
         $counter = 1;
         while (Tour::where('slug', $uniqueSlug)->where('id', '!=', $request->id)->exists()) {
