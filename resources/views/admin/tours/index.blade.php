@@ -68,7 +68,7 @@
     <div class="card">
 
         <!-- Search Form (GET) -->
-        <form class="my-0" method="GET" action="{{ route('admin.tour.index') }}">
+        <form class="my-0" id="filterForm" method="GET" action="{{ route('admin.tour.index') }}">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
                     <!-- <h3 class="card-title mb-0">{{ translate('Tours') }}</h3> -->
@@ -174,7 +174,7 @@
 
                         {{-- Submit Button --}}
                         <button type="submit" class="btn btn-primary btn-sm">Search</button>
-                        <!-- <a href="{{ route('admin.tour.index')}}" class="btn btn-outline-secondary btn-sm">Clear</a> -->
+                        <a href="{{ route('admin.tour.index')}}" class="btn btn-info ml-2">Clear</a>
                     </div>
                 </div>
             </div>
@@ -188,6 +188,9 @@
             <div class="d-flex justify-content-between align-items-center w-100">
                 <h3 class="card-title mb-0"></h3>
                 <div class="card-tools">
+                    
+                    <a href="#" onclick="exportFilteredTours()" class="btn btn-sm btn-info">Export Tours</a>
+
                     <button id="enableDisableTour" type="button" class="btn btn-sm btn-primary">Enable/Disable</button>
 
                     <button id="saveTourCoupon" type="button" class="btn btn-sm btn-info">Create Discount</button>
@@ -665,6 +668,13 @@ $(document).ready(function () {
 
 
 
+</script>
+<script>
+function exportFilteredTours() {
+    const form = document.getElementById('filterForm');
+    const params = new URLSearchParams(new FormData(form)).toString();
+    window.location.href = "{{ route('admin.tours.export') }}?" + params;
+}
 </script>
 
 @endsection
