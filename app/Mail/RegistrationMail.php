@@ -15,20 +15,28 @@ class RegistrationMail extends Mailable
 
     public $subjectText;
     public $bodyHtml;
+    public ?string $replyToEmail;
+    public ?string $replyToName;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($subjectText, $bodyHtml)
+    public function __construct($subjectText, $bodyHtml, $replyToEmail = null, $replyToName = null)
     {
         $this->subjectText = $subjectText;
         $this->bodyHtml = $bodyHtml;
+        $this->replyToEmail = $replyToEmail;
+        $this->replyToName = $replyToName;
     }
 
     public function build()
     {
-        return $this->subject($this->subjectText)
+        $mail =  $this->subject($this->subjectText)
                     ->html($this->bodyHtml);
+        if (!empty($this->replyToEmail)) {
+            $mail->replyTo($this->replyToEmail, $this->replyToName ?? null);
+        }
+        return $mail;
     }
 
     /**

@@ -13,7 +13,13 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
+        $schedule->command('update:conversion-rates')->twiceDaily(1, 13);
+        $schedule->command('orders:check-abandoned')->everyFifteenMinutes();
+        $schedule->command('tour:send-tour-expiry-notification')->dailyAt('09:00');
+
+        
     }
+
 
     /**
      * Register the commands for the application.

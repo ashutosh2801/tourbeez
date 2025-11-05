@@ -1465,6 +1465,11 @@ class TourController extends Controller
             return response()->json(['message' => 'No review found'], 404);
         }
 
+        // Decode JSON fields safely
+        $recommended = $review->use_recommended ? json_decode($review->recommended, true) ?? [] : [];
+        $badges      = $review->use_badge ? json_decode($review->badges, true) ?? [] : [];
+        $banners     = $review->use_banner ? json_decode($review->banners, true) ?? [] : [];
+
         // Build response respecting the flags
         $response = [
             'tour_id' => $review->tour_id,
@@ -1475,17 +1480,14 @@ class TourController extends Controller
             'review_rating'  => $review->use_review ? $review->review_rating : 0,
             'review_count'   => $review->use_review ? $review->review_count : 0,
 
-            // Recommended section
-            'recommended_heading' => $review->use_recommended ? $review->recommended_heading : null,
-            'recommended_text'    => $review->use_recommended ? $review->recommended_text : null,
+            // Multiple Recommended items (array)
+            'recommended' => $recommended,
 
-            // Badge section
-            'badge_heading' => $review->use_badge ? $review->badge_heading : null,
-            'badge_text'    => $review->use_badge ? $review->badge_text : null,
+            // Multiple Badge items (array)
+            'badges' => $badges,
 
-            // Banner section
-            'banner_heading' => $review->use_banner ? $review->banner_heading : null,
-            'banner_text'    => $review->use_banner ? $review->banner_text : null,
+            // Multiple Banner items (array)
+            'banners' => $banners,
         ];
 
         return response()->json($response);

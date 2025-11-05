@@ -13,32 +13,31 @@
         <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
             <p>Number of Orders</p>
             <h2>{{ $performance['number_of_orders'] }}</h2>
-            <p>{{ $performance['number_of_orders'] }}</p>
         </div>
 
         <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
             <p>Value of Orders</p>
-            <h2>{{ number_format($performance['value_of_orders'], 2) }}</h2>
+            <h2>USD {{ number_format($performance['value_of_orders'], 2) }}</h2>
         </div>
 
         <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
             <p>Total Paid</p>
-            <h2>{{ number_format($performance['total_paid'], 2) }}</h2>
+            <h2>USD {{ number_format($performance['total_paid'], 2) }}</h2>
         </div>
 
         <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
             <p>Total Refund</p>
-            <h2>{{ number_format($performance['total_refund'], 2) }}</h2>
+            <h2>USD {{ number_format($performance['total_refund'], 2) }}</h2>
         </div>
 
         <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
             <p>Total Discount</p>
-            <h2>{{ number_format($performance['total_discount'], 2) }}</h2>
+            <h2>USD {{ number_format($performance['total_discount'], 2) }}</h2>
         </div>
 
         <div class="pt-3 flex-fill bd-highlight border bg-white m-1 rounded">
             <p>Total Owed</p>
-            <h2>{{ number_format($performance['total_owed'], 2) }}</h2>
+            <h2>USD {{ number_format($performance['total_owed'], 2) }}</h2>
         </div>
     </div>
 </div>

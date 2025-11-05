@@ -18,16 +18,23 @@ class CommonMail extends Mailable
     public $bodyHtml;
 
     public ?UploadedFile $attachment;
+    public ?string $replyToEmail;
+    public ?string $replyToName;
+    public bool $disableTracking;
 
 
     /**
      * Create a new message instance.
      */
-    public function __construct($subjectHtml, $bodyHtml, UploadedFile $attachment = null)
+    public function __construct($subjectHtml, $bodyHtml, UploadedFile $attachment = null, $replyToEmail = null, $replyToName = null, bool $disableTracking = false
+)
     {
         $this->subjectHtml = $subjectHtml;
         $this->bodyHtml = $bodyHtml;
         $this->attachment = $attachment;
+        $this->replyToEmail = $replyToEmail;
+        $this->replyToName = $replyToName;
+        $this->disableTracking = $disableTracking;
     }
 
     /**
@@ -37,7 +44,23 @@ class CommonMail extends Mailable
      */
     public function build()
     {
-        return $this->subject($this->subjectHtml)->html($this->bodyHtml);
+        $mail =  $this->subject($this->subjectHtml)->html($this->bodyHtml);
+
+        if ($this->replyToEmail) {
+            $mail->replyTo($this->replyToEmail, $this->replyToName);
+        }
+        if ($this->disableTracking) {
+            $mail->withSymfonyMessage(function ($message) {
+                $headers = $message->getHeaders();
+                $headers->addTextHeader('X-Mailgun-Track', 'no');
+                $headers->addTextHeader('X-Mailgun-Track-Clicks', 'no');
+                $headers->addTextHeader('X-Mailgun-Track-Opens', 'no');
+            });
+        }
+
+        
+
+        return $mail;
     }
 
     /**

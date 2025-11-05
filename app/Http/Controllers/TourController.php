@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ToursExport;
 use App\Models\Addon;
 use App\Models\Category;
 use App\Models\City;
@@ -32,6 +33,7 @@ use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Redirect;
 use Str;
 use Validator;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TourController extends Controller
 {
@@ -85,7 +87,7 @@ class TourController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                ->orWhere('unique_code', "%{$search}%");
+                ->orWhere('unique_code', 'like', "%{$search}%");
             });
         }
 
@@ -229,11 +231,10 @@ class TourController extends Controller
 
         $query =  $parentTour->subTours();
 
-        // dd($query);
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                ->orWhere('unique_code', "%{$search}%");
+                  ->orWhere('unique_code', 'like', "%{$search}%");
             });
         }
 
@@ -315,120 +316,6 @@ class TourController extends Controller
         return view('admin.tours.sub-tour.edit.index', compact('data', 'detail', 'schedule', 'metaData'));
     }
 
-
-    // public function subTourStore(Request $request, $id)
-    // {
-    //     $validator = FacadesValidator::make($request->all(), [
-    //         'title'                 => 'required|max:255',
-    //         'description'           => 'required',
-    //         // 'long_description'      => 'required',
-    //         'price_type'            => 'required',
-    //         'PriceOption'           => 'required|array',
-    //         'PriceOption.*.label'   => 'required|string|max:255',
-    //         'PriceOption.*.price'   => 'required|numeric|min:0',
-    //         'PriceOption.*.qty_used'=> 'required|integer|min:0',
-    //         'advertised_price'      => 'required',
-    //         // 'category'              => 'required|array',
-    //         // 'category.*'            => 'integer|exists:categories,id',
-    //         // 'tour_type'             => 'required|array',
-    //         // 'tour_type.*'           => 'integer|exists:tourtypes,id',
-    //         'image'                 => 'required|integer',
-    //     ],
-    //     [
-    //         'title.required' => 'Please enter a title',
-    //         'description.required' => 'Please enter a description',
-    //         // 'long_description.required' => 'Please enter a long description',
-    //         'price_type.required' => 'Please select a price type',
-    //         'PriceOption.*.label.required' => 'Please enter a label for the price option',
-    //         'PriceOption.*.price.required' => 'Please enter a price for the price option',
-    //         'PriceOption.*.qty_used.required' => 'Please enter a quantity used for the price option',
-    //         'advertised_price.required' => 'Please enter an advertised price',
-    //         'category.required' => 'Please select at least one category',
-    //         'image.required' => 'Please select at featured image',
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         // Validation failed
-    //         return back()->withInput()->withErrors($validator)->with('error','Something went wrong!');
-    //     }
-        
-    //     // Generate unique slug
-    //     $baseSlug = Str::slug($request->title);
-    //     $uniqueSlug = $baseSlug;
-    //     $counter = 1;
-    //     while (Tour::where('slug', $uniqueSlug)->exists()) {
-    //         $uniqueSlug = $baseSlug . '-' . $counter;
-    //         $counter++;
-    //     }
-
-    //     // Create new product instance
-    //     $tour = new Tour();
-    //     $tour->user_id    = auth()->id();
-    //     $tour->parent_id    = $id;
-    //     $tour->title      = $request->title;
-    //     $tour->slug       = $uniqueSlug;
-    //     $tour->unique_code= $request->unique_code;
-    //     $tour->price      = $request->advertised_price;
-    //     $tour->price_type = $request->price_type;
-    //     $tour->order_email       = $request->order_email;
-
-    //     if($tour->save()) {
-
-    //         // Save categories
-    //         if ($request->has('category') && is_array($request->category)) {
-    //             $tour->categories()->sync($request->category);
-    //         }
-    //         // Save tour types
-    //         if ($request->has('tour_type') && is_array($request->tour_type)) {
-    //             $tour->tourtypes()->sync($request->tour_type);
-    //         }
-
-    //         if ($request->has('PriceOption') && is_array($request->PriceOption)) {
-    //             foreach ($request->PriceOption as $option) {
-    //                 $pricing = new TourPricing();
-    //                 $pricing->tour_id       = $tour->id;
-    //                 $pricing->label         = $option['label'] ?? null;
-    //                 $pricing->price         = $option['price'] ?? null;
-    //                 $pricing->quantity_used = $option['qty_used'] ?? 0;
-    //                 $pricing->save();
-    //             }
-    //         }
-            
-    //         $tour_detail = new TourDetail();
-    //         $tour_detail->tour_id               = $tour->id;
-    //         $tour_detail->description           = $request->description;
-    //         $tour_detail->long_description      = $request->long_description;
-    //         $tour_detail->other_description     = $request->other_description;
-    //         $tour_detail->quantity_min          = $request->quantity_min;
-    //         $tour_detail->quantity_max          = $request->quantity_max;
-    //         $tour_detail->IsPurchasedAsAGift    = $request->IsPurchasedAsAGift?1:0;
-    //         $tour_detail->IsExpiryDays          = $request->IsExpiryDays?1:0;
-    //         $tour_detail->expiry_days           = $request->expiry_days;
-    //         $tour_detail->IsExpiryDate          = $request->IsExpiryDate?1:0;
-    //         $tour_detail->expiry_date           = $request->expiry_date;
-    //         $tour_detail->gift_tax_fees         = $request->gift_tax_fees?1:0;
-    //         $tour_detail->IsTerms               = $request->IsTerms?1:0;
-    //         $tour_detail->terms_and_conditions  = $request->terms_and_conditions;
-    //         $tour_detail->meta_title            = $request->title;
-    //         $tour_detail->meta_description      = $request->title;
-    //         $tour_detail->focus_keyword         = $request->title;
-    //         $tour_detail->save();
-    //     }
-        
-    //     $tourId = $tour->id;
-    //     if( $request->has('image') ) { 
-    //         $tour->galleries()->updateExistingPivot($tour->galleries->pluck('id'), ['is_main' => 0]);
-    //         // Check if the requested image is already attached to the tour
-    //         if ($tour->galleries->contains($request->image)) {
-    //             // Just update pivot
-    //             $tour->galleries()->detach($request->image);
-    //         } 
-    //         // Attach and set is_main = 1
-    //         $tour->galleries()->attach($request->image, ['is_main' => 1]);
-    //     }
-
-    //     return redirect()->route('admin.tour.sub-tour.edit', encrypt($tour->id))->with('success', 'Tour created successfully.');
-    // }
 
 
     public function subTourStore(Request $request, $id, $tourId = null)
@@ -1182,7 +1069,7 @@ class TourController extends Controller
             'category.required' => 'Please select at least one category',
         ]);
 
-        $baseSlug = Str::slug($request->title);
+        $baseSlug = Str::slug($request->slug);
         $uniqueSlug = $baseSlug;
         $counter = 1;
         while (Tour::where('slug', $uniqueSlug)->where('id', '!=', $request->id)->exists()) {
@@ -1383,19 +1270,6 @@ class TourController extends Controller
         return back()->withInput()->withErrors($request->all())->with('error','Something went wrong!');
     }
 
-    // public function pickup_update(Request $request, $id) {
-
-
-    //     $tour  = Tour::findOrFail($id);
-    //     // Save tour types
-    //     if ($request->has('pickups') && is_array($request->pickups)) {
-    //         $tour->pickups()->sync($request->pickups);
-
-    //         return redirect()->back()->withInput()->with('success','Pickup location saved successfully.'); 
-    //     }
-
-    //     return back()->withInput()->with('success','Addon saved successfully.');
-    // }
 
     public function pickup_update(Request $request, $id) {
         $tour = Tour::findOrFail($id);
@@ -1453,113 +1327,6 @@ class TourController extends Controller
 
         return redirect()->back()->withInput()->with('error', 'Something went wrong!');
     }
-
-    // public function schedule_update(Request $request, $id) {
-    //     //echo $request->session_start_time;   exit;
-
-    //     $request->validate([
-    //         'minimum_notice_num'        => 'required|integer|min:0',
-    //         'minimum_notice_unit'       => 'required',
-    //         'estimated_duration_num'    => 'required|integer|min:0',
-    //         'estimated_duration_unit'   => 'required',
-    //         'session_start_date'        => 'required|date_format:Y-m-d',
-    //         'session_start_time'        => 'required',
-    //         'session_end_date'          => 'required|date_format:Y-m-d',
-    //         'session_end_time'          => 'required',
-
-    //         'repeat_period'             => 'required|string|in:NONE,MINUTELY,HOURLY,DAILY,WEEKLY,MONTHLY,YEARLY', 
-    //         'repeat_period_unit'        => 'required_if:repeat_period,MINUTELY,HOURLY|integer',
-    //         'until_date'                => 'required_if:repeat_period,MINUTELY,HOURLY|date',  
-    //     ],
-    //     [
-    //         'minimum_notice_num.required'       => 'Please enter a minimum notice number',
-    //         'minimum_notice_unit.required'      => 'Please select a minimum notice unit',
-    //         'estimated_duration_num.required'   => 'Please enter a minimum notice number',
-    //         'estimated_duration_unit.required'  => 'Please select a minimum notice unit',
-    //         'session_start_date.required'       => 'Please enter a start date',
-    //         'session_start_time.required'       => 'Please enter a start time',
-    //         'session_end_date.required'         => 'Please enter a to date',
-    //         'session_end_time.required'         => 'Please enter a to time',
-    //         'repeat_period.required'            => 'Please select a repeat',
-    //     ]);
-
-    //     // If repeat_period is MINUTELY or HOURLY, validate Repeat[]
-    //     if (in_array($request->repeat_period, ['MINUTELY', 'HOURLY'])) {
-    //         foreach ($request->input('Repeat', []) as $index => $repeat) {
-    //             $request->validate([
-    //                 'num'        => ['nullable'], // checkbox, might not be checked
-    //                 'day'        => ['required_if:num,on', 'string'],
-    //                 'start_time' => ['required_if:num,on'], // required only if num is checked
-    //                 'end_time'   => ['required_if:num,on', 'after:start_time'],
-    //             ], [
-    //                 'start_time.required_if'=> "Start time is required for {$repeat['day']} when selected.",
-    //                 'end_time.required_if'  => "End time is required for {$repeat['day']} when selected.",
-    //                 'end_time.after'        => "End time must be after start time for {$repeat['day']}.",
-    //             ]);
-    //         }
-    //     }
-
-    //     // If repeat_period is MINUTELY or HOURLY, validate Repeat[]
-    //     if (in_array($request->repeat_period, ['WEEKLY'])) {
-    //         foreach ($request->input('Repeat', []) as $index => $repeat) {
-    //             $request->validate([
-    //                 'num'        => ['nullable'], // checkbox, might not be checked
-    //                 'day'        => ['required_if:num,on', 'string'],
-    //             ]);
-    //         }
-    //     }
-
-    //     $tour  = Tour::findOrFail($id);
-
-    //     $schedule = $tour->schedule;
-    //     if( !$schedule ) {
-    //         $schedule = new TourSchedule();
-    //     }
-
-    //     $schedule->tour_id                  = $tour->id;
-    //     $schedule->minimum_notice_num       = $request->minimum_notice_num;
-    //     $schedule->minimum_notice_unit      = $request->minimum_notice_unit;
-    //     $schedule->estimated_duration_num   = $request->estimated_duration_num;
-    //     $schedule->estimated_duration_unit  = $request->estimated_duration_unit;
-    //     $schedule->session_start_date       = $request->session_start_date;
-    //     $schedule->session_start_time       = $request->session_start_time;
-    //     $schedule->session_end_date         = $request->session_end_date;
-    //     $schedule->session_end_time         = $request->session_end_time;
-    //     $schedule->sesion_all_day           = $request->sesion_all_day?1:0;
-    //     $schedule->repeat_period            = $request->repeat_period;
-    //     $schedule->repeat_period_unit       = $request->repeat_period_unit;
-    //     $schedule->until_date               = $request->until_date;
-    //     if ($schedule->save() ) {
-    //         // First delete old repeats
-    //         $schedule->repeats()->delete();
-
-    //         if (in_array($request->repeat_period, ['MINUTELY', 'HOURLY'])) {
-    //             foreach ($request->input('Repeat', []) as $repeat) {
-    //                 if(isset($repeat['num']) && $repeat['num']=='on') {
-    //                     $schedule->repeats()->create([
-    //                         'tour_schedule_id'  => $schedule->id,
-    //                         'day'               => $repeat['day'],
-    //                         'start_time'        => $repeat['start_time'],
-    //                         'end_time'          => $repeat['end_time'],
-    //                     ]);
-    //                 }
-    //             }
-    //         }
-
-    //         if (in_array($request->repeat_period, ['WEEKLY'])) {
-    //             foreach ($request->input('Repeat', []) as $repeat) {
-    //                 if(isset($repeat['num']) && $repeat['num']=='on') {
-    //                     $schedule->repeats()->create([
-    //                         'tour_schedule_id'  => $schedule->id,
-    //                         'day'               => $repeat['day'],
-    //                     ]);
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     return back()->withInput()->with('success','Schedule saved successfully.');
-    // }
 
 
     public function schedule_update(Request $request, $id)
@@ -2207,50 +1974,50 @@ class TourController extends Controller
         return view('admin.tours.feature.review', compact( 'data', 'tourReview'));
     }
 
+   
     public function reviewUpdate(Request $request, $id)
     {
-
         $tour = Tour::findOrFail($id);
 
         $validated = $request->validate([
-            'review.use_review'        => 'nullable|boolean',
-            'review.review_heading'    => 'nullable|string|max:255',
-            'review.review_text'       => 'nullable|string',
-            'review.review_rating'     => 'nullable|integer|min:0|max:5',
-            'review.review_count'      => 'nullable|integer|min:0',
+            'review.use_review' => 'nullable|boolean',
+            'review.review_heading' => 'nullable|string|max:255',
+            'review.review_text' => 'nullable|string',
+            'review.review_rating' => 'nullable|integer|min:0|max:5',
+            'review.review_count' => 'nullable|integer|min:0',
 
-            'review.use_recommended'   => 'nullable|boolean',
-            'review.recommended_heading' => 'nullable|string|max:255',
-            'review.recommended_text'  => 'nullable|string',
+            'review.recommended' => 'array|nullable',
+            'review.recommended.*.heading' => 'nullable|string|max:255',
+            'review.recommended.*.text' => 'nullable|string',
 
-            'review.use_badge'         => 'nullable|boolean',
-            'review.badge_heading'     => 'nullable|string|max:255',
-            'review.badge_text'        => 'nullable|string',
+            'review.badges' => 'array|nullable',
+            'review.badges.*.heading' => 'nullable|string|max:255',
+            'review.badges.*.text' => 'nullable|string',
 
-            'review.use_banner'        => 'nullable|boolean',
-            'review.banner_heading'    => 'nullable|string|max:255',
-            'review.banner_text'       => 'nullable|string',
+            'review.banners' => 'array|nullable',
+            'review.banners.*.heading' => 'nullable|string|max:255',
+            'review.banners.*.text' => 'nullable|string',
         ]);
 
-        if ($request->has('review') && is_array($request->review)) {
-            $data = $request->review;
+        $data = $request->review;
 
-            if(!$data['use_review'] && !$data['use_recommended'] && !$data['use_badge'] && !$data['use_banner']){
-                \DB::table('tour_reviews')->where('tour_id', $id)->delete();
-            } else {
-                \DB::table('tour_reviews')->updateOrInsert(
-                    ['tour_id' => $tour->id],
-                    array_merge($data, [
-                        'updated_at' => now(),
-                        'created_at' => now(),
-                    ])
-                );
-            }
+        \DB::table('tour_reviews')->updateOrInsert(
+            ['tour_id' => $tour->id],
+            [
+                'use_review' => $data['use_review'] ?? 0,
+                'review_heading' => $data['review_heading'] ?? null,
+                'review_text' => $data['review_text'] ?? null,
+                'review_rating' => $data['review_rating'] ?? null,
+                'review_count' => $data['review_count'] ?? null,
+                'recommended' => !empty($data['recommended']) ? json_encode($data['recommended']) : null,
+                'badges' => !empty($data['badges']) ? json_encode($data['badges']) : null,
+                'banners' => !empty($data['banners']) ? json_encode($data['banners']) : null,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
 
-            return redirect()->back()->with('success', 'Tour review settings saved successfully.');
-        }
-
-        return back()->withInput()->with('error','OOPs! something went wrong!');
+        return back()->with('success', 'Tour review updated successfully.');
     }
 
 
@@ -2649,6 +2416,63 @@ class TourController extends Controller
 
         return $response;
     }
+
+    // public function exportTours(Request $request)
+    // {
+    //     return Excel::download(new ToursExport($request), 'tours.xlsx');
+    // }
+
+    public function exportTours(Request $request)
+    {
+        $filters = [];
+
+        // Collect readable filter info
+        if ($request->filled('search')) {
+            $filters[] = 'Search-' . str_replace(' ', '_', $request->search);
+        }
+
+        if ($request->filled('category')) {
+            $categoryName = \App\Models\Category::find($request->category)?->name ?? $request->category;
+            $filters[] = 'Category-' . str_replace(' ', '_', $categoryName);
+        }
+
+        if ($request->filled('city')) {
+            $cityName = \App\Models\City::find($request->city)?->name ?? $request->city;
+            $filters[] = 'City-' . str_replace(' ', '_', $cityName);
+        }
+
+        if ($request->filled('status')) {
+            $filters[] = 'Status-' . ucfirst($request->status);
+        }
+
+        if ($request->filled('author')) {
+            $authorName = \App\Models\User::find($request->author)?->name ?? $request->author;
+            $filters[] = 'Author-' . str_replace(' ', '_', $authorName);
+        }
+
+        if ($request->filled('special_deposit')) {
+            $filters[] = 'Deposit-' . ucfirst($request->special_deposit);
+        }
+
+        if ($request->filled('schedule')) {
+            $filters[] = 'Schedule-' . ucfirst($request->schedule);
+        }
+
+        if ($request->filled('schedule_expiry')) {
+            $filters[] = 'Expiry-' . ucfirst(str_replace('_', '-', $request->schedule_expiry));
+        }
+
+        // 🕒 Add timestamp
+        $timestamp = now()->format('Y-m-d_H-i-s');
+
+        // 🧩 Build filename
+        $filterText = $filters ? implode('_', $filters) . '_' : '';
+        $fileName = "Tours_{$filterText}{$timestamp}.xlsx";
+
+        // 📦 Export
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ToursExport($request), $fileName);
+    }
+
 
 
 

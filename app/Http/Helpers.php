@@ -1281,7 +1281,7 @@ if (!function_exists('emailAlreadySent')) {
     }
 }
 if (!function_exists('currencyConvert')) {
-function currencyConvert(float $amount, string $from, string $to = 'CAD')
+function currencyConvert(float $amount, string $from, string $to = 'USD')
     {
         // Always uppercase currency codes
         $from = strtoupper($from);
