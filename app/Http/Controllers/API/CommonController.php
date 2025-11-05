@@ -446,7 +446,7 @@ class CommonController extends Controller
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
 
-        Mail::to([ env('MAIL_FROM_ADDRESS'), 'kiran@tourbeez.com' ])->send(new CommonMail($parsedSubject, $parsedBody));
+        Mail::to([ env('MAIL_FROM_ADDRESS'), 'kiran@tourbeez.com' ])->send(new CommonMail($parsedSubject, $parsedBody, null, $request->email, $request->name));
 
         $admin = User::where('role', 'Super Admin')->first();
 
@@ -543,7 +543,7 @@ class CommonController extends Controller
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
 
-        Mail::to([env('MAIL_FROM_ADMIN_ADDRESS'), 'kiran@tourbeez.com'])->send(new CommonMail($parsedSubject, $parsedBody));
+        Mail::to([env('MAIL_FROM_ADMIN_ADDRESS'), 'kiran@tourbeez.com'])->send(new CommonMail($parsedSubject, $parsedBody, null, $request->email, $name));
         
         // Send email using mailable and template
        

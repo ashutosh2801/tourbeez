@@ -52,6 +52,7 @@ class Order extends Model
         'sub_tour_id',
         'admin_email_sent',
         'created_by',
+        'is_abandon_mail_sent'
     ];
 
     public function tour_detail($id, $label='all') {

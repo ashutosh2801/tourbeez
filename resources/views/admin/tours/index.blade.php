@@ -241,7 +241,7 @@
                                 {{ $tour->title }}
                                 @endcan
 
-                                <div class="text-sm mt-2">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-success text-hover" target="_blank">{{translate('View Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-success text-hover" target="_blank">{{ $tour->parent_id ? translate('View Sub Tours') : translate('Create Sub Tours')}}</a></div>
+                                <div class="text-sm mt-2">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-success text-hover" target="_blank">{{translate('View Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-success text-hover" target="_blank">{{ $tour->subTours()->exists() ? translate('View Sub Tours') : translate('Create Sub Tours')}}</a></div>
                                 <div class="text-sm text-gray-500 mt-2"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
                             </td>    
                             <td>{{ price_format_with_currency($tour->price) }}</td>

@@ -87,7 +87,7 @@ class TourController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                ->orWhere('unique_code', "%{$search}%");
+                ->orWhere('unique_code', 'like', "%{$search}%");
             });
         }
 
@@ -231,11 +231,10 @@ class TourController extends Controller
 
         $query =  $parentTour->subTours();
 
-        // dd($query);
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                ->orWhere('unique_code', "%{$search}%");
+                  ->orWhere('unique_code', 'like', "%{$search}%");
             });
         }
 

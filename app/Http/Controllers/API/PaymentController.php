@@ -358,9 +358,8 @@ class PaymentController extends Controller
                 ],
             ];
             
-
             
-            if ($booking && $booking->tour->order_email && !$booking->email_sent) {                    
+            if ($booking && !$booking->tour?->order_email && !$booking->email_sent) {                    
                 $mailsent = self::sendOrderDetailMail($detail, $action_name);
                 
                 
@@ -368,7 +367,7 @@ class PaymentController extends Controller
                 // $booking->save();
             }
 
-            if ($booking && $booking->tour->order_email && !$booking->admin_email_sent) {                    
+            if ($booking && !$booking->admin_email_sent) {                    
                 $mailsent = self::sendOrderDetailMail($detail, 'admin');
                 
                 Log::info('admin email sent' . $booking->admin_email_sent);
@@ -403,6 +402,8 @@ class PaymentController extends Controller
     //this function need name should should change
     public static function sendOrderDetailMail($detail, $action_name = 'book')
     {
+//         $booking->tour->order_email &&
+// $booking->tour->order_email &&
         Log::info('sendOrderDetailMail start');
         try{
             $order_id = $detail['order_number'];
@@ -410,7 +411,17 @@ class PaymentController extends Controller
             if($action_name == 'admin'){
                 $identifier = 'admin_order_booking';
             } else{
-                $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_pending';
+               //  $orderTour  = $order->orderTours()->first();
+
+            
+               //  $tour       = $orderTour->tour;
+
+               //  if($tour->order_email){
+               //     $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_confirmed'; 
+               // }else{
+                   $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_pending';
+               // }
+                
             }
             
             $email_template = EmailTemplate::where('identifier', $identifier)->first();
@@ -783,8 +794,8 @@ class PaymentController extends Controller
             try {
 
 
-                // $mailer = Mail::mailer('mailgun');
-                $mailer = Mail::mailer();
+                $mailer = Mail::mailer('mailgun');
+                // $mailer = Mail::mailer();
 
 
                 // Send email and capture message info
