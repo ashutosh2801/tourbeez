@@ -225,7 +225,7 @@ class OrderController extends Controller
     /**
      * Store a newly created resource in storage.
      */
- public function store(Request $request)
+public function store(Request $request)
 {
     dd(auth()->user()->id);
     // dd($request->all());
@@ -732,7 +732,7 @@ class OrderController extends Controller
                 'totalAmount'   => $item_total
             ];
 
-            if ($adv_deposite == "deposit") {
+            if ($adv_deposite === "deposit") {
                 $depositRule = TourSpecialDeposit::where('tour_id', $tour->id)->first();
                 $chargeAmount = $depositRule ? calculate_deposit($depositRule, $item_total, $validated['selectedDate']) : $item_total;
 
@@ -1037,13 +1037,8 @@ class OrderController extends Controller
                 $sentMessage->bcc(explode(',', $bcc_mail));
             }
             
-<<<<<<< HEAD
-            $sentMessage->send(new EmailManager($array));
-
-=======
             $sentMessage = $sentMessage->send(new EmailManager($array));
            
->>>>>>> 715cf4585717b903341775ec4faad90a537bdf59
             $messageId = null;
             if ($sentMessage instanceof \Illuminate\Mail\SentMessage) {
                 $symfonySent = $sentMessage->getSymfonySentMessage();

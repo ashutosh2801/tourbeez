@@ -320,7 +320,6 @@ class TourController extends Controller
                 'inclusions'    => $tour->inclusions,
                 'optionals'     => $tour->optionals,
                 'exclusions'    => $tour->exclusions,
-                'optionals'     => $tour->optionals,
                 'taxes_fees'    => $tour->taxes_fees,
                 'detail'        => $tour->detail,
                 'location'      => $tour->location,
@@ -731,7 +730,7 @@ class TourController extends Controller
         ]);
     }
 
-    function highlightMatch($string, $keyword) {
+    public function highlightMatch($string, $keyword) {
         $string = ucfirst($string);
         return preg_replace("/(" . preg_quote($keyword, '/') . ")/i", '<mark>$1</mark>', $string);
     }
@@ -830,162 +829,162 @@ class TourController extends Controller
         ]);
     }
 
-private function getNextAvailableDate($tourId, $schedules = null)
-{
+    private function getNextAvailableDate($tourId, $schedules = null)
+    {
 
 
-    $today = Carbon::today();
+        $today = Carbon::today();
 
-    if ($schedules === null) {
-        $schedules = TourSchedule::where('tour_id', $tourId)
-            ->where(function ($query) use ($today) {
-                $query->orWhere(function ($q) use ($today) {
-                    $q->whereDate('session_start_date', '<=', $today)
-                      ->whereDate('until_date', '>=', $today);
+        if ($schedules === null) {
+            $schedules = TourSchedule::where('tour_id', $tourId)
+                ->where(function ($query) use ($today) {
+                    $query->orWhere(function ($q) use ($today) {
+                        $q->whereDate('session_start_date', '<=', $today)
+                        ->whereDate('until_date', '>=', $today);
+                    })
+                    ->orWhereDate('session_start_date', '>=', $today);
                 })
-                ->orWhereDate('session_start_date', '>=', $today);
-            })
-            ->get();
-    } else {
-        // ✅ If schedules already passed in, filter in-memory
-        $schedules = $schedules->filter(function ($s) use ($today) {
-            return (
-                ($s->session_start_date <= $today && $s->until_date >= $today) ||
-                ($s->session_start_date >= $today)
-            );
+                ->get();
+        } else {
+            // ✅ If schedules already passed in, filter in-memory
+            $schedules = $schedules->filter(function ($s) use ($today) {
+                return (
+                    ($s->session_start_date <= $today && $s->until_date >= $today) ||
+                    ($s->session_start_date >= $today)
+                );
+            });
+        }
+
+        $nextDates = [];
+
+        $allRepeats = TourScheduleRepeats::whereIn('tour_schedule_id', $schedules->pluck('id')->toArray())
+        ->get()
+        ->groupBy('tour_schedule_id')
+        ->map(function ($items) {
+            return $items->groupBy('day'); // group inside each schedule by day
         });
-    }
+        
+        foreach ($schedules as $schedule) {
+            // dd($schedule->repeat_period);
+            if($schedule->repeat_period == 'NONE'){
+                if($today->lte(Carbon::parse($schedule->session_start_date))){
+                    return ['date' => Carbon::parse($schedule->session_start_date)->toDateString()];
+                } 
+                return ['date' => ""];            
+            }   
 
-    $nextDates = [];
-
-    $allRepeats = TourScheduleRepeats::whereIn('tour_schedule_id', $schedules->pluck('id')->toArray())
-    ->get()
-    ->groupBy('tour_schedule_id')
-    ->map(function ($items) {
-        return $items->groupBy('day'); // group inside each schedule by day
-    });
-    
-    foreach ($schedules as $schedule) {
-        // dd($schedule->repeat_period);
-        if($schedule->repeat_period == 'NONE'){
-            if($today->lte(Carbon::parse($schedule->session_start_date))){
-                return ['date' => Carbon::parse($schedule->session_start_date)->toDateString()];
-            } 
-            return ['date' => ""];            
+            $nextDate = $this->calculateNextDate($schedule, $today, $allRepeats);
+            
+            if ($nextDate) {
+                $nextDates[] = $nextDate;
+            }
         }   
 
-        $nextDate = $this->calculateNextDate($schedule, $today, $allRepeats);
-        
-        if ($nextDate) {
-            $nextDates[] = $nextDate;
+
+        if (!empty($nextDates)) {
+            usort($nextDates, fn($a, $b) => strtotime($a['date']) <=> strtotime($b['date']));
+            return $nextDates[0];
         }
-    }   
 
-
-    if (!empty($nextDates)) {
-        usort($nextDates, fn($a, $b) => strtotime($a['date']) <=> strtotime($b['date']));
-        return $nextDates[0];
-    }
-
-    return null;
-}
-
-
-private function calculateNextDate($schedule, Carbon $today, $allRepeats = [])
-{
-    $interval   = $schedule->repeat_period_unit ?? 1;
-    $repeatType = $schedule->repeat_period;
-
-    if ($repeatType === 'NONE') {
         return null;
     }
 
-    $scheduleStartDate = Carbon::parse($schedule->session_start_date);
-    $scheduleEndDate   = Carbon::parse($schedule->until_date);
 
-    // Start from today or schedule start (whichever is later)
-    $next = $today->lt($scheduleStartDate) ? $scheduleStartDate->copy() : $today->copy();
+    private function calculateNextDate($schedule, Carbon $today, $allRepeats = [])
+    {
+        $interval   = $schedule->repeat_period_unit ?? 1;
+        $repeatType = $schedule->repeat_period;
 
-    // Prefetched repeats for this schedule (grouped by day)
-    $repeats = $allRepeats[$schedule->id] ?? collect();
-    
-    while ($next->lte($scheduleEndDate)) {
+        if ($repeatType === 'NONE') {
+            return null;
+        }
 
-        $dayName = $next->format('l');
-        $allowedDay = true;
+        $scheduleStartDate = Carbon::parse($schedule->session_start_date);
+        $scheduleEndDate   = Carbon::parse($schedule->until_date);
 
-        // Restrict to allowed days if WEEKLY/HOURLY/MINUTELY
-        if (in_array($repeatType, ['WEEKLY', 'HOURLY', 'MINUTELY'])) {
-            $allowedDay = $repeats->has($dayName);
+        // Start from today or schedule start (whichever is later)
+        $next = $today->lt($scheduleStartDate) ? $scheduleStartDate->copy() : $today->copy();
 
-            if ($repeatType === 'WEEKLY' && $allowedDay) {
-                $weekDiff = $scheduleStartDate->diffInWeeks($next);
-                if ($weekDiff % $interval !== 0) {
-                    $allowedDay = false;
+        // Prefetched repeats for this schedule (grouped by day)
+        $repeats = $allRepeats[$schedule->id] ?? collect();
+        
+        while ($next->lte($scheduleEndDate)) {
+
+            $dayName = $next->format('l');
+            $allowedDay = true;
+
+            // Restrict to allowed days if WEEKLY/HOURLY/MINUTELY
+            if (in_array($repeatType, ['WEEKLY', 'HOURLY', 'MINUTELY'])) {
+                $allowedDay = $repeats->has($dayName);
+
+                if ($repeatType === 'WEEKLY' && $allowedDay) {
+                    $weekDiff = $scheduleStartDate->diffInWeeks($next);
+                    if ($weekDiff % $interval !== 0) {
+                        $allowedDay = false;
+                    }
                 }
+            }
+
+            // If day is allowed → check valid slot
+            if ($allowedDay && $this->hasValidSlot($schedule, $next, $repeats)) {
+                return ['date' => $next->toDateString()];
+            }
+
+            // Step forward depending on repeat type
+            switch ($repeatType) {
+                case 'DAILY':    $next->addDays($interval); break;
+                case 'WEEKLY':   $next->addDay(); break;
+                case 'MONTHLY':  $next->addMonths($interval); break;
+                case 'YEARLY':   $next->addYears($interval); break;
+                case 'HOURLY':   $next->addHours($interval); break;
+                case 'MINUTELY': $next->addMinutes($interval); break;
+                default: return null;
             }
         }
 
-        // If day is allowed → check valid slot
-        if ($allowedDay && $this->hasValidSlot($schedule, $next, $repeats)) {
-            return ['date' => $next->toDateString()];
-        }
-
-        // Step forward depending on repeat type
-        switch ($repeatType) {
-            case 'DAILY':    $next->addDays($interval); break;
-            case 'WEEKLY':   $next->addDay(); break;
-            case 'MONTHLY':  $next->addMonths($interval); break;
-            case 'YEARLY':   $next->addYears($interval); break;
-            case 'HOURLY':   $next->addHours($interval); break;
-            case 'MINUTELY': $next->addMinutes($interval); break;
-            default: return null;
-        }
+        return null;
     }
 
-    return null;
-}
 
+    private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationMinutes = 30)
+    {
+        $repeatType = $schedule->repeat_period;
+        $dayName    = $date->format('l');
 
-private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationMinutes = 30)
-{
-    $repeatType = $schedule->repeat_period;
-    $dayName    = $date->format('l');
+        $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
+        $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
 
-    $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
-    $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
+        // override times if repeat slots exist (for hourly/minutely)
+        if (($repeatType === 'HOURLY' || $repeatType === 'MINUTELY') && $repeats->has($dayName)) {
+            $slot = $repeats[$dayName]->first();
+            $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $slot->start_time);
+            $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $slot->end_time);
+        }
 
-    // override times if repeat slots exist (for hourly/minutely)
-    if (($repeatType === 'HOURLY' || $repeatType === 'MINUTELY') && $repeats->has($dayName)) {
-        $slot = $repeats[$dayName]->first();
-        $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $slot->start_time);
-        $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $slot->end_time);
-    }
+        // apply minimum notice
+        $minutes = $schedule->minimum_notice_unit === "HOURS"
+            ? $schedule->minimum_notice_num * 60
+            : $schedule->minimum_notice_num;
 
-    // apply minimum notice
-    $minutes = $schedule->minimum_notice_unit === "HOURS"
-        ? $schedule->minimum_notice_num * 60
-        : $schedule->minimum_notice_num;
+        $earliestAllowed = now()->addMinutes($minutes);
 
-    $earliestAllowed = now()->addMinutes($minutes);
+        if ($endTime->lt($earliestAllowed)) {
+            return false;
+        }
 
-    if ($endTime->lt($earliestAllowed)) {
+        if (in_array($repeatType, ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'])) {
+            return $startTime->gte($earliestAllowed);
+        }
+
+        while ($startTime->lte($endTime)) {
+            if ($startTime->gte($earliestAllowed)) {
+                return true;
+            }
+            $startTime->addMinutes($durationMinutes);
+        }
+
         return false;
     }
-
-    if (in_array($repeatType, ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'])) {
-        return $startTime->gte($earliestAllowed);
-    }
-
-    while ($startTime->lte($endTime)) {
-        if ($startTime->gte($earliestAllowed)) {
-            return true;
-        }
-        $startTime->addMinutes($durationMinutes);
-    }
-
-    return false;
-}
 
 
 
@@ -1376,7 +1375,7 @@ private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationM
         return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
     }
 
-    function applySlotDeletions(array $response, $storeDeleteSlot): array
+    public function applySlotDeletions(array $response, $storeDeleteSlot): array
     {
         $clearAll = false;
         
@@ -1442,15 +1441,15 @@ private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationM
         return $response;
     }
 
-    function normalizeTime(string $time): string
+    public function normalizeTime(string $time): string
     {
         return date("H:i", strtotime($time));
     }
 
-/**
- * Sort slots chronologically (keeps AM/PM format)
- */
-    function sortSlots(array $slots): array
+    /**
+     * Sort slots chronologically (keeps AM/PM format)
+     */
+    public function sortSlots(array $slots): array
     {
         usort($slots, function ($a, $b) {
             return strtotime($a) <=> strtotime($b);
