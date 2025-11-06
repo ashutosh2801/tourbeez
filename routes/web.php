@@ -28,7 +28,6 @@ require('auth.php');
 // Admin Routes
 require('admin.php');
 
-
 Route::get('/export', [ExportController::class, 'index']);
 
 Route::get('/{any}', function () {
@@ -36,18 +35,11 @@ Route::get('/{any}', function () {
 })->where('any', '.*');
 
 
-// Route::get('/', function () {
-//     $readmePath = base_path('WELCOME.md');
+Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
 
-//     return view('welcome', [
-//         'readmeContent' => Str::markdown(file_get_contents($readmePath)),
-//     ]);
-// });
-
-
-Route::get('/sitemap.xml', [SitemapController::class, 'index']);
-Route::get('/sitemaps/categories', [SitemapController::class, 'categories']);
+Route::get('/sitemaps/categories.xml', [SitemapController::class, 'categories']);
 Route::get('/sitemaps/destinations.xml', [SitemapController::class, 'destinations']);
+Route::get('/sitemaps/sitemap.xml', [SitemapController::class, 'index']);
 Route::get('/sitemaps/tours.xml', [SitemapController::class, 'tours']);
 
 Route::post('/tour/single', [TourController::class,'single'])->name('tour.single');
