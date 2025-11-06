@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\OrderCustomer;
 use App\Models\OrderEmailHistory;
 use App\Models\OrderMeta;
+use App\Models\Scopes\SupplierOrderScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,6 +16,11 @@ class Order extends Model
 {
     use HasFactory, SoftDeletes;
     use LogsActivity;
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new SupplierOrderScope);
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -46,6 +52,7 @@ class Order extends Model
         'sub_tour_id',
         'admin_email_sent',
         'created_by',
+        'is_abandon_mail_sent'
     ];
 
     public function tour_detail($id, $label='all') {

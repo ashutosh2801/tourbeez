@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Optional;
+use App\Models\Scopes\SupplierScope;
 use App\Models\TourReview;
 use App\Models\TourSpecialDeposit;
 use App\Upload;
@@ -23,6 +24,11 @@ class Tour extends Model
         'discounted_data',
         'duration',
     ];
+
+    protected static function booted()
+    {
+        static::addGlobalScope(new SupplierScope('user_id'));
+    }
 
     public function getActivitylogOptions(): LogOptions
     {

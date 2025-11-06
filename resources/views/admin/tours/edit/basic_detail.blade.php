@@ -129,6 +129,17 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="col-lg-7">
+                        <div class="form-group">
+                            <label for="slug" class="form-label">Slug *</label>
+                            <input type="text" name="slug" id="slug" value="{{ old('slug') ? : $data->slug }}"
+                                class="form-control" >
+                                
+                            @error('slug')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div>
 
                     <div class="col-lg-12">
                         <div class="form-group" id="product_pricing">

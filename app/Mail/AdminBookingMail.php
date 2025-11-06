@@ -11,17 +11,25 @@ class AdminBookingMail extends Mailable
     use Queueable, SerializesModels;
 
     public $array;
+    public ?string $replyToEmail;
+    public ?string $replyToName;
 
-    public function __construct($array)
+    public function __construct($array, $replyToEmail = null, $replyToName = null)
     {
         $this->array = $array;
+        $this->replyToEmail = $replyToEmail;
+        $this->replyToName = $replyToName;
     }
 
     public function build()
     { 
         $mail = $this->view($this->array['view'])
             ->from($this->array['from'], config('app.name'))
-            ->subject("New Order Received");
+            ->subject($this->array['subject']);
+
+        if ($this->replyToEmail) {
+            $mail->replyTo($this->replyToEmail, $this->replyToName);
+        }
 
         if (!empty($this->array['event'])) {
             $icsContent = $this->generateICS($this->array['event']);
@@ -30,6 +38,12 @@ class AdminBookingMail extends Mailable
                 'mime' => 'text/calendar',
             ]);
         }
+        $mail->withSwiftMessage(function ($message) {
+            $headers = $message->getHeaders();
+            $headers->addTextHeader('X-Mailgun-Track', 'yes');
+            $headers->addTextHeader('X-Mailgun-Track-Opens', 'yes');
+            $headers->addTextHeader('X-Mailgun-Track-Clicks', 'yes');
+        });
 
         return $mail;
     }

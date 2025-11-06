@@ -292,6 +292,14 @@
         @endcan   
         @can('activity_logs')
         <li class="nav-item">
+            <a href="{{ route('admin.contacts.index') }}" class="nav-link {{ Route::is('admin.contacts.index') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-phone"></i>
+                <p>Contacts</p>
+            </a>
+        </li>    
+        @endcan
+        @can('activity_logs')
+        <li class="nav-item">
             <a href="{{ route('admin.activity.logs') }}" class="nav-link {{ Route::is('admin.activity.logs') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-cog"></i>
                 <p>Activity Logs</p>

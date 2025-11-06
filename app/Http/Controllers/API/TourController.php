@@ -14,6 +14,7 @@ use App\Models\TourScheduleRepeats;
 use App\Models\TourSpecialDeposit;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use DB;
 use Dompdf\Helpers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -38,8 +39,10 @@ class TourController extends Controller
                 'location:id,city_id,state_id,country_id',
             ])
             ->where('status', 1)
+            ->whereHas('schedules', function ($sq) {
+                $sq->whereDate('until_date', '>=', now()->toDateString());
+            })
             ->whereNull('deleted_at');
-
         // Filters
         $query->when($request->title, fn($q, $title) => $q->where('title', 'like', "%$title%"))
             ->when($request->q, fn($q, $qstr) => $q->where('title', 'like', "%$qstr%"));
@@ -81,15 +84,32 @@ class TourController extends Controller
         //     'hightolow' => $query->orderBy('price', 'DESC'),
         //     default     => $query->orderBy('sort_order', 'ASC'),
         // };
-        match ($request->input('order_by')) {
-            'lowtohigh' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
-                                ->orderBy('price', 'ASC'),
+        // match ($request->input('order_by')) {
+        //     'lowtohigh' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
+        //                         ->orderBy('price', 'ASC'),
 
-            'hightolow' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
-                                ->orderBy('price', 'DESC'),
+        //     'hightolow' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
+        //                         ->orderBy('price', 'DESC'),
 
-            default     => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC'),
-        };
+        //     default     => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC'),
+        // };
+
+
+        $orderBy = strtolower($request->input('order_by', ''));
+
+        if ($request->input('order_by') === 'lowtohigh') {
+            // $query->orderByRaw('(CASE WHEN sort_order > 0 THEN 0 ELSE 1 END) ASC')
+            //       ->orderBy('price', 'ASC');
+            $query->orderBy('price', 'ASC');
+        } elseif ($request->input('order_by') === 'hightolow') {
+            // $query->orderByRaw('(CASE WHEN sort_order > 0 THEN 0 ELSE 1 END) ASC')
+            //       ->orderBy('price', 'DESC');
+            $query->orderBy('price', 'DESC');
+        } else {
+            $query->orderByRaw('(CASE WHEN sort_order > 0 THEN 0 ELSE 1 END) ASC')
+                  ->orderBy('sort_order', 'ASC'); // Only sort_order for default
+        }
+
 
         // Cache paginated
         $page = $request->get('page', 1);
@@ -300,7 +320,6 @@ class TourController extends Controller
                 'inclusions'    => $tour->inclusions,
                 'optionals'     => $tour->optionals,
                 'exclusions'    => $tour->exclusions,
-                'optionals'     => $tour->optionals,
                 'taxes_fees'    => $tour->taxes_fees,
                 'detail'        => $tour->detail,
                 'location'      => $tour->location,
@@ -385,7 +404,7 @@ class TourController extends Controller
 
         $tour_start_date = $this->getNextAvailableDate($tour->id, $schedules);
         $disabled_dates =  $this->getDisabledTourDates($tour->id, $schedules);
-        $disabled_dates =  [];// $this->getDisabledTourDates_fromdb($tour->id);
+        // $disabled_dates =  [];// $this->getDisabledTourDates_fromdb($tour->id);
 
         
         // Calculate discount pricing (unchanged)
@@ -557,7 +576,7 @@ class TourController extends Controller
         });
 
         // If no rule found for specific tour, check global rule
-        if (!$depositRule) {
+        if (!$depositRule || ($depositRule && $depositRule->use_deposit == 0)) {
             $depositRule = Cache::remember('deposit_rule_global', 86400, function () {
                 return TourSpecialDeposit::where('type', 'global')->first();
             });
@@ -614,17 +633,39 @@ class TourController extends Controller
         // Build cache key
         $cacheKey = 'search_tours_' . md5($search . '_' . $date);
 
-        $cities = City::where('status', 'active')
-            ->when($search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'LIKE', '' . $search . '%');
-                });
-            })
-            ->orderBy('name', 'asc')
-            ->limit(2)
-            ->get();
+        // $cities = City::where('status', 'active')
+        //     ->when($search, function ($query, $search) {
+        //         $query->where(function ($q) use ($search) {
+        //             $q->where('name', 'LIKE', '' . $search . '%');
+        //         });
+        //     })
+        //     ->orderBy('name', 'asc')
+        //     ->limit(2)
+        //     ->get();
 
-
+        $cities = DB::table('tour_locations as tl')
+                    ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                    ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                    ->join('states as s', 's.id', '=', 'c.state_id')
+                    ->join('countries as cc', 'cc.id', '=', 's.country_id')
+                    ->join('uploads as u', 'u.id', '=', 'c.upload_id')
+                    ->select('c.id', 'c.name', 's.name as state_name', 'cc.name as country_name', 'u.file_name as image')
+                    ->groupBy('c.id', 'c.name')
+                    ->orderBy('name', 'asc')
+                    ->where('c.upload_id', '>=', 1)
+                    ->whereExists(function ($query) {
+                        $query->select(DB::raw(1))
+                            ->from('tour_schedules as ts')
+                            ->whereColumn('ts.tour_id', 't.id')
+                            ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                    })
+                    ->when($search, function ($query, $search) {
+                        $query->where(function ($q) use ($search) {
+                            $q->where('c.name', 'LIKE', '' . $search . '%');
+                        });
+                    })
+                    ->limit(2)
+                    ->get();
             
         $categories = Category::orderBy('name', 'asc')
             ->when($search, function ($query, $search) {
@@ -632,8 +673,8 @@ class TourController extends Controller
                     $q->where('name', 'LIKE', '' . $search . '%');
                 });
             })
-            ->limit(3)
-            ->get();    
+        ->limit(3)
+        ->get();    
         
         $total_cities       = $cities->count();
         $total_categories   = $categories->count();
@@ -661,7 +702,8 @@ class TourController extends Controller
         $data = [];
         if($total_cities>0) {
             foreach($cities as $city) {
-                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
+                //$data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
+                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state_name).', '.ucfirst($city->country_name)];
             }
         }
         if($total_categories>0) {
@@ -673,7 +715,7 @@ class TourController extends Controller
             foreach($tours as $tour) {
                 $image_id = $tour->main_image->id ?? 0;
                 $image  = uploaded_asset($image_id, 'thumb');
-                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => '/tour/'.$tour->slug, 'address' => $tour->location->address];
+                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => '/tour/'.$tour->slug, 'address' => $tour->location?->address];
             }
         }
         
@@ -688,7 +730,7 @@ class TourController extends Controller
         ]);
     }
 
-    function highlightMatch($string, $keyword) {
+    public function highlightMatch($string, $keyword) {
         $string = ucfirst($string);
         return preg_replace("/(" . preg_quote($keyword, '/') . ")/i", '<mark>$1</mark>', $string);
     }
@@ -787,163 +829,162 @@ class TourController extends Controller
         ]);
     }
 
-private function getNextAvailableDate($tourId, $schedules = null)
-{
+    private function getNextAvailableDate($tourId, $schedules = null)
+    {
 
 
-    $today = Carbon::today();
+        $today = Carbon::today();
 
-    if ($schedules === null) {
-        $schedules = TourSchedule::where('tour_id', $tourId)
-            ->where(function ($query) use ($today) {
-                $query->orWhere(function ($q) use ($today) {
-                    $q->whereDate('session_start_date', '<=', $today)
-                      ->whereDate('until_date', '>=', $today);
+        if ($schedules === null) {
+            $schedules = TourSchedule::where('tour_id', $tourId)
+                ->where(function ($query) use ($today) {
+                    $query->orWhere(function ($q) use ($today) {
+                        $q->whereDate('session_start_date', '<=', $today)
+                        ->whereDate('until_date', '>=', $today);
+                    })
+                    ->orWhereDate('session_start_date', '>=', $today);
                 })
-                ->orWhereDate('session_start_date', '>=', $today);
-            })
-            ->get();
-    } else {
-        // ✅ If schedules already passed in, filter in-memory
-        $schedules = $schedules->filter(function ($s) use ($today) {
-            return (
-                ($s->session_start_date <= $today && $s->until_date >= $today) ||
-                ($s->session_start_date >= $today)
-            );
+                ->get();
+        } else {
+            // ✅ If schedules already passed in, filter in-memory
+            $schedules = $schedules->filter(function ($s) use ($today) {
+                return (
+                    ($s->session_start_date <= $today && $s->until_date >= $today) ||
+                    ($s->session_start_date >= $today)
+                );
+            });
+        }
+
+        $nextDates = [];
+
+        $allRepeats = TourScheduleRepeats::whereIn('tour_schedule_id', $schedules->pluck('id')->toArray())
+        ->get()
+        ->groupBy('tour_schedule_id')
+        ->map(function ($items) {
+            return $items->groupBy('day'); // group inside each schedule by day
         });
-    }
+        
+        foreach ($schedules as $schedule) {
+            // dd($schedule->repeat_period);
+            if($schedule->repeat_period == 'NONE'){
+                if($today->lte(Carbon::parse($schedule->session_start_date))){
+                    return ['date' => Carbon::parse($schedule->session_start_date)->toDateString()];
+                } 
+                return ['date' => ""];            
+            }   
 
-    $nextDates = [];
-
-    $allRepeats = TourScheduleRepeats::whereIn('tour_schedule_id', $schedules->pluck('id')->toArray())
-    ->get()
-    ->groupBy('tour_schedule_id')
-    ->map(function ($items) {
-        return $items->groupBy('day'); // group inside each schedule by day
-    });
-    
-    foreach ($schedules as $schedule) {
-        // dd($schedule->repeat_period);
-        if($schedule->repeat_period == 'NONE'){
-            if($today->lte(Carbon::parse($schedule->session_start_date))){
-                return ['date' => Carbon::parse($schedule->session_start_date)->toDateString()];
-            } 
-            return ['date' => ""];
+            $nextDate = $this->calculateNextDate($schedule, $today, $allRepeats);
             
+            if ($nextDate) {
+                $nextDates[] = $nextDate;
+            }
         }   
 
-        $nextDate = $this->calculateNextDate($schedule, $today, $allRepeats);
-        
-        if ($nextDate) {
-            $nextDates[] = $nextDate;
+
+        if (!empty($nextDates)) {
+            usort($nextDates, fn($a, $b) => strtotime($a['date']) <=> strtotime($b['date']));
+            return $nextDates[0];
         }
-    }   
 
-
-    if (!empty($nextDates)) {
-        usort($nextDates, fn($a, $b) => strtotime($a['date']) <=> strtotime($b['date']));
-        return $nextDates[0];
-    }
-
-    return null;
-}
-
-
-private function calculateNextDate($schedule, Carbon $today, $allRepeats = [])
-{
-    $interval   = $schedule->repeat_period_unit ?? 1;
-    $repeatType = $schedule->repeat_period;
-
-    if ($repeatType === 'NONE') {
         return null;
     }
 
-    $scheduleStartDate = Carbon::parse($schedule->session_start_date);
-    $scheduleEndDate   = Carbon::parse($schedule->until_date);
 
-    // Start from today or schedule start (whichever is later)
-    $next = $today->lt($scheduleStartDate) ? $scheduleStartDate->copy() : $today->copy();
+    private function calculateNextDate($schedule, Carbon $today, $allRepeats = [])
+    {
+        $interval   = $schedule->repeat_period_unit ?? 1;
+        $repeatType = $schedule->repeat_period;
 
-    // Prefetched repeats for this schedule (grouped by day)
-    $repeats = $allRepeats[$schedule->id] ?? collect();
-    
-    while ($next->lte($scheduleEndDate)) {
+        if ($repeatType === 'NONE') {
+            return null;
+        }
 
-        $dayName = $next->format('l');
-        $allowedDay = true;
+        $scheduleStartDate = Carbon::parse($schedule->session_start_date);
+        $scheduleEndDate   = Carbon::parse($schedule->until_date);
 
-        // Restrict to allowed days if WEEKLY/HOURLY/MINUTELY
-        if (in_array($repeatType, ['WEEKLY', 'HOURLY', 'MINUTELY'])) {
-            $allowedDay = $repeats->has($dayName);
+        // Start from today or schedule start (whichever is later)
+        $next = $today->lt($scheduleStartDate) ? $scheduleStartDate->copy() : $today->copy();
 
-            if ($repeatType === 'WEEKLY' && $allowedDay) {
-                $weekDiff = $scheduleStartDate->diffInWeeks($next);
-                if ($weekDiff % $interval !== 0) {
-                    $allowedDay = false;
+        // Prefetched repeats for this schedule (grouped by day)
+        $repeats = $allRepeats[$schedule->id] ?? collect();
+        
+        while ($next->lte($scheduleEndDate)) {
+
+            $dayName = $next->format('l');
+            $allowedDay = true;
+
+            // Restrict to allowed days if WEEKLY/HOURLY/MINUTELY
+            if (in_array($repeatType, ['WEEKLY', 'HOURLY', 'MINUTELY'])) {
+                $allowedDay = $repeats->has($dayName);
+
+                if ($repeatType === 'WEEKLY' && $allowedDay) {
+                    $weekDiff = $scheduleStartDate->diffInWeeks($next);
+                    if ($weekDiff % $interval !== 0) {
+                        $allowedDay = false;
+                    }
                 }
+            }
+
+            // If day is allowed → check valid slot
+            if ($allowedDay && $this->hasValidSlot($schedule, $next, $repeats)) {
+                return ['date' => $next->toDateString()];
+            }
+
+            // Step forward depending on repeat type
+            switch ($repeatType) {
+                case 'DAILY':    $next->addDays($interval); break;
+                case 'WEEKLY':   $next->addDay(); break;
+                case 'MONTHLY':  $next->addMonths($interval); break;
+                case 'YEARLY':   $next->addYears($interval); break;
+                case 'HOURLY':   $next->addHours($interval); break;
+                case 'MINUTELY': $next->addMinutes($interval); break;
+                default: return null;
             }
         }
 
-        // If day is allowed → check valid slot
-        if ($allowedDay && $this->hasValidSlot($schedule, $next, $repeats)) {
-            return ['date' => $next->toDateString()];
-        }
-
-        // Step forward depending on repeat type
-        switch ($repeatType) {
-            case 'DAILY':    $next->addDays($interval); break;
-            case 'WEEKLY':   $next->addDay(); break;
-            case 'MONTHLY':  $next->addMonths($interval); break;
-            case 'YEARLY':   $next->addYears($interval); break;
-            case 'HOURLY':   $next->addHours($interval); break;
-            case 'MINUTELY': $next->addMinutes($interval); break;
-            default: return null;
-        }
+        return null;
     }
 
-    return null;
-}
 
+    private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationMinutes = 30)
+    {
+        $repeatType = $schedule->repeat_period;
+        $dayName    = $date->format('l');
 
-private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationMinutes = 30)
-{
-    $repeatType = $schedule->repeat_period;
-    $dayName    = $date->format('l');
+        $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
+        $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
 
-    $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_start_time);
-    $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $schedule->session_end_time);
+        // override times if repeat slots exist (for hourly/minutely)
+        if (($repeatType === 'HOURLY' || $repeatType === 'MINUTELY') && $repeats->has($dayName)) {
+            $slot = $repeats[$dayName]->first();
+            $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $slot->start_time);
+            $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $slot->end_time);
+        }
 
-    // override times if repeat slots exist (for hourly/minutely)
-    if (($repeatType === 'HOURLY' || $repeatType === 'MINUTELY') && $repeats->has($dayName)) {
-        $slot = $repeats[$dayName]->first();
-        $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $slot->start_time);
-        $endTime   = Carbon::parse($date->format('Y-m-d') . ' ' . $slot->end_time);
-    }
+        // apply minimum notice
+        $minutes = $schedule->minimum_notice_unit === "HOURS"
+            ? $schedule->minimum_notice_num * 60
+            : $schedule->minimum_notice_num;
 
-    // apply minimum notice
-    $minutes = $schedule->minimum_notice_unit === "HOURS"
-        ? $schedule->minimum_notice_num * 60
-        : $schedule->minimum_notice_num;
+        $earliestAllowed = now()->addMinutes($minutes);
 
-    $earliestAllowed = now()->addMinutes($minutes);
+        if ($endTime->lt($earliestAllowed)) {
+            return false;
+        }
 
-    if ($endTime->lt($earliestAllowed)) {
+        if (in_array($repeatType, ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'])) {
+            return $startTime->gte($earliestAllowed);
+        }
+
+        while ($startTime->lte($endTime)) {
+            if ($startTime->gte($earliestAllowed)) {
+                return true;
+            }
+            $startTime->addMinutes($durationMinutes);
+        }
+
         return false;
     }
-
-    if (in_array($repeatType, ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'])) {
-        return $startTime->gte($earliestAllowed);
-    }
-
-    while ($startTime->lte($endTime)) {
-        if ($startTime->gte($earliestAllowed)) {
-            return true;
-        }
-        $startTime->addMinutes($durationMinutes);
-    }
-
-    return false;
-}
 
 
 
@@ -1334,7 +1375,7 @@ private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationM
         return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
     }
 
-    function applySlotDeletions(array $response, $storeDeleteSlot): array
+    public function applySlotDeletions(array $response, $storeDeleteSlot): array
     {
         $clearAll = false;
         
@@ -1400,15 +1441,15 @@ private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationM
         return $response;
     }
 
-    function normalizeTime(string $time): string
+    public function normalizeTime(string $time): string
     {
         return date("H:i", strtotime($time));
     }
 
-/**
- * Sort slots chronologically (keeps AM/PM format)
- */
-    function sortSlots(array $slots): array
+    /**
+     * Sort slots chronologically (keeps AM/PM format)
+     */
+    public function sortSlots(array $slots): array
     {
         usort($slots, function ($a, $b) {
             return strtotime($a) <=> strtotime($b);
@@ -1424,6 +1465,11 @@ private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationM
             return response()->json(['message' => 'No review found'], 404);
         }
 
+        // Decode JSON fields safely
+        $recommended = $review->use_recommended ? json_decode($review->recommended, true) ?? [] : [];
+        $badges      = $review->use_badge ? json_decode($review->badges, true) ?? [] : [];
+        $banners     = $review->use_banner ? json_decode($review->banners, true) ?? [] : [];
+
         // Build response respecting the flags
         $response = [
             'tour_id' => $review->tour_id,
@@ -1434,17 +1480,14 @@ private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationM
             'review_rating'  => $review->use_review ? $review->review_rating : 0,
             'review_count'   => $review->use_review ? $review->review_count : 0,
 
-            // Recommended section
-            'recommended_heading' => $review->use_recommended ? $review->recommended_heading : null,
-            'recommended_text'    => $review->use_recommended ? $review->recommended_text : null,
+            // Multiple Recommended items (array)
+            'recommended' => $recommended,
 
-            // Badge section
-            'badge_heading' => $review->use_badge ? $review->badge_heading : null,
-            'badge_text'    => $review->use_badge ? $review->badge_text : null,
+            // Multiple Badge items (array)
+            'badges' => $badges,
 
-            // Banner section
-            'banner_heading' => $review->use_banner ? $review->banner_heading : null,
-            'banner_text'    => $review->use_banner ? $review->banner_text : null,
+            // Multiple Banner items (array)
+            'banners' => $banners,
         ];
 
         return response()->json($response);

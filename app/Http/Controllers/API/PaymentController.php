@@ -13,6 +13,7 @@ use App\Models\Pickup;
 use App\Models\PickupLocation;
 use App\Models\TourPricing;
 use App\Models\User;
+use App\Notifications\NewOrderNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -357,18 +358,16 @@ class PaymentController extends Controller
                 ],
             ];
             
-
-            Log::info('order_email_sent' . $booking->email_sent);
-            if ($booking && $booking->tour->order_email && !$booking->email_sent) {                    
+            
+            if ($booking && !$booking->tour?->order_email && !$booking->email_sent) {                    
                 $mailsent = self::sendOrderDetailMail($detail, $action_name);
                 
-                Log::info('order_email_sentqwwqdwqqdqwdqw' . $booking->email_sent);
+                
                 $booking->email_sent = true;
                 // $booking->save();
             }
 
-            Log::info('order_admin email' . $booking->admin_email_sent);
-            if ($booking && $booking->tour->order_email && !$booking->admin_email_sent) {                    
+            if ($booking && !$booking->admin_email_sent) {                    
                 $mailsent = self::sendOrderDetailMail($detail, 'admin');
                 
                 Log::info('admin email sent' . $booking->admin_email_sent);
@@ -377,8 +376,14 @@ class PaymentController extends Controller
             }
             $booking->save();
 
-            Log::info('order_email_sentqwwqdwq' . $booking->email_sent);
+        
 
+
+            
+            $admin_id = $booking->tour->user_id;
+            $admin = User::findorFail($admin_id);
+            $admin->notify(new NewOrderNotification($booking));
+            Log::info('NewOrderNotification');
             return response()->json([
                     'status'  => 'succeeded',
                     'booking' => $detail,
@@ -397,6 +402,8 @@ class PaymentController extends Controller
     //this function need name should should change
     public static function sendOrderDetailMail($detail, $action_name = 'book')
     {
+//         $booking->tour->order_email &&
+// $booking->tour->order_email &&
         Log::info('sendOrderDetailMail start');
         try{
             $order_id = $detail['order_number'];
@@ -404,7 +411,17 @@ class PaymentController extends Controller
             if($action_name == 'admin'){
                 $identifier = 'admin_order_booking';
             } else{
-                $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_pending';
+               //  $orderTour  = $order->orderTours()->first();
+
+            
+               //  $tour       = $orderTour->tour;
+
+               //  if($tour->order_email){
+               //     $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_confirmed'; 
+               // }else{
+                   $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_pending';
+               // }
+                
             }
             
             $email_template = EmailTemplate::where('identifier', $identifier)->first();
@@ -623,13 +640,13 @@ class PaymentController extends Controller
             else if($order->customer->pickup_id) {
                 $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
-            if($pickup_address) {
-                $pickup_address = '
-                  <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
-                  <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
-                    <strong>' . $pickup_address . '</strong>
-                  </h3>';
-                            }
+            // if($pickup_address) {
+            //     $pickup_address = '
+            //       <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
+            //       <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
+            //         <strong>' . $pickup_address . '</strong>
+            //       </h3>';
+            // }
 
             $to_address = $tour->location->destination ?? '';
             $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
@@ -640,8 +657,9 @@ class PaymentController extends Controller
                 "[[CUSTOMER_PHONE]]"        => '+'.$customer->phone ?? '',
 
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
-                "[[TOUR_MAP]]"              => $to_address,
+                // "[[TOUR_MAP]]"              => $to_address,
                 "[[TOUR_ADDRESS]]"          => $to_address,
+                "[[TOUR_MAP]]"              => $pickup_address,
                 "[[PICKUP_ADDRESS]]"        => $pickup_address,
                 "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
                 "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
@@ -663,6 +681,7 @@ class PaymentController extends Controller
                 "[[ORDER_PAID]]"            => price_format_with_currency($order_paid, $order->currency) ?? '',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
+                "[[YEAR]]"                  => date('Y'),
             ];
 
 
@@ -697,7 +716,26 @@ class PaymentController extends Controller
 
           
             if($action_name == 'admin'){
-                $mailSend = self::order_mail_send([env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_ADMIN_ADDRESS')],$subject, $header,  $body, $footer, $event, 'admin');
+
+                $admin_subject = "[[ORDER_NUMBER]] : New Order Received";
+                $subject = strtr($admin_subject, $replacements);
+
+                $notifiableAdmins = User::where('email_notification', 1)
+                        ->pluck('email')
+                        ->toArray();
+
+                Log::info('order_mail_send 676' . env('MAIL_FROM_ADMIN_ADDRESS'));
+
+            // Always include fallback addresses from .env
+            $defaultEmails = [
+                env('MAIL_FROM_ADDRESS'),
+                env('MAIL_FROM_ADMIN_ADDRESS')
+            ];
+
+            // Merge both lists and remove duplicates
+            $recipients = array_unique(array_merge($defaultEmails, $notifiableAdmins));
+
+                $mailSend = self::order_mail_send($recipients,$subject, $header,  $body, $footer, $event, 'admin');
             } else{
                 $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event);
             }
@@ -712,7 +750,7 @@ class PaymentController extends Controller
                     'from_email'=> env('MAIL_FROM_ADDRESS'),
                     'subject'   => $subject,
                     'body'      => $header.$body.$footer,
-                    'status'    => 'sent'
+                    'message_id' => $mailSend
                 ]);
 
             }
@@ -743,7 +781,7 @@ class PaymentController extends Controller
     {
          Log::info('order_mail_send' . 718);
         if (env('MAIL_FROM_ADDRESS') != null) {
-            Log::info('order_mail_send' . 2234242);
+            
             $array['view'] = 'emails.newsletter';
             $array['subject'] = $subject;
 
@@ -755,23 +793,38 @@ class PaymentController extends Controller
  
             try {
 
-                if($recipient == 'admin'){
-                     Mail::to($email)->send(new AdminBookingMail($array));
-                     return true;
-                } else{
-                    if(Mail::to($email)->send(new EmailManager($array))){
 
-                        return true;
-                        return response()->json(['status' => 'success']);
-                    }else{
-                         return false;
-                         return response()->json(['status' => 'Failed']);
+                $mailer = Mail::mailer('mailgun');
+                // $mailer = Mail::mailer();
+
+
+                // Send email and capture message info
+                // $sentMessage = $mailer->to($email)->send(new EmailManager($array));
+
+                
+
+                if($recipient == 'admin'){
+                    Log::info('Admin recipients:', $email);
+                     $sentMessage = $mailer->to($email)->send(new AdminBookingMail($array, $event['uid']));
+                } else{
+                        $sentMessage = $mailer->to($email)->send(new EmailManager($array));
+                        
+                        
+                }
+
+                $messageId = null;
+                if ($sentMessage instanceof \Illuminate\Mail\SentMessage) {
+                    $symfonySent = $sentMessage->getSymfonySentMessage();
+                    if ($symfonySent && method_exists($symfonySent, 'getMessageId')) {
+                        $messageId = $symfonySent->getMessageId();
+                        $messageId = trim($messageId, '<>');
                     }
                 }
+
+                return $messageId;
                 
                  
             } catch (\Exception $e) {
-                Log::info('order_mail_sendweeeer' . 2234242453);
                 return response()->json([
                     'success' => false,
                     'message' => 'error'

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AddonController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AizUploadController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CityController;
@@ -14,20 +15,21 @@ use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeatureController;
 use App\Http\Controllers\InclusionController;
 use App\Http\Controllers\ItineraryController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PickupController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
-use App\Http\Controllers\StateController;
 use App\Http\Controllers\SmsTemplateController;
+use App\Http\Controllers\StateController;
+use App\Http\Controllers\SubCateoryController;
 use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\SubCateoryController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +37,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/dashboard',[ProfileController::class,'dashboard'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/suplier_update', [ProfileController::class, 'suplierUpdate'])->name('profile.suplier_update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::resource('/user',UserController::class);
@@ -105,6 +108,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/schedule-calendar', [TourController::class, 'scheduleCalendar'])->name('tour.edit.schedule-calendar');
     Route::get('/tour/{id}/edit/schedule-calendar-event', [TourController::class, 'scheduleCalendarEvent'])->name('tour.edit.schedule-calendar-event');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
+    Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
+    Route::get('/export-tours', [TourController::class, 'exportTours'])->name('tours.export');
+
 
     // Tour Preview
     Route::get('/tour/clone/{id}', [TourController::class, 'clone'])->name('tour.clone');
@@ -228,7 +234,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Email Templates
     Route::resource('/email-templates', EmailTemplateController::class);
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
-    Route::post('/email-templates/preview/{id}', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
+    Route::get('/email-templates/preview/{id}', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
 
 
     Route::get('/tour/{slug}/fetch_one', [\App\Http\Controllers\API\TourController::class, 'fetch_one']);
@@ -242,4 +248,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Artisan::call('permission:cache-reset');
         return redirect()->back()->with('success', 'Cache cleared!');
     })->name('clear.cache');
+
+    Route::get('/uploaded-disable-date', function() {
+        Artisan::call('app:update-tour-disable-date');
+        
+        return redirect()->back()->with('success', 'Update disabled tour schedule meta for all tours');
+    })->name('uploaded-disable-date');
+
+    Route::get('/notifications/navbar', [NotificationController::class, 'navbar'])
+    ->name('notifications.navbar');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+
+    Route::get('/notifications/fetch-all', [NotificationController::class, 'fetchAll'])->name('notifications.fetchAll');
+// Route::get('/notifications/read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.read');   
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
+
+    Route::resource('contacts', ContactController::class)->only(['index', 'show', 'destroy']);
+
 });

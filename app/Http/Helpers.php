@@ -11,6 +11,7 @@ use App\Models\Translation;
 use App\Models\TourUpload;
 use App\Upload;
 use App\User;
+use Illuminate\Support\Facades\Http;
 
 // use App\Models\EmailTemplate;
 // use App\Models\SmsTemplate;
@@ -117,7 +118,7 @@ if(!function_exists('price_format')) {
 
 
 if (!function_exists('price_format_with_currency')) {
-    function price_format_with_currency($amount, $currency = 'CAD')
+    function price_format_with_currency($amount, $currency = 'USD')
     {
         // // Define currency symbols (add more as needed)
         // $symbols = [
@@ -1277,6 +1278,42 @@ if (!function_exists('emailAlreadySent')) {
     function emailAlreadySent($paymentIntentId)
     {
         return Cache::has('email_sent_' . $paymentIntentId);
+    }
+}
+if (!function_exists('currencyConvert')) {
+function currencyConvert(float $amount, string $from, string $to = 'USD')
+    {
+        // Always uppercase currency codes
+        $from = strtoupper($from);
+        $to   = strtoupper($to);
+
+        // Fetch conversion rates (cached for 12 hours)
+        $rates = Cache::remember('conversion_rates', 43200, function () {
+            $response = Http::get('https://tourbeez.com/public/data/conversion_rates.json');
+            if ($response->ok()) {
+                return $response->json()['conversion_rates'] ?? [];
+            }
+            return [];
+        });
+
+        if (empty($rates)) {
+            return $amount; // fallback: return same amount if API fails
+        }
+
+        // All rates are based on CAD
+        $rateFrom = $rates[$from] ?? null;
+        $rateTo   = $rates[$to] ?? null;
+
+        if (!$rateFrom || !$rateTo) {
+            return $amount; // fallback: unknown currency
+        }
+
+        // Convert from -> CAD -> to
+        $amountInCad = $amount / $rateFrom;
+        $converted   = $amountInCad * $rateTo;
+
+        // Round to 2 decimals
+        return round($converted, 2);
     }
 }
 ?>

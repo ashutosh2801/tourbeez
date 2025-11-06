@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\UserSupplier;
+use App\Notifications\CustomResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -29,7 +31,9 @@ class User extends Authenticatable
         'provider_id',
         'avatar',
         'dob',
-        'country'
+        'country',
+        'email_notification',
+        'text_notification'
     ];
 
     /**
@@ -52,8 +56,16 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new CustomResetPasswordNotification($token));
+    }
+
     public function wishlists()
     {
         return $this->hasMany(Wishlist::class);
+    }
+    public function supplier() {
+        return $this->hasOne(UserSupplier::class, 'user_id');
     }
 }

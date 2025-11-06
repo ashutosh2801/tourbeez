@@ -1,3 +1,21 @@
+<style>
+    .dropdown-menu li a span.text {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-right: 0;
+        vertical-align: bottom;
+        text-wrap: auto !important; 
+    }
+    .bootstrap-select .dropdown-menu.inner {
+        max-height: 400px !important;  /* default is usually 300px */
+        overflow-y: auto !important;
+    }
+
+
+</style>
+
 <x-admin>
     @section('title', 'Orders List')
 
@@ -13,10 +31,22 @@
                     <div class="col-md-2">
                         <input type="text" name="search" class="form-control form-control-sm" placeholder="Order # / Customer" value="{{ request('search') }}">
                     </div>
-                    <div class="col-md-2">
+                    <!-- <div class="col-md-2">
                         <select name="product" class="form-control form-control-sm" onchange="this.form.submit()">
                             <option value="">All Tours</option>
                             @foreach ($products as $product)
+                                <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>{{ $product->title }}</option>
+                            @endforeach
+                        </select>
+                    </div> -->
+
+                    <div class="col-md-3">
+                        <select name="product" 
+                           
+                            class="form-control aiz-selectpicker" data-live-search="true">
+                            <option value="">Select Tour</option>
+
+                            @foreach ($products->sortBy('title') as $product)
                                 <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>{{ $product->title }}</option>
                             @endforeach
                         </select>
@@ -41,7 +71,8 @@
                     <div class="col-md-2">
                         <input type="date" name="tour_start_date" class="form-control form-control-sm" value="{{ request('tour_start_date') }}">
                     </div>
-                    <div class="col-md-2">
+                    
+                    <div class="col-md-2 mt-2">
                         <select name="date_filter" class="form-control form-control-sm" onchange="this.form.submit()">
                             <option value="">Filter by Order Created</option>
                             <option value="last_7" {{ request('date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
@@ -63,6 +94,7 @@
                             <option value="this_year" {{ request('tour_date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
                         </select>
                     </div>
+                    
                     <div class="col-md-2 mt-2">
                         <button type="submit" class="btn btn-primary btn-sm p-2">Search</button>
                         <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary btn-sm p-2">Clear</a>
@@ -150,7 +182,9 @@
                                 <td>
 
                                     @foreach ($order->orderTours as $order_tour)
-                                        {{ \Carbon\Carbon::parse($order_tour->tour_date)->format('M d, Y h:i A') }}<br>
+                                        {{ \Carbon\Carbon::parse($order_tour->tour_date)->format('M d, Y') }}<br>
+
+                                         {{ $order_tour->tour_time }}
                                     @endforeach
                                 </td>
                                 <td>

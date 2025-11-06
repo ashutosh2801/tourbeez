@@ -15,6 +15,7 @@
     box-shadow: none !important;
     widows: 150px !important;
 
+
 }
 
 /* Ensure focus style also matches */
@@ -55,6 +56,7 @@
 
 .select2-container {
     min-width: 200px !important; /* dropdown width */
+    margin-right: .5rem!important;
 }
 
 
@@ -66,28 +68,26 @@
     <div class="card">
 
         <!-- Search Form (GET) -->
-        <form class="my-0" method="GET" action="{{ route('admin.tour.index') }}">
+        <form class="my-0" id="filterForm" method="GET" action="{{ route('admin.tour.index') }}">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
-                    <h3 class="card-title mb-0">{{ translate('Tours') }}</h3>
+                    <!-- <h3 class="card-title mb-0">{{ translate('Tours') }}</h3> -->
 
                     <div class="d-flex gap-2 flex">
 
-                        {{-- City Dropdown --}}
-
-                    <select name="city" id="city-select" class="form-control form-control-sm">
-                        @if(request('city'))
-                            <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
-                        @endif
-                    </select>
+                        
 
 
                         {{-- Search Input --}}
-                        <input type="text" name="search" class="ml-2 form-control form-control-sm mr-2" placeholder="Search tour" value="{{ request('search') }}" />
+                        <input type="text" name="search" class="form-control form-control-sm ml-0 mr-2 col-3" placeholder="Search tour" value="{{ request('search') }}" />
+
+                        {{-- City Dropdown --}}
+
+                        
 
                         {{-- Category Dropdown --}}
 
-                        <select name="category" class="form-control form-control-sm mr-2 select-searchable">
+                        <select name="category" class="form-control form-control-sm select-searchable mx-2 col-3">
                             <option value="">All Categories</option>
                             @foreach ($categories as $category)
                                 <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
@@ -96,16 +96,22 @@
                             @endforeach
                         </select>
 
-                        {{-- Per Page Dropdown --}}
-                        <select name="per_page" class="ml-2 form-control form-control-sm mr-2">
-                            @foreach (['All',10, 25, 50, 100] as $number)
-                                <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                                    {{ $number }} per page
-                                </option>
-                            @endforeach
+                        <select name="city" id="city-select" class="mx-2 form-control form-control-sm col-3">
+                            @if(request('city'))
+                                <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
+                            @endif
                         </select>
-
-                        <select name="status" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                        
+                        <select name="author" class=" aiz-selectpicker col-3" data-live-search="true">
+                            <option value="">Select Author</option>
+                                @foreach ($users as $author)
+                                    <option value="{{ $author->id }}" {{ request('author') == $author->id ? 'selected' : '' }}>
+                                        {{ $author->name }}
+                                    </option>
+                                @endforeach
+                            
+                        </select>
+                        <select name="status" class="form-control form-control-sm mr-2 col-2" onchange="this.form.submit()">
                             <option value="">All Status</option>
                                 <option value="0" {{ request('staus') === 0 ? 'selected' : '' }}>
                                     Pending
@@ -116,9 +122,59 @@
                             
                         </select>
 
+                        
+
+                        
+                        <!-- <a href="{{ route('admin.tour.index')}}" class="btn btn-outline-secondary btn-sm">Clear</a> -->
+                    </div>
+
+                    <div class="d-flex gap-2 flex mt-2">
+
+                        
+
+                        <select name="special_deposit" class="form-control form-control-sm mr-2 col-3">
+
+                            <option value="">Special Deposit</option>
+                            @foreach (['Active','Not_Active'] as $special_deposit)
+                                <option value="{{ strtolower($special_deposit) }}" {{ request('special_deposit') == strtolower($special_deposit) ? 'selected' : '' }}>
+                                    {{ str_replace('_', ' ', $special_deposit) }} 
+                                </option>
+                            @endforeach
+                        </select>
+                        <select name="schedule" class="form-control form-control-sm mr-2 col-2">
+
+                            <option value="">Schedule</option>
+                            @foreach (['Active','Not_Active'] as $schedule)
+                                <option value="{{ strtolower($schedule) }}" {{ request('schedule') == strtolower($schedule) ? 'selected' : '' }}>
+                                    {{ str_replace('_', ' ', $schedule) }} 
+                                </option>
+                            @endforeach
+                        </select>
+                        {{-- Schedule Expiry On --}}
+                        <div class="col-4">
+                            <select name="schedule_expiry" class="form-control form-control-sm">
+                                <option value="">Schedule Expiry</option>
+                                <option value="today" {{ request('schedule_expiry') == 'today' ? 'selected' : '' }}>Today</option>
+                                <option value="last_7" {{ request('schedule_expiry') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
+                                <option value="last_15" {{ request('schedule_expiry') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
+                                <option value="this_week" {{ request('schedule_expiry') == 'this_week' ? 'selected' : '' }}>This Week</option>
+                                <option value="upcoming_15" {{ request('schedule_expiry') == 'upcoming_15' ? 'selected' : '' }}>Upcoming 15 Days</option>
+                                <option value="expired" {{ request('schedule_expiry') == 'expired' ? 'selected' : '' }}>Expired</option>
+                            </select>
+                        </div>
+
+                        {{-- Per Page Dropdown --}}
+                        <select name="per_page" class="form-control form-control-sm mr-2 col-4">
+                            @foreach (['All',10, 25, 50, 100] as $number)
+                                <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                    {{ $number }} per page
+                                </option>
+                            @endforeach
+                        </select>
+
                         {{-- Submit Button --}}
                         <button type="submit" class="btn btn-primary btn-sm">Search</button>
-                        <!-- <a href="{{ route('admin.tour.index')}}" class="btn btn-outline-secondary btn-sm">Clear</a> -->
+                        <a href="{{ route('admin.tour.index')}}" class="btn btn-info ml-2">Clear</a>
                     </div>
                 </div>
             </div>
@@ -132,6 +188,9 @@
             <div class="d-flex justify-content-between align-items-center w-100">
                 <h3 class="card-title mb-0"></h3>
                 <div class="card-tools">
+                    
+                    <a href="#" onclick="exportFilteredTours()" class="btn btn-sm btn-info">Export Tours</a>
+
                     <button id="enableDisableTour" type="button" class="btn btn-sm btn-primary">Enable/Disable</button>
 
                     <button id="saveTourCoupon" type="button" class="btn btn-sm btn-info">Create Discount</button>
@@ -158,7 +217,7 @@
                         <th >{{ translate('Image') }}</th>
                         <th>{{ translate('Title') }}</th>
                         <th width="150">{{ translate('Price') }}</th>
-                        <th width="150">{{ translate('Code') }}</th>
+                        <th width="150">{{ translate('SKU') }}</th>
                         <th width="200">{{ translate('Category') }}</th>
                         <th width="150">{{ translate('Actions') }}</th>
                     </tr>
@@ -182,7 +241,7 @@
                                 {{ $tour->title }}
                                 @endcan
 
-                                <div class="text-sm mt-2">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-success text-hover" target="_blank">{{translate('View Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-success text-hover" target="_blank">{{translate('Sub Tours')}}</a></div>
+                                <div class="text-sm mt-2">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-success text-hover" target="_blank">{{translate('View Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-success text-hover" target="_blank">{{ $tour->subTours()->exists() ? translate('View Sub Tours') : translate('Create Sub Tours')}}</a></div>
                                 <div class="text-sm text-gray-500 mt-2"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
                             </td>    
                             <td>{{ price_format_with_currency($tour->price) }}</td>
@@ -609,6 +668,13 @@ $(document).ready(function () {
 
 
 
+</script>
+<script>
+function exportFilteredTours() {
+    const form = document.getElementById('filterForm');
+    const params = new URLSearchParams(new FormData(form)).toString();
+    window.location.href = "{{ route('admin.tours.export') }}?" + params;
+}
 </script>
 
 @endsection
