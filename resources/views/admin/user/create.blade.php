@@ -1,3 +1,52 @@
+<style>
+    /* Toggle Switch Style */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 32px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: all 0.4s ease;
+  border-radius: 34px;
+}
+
+.slider::before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 24px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: all 0.4s ease;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0,0,0,0.2);
+}
+
+.toggle-switch input:checked + .slider {
+  background-color: #4caf50;
+}
+
+.toggle-switch input:checked + .slider::before {
+  transform: translateX(28px);
+}
+
+</style>
 <x-admin>
     @section('title', 'Create User')
     <div class="card">
@@ -52,6 +101,29 @@
                             <x-error>role</x-error>
                         </div>
                     </div>
+                    {{-- ================= NOTIFICATION TOGGLES ================= --}}
+                    
+
+                    <div class="col-lg-6 mt-3">
+                        <div class="form-group">
+                            <label class="form-label d-block mb-2">Email Notification:</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="email_notification" value="1" {{ old('email_notification') ? 'checked' : '' }}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 mt-3">
+                        <div class="form-group">
+                            <label class="form-label d-block mb-2">Text Notification:</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="text_notification" value="1" {{ old('text_notification') ? 'checked' : '' }}>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                
 
                     {{-- ================= SUPPLIER INFO SECTION ================= --}}
                     <div id="supplier-section" class="col-12 mt-4" style="display: none;">

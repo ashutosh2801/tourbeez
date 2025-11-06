@@ -3,7 +3,7 @@
 return [
 
     'order_statuses' => [
-        'New' => 'New',
+        'Abandoned' => 'Abandoned',
         'On Hold' => 'On Hold',
         'Pending supplier' => 'Pending supplier',
         'Pending customer' => 'Pending customer',
@@ -13,7 +13,7 @@ return [
     ],
 
     'status_with_code' => [
-            1 => 'New',
+            1 => 'Abandoned',
             2 => 'On Hold',
             3 => 'Pending supplier',
             4 => 'Pending customer',

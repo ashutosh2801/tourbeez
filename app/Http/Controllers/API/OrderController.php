@@ -545,7 +545,14 @@ class OrderController extends Controller
 
 
             if ($adv_deposite == "deposit") {
-                $depositRule = TourSpecialDeposit::where('tour_id', $tour->id)->first();
+                $depositRule = TourSpecialDeposit::where('use_deposit', 1)->where('tour_id', $tour->id)->first();
+
+                Log::info($depositRule);
+
+                if(!$depositRule){
+                    $depositRule = TourSpecialDeposit::where('type', 'global')->first();
+
+                }
                 $chargeAmount = 0;
                 
 

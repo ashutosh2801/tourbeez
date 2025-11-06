@@ -174,7 +174,7 @@ class SupplierController extends Controller
             $parsedSubject = parseTemplate($template->subject, $placeholders);
             $toRecipient = get_setting('MAIL_FROM_ADDRESS') ?? 'info@tourbeez.com';
             $ccRecipient = 'kiran@tourbeez.com';
-            Mail::to( $toRecipient )->cc($ccRecipient)->send(new RegistrationMail($parsedSubject, $parsedBody));
+            Mail::to( $toRecipient )->cc($ccRecipient)->send(new RegistrationMail($parsedSubject, $parsedBody, $user->email, $user->name));
 
             return response()->json([
                 'status' => true,

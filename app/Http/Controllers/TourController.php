@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ToursExport;
 use App\Models\Addon;
 use App\Models\Category;
 use App\Models\City;
@@ -32,6 +33,7 @@ use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Redirect;
 use Str;
 use Validator;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TourController extends Controller
 {
@@ -85,7 +87,7 @@ class TourController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                ->orWhere('unique_code', "%{$search}%");
+                ->orWhere('unique_code', 'like', "%{$search}%");
             });
         }
 
@@ -229,11 +231,10 @@ class TourController extends Controller
 
         $query =  $parentTour->subTours();
 
-        // dd($query);
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                ->orWhere('unique_code', "%{$search}%");
+                  ->orWhere('unique_code', 'like', "%{$search}%");
             });
         }
 
@@ -1068,7 +1069,7 @@ class TourController extends Controller
             'category.required' => 'Please select at least one category',
         ]);
 
-        $baseSlug = Str::slug($request->title);
+        $baseSlug = Str::slug($request->slug);
         $uniqueSlug = $baseSlug;
         $counter = 1;
         while (Tour::where('slug', $uniqueSlug)->where('id', '!=', $request->id)->exists()) {
@@ -2415,6 +2416,63 @@ class TourController extends Controller
 
         return $response;
     }
+
+    // public function exportTours(Request $request)
+    // {
+    //     return Excel::download(new ToursExport($request), 'tours.xlsx');
+    // }
+
+    public function exportTours(Request $request)
+    {
+        $filters = [];
+
+        // Collect readable filter info
+        if ($request->filled('search')) {
+            $filters[] = 'Search-' . str_replace(' ', '_', $request->search);
+        }
+
+        if ($request->filled('category')) {
+            $categoryName = \App\Models\Category::find($request->category)?->name ?? $request->category;
+            $filters[] = 'Category-' . str_replace(' ', '_', $categoryName);
+        }
+
+        if ($request->filled('city')) {
+            $cityName = \App\Models\City::find($request->city)?->name ?? $request->city;
+            $filters[] = 'City-' . str_replace(' ', '_', $cityName);
+        }
+
+        if ($request->filled('status')) {
+            $filters[] = 'Status-' . ucfirst($request->status);
+        }
+
+        if ($request->filled('author')) {
+            $authorName = \App\Models\User::find($request->author)?->name ?? $request->author;
+            $filters[] = 'Author-' . str_replace(' ', '_', $authorName);
+        }
+
+        if ($request->filled('special_deposit')) {
+            $filters[] = 'Deposit-' . ucfirst($request->special_deposit);
+        }
+
+        if ($request->filled('schedule')) {
+            $filters[] = 'Schedule-' . ucfirst($request->schedule);
+        }
+
+        if ($request->filled('schedule_expiry')) {
+            $filters[] = 'Expiry-' . ucfirst(str_replace('_', '-', $request->schedule_expiry));
+        }
+
+        // 🕒 Add timestamp
+        $timestamp = now()->format('Y-m-d_H-i-s');
+
+        // 🧩 Build filename
+        $filterText = $filters ? implode('_', $filters) . '_' : '';
+        $fileName = "Tours_{$filterText}{$timestamp}.xlsx";
+
+        // 📦 Export
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ToursExport($request), $fileName);
+    }
+
 
 
 

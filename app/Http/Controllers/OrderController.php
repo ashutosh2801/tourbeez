@@ -761,6 +761,7 @@ class OrderController extends Controller
 
             // Explicitly use Mailgun mailer
             $mailer = Mail::mailer('mailgun');
+            // $mailer = Mail::mailer();
 
             // Send email and capture message inf
 
@@ -1025,13 +1026,13 @@ class OrderController extends Controller
             else if($order->customer->pickup_id) {
                 $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
-            if($pickup_address) {
-                $pickup_address = '
-                  <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
-                  <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
-                    <strong>' . $pickup_address . '</strong>
-                  </h3>';
-                            }
+            // if($pickup_address) {
+            //     $pickup_address = '
+            //       <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
+            //       <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
+            //         <strong>' . $pickup_address . '</strong>
+            //       </h3>';
+            //                 }
 
             $to_address = $tour->location->destination ?? '';
             $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
@@ -1048,7 +1049,8 @@ class OrderController extends Controller
 
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
                 "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
-                "[[TOUR_MAP]]"              => $tour->location->address ?? '',
+                // "[[TOUR_MAP]]"              => $tour->location->address ?? '',
+                "[[TOUR_MAP]]"              => $pickup_address,
                 "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
                 "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
                 "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,

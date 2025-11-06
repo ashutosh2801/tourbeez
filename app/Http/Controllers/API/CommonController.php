@@ -386,32 +386,32 @@ class CommonController extends Controller
             'email'   => 'required|email',
             'phone'   => 'required',
             'message' => 'required|string',
-            // 'recaptcha_token' => 'required',
+            'recaptcha_token' => 'required',
         ];
         $this->messages = [
             'name.required' => 'Name is required.',
             'email.required' => 'Email is required.',
             'phone.required' => 'Phone number is required.',    
             'message.required' => 'Message is required.',
-            // 'recaptcha_token.required' => 'reCAPTCHA token is required.',
+            'recaptcha_token.required' => 'reCAPTCHA token is required.',
         ];
 
-        // $validated = Validator::make($request->all(), $this->rules, $this->messages);
-        // if ($validated->fails()) {
-        //     return response()->json(['status' => false, 'errors' => $validated->errors()], 422);
-        // }        
+        $validated = Validator::make($request->all(), $this->rules, $this->messages);
+        if ($validated->fails()) {
+            return response()->json(['status' => false, 'errors' => $validated->errors()], 422);
+        }        
 
-        // $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-        //     'secret'   => env('RECAPTCHA_SECRET'),
-        //     'response' => $request->recaptcha_token,
-        //     'remoteip' => $request->ip(),
-        // ]);
+        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret'   => env('RECAPTCHA_SECRET'),
+            'response' => $request->recaptcha_token,
+            'remoteip' => $request->ip(),
+        ]);
 
-        // $result = $response->json();
+        $result = $response->json();
 
-        // if (!($result['success'] ?? false)) {
-        //     return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
-        // }
+        if (!($result['success'] ?? false)) {
+            return response()->json(['message' => 'reCAPTCHA validation failed.'], 422);
+        }
 
         // Send email using mailable and template
         //Mail::to('ashutosh2801@gmail.com')->send(new ContactMail($validated));
@@ -445,7 +445,8 @@ class CommonController extends Controller
         $template = fetch_email_template('contact_mail_for_admin');
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
-        Mail::to([ env('MAIL_FROM_ADDRESS'), 'kiran@tourbeez.com' ])->send(new CommonMail($parsedSubject, $parsedBody));
+
+        Mail::to([ env('MAIL_FROM_ADDRESS'), 'kiran@tourbeez.com' ])->send(new CommonMail($parsedSubject, $parsedBody, null, $request->email, $request->name));
 
         $admin = User::where('role', 'Super Admin')->first();
 
@@ -518,8 +519,9 @@ class CommonController extends Controller
         $template = fetch_email_template('career_mail');
 
         // Parse placeholders 
+        $name = $request->first_name . " " . $request->last_name;
         $placeholders = [
-            'name' => $request->first_name . " " . $request->last_name,
+            'name' => $name,
             'email' => $request->email,
             'message' => $request->message,
             'year' => date('Y'),
@@ -541,7 +543,7 @@ class CommonController extends Controller
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
 
-        Mail::to([env('MAIL_FROM_ADMIN_ADDRESS'), 'kiran@tourbeez.com'])->send(new CommonMail($parsedSubject, $parsedBody));
+        Mail::to([env('MAIL_FROM_ADMIN_ADDRESS'), 'kiran@tourbeez.com'])->send(new CommonMail($parsedSubject, $parsedBody, null, $request->email, $name));
         
         // Send email using mailable and template
        
