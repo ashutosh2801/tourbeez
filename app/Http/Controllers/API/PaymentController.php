@@ -458,289 +458,212 @@ class PaymentController extends Controller
 
 
             $TOUR_PAYMENT_HISTORY =    '
-                                <style>
-                                @media only screen and (max-width: 640px) {
-                                  .wrapper {
-                                    width: 100% !important;
-                                    padding: 0 10px !important;
-                                  }
-                                  .table, .header_table {
-                                    width: 100% !important;
-                                  }
-                                  .table td {
-                                    display: block;
-                                    width: 100% !important;
-                                    text-align: left !important;
-                                  }
-                                  .table h3, .table small {
-                                    text-align: left !important;
-                                  }
-                                }
-                                </style>
-                                </head>
-                                <body style="margin:0; padding:0; font-family: \'Lato\', Helvetica, Arial, sans-serif; background-color: #f9f9f9;">
-                                <div class="wrapper" style="width:640px; margin:0 auto;">
+            <style>
+            @media only screen and (max-width: 640px) {
+                .wrapper {
+                width: 100% !important;
+                padding: 0 10px !important;
+                }
+                .table, .header_table {
+                width: 100% !important;  
+                }
+                .table td {
+                display: block;
+                width: 100% !important;
+                text-align: left !important;
+                }
+                .table h3, .table small {
+                text-align: left !important;
+                }
+            }
+            </style>
+            </head>
+            <body style="margin:0; padding:0; font-family: \'Lato\', Helvetica, Arial, sans-serif; background-color: #f9f9f9;">
+            <div class="wrapper" style="width:640px; margin:0 auto;">
 
-                                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:100%; max-width:640px;">
-                                  <tr>
-                                    <td style="padding: 30px 30px 15px;">
-                                      <h3 style="font-size:19px; margin: 0;"><strong>Payment History</strong></h3>
-                                    </td>
-                                  </tr>
-                                </table>
+            <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:100%; max-width:640px;">
+                <tr>
+                <td style="padding: 30px 30px 15px;">
+                    <h3 style="font-size:19px; margin: 0;"><strong>Payment History</strong></h3>
+                </td>
+                </tr>
+            </table>
 
-                                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-collapse:collapse; background-color:#fff; width:100%; max-width:640px; border-left:30px solid #fff; border-right:30px solid #fff; border-bottom:30px solid #fff;">
-                                  <tbody>
-                                    <tr>
-                                      <td style="width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
-                                      </td>
-                                      <td style="width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
-                                      </td>
-                                      <td style="width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
-                                      </td>
-                                    </tr>
+            <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-collapse:collapse; background-color:#fff; width:100%; max-width:640px; border-left:30px solid #fff; border-right:30px solid #fff; border-bottom:30px solid #fff;">
+                <tbody>
+                <tr>
+                    <td style="width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
+                    </td>
+                    <td style="width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
+                    </td>
+                    <td style="width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
+                    </td>
+                </tr>
 
-                                    <tr>
-                                      <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
-                                      <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail["created_at"] . '</td>
-                                      <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:10px;" valign="top"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency) . '</strong></td>
-                                    </tr>
+                <tr>
+                    <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
+                    <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail["created_at"] . '</td>
+                    <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:10px;" valign="top"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency) . '</strong></td>
+                </tr>
 
-                                    <tr>
-                                      <td style="border-top:2pt solid #000; border-bottom:2pt solid #000;">&nbsp;</td>
-                                      <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-                                      </td>
-                                      <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                        <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency). '</strong></h3>
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                </table>';
+                <tr>
+                    <td style="border-top:2pt solid #000; border-bottom:2pt solid #000;">&nbsp;</td>
+                    <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
+                    </td>
+                    <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                    <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency). '</strong></h3>
+                    </td>
+                </tr>
+                </tbody>
+            </table>';
 
-
-            // $TOUR_ITEM_SUMMARY = '';
-
-            // foreach ($order->orderTours as $order_tour) {
-            //     $subtotal = 0;
-            //     $_tourId = $order_tour->tour_id;
-            //     $tour_pricing = !empty($order_tour->tour_pricing) ? json_decode($order_tour->tour_pricing, true) : [];
-            //     $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
-                
-            //     $TOUR_ITEM_SUMMARY .= '
-            //     <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
-            //         <tbody>
-            //         <tr>
-            //             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
-            //                 <h3 style="font-size:19px"><strong>' . $order_tour->tour->title . ' - Item Summary</strong></h3>
-            //             </td>
-            //         </tr>
-            //         </tbody>
-            //     </table>
-
-            //     <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
-            //         <tbody>
-            //             <tr>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                     <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
-            //                 </td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                     <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
-            //                 </td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                     &nbsp;
-            //                 </td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-            //                     <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
-            //                 </td>
-            //             </tr>';
-                
-            //     // Pricing Rows
-            //     $i = 1;
-            //     foreach ($tour_pricing as $result) {
-            //         // $result = getTourPricingDetails($tour_pricing, $pricing->id);
-            //         $qty = $result['quantity'] ?? 0;
-            //         $price = $result['price'] ?? 0;
-            //         //$total = $qty * $price;
-            //         $total = $result['total_price'] ?? 0;
-            //         if ($qty > 0) {
-            //             $subtotal += $total;
-            //             $TOUR_ITEM_SUMMARY .= '
-            //             <tr>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ucwords($result['label']) . '</td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
-            //             </tr>';
-            //         }
-            //     }
-
-            //     // Extras Rows
-            //     foreach ($tour_extra as $extra) {
-            //         // $result = getTourExtraDetails($tour_extra, $extra->id);
-            //         $qty = $extra['quantity'] ?? 0;
-            //         $price = $extra['price'] ?? 0;
-            //         // $total = $qty * $price;
-            //         $total = $extra['total_price'] ?? 0;
-            //         if ($qty > 0) {
-            //             $subtotal += $total;
-            //             $TOUR_ITEM_SUMMARY .= '
-            //             <tr>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' (Extra)</td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
-            //             </tr>';
-            //         }
-            //     }
-
-            //     // Taxes
-            //     $taxRows = '';
-            //     if ($order_tour->tour->taxes_fees) {
-            //         foreach ($order_tour->tour->taxes_fees as $tax) {
-            //             $taxAmount = get_tax($subtotal, $tax->fee_type, $tax->tax_fee_value);
-            //             $subtotal += $taxAmount;
-            //             $taxRows .= '
-            //             <tr>
-            //                 <td>&nbsp;</td>
-            //                 <td>&nbsp;</td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                     <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
-            //                 </td>
-            //                 <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-            //                     ' . price_format_with_currency($taxAmount, $order->currency) . '
-            //                 </td>
-            //             </tr>';
-            //         }
-            //     }
-
-            //     // Total Row
-            //     $TOUR_ITEM_SUMMARY .= $taxRows . '
-            //         <tr>
-            //             <td>&nbsp;</td>
-            //             <td>&nbsp;</td>
-            //             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-            //                 <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-            //             </td>
-            //             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-            //                 <h3 style="color:#000; margin:0; font-size:19px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
-            //             </td>
-            //         </tr>
-            //         </tbody>
-            //     </table>';
-            // }
 
             $TOUR_ITEM_SUMMARY = '';
- 
+
             foreach ($order->orderTours as $order_tour) {
                 $subtotal = 0;
                 $_tourId = $order_tour->tour_id;
                 $tour_pricing = !empty($order_tour->tour_pricing) ? json_decode($order_tour->tour_pricing, true) : [];
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
+                
                 $TOUR_ITEM_SUMMARY .= '
-                    <table width="768" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:768px;">
+                <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
                     <tbody>
                     <tr>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 0 0 10px; width:768px;">
-                    <h3 style="font-size:18px"><strong>' . $order_tour->tour->title . ' - Item Summary</strong></h3>
-                    </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
+                            <h3 style="font-size:19px"><strong>' . $order_tour->tour->title . ' - Item Summary</strong></h3>
+                        </td>
                     </tr>
                     </tbody>
-                    </table>
-                     
-                                    <table width="768" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
+                </table>
+
+                <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
                     <tbody>
+                        <tr>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                &nbsp;
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
+                            </td>
+                        </tr>';
+                
+                // Pricing Rows
+                $i = 1;
+                foreach ($tour_pricing as $result) {
+                    // $result = getTourPricingDetails($tour_pricing, $pricing->id);
+                    $qty = $result['quantity'] ?? 0;
+                    $price = $result['price'] ?? 0;
+                    //$total = $qty * $price;
+                    $total = $result['total_price'] ?? 0;
+                    if ($qty > 0) {
+                        $subtotal += $total;
+                        $TOUR_ITEM_SUMMARY .= '
+                        <tr>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ucwords($result['label']) . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
+                        </tr>';
+                    }
+                }
+
+                // Extras Rows
+                foreach ($tour_extra as $extra) {
+                    // $result = getTourExtraDetails($tour_extra, $extra->id);
+                    $qty = $extra['quantity'] ?? 0;
+                    $price = $extra['price'] ?? 0;
+                    // $total = $qty * $price;
+                    $total = $extra['total_price'] ?? 0;
+                    if ($qty > 0) {
+                        $subtotal += $total;
+                        $TOUR_ITEM_SUMMARY .= '
+                        <tr>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' (Extra)</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
+                        </tr>';
+                    }
+                }
+
+                // Taxes
+                $taxRows = '';
+                if ($order_tour->tour->taxes_fees) {
+                    foreach ($order_tour->tour->taxes_fees as $tax) {
+                        $taxAmount = get_tax($subtotal, $tax->fee_type, $tax->tax_fee_value);
+                        $subtotal += $taxAmount;
+                        $taxRows .= '
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                ' . price_format_with_currency($taxAmount, $order->currency) . '
+                            </td>
+                        </tr>';
+                    }
+                }
+
+                // Total Row
+                $TOUR_ITEM_SUMMARY .= $taxRows . '
                     <tr>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
-                    </td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
-                    </td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    &nbsp;
-                    </td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
-                    </td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <h3 style="color:#000; margin:0; font-size:19px"><strong>Total</strong></h3>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                            <h3 style="color:#000; margin:0; font-size:19px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
+                        </td>
                     </tr>';
-                                    // Pricing Rows
-                                    $i = 1;
-                                    foreach ($tour_pricing as $result) {
-                                        // $result = getTourPricingDetails($tour_pricing, $pricing->id);
-                                        $qty = $result['quantity'] ?? 0;
-                                        $price = $result['price'] ?? 0;
-                                        //$total = $qty * $price;
-                                        $total = $result['total_price'] ?? 0;
-                                        if ($qty > 0) {
-                                            $subtotal += $total;
-                                            $TOUR_ITEM_SUMMARY .= '
+
+                if ($order_tour->balance_amount > 0) {
+                    // balance amount
+                    $TOUR_ITEM_SUMMARY .= '
                     <tr>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ucwords($result['label']) . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
-                    </tr>';
-                                        }
-                                    }
-                     
-                                    // Extras Rows
-                                    foreach ($tour_extra as $extra) {
-                                        // $result = getTourExtraDetails($tour_extra, $extra->id);
-                                        $qty = $extra['quantity'] ?? 0;
-                                        $price = $extra['price'] ?? 0;
-                                        // $total = $qty * $price;
-                                        $total = $extra['total_price'] ?? 0;
-                                        if ($qty > 0) {
-                                            $subtotal += $total;
-                                            $TOUR_ITEM_SUMMARY .= '
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <h3 style="color:#000; margin:0; font-size:19px"><strong>Balance</strong></h3>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                            <h3 style="color:#000; margin:0; font-size:19px"><strong>' . price_format_with_currency($order_tour->balance_amount, $order->currency) . '</strong></h3>
+                        </td>
+                    </tr>'; 
+                }
+                
+                $paid = $order_tour->total_amount - $order_tour->balance_amount;
+                if ($paid > 0) {                    
+                    // paid amount
+                    $TOUR_ITEM_SUMMARY .= '
                     <tr>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' (Extra)</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
-                    </tr>';
-                                        }
-                                    }
-                     
-                                    // Taxes
-                                    $taxRows = '';
-                                    if ($order_tour->tour->taxes_fees) {
-                                        foreach ($order_tour->tour->taxes_fees as $tax) {
-                                            $taxAmount = get_tax($subtotal, $tax->fee_type, $tax->tax_fee_value);
-                                            $subtotal += $taxAmount;
-                                            $taxRows .= '
-                    <tr>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
-                    </td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                                    ' . price_format_with_currency($taxAmount, $order->currency) . '
-                    </td>
-                    </tr>';
-                                        }
-                                    }
-                     
-                                    // Total Row
-                                    $TOUR_ITEM_SUMMARY .= $taxRows . '
-                    <tr>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-                    </td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                    <h3 style="color:#000; margin:0; font-size:19px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
-                    </td>
-                    </tr>
-                    </tbody>
-                    </table>';
-                                }
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <h3 style="color:green; margin:0; font-size:19px"><strong>Paid Amount</strong></h3>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                            <h3 style="color:green; margin:0; font-size:19px"><strong>' . price_format_with_currency($paid, $order->currency) . '</strong></h3>
+                        </td>
+                    </tr>'; 
+                }    
+                
+                $TOUR_ITEM_SUMMARY .=  '</tbody>
+                </table>';
+            }
             
             $pickup_address = '';
             if( $order->customer->pickup_name ) {

@@ -592,6 +592,7 @@
                                         <td></td>
                                         <td>Balance</td>
                                         <td>Paid</td>
+                                        <td>Refund</td>
 
 
 
@@ -604,6 +605,15 @@
                                         <td></td>
                                         <td>{{ price_format_with_currency($order->balance_amount) }}</td>
                                         <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger refund-btn" 
+                                          style="width:150px; display:inline-block;" 
+                                          data-order-id="{{ $order->id }}" 
+                                          data-amount="{{ $order->booked_amount }}" 
+                                          type="button">
+                                          Refund
+                                        </button>
+                                    </td>
                                     </tr>
 
                                 </table>
@@ -846,6 +856,35 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="refundModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Refund Payment</h5>
+      </div>
+      <div class="modal-body">
+        <form id="refundForm">
+          <input type="hidden" id="refundOrderId" name="order_id">
+
+          <div class="mb-3">
+            <label>Refund Amount</label>
+            <input type="number" id="refundAmount" name="amount" class="form-control" min="0" step="0.01" required>
+          </div>
+
+          <div class="mb-3">
+            <label>Reason (optional)</label>
+            <input type="text" id="refundReason" name="reason" class="form-control">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        <button type="submit" form="refundForm" class="btn btn-danger">Confirm Refund</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 @endsection
@@ -1209,6 +1248,44 @@ $(document).ready(function(){
         });
     });
 });
+
+$(document).on('click', '.refund-btn', function(e) {
+    e.preventDefault();
+    let orderId = $(this).data('order-id');
+    let amount = $(this).data('amount');
+
+    $('#refundOrderId').val(orderId);
+    $('#refundAmount').val(amount);
+    $('#refundModal').modal('show');
+});
+
+$('#refundForm').on('submit', function(e) {
+    e.preventDefault();
+
+    let orderId = $('#refundOrderId').val();
+    let amount  = $('#refundAmount').val();
+    let reason  = $('#refundReason').val();
+
+    $.ajax({
+        url: "{{ route('admin.orders.refund', ['order' => '__ORDER_ID__']) }}".replace('__ORDER_ID__', orderId),
+        type: 'POST',
+        data: {
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            amount: amount,
+            reason: reason
+        },
+        success: function(response) {
+            $('#refundModal').modal('hide');
+            alert(response.message || 'Refund processed successfully!');
+            location.reload();
+        },
+        error: function(xhr) {
+            alert("Refund failed: " + xhr.responseJSON.message);
+        }
+    });
+});
+
 </script>
 @endsection
 </x-admin>
+
