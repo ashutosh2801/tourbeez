@@ -45,7 +45,7 @@ if(!function_exists('countThingsToDo')) {
             ->whereNull('deleted_at');
 
         if ($id) {
-            if($type == 'c3') {
+            if($type === 'c3') {
                 $query->whereHas('categories', fn($q) => $q->where('categories.id', $id));
             }
             else {
@@ -687,16 +687,16 @@ if (! function_exists('order_status')) {
                 return '<span class="badge badge-inline badge-warning text-yellow-800 bg-yellow-100 px-4 py-2  rounded-full">Pending customer</span>';
                 break;
             case 5:
-                return '<span class="badge badge-inline badge-warning text-green-800 bg-green-100 px-4 py-2  rounded-full">Confirmed</span>';
+                return '<span class="badge badge-inline badge-success text-green-800 bg-green-100 px-4 py-2  rounded-full">Confirmed</span>';
                 break;
             case 6:
-                return '<span class="badge badge-inline badge-warning text-red-800 bg-red-100 px-4 py-2  rounded-full">Cancelled</span>';   
+                return '<span class="badge badge-inline badge-danger text-red-800 bg-red-100 px-4 py-2  rounded-full">Cancelled</span>';   
                 break;  
             case 7:
-                return '<span class="badge badge-inline badge-warning text-red-800 bg-red-100 px-4 py-2  rounded-full">Abandoned cart</span>';   
+                return '<span class="badge badge-inline badge-danger text-red-800 bg-red-100 px-4 py-2  rounded-full">Abandoned cart</span>';   
                 break; 
             default:
-                return '<span class="badge badge-inline badge-warning text-gray-800 bg-gray-100 px-4 py-2  rounded-full">Not completed</span>';   
+                return '<span class="badge badge-inline badge-secondary text-gray-800 bg-gray-100 px-4 py-2  rounded-full">Not completed</span>';   
                 break;   
         }
     }

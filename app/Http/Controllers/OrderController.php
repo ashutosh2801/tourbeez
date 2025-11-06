@@ -200,7 +200,7 @@ class OrderController extends Controller
     /**
      * Store a newly created resource in storage.
      */
- public function store(Request $request)
+public function store(Request $request)
 {
      $validated = $request->validate([
         'customer_id'          => 'nullable|integer',
@@ -1063,6 +1063,7 @@ class OrderController extends Controller
                 "[[APP_EMAIL]]"             => get_setting('app_email'),
                 "[[APP_PHONE]]"             => get_setting('app_phone'),
                 "[[APP_ADDRESS]]"           => get_setting('app_address'),
+                "[[YEAR]]"                  => date('Y'),
 
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
                 "[[ORDER_STATUS]]"          => $order->status,
@@ -1180,6 +1181,7 @@ class OrderController extends Controller
                 "[[APP_EMAIL]]"             => get_setting('app_email'),
                 "[[APP_PHONE]]"             => get_setting('app_phone'),
                 "[[APP_ADDRESS]]"           => get_setting('app_address'),
+                "[[YEAR]]"                  => date('Y'),
 
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
                 "[[ORDER_STATUS]]"          => $order->status,

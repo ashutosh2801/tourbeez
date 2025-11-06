@@ -38,6 +38,10 @@ class EmailManager extends Mailable
     { 
         $mail = $this->view($this->array['view'])
             ->from($this->array['from'], config('app.name'))
+            ->cc([
+                env('MAIL_FROM_ADDRESS'),
+                env('MAIL_FROM_ADMIN_ADDRESS')
+            ])
             ->subject($this->array['subject']);
 
         // If event details are provided, generate ICS on the fly
