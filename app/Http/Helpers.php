@@ -732,7 +732,7 @@ if (! function_exists('membership_type')) {
 if (!function_exists('unique_code')) {
     function unique_code()
     {
-        $id = Tour::withTrashed()->latest('id')->first()->id+1;
+        $id = Tour::withoutGlobalScopes()->withTrashed()->latest('id')->first()->id+1;
         $code = get_setting('tour_code_prifix').date('Ym').$id;
         return $code;
     }
