@@ -8085,6 +8085,7 @@ a.dropdown-footer:hover {
 
 .order-edit .info-blog .info-stats4 {
     background: #f7f7f7;
+    margin-bottom: 0;
 }
 
 .order-edit .info-blog .btn-balance {
@@ -8108,7 +8109,7 @@ a.dropdown-footer:hover {
     font-weight: bold;
 }
 
-.order-edit .info-blog .email-option {
+.order-edit .info-blog .form-option {
     padding: 0;
     border: 0;
     background: transparent;
@@ -8118,4 +8119,33 @@ a.dropdown-footer:hover {
     min-height: 23px;
     border-radius: 0;
     font-size: 14px;
+    cursor: pointer;
+}
+
+.order-edit-head .card-header {
+    width: 100%;
+    display: block;
+}
+
+.order-edit-head .card-header .row{
+    align-items: center;
+}
+
+.order-edit-head .charge-btn {
+    background: #01228b;
+    color: #FFF;
+    float: right;
+}
+
+.order-edit-head .charge-btn:hover {
+    background: #225de4;
+    color: #FFF;
+}
+
+@media (max-width: 767px) {
+
+    .order-edit .info-blog .info-stats4 {
+        margin-bottom: 1rem;
+    }
+
 }
