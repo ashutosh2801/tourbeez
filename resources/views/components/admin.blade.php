@@ -61,19 +61,19 @@
         <x-navbar />
         <!-- /.navbar -->
         <!-- Main Sidebar Container -->
-        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <aside class="main-sidebar elevation-4">
             <!-- Brand Logo -->
 
             <!-- Sidebar -->
             <div class="sidebar">
                 <!-- Sidebar user (optional) -->
-                <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                <div class="user-panel pb-3 pt-3">
                     <div class="image">
                         @if (Auth::user()->avatar != null)
                              <img src="{{ Auth::user()->avatar }}" class="img-circle elevation-2" alt="User Image">
                         @else
-                            <a href="{{ route('admin.dashboard') }}"><img style="width:200px" src="{{ asset('admin/dist/img/tourbeez-logo-white.png') }}" class="img-responsive"
-                        alt="tourbeez-logo-white.png"></a>
+                            <a href="{{ route('admin.dashboard') }}"><img style="width:200px" src="{{ asset('admin/dist/img/logo.jpg') }}" class="img-responsive"
+                        alt="TourbBeez"></a>
                         @endif
                     </div>
                     <!-- <div class="info">
@@ -91,19 +91,17 @@
         <div class="content-wrapper">
             <!-- Content Header (Page header) -->
             <section class="content-header">
-                <div class="container-fluid">
-                    <div class="row mb-2">
-                        <div class="col-sm-6">
-                            <h1>@yield('title')</h1>
-                        </div>
-                        <div class="col-sm-6">
-                            <ol class="breadcrumb float-sm-right">
-                                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Home</a></li>
-                                <li class="breadcrumb-item active">@yield('title')</li>
-                            </ol>
-                        </div>
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>@yield('title')</h1>
                     </div>
-                </div><!-- /.container-fluid -->
+                    <div class="col-sm-6">
+                        <ol class="breadcrumb float-sm-right">
+                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Home</a></li>
+                            <li class="breadcrumb-item active">@yield('title')</li>
+                        </ol>
+                    </div>
+                </div>
             </section>
             <!-- Main content -->
             <section class="content">
@@ -117,7 +115,7 @@
     </div>
     <!-- ./wrapper -->
     <footer class="main-footer">
-        <strong>Copyright © {{ date('Y') }} TourBeez.</strong> All rights reserved.
+        <p class="m-0">Copyright © {{ date('Y') }} TourBeez. All rights reserved.</p>
     </footer>
     <!-- ./wrapper -->
 

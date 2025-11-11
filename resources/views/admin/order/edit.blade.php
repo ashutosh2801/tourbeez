@@ -3,9 +3,6 @@
 
 @section('css')
 <style>
-    .bs-example{
-        margin: 20px;
-    }
     .accordion .fa{
         margin-right: 0.5rem;
         font-size: 24px;
@@ -167,10 +164,10 @@
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
     <div class="card card-primary">
         <div class="card-header">
-            <h5>Created on {{ date__format($order->created_at) }} online on your booking form</h5>
+            <h5 class="m-0">Created on {{ date__format($order->created_at) }} online on your booking form</h5>
         </div>
-        <div class="card-body">
-            <div style="padding:0 15px;">
+        <div class="card-body order-edit">
+            <div>
 
                 <div class="row">
                     
