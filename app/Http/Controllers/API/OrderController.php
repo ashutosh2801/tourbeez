@@ -9,6 +9,7 @@ use App\Models\City;
 use App\Models\Order;
 use App\Models\OrderCustomer;
 use App\Models\OrderMeta;
+use App\Models\OrderPayment;
 use App\Models\OrderTour;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\Tour;
@@ -613,6 +614,68 @@ class OrderController extends Controller
 
                     $order->payment_intent_client_secret = $pi->client_secret;
                     $order->payment_intent_id = $pi->id;
+                    // Retrieve card details from payment method if available
+                try {
+                    $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
+                    if (!empty($retrievedIntent->payment_method)) {
+                        $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+
+                        if ($paymentMethod->type === 'card') {
+                            $cardDetails = [
+                                'brand'     => $paymentMethod->card->brand ?? null,
+                                'last4'     => $paymentMethod->card->last4 ?? null,
+                                'exp_month' => $paymentMethod->card->exp_month ?? null,
+                                'exp_year'  => $paymentMethod->card->exp_year ?? null,
+                            ];
+
+                            // Optional: store in Order table (if fields exist)
+                            $order->card_brand = $cardDetails['brand'];
+                            $order->card_last4 = $cardDetails['last4'];
+                            $order->card_exp_month = $cardDetails['exp_month'];
+                            $order->card_exp_year = $cardDetails['exp_year'];
+                        }
+
+
+                        // OrderPayment::create([
+                        //     'order_id'          => $order->id,
+                        //     'payment_intent_id' => $pi->id,
+                        //     'transaction_id'    => null, // no charge yet until capture
+                        //     'payment_method'    => 'card',
+                        //     'card_brand'        => $paymentMethod->card->brand ?? null,
+                        //     'card_last4'        => $paymentMethod->card->last4 ?? null,
+                        //     'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                        //     'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                        //     'amount'            => ($adv_deposite == 'deposit')
+                        //                             ? $chargeAmount
+                        //                             : $order->total_amount,
+                        //     'currency'          => $order->currency,
+                        //     'status'            => 'pending', // manual capture pending
+                        //     'action'            => $adv_deposite,
+                        //     'response_payload'  => json_encode($pi),
+                        // ]);
+                    }
+
+                    OrderPayment::create([
+                            'order_id'          => $order->id,
+                            'payment_intent_id' => $pi->id,
+                            'transaction_id'    => null, // no charge yet until capture
+                            'payment_method'    => 'card',
+                            'card_brand'        => $paymentMethod->card->brand ?? null,
+                            'card_last4'        => $paymentMethod->card->last4 ?? null,
+                            'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                            'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                            'amount'            => ($adv_deposite == 'deposit')
+                                                    ? $chargeAmount
+                                                    : $order->total_amount,
+                            'currency'          => $order->currency,
+                            'status'            => 'pending', // manual capture pending
+                            'action'            => $adv_deposite,
+                            'response_payload'  => json_encode($pi),
+                        ]);
+                } catch (\Exception $cardError) {
+                    \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
+                }
+
                 } else {
                     // No charge needed
                     $si = \Stripe\SetupIntent::create([
@@ -623,8 +686,33 @@ class OrderController extends Controller
                     ]);               
                     $order->payment_intent_client_secret = $si->client_secret;
                     $order->payment_intent_id = $si->id;
+
+
+                    $retrievedIntent = \Stripe\PaymentIntent::retrieve($si->id);
+                    
+                    $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                    OrderPayment::create([
+                            'order_id'          => $order->id,
+                            'payment_intent_id' => $si->id,
+                            'transaction_id'    => null, // no charge yet until capture
+                            'payment_method'    => 'card',
+                            'card_brand'        => $paymentMethod->card->brand ?? null,
+                            'card_last4'        => $paymentMethod->card->last4 ?? null,
+                            'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                            'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                            'amount'            => ($adv_deposite == 'deposit')
+                                                    ? $chargeAmount
+                                                    : $order->total_amount,
+                            'currency'          => $order->currency,
+                            'status'            => 'pending', // manual capture pending
+                            'action'            => $adv_deposite,
+                            'response_payload'  => json_encode($pi),
+                        ]);
+
                 }
             }else if($adv_deposite == "full") {
+
+
                 $pi = \Stripe\PaymentIntent::create([
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($order->total_amount * 100)),
@@ -640,6 +728,45 @@ class OrderController extends Controller
                     ]);
                 $order->payment_intent_client_secret = $pi->client_secret;
                 $order->payment_intent_id = $pi->id;
+
+                $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
+                    
+                $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                OrderPayment::create([
+                            'order_id'          => $order->id,
+                            'payment_intent_id' => $pi->id,
+                            'transaction_id'    => null, // no charge yet until capture
+                            'payment_method'    => 'card',
+                            'card_brand'        => $paymentMethod->card->brand ?? null,
+                            'card_last4'        => $paymentMethod->card->last4 ?? null,
+                            'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                            'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                            'amount'            => ($adv_deposite == 'deposit')
+                                                    ? $chargeAmount
+                                                    : $order->total_amount,
+                            'currency'          => $order->currency,
+                            'status'            => 'pending', // manual capture pending
+                            'action'            => $adv_deposite,
+                            'response_payload'  => json_encode($pi),
+                        ]);
+
+
+                // ✅ Fetch and store card details (if available)
+                try {
+                    $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
+                    if (!empty($retrievedIntent->payment_method)) {
+                        $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+
+                        if ($paymentMethod->type === 'card') {
+                            $order->card_brand = $paymentMethod->card->brand ?? null;
+                            $order->card_last4 = $paymentMethod->card->last4 ?? null;
+                            $order->card_exp_month = $paymentMethod->card->exp_month ?? null;
+                            $order->card_exp_year = $paymentMethod->card->exp_year ?? null;
+                        }
+                    }
+                } catch (\Exception $cardError) {
+                    \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
+                }
             }
 
 
