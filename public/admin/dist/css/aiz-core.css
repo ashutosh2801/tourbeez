@@ -8142,6 +8142,13 @@ a.dropdown-footer:hover {
     color: #FFF;
 }
 
+.order-edit .accordion>.card>.card-header {
+    border-radius: 8px;
+    margin-bottom: 0;
+    background: #f7f7f7 !important;
+    border: 1px solid #e0e3e8;
+}
+
 @media (max-width: 767px) {
 
     .order-edit .info-blog .info-stats4 {

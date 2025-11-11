@@ -181,7 +181,7 @@
                     <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
-                                <i class="fa fa-users"></i>
+                                <i class="fas fa-hand-holding-usd"></i>
                             </div>
                             <div class="sale-num">
                                 <p>Balance</p>
@@ -218,7 +218,7 @@
                     <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
-                                <i class="fa fa-users"></i>
+                                <i class="fas fa-stream"></i>
                             </div>
                             <div class="sale-num">
                                 <p>Order Status</p>
@@ -252,7 +252,7 @@
                     <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
-                                <i class="fa fa-users"></i>
+                                <i class="fas fa-envelope-open-text"></i>
                             </div>
                             <div class="sale-num">
                                 <p>Email</p>
@@ -268,7 +268,7 @@
                     <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
-                                <i class="fa fa-users"></i>
+                                <i class="fas fa-comments"></i>
                             </div>
                             <div class="sale-num">
                                 <p>SMS</p>
@@ -291,7 +291,7 @@
                     <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
-                                <i class="fa fa-users"></i>
+                                <i class="fas fa-print"></i>
                             </div>
                             <div class="sale-num">
                                 <p>Print</p>
