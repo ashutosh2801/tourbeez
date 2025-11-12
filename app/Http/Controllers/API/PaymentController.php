@@ -493,26 +493,26 @@ class PaymentController extends Controller
                 <tbody>
                 <tr>
                     <td style="width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
+                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
                     </td>
                     <td style="width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
+                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
                     </td>
                     <td style="width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
+                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
                     </td>
                 </tr>
 
                 <tr>
                     <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
                     <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail["created_at"] . '</td>
-                    <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:10px;" valign="top"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency) . '</strong></td>
+                    <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:11px;" valign="top"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency) . '</strong></td>
                 </tr>
 
                 <tr>
                     <td style="border-top:2pt solid #000; border-bottom:2pt solid #000;">&nbsp;</td>
                     <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
+                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
                     </td>
                     <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
                     <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency). '</strong></h3>
@@ -531,7 +531,7 @@ class PaymentController extends Controller
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
                 
                 $TOUR_ITEM_SUMMARY .= '
-                <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
+                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table">
                     <tbody>
                     <tr>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
@@ -541,20 +541,20 @@ class PaymentController extends Controller
                     </tbody>
                 </table>
 
-                <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
+                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
                     <tbody>
                         <tr>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">#</small>
                             </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
                             </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
                                 &nbsp;
                             </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
                             </td>
                         </tr>';
                 
@@ -608,7 +608,7 @@ class PaymentController extends Controller
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
                             </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                                 ' . price_format_with_currency($taxAmount, $order->currency) . '
@@ -623,29 +623,29 @@ class PaymentController extends Controller
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:#000; margin:0; font-size:19px"><strong>Total</strong></h3>
+                            <h3 style="color:#000; margin:0; font-size:15px"><strong>Total</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:#000; margin:0; font-size:19px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
+                            <h3 style="color:#000; margin:0; font-size:15px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
                         </td>
                     </tr>';
 
-                if ($order_tour->balance_amount > 0) {
+                if ($order->balance_amount > 0) {
                     // balance amount
                     $TOUR_ITEM_SUMMARY .= '
                     <tr>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:#000; margin:0; font-size:19px"><strong>Balance</strong></h3>
+                            <h3 style="color:red; margin:0; font-size:15px"><strong>Balance</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:#000; margin:0; font-size:19px"><strong>' . price_format_with_currency($order_tour->balance_amount, $order->currency) . '</strong></h3>
+                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($order->balance_amount, $order->currency) . '</strong></h3>
                         </td>
                     </tr>'; 
                 }
                 
-                $paid = $order_tour->total_amount - $order_tour->balance_amount;
+                $paid = $order->total_amount - $order->balance_amount;
                 if ($paid > 0) {                    
                     // paid amount
                     $TOUR_ITEM_SUMMARY .= '
@@ -653,10 +653,10 @@ class PaymentController extends Controller
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:green; margin:0; font-size:19px"><strong>Paid Amount</strong></h3>
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>Paid</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:green; margin:0; font-size:19px"><strong>' . price_format_with_currency($paid, $order->currency) . '</strong></h3>
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>' . price_format_with_currency($paid, $order->currency) . '</strong></h3>
                         </td>
                     </tr>'; 
                 }    
@@ -674,7 +674,7 @@ class PaymentController extends Controller
             }
             // if($pickup_address) {
             //     $pickup_address = '
-            //       <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
+            //       <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
             //       <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
             //         <strong>' . $pickup_address . '</strong>
             //       </h3>';

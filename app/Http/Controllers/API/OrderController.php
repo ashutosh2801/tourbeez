@@ -224,7 +224,10 @@ class OrderController extends Controller
             ], 404);
         }
 
-        $order = Order::create([
+        $order = Order::updateOrCreate(
+        [
+            'id' => $request->orderId ?? null, // condition: check if orderId exists
+        ],[
             'tour_id'       => $request->tourId,
             'user_id'       => $request->userId ?? 0,
             'session_id'    => $request->sessionId, // optional if using guest carts
