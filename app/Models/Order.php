@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\OrderCustomer;
 use App\Models\OrderEmailHistory;
 use App\Models\OrderMeta;
+use App\Models\OrderPayment;
 use App\Models\Scopes\SupplierOrderScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -156,6 +157,11 @@ class Order extends Model
     public function emailHistories()
     {
         return $this->hasMany(OrderEmailHistory::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(OrderPayment::class);
     }
 
 }

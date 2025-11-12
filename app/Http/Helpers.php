@@ -45,7 +45,7 @@ if(!function_exists('countThingsToDo')) {
             ->whereNull('deleted_at');
 
         if ($id) {
-            if($type == 'c3') {
+            if($type === 'c3') {
                 $query->whereHas('categories', fn($q) => $q->where('categories.id', $id));
             }
             else {
@@ -732,7 +732,7 @@ if (! function_exists('membership_type')) {
 if (!function_exists('unique_code')) {
     function unique_code()
     {
-        $id = Tour::withTrashed()->latest('id')->first()->id+1;
+        $id = Tour::withoutGlobalScopes()->withTrashed()->latest('id')->first()->id+1;
         $code = get_setting('tour_code_prifix').date('Ym').$id;
         return $code;
     }

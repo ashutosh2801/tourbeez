@@ -21,7 +21,7 @@ class SitemapController extends Controller
     public function index()
     {
         return SitemapIndex::create()
-            //->add(url('/sitemaps/categories.xml'))
+            ->add(url('/sitemaps/categories.xml'))
             ->add(url('/sitemaps/destinations.xml'))
             ->add(url('/sitemaps/tours.xml'))
             ->add(url('/sitemaps/pages.xml'))
@@ -50,17 +50,48 @@ class SitemapController extends Controller
     {
         $sitemap = Sitemap::create();
 
-        $desinations = DB::table('tour_locations as tl')
+        $cities = DB::table('tour_locations as tl')
                 ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                ->select('c.id', 'c.name', 'c.upload_id', 'c.updated_at')
-                ->groupBy('c.id', 'c.name', 'c.upload_id') 
-                ->orderByRaw('RAND()') 
+                ->select('c.id', 'c.name', 'c.updated_at')
+                ->groupBy('c.id', 'c.name') 
+                ->orderByRaw('c.name ASC') 
                 ->get();
-
-        foreach ($desinations as $destination) {
+        foreach ($cities as $destination) {
             $slug = Str::slug($destination->name);
             $sitemap->add(
-                Url::create(url("https://tourbeez.com/c1/{$destination->id}/{$slug}"))
+                Url::create(url("https://tourbeez.com/{$slug}/{$destination->id}/c1"))
+                    ->setLastModificationDate(Carbon::parse($destination->updated_at))
+                    ->setChangeFrequency('weekly')
+                    ->setPriority(0.8)
+            );
+        }
+
+        $states = DB::table('tour_locations as tl')
+                ->join('states as s', 's.id', '=', 'tl.state_id')
+                ->select('s.id', 's.name', 's.updated_at')
+                ->groupBy('s.id', 's.name') 
+                ->orderByRaw('s.name ASC') 
+                ->get();
+        foreach ($states as $destination) {
+            $slug = Str::slug($destination->name);
+            $sitemap->add(
+                Url::create(url("https://tourbeez.com/{$slug}/{$destination->id}/s1"))
+                    ->setLastModificationDate(Carbon::parse($destination->updated_at))
+                    ->setChangeFrequency('weekly')
+                    ->setPriority(0.8)
+            );
+        }
+
+        $countries = DB::table('tour_locations as tl')
+                ->join('countries as c', 'c.id', '=', 'tl.country_id')
+                ->select('c.id', 'c.name', 'c.updated_at')
+                ->groupBy('c.id', 'c.name') 
+                ->orderByRaw('c.name ASC') 
+                ->get();
+        foreach ($countries as $destination) {
+            $slug = Str::slug($destination->name);
+            $sitemap->add(
+                Url::create(url("https://tourbeez.com/{$slug}/{$destination->id}/c2"))
                     ->setLastModificationDate(Carbon::parse($destination->updated_at))
                     ->setChangeFrequency('weekly')
                     ->setPriority(0.8)
@@ -74,8 +105,9 @@ class SitemapController extends Controller
     public function tours()
     {
         $sitemap = Sitemap::create();
+        $tours = Tour::all();
 
-        foreach (Tour::all() as $tour) {
+        foreach ($tours as $tour) {
             $sitemap->add(
                 Url::create(url("https://tourbeez.com/tour/{$tour->slug}"))
                     ->setLastModificationDate($tour->updated_at)

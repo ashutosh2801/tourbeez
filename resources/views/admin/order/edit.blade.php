@@ -606,6 +606,96 @@
                                         </tr>
                                     </tbody>
                                 </table>
+
+                                <h5 class="mt-4">💳 Payment Details</h5>
+
+                                    @if($order->payments->isNotEmpty())
+                                        <table class="table table-sm table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Amount</th>
+                                                    <th>Card</th>
+                                                    <th>Status</th>
+                                                    <th>Action</th>
+                                                    <th>Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($order->payments as $payment)
+                                                    <tr>
+                                                        <td>{{ $payment->id }}</td>
+                                                        <td>{{ price_format_with_currency($payment->amount, $payment->currency) }}</td>
+                                                        <td>
+                                                            {{ strtoupper($payment->card_brand) ?? 'N/A' }} 
+                                                            •••• {{ $payment->card_last4 ?? '----' }}  
+                                                            <br>
+                                                            <small>Exp: {{ $payment->card_exp_month }}/{{ $payment->card_exp_year }}</small>
+                                                        </td>
+                                                        <td>
+                                                            @if($payment->status === 'succeeded')
+                                                                <span class="badge bg-success">Succeeded</span>
+                                                            @elseif($payment->status === 'pending')
+                                                                <span class="badge bg-warning text-dark">Pending</span>
+                                                            @elseif($payment->status === 'failed')
+                                                                <span class="badge bg-danger">Failed</span>
+                                                            @elseif($payment->status === 'refunded')
+                                                                <span class="badge bg-secondary">Refunded</span>
+                                                            @elseif($payment->status === 'partial_refunded')
+                                                                <span class="badge bg-secondary">Partial Refunded </span> <span>{{(price_format_with_currency( $payment->refund_amount))}}</span>  
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            
+                                                            @if($payment->status === 'succeeded' || $payment->status === 'partial_refunded')
+                                                                <button 
+                                                                    type="button"  
+                                                                    class="btn btn-danger btn-sm open-refund-modal" 
+                                                                    data-id="{{ $payment->id }}" 
+                                                                    data-amount="{{ $payment->amount }}"
+                                                                    data-bs-toggle="modal" 
+                                                                    data-bs-target="#refundModal">
+                                                                    <i class="fa fa-undo"></i> Refund
+                                                                </button>
+                                                            @else
+                                                                <span class="text-muted">—</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>{{ $payment->created_at->format('d M Y h:i A') }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    @else
+                                        <p class="text-muted">No payments have been recorded yet.</p>
+                                    @endif
+
+
+
+                            </div>
+                        </div>
+                        <div class="text-left mt-3">
+                            <button id="addPaymentBtn" type="button" class="btn btn-primary">
+                                + Add Payment
+                            </button>
+                        </div>
+                        <!-- Hidden Add Payment Form -->
+                        <div id="addPaymentBlock" class="mt-3" style="display:none;">
+                            <div id="addPaymentSection">
+                                <div class="form-group">
+                                    <label>Amount</label>
+                                    <input type="number" id="addPaymentAmount" class="form-control" min="1" placeholder="Enter amount">
+                                </div>
+
+                                <div id="cardFields">
+                                    <div class="form-group">
+                                        <label for="card-element">Card Details</label>
+                                        <div id="card-element" class="form-control" style="padding:10px; height:auto;"></div>
+                                        <small id="card-errors" class="text-danger mt-2"></small>
+                                    </div>
+                                </div>
+
+                                <button id="addPaymentSubmit" class="btn btn-success">Pay Now</button>
                             </div>
                         </div>
                     </div>
@@ -845,6 +935,36 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="refundModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Refund Payment</h5>
+      </div>
+      <div class="modal-body">
+        <form id="refundForm">
+          <input type="hidden" id="refundPaymentId" name="payment_id">
+
+          <div class="mb-3">
+            <label>Refund Amount</label>
+            <input type="number" id="refundAmount" name="amount" class="form-control" min="0" step="0.01" required>
+          </div>
+
+          <div class="mb-3">
+            <label>Reason (optional)</label>
+            <input type="text" id="refundReason" name="reason" class="form-control">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" form="refundForm" class="btn btn-danger">Confirm Refund</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 
 @endsection
@@ -1208,6 +1328,193 @@ $(document).ready(function(){
         });
     });
 });
+
+$(document).on('click', '.refund-btn', function(e) {
+    e.preventDefault();
+    let orderId = $(this).data('order-id');
+    let amount = $(this).data('amount');
+
+    $('#refundOrderId').val(orderId);
+    $('#refundAmount').val(amount);
+    $('#refundModal').modal('show');
+});
+
+
+
 </script>
+<<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const addBtn = document.getElementById("addPaymentBtn");
+    const block = document.getElementById("addPaymentBlock");
+
+    addBtn.addEventListener("click", () => {
+        block.style.display = block.style.display === "none" ? "block" : "none";
+    });
+
+    // Initialize Stripe
+    const stripe = Stripe("{{ env('STRIPE_KEY') }}");
+    const elements = stripe.elements();
+    const style = {
+        base: {
+            fontSize: '16px',
+            color: '#32325d',
+            fontFamily: 'Arial, sans-serif'
+        },
+        invalid: { color: '#fa755a' }
+    };
+    const card = elements.create('card', { style });
+    card.mount('#card-element');
+
+    // Show validation errors
+    card.on('change', function(event) {
+        document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+    });
+
+    // Handle payment
+    const submitBtn = document.getElementById("addPaymentSubmit");
+    submitBtn.addEventListener("click", async function() {
+        const amount = document.getElementById("addPaymentAmount").value;
+        if (!amount || amount <= 0) {
+            alert("Please enter a valid amount");
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Processing...";
+
+        // Create Stripe Payment Method
+        const { paymentMethod, error } = await stripe.createPaymentMethod({
+            type: 'card',
+            card: card,
+        });
+
+        if (error) {
+            document.getElementById('card-errors').textContent = error.message;
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Pay Now";
+            return;
+        }
+
+        // Extract card details (safe data only)
+        const cardData = {
+            last4: paymentMethod.card.last4,
+            brand: paymentMethod.card.brand,
+            exp_month: paymentMethod.card.exp_month,
+            exp_year: paymentMethod.card.exp_year,
+        };
+
+        // Send payment info to backend
+        const response = await fetch("{{ route('admin.orders.addPayment', $order->id) }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({
+                payment_method_id: paymentMethod.id,
+                amount: amount,
+                card_last4: cardData.last4,
+                card_brand: cardData.brand,
+                card_exp_month: cardData.exp_month,
+                card_exp_year: cardData.exp_year,
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert("Payment added successfully!");
+            location.reload();
+        } else {
+            alert("Error: " + data.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Pay Now";
+        }
+    });
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(e) {
+    e.preventDefault();
+
+    // When refund modal is opened
+    document.querySelectorAll('.open-refund-modal').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('refundPaymentId').value = this.dataset.id;
+            document.getElementById('refundAmount').value = this.dataset.amount;
+            document.getElementById('refundReason').value = '';
+        });
+    });
+
+    // Handle refund form submit
+    document.getElementById('refundForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const paymentId = document.getElementById('refundPaymentId').value;
+        const amount = document.getElementById('refundAmount').value;
+        const reason = document.getElementById('refundReason').value;
+
+        if (!amount || amount <= 0) {
+            alert("Please enter a valid refund amount.");
+            return;
+        }
+
+        const btn = document.querySelector("button[form='refundForm'][type='submit']");
+        btn.disabled = true;
+        btn.textContent = "Processing...";
+
+        const response = await fetch("{{ route('admin.orders.refundPayment', $order->id) }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({
+                payment_id: paymentId,
+                amount: amount,
+                reason: reason
+            })
+        });
+
+        const data = await response.json();
+        btn.disabled = false;
+        btn.textContent = "Confirm Refund";
+
+        if (data.success) {
+            alert("Refund successful!");
+            location.reload();
+        } else {
+            alert("Error: " + data.message);
+        }
+    });
+
+});
+
+
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    $(document).on('click', '.open-refund-modal', function(e) {
+        e.preventDefault();
+
+        const paymentId = $(this).data('id');
+        const amount = $(this).data('amount');
+
+        // Set values inside modal
+        $('#refundOrderId').val(paymentId);
+        $('#refundAmount').val(amount);
+
+        // Manually show modal (to ensure it opens even if Bootstrap auto-toggle fails)
+        const refundModal = new bootstrap.Modal(document.getElementById('refundModal'));
+        refundModal.show();
+    });
+});
+</script>
+
+
 @endsection
 </x-admin>
+
