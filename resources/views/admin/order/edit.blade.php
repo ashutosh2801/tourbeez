@@ -3,9 +3,6 @@
 
 @section('css')
 <style>
-    .bs-example{
-        margin: 20px;
-    }
     .accordion .fa{
         margin-right: 0.5rem;
         font-size: 24px;
@@ -165,21 +162,30 @@
     @method('PUT')
     @csrf
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
-    <div class="card card-primary">
+    <div class="card card-primary rounded-lg-custom border order-edit-head">
         <div class="card-header">
-            <h5>Created on {{ date__format($order->created_at) }} online on your booking form</h5>
+            <div class="row">
+                <div class="col-md-9">
+                    <h5 class="m-0">Created on {{ date__format($order->created_at) }} online on your booking form</h5>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
+                        Charge now
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div style="padding:0 15px;">
-
+        <div class="card-body order-edit">
+            <div>
                 <div class="row">
-                    
-                    <div class="col-lg-5 btngroup">
-                        <div class="justify-center item-center">
-                            <div class="payment-status order-balance {{ $order->balance_amount > 0 ? 'due' : 'paid' }}">
-                            <div class="btn-group">
-                                <label for="totalDue">Balance</label>
-                                <button type="button" class="btn dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-hand-holding-usd"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Balance</p>
+                                <button type="button" class="btn btn-balance dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
                                 </button>
                                 <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
@@ -208,81 +214,102 @@
                                 </ul>
                             </div>
                         </div>
-
-
-                            <div class="order-status">
-                                <div class="btn-group open">
-                                    <label for="order_status">Order Status</label>
-                                    <button type="button" class="btn dropdown-toggle arrow childOrderEnabled"
-                                        data-element-to-update=".payment-status"
-                                        data-selected="{{ $order->status }}"
-                                        data-toggle="dropdown"
-                                        aria-haspopup="true"
-                                        aria-expanded="false">
-                                        {{ $statuses[$order->status] ?? 'Unknown' }}
-                                    </button>
-
-                                    <ul class="dropdown-menu dropdown-value">
-                                        @foreach ($statuses as $key => $label)
-                                            <li>
-                                                <input type="radio"
-                                                    id="{{ $key }}"
-                                                    name="order_status"
-                                                    value="{{ $key }}"
-                                                    autocomplete="off"
-                                                    {{ $order->status === $key ? 'checked' : '' }}>
-                                                <label for="{{ $key }}" class="{{ $key }}">
-                                                    <i class="fa fa-circle" aria-hidden="true"></i>
-                                                    {{ $label }}
-                                                </label>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
+                    </div>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-stream"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Order Status</p>
+                                <button type="button" class="btn btn-status dropdown-toggle arrow childOrderEnabled"
+                                    data-element-to-update=".payment-status"
+                                    data-selected="{{ $order->status }}"
+                                    data-toggle="dropdown"
+                                    aria-haspopup="true"
+                                    aria-expanded="false">
+                                    {{ $statuses[$order->status] ?? 'Unknown' }}
+                                </button>
+                                <ul class="dropdown-menu dropdown-value">
+                                    @foreach ($statuses as $key => $label)
+                                        <li>
+                                            <input type="radio"
+                                                id="{{ $key }}"
+                                                name="order_status"
+                                                value="{{ $key }}"
+                                                autocomplete="off"
+                                                {{ $order->status === $key ? 'checked' : '' }}>
+                                            <label for="{{ $key }}" class="{{ $key }}">
+                                                <i class="fa fa-circle" aria-hidden="true"></i>
+                                                {{ $label }}
+                                            </label>
+                                        </li>
+                                    @endforeach
+                                </ul>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-7 text-right">
-                        <button class="form-control btn btn-sm btn-primary charge-btn" style="width:150px; display:inline-block;" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                            Charge now
-                        </button>
-                        
-                                            
-                                    
-                        <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
-                            <option value="" >Email</option>
-                            @foreach($email_templates as $email_template)
-                                <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
-                            @endforeach
-                        </select>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-envelope-open-text"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Email</p>
+                                <select class="form-control form-option" name="email_template_name" id="email_template_name">
+                                    <option value="" >Select</option>
+                                    @foreach($email_templates as $email_template)
+                                        <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>SMS</p>
+                                <select class="form-control form-option" name="sms_template_name" id="sms_template_name">
+                                    <option value="" >Select</option>
 
-                        <select class="form-control" style="width:150px; display:inline-block;" name="sms_template_name" id="sms_template_name">
-                            <option value="" >SMS</option>
+                                    @foreach($sms_templates as $sms_template)
+                                <!--  <option value="14" >Order Confirmation -> Send Now</option>
+                                    <option value="Reminder" >Reminder -> Send Now</option>
+                                    <option value="FollowUp" >FollowUp -> Send Now</option>
+                                    <option value="Simple" >Simple -> Send Now</option> -->
 
-                            @foreach($sms_templates as $sms_template)
-                           <!--  <option value="14" >Order Confirmation -> Send Now</option>
-                            <option value="Reminder" >Reminder -> Send Now</option>
-                            <option value="FollowUp" >FollowUp -> Send Now</option>
-                            <option value="Simple" >Simple -> Send Now</option> -->
+                                    <option value="{{$sms_template->id}}" >{{snakeToWords($sms_template->identifier)}} -> Send Now</option>
 
-                            <option value="{{$sms_template->id}}" >{{snakeToWords($sms_template->identifier)}} -> Send Now</option>
-
-                            @endforeach
-                        </select>
-
-                        <select class="form-control" style="width:150px; display:inline-block;" name="print_template_name" id="print_template_name">
-                            <option value="" >Print</option>
-                            <option value="Order Details" >Order Details -> Send Now</option>
-                            <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
-                            <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
-                            <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
-                            <option value="Reminder 2nd" >Reminder 2nd -> Send Now</option>
-                            <option value="Reminder 3rd" >Reminder 3rd -> Send Now</option>
-                            <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
-                            <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
-                            <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
-                            <option value="Simple Email" >Simple Email -> Send Now</option>
-                        </select>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-print"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Print</p>
+                                <select class="form-control form-option" name="print_template_name" id="print_template_name">
+                                    <option value="" >Select</option>
+                                    <option value="Order Details" >Order Details -> Send Now</option>
+                                    <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
+                                    <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
+                                    <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
+                                    <option value="Reminder 2nd" >Reminder 2nd -> Send Now</option>
+                                    <option value="Reminder 3rd" >Reminder 3rd -> Send Now</option>
+                                    <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
+                                    <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
+                                    <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
+                                    <option value="Simple Email" >Simple Email -> Send Now</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -592,6 +619,7 @@
                                         <td></td>
                                         <td>Balance</td>
                                         <td>Paid</td>
+                                        <!-- <td>Refund</td> -->
 
 
 
@@ -604,12 +632,117 @@
                                         <td></td>
                                         <td>{{ price_format_with_currency($order->balance_amount) }}</td>
                                         <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
+                                    <!-- <td>
+                                        <button class="btn btn-sm btn-danger refund-btn" 
+                                          style="width:150px; display:inline-block;" 
+                                          data-order-id="{{ $order->id }}" 
+                                          data-amount="{{ $order->booked_amount }}" 
+                                          type="button">
+                                          Refund
+                                        </button>
+                                    </td> -->
                                     </tr>
 
                                 </table>
+
+                                <h5 class="mt-4">💳 Payment Details</h5>
+
+                                    @if($order->payments->isNotEmpty())
+                                        <table class="table table-sm table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Amount</th>
+                                                    <th>Card</th>
+                                                    <th>Status</th>
+                                                    <th>Action</th>
+                                                    <th>Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($order->payments as $payment)
+                                                    <tr>
+                                                        <td>{{ $payment->id }}</td>
+                                                        <td>{{ price_format_with_currency($payment->amount, $payment->currency) }}</td>
+                                                        <td>
+                                                            {{ strtoupper($payment->card_brand) ?? 'N/A' }} 
+                                                            •••• {{ $payment->card_last4 ?? '----' }}  
+                                                            <br>
+                                                            <small>Exp: {{ $payment->card_exp_month }}/{{ $payment->card_exp_year }}</small>
+                                                        </td>
+                                                        <td>
+                                                            @if($payment->status === 'succeeded')
+                                                                <span class="badge bg-success">Succeeded</span>
+                                                            @elseif($payment->status === 'pending')
+                                                                <span class="badge bg-warning text-dark">Pending</span>
+                                                            @elseif($payment->status === 'failed')
+                                                                <span class="badge bg-danger">Failed</span>
+                                                            @elseif($payment->status === 'refunded')
+                                                                <span class="badge bg-secondary">Refunded</span>
+                                                            @elseif($payment->status === 'partial_refunded')
+                                                                <span class="badge bg-secondary">Partial Refunded </span> <span>{{(price_format_with_currency( $payment->refund_amount))}}</span>  
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            
+                                                            @if($payment->status === 'succeeded' || $payment->status === 'partial_refunded')
+                                                                <button 
+                                                                    type="button"  
+                                                                    class="btn btn-danger btn-sm open-refund-modal" 
+                                                                    data-id="{{ $payment->id }}" 
+                                                                    data-amount="{{ $payment->amount }}"
+                                                                    data-bs-toggle="modal" 
+                                                                    data-bs-target="#refundModal">
+                                                                    <i class="fa fa-undo"></i> Refund
+                                                                </button>
+                                                            @else
+                                                                <span class="text-muted">—</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>{{ $payment->created_at->format('d M Y h:i A') }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    @else
+                                        <p class="text-muted">No payments have been recorded yet.</p>
+                                    @endif
+
+
+
+                            </div>
+                        </div>
+                        <div class="text-left mt-3">
+                            <button id="addPaymentBtn" type="button" class="btn btn-primary">
+                                + Add Payment
+                            </button>
+                        </div>
+                        <!-- Hidden Add Payment Form -->
+                        <div id="addPaymentBlock" class="mt-3" style="display:none;">
+                            <div id="addPaymentSection">
+                                <div class="form-group">
+                                    <label>Amount</label>
+                                    <input type="number" id="addPaymentAmount" class="form-control" min="1" placeholder="Enter amount">
+                                </div>
+
+                                <div id="cardFields">
+                                    <div class="form-group">
+                                        <label for="card-element">Card Details</label>
+                                        <div id="card-element" class="form-control" style="padding:10px; height:auto;"></div>
+                                        <small id="card-errors" class="text-danger mt-2"></small>
+                                    </div>
+                                </div>
+
+                                <button id="addPaymentSubmit" class="btn btn-success">Pay Now</button>
                             </div>
                         </div>
                     </div>
+
+
+
+
+</div>
+
                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="headingThree">
                             <h2 class="my-0 py-0">
@@ -846,6 +979,36 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="refundModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Refund Payment</h5>
+      </div>
+      <div class="modal-body">
+        <form id="refundForm">
+          <input type="hidden" id="refundPaymentId" name="payment_id">
+
+          <div class="mb-3">
+            <label>Refund Amount</label>
+            <input type="number" id="refundAmount" name="amount" class="form-control" min="0" step="0.01" required>
+          </div>
+
+          <div class="mb-3">
+            <label>Reason (optional)</label>
+            <input type="text" id="refundReason" name="reason" class="form-control">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" form="refundForm" class="btn btn-danger">Confirm Refund</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 
 @endsection
@@ -1209,6 +1372,193 @@ $(document).ready(function(){
         });
     });
 });
+
+$(document).on('click', '.refund-btn', function(e) {
+    e.preventDefault();
+    let orderId = $(this).data('order-id');
+    let amount = $(this).data('amount');
+
+    $('#refundOrderId').val(orderId);
+    $('#refundAmount').val(amount);
+    $('#refundModal').modal('show');
+});
+
+
+
 </script>
+<<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const addBtn = document.getElementById("addPaymentBtn");
+    const block = document.getElementById("addPaymentBlock");
+
+    addBtn.addEventListener("click", () => {
+        block.style.display = block.style.display === "none" ? "block" : "none";
+    });
+
+    // Initialize Stripe
+    const stripe = Stripe("{{ env('STRIPE_KEY') }}");
+    const elements = stripe.elements();
+    const style = {
+        base: {
+            fontSize: '16px',
+            color: '#32325d',
+            fontFamily: 'Arial, sans-serif'
+        },
+        invalid: { color: '#fa755a' }
+    };
+    const card = elements.create('card', { style });
+    card.mount('#card-element');
+
+    // Show validation errors
+    card.on('change', function(event) {
+        document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+    });
+
+    // Handle payment
+    const submitBtn = document.getElementById("addPaymentSubmit");
+    submitBtn.addEventListener("click", async function() {
+        const amount = document.getElementById("addPaymentAmount").value;
+        if (!amount || amount <= 0) {
+            alert("Please enter a valid amount");
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Processing...";
+
+        // Create Stripe Payment Method
+        const { paymentMethod, error } = await stripe.createPaymentMethod({
+            type: 'card',
+            card: card,
+        });
+
+        if (error) {
+            document.getElementById('card-errors').textContent = error.message;
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Pay Now";
+            return;
+        }
+
+        // Extract card details (safe data only)
+        const cardData = {
+            last4: paymentMethod.card.last4,
+            brand: paymentMethod.card.brand,
+            exp_month: paymentMethod.card.exp_month,
+            exp_year: paymentMethod.card.exp_year,
+        };
+
+        // Send payment info to backend
+        const response = await fetch("{{ route('admin.orders.addPayment', $order->id) }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({
+                payment_method_id: paymentMethod.id,
+                amount: amount,
+                card_last4: cardData.last4,
+                card_brand: cardData.brand,
+                card_exp_month: cardData.exp_month,
+                card_exp_year: cardData.exp_year,
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert("Payment added successfully!");
+            location.reload();
+        } else {
+            alert("Error: " + data.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Pay Now";
+        }
+    });
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(e) {
+    e.preventDefault();
+
+    // When refund modal is opened
+    document.querySelectorAll('.open-refund-modal').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('refundPaymentId').value = this.dataset.id;
+            document.getElementById('refundAmount').value = this.dataset.amount;
+            document.getElementById('refundReason').value = '';
+        });
+    });
+
+    // Handle refund form submit
+    document.getElementById('refundForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const paymentId = document.getElementById('refundPaymentId').value;
+        const amount = document.getElementById('refundAmount').value;
+        const reason = document.getElementById('refundReason').value;
+
+        if (!amount || amount <= 0) {
+            alert("Please enter a valid refund amount.");
+            return;
+        }
+
+        const btn = document.querySelector("button[form='refundForm'][type='submit']");
+        btn.disabled = true;
+        btn.textContent = "Processing...";
+
+        const response = await fetch("{{ route('admin.orders.refundPayment', $order->id) }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({
+                payment_id: paymentId,
+                amount: amount,
+                reason: reason
+            })
+        });
+
+        const data = await response.json();
+        btn.disabled = false;
+        btn.textContent = "Confirm Refund";
+
+        if (data.success) {
+            alert("Refund successful!");
+            location.reload();
+        } else {
+            alert("Error: " + data.message);
+        }
+    });
+
+});
+
+
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    $(document).on('click', '.open-refund-modal', function(e) {
+        e.preventDefault();
+
+        const paymentId = $(this).data('id');
+        const amount = $(this).data('amount');
+
+        // Set values inside modal
+        $('#refundOrderId').val(paymentId);
+        $('#refundAmount').val(amount);
+
+        // Manually show modal (to ensure it opens even if Bootstrap auto-toggle fails)
+        const refundModal = new bootstrap.Modal(document.getElementById('refundModal'));
+        refundModal.show();
+    });
+});
+</script>
+
+
 @endsection
 </x-admin>
+

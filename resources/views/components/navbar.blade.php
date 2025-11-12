@@ -1,7 +1,7 @@
-<nav class="main-header navbar navbar-expand navbar-dark navbar-light">
+<nav class="main-header navbar navbar-expand navbar-light">
     <ul class="navbar-nav">
         <li class="nav-item">
-            <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            <a class="nav-link menu-bar" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
     </ul>
 
@@ -30,7 +30,7 @@
     @endphp
 
     <li class="nav-item dropdown">
-        <a class="nav-link" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
+        <a class="nav-link nav-notify" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
             <i class="far fa-bell fa-lg"></i>
             @if($unreadCount > 0)
                 <span class="badge badge-danger navbar-badge">{{ $unreadCount }}</span>
@@ -42,13 +42,11 @@
             <div class="dropdown-divider"></div>
 
             @forelse($unreadNotifications as $notification)
-                <a href="{{ route('admin.notifications.read', $notification->id) }}" target="_blank" class="dropdown-item">
-                    <i class="fas fa-circle text-primary mr-2"></i>
+                <a href="{{ route('admin.notifications.read', $notification->id) }}" target="_blank" class="dropdown-item unread">
                     <strong>{{ $notification->data['title'] ?? 'Notification' }}</strong><br>
                     <small class="text-wrap">{{ $notification->data['message'] ?? '' }}</small><br>
                     <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
                 </a>
-                <div class="dropdown-divider"></div>
             @empty
                 <span class="dropdown-item text-muted">No new notifications</span>
             @endforelse
@@ -60,27 +58,33 @@
     </li>
 
     {{-- Clear Cache --}}
-    <li class="nav-item">
-        <a href="{{ route('admin.clear.cache') }}" class="btn btn-info btn-sm">
-            <i class="fas fa-wrench"></i> Clear Cache
-        </a> &nbsp;
+    <li class="nav-item tooltip">
+        <a href="{{ route('admin.clear.cache') }}" class="nav-link nav-clear">
+            <i class="fas fa-wrench fa-lg"></i>
+        </a>
+        <span class="tooltip-text">Clear Cache</span>
     </li>
 
-    {{-- Profile --}}
-    <li class="nav-item">
-        <a href="{{ route('admin.profile.edit') }}" class="btn btn-success btn-sm {{ Route::is('admin.profile.edit') ? 'active' : '' }}">
-            <i class="nav-icon fas fa-user"></i> {{ Auth::user()->name }} Profile
-        </a> &nbsp;
-    </li>
-
-    {{-- Logout --}}
-    <li class="nav-item">
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit" name="submit" class="btn btn-danger btn-sm">
-                <i class="fas fa-sign-out-alt"></i> Log out
-            </button>    
-        </form>
+    <li class="nav-item dropdown">
+        <a class="nav-link nav-profile" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
+            {{ Auth::user()->name }} <img src="{{ asset('admin/dist/img/avatar4.png') }}" class="img-circle elevation-2" width="40" height="40">
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right profile-dropdown">
+            <a href="{{ route('admin.profile.edit') }}" class="{{ Route::is('admin.profile.edit') ? 'active' : '' }} text-center">
+                <img src="{{ asset('admin/dist/img/avatar4.png') }}" class="img-circle elevation-2" width="40" height="40">
+                <b>{{ Auth::user()->name }}</b>
+                Admin
+            </a>
+            <a href="{{ route('admin.profile.edit') }}" class="{{ Route::is('admin.profile.edit') ? 'active' : '' }} link">
+                <i class="nav-icon fas fa-user"></i> My Profile
+            </a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" name="submit" class="link">
+                    <i class="fas fa-sign-out-alt"></i> Sign out
+                </button>    
+            </form>
+        </div>
     </li>
 </ul>
 </nav>

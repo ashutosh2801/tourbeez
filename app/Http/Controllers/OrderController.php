@@ -8,6 +8,7 @@ use App\Models\EmailTemplate;
 use App\Models\Order;
 use App\Models\OrderCustomer;
 use App\Models\OrderEmailHistory;
+use App\Models\OrderPayment;
 use App\Models\OrderTour;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use Stripe\PaymentIntent;
+use Stripe\Refund;
 use Stripe\Stripe;
 
 
@@ -909,115 +911,113 @@ public function store(Request $request)
 
 
             $TOUR_ITEM_SUMMARY = '';
-
+ 
             foreach ($order->orderTours as $order_tour) {
                 $subtotal = 0;
                 $_tourId = $order_tour->tour_id;
                 $tour_pricing = !empty($order_tour->tour_pricing) ? json_decode($order_tour->tour_pricing, true) : [];
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
-                
                 $TOUR_ITEM_SUMMARY .= '
-                <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
+                    <table width="768" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:768px;">
                     <tbody>
                     <tr>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
-                            <h3 style="font-size:19px"><strong>' . $order_tour->tour->title . ' - Item Summary</strong></h3>
-                        </td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 0 0 10px; width:768px;">
+                    <h3 style="font-size:19px"><strong>' . $order_tour->tour->title . ' - Item Summary</strong></h3>
+                    </td>
                     </tr>
                     </tbody>
-                </table>
-
-                <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
+                    </table>
+                     
+                                    <table width="768" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
                     <tbody>
-                        <tr>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
-                            </td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
-                            </td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                &nbsp;
-                            </td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
-                            </td>
-                        </tr>';
-                
-                // Pricing Rows
-                $i = 1;
-                foreach ($tour_pricing as $result) {
-                    // $result = getTourPricingDetails($tour_pricing, $pricing->id);
-                    $qty = $result['quantity'] ?? 0;
-                    $price = $result['price'] ?? 0;
-                    //$total = $qty * $price;
-                    $total = $result['total_price'] ?? 0;
-                    if ($qty > 0) {
-                        $subtotal += $total;
-                        $TOUR_ITEM_SUMMARY .= '
-                        <tr>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ucwords($result['label']) . '</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
-                        </tr>';
-                    }
-                }
-
-                // Extras Rows
-                foreach ($tour_extra as $extra) {
-                    // $result = getTourExtraDetails($tour_extra, $extra->id);
-                    $qty = $extra['quantity'] ?? 0;
-                    $price = $extra['price'] ?? 0;
-                    // $total = $qty * $price;
-                    $total = $extra['total_price'] ?? 0;
-                    if ($qty > 0) {
-                        $subtotal += $total;
-                        $TOUR_ITEM_SUMMARY .= '
-                        <tr>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' (Extra)</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
-                        </tr>';
-                    }
-                }
-
-                // Taxes
-                $taxRows = '';
-                if ($order_tour->tour->taxes_fees) {
-                    foreach ($order_tour->tour->taxes_fees as $tax) {
-                        $taxAmount = get_tax($subtotal, $tax->fee_type, $tax->tax_fee_value);
-                        $subtotal += $taxAmount;
-                        $taxRows .= '
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
-                            </td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                ' . price_format_with_currency($taxAmount, $order->currency) . '
-                            </td>
-                        </tr>';
-                    }
-                }
-
-                // Total Row
-                $TOUR_ITEM_SUMMARY .= $taxRows . '
                     <tr>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-                        </td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:#000; margin:0; font-size:19px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
-                        </td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
+                    </td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
+                    </td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    &nbsp;
+                    </td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
+                    </td>
+                    </tr>';
+                                    // Pricing Rows
+                                    $i = 1;
+                                    foreach ($tour_pricing as $result) {
+                                        // $result = getTourPricingDetails($tour_pricing, $pricing->id);
+                                        $qty = $result['quantity'] ?? 0;
+                                        $price = $result['price'] ?? 0;
+                                        //$total = $qty * $price;
+                                        $total = $result['total_price'] ?? 0;
+                                        if ($qty > 0) {
+                                            $subtotal += $total;
+                                            $TOUR_ITEM_SUMMARY .= '
+                    <tr>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ucwords($result['label']) . '</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
+                    </tr>';
+                                        }
+                                    }
+                     
+                                    // Extras Rows
+                                    foreach ($tour_extra as $extra) {
+                                        // $result = getTourExtraDetails($tour_extra, $extra->id);
+                                        $qty = $extra['quantity'] ?? 0;
+                                        $price = $extra['price'] ?? 0;
+                                        // $total = $qty * $price;
+                                        $total = $extra['total_price'] ?? 0;
+                                        if ($qty > 0) {
+                                            $subtotal += $total;
+                                            $TOUR_ITEM_SUMMARY .= '
+                    <tr>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' (Extra)</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
+                    </tr>';
+                                        }
+                                    }
+                     
+                                    // Taxes
+                                    $taxRows = '';
+                                    if ($order_tour->tour->taxes_fees) {
+                                        foreach ($order_tour->tour->taxes_fees as $tax) {
+                                            $taxAmount = get_tax($subtotal, $tax->fee_type, $tax->tax_fee_value);
+                                            $subtotal += $taxAmount;
+                                            $taxRows .= '
+                    <tr>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
+                    </td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                                    ' . price_format_with_currency($taxAmount, $order->currency) . '
+                    </td>
+                    </tr>';
+                                        }
+                                    }
+                     
+                                    // Total Row
+                                    $TOUR_ITEM_SUMMARY .= $taxRows . '
+                    <tr>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
+                    </td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                    <h3 style="color:#000; margin:0; font-size:19px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
+                    </td>
                     </tr>
                     </tbody>
-                </table>';
-            }
+                    </table>';
+                }
             
             $pickup_address = '';
             if( $order->customer->pickup_name ) {
@@ -1499,7 +1499,7 @@ public function store(Request $request)
     }
 
 
-    public function capturePayment(Request $request, $orderId, $action_name = 'full')
+    public function capturePayment6r67(Request $request, $orderId, $action_name = 'full')
     {
         DB::beginTransaction();
 
@@ -1592,6 +1592,18 @@ public function store(Request $request)
                 $order->save();
             }
 
+            OrderPayment::create([
+                'order_id'          => $order->id,
+                'payment_intent_id' => $paymentIntent->id,
+                'transaction_id'    => $paymentIntent->id,
+                'payment_method'    => 'card',
+                'amount'            => $chargeAmount,
+                'currency'          => $order->currency,
+                'status'            => 'succeeded',
+                'action'            => 'charge',
+                'response_payload'  => json_encode($paymentIntent),
+            ]);
+
             DB::commit();
             return response()->json([
                 'success' => true,
@@ -1618,6 +1630,208 @@ public function store(Request $request)
             ], 500);
         }
     }
+
+
+    public function capturePayment(Request $request, $orderId, $action_name = 'full')
+{
+    DB::beginTransaction();
+
+    try {
+        $order = Order::findOrFail($orderId);
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        $capturedIntent = null;
+        $action_name = $order->adv_deposite ?: $action_name;
+        $customerId = $order->stripe_customer_id;
+        $intentId = $order->payment_intent_id;
+        $paymentMethodId = null;
+
+        // Retrieve PaymentMethod from existing intents
+        if ($intentId && Str::startsWith($intentId, 'seti_')) {
+            $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
+            $paymentMethodId = $setupIntent->payment_method;
+        } elseif ($intentId && Str::startsWith($intentId, 'pi_')) {
+            $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+            $paymentMethodId = $paymentIntent->payment_method;
+        }
+
+        if (!$paymentMethodId || !$customerId) {
+            throw new \Exception("No valid payment method or customer found for this order.");
+        }
+
+        // Ensure PaymentMethod is attached to customer
+        $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
+        if ($paymentMethod->customer !== $customerId) {
+            $paymentMethod->attach(['customer' => $customerId]);
+        }
+
+        // Get card details
+        $cardDetails = $paymentMethod->card ?? null;
+        $cardLast4 = $cardDetails->last4 ?? null;
+        $cardBrand = $cardDetails->brand ?? null;
+
+        // Determine amount to charge
+        $chargeAmount = $action_name === 'deposit'
+            ? (float) $request->input('amount')
+            : (float) $order->balance_amount;
+
+        if ($chargeAmount <= 0) {
+            throw new \Exception("Invalid charge amount.");
+        }
+
+        // ✅ Create new PaymentIntent with only `card` as method type
+        // "link" caused your previous error — we’ll use just 'card' for safe capture
+        $paymentIntent = \Stripe\PaymentIntent::create([
+            'customer'             => $customerId,
+            'amount'               => (int) ($chargeAmount * 100),
+            'currency'             => $order->currency ?? 'usd',
+            'payment_method'      => $paymentMethodId,
+            'payment_method_types'=> ['card', 'link'],
+            'off_session'          => true,
+            'confirm'              => true,
+            'description'          => 'Charge for Order #' . $order->order_number,
+            'metadata'             => [
+                'order_id' => $order->id,
+                'action'   => $action_name,
+            ],
+        ]);
+
+        $capturedIntent = $paymentIntent;
+
+        // Update order status and amounts
+        // $order->booked_amount += $chargeAmount;
+        // $order->balance_amount = max(0, $order->total_amount - $order->booked_amount);
+
+        if ($order->balance_amount <= 0) {
+            $order->payment_status = 1; // Fully paid
+        }
+
+        $order->payment_intent_id = $paymentIntent->id;
+        $order->transaction_id = $paymentIntent->charges->data[0]->id ?? $paymentIntent->id;
+        $order->save();
+
+        // ✅ Save payment record
+        OrderPayment::create([
+            'order_id'          => $order->id,
+            'payment_intent_id' => $paymentIntent->id,
+            'transaction_id'    => $paymentIntent->charges->data[0]->id ?? $paymentIntent->id,
+            'payment_method'    => 'card',
+            'card_brand'        => $cardBrand,
+            'card_last4'        => $cardLast4,
+            'amount'            => $chargeAmount,
+            'currency'          => $order->currency,
+            'status'            => 'succeeded',
+            'action'            => $action_name,
+            'response_payload'  => json_encode($paymentIntent),
+        ]);
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => $order->balance_amount > 0
+                ? 'Partial payment captured successfully.'
+                : 'Full payment captured successfully.',
+            'data' => [
+                'payment_intent' => $capturedIntent,
+                'card' => [
+                    'brand' => $cardBrand,
+                    'last4' => $cardLast4,
+                ],
+            ],
+        ]);
+
+    } catch (\Stripe\Exception\CardException $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => $e->getError()->message ?? 'Card was declined.',
+        ], 400);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Payment capture failed', [
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+
+
+
+
+
+public function refundPayment(Request $request, Order $order)
+{
+    $request->validate([
+        'payment_id' => 'required|integer',
+        'amount' => 'required|numeric|min:0.5',
+        'reason' => 'nullable|string|max:255'
+    ]);
+
+    $payment = $order->payments()->findOrFail($request->payment_id);
+
+    // Ensure we don’t over-refund
+    $alreadyRefunded = $payment->refund_amount ?? 0;
+    $remainingRefundable = $payment->amount - $alreadyRefunded;
+
+    if ($remainingRefundable <= 0) {
+        return response()->json(['success' => false, 'message' => 'This payment has already been fully refunded.']);
+    }
+
+    if ($request->amount > $remainingRefundable) {
+        return response()->json(['success' => false, 'message' => 'Refund amount exceeds remaining refundable balance.']);
+    }
+
+    try {
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        $refund = \Stripe\Refund::create([
+            'payment_intent' => $payment->payment_intent_id,
+            'amount' => (int) ($request->amount * 100), // cents
+            'reason' => $request->reason ?: null,
+        ]);
+
+        // Calculate new total refunded amount
+        $newRefundTotal = $alreadyRefunded + $request->amount;
+
+        // Determine new status
+        $newStatus = $newRefundTotal >= $payment->amount ? 'refunded' : 'partial_refunded';
+
+        // Update payment
+        $payment->update([
+            'status' => $newStatus,
+            'refund_id' => $refund->id ?? null,
+            'refunded_at' => now(),
+            'refund_amount' => $newRefundTotal, // cumulative refund
+            'refund_reason' => $request->reason,
+        ]);
+
+        // Update order amounts
+        $order->booked_amount -= $request->amount;
+        $order->balance_amount = $order->total_amount - $order->booked_amount;
+        $order->save();
+
+        return response()->json([
+            'success' => true,
+            'status' => $newStatus,
+            'refunded_amount' => $newRefundTotal,
+            'remaining' => $payment->amount - $newRefundTotal,
+        ]);
+
+    } catch (\Stripe\Exception\ApiErrorException $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()]);
+    }
+}
+
 
 
 
@@ -1828,6 +2042,61 @@ public function store(Request $request)
             ]
         ]);
     }
+
+
+    public function addStripePayment(Request $request, Order $order)
+    {
+        // dd(2332, $request, $order, $order->payments());
+        try {
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            $paymentIntent = \Stripe\PaymentIntent::create([
+                'amount' => (int) ($request->amount * 100),
+                'currency' => strtoupper($order->currency ?? 'cad'),
+                'customer' => $order->stripe_customer_id,
+                'payment_method' => $request->payment_method_id,
+                'off_session' => true,
+                'confirm' => true,
+            ]);
+
+            // Store in order_payments table
+            $order->payments()->create([
+                'order_id'        => $order->id,
+                'payment_intent_id' => $paymentIntent->id,
+                'transaction_id'  => NULL,
+                'payment_method'  => 'stripe',
+                'amount'          => (int) ($request->amount),
+                'currency'        => strtoupper($order->currency ?? 'cad'),
+                'status'          => $paymentIntent->status,
+                'action'          => 'deposit',
+                'response_payload'=> json_encode($paymentIntent),
+                'card_last4'      => $request->card_last4,
+                'card_brand'      => $request->card_brand,
+                'card_exp_month'  => $request->card_exp_month,
+                'card_exp_year'   => $request->card_exp_year,
+            ]);
+
+
+
+            // Update main order summary
+            $order->booked_amount += $request->amount;
+            $order->balance_amount = $order->total_amount - $order->booked_amount;
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment successful',
+                'data' => $paymentIntent
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Stripe Add Payment Failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
 
 

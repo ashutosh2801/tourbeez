@@ -9,6 +9,7 @@ use App\Models\Addon;
 use App\Models\EmailTemplate;
 use App\Models\Order;
 use App\Models\OrderEmailHistory;
+use App\Models\OrderPayment;
 use App\Models\Pickup;
 use App\Models\PickupLocation;
 use App\Models\TourPricing;

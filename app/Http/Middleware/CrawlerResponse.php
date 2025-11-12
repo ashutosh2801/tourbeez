@@ -50,7 +50,7 @@ class CrawlerResponse
         ];
 
         foreach ($bots as $bot) {
-            \Log::info('Crawler detected 1: ' . $ua);
+            
             if (strpos($ua, $bot) !== false) {
 
                 // ----- Adjust for /tbadmin/ subfolder -----
@@ -464,7 +464,7 @@ class CrawlerResponse
                         $d = Category::findOrFail( $id );
                     }                    
 
-                    if($id && $type){
+                    if($id && $type && $d){
 
                         $query = Tour::select([
                                 'id', 'title', 'slug', 'unique_code', 'price',
