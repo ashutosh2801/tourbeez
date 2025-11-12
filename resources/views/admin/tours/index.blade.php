@@ -109,6 +109,9 @@
                 <div class="card-tools">
                     
                     <a href="#" onclick="exportFilteredTours()" class="btn btn-selected"> <i class="fas fa-file-export"></i> Export Tours</a>
+                    <button type="button" class="btn btn-selected" data-toggle="modal" data-target="#importPriceModal">
+                        <i class="fas fa-file-import"></i> Import Price
+                    </button>
 
                     <button id="enableDisableTour" type="button" class="btn btn-selected"> <i class="fas fa-sync"></i> Enable/Disable</button>
 
@@ -301,6 +304,34 @@
         </div>
     </div>
 </div>
+
+<!-- Import Price Modal -->
+<div id="importPriceModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title h6">{{ translate('Import Tour Prices') }}</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+            </div>
+
+            <form method="POST" action="{{ route('admin.tours.importPrice') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body">
+                    <p>Upload a CSV file with columns: <strong>unique_code</strong>, <strong>price</strong></p>
+                    <div class="form-group">
+                        <label for="file">Select File</label>
+                        <input type="file" name="file" id="file" class="form-control" required accept=".csv,.xlsx,.xls">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                    <button type="submit" class="btn btn-success">{{ translate('Import') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
 
 

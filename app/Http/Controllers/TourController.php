@@ -34,6 +34,7 @@ use Redirect;
 use Str;
 use Validator;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\ToursImport;
 
 class TourController extends Controller
 {
@@ -2471,6 +2472,21 @@ class TourController extends Controller
 
         // 📦 Export
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ToursExport($request), $fileName);
+    }
+
+
+    public function importPrice(Request $request)
+    {
+
+            $request->validate([
+                'file' => 'required|mimes:csv,xlsx,xls',
+            ]);
+
+            Excel::import(new ToursImport, $request->file('file'));
+
+            return back()->with('success', 'Tour prices updated successfully!');
+
+        return back()->with('success', "$updatedCount tour prices have been updated successfully.");
     }
 
 
