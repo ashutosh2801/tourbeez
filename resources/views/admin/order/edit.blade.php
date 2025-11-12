@@ -3,13 +3,6 @@
 
 @section('css')
 <style>
-    .accordion .fa{
-        margin-right: 0.5rem;
-        font-size: 24px;
-        font-weight: bold;
-        position: relative;
-        top: 2px;
-    }
     ul.flex {
         display: flex;
         list-style: none;
@@ -316,37 +309,27 @@
             
             <div class="bs-example">
                 <div class="accordion" id="accordionExample">
-                    <div class="card">
+                    <div class="card customer-details">
                         <div class="card-header bg-secondary py-0" id="headingOne">
-                            <h2 class="my-0 py-0">
-                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0 px-0" data-toggle="collapse" data-target="#collapseOne"><i class="fa fa-angle-right"></i>Customer Details</button>                                  
-                            </h2>
+                            <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne"><i class="fa fa-angle-right"></i>Customer Details</button>
                         </div>
                         <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
                             <div class="card-body">
-
-                                
-                            
-                               
                                     <ul class="flex flex-row">
-
-
-                                        <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank">{{ $order->customer?->name }}</a></li>
-                                        <li>{{ $order->customer?->email }}</li>
-                                        <li>+{{ $order->customer?->phone }}</li>
+                                        <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"> <i class="fas fa-user-tie"></i> {{ $order->customer?->name }}</a></li>
+                                        <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
+                                        <li><i class="fas fa-phone-square-alt"></i> +{{ $order->customer?->phone }}</li>
                                     </ul>
                                 
                             </div>
                         </div>
                     </div>
 
-                    <div class="card">
+                    <div class="card tour-details">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
-                            <h2 class="my-0 py-0">
-                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-down"></i> Tour Details</button>
-                            </h2>
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-right"></i> Tour Details</button>
                         </div>
-                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionExample">
                             <div class="card-body">                               
                                 
                                 <div id="tour_all">
@@ -357,11 +340,11 @@
                                         $subtotal = 0;
                                         $_tourId = $order_tour->tour_id;
                                     @endphp
-                                    <div id="{{ $row_id }}" style="border:1px solid #e1a604; margin-bottom:10px">
+                                    <div id="{{ $row_id }}" style="border:1px solid #eaecef;">
                                     <input type="hidden" name="tour_id[]" value="{{ $order_tour->tour_id }}" />    
                                     <table class="table">
                                         <tr>
-                                            <td width="600"><h3 class="text-lg">{{ $order_tour->tour?->title }}</h3></td>
+                                            <td width="600"><h3 class="tour-name">{{ $order_tour->tour?->title }}</h3></td>
                                             <td class="text-right" width="200">
                                                 <div class="input-group">
                                                     <input type="text" class="aiz-date-range form-control" id="tour_startdate" name="tour_startdate[]" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="{{ $order_tour->tour_date }}">
@@ -389,19 +372,19 @@
                                                 </div>
                                             </td> --}}
                                             <td class="text-right">
-                                                <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button>
-                                                <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
+                                                <button type="button" onClick="addTour()" class="btn btn-plus">+</button>
+                                                <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-minus">-</button>
                                             </td>
                                         </tr>
                                     </table>
 
-                                    <table class="table" style="background:#ebebeb">
+                                    <table class="table m-0" style="background:#ebebeb;">
                                         <tr>
                                             <td style="width:200px">
                                                 <table class="table">
                                                     <tr>
                                                         <td colspan="2">
-                                                            <h4 style="font-size:16px; font-weight:600">Quantities</h4>
+                                                            <h4 style="font-size:16px; font-weight:600; margin:0;">Quantities</h4>
                                                         </td>
                                                     </tr>
                                                     @if ($order_tour->tour)
@@ -433,7 +416,7 @@
                                                 <table class="table">
                                                     <tr>
                                                         <td colspan="2">
-                                                            <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
+                                                            <h4 style="font-size:16px; font-weight:600; margin:0;">Optional extras</h4>
                                                         </td>
                                                     </tr>
                                                     @if ($order_tour->tour)
@@ -464,7 +447,7 @@
                                         </tr>
                                     </table>
 
-                                    <table class="table">
+                                    <table class="table m-0">
                                         @php
                                         $i=1;
                                         $taxesfees = $order_tour->tour->taxes_fees;
@@ -495,8 +478,8 @@
                                 
                                 <div id="tourContainer"></div>
 
-                                <div style="border:1px solid #e1a604; margin-bottom:10px">
-                                    <table class="table">
+                                <div style="border:1px solid #eaecef; border-top: 0;">
+                                    <table class="table m-0">
                                         @if ($order->bookingFee->value('value'))
                                             <tr>
                                                 <td><b>Booking fee</b> (included in price)</td>
@@ -509,7 +492,7 @@
                                         </tr> --}}
                                         <tr>
                                             <td><b>Total</b></td>
-                                            <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }} {{ $order->currency}}</td>
+                                            <td class="text-right"><b>{{ price_format_with_currency($order->total_amount, $order->currency) }} {{ $order->currency}}</b></td>
                                         </tr>
                                         <tr style="color: red">
                                             <td><b>Balance</b></td>
@@ -521,21 +504,14 @@
                         </div>
                     </div>
 
-                    <div class="card">
+                    <div class="card additional-info">
                         <div class="card-header bg-secondary py-0" id="heading4">
-                            <h2 class="my-0 py-0">
-                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0 px-0" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
-
-
-                            </h2>
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
                         </div>
-                        <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
-                            <div class="card-body">
-                               
-
-
-                                 <div style="border:1px solid #e1a604; margin-bottom:10px">
-                                    <table class="table">
+                        <div id="collapse4" class="collapse" aria-labelledby="heading4" data-parent="#accordionExample">
+                            <div class="card-body">                               
+                                 <div style="border:1px solid #eaecef;">
+                                    <table class="table m-0">
                                         <tr>
                                             <td><b>Tour Guest</b> </td>
                                             <td class="text-right">{{ $order->order_tour->number_of_guests }} </td>
@@ -599,51 +575,45 @@
                         </div>
                     </div>
 
-                    <div class="card">
+                    <div class="card payment-details">
                         <div class="card-header bg-secondary py-0" id="headingThree">
-                            <h2 class="my-0 py-0">
-                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Payment Details</button>                     
-                            </h2>
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Payment Details</button>
                         </div>
 
-                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+                        <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordionExample">
                             <div class="card-body">
-                                <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div>
+                                <div class="card text-success" ><p> <i class="fas fa-exclamation-circle"></i> This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div>
                                 
                                 <table class="table">    
-                                    <tr>
-                                        <td>Payment Type</td>
-                                        <td>Ref number</td>
-                                        
-                                        <td>Total</td>
-                                        <td></td>
-                                        <td>Balance</td>
-                                        <td>Paid</td>
-
-
-
-                                    </tr>
-                                    <tr>
-                                    <td>{{ ucwords($order->payment_method)}}</td>
-                                    <td>{{ ucwords($order->payment_intent_id)}}</td>
-                                    
-                                    <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-                                        <td></td>
-                                        <td>{{ price_format_with_currency($order->balance_amount) }}</td>
-                                        <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
-                                    </tr>
-
+                                    <thead>
+                                        <tr>
+                                            <th>Payment Type</th>
+                                            <th>Ref number</th>
+                                            <th>Total</th>
+                                            <th></th>
+                                            <th>Balance</th>
+                                            <th>Paid</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>{{ ucwords($order->payment_method)}}</td>
+                                            <td>{{ ucwords($order->payment_intent_id)}}</td>
+                                            <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                            <td></td>
+                                            <td>{{ price_format_with_currency($order->balance_amount) }}</td>
+                                            <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-                    <div class="card">
-                        <div class="card-header bg-secondary py-0" id="headingThree">
-                            <h2 class="my-0 py-0">
-                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Order Email History</button>                     
-                            </h2>
+                    <div class="card email-history">
+                        <div class="card-header bg-secondary py-0" id="headingFour">
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseFour"><i class="fa fa-angle-right"></i> Order Email History</button>
                         </div>
-                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+                        <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordionExample">
                             <div class="card-body">
                                 <table class="table">
                                     <thead>
@@ -678,10 +648,12 @@
                         </div>
                     </div>
 
-                    <div class="card-footer" style="display:block">
-                        <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save order</button>
-                        <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
-                        <a onclick="return confirm('Are you sure?')" style="padding:0.6rem 2rem" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-outline-danger">Delete</a>
+                    <div class="card-footer">
+                        <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Save order</button>
+
+                        <a href="{{ route('admin.orders.index') }}" class="btn btn-cancel"><i class="fas fa-times"></i> Cancel</a>
+
+                        <a onclick="return confirm('Are you sure?')" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-danger confirm-delete"><i class="fas fa-trash-alt"></i></a>
                     </div>
                 </div>
             </div>
@@ -868,7 +840,7 @@
       <div class="modal-footer">
         <!-- <button type="button" class="btn btn-primary" id="confirmCharge">Confirm Charge</button> -->
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-        <button type="submit" form="chargeForm" class="btn btn-primary">Charge</button>
+        <button type="submit" form="chargeForm" class="btn btn-charge">Charge</button>
       </div>
     </div>
   </div>

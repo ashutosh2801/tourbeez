@@ -52,7 +52,7 @@
                             <input type="date" name="tour_start_date" class="form-control" value="{{ request('tour_start_date') }}">
                         </div>
                         <div class="col-md-2 col-6">
-                            <select name="date_filter" class="form-control form-control-sm" onchange="this.form.submit()">
+                            <select name="date_filter" class="form-control" onchange="this.form.submit()">
                                 <option value="">Filter by Order Created</option>
                                 <option value="last_7" {{ request('date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
                                 <option value="last_15" {{ request('date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
