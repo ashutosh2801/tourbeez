@@ -44,7 +44,7 @@
 
                 <div id="FeatureRow_{{ $index }}"> 
                     <input type="hidden" name="ExclusionOptions[{{ $index }}][id]" id="ExclusionOptions_id_{{ $index }}" 
-                    value="{{ old("ExclusionOptions.$index.id", $option['id']) }}" class="form-control" />
+                    value="{{ old("ExclusionOptions.$index.id", $option['id'] ?? '') }}" class="form-control" />
 
                     
                     <div class="row">

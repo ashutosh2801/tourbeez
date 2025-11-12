@@ -225,6 +225,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/order/bulk-delete', [OrderController::class, 'bulkDelete'])->name('order.bulkDelete');
     Route::post('/orders/{order}/charge', [OrderController::class, 'capturePayment'])->name('orders.charge');
     Route::post('/orders/{order}/payment-details', [OrderController::class, 'getPaymentDetails'])->name('orders.payment-details');
+    Route::post('orders/{order}/refund', [OrderController::class, 'refundPayment'])
+    ->name('orders.refundPayment');
+    Route::post('orders/{order}/refund2322', [OrderController::class, 'refundPayment'])->name('orders.refund');
+
+
+    Route::post('/admin/orders/{order}/add-payment', [OrderController::class, 'addStripePayment'])
+    ->name('orders.addPayment');
 
     // SMS Templates
     Route::resource('/sms-templates', SmsTemplateController::class);

@@ -30,7 +30,7 @@ class CheckAbandonedOrders extends Command
         
         if ($orders->isEmpty()) {
             $this->info('No abandoned orders found.');
-            Log::info('No abandoned orders found.');
+            \Log::info('No abandoned orders found.');
             return;
         }
 
@@ -48,7 +48,7 @@ class CheckAbandonedOrders extends Command
                     $customer = $order->orderUser;
                 }
 
-                if(!$customer->email){
+                if($customer && !$customer->email){
                     continue;
                 }
                 $pickup_address = '';
