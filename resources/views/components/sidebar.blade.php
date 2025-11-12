@@ -21,7 +21,7 @@
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.tour.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.tour.index') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-th"></i>
+                        <i class="nav-icon fas fa-map-signs"></i>
                         <p>{{  translate('Tours') }}
                             <span class="badge badge-warning right">{{ $TourCount }}</span>
                         </p>
@@ -31,7 +31,7 @@
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.addon.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.addon.index') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-list-alt"></i>
+                        <i class="nav-icon fas fa-umbrella-beach"></i>
                         <p>{{  translate('Extra ') }}
                             <span class="badge badge-warning right">{{ $AddonCount }}</span>
                         </p>
@@ -42,7 +42,7 @@
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.category.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.category.index') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-list-alt"></i>
+                        <i class="nav-icon fas fas fa-th"></i>
                         <p>{{  translate('Categories') }}
                             <span class="badge badge-warning right">{{ $CategoryCount }}</span>
                         </p>
@@ -53,7 +53,7 @@
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.pickups.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.pickups.index') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-list"></i>
+                        <i class="nav-icon fas fa-suitcase-rolling"></i>
                         <p>{{  translate('Pickups') }}
                             <span class="badge badge-warning right">{{ $PickupCount }}</span>
                         </p>
@@ -64,7 +64,7 @@
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.tour_type.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.tour_type.index') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-list"></i>
+                        <i class="nav-icon fas fa-cannabis"></i>
                         <p>{{  translate('Tour Types') }}
                             <span class="badge badge-warning right">{{ $TourTypeCount }}</span>
                         </p>
@@ -74,7 +74,7 @@
                 @can('show_attributes') 
                 <li class="aiz-side-nav-item">
                     <a href="javascript:void(0);" class="aiz-side-nav-link nav-link">
-                        <i class="nav-icon fas fa-taxi"></i>
+                        <i class="nav-icon fas fa-magic"></i>
                         <p>{{  translate('Attributes') }}
                             <span class="aiz-side-nav-arrow right"></span>
                         </p>
@@ -84,7 +84,7 @@
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('admin.countries.index') }}"
                                 class="aiz-side-nav-link nav-link {{ Route::is('admin.countries.index') ? 'active' : '' }}">
-                                <i class="nav-icon fas fa-list"></i>
+                                <i class="nav-icon fas fa-globe-europe"></i>
                                 <p>{{  translate('Countries') }}
                                     <span class="badge badge-warning right">{{ $CountryCount }}</span>
                                 </p>
@@ -93,7 +93,7 @@
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('admin.states.index') }}"
                                 class="aiz-side-nav-link nav-link {{ Route::is('admin.states.index') ? 'active' : '' }}">
-                                <i class="nav-icon fas fa-list"></i>
+                                <i class="nav-icon fas fa-flag"></i>
                                 <p>{{  translate('States') }}
                                     <span class="badge badge-warning right">{{ $StateCount }}</span>
                                 </p>
@@ -102,7 +102,7 @@
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('admin.cities.index') }}"
                                 class="aiz-side-nav-link nav-link {{ Route::is('admin.cities.index') ? 'active' : '' }}">
-                                <i class="nav-icon fas fa-list"></i>
+                                <i class="nav-icon fas fa-city"></i>
                                 <p>{{  translate('Cities') }}
                                     <span class="badge badge-warning right">{{ $CityCount }}</span>
                                 </p>
@@ -166,7 +166,7 @@
         @can('show_users')  
         <li class="nav-item">
             <a href="javascript:void(0);" class="nav-link">
-                <i class="nav-icon fas fa-users"></i>
+                <i class="nav-icon fas fa-user-cog"></i>
                 <p>{{ translate('Staff')}}
                     <span class="aiz-side-nav-arrow right"></span>
                 </p>                    
@@ -178,7 +178,7 @@
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.user.index') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user"></i>
                         <p>{{ translate('Staff')}}
-                            <span class="badge badge-info right">{{ $userCount }}</span>
+                            <span class="badge badge-warning right">{{ $userCount }}</span>
                         </p>
                     </a>
                 </li>
@@ -189,7 +189,7 @@
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.role.index') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user-tag"></i>
                         <p>Role
-                            <span class="badge badge-success right">{{ $RoleCount }}</span>
+                            <span class="badge badge-warning right">{{ $RoleCount }}</span>
                         </p>
                     </a>
                 </li>
@@ -198,7 +198,7 @@
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.permission.index') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-hat-cowboy"></i>
                         <p>{{ translate('Permission') }}
-                            <span class="badge badge-danger right">{{ $PermissionCount }}</span>
+                            <span class="badge badge-warning right">{{ $PermissionCount }}</span>
                         </p>
                     </a>
                 </li>
@@ -210,7 +210,7 @@
             <li class="nav-item">
                 <a href="{{ route('admin.uploaded-files.index') }}"
                     class="nav-link {{ areActiveRoutes(['uploaded-files.create']) }}">
-                    <i class="nav-icon fas fa-file"></i>
+                    <i class="nav-icon fas fa-photo-video"></i>
                     <p>{{ translate('Media') }}</p>
                 </a>
             </li>
@@ -293,7 +293,7 @@
         @can('activity_logs')
         <li class="nav-item">
             <a href="{{ route('admin.contacts.index') }}" class="nav-link {{ Route::is('admin.contacts.index') ? 'active' : '' }}">
-                <i class="nav-icon fas fa-phone"></i>
+                <i class="nav-icon fas fa-phone-alt"></i>
                 <p>Contacts</p>
             </a>
         </li>    

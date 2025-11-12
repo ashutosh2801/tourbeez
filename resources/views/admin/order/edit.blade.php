@@ -3,9 +3,6 @@
 
 @section('css')
 <style>
-    .bs-example{
-        margin: 20px;
-    }
     .accordion .fa{
         margin-right: 0.5rem;
         font-size: 24px;
@@ -165,21 +162,30 @@
     @method('PUT')
     @csrf
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
-    <div class="card card-primary">
+    <div class="card card-primary rounded-lg-custom border order-edit-head">
         <div class="card-header">
-            <h5>Created on {{ date__format($order->created_at) }} online on your booking form</h5>
+            <div class="row">
+                <div class="col-md-9">
+                    <h5 class="m-0">Created on {{ date__format($order->created_at) }} online on your booking form</h5>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
+                        Charge now
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <div style="padding:0 15px;">
-
+        <div class="card-body order-edit">
+            <div>
                 <div class="row">
-                    
-                    <div class="col-lg-5 btngroup">
-                        <div class="justify-center item-center">
-                            <div class="payment-status order-balance {{ $order->balance_amount > 0 ? 'due' : 'paid' }}">
-                            <div class="btn-group">
-                                <label for="totalDue">Balance</label>
-                                <button type="button" class="btn dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-hand-holding-usd"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Balance</p>
+                                <button type="button" class="btn btn-balance dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
                                 </button>
                                 <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
@@ -208,81 +214,102 @@
                                 </ul>
                             </div>
                         </div>
-
-
-                            <div class="order-status">
-                                <div class="btn-group open">
-                                    <label for="order_status">Order Status</label>
-                                    <button type="button" class="btn dropdown-toggle arrow childOrderEnabled"
-                                        data-element-to-update=".payment-status"
-                                        data-selected="{{ $order->status }}"
-                                        data-toggle="dropdown"
-                                        aria-haspopup="true"
-                                        aria-expanded="false">
-                                        {{ $statuses[$order->status] ?? 'Unknown' }}
-                                    </button>
-
-                                    <ul class="dropdown-menu dropdown-value">
-                                        @foreach ($statuses as $key => $label)
-                                            <li>
-                                                <input type="radio"
-                                                    id="{{ $key }}"
-                                                    name="order_status"
-                                                    value="{{ $key }}"
-                                                    autocomplete="off"
-                                                    {{ $order->status === $key ? 'checked' : '' }}>
-                                                <label for="{{ $key }}" class="{{ $key }}">
-                                                    <i class="fa fa-circle" aria-hidden="true"></i>
-                                                    {{ $label }}
-                                                </label>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
+                    </div>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-stream"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Order Status</p>
+                                <button type="button" class="btn btn-status dropdown-toggle arrow childOrderEnabled"
+                                    data-element-to-update=".payment-status"
+                                    data-selected="{{ $order->status }}"
+                                    data-toggle="dropdown"
+                                    aria-haspopup="true"
+                                    aria-expanded="false">
+                                    {{ $statuses[$order->status] ?? 'Unknown' }}
+                                </button>
+                                <ul class="dropdown-menu dropdown-value">
+                                    @foreach ($statuses as $key => $label)
+                                        <li>
+                                            <input type="radio"
+                                                id="{{ $key }}"
+                                                name="order_status"
+                                                value="{{ $key }}"
+                                                autocomplete="off"
+                                                {{ $order->status === $key ? 'checked' : '' }}>
+                                            <label for="{{ $key }}" class="{{ $key }}">
+                                                <i class="fa fa-circle" aria-hidden="true"></i>
+                                                {{ $label }}
+                                            </label>
+                                        </li>
+                                    @endforeach
+                                </ul>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-7 text-right">
-                        <button class="form-control btn btn-sm btn-primary charge-btn" style="width:150px; display:inline-block;" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                            Charge now
-                        </button>
-                        
-                                            
-                                    
-                        <select class="form-control" style="width:150px; display:inline-block;" name="email_template_name" id="email_template_name">
-                            <option value="" >Email</option>
-                            @foreach($email_templates as $email_template)
-                                <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
-                            @endforeach
-                        </select>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-envelope-open-text"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Email</p>
+                                <select class="form-control form-option" name="email_template_name" id="email_template_name">
+                                    <option value="" >Select</option>
+                                    @foreach($email_templates as $email_template)
+                                        <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>SMS</p>
+                                <select class="form-control form-option" name="sms_template_name" id="sms_template_name">
+                                    <option value="" >Select</option>
 
-                        <select class="form-control" style="width:150px; display:inline-block;" name="sms_template_name" id="sms_template_name">
-                            <option value="" >SMS</option>
+                                    @foreach($sms_templates as $sms_template)
+                                <!--  <option value="14" >Order Confirmation -> Send Now</option>
+                                    <option value="Reminder" >Reminder -> Send Now</option>
+                                    <option value="FollowUp" >FollowUp -> Send Now</option>
+                                    <option value="Simple" >Simple -> Send Now</option> -->
 
-                            @foreach($sms_templates as $sms_template)
-                           <!--  <option value="14" >Order Confirmation -> Send Now</option>
-                            <option value="Reminder" >Reminder -> Send Now</option>
-                            <option value="FollowUp" >FollowUp -> Send Now</option>
-                            <option value="Simple" >Simple -> Send Now</option> -->
+                                    <option value="{{$sms_template->id}}" >{{snakeToWords($sms_template->identifier)}} -> Send Now</option>
 
-                            <option value="{{$sms_template->id}}" >{{snakeToWords($sms_template->identifier)}} -> Send Now</option>
-
-                            @endforeach
-                        </select>
-
-                        <select class="form-control" style="width:150px; display:inline-block;" name="print_template_name" id="print_template_name">
-                            <option value="" >Print</option>
-                            <option value="Order Details" >Order Details -> Send Now</option>
-                            <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
-                            <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
-                            <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
-                            <option value="Reminder 2nd" >Reminder 2nd -> Send Now</option>
-                            <option value="Reminder 3rd" >Reminder 3rd -> Send Now</option>
-                            <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
-                            <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
-                            <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
-                            <option value="Simple Email" >Simple Email -> Send Now</option>
-                        </select>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-print"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Print</p>
+                                <select class="form-control form-option" name="print_template_name" id="print_template_name">
+                                    <option value="" >Select</option>
+                                    <option value="Order Details" >Order Details -> Send Now</option>
+                                    <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
+                                    <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
+                                    <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
+                                    <option value="Reminder 2nd" >Reminder 2nd -> Send Now</option>
+                                    <option value="Reminder 3rd" >Reminder 3rd -> Send Now</option>
+                                    <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
+                                    <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
+                                    <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
+                                    <option value="Simple Email" >Simple Email -> Send Now</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
