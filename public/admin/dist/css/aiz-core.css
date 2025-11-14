@@ -81,6 +81,24 @@ pre {
     white-space: initial;
 }
 
+/* width */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 7px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 5px #343a40;
+    border-radius: 10px;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: grey;
+    border-radius: 10px;
+}
+
 /* common helper utilites */
 .c-scrollbar::-webkit-scrollbar {
     width: 4px;
@@ -7966,13 +7984,13 @@ a.dropdown-footer:hover {
 }
 
 .btn-selected {
-    background: #f2f2f2;
-    color: #000;
+    background: #225de4;
+    color: #FFF;
     margin: 0 8px 0 0;
 }
 
 .btn-selected:hover {
-    background: #225de4;
+    background: #01228b;
     color: #FFF;
 }
 
@@ -8174,6 +8192,40 @@ a.dropdown-footer:hover {
     top: 2px;
 }
 
+@media (max-width: 767px) {
+
+    .order-edit-head .card-header h5 {
+        font-size: 17px;
+    }
+    .order-edit-head .charge-btn {
+        float: left;
+        margin-top: 15px;
+    }
+    .info-blog {
+        width: 100%;
+    }
+    .customer-details ul.flex {
+        flex-wrap: wrap;
+    }
+    .customer-details  ul.flex li {
+        margin-right: 0;
+        margin-bottom: 5px;
+    }
+    .customer-details ul.flex li:after {
+        display: none;
+    }
+    .accordion .card .card-body {
+        padding: 20px 15px !important;
+    }
+    .order-edit .card-footer {
+        justify-content: center !important;
+        flex-wrap: wrap;
+    }
+    .order-edit .card-footer .btn-save {
+        width: 100%;
+    }
+}
+
 .customer-details .alink {
     color: #01228b;
 }
@@ -8292,10 +8344,78 @@ a.dropdown-footer:hover {
     border-color: #225de4;
 }
 
+.payment-details h5 {
+    font-size: 16px;
+    color: #000;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.payment-details .add-payment-btn {
+    background: #225de4;
+    color: #FFF;
+    border-color: #225de4;
+}
+
+.payment-details .add-payment-btn:hover {
+    background: #01228b;
+    color: #FFF;
+    border-color: #01228b;
+}
+
 @media (max-width: 767px) {
 
     .order-edit .info-blog .info-stats4 {
         margin-bottom: 1rem;
     }
 
+}
+
+.tour-edit-head .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.tour-edit-head .card-tools {
+    float: right;
+}
+
+.tour-edit-head .card-tools .btn {
+    padding: 9px 12px;
+}
+
+.tour-edit-head .card-tools .btn-view-tour {
+    background: #225de4;
+    color: #FFF;
+    border-color: #225de4;
+}
+
+.tour-edit-head .card-tools .btn-view-tour:hover {
+    background: #1e56d8;
+    color: #FFF;
+    border-color: #1e56d8;
+}
+
+.tour-edit-head .card-tools .btn-preview {
+    background: #808080;
+    color: #FFF;
+    border-color: #808080;
+}
+
+.tour-edit-head .card-tools .btn-preview:hover {
+    background: #9e9e9e;
+    color: #FFF;
+    border-color: #9e9e9e;
+}
+
+.tour-edit-head .card-tools .btn-back {
+    background: #d9d9d9;
+    border: 1px solid #d9d9d9;
+    color: #000 !important;
+}
+
+.tour-edit-head .card-tools .btn-back:hover {
+    background: #bcbcbc;
 }
