@@ -156,6 +156,11 @@ class TourController extends Controller
             }
         }
 
+        if ($request->has('trustpilot_review') && $request->trustpilot_review != '') {
+            $query->where('trustpilot_review', $request->trustpilot_review);
+        }
+        
+
         if ($request->filled('schedule_expiry')) {
             $today = now()->startOfDay();
 
@@ -2488,6 +2493,22 @@ class TourController extends Controller
 
         return back()->with('success', "$updatedCount tour prices have been updated successfully.");
     }
+
+    public function markReview(Request $request)
+    {
+        $request->validate([
+            'skus' => 'required|string'
+        ]);
+
+        // Split and trim SKUs
+        $skus = array_map('trim', explode(',', $request->skus));
+
+        // Update tours matching SKUs
+        $updated = Tour::whereIn('unique_code', $skus)->update(['trustpilot_review' => 1]);
+
+        return redirect()->back()->with('success', "{$updated} tour(s) marked as reviewed successfully.");
+    }
+
 
 
 

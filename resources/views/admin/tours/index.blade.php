@@ -70,6 +70,17 @@
                             </select>
                         </div>
                         <div class="col-md-2 col-6">
+                            <select name="trustpilot_review" class="form-control" onchange="this.form.submit()">
+                                <option value="">TrustPilot Review</option>
+                                    <option value="0" {{ request('trustpilot_review') === 0 ? 'selected' : '' }}>
+                                        No
+                                    </option>
+                                    <option value="1" {{ request('trustpilot_review') === 1 ? 'selected' : '' }}>
+                                        Yes
+                                    </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
                             <select name="schedule_expiry" class="form-control">
                                 <option value="">Schedule Expiry</option>
                                 <option value="today" {{ request('schedule_expiry') == 'today' ? 'selected' : '' }}>Today</option>
@@ -112,6 +123,9 @@
                     <button type="button" class="btn btn-selected" data-toggle="modal" data-target="#importPriceModal">
                         <i class="fas fa-file-import"></i> Import Price
                     </button>
+                    <button type="button" class="btn btn-selected" data-toggle="modal" data-target="#markReviewModal">
+                        <i class="fas fa-star"></i> Mark Review
+                    </button>
 
                     <button id="enableDisableTour" type="button" class="btn btn-selected"> <i class="fas fa-sync"></i> Enable/Disable</button>
 
@@ -141,6 +155,7 @@
                             <th>{{ translate('Title') }}</th>
                             <th width="150">{{ translate('Price') }}</th>
                             <th width="150">{{ translate('SKU') }}</th>
+                            <th width="10">{{ translate('Trustpilot Review') }}</th>
                             <th width="200">{{ translate('Category') }}</th>
                             <th width="150">{{ translate('Actions') }}</th>
                         </tr>
@@ -171,6 +186,7 @@
                                 </td>    
                                 <td>{{ price_format_with_currency($tour->price) }}</td>
                                 <td>{{ $tour->unique_code }}</td>
+                                <td class="text-center">{{ $tour->trustpilot_review ? 'Yes' : 'No' }}</td>
                                 <td>{{ $tour->category_names ?: 'No categories' }}</td>
                                 <td>
                                     @can('clone_tour')   
@@ -317,13 +333,18 @@
             <form method="POST" action="{{ route('admin.tours.importPrice') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body">
-                    <p>Upload a CSV file with columns: <strong>unique_code</strong>, <strong>price</strong></p>
+                    
+                    <p>Upload a Excel file with columns: <strong>SKU</strong>, <strong>price</strong></p>
+
                     <div class="form-group">
                         <label for="file">Select File</label>
                         <input type="file" name="file" id="file" class="form-control" required accept=".csv,.xlsx,.xls">
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="downloadSample">
+                        <i class="fas fa-file-excel"></i> Download Sample Excel
+                    </button>
                     <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
                     <button type="submit" class="btn btn-success">{{ translate('Import') }}</button>
                 </div>
@@ -331,6 +352,34 @@
         </div>
     </div>
 </div>
+
+<!-- Mark Review Modal -->
+<div id="markReviewModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title h6">{{ translate('Mark Trustpilot Review') }}</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+      </div>
+
+      <form method="POST" action="{{ route('admin.tours.markReview') }}">
+        @csrf
+        <div class="modal-body">
+          <p>Enter one or more <strong>SKUs (comma-separated)</strong> to mark them as reviewed.</p>
+          <div class="form-group">
+            <textarea name="skus" class="form-control" rows="4" placeholder="e.g., TOUR123, TOUR456, TOUR789" required></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+          <button type="submit" class="btn btn-success">{{ translate('Mark Reviewed') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 
 
 
@@ -629,6 +678,11 @@ function exportFilteredTours() {
     const params = new URLSearchParams(new FormData(form)).toString();
     window.location.href = "{{ route('admin.tours.export') }}?" + params;
 }
+</script>
+<script>
+    document.getElementById('downloadSample').addEventListener('click', function () {
+        window.location.href = "{{ route('admin.tours.sample.download') }}";
+    });
 </script>
 
 @endsection
