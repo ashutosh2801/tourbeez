@@ -274,6 +274,8 @@ public function store(Request $request)
                 'email'        => $user->email ?? 'N/A',
                 'phone'        => $user->phone ?? 'N/A',
                 'instructions' => $request->additional_info ?? '',
+                'pickup_id'    => $request->pickup_id ?? '',
+                'pickup_name'  => $request->pickup_name ?? '',
             ]);
         } else {
             // Fallback to request inputs
@@ -285,6 +287,8 @@ public function store(Request $request)
                 'email'        => $request->customer_email ?? 'N/A',
                 'phone'        => $request->customer_phone ?? 'N/A',
                 'instructions' => $request->additional_info ?? '',
+                'pickup_id'    => $request->pickup_id ?? '',
+                'pickup_name'  => $request->pickup_name ?? '',
             ]);
         }
 

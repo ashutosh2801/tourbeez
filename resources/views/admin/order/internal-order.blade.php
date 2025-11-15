@@ -21,13 +21,15 @@
             </div>
             <div>
                 <select name="order_status" class="form-control">
-                    <option value="CONFIRMED" selected>Confirmed</option>
-                    <option value="NEW">New</option>
-                    <option value="ON_HOLD">On Hold</option>
-                    <option value="PENDING_SUPPLIER">Pending Supplier</option>
-                    <option value="PENDING_CUSTOMER">Pending Customer</option>
-                    <option value="CANCELLED">Cancelled</option>
-                    <option value="ABANDONED_CART">Abandoned Cart</option>
+
+                    <option value="5" selected>Confirmed</option>
+                    <option value="0">New</option> <!-- Not in switch, will show "Not completed" -->
+                    <option value="2">On Hold</option>
+                    <option value="3">Pending Supplier</option>
+                    <option value="4">Pending Customer</option>
+                    <option value="6">Cancelled</option>
+                    <option value="7">Abandoned Cart</option>
+
                 </select>
             </div>
             <button type="submit" class="btn btn-primary">Create Order</button>
@@ -35,30 +37,7 @@
 
         <div class="accordion" id="accordionExample">
 
-            <!-- ================= Customer Details ================= -->
-           <!--  <div class="card">
-                <div class="card-header bg-secondary py-0" id="headingOne">
-                    <h2 class="my-0 py-0">
-                        <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
-                            data-toggle="collapse" data-target="#collapseOne">
-                            <i class="fa fa-angle-right"></i> Customer Details
-                        </button>                                  
-                    </h2>
-                </div>
-                <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label for="customer">Select Customer</label>
-                            <select name="customer_id" id="customer" class="form-control aiz-selectpicker" data-live-search="true">
-                                <option value="">Select Customer</option>
-                                @foreach($customers as $customer)
-                                    <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->email }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
+           
             <div class="card">
 <div class="card">
     <div class="card-header bg-secondary py-0" id="headingOne">
@@ -90,7 +69,7 @@
             </div>
 
             {{-- New Customer Fields (hidden by default) --}}
-            <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
+            <!-- <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
                 <h5 class="mb-3">New Customer Information</h5>
 
                 <div class="form-row">
@@ -115,22 +94,45 @@
                     </div>
                 </div>
 
+            </div> -->
+
+            <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
+                <h5 class="mb-3">New Customer Information</h5>
+
                 <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label for="pickup_id">Pickup ID</label>
-                        <input type="text" name="pickup_id" id="pickup_id" class="form-control">
+                        <label for="customer_first_name">First Name *</label>
+                        <input type="text" name="customer_first_name" id="customer_first_name"
+                               class="form-control" required minlength="2">
+                        <small class="text-danger d-none" id="error_first_name">Enter a valid first name</small>
                     </div>
+
                     <div class="form-group col-md-6">
-                        <label for="pickup_name">Pickup Name</label>
-                        <input type="text" name="pickup_name" id="pickup_name" class="form-control">
+                        <label for="customer_last_name">Last Name *</label>
+                        <input type="text" name="customer_last_name" id="customer_last_name"
+                               class="form-control" required minlength="2">
+                        <small class="text-danger d-none" id="error_last_name">Enter a valid last name</small>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="additional_info">Instructions <span class="text-danger">*</span></label>
-                    <textarea name="additional_info" id="additional_info" class="form-control" required></textarea>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="customer_email">Email *</label>
+                        <input type="email" name="customer_email" id="customer_email"
+                               class="form-control" required>
+                        <small class="text-danger d-none" id="error_email">Enter a valid email</small>
+                    </div>
+
+                    <div class="form-group col-md-6">
+                        <label for="customer_phone">Phone (with country code) *</label>
+                        <input id="customer_phone" name="customer_phone" type="tel" class="form-control" />
+                        <input type="hidden" id="full_phone" name="full_phone">
+                        <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
+
+                    </div>
                 </div>
             </div>
+
 
         </div>
     </div>
@@ -238,6 +240,9 @@
 </div>
 
 @section('js')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
+
 <script>
 let tourCount = 1;
 
@@ -416,5 +421,128 @@ function fetchTourSessions(tourId, selectedDate, count) {
     });
 
 </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    /* ======================================================
+       INTL TEL INPUT INITIALIZATION
+    ====================================================== */
+    const phoneInput = document.querySelector("#customer_phone");
+
+    const iti = window.intlTelInput(phoneInput, {
+        initialCountry: "auto",
+        separateDialCode: true,
+        nationalMode: false,
+        geoIpLookup: function (callback) {
+            fetch("https://ipapi.co/json/")
+                .then(res => res.json())
+                .then(data => callback(data.country_code))
+                .catch(() => callback("US"));
+        },
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
+    });
+
+    // ✔ Block letters — only numbers allowed
+    phoneInput.addEventListener("keypress", function (e) {
+        const char = String.fromCharCode(e.which);
+        if (!/[0-9]/.test(char)) {
+            e.preventDefault();
+        }
+    });
+
+    // ✔ Block invalid paste
+    phoneInput.addEventListener("paste", function (e) {
+        const paste = (e.clipboardData || window.clipboardData).getData("text");
+        if (!/^[0-9]+$/.test(paste)) {
+            e.preventDefault();
+        }
+    });
+
+    // ✔ Update hidden full-phone value
+    function updateFullNumber() {
+        document.getElementById("full_phone").value = iti.getNumber();
+    }
+
+    phoneInput.addEventListener("input", updateFullNumber);
+    phoneInput.addEventListener("countrychange", updateFullNumber);
+
+    /* ======================================================
+       FIELD VALIDATIONS
+    ====================================================== */
+    function validateFields() {
+        let valid = true;
+
+        // FIRST NAME
+        const first = document.getElementById("customer_first_name");
+        if (!/^[A-Za-z]{2,}$/.test(first.value.trim())) {
+            document.getElementById("error_first_name").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_first_name").classList.add("d-none");
+        }
+
+        // LAST NAME
+        const last = document.getElementById("customer_last_name");
+        if (!/^[A-Za-z]{2,}$/.test(last.value.trim())) {
+            document.getElementById("error_last_name").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_last_name").classList.add("d-none");
+        }
+
+        // EMAIL
+        const email = document.getElementById("customer_email");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.value.trim())) {
+            document.getElementById("error_email").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_email").classList.add("d-none");
+        }
+
+        // PHONE VALIDATION (Intl Tel Input)
+        if (!iti.isValidNumber()) {
+            document.getElementById("error_phone").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_phone").classList.add("d-none");
+        }
+
+        return valid;
+    }
+
+    /* ======================================================
+       FORM SUBMIT VALIDATION
+    ====================================================== */
+    document.querySelector("form").addEventListener("submit", function (e) {
+
+        // Always update number before submit
+        updateFullNumber();
+
+        if (!validateFields()) {
+            e.preventDefault();
+            alert("Please correct the highlighted fields.");
+        }
+    });
+
+});
+</script>
+<script>
+document.addEventListener("change", function(e){
+    if(e.target.classList.contains("pickup-dropdown")) {
+        const tour = e.target.dataset.tour;
+        const otherBox = document.getElementById("pickup_other_" + tour);
+
+        if(e.target.value === "other") {
+            otherBox.style.display = "block";
+        } else {
+            otherBox.style.display = "none";
+        }
+    }
+});
+</script>
+
+
 @endsection
 </x-admin>
