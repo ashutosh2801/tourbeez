@@ -29,6 +29,13 @@
         $unreadCount = $notificationsQuery->whereNull('read_at')->count();
     @endphp
 
+    <li>
+      <button id="openCurrencyModal" class="btn"  title="Convert currency to USD">
+        
+        <i class="fas fa-calculator fa-lg"></i>
+      </button>
+    </li>
+
     <li class="nav-item dropdown">
         <a class="nav-link nav-notify" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
             <i class="far fa-bell fa-lg"></i>
@@ -111,6 +118,54 @@
     </div>
   </div>
 </div>
+
+<!-- Live Currency Conversion Modal -->
+<!-- Live Currency Conversion Modal -->
+<div class="modal fade" id="currencyModal" tabindex="-1" aria-labelledby="currencyModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="currencyForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="currencyModalLabel">Convert to USD</h5>
+          <!-- <button type="button" id="closeCurrencyModalTop" class="btn-close" aria-label="Close"></button> -->
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="currency" class="form-label">Select Currency</label>
+            <select class="form-control " id="currency" name="from" required>
+
+                @foreach(config('constants.currencies') as $sign => $country)
+                  <option value="{{ $sign }}">{{ $sign . '-' . $country}}</option>
+                @endforeach
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="amount" class="form-label">Enter Price</label>
+            <input type="number" step="0.01" class="form-control" id="amount" name="amount" placeholder="Enter amount" required>
+          </div>
+
+          <div class="mt-3">
+            <label class="form-label">Converted (USD)</label>
+            <input type="text" id="convertedUsd" class="form-control" readonly placeholder="0.00">
+          </div>
+          <div class="mt-2 text-end">
+            <button type="button" id="copyUsdBtn" class="btn btn-outline-success btn-sm">
+                Copy USD Value
+            </button>
+        </div>
+        </div>
+
+        <!-- <div class="modal-footer">
+          <button type="button" id="closeCurrencyModalBottom" class="btn btn-secondary">Close</button>
+        </div> -->
+      </form>
+    </div>
+  </div>
+</div>
+
+
 
 {{-- SCRIPT --}}
 <script>
@@ -245,4 +300,92 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('notificationDropdown').addEventListener('click', loadNotifications);
 });
 });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('currencyModal');
+    const openBtn = document.getElementById('openCurrencyModal');
+
+    // Open modal using Bootstrap JS class (no data attributes)
+    openBtn.addEventListener('click', function () {
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+    });
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modalElement = document.getElementById('currencyModal');
+    const openBtn = document.getElementById('openCurrencyModal');
+    // const closeBtnTop = document.getElementById('closeCurrencyModalTop');
+    // const closeBtnBottom = document.getElementById('closeCurrencyModalBottom');
+    const copyBtn = document.getElementById('copyUsdBtn');
+    const convertedUsdInput = document.getElementById('convertedUsd');
+
+    const modalInstance = new bootstrap.Modal(modalElement, { backdrop: true, keyboard: true });
+
+    // Open modal
+    openBtn.addEventListener('click', () => modalInstance.show());
+
+    // Copy USD value to clipboard
+    copyBtn.addEventListener('click', async () => {
+        const value = convertedUsdInput.value.trim();
+        if (!value) {
+            alert('No USD value to copy!');
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(value);
+            copyBtn.innerText = 'Copied!';
+            copyBtn.classList.add('btn-success');
+            setTimeout(() => {
+                copyBtn.innerText = 'Copy USD Value';
+                copyBtn.classList.remove('btn-success');
+            }, 1500);
+        } catch (err) {
+            alert('Failed to copy. Please copy manually.');
+        }
+    });
+});
+</script>
+
+
+
+
+<script>
+    function convertToUSD() {
+        const amount = document.getElementById('amount').value;
+        const currency = document.getElementById('currency').value;
+
+        if (!amount || amount <= 0) return;
+
+        fetch('{{ route('admin.currency.convert') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                amount: amount,
+                from: currency
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('convertedUsd').value = data.usd_amount;
+        })
+        .catch(() => {
+            document.getElementById('convertedUsd').value = 'Error';
+        });
+    }
+
+    // Attach event listeners for input and currency change
+    document.addEventListener('DOMContentLoaded', function () {
+        const amountInput = document.getElementById('amount');
+        const currencySelect = document.getElementById('currency');
+
+        amountInput.addEventListener('input', convertToUSD);
+        currencySelect.addEventListener('change', convertToUSD);
+    });
 </script>
