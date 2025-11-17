@@ -372,7 +372,7 @@
                                                             <input type="text" placeholder="99.99" name="tour_price[]" id="tour_price" value="{{ $order_tour->total_amount }}" class="form-control"> 
                                                         </div>
                                                     </td> --}}
-                                                    <td class="text-right">
+                                                    <td class="text-right" style="padding: 12px 5px;">
                                                         <button type="button" onClick="addTour()" class="btn btn-plus">+</button>
                                                         <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-minus">-</button>
                                                     </td>

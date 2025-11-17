@@ -63,7 +63,7 @@
 
 <div class="card">
     <div class="card card-primary">
-        <div class="card-header">
+        <div class="card-header" style="border-radius: 0 10px 0 0;">
             <h3 class="card-title">Basic Details</h3>            
         </div>
         @if ($errors->any())
@@ -104,8 +104,6 @@
                         </div>
                         
                     </div>
-
-
 
                     <div class="col-lg-2">
                         <div class="form-group">
@@ -466,7 +464,7 @@
                                             <span class="input-group-text">https://www.youtube.com/watch?v=</span>
                                         </div>
                                         <input type="text" name="videos[]" class="form-control" value="{{ $video }}">
-                                        <button type="button" class="btn btn-sm btn-primary mr-2" onclick="previewVideo('{{ $video }}')">Preview</button>
+                                        <button type="button" class="btn btn-sm btn-primary btn-preview mr-2" onclick="previewVideo('{{ $video }}')">Preview</button>
                                         <button type="button" class="btn btn-sm btn-danger" onclick="removeVideo(this)"><i class="fa fa-minus"></i></button>
                                     </div>
                                 @endforeach
