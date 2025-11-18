@@ -1,8 +1,3 @@
-@php
-$performance['total_refund'] = 1500;
-$performance['total_discount'] = 2500;
-$performance['total_owed'] = 6544.01;
-@endphp
 <div class="mb-3">
     <div class="dash-perform">
         <div class="row">

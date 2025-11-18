@@ -6,59 +6,73 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 </style>
 <div class="card">
     <div class="card card-primary">
-        <div class="card-header">
-            <h3 class="card-title">Extra</h3>
-            <div class="card-tools">
-                <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-info">Create New</a>
+        <div class="card-header" style="border-radius: 0 10px 0 0;">
+          <div class="row">
+            <div class="col-md-8">
+              <h3 class="card-title">Extra</h3>
             </div>
+            <div class="col-md-4 text-right">
+              <div class="card-tools">
+                  <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-success">+ Create New</a>
+              </div>
+            </div>
+          </div>
         </div>
         <form class="needs-validation" novalidate action="{{ route('admin.tour.addon_update', $data->id) }}" method="POST"
     enctype="multipart/form-data">
         <div class="card-body">
             
             @csrf
-            <table class="table table-striped align-middle" id="myTable">
-                <thead>
-                    <tr>
-                        <th><input type="checkbox" id="check_all" style="width: 20px;height: 20px;" /></th>
-                        <th>Ordering</th>
-                        <th>Image</th>
-                        <th width="200">Name</th>
-                        <th>Description</th>
-                        <th>Price</th>
-                        <th width="150">Customer choice</th>
-                    </tr>
-                </thead>
-                <tbody id="addon-table-body">
-                    @php
-                    $i=1;
-                    $index=0;
-                    $existing_addons = $data->addons->pluck('id')->toArray();
-                    @endphp
-                    @foreach ($addons as $item)
-                        <tr draggable="true" data-original-index="{{ $index }}" data-id="{{ $item->id }}" data-order="{{ $item->order ? $item->order : $i++  }}">
-                            <th><input {{ (is_array($existing_addons) && in_array($item->id, $existing_addons)) ? 'checked' : '' }} type="checkbox" class="check_all" name="selected_addons[]" value="{{ $item->id }}" style="width: 20px;height: 20px;" /></th>
-                            <th><input type="number" name="addons[{{ $item->id }}][sort_by]" value="{{ $item->sort_order_from_pivot ?? '' }}" style="width: 50px;" /></th>
-                            <td>
-                                <img class="img-md" src="{{ uploaded_asset($item->image) }}" height="150"  alt="{{translate('photo')}}">
-                            </td>
-                            <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
-                            <td>{{ substr($item->description,0,150) }}...</td>
-                            <td>{{ price_format_with_currency($item->price) }}</td>
-                            <td>{{ $item->customer_choice }}</td>
-                                                  
-                        </tr>
-                      @php $index++; @endphp
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        <div class="card-footer" style="display:block">
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
-                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
+            <div class="table-viewport">
+              <table class="table table-striped align-middle" id="myTable">
+                  <thead>
+                      <tr>
+                          <th><input type="checkbox" id="check_all" style="width: 20px;height: 20px;" /></th>
+                          <th>Ordering</th>
+                          <th>Image</th>
+                          <th width="200">Name</th>
+                          <th>Description</th>
+                          <th>Price</th>
+                          <th width="150">Customer choice</th>
+                      </tr>
+                  </thead>
+                  <tbody id="addon-table-body">
+                      @php
+                      $i=1;
+                      $index=0;
+                      $existing_addons = $data->addons->pluck('id')->toArray();
+                      @endphp
+                      @foreach ($addons as $item)
+                          <tr draggable="true" data-original-index="{{ $index }}" data-id="{{ $item->id }}" data-order="{{ $item->order ? $item->order : $i++  }}">
+                              <th><input {{ (is_array($existing_addons) && in_array($item->id, $existing_addons)) ? 'checked' : '' }} type="checkbox" class="check_all" name="selected_addons[]" value="{{ $item->id }}" style="width: 20px;height: 20px;" /></th>
+                              <th><input type="number" name="addons[{{ $item->id }}][sort_by]" value="{{ $item->sort_order_from_pivot ?? '' }}" style="width: 50px;" /></th>
+                              <td>
+                                  <img class="img-md" src="{{ uploaded_asset($item->image) }}" height="150"  alt="{{translate('photo')}}">
+                              </td>
+                              <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
+                              <td>{{ substr($item->description,0,150) }}...</td>
+                              <td>{{ price_format_with_currency($item->price) }}</td>
+                              <td>{{ $item->customer_choice }}</td>
+                                                    
+                          </tr>
+                        @php $index++; @endphp
+                      @endforeach
+                  </tbody>
+              </table>
             </div>
-            </form>
+        </div>
+        <div class="card-footer tour-edit-footer" style="display:block">
+          <div class="row">
+            <div class="col-md-6">
+              <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit', encrypt($data->id)) }}" class="btn btn-secondary"> <i class="fas fa-chevron-left"></i> Back</a>
+              <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></a>
+            </div>
+            <div class="col-md-6 text-right">
+              <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
+            </div>
+          </div>
+        </div>
+      </form>
     </div>
 </div>
 

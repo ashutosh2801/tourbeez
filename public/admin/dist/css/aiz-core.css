@@ -8464,25 +8464,40 @@ a.dropdown-footer:hover {
     padding: 6px 12px;
 }
 
-.tour-edit-head .card-tools .btn-view-tour,
+.tour-edit-head .card-tools .btn-view-tour {
+    background: #8f97ab;
+    color: #ffffff !important;
+    border-color: #8f97ab;
+}
+
 .tour-edit-head .card-tools .btn-view-tour:hover {
+    background: #5a6268;
+    color: #ffffff !important;
+    border-color: #5a6268;
+}
+
+.tour-edit-head .card-tools .btn-preview {
     background: #8f97ab;
     color: #ffffff !important;
     border-color: #8f97ab;
 }
 
-.tour-edit-head .card-tools .btn-preview,
 .tour-edit-head .card-tools .btn-preview:hover {
+    background: #5a6268;
+    color: #ffffff !important;
+    border-color: #5a6268;
+}
+
+.tour-edit-head .card-tools .btn-back {
     background: #8f97ab;
     color: #ffffff !important;
     border-color: #8f97ab;
 }
 
-.tour-edit-head .card-tools .btn-back,
 .tour-edit-head .card-tools .btn-back:hover {
-    background: #8f97ab;
+    background: #5a6268;
     color: #ffffff !important;
-    border-color: #8f97ab;
+    border-color: #5a6268;
 }
 
 .tour-edit-body .nav {
@@ -8517,4 +8532,27 @@ a.dropdown-footer:hover {
     border-color: #01228b;
     border-radius: 0 8px 8px 0;
     padding: 10px 15px;
+}
+
+.extra-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.extra-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.extra-body .card-header .row {
+    width: 100%;
+}
+
+@media (max-width: 767px) {
+
+    .tour-edit-footer .btn-success {
+        width: 100%;
+        margin-top: 10px;
+    }
+
 }

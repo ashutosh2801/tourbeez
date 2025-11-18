@@ -63,12 +63,12 @@
                         <div class="col-10 pl-0">
                             <div class="tab-content" id="v-pills-tabContent">
                                 <div class="tab-pane fade show active" id="basic_information" role="tabpanel" aria-labelledby="v-pills-tab-1">
-                                    <div class="card basic-detail" style="">
+                                    <div class="card basic-detail">
                                         @include('admin.tours.edit.basic_detail')
                                     </div>
                                 </div>
                                 <div class="tab-pane fade" id="addon" role="tabpanel" aria-labelledby="v-pills-profile-tab-2">
-                                    <div class="card">
+                                    <div class="card p-0">
                                         @include('admin.tours.edit.addon')
                                     </div>
                                 </div>

@@ -1,18 +1,26 @@
 <x-admin>
     @section('title','Edit Tour')
     <div class="row">
-        <div class="col-lg-12">
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h5 class="mb-0 h6">{{ $data->title }}</h5>
-                    <div class="card-tools">
-                        <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-primary btn-sm" target="_blank">{{translate('View Tour Online')}}</a>
-                        <a href="{{ route('admin.tour.index') }}" class="btn btn-info btn-sm">Back</a>
+        <div class="col-lg-12 tour-edit-body">
+            <div class="card-primary mb-3">
+                <div class="card-header tour-edit-head">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5>{{ $data->title }}</h5>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-tools">
+                                <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-view-tour" target="_blank">{{translate('View Tour Online')}}</a>
+                                <a href="{{ route('admin.tour.index') }}" class="btn btn-back">Back</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body">
+            </div>
+            <div class="card-primary bg-white border rounded-lg-custom">
+                <div class="card-body p-0">
                     <div class="row">
-                        <div class="col-2">
+                        <div class="col-2 pr-0">
                             <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                                 <a class="nav-link" href="{{ route('admin.tour.edit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Basic Details')}}</a>
                                 <a class="nav-link active" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" ><i class="fas fa-caret-right"></i> {{translate('Extra')}}</a>
@@ -35,10 +43,10 @@
                                 <a class="nav-link" href="{{ route('admin.tour.edit.review', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Review')}}</a>                                 
                             </div>
                         </div>
-                        <div class="col-10">
+                        <div class="col-10 pl-0">
                             <div class="tab-content" id="v-pills-tabContent">
                                 <div class="tab-pane fade show active" id="addon" role="tabpanel" aria-labelledby="v-pills-profile-tab-2">
-                                    <div class="card">
+                                    <div class="card extra-body">
                                         @include('admin.tours.edit.addon')
                                     </div>
                                 </div> 
