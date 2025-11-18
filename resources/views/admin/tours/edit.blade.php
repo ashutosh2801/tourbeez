@@ -4,11 +4,18 @@
         <div class="col-lg-12">
             <div class="card">
                 <div class="card-header card-primary">
-                    <h5 class="mb-0 h6">{{translate('Member Profile Update')}}</h5>
-                    <div class="card-tools">
-                        <a class="btn" href="{{ route('admin.tour.show', $data->id) }}">{{translate('View Profile')}}</a>
-                        <a href="{{ route('admin.tour.index') }}" class="btn btn-info btn-sm">Back</a>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="mb-0 h6">{{translate('Member Profile Update')}}</h5>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-tools">
+                                <a class="btn" href="{{ route('admin.tour.show', $data->id) }}">{{translate('View Profile')}}</a>
+                                <a href="{{ route('admin.tour.index') }}" class="btn btn-info btn-sm">Back</a>
+                            </div>
+                        </div>
                     </div>
+                    
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -44,11 +51,6 @@
                                     present_address here
                                     </div>
                                 </div>
-                                
-                                
-                                
-                                
-                                
                             </div>
                         </div>
                     </div>

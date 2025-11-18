@@ -81,6 +81,24 @@ pre {
     white-space: initial;
 }
 
+/* width */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 7px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 5px #343a40;
+    border-radius: 10px;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: grey;
+    border-radius: 10px;
+}
+
 /* common helper utilites */
 .c-scrollbar::-webkit-scrollbar {
     width: 4px;
@@ -132,6 +150,10 @@ pre {
 }
 .no-scrollbar::-webkit-scrollbar-thumb {
     background: transparent;
+}
+
+.shadow-none {
+    box-shadow: none !important;
 }
 
 .img-fit {
@@ -7674,6 +7696,71 @@ a.dropdown-footer:hover {
     color: #000;
 }
 
+.total-record .order-number {
+    text-align: center;
+}
+
+.total-record .circle-chart {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    display: inline-flex;
+}
+
+.total-record .circle-chart svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+}
+
+.total-record .circle-bg {
+    fill: none;
+    stroke: #eee;
+    stroke-width: 10;
+}
+
+.total-record .circle-progress {
+    fill: none;
+    stroke: #225de4;
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-dasharray: 440; /* 2 * pi * radius (r=70) */
+    stroke-dashoffset: 440;
+    transition: stroke-dashoffset 1.5s ease;
+}
+
+.total-record .circle-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 20px;
+    font-weight: 400;
+    color: #000;
+}
+
+.apexcharts-text tspan {
+    font-family: 'Aeonik', 'Helvetica', 'Arial', sans-serif !important;
+    color: #000;
+    font-size: 12px;
+}
+
+.apexcharts-legend-text {
+    font-family: 'Aeonik', 'Helvetica', 'Arial', sans-serif !important;
+    position: relative;
+    font-size: 14px !important;
+    color: #888 !important;
+}
+
+.apexcharts-legend-series {
+    margin: 5px 12px !important;
+}
+
+.apexcharts-tooltip * {
+    font-family: 'Aeonik', 'Helvetica', 'Arial', sans-serif !important;
+    font-size: 13px !important;
+}
+
 @media (max-width: 767px) {
 
     .total-record .mb-border-b {
@@ -7687,8 +7774,7 @@ a.dropdown-footer:hover {
     background: #FFF;
     padding: 10px 15px;
     border: 1px solid #e2e5ec !important;
-    border-radius: 10px 10px 0 0;
-    border-bottom: 0 !important;
+    border-radius: 10px;
 }
 
 .dash-perform .row{
@@ -7966,13 +8052,13 @@ a.dropdown-footer:hover {
 }
 
 .btn-selected {
-    background: #f2f2f2;
-    color: #000;
+    background: #225de4;
+    color: #FFF;
     margin: 0 8px 0 0;
 }
 
 .btn-selected:hover {
-    background: #225de4;
+    background: #01228b;
     color: #FFF;
 }
 
@@ -8132,21 +8218,217 @@ a.dropdown-footer:hover {
 }
 
 .order-edit-head .charge-btn {
-    background: #01228b;
+    background: #225de4;
     color: #FFF;
     float: right;
 }
 
 .order-edit-head .charge-btn:hover {
-    background: #225de4;
+    background: #1e56d8;
     color: #FFF;
 }
 
 .order-edit .accordion>.card>.card-header {
+    border-radius: 0;
+    margin-bottom: 0;
+    border: 0;
+    padding: 0;
+    background: none !important;
+}
+
+.order-edit .accordion .card-header .btn {
+    padding: 12px 25px !important;
+    width: 100%;
+    text-align: left;
+    font-size: 16px;
+    font-weight: bold;
+    color: #000;
     border-radius: 8px;
     margin-bottom: 0;
-    background: #f7f7f7 !important;
-    border: 1px solid #e0e3e8;
+}
+
+.order-edit .accordion .card-header .btn {
+    background: #ebf0f9 !important;
+    border: 1px solid #ebf0f9;
+}
+
+.order-edit .accordion .card-header .btn .fa{
+    margin-right: 0.5rem;
+    font-size: 17px;
+    font-weight: bold;
+    position: relative;
+    top: 2px;
+}
+
+@media (max-width: 767px) {
+
+    .order-edit-head .card-header h5 {
+        font-size: 17px;
+    }
+    .order-edit-head .charge-btn {
+        float: left;
+        margin-top: 15px;
+    }
+    .info-blog {
+        width: 100%;
+    }
+    .customer-details ul.flex {
+        flex-wrap: wrap;
+    }
+    .customer-details  ul.flex li {
+        margin-right: 0;
+        margin-bottom: 5px;
+    }
+    .customer-details ul.flex li:after {
+        display: none;
+    }
+    .accordion .card .card-body {
+        padding: 20px 15px !important;
+    }
+    .order-edit .card-footer {
+        justify-content: center !important;
+        flex-wrap: wrap;
+    }
+    .order-edit .card-footer .btn-save {
+        width: 100%;
+    }
+}
+
+.customer-details .alink {
+    color: #01228b;
+}
+
+.customer-details .alink:hover {
+    color: #000;
+    text-decoration: none;
+}
+
+.customer-details .card-body i {
+    font-size: 18px;
+    margin-right: 5px;
+    color: #000;
+}
+
+.order-edit .accordion .card .card-body {
+    padding: 20px 25px;
+    border-radius: 0 0 8px 8px;
+    border: 1px solid #ebf0f9;
+    border-top: 0;
+}
+
+.order-edit .tour-details .tour-name {
+    font-weight: 600;
+    font-size: 17px;
+    color: #01228b;
+}
+
+.order-edit .tour-details .btn-plus {
+    background: #343a41;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    border: 1px solid #343a41;
+    color: #FFF;
+    padding: 0;
+}
+
+.order-edit .tour-details .btn-minus{
+    background: #676b70;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    border: 1px solid #676b70;
+    color: #FFF;
+    padding: 0;
+}
+
+.order-edit .tour-details .btn-plus:hover,
+.order-edit .tour-details .btn-minus:hover {
+    background-color: #222;
+    border-color: #222;
+}
+
+.order-edit .payment-details .card.text-success {
+    background: #DAF9E7;
+    border-radius: 8px;
+    padding: 10px 20px;
+    border: 1px solid #0abb7540;
+}
+
+.order-edit .payment-details .card.text-success p {
+    margin: 0;
+}
+
+.order-edit .payment-details .table,
+.order-edit .email-history .table {
+    border: 1px solid #eee;
+}
+
+.order-edit .card-footer {
+    padding: 12px 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.order-edit .card-footer .btn-save {
+    background: #01228b;
+    color: #FFF;
+    border-color: #01228b;
+}
+
+.order-edit .card-footer .btn-save:hover {
+    background: #225de4;
+    color: #FFF;
+    border-color: #225de4;
+}
+
+.order-edit .card-footer .btn-save i {
+    margin-right: 2px;
+}
+
+.order-edit .card-footer .btn-cancel {
+    background: #d9d9d9;
+    border: 1px solid #d9d9d9;
+}
+
+.order-edit .card-footer .btn-cancel:hover {
+    background: #bcbcbc;
+}
+
+.order-edit .card-footer .btn-cancel i {
+    margin-right: 2px;
+}
+
+#chargeModal .btn-charge {
+    background: #01228b;
+    color: #FFF;
+    border-color: #01228b;
+}
+
+#chargeModal .btn-charge:hover {
+    background: #225de4;
+    color: #FFF;
+    border-color: #225de4;
+}
+
+.payment-details h5 {
+    font-size: 16px;
+    color: #000;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+.payment-details .add-payment-btn {
+    background: #225de4;
+    color: #FFF;
+    border-color: #225de4;
+}
+
+.payment-details .add-payment-btn:hover {
+    background: #01228b;
+    color: #FFF;
+    border-color: #01228b;
 }
 
 @media (max-width: 767px) {
@@ -8155,4 +8437,84 @@ a.dropdown-footer:hover {
         margin-bottom: 1rem;
     }
 
+}
+
+.tour-edit-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.tour-edit-head h5 {
+    font-size: 17px;
+    margin: 0;
+}
+
+.tour-edit-head .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.tour-edit-head .card-tools {
+    float: right;
+}
+
+.tour-edit-head .card-tools .btn {
+    padding: 6px 12px;
+}
+
+.tour-edit-head .card-tools .btn-view-tour,
+.tour-edit-head .card-tools .btn-view-tour:hover {
+    background: #8f97ab;
+    color: #ffffff !important;
+    border-color: #8f97ab;
+}
+
+.tour-edit-head .card-tools .btn-preview,
+.tour-edit-head .card-tools .btn-preview:hover {
+    background: #8f97ab;
+    color: #ffffff !important;
+    border-color: #8f97ab;
+}
+
+.tour-edit-head .card-tools .btn-back,
+.tour-edit-head .card-tools .btn-back:hover {
+    background: #8f97ab;
+    color: #ffffff !important;
+    border-color: #8f97ab;
+}
+
+.tour-edit-body .nav {
+    padding-top: 50px;
+}
+
+.tour-edit-body .nav.nav-pills .nav-link {
+    border-radius: 0;
+}
+
+.tour-edit-body .nav.nav-pills .nav-link.active {
+    color: #000;
+}
+
+.basic-detail {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.basic-detail .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.basic-detail .bootstrap-select.form-control {
+    border: 1px solid #aeb0b4;
+}
+
+#videosContainer .btn-preview {
+    background-color: #01228b;
+    color: #FFF;
+    border-color: #01228b;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 15px;
 }
