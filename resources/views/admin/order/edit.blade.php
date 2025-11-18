@@ -1157,15 +1157,15 @@
         radio.addEventListener('change', function (e) {
 
             // update UI
-
+            alert(23432);
             
-            updateStatusUI(this);
+            // updateStatusUI(this);
 
             // now update backend via fetch()
             const order_id = document.getElementById('order_id').value;
             const status = this.value;
             
-            fetch(`/staging/admin/admin/orders/${order_id}/update-status`, {
+            fetch(`/admin/orders/${order_id}/update-status`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

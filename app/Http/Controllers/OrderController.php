@@ -189,13 +189,13 @@ class OrderController extends Controller
      */
     public function create()
     {
-       // $products = Tour::select('id', 'title', 'slug')->get();
-       // $tours = $products;
+        // $products = Tour::select('id', 'title', 'slug')->get();
+        // $tours = $products;
 
-       $tours = Tour::with('pricings', 'addons', 'taxes_fees', 'pickups', 'location.country', 'location.state', 'location.city')->get();
+        $tours = Tour::with('pricings', 'addons', 'taxes_fees', 'pickups', 'location.country', 'location.state', 'location.city')->get();
         $customers = User::all();
 
-       return view('admin.order.internal-order', compact('tours', 'customers'));
+        return view('admin.order.internal-order', compact('tours', 'customers'));
     }
 
     /**
@@ -220,11 +220,15 @@ public function store(Request $request)
 
         'additional_info'      => 'nullable|string|max:500',
     ], [
-        'customer_id.required' => 'Please select a customer.',
-        'tour_id.required'     => 'At least one tour must be selected.',
-        'tour_startdate.required' => 'Please provide a start date for the tour.',
-        'tour_starttime.required' => 'Please provide a start time for the tour.',
+        'customer_id.required'      => 'Please select a customer.',
+        'tour_id.required'          => 'At least one tour must be selected.',
+        'tour_startdate.required'   => 'Please provide a start date for the tour.',
+        'tour_starttime.required'   => 'Please provide a start time for the tour.',
     ]);
+
+    if($validated->fails()){
+        return redirect()->back()->withErrors($validated)->withInput();
+    }
 
     $data = $request->all();
 
@@ -932,7 +936,7 @@ public function store(Request $request)
                     </tbody>
                     </table>
                      
-                                    <table width="768" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
+                    <table width="768" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
                     <tbody>
                     <tr>
                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
@@ -948,20 +952,20 @@ public function store(Request $request)
                     <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
                     </td>
                     </tr>';
-                                    // Pricing Rows
-                                    $i = 1;
-                                    foreach ($tour_pricing as $result) {
-                                        // $result = getTourPricingDetails($tour_pricing, $pricing->id);
-                                        $qty = $result['quantity'] ?? 0;
-                                        $price = $result['price'] ?? 0;
-                                        //$total = $qty * $price;
-                                        $total = $result['total_price'] ?? 0;
-                                        if ($qty > 0) {
-                                            $subtotal += $total;
-                                            $TOUR_ITEM_SUMMARY .= '
+                    // Pricing Rows
+                    $i = 1;
+                    foreach ($tour_pricing as $result) {
+                        // $result = getTourPricingDetails($tour_pricing, $pricing->id);
+                        $qty = $result['quantity'] ?? 0;
+                        $price = $result['price'] ?? 0;
+                        //$total = $qty * $price;
+                        $total = $result['total_price'] ?? 0;
+                        if ($qty > 0) {
+                            $subtotal += $total;
+                            $TOUR_ITEM_SUMMARY .= '
                     <tr>
                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ucwords($result['label']) . '</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ucwords($result['label']??"") . '</td>
                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
                     </tr>';
@@ -980,7 +984,7 @@ public function store(Request $request)
                                             $TOUR_ITEM_SUMMARY .= '
                     <tr>
                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' (Extra)</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label']??"" . ' (Extra)</td>
                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
                     <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
                     </tr>';
@@ -1273,10 +1277,21 @@ public function store(Request $request)
         // dd($request->status);
         $order->order_status = $request->status;
 
+        if($request->status == 'Confirmed'){
+
+            // $status = self::confirmPayment($order->id, $order->adv_deposite, $order->booked_amount);
+
+            self::confirmInitialPayment($order->id);
+            $order->save();
+            return $status;
+            
+            return response()->json(['success' => true]);
+        }
+        
 
         $order->save();
 
-        $this->sendOrderStatusEmail($order);
+        // $this->sendOrderStatusEmail($order);
 
         return response()->json(['success' => true]);
     }
@@ -1510,7 +1525,7 @@ public function store(Request $request)
         try {
             $order = Order::findOrFail($orderId);
 
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+            \Stripe\Stripe::z(env('STRIPE_SECRET'));
             $capturedIntent = null;
             $action_name = $order->adv_deposite; // always trust saved action_name
 
@@ -1636,7 +1651,7 @@ public function store(Request $request)
     }
 
 
-    public function capturePayment(Request $request, $orderId, $action_name = 'full')
+    public function capturePaymentmain(Request $request, $orderId, $action_name = 'full')
 {
     DB::beginTransaction();
 
@@ -1768,6 +1783,181 @@ public function store(Request $request)
 }
 
 
+public function capturePayment(Request $request, $orderId)
+{
+    DB::beginTransaction();
+
+    try {
+        $order = Order::findOrFail($orderId);
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        $customerId = $order->stripe_customer_id;
+        $intentId   = $order->payment_intent_id;
+        $paymentMethodId = null;
+
+        if (!$customerId) {
+            throw new \Exception("Stripe customer not found.");
+        }
+
+        /**
+         * -------------------------------------------------------------
+         * 1. FIRST TRY: Load saved CARD payment methods
+         * -------------------------------------------------------------
+         */
+        $savedCards = \Stripe\PaymentMethod::all([
+            'customer' => $customerId,
+            'type' => 'card'
+        ]);
+
+
+
+        if (count($savedCards->data) > 0) {
+            $paymentMethodId = $savedCards->data[0]->id;
+        }
+
+        /**
+         * -------------------------------------------------------------
+         * 2. SECOND TRY: Extract payment method from previous PI/SI
+         * -------------------------------------------------------------
+         */
+        if (!$paymentMethodId && $intentId) {
+
+            if (Str::startsWith($intentId, 'pi_')) {
+                $pi = \Stripe\PaymentIntent::retrieve($intentId);
+
+                if ($pi->payment_method) {
+                    $pm = \Stripe\PaymentMethod::retrieve($pi->payment_method);
+
+                    if ($pm->type === 'card') {
+                        $paymentMethodId = $pm->id;
+                    }
+                }
+            }
+
+            if (!$paymentMethodId && Str::startsWith($intentId, 'seti_')) {
+                $si = \Stripe\SetupIntent::retrieve($intentId);
+
+                if ($si->payment_method) {
+                    $pm = \Stripe\PaymentMethod::retrieve($si->payment_method);
+
+                    if ($pm->type === 'card') {
+                        $paymentMethodId = $pm->id;
+                    }
+                }
+            }
+        }
+
+        /**
+         * -------------------------------------------------------------
+         * If still no card found → STOP
+         * -------------------------------------------------------------
+         */
+        if (!$paymentMethodId) {
+            throw new \Exception("No saved card found for this customer.");
+        }
+
+        /**
+         * Ensure payment method is attached to customer
+         */
+        $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
+
+        if ($paymentMethod->customer !== $customerId) {
+            $paymentMethod->attach(['customer' => $customerId]);
+        }
+
+        /**
+         * Determine amount to charge
+         */
+        $chargeAmount = (float) $request->input('amount');
+
+        if ($chargeAmount <= 0) {
+            throw new \Exception("Invalid charge amount.");
+        }
+
+        /**
+         * -------------------------------------------------------------
+         * CREATE NEW PAYMENT INTENT (Card Only)
+         * -------------------------------------------------------------
+         */
+        $newIntent = \Stripe\PaymentIntent::create([
+            'customer'             => $customerId,
+            'amount'               => (int) ($chargeAmount * 100),
+            'currency'             => $order->currency ?? 'eur',
+            'payment_method'       => $paymentMethodId,
+            'payment_method_types' => ['card'], // IMPORTANT
+            'off_session'          => true,
+            'confirm'              => true,
+            'description'          => "Manual charge for Order #{$order->order_number}",
+            'metadata'             => [
+                'order_id' => $order->id,
+                'action'   => 'manual_charge'
+            ]
+        ]);
+
+        /**
+         * Extract card metadata
+         */
+        $card = $paymentMethod->card;
+        $last4 = $card->last4 ?? null;
+        $brand = $card->brand ?? null;
+
+        /**
+         * Save to DB
+         */
+        OrderPayment::create([
+            'order_id'          => $order->id,
+            'payment_intent_id' => $newIntent->id,
+            'transaction_id'    => $newIntent->charges->data[0]->id ?? $newIntent->id,
+            'payment_method'    => 'card',
+            'card_brand'        => $brand,
+            'card_last4'        => $last4,
+            'amount'            => $chargeAmount,
+            'currency'          => $order->currency,
+            'status'            => 'succeeded',
+            'action'            => 'manual_charge',
+            'response_payload'  => json_encode($newIntent),
+        ]);
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Customer charged successfully.",
+            'data' => [
+                'intent' => $newIntent,
+                'card' => [
+                    'brand' => $brand,
+                    'last4' => $last4
+                ]
+            ]
+        ]);
+
+    } catch (\Stripe\Exception\CardException $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => $e->getError()->message,
+        ], 400);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        \Log::error("Manual charge failed", [
+            'message' => $e->getMessage(),
+            'file'    => $e->getFile(),
+            'line'    => $e->getLine(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+
+
 
 
 
@@ -1828,7 +2018,7 @@ public function refundPayment(Request $request, Order $order)
             'success' => true,
             'status' => $newStatus,
             'refunded_amount' => $newRefundTotal,
-            'remaining' => $payment->amount - $newRefundTotal,
+            'remaining' => $payment->amount - $newRefundTotal, z
         ]);
 
     } catch (\Stripe\Exception\ApiErrorException $e) {
@@ -2100,6 +2290,203 @@ public function refundPayment(Request $request, Order $order)
             ], 500);
         }
     }
+
+    public function confirmPayment($orderId, $action_name = 'full', $amount)
+    {
+        DB::beginTransaction();
+
+        try {
+            $order = Order::findOrFail($orderId);
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            $capturedIntent = null;
+            $action_name = $order->adv_deposite ?: $action_name;
+            $customerId = $order->stripe_customer_id;
+            $intentId = $order->payment_intent_id;
+            $paymentMethodId = null;
+
+            // Retrieve PaymentMethod from existing intents
+            if ($intentId && Str::startsWith($intentId, 'seti_')) {
+                $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
+                $paymentMethodId = $setupIntent->payment_method;
+            } elseif ($intentId && Str::startsWith($intentId, 'pi_')) {
+                $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+                $paymentMethodId = $paymentIntent->payment_method;
+            }
+
+            if (!$paymentMethodId || !$customerId) {
+                throw new \Exception("No valid payment method or customer found for this order.");
+            }
+
+            // Ensure PaymentMethod is attached to customer
+            $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
+            if ($paymentMethod->customer !== $customerId) {
+                $paymentMethod->attach(['customer' => $customerId]);
+            }
+
+            // Get card details
+            $cardDetails = $paymentMethod->card ?? null;
+            $cardLast4 = $cardDetails->last4 ?? null;
+            $cardBrand = $cardDetails->brand ?? null;
+
+            // Determine amount to charge
+            $chargeAmount = $action_name === 'deposit'
+                ? (float) $amount
+                : (float) $order->balance_amount;
+
+            if ($chargeAmount <= 0) {
+                throw new \Exception("Invalid charge amount.");
+            }
+
+            // ✅ Create new PaymentIntent with only `card` as method type
+            // "link" caused your previous error — we’ll use just 'card' for safe capture
+            $paymentIntent = \Stripe\PaymentIntent::create([
+                'customer'             => $customerId,
+                'amount'               => (int) ($chargeAmount * 100),
+                'currency'             => $order->currency ?? 'usd',
+                'payment_method'      => $paymentMethodId,
+                'payment_method_types'=> ['card', 'link'],
+                'setup_future_usage' => 'off_session',
+                'off_session'          => true,
+                'confirm'              => true,
+                'description'          => 'Charge for Order #' . $order->order_number,
+                'metadata'             => [
+                    'order_id' => $order->id,
+                    'action'   => $action_name,
+                ],
+            ]);
+
+            $capturedIntent = $paymentIntent;
+
+            // Update order status and amounts
+            // $order->booked_amount += $chargeAmount;
+            // $order->balance_amount = max(0, $order->total_amount - $order->booked_amount);
+
+            if ($order->balance_amount <= 0) {
+                $order->payment_status = 1; // Fully paid
+            }
+
+            $order->payment_intent_id = $paymentIntent->id;
+            $order->transaction_id = $paymentIntent->charges->data[0]->id ?? $paymentIntent->id;
+            $order->save();
+
+            // ✅ Save payment record
+            OrderPayment::create([
+                'order_id'          => $order->id,
+                'payment_intent_id' => $paymentIntent->id,
+                'transaction_id'    => $paymentIntent->charges->data[0]->id ?? $paymentIntent->id,
+                'payment_method'    => 'card',
+                'card_brand'        => $cardBrand,
+                'card_last4'        => $cardLast4,
+                'amount'            => $chargeAmount,
+                'currency'          => $order->currency,
+                'status'            => 'succeeded',
+                'action'            => $action_name,
+                'response_payload'  => json_encode($paymentIntent),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => $order->balance_amount > 0
+                    ? 'Partial payment captured successfully.'
+                    : 'Full payment captured successfully.',
+                'data' => [
+                    'payment_intent' => $capturedIntent,
+                    'card' => [
+                        'brand' => $cardBrand,
+                        'last4' => $cardLast4,
+                    ],
+                ],
+            ]);
+
+        } catch (\Stripe\Exception\CardException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => $e->getError()->message ?? 'Card was declined.',
+            ], 400);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Payment capture failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+    public function confirmInitialPayment($orderId)
+{
+    DB::beginTransaction();
+
+    try {
+        $order = Order::findOrFail($orderId);
+
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        // Retrieve existing intent (created in step 1)
+        $intentId = $order->payment_intent_id;
+        if (!$intentId) {
+            throw new \Exception("No initial PaymentIntent found.");
+        }
+
+        // Retrieve PaymentIntent
+        $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+
+        // Extract the payment method
+        $paymentMethodId = $paymentIntent->payment_method;
+        if (!$paymentMethodId) {
+            throw new \Exception("No PaymentMethod saved on initial PaymentIntent.");
+        }
+
+        // Confirm the payment — this will charge the user
+        $confirmed = \Stripe\PaymentIntent::confirm($intentId, [
+            'off_session' => true,    // charge without user present
+        ]);
+
+        // Save transaction info
+        $order->transaction_id = $confirmed->charges->data[0]->id ?? $confirmed->id;
+        $order->payment_status = 1; // paid
+        $order->save();
+
+        OrderPayment::create([
+            'order_id'          => $order->id,
+            'payment_intent_id' => $confirmed->id,
+            'transaction_id'    => $confirmed->charges->data[0]->id ?? $confirmed->id,
+            'payment_method'    => 'card',
+            'amount'            => ($confirmed->amount / 100),
+            'currency'          => $confirmed->currency,
+            'status'            => $confirmed->status,
+            'action'            => 'initial_charge',
+            'response_payload'  => json_encode($confirmed),
+        ]);
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Initial payment captured successfully.",
+            'data'    => $confirmed
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 
 
 
