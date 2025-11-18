@@ -193,7 +193,7 @@ class PaymentController extends Controller
             $action_name = $request->action_name;
             $intentId = explode('_secret_', $clientSecret)[0];
 
-            $payment_status = 0;
+            $payment_status = 3;
             $balance_amount = 0;
             $payment_method = null;
             $order_status   = 3;
@@ -231,7 +231,7 @@ class PaymentController extends Controller
                 // Reserve flow → Retrieve SetupIntent
                 $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
 
-                $payment_status = 0; // Not paid yet
+                $payment_status = 3; // Not paid yet
                 $total_amount   = 0;
                 $balance_amount = 0; // Full amount still pending
                 $payment_method = ''; // future use
@@ -262,7 +262,7 @@ class PaymentController extends Controller
             }
             
             // Update booking
-            $booking->payment_status = $payment_status;
+            $booking->payment_status = 3;
             //$booking->total_amount   = $total_amount;
             //$booking->balance_amount = $balance_amount;
             $booking->order_status   = $order_status;
@@ -399,6 +399,191 @@ class PaymentController extends Controller
         }
            
     }
+
+    public function verifyPayment2323(Request $request)
+{
+    $request->validate([
+        'client_secret' => 'required|string',
+    ]);
+
+    Stripe::setApiKey(env('STRIPE_SECRET'));
+
+    try {
+        $clientSecret = $request->client_secret;
+        $action_name  = $request->action_name ?? 'book';
+        $intentId     = explode('_secret_', $clientSecret)[0];
+
+        $payment_status = 0;
+        $balance_amount = 0;
+        $payment_method = null;
+        $order_status   = 3;
+        $card_last4     = null;
+        $card_brand     = null;
+
+        if ($action_name === "book") {
+            // Retrieve PaymentIntent
+            $paymentIntent = PaymentIntent::retrieve($intentId);
+            $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
+            $payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
+
+            $booking = Order::with([
+                'tour',
+                'tour.location',
+                'tour.detail',
+                'customer'
+            ])->where('payment_intent_id', $paymentIntent->id)->first();
+
+            $balance_amount = 0;
+        } else {
+            // Reserve flow → Retrieve SetupIntent
+            $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
+
+            $payment_status = 0; // Not paid yet
+            $payment_method = 'card'; // Saved card for future charges
+
+            // Retrieve attached payment method if exists
+            if ($setupIntent->payment_method) {
+                $pm = \Stripe\PaymentMethod::retrieve($setupIntent->payment_method);
+                $card_last4 = $pm->card->last4 ?? null;
+                $card_brand = $pm->card->brand ?? null;
+            }
+
+            $booking = Order::with([
+                'tour',
+                'tour.location',
+                'tour.detail',
+                'customer'
+            ])->where('payment_intent_id', $setupIntent->id)->first();
+        }
+
+        if (!$booking) {
+            return response()->json([
+                'status'  => 'failed',
+                'message' => 'Order not found!',
+            ], 400);
+        }
+
+        // Update booking
+        $booking->payment_status  = $payment_status;
+        $booking->order_status    = $order_status;
+        $booking->payment_method  = $payment_method;
+        $booking->updated_at      = now();
+        $booking->save();
+
+        // Prepare pricing
+        $pricing = [];
+        $tour_pricing = json_decode($booking->order_tour->tour_pricing);
+        if (!empty($tour_pricing) && is_array($tour_pricing)) {
+            foreach ($tour_pricing as $tp) {
+                $tourPricing = TourPricing::find($tp->tour_pricing_id);
+                $label = str_ireplace('Group', 'Participants', $tourPricing->label);
+                $pricing[] = [
+                    'label' => $label,
+                    'qty'   => $tp->quantity,
+                    'price' => $tp->price,
+                    'total' => $tp->total_price
+                ];
+            }
+        }
+
+        // Prepare extras
+        $extra = [];
+        $extra_pricing = json_decode($booking->order_tour->tour_extra);
+        if (!empty($extra_pricing) && is_array($extra_pricing)) {
+            foreach ($extra_pricing as $ep) {
+                $extraAddon = Addon::find($ep->tour_extra_id);
+                $extra[] = [
+                    'label' => $extraAddon->name,
+                    'qty'   => $ep->quantity,
+                    'price' => $ep->price,
+                    'total' => $ep->total_price
+                ];
+            }
+        }
+
+        // Prepare fees
+        $fees = [];
+        $fees_pricing = json_decode($booking->order_tour->tour_fees);
+        if (!empty($fees_pricing) && is_array($fees_pricing)) {
+            foreach ($fees_pricing as $fp) {
+                $fees[] = [
+                    'label' => $fp->label,
+                    'price' => $fp->price,
+                    'total' => $fp->price
+                ];
+            }
+        }
+
+        // Pickup info
+        $pickName = '';
+        if ($booking->customer && $booking->customer->pickup_name) {
+            $pickName = $booking->customer->pickup_name;
+        } elseif ($booking->customer && $booking->customer->pickup_id) {
+            $pickLocation = PickupLocation::find($booking->customer->pickup_id);
+            $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+        }
+
+        // Tour image
+        $image = uploaded_asset($booking->tour?->main_image->id ?? 0, 'medium');
+
+        // Prepare detail
+        $detail = [
+            'action_name'      => $booking->action_name,
+            'order_number'     => $booking->order_number,
+            'number_of_guests' => $booking->number_of_guests,
+            'total_amount'     => $booking->total_amount ?? 0,
+            'balance_amount'   => $booking->balance_amount ?? 0,
+            'currency'         => $booking->currency,
+            'payment_method'   => ucfirst($booking->payment_method),
+            'card_last4'       => $card_last4,
+            'card_brand'       => $card_brand,
+            'customer'         => $booking->customer,
+            'pickup'           => $pickName,
+            'tour_date'        => date('D, M d, Y', strtotime($booking->order_tour->tour_date)),
+            'tour_time'        => $booking->order_tour->tour_time,
+            'created_at'       => date('Y-m-d', strtotime($booking->created_at)),
+            'tour'             => [
+                'image'       => $image,
+                'title'       => $booking->tour?->title,
+                'address'     => $booking->tour?->location->address,
+                'pricing'     => $pricing,
+                'extra'       => $extra,
+                'fees'        => $fees,
+                't_and_c'     => $booking->tour?->terms_and_conditions,
+                'order_email' => $booking->tour?->order_email,
+            ],
+        ];
+
+        // Send emails if not already sent
+        if ($booking && !$booking->tour?->order_email && !$booking->email_sent) {
+            self::sendOrderDetailMail($detail, $action_name);
+            $booking->email_sent = true;
+        }
+
+        if ($booking && !$booking->admin_email_sent) {
+            self::sendOrderDetailMail($detail, 'admin');
+            $booking->admin_email_sent = true;
+        }
+
+        $booking->save();
+
+        // Notify admin
+        $admin = User::findOrFail($booking->tour->user_id);
+        $admin->notify(new NewOrderNotification($booking));
+
+        return response()->json([
+            'status'  => 'succeeded',
+            'booking' => $detail,
+        ]);
+    } catch (\Exception $e) {
+        Log::error('VerifyPayment Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
+
 
     //this function need name should should change
     public static function sendOrderDetailMail($detail, $action_name = 'book')

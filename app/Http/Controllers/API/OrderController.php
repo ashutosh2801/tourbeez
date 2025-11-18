@@ -622,7 +622,7 @@ class OrderController extends Controller
                     $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
                     if (!empty($retrievedIntent->payment_method)) {
                         $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
-
+                        // return $paymentMethod;
                         if ($paymentMethod->type === 'card') {
                             $cardDetails = [
                                 'brand'     => $paymentMethod->card->brand ?? null,
@@ -662,7 +662,7 @@ class OrderController extends Controller
                             'order_id'          => $order->id,
                             'payment_intent_id' => $pi->id,
                             'transaction_id'    => null, // no charge yet until capture
-                            'payment_method'    => 'card',
+                            'payment_method'    => $paymentMethod->type,
                             'card_brand'        => $paymentMethod->card->brand ?? null,
                             'card_last4'        => $paymentMethod->card->last4 ?? null,
                             'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
@@ -671,7 +671,7 @@ class OrderController extends Controller
                                                     ? $chargeAmount
                                                     : $order->total_amount,
                             'currency'          => $order->currency,
-                            'status'            => 'pending', // manual capture pending
+                            'status'            => 'uncaptured', // manual capture pending
                             'action'            => $adv_deposite,
                             'response_payload'  => json_encode($pi),
                         ]);
@@ -707,7 +707,7 @@ class OrderController extends Controller
                                                     ? $chargeAmount
                                                     : $order->total_amount,
                             'currency'          => $order->currency,
-                            'status'            => 'pending', // manual capture pending
+                            'status'            => 'uncaptured', // manual capture pending
                             'action'            => $adv_deposite,
                             'response_payload'  => json_encode($pi),
                         ]);
@@ -808,6 +808,7 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Get session time 

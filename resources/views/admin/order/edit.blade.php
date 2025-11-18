@@ -157,6 +157,9 @@
 
 @php
     $statuses = config('constants.order_statuses');
+
+    $expectEmails = ['order_pending', 'payment_request', 'payment_receipt'];
+    
 @endphp
     <form action="{{ route('admin.orders.update',$order->id) }}" method="POST">
     @method('PUT')
@@ -186,13 +189,30 @@
                             <div class="sale-num">
                                 <p>Balance</p>
                                 <button type="button" class="btn btn-balance dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
+                                    @if($order->payment_status ==3)
+
+                                        <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</strong>
+                                    @else
+
+                                        <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
+                                    @endif
+
+                                    
                                 </button>
                                 <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
-                                    <li class="payment-details-breakdown--item">
-                                        <strong class="payment-details-breakdown--text">Paid</strong>
-                                        <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
-                                    </li>
+
+                                    @if($order->payment_status ==3)
+                                        <li class="payment-details-breakdown--item">
+                                            <strong class="payment-details-breakdown--text">Uncaptured</strong>
+                                            <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
+                                        </li>
+                                    @else
+                                        <li class="payment-details-breakdown--item">
+                                            <strong class="payment-details-breakdown--text">Paid</strong>
+                                            <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
+                                        </li>
+
+                                    @endif
                                     <li class="payment-details-breakdown--item">
                                         <strong class="payment-details-breakdown--text">Total</strong>
                                         <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->total_amount, $order->currency) }}</strong>
@@ -201,10 +221,20 @@
                                         <strong class="payment-details-breakdown--text">Refunded</strong>
                                         <strong class="payment-details-breakdown--text">{{ price_format_with_currency(0, $order->currency) }}</strong>
                                     </li>
-                                    <li class="payment-details-breakdown--item">
+                                    @if($order->payment_status == 3)
+                                        <li class="payment-details-breakdown--item">
                                         <strong class="payment-details-breakdown--text">Balance</strong>
-                                        <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
-                                    </li>
+                                            <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</strong>
+                                        </li>
+
+                                    @else
+                                        <li class="payment-details-breakdown--item">
+                                        <strong class="payment-details-breakdown--text">Balance</strong>
+                                            <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
+                                        </li>
+
+                                    @endif
+                                    
 
                                     <!-- Divider -->
                                     <li role="separator" class="divider"></li>
@@ -258,14 +288,23 @@
                                 <p>Email</p>
                                 <select class="form-control form-option" name="email_template_name" id="email_template_name">
                                     <option value="" >Select</option>
+
+                                    
+
                                     @foreach($email_templates as $email_template)
+
+                                        @if(!in_array($email_template->identifier, $expectEmails))
+                                            @continue
+                                        @endif
+
+
                                         <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
                                     @endforeach
                                 </select>
                             </div>
                         </div>
                     </div>
-                    <div class="info-blog">
+                    <!-- <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
                                 <i class="fas fa-comments"></i>
@@ -276,10 +315,7 @@
                                     <option value="" >Select</option>
 
                                     @foreach($sms_templates as $sms_template)
-                                <!--  <option value="14" >Order Confirmation -> Send Now</option>
-                                    <option value="Reminder" >Reminder -> Send Now</option>
-                                    <option value="FollowUp" >FollowUp -> Send Now</option>
-                                    <option value="Simple" >Simple -> Send Now</option> -->
+                                
 
                                     <option value="{{$sms_template->id}}" >{{snakeToWords($sms_template->identifier)}} -> Send Now</option>
 
@@ -287,8 +323,8 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
-                    <div class="info-blog">
+                    </div> -->
+                    <!-- <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
                                 <i class="fas fa-print"></i>
@@ -310,7 +346,7 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
             </div>
             
@@ -948,7 +984,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Capture Payment</h5>
+        <h5 class="modal-title">Carge Payment</h5>
       </div>
       <div class="modal-body">
 
@@ -957,6 +993,15 @@
           <label>Customer Name:  <span id="customerName"></span> </label>
           
         </div>
+
+        @if($order->payment_status == 3)
+
+
+        <div class="mb-3">
+          <label class="text-danger">Please confirm the order before charging the amount </label>
+          <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
+        </div>
+        @else
         <form id="chargeForm">
           <input type="hidden" id="chargeOrderId" name="order_id">
         <!-- Amount field -->
@@ -970,11 +1015,17 @@
         <!-- Card details block (will be shown/hidden) -->
         <div class="mb-3" id="cardDetailsBlock" style="display:none;"></div>
         </form>
+        @endif
       </div>
       <div class="modal-footer">
         <!-- <button type="button" class="btn btn-primary" id="confirmCharge">Confirm Charge</button> -->
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+
+        @if($order->payment_status == 3)
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
+        @else
         <button type="submit" form="chargeForm" class="btn btn-primary">Charge</button>
+        @endif
       </div>
     </div>
   </div>
@@ -1014,7 +1065,9 @@
 @endsection
 
 @section('js') 
-@parent()  
+@parent() 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
     let tourCount = {{ $count ? $count : 1 }}
     function tourOptions() {
@@ -1157,7 +1210,6 @@
         radio.addEventListener('change', function (e) {
 
             // update UI
-            alert(23432);
             
             // updateStatusUI(this);
 
@@ -1181,8 +1233,15 @@
               return res.json();
           })
           .then(data => {
-            console.log("Status updated:", data);
-            location.reload(); // 🔄 reload page after successful update
+            Swal.fire({
+                icon: data.success ? 'success' : 'error',
+                title: data.success ? 'Success' : 'Error',
+                text: data.message,
+            }).then(() => {
+                location.reload();
+            });
+            // console.log("Status updated:", data);
+            // location.reload(); // 🔄 reload page after successful update
         })
           .catch(err => console.error("Fetch error:", err));
         });
@@ -1231,15 +1290,38 @@ $('#chargeForm').on('submit', function(e) {
         success: function(response) {
             $('#chargeModal').modal('hide');
             if(response.message){
-                alert(response.message);
+                // alert(response.message);
+
+                Swal.fire({
+                    icon: response.success ? 'success' : 'error',
+                    title: response.success ? 'Success' : 'Error',
+                    text: response.message,
+                }).then(() => {
+                    location.reload();
+                });
             } else{
-                alert("Payment captured successfully!");
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: response.success ? 'Success' : 'Error',
+                    text: 'Payment captured successfully!',
+                }).then(() => {
+                    location.reload();
+                });
             }
             
             location.reload();
         },
         error: function(xhr) {
-            alert("Payment capture failed: " + xhr.responseJSON.message);
+
+
+            Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Payment capture failed: ' + xhr.responseJSON.message,
+                }).then(() => {
+                    location.reload();
+                });
         }
     });
 });

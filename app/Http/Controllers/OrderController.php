@@ -1278,14 +1278,26 @@ public function store(Request $request)
         $order->order_status = $request->status;
 
         if($request->status == 'Confirmed'){
+            if($order->payment_status == 3){
+                $confirmPayment = self::confirmPayment($order->id, $order->adv_deposite, $order->booked_amount);
 
-            // $status = self::confirmPayment($order->id, $order->adv_deposite, $order->booked_amount);
+                $confirmPayment = $confirmPayment->getData();
+                
+                if($confirmPayment->status){
+                    $order->save();
+                    return response()->json(['success' => true, 'message' => $confirmPayment->message]);
 
-            self::confirmInitialPayment($order->id);
-            $order->save();
-            return $status;
+                } else{
+                    return response()->json(['success' => false, 'message' => $confirmPayment->message]);
+                }
+            } else {
+                $order->save();
+                return response()->json(['success' => true, 'message' => 'Order is already charged']);
+            }
+
+
             
-            return response()->json(['success' => true]);
+            
         }
         
 
@@ -1518,269 +1530,8 @@ public function store(Request $request)
     }
 
 
-    public function capturePayment6r67(Request $request, $orderId, $action_name = 'full')
-    {
-        DB::beginTransaction();
-
-        try {
-            $order = Order::findOrFail($orderId);
-
-            \Stripe\Stripe::z(env('STRIPE_SECRET'));
-            $capturedIntent = null;
-            $action_name = $order->adv_deposite; // always trust saved action_name
-
-            $customerId = $order->stripe_customer_id; // always trust DB saved customer_id
-            $intentId   = $order->payment_intent_id;
-            $paymentMethodId = null;
 
 
-            if ($action_name === 'deposit') {
-
-            // Get the payment method from last setup/payment intent
-            if ($intentId && Str::startsWith($intentId, 'seti_')) {
-                $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
-                $paymentMethodId = $setupIntent->payment_method;
-            } elseif ($intentId && Str::startsWith($intentId, 'pi_')) {
-                $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
-                $paymentMethodId = $paymentIntent->payment_method;
-            }
-
-            if (!$paymentMethodId || !$customerId) {
-                throw new \Exception("No valid payment method or customer found.");
-            }
-
-            // Ensure PaymentMethod is attached to this customer
-            $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
-            if ($paymentMethod->customer !== $customerId) {
-                $paymentMethod->attach(['customer' => $customerId]);
-            }
-
-            // Determine amount to charge
-            $chargeAmount = $action_name === 'deposit'
-                ? $request->input('amount')
-                : $order->balance_amount; // full remaining amount
-
-            if ($chargeAmount <= 0) {
-                throw new \Exception("Invalid charge amount.");
-            }
-
-            // ✅ Create a new PaymentIntent for each charge
-            $paymentIntent = \Stripe\PaymentIntent::create([
-                'customer'            => $customerId,
-                'amount'              => (int) ($chargeAmount * 100),
-                'currency'            => $order->currency ?? 'usd',
-                'payment_method'      => $paymentMethodId,
-                'payment_method_types'=> ['card', 'link'],
-                'off_session'         => true,
-                'confirm'             => true,
-// allow future charges
-            ]);
-
-            // Update order amounts
-            $order->booked_amount += $chargeAmount;
-            $order->balance_amount = $order->total_amount - $order->booked_amount;
-
-            if ($action_name === 'full') {
-                $order->payment_status = 1; // Paid
-                $order->balance_amount = 0;
-                $order->booked_amount = $order->total_amount;
-            }
-
-            $order->payment_intent_id = $paymentIntent->id;
-            $order->payment_intent_client_secret = $paymentIntent->client_secret;
-            $order->transaction_id = $paymentIntent->id;
-            $order->save();
-
-            $capturedIntent = $paymentIntent;
-
-            }elseif($action_name === 'full') {
-                if ($order->payment_intent_id) {
-                    $paymentIntent = \Stripe\PaymentIntent::retrieve($order->payment_intent_id);
-
-                    if ($paymentIntent->status === 'requires_capture') {
-                        // ✅ Capture only booked amount
-                        $capturedIntent = $paymentIntent->capture([
-                            'amount_to_capture' => (int) ($order->total_amount * 100),
-                        ]);
-                    }
-                }
-                $order->payment_status = 1; // Paid
-                $order->balance_amount = 0; // nothing left
-                $order->booked_amount = $order->total_amount; // all 
-                $order->transaction_id = $capturedIntent->id ?? $order->transaction_id;
-                $order->save();
-            }
-
-            OrderPayment::create([
-                'order_id'          => $order->id,
-                'payment_intent_id' => $paymentIntent->id,
-                'transaction_id'    => $paymentIntent->id,
-                'payment_method'    => 'card',
-                'amount'            => $chargeAmount,
-                'currency'          => $order->currency,
-                'status'            => 'succeeded',
-                'action'            => 'charge',
-                'response_payload'  => json_encode($paymentIntent),
-            ]);
-
-            DB::commit();
-            return response()->json([
-                'success' => true,
-                'message' => $action_name === 'reserve'
-                    ? 'Payment reserved successfully'
-                    : 'Order charged successfully',
-                'data'    => $capturedIntent
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            \Log::error('Payment processing failed', [
-                'message'   => $e->getMessage(),
-                'file'      => $e->getFile(),
-                'line'      => $e->getLine(),
-                'trace'     => $e->getTraceAsString(),
-                'request'   => request()->all(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-
-    public function capturePaymentmain(Request $request, $orderId, $action_name = 'full')
-{
-    DB::beginTransaction();
-
-    try {
-        $order = Order::findOrFail($orderId);
-        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-
-        $capturedIntent = null;
-        $action_name = $order->adv_deposite ?: $action_name;
-        $customerId = $order->stripe_customer_id;
-        $intentId = $order->payment_intent_id;
-        $paymentMethodId = null;
-
-        // Retrieve PaymentMethod from existing intents
-        if ($intentId && Str::startsWith($intentId, 'seti_')) {
-            $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
-            $paymentMethodId = $setupIntent->payment_method;
-        } elseif ($intentId && Str::startsWith($intentId, 'pi_')) {
-            $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
-            $paymentMethodId = $paymentIntent->payment_method;
-        }
-
-        if (!$paymentMethodId || !$customerId) {
-            throw new \Exception("No valid payment method or customer found for this order.");
-        }
-
-        // Ensure PaymentMethod is attached to customer
-        $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
-        if ($paymentMethod->customer !== $customerId) {
-            $paymentMethod->attach(['customer' => $customerId]);
-        }
-
-        // Get card details
-        $cardDetails = $paymentMethod->card ?? null;
-        $cardLast4 = $cardDetails->last4 ?? null;
-        $cardBrand = $cardDetails->brand ?? null;
-
-        // Determine amount to charge
-        $chargeAmount = $action_name === 'deposit'
-            ? (float) $request->input('amount')
-            : (float) $order->balance_amount;
-
-        if ($chargeAmount <= 0) {
-            throw new \Exception("Invalid charge amount.");
-        }
-
-        // ✅ Create new PaymentIntent with only `card` as method type
-        // "link" caused your previous error — we’ll use just 'card' for safe capture
-        $paymentIntent = \Stripe\PaymentIntent::create([
-            'customer'             => $customerId,
-            'amount'               => (int) ($chargeAmount * 100),
-            'currency'             => $order->currency ?? 'usd',
-            'payment_method'      => $paymentMethodId,
-            'payment_method_types'=> ['card', 'link'],
-            'off_session'          => true,
-            'confirm'              => true,
-            'description'          => 'Charge for Order #' . $order->order_number,
-            'metadata'             => [
-                'order_id' => $order->id,
-                'action'   => $action_name,
-            ],
-        ]);
-
-        $capturedIntent = $paymentIntent;
-
-        // Update order status and amounts
-        // $order->booked_amount += $chargeAmount;
-        // $order->balance_amount = max(0, $order->total_amount - $order->booked_amount);
-
-        if ($order->balance_amount <= 0) {
-            $order->payment_status = 1; // Fully paid
-        }
-
-        $order->payment_intent_id = $paymentIntent->id;
-        $order->transaction_id = $paymentIntent->charges->data[0]->id ?? $paymentIntent->id;
-        $order->save();
-
-        // ✅ Save payment record
-        OrderPayment::create([
-            'order_id'          => $order->id,
-            'payment_intent_id' => $paymentIntent->id,
-            'transaction_id'    => $paymentIntent->charges->data[0]->id ?? $paymentIntent->id,
-            'payment_method'    => 'card',
-            'card_brand'        => $cardBrand,
-            'card_last4'        => $cardLast4,
-            'amount'            => $chargeAmount,
-            'currency'          => $order->currency,
-            'status'            => 'succeeded',
-            'action'            => $action_name,
-            'response_payload'  => json_encode($paymentIntent),
-        ]);
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => $order->balance_amount > 0
-                ? 'Partial payment captured successfully.'
-                : 'Full payment captured successfully.',
-            'data' => [
-                'payment_intent' => $capturedIntent,
-                'card' => [
-                    'brand' => $cardBrand,
-                    'last4' => $cardLast4,
-                ],
-            ],
-        ]);
-
-    } catch (\Stripe\Exception\CardException $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => $e->getError()->message ?? 'Card was declined.',
-        ], 400);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::error('Payment capture failed', [
-            'message' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage(),
-        ], 500);
-    }
-}
 
 
 public function capturePayment(Request $request, $orderId)
@@ -1793,98 +1544,41 @@ public function capturePayment(Request $request, $orderId)
 
         $customerId = $order->stripe_customer_id;
         $intentId   = $order->payment_intent_id;
-        $paymentMethodId = null;
 
-        if (!$customerId) {
-            throw new \Exception("Stripe customer not found.");
+        if (!$customerId || !$intentId) {
+            throw new \Exception("Stripe customer or PaymentIntent not found.");
         }
 
-        /**
-         * -------------------------------------------------------------
-         * 1. FIRST TRY: Load saved CARD payment methods
-         * -------------------------------------------------------------
-         */
-        $savedCards = \Stripe\PaymentMethod::all([
-            'customer' => $customerId,
-            'type' => 'card'
-        ]);
+        // Retrieve previous PaymentIntent
+        $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+        $paymentMethodId = $paymentIntent->payment_method;
 
-
-
-        if (count($savedCards->data) > 0) {
-            $paymentMethodId = $savedCards->data[0]->id;
-        }
-
-        /**
-         * -------------------------------------------------------------
-         * 2. SECOND TRY: Extract payment method from previous PI/SI
-         * -------------------------------------------------------------
-         */
-        if (!$paymentMethodId && $intentId) {
-
-            if (Str::startsWith($intentId, 'pi_')) {
-                $pi = \Stripe\PaymentIntent::retrieve($intentId);
-
-                if ($pi->payment_method) {
-                    $pm = \Stripe\PaymentMethod::retrieve($pi->payment_method);
-
-                    if ($pm->type === 'card') {
-                        $paymentMethodId = $pm->id;
-                    }
-                }
-            }
-
-            if (!$paymentMethodId && Str::startsWith($intentId, 'seti_')) {
-                $si = \Stripe\SetupIntent::retrieve($intentId);
-
-                if ($si->payment_method) {
-                    $pm = \Stripe\PaymentMethod::retrieve($si->payment_method);
-
-                    if ($pm->type === 'card') {
-                        $paymentMethodId = $pm->id;
-                    }
-                }
-            }
-        }
-
-        /**
-         * -------------------------------------------------------------
-         * If still no card found → STOP
-         * -------------------------------------------------------------
-         */
         if (!$paymentMethodId) {
-            throw new \Exception("No saved card found for this customer.");
+            throw new \Exception("No payment method found on previous PaymentIntent.");
         }
 
-        /**
-         * Ensure payment method is attached to customer
-         */
+        // Retrieve payment method
         $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
 
+        // Attach to customer if not already attached
         if ($paymentMethod->customer !== $customerId) {
             $paymentMethod->attach(['customer' => $customerId]);
         }
 
-        /**
-         * Determine amount to charge
-         */
+        // Charge amount
         $chargeAmount = (float) $request->input('amount');
-
         if ($chargeAmount <= 0) {
             throw new \Exception("Invalid charge amount.");
         }
 
-        /**
-         * -------------------------------------------------------------
-         * CREATE NEW PAYMENT INTENT (Card Only)
-         * -------------------------------------------------------------
-         */
+        // Create a new PaymentIntent for off-session charge
         $newIntent = \Stripe\PaymentIntent::create([
             'customer'             => $customerId,
-            'amount'               => (int) ($chargeAmount * 100),
+            'amount'               => intval($chargeAmount * 100),
             'currency'             => $order->currency ?? 'eur',
             'payment_method'       => $paymentMethodId,
-            'payment_method_types' => ['card'], // IMPORTANT
+            // 'payment_method_types' => ['card', 'link'], // card and link allowed
+            'automatic_payment_methods' => ['enabled' => true],
             'off_session'          => true,
             'confirm'              => true,
             'description'          => "Manual charge for Order #{$order->order_number}",
@@ -1894,16 +1588,17 @@ public function capturePayment(Request $request, $orderId)
             ]
         ]);
 
-        /**
-         * Extract card metadata
-         */
+        // Save card info
         $card = $paymentMethod->card;
         $last4 = $card->last4 ?? null;
         $brand = $card->brand ?? null;
 
-        /**
-         * Save to DB
-         */
+
+        $order->booked_amount += $chargeAmount;
+        $order->balance_amount = max($order->total_amount - $order->booked_amount, 0);
+        $order->save();
+
+        // Save payment record
         OrderPayment::create([
             'order_id'          => $order->id,
             'payment_intent_id' => $newIntent->id,
@@ -1941,7 +1636,6 @@ public function capturePayment(Request $request, $orderId)
 
     } catch (\Exception $e) {
         DB::rollBack();
-
         \Log::error("Manual charge failed", [
             'message' => $e->getMessage(),
             'file'    => $e->getFile(),
@@ -1954,6 +1648,7 @@ public function capturePayment(Request $request, $orderId)
         ], 500);
     }
 }
+
 
 
 
@@ -2011,7 +1706,7 @@ public function refundPayment(Request $request, Order $order)
 
         // Update order amounts
         $order->booked_amount -= $request->amount;
-        $order->balance_amount = $order->total_amount - $order->booked_amount;
+        $order->balance_amount = max($order->total_amount - $order->booked_amount, 0);
         $order->save();
 
         return response()->json([
@@ -2274,7 +1969,7 @@ public function refundPayment(Request $request, Order $order)
 
             // Update main order summary
             $order->booked_amount += $request->amount;
-            $order->balance_amount = $order->total_amount - $order->booked_amount;
+            $order->balance_amount = max($order->total_amount - $order->booked_amount, 0);
             $order->save();
 
             return response()->json([
@@ -2347,7 +2042,7 @@ public function refundPayment(Request $request, Order $order)
                 'payment_method'      => $paymentMethodId,
                 'payment_method_types'=> ['card', 'link'],
                 'setup_future_usage' => 'off_session',
-                'off_session'          => true,
+                
                 'confirm'              => true,
                 'description'          => 'Charge for Order #' . $order->order_number,
                 'metadata'             => [
@@ -2368,6 +2063,7 @@ public function refundPayment(Request $request, Order $order)
 
             $order->payment_intent_id = $paymentIntent->id;
             $order->transaction_id = $paymentIntent->charges->data[0]->id ?? $paymentIntent->id;
+            $order->payment_status = 1;
             $order->save();
 
             // ✅ Save payment record
