@@ -610,7 +610,170 @@ class TourController extends Controller
         $str = '';
         $subtotal = 0;
         if($data) {
-            $_tourId = $data->id;
+
+        $_tourId = $data->id;
+
+
+        $pickups = [];
+
+        // $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
+        //     <h4 style="font-size:16px; font-weight:600">Pickup Options</h4>';
+
+        // if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'No Pickup') {
+            
+        //     $pickups[] = 'No Pickup';
+        //     $pickupHtml .= '
+        //         <p>No Pickup Available</p>
+        //         <input type="hidden" name="pickup_type_'.$_tourId.'" value="no_pickup">
+        //     ';
+        // }
+        // else if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'Pickup') {
+            
+        //     $pickups[0] = 'Pickup';
+            
+        //     $comment = \DB::table('pickup_tour')
+        //                                     ->where('tour_id', $data->id)
+        //                                     ->where('pickup_id', $data->pickups[0]?->id)  // a single pickup ID
+        //                                     ->value('comment');
+
+
+        //     $pickups[1] = $comment ?? "Enter the pickup location";
+
+        //     $commentText = $pickups[1] ?? 'Enter the pickup location';
+
+        //     $pickupHtml .= '
+        //         <input type="hidden" name="pickup_type_'.$_tourId.'" value="pickup_text">
+
+        //         <label>Pickup Location</label>
+        //         <input type="text" name="pickup_location_'.$_tourId.'" 
+        //                class="form-control" placeholder="Enter pickup location">
+
+        //         <small style="color:#777; display:block; margin-top:5px;">
+        //             '.$commentText.'
+        //         </small>
+        //     ';
+        // }
+        // else if (!empty($data->pickups) && isset($data->pickups[0])) {
+            
+        //     $pickups = $data->pickups[0]?->locations ?? [];
+
+
+
+        //     $pickupHtml .= '
+        //         <input type="hidden" name="pickup_type_'.$_tourId.'" value="pickup_dropdown">
+
+        //         <label>Select Pickup Point</label>
+        //         <select name="pickup_selected_'.$_tourId.'" 
+        //                 class="form-control pickup-dropdown" 
+        //                 data-tour="'.$_tourId.'">
+        //             <option value="">Select Pickup Point</option>';
+
+        //             foreach($pickups as $p) {
+        //                 $pickupHtml .= '<option value="'.$p->id.'">'.$p->location.'</option>';
+        //             }
+
+        //             // Append OTHER option
+        //             $pickupHtml .= '<option value="other">Other</option>';
+
+        //     $pickupHtml .= '
+        //         </select>
+
+        //         <div class="pickup-other-box" id="pickup_other_'.$_tourId.'" 
+        //              style="display:none; margin-top:10px">
+        //             <label>Enter Pickup Location</label>
+        //             <input type="text" 
+        //                    name="pickup_other_'.$_tourId.'" 
+        //                    class="form-control" 
+        //                    placeholder="Enter location manually">
+        //         </div>
+        //     ';
+        // }
+
+        // $pickupHtml .= '</div>';
+
+
+
+        $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
+    <h4 style="font-size:16px; font-weight:600">Pickup Options</h4>';
+
+
+// CASE 1: NO PICKUP
+if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'No Pickup') {
+
+    $pickupHtml .= '
+        <p>No Pickup Available</p>
+
+        <input type="hidden" name="pickup_id" value="0">
+        <input type="hidden" name="pickup_name" value="">
+    ';
+}
+
+
+
+// CASE 2: PICKUP (text input + comment)
+else if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'Pickup') {
+
+    $comment = \DB::table('pickup_tour')
+                    ->where('tour_id', $data->id)
+                    ->where('pickup_id', $data->pickups[0]?->id)
+                    ->value('comment');
+
+    $commentText = $comment ?? "Enter the pickup location";
+
+    $pickupHtml .= '
+        <label>Pickup Location</label>
+        <input type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
+
+        <small style="color:#777; display:block; margin-top:5px;">'.$commentText.'</small>
+
+        <input type="hidden" name="pickup_id" value="0">
+    ';
+}
+
+
+
+// CASE 3: MULTIPLE LOCATIONS (dropdown + other option)
+else if (!empty($data->pickups) && isset($data->pickups[0])) {
+
+    $locations = $data->pickups[0]?->locations ?? [];
+
+    $pickupHtml .= '
+        <label>Select Pickup Point</label>
+        <select name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
+            <option value="">Select Pickup Point</option>';
+
+            foreach($locations as $loc) {
+                $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
+            }
+
+            $pickupHtml .= '<option value="other">Other</option>';
+
+    $pickupHtml .= '
+        </select>
+
+        <div id="pickup-other-box" style="display:none; margin-top:10px">
+            <label>Enter Pickup Location</label>
+            <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
+        </div>
+    ';
+}
+
+$pickupHtml .= '</div>';
+
+
+
+
+
+
+
+
+        /* ------------------------------------------
+           ADD PICKUP HTML TO MAIN STRING
+        -------------------------------------------*/
+
+        
+
+
             $row_id = 'row_'.$request->tourCount;
             $str = '<div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
                     <input type="hidden" name="tour_id[]" value="' .  $data->id . '" />  
@@ -707,6 +870,8 @@ class TourController extends Controller
                     
                     <table class="table">';
 
+                    $str .= $pickupHtml;
+
                     $taxesfees = $data->taxes_fees;
                     if( $taxesfees ) {
                         foreach ($taxesfees as $key => $item) {                    
@@ -729,6 +894,7 @@ class TourController extends Controller
                     </table>
                     </div>';
         }
+
         return $str;
     }
 

@@ -325,7 +325,30 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-lg-6">
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="form-group">
+                            <label for="offerd_price" class="form-label">Offered Price</label>
+                            <div class="row">
 
+                                <!-- Coupon Value -->
+                                <div class="col-lg-6">
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="basic-addon1">$</span>
+                                        </div>
+                                        <input type="number" 
+                                               placeholder="Value" 
+                                               name="offerd_price" 
+                                               id="offerd_price" 
+                                               value="" 
+                                               class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                                                     
                     <div class="col-lg-12">
@@ -830,4 +853,36 @@ function stopPreview() {
 
 
 </script>
+
+<script>
+    function calculateOfferedPrice() {
+        let finalPrice = parseFloat($('#advertised_price').val()) || 0;
+        let couponType = $('#coupon_type').val();
+        let couponValue = parseFloat($('#coupon_value').val()) || 0;
+
+        let offeredPrice = finalPrice;
+
+        if (couponType === 'percentage') {
+            let pct = couponValue / 100;
+
+            // avoid divide by zero
+            if (pct >= 1) pct = 0.99;
+
+            offeredPrice = finalPrice / (1 - pct);
+        } 
+        else if (couponType === 'fixed') {
+            offeredPrice = finalPrice + couponValue;
+        }
+
+        $('#offerd_price').val(offeredPrice.toFixed(2));
+    }
+
+    $('#advertised_price, #coupon_type, #coupon_value').on('input change', function () {
+        calculateOfferedPrice();
+    });
+
+    calculateOfferedPrice();
+</script>
+
+
 @endsection
