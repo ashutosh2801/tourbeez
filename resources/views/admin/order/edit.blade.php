@@ -293,7 +293,7 @@
 
                                     @foreach($email_templates as $email_template)
 
-                                        @if(!in_array($email_template->identifier, $expectEmails))
+                                        @if(in_array($email_template->identifier, $expectEmails))
                                             @continue
                                         @endif
 
