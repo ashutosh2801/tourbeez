@@ -2,6 +2,16 @@
 @section('title', 'Internal Orders Create')
 
 <div class="card">
+
+        @if ($errors->any())
+    <div class="alert alert-danger mb-4 p-3 rounded">
+        <ul class="mb-0 pl-4">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
     <form id="orderForm" action="{{ route('admin.orders.store') }}" method="POST">
         @csrf
 
@@ -22,11 +32,13 @@
             <div>
                 <select name="order_status" class="form-control">
 
-                    <option value="5" selected>Confirmed</option>
+                    <option value="4" selected>Pending Customer</option>
+                    <option value="3" >Pending Supplier</option>
+                    <option value="5" >Confirmed</option>
                     <option value="0">New</option> <!-- Not in switch, will show "Not completed" -->
                     <option value="2">On Hold</option>
-                    <option value="3">Pending Supplier</option>
-                    <option value="4">Pending Customer</option>
+                    
+                    
                     <option value="6">Cancelled</option>
                     <option value="7">Abandoned Cart</option>
 
@@ -103,14 +115,14 @@
                     <div class="form-group col-md-6">
                         <label for="customer_first_name">First Name *</label>
                         <input type="text" name="customer_first_name" id="customer_first_name"
-                               class="form-control" required minlength="2">
+                               class="form-control" minlength="2">
                         <small class="text-danger d-none" id="error_first_name">Enter a valid first name</small>
                     </div>
 
                     <div class="form-group col-md-6">
                         <label for="customer_last_name">Last Name *</label>
                         <input type="text" name="customer_last_name" id="customer_last_name"
-                               class="form-control" required minlength="2">
+                               class="form-control" minlength="2">
                         <small class="text-danger d-none" id="error_last_name">Enter a valid last name</small>
                     </div>
                 </div>
@@ -119,16 +131,27 @@
                     <div class="form-group col-md-6">
                         <label for="customer_email">Email *</label>
                         <input type="email" name="customer_email" id="customer_email"
-                               class="form-control" required>
+                               class="form-control" >
                         <small class="text-danger d-none" id="error_email">Enter a valid email</small>
                     </div>
 
                     <div class="form-group col-md-6">
                         <label for="customer_phone">Phone (with country code) *</label>
-                        <input id="customer_phone" name="customer_phone" type="tel" class="form-control" />
-                        <input type="hidden" id="full_phone" name="full_phone">
-                        <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
 
+                        <!-- Allow typing "+" -->
+                        <input 
+                            id="customer_phone"
+                            name="customer_phone"
+                            type="tel"
+                            class="form-control"
+                            autocomplete="tel"
+                            inputmode="tel"
+                        />
+
+                        <!-- Hidden field that stores full E.164 number -->
+                        <input type="hidden" id="full_phone" name="full_phone">
+
+                        <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
                     </div>
                 </div>
             </div>
@@ -175,7 +198,7 @@
             </div>
 
             <!-- ================= Payment Details ================= -->
-            <div class="card">
+            <!-- <div class="card">
                 <div class="card-header bg-secondary py-0" id="headingThree">
                     <h2 class="my-0 py-0">
                         <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
@@ -192,7 +215,7 @@
                         <div class="form-group">
                             <label><strong>Payment Method</strong></label><br>
                             <label class="mr-3">
-                                <input type="radio" name="payment_type" value="card" checked> Credit Card (Stripe)
+                                <input type="radio" name="payment_type" value="card"> Credit Card (Stripe)
                             </label>
                             <label>
                                 <input type="radio" name="payment_type" value="transaction"> Transaction
@@ -228,11 +251,11 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <!-- ================= Form Actions ================= -->
             <div class="card-footer" style="display:block">
-                <button style="padding:0.6rem 2rem" type="submit" id="createOrderBtn" class="btn btn-success">Create Order</button>
+                <button style="padding:0.6rem 2rem" type="submit" id="createOrderBtn" class="btn btn-primary">Create Order</button>
                 <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </div>
@@ -406,16 +429,21 @@ function fetchTourSessions(tourId, selectedDate, count) {
     });
     $(document).ready(function () {
         $('#addNewCustomerBtn').on('click', function () {
+             $('#newCustomerFields').removeClass('d-none');
             $('#newCustomerFields').removeClass('d-none');
-            $('#customer').val('').trigger('change'); // clear existing dropdown
-            $('#additional_info').attr('required', true); // make message field required
+            $('#customer').val('').trigger('change');
+
+            $("#customer_first_name").prop("required", true);
+            $("#customer_last_name").prop("required", true);
+            $("#customer_email").prop("required", true);
+            $("#customer_phone").prop("required", true);
         });
 
         $('#customer').on('change', function () {
             if ($(this).val()) {
                 // If existing customer selected → hide new fields
                 $('#newCustomerFields').addClass('d-none');
-                $('#additional_info').attr('required', false); // remove required
+                // remove required
             }
         });
     });
@@ -443,23 +471,51 @@ document.addEventListener("DOMContentLoaded", function () {
         utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
     });
 
-    // ✔ Block letters — only numbers allowed
+
+
+
+    /* ======================================================
+       ALLOW + AUTO-DETECT COUNTRY FROM FULL NUMBER
+    ====================================================== */
+    phoneInput.addEventListener("input", function () {
+        let value = this.value.trim();
+
+        // Allow the first character to be "+"
+        if (value.startsWith("+")) {
+            // Remove non-numeric characters except +
+            value = value.replace(/[^0-9+]/g, "");
+            this.value = value;
+
+            // Auto-detect country if number has enough digits
+            if (value.length > 3) {
+                iti.setNumber(value);
+            }
+            return; // stop here, do not apply numeric restrictions below
+        }
+    });
+    document.getElementById("full_phone").value = iti.getNumber();
+    /* ======================================================
+       BLOCK LETTERS — only numbers allowed
+    ====================================================== */
     phoneInput.addEventListener("keypress", function (e) {
         const char = String.fromCharCode(e.which);
+
+        // Allow "+" only as first character
+        if (char === "+" && this.value.length === 0) return;
+
         if (!/[0-9]/.test(char)) {
             e.preventDefault();
         }
     });
 
-    // ✔ Block invalid paste
-    phoneInput.addEventListener("paste", function (e) {
-        const paste = (e.clipboardData || window.clipboardData).getData("text");
-        if (!/^[0-9]+$/.test(paste)) {
-            e.preventDefault();
-        }
-    });
+    /* ======================================================
+       BLOCK INVALID PASTE (allow + at start)
+    ====================================================== */
 
-    // ✔ Update hidden full-phone value
+
+    /* ======================================================
+       UPDATE HIDDEN FULL NUMBER
+    ====================================================== */
     function updateFullNumber() {
         document.getElementById("full_phone").value = iti.getNumber();
     }
@@ -516,9 +572,7 @@ document.addEventListener("DOMContentLoaded", function () {
        FORM SUBMIT VALIDATION
     ====================================================== */
     document.querySelector("form").addEventListener("submit", function (e) {
-
-        // Always update number before submit
-        updateFullNumber();
+        updateFullNumber(); // always update before form submit
 
         if (!validateFields()) {
             e.preventDefault();
@@ -527,6 +581,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
+
 </script>
 <script>
 document.addEventListener("change", function(e){

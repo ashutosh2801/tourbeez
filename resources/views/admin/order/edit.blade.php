@@ -545,11 +545,21 @@
                                         </tr> --}}
                                         <tr>
                                             <td><b>Total</b></td>
-                                            <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }} {{ $order->currency}}</td>
+                                            <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                         </tr>
                                         <tr style="color: red">
                                             <td><b>Balance</b></td>
-                                            <td class="text-right"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }} {{ $order->currency}}</b></td>
+
+                                            @if($order->payment_status ==3)
+
+
+                                                <td class="text-right"><b>{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</b></td>
+                                            @else
+
+                                                <td class="text-right"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
+                                            @endif
+
+                                            
                                         </tr>
                                     </table>
                                 </div>
@@ -666,7 +676,16 @@
                                     
                                     <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                         <td></td>
-                                        <td>{{ price_format_with_currency($order->balance_amount) }}</td>
+
+                                        @if($order->payment_status ==3)
+
+
+                                            <td>{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
+                                        @else
+
+                                            <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
+                                        @endif
+                                        
                                         <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
                                     <!-- <td>
                                         <button class="btn btn-sm btn-danger refund-btn" 
@@ -1351,7 +1370,7 @@ $(document).ready(function(){
             type: 'POST',
             data: data,
             success: function(response) {
-                console.log(response.event);
+                console.log(response);
                 $('#email').val(response.email);
                 $('#bcc_mail').val(response.bcc_mail);
                 $('#cc_mail').val(response.cc_mail);

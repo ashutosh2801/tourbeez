@@ -203,32 +203,57 @@ class OrderController extends Controller
      */
 public function store(Request $request)
 {
-     $validated = $request->validate([
-        'customer_id'          => 'nullable|integer',
+
+
+
+    // dd($request->customer_id);
+
+    $request->merge([
+    'customer_id' => $request->customer_id ?: null
+]);
+    // dd($request->all());
+    $validated = $request->validate([
+
+        // Existing Customer
+        'customer_id'          => 'nullable',
+
+            // New Customer Fields (conditionally required)
+        'customer_first_name'  => 'exclude_unless:customer_id,null|required|string|max:100',
+        'customer_last_name'   => 'exclude_unless:customer_id,null|required|string|max:100',
+        'customer_email'       => 'exclude_unless:customer_id,null|required|email|max:150',
+        'customer_phone'       => 'exclude_unless:customer_id,null|required|string|max:50',
+
+        // Tours
         'tour_id'              => 'required|array|min:1',
         'tour_id.*'            => 'integer|exists:tours,id',
 
-        'customer_first_name'  => 'nullable|string|max:100',
-        'customer_last_name'   => 'nullable|string|max:100',
-        'customer_email'       => 'nullable|email|max:150',
-        'customer_phone'       => 'nullable|string|max:50',
-
         'tour_startdate'       => 'required|array|min:1',
         'tour_startdate.*'     => 'date',
+
         'tour_starttime'       => 'required|array|min:1',
         'tour_starttime.*'     => 'string',
 
         'additional_info'      => 'nullable|string|max:500',
+
     ], [
-        'customer_id.required'      => 'Please select a customer.',
+
+        // Customer Validation Messages
+        'customer_id.required'             => 'Please select an existing customer.',
+        'customer_first_name.required_without' => 'First name is required when no existing customer is selected.',
+        'customer_last_name.required_without'  => 'Last name is required when no existing customer is selected.',
+        'customer_email.required_without'      => 'Email is required when no existing customer is selected.',
+        'customer_phone.required_without'      => 'Phone is required when no existing customer is selected.',
+
+        // Tours
         'tour_id.required'          => 'At least one tour must be selected.',
-        'tour_startdate.required'   => 'Please provide a start date for the tour.',
-        'tour_starttime.required'   => 'Please provide a start time for the tour.',
+        'tour_startdate.required'   => 'Please provide a start date.',
+        'tour_starttime.required'   => 'Please provide a start time.',
     ]);
 
-    if($validated->fails()){
-        return redirect()->back()->withErrors($validated)->withInput();
-    }
+    // if ($validated->fails()) {
+    //     return redirect()->back()->withErrors($validated)->withInput();
+    // }
+
 
     $data = $request->all();
 
@@ -289,7 +314,7 @@ public function store(Request $request)
                 'first_name'   => $request->customer_first_name ?? 'N/A',
                 'last_name'    => $request->customer_last_name ?? 'N/A',
                 'email'        => $request->customer_email ?? 'N/A',
-                'phone'        => $request->customer_phone ?? 'N/A',
+                'phone'        => $request->full_phone ?? 'N/A',
                 'instructions' => $request->additional_info ?? '',
                 'pickup_id'    => $request->pickup_id ?? '',
                 'pickup_name'  => $request->pickup_name ?? '',
@@ -386,147 +411,151 @@ public function store(Request $request)
         // ===== Update Order totals =====
         $order->total_amount = $totalOrderAmount;
         $order->balance_amount = $totalOrderAmount;
+        
         // $order->payment_type = $request->payment_type;
         $order->save();
+        // dd($request->payment_type);
+        if($request->payment_type){
+            
 
 
-        if($request->payment_type == 'transaction'){
-            // $order->payment_type = $request->payment_type;
-            $order->booked_amount = $totalOrderAmount;
-            $order->balance_amount = 0;
-            $order->transaction_id = $request->transaction_id;
-            $order->payment_method = $request->payment_method;
-            $order->save();
-        } else {
-    // ===== Stripe Payment Handling =====
-    try {
-        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+          if($request->payment_type == 'transaction'){
+                    // $order->payment_type = $request->payment_type;
+                    $order->booked_amount = $totalOrderAmount;
+                    $order->balance_amount = 0;
+                    $order->transaction_id = $request->transaction_id;
+                    $order->payment_method = $request->payment_method;
+                    $order->save();
+                } else {
+            // ===== Stripe Payment Handling =====
+            try {
+                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
-        // Check if customer already linked
-        if (!$order->stripe_customer_id) {
-            $name = $customer->first_name.' '.$customer->last_name;
-            $stripeCustomer = \Stripe\Customer::create([
-                'name'  => $name,
-                'email' => $customer->email,
-                'phone' => $customer->phone,
-            ]);
-        } else {
-            $stripeCustomer = \Stripe\Customer::retrieve($order->stripe_customer_id);
-        }
-
-        $adv_deposite = $request->adv_deposite ?? 'full'; // or deposit/full
-
-        $metaData = [
-            'bookedDate'    => $order->created_at,
-            'orderId'       => $order->id,
-            'orderNumber'   => $order->order_number,
-            'tourName'      => $tour->title ?? 'Multiple Tours',
-            'customerId'    => $customer->id,
-            'customerEmail' => $customer->email,
-            'customerName'  => $customer->first_name.' '.$customer->last_name,
-            'planName'      => "TourBeez Plan",
-            'status'        => 'Pending supplier',
-            'totalAmount'   => $order->total_amount,
-        ];
-
-        $chargeAmount = 0;
-
-        // if ($adv_deposite == "deposit") {
-            $depositRule = \App\Models\TourSpecialDeposit::where('tour_id', $firstTourId)->first();
-            if(!$depositRule){
-                $depositRule = \App\Models\TourSpecialDeposit::where('type', 'global')->first();
-            }
-            if ($depositRule && $depositRule->use_deposit) {
-                switch ($depositRule->charge) {
-                    case 'FULL':
-                        $chargeAmount = $order->total_amount;
-                        break;
-                    case 'DEPOSIT_PERCENT':
-                        $chargeAmount = $order->total_amount * ($depositRule->deposit_amount / 100);
-                        break;
-                    case 'DEPOSIT_FIXED':
-                    case 'DEPOSIT_FIXED_PER_ORDER':
-                        $chargeAmount = $depositRule->deposit_amount;
-                        break;
-                    case 'NONE':
-                        $chargeAmount = 0;
-                        break;
+                // Check if customer already linked
+                if (!$order->stripe_customer_id) {
+                    $name = $customer->first_name.' '.$customer->last_name;
+                    $stripeCustomer = \Stripe\Customer::create([
+                        'name'  => $name,
+                        'email' => $customer->email,
+                        'phone' => $customer->phone,
+                    ]);
+                } else {
+                    $stripeCustomer = \Stripe\Customer::retrieve($order->stripe_customer_id);
                 }
-            } else {
-                $chargeAmount = $order->total_amount; // fallback full
+
+                $adv_deposite = $request->adv_deposite ?? 'full'; // or deposit/full
+
+                $metaData = [
+                    'bookedDate'    => $order->created_at,
+                    'orderId'       => $order->id,
+                    'orderNumber'   => $order->order_number,
+                    'tourName'      => $tour->title ?? 'Multiple Tours',
+                    'customerId'    => $customer->id,
+                    'customerEmail' => $customer->email,
+                    'customerName'  => $customer->first_name.' '.$customer->last_name,
+                    'planName'      => "TourBeez Plan",
+                    'status'        => 'Pending supplier',
+                    'totalAmount'   => $order->total_amount,
+                ];
+
+                $chargeAmount = 0;
+
+                // if ($adv_deposite == "deposit") {
+                    $depositRule = \App\Models\TourSpecialDeposit::where('tour_id', $firstTourId)->first();
+                    if(!$depositRule){
+                        $depositRule = \App\Models\TourSpecialDeposit::where('type', 'global')->first();
+                    }
+                    if ($depositRule && $depositRule->use_deposit) {
+                        switch ($depositRule->charge) {
+                            case 'FULL':
+                                $chargeAmount = $order->total_amount;
+                                break;
+                            case 'DEPOSIT_PERCENT':
+                                $chargeAmount = $order->total_amount * ($depositRule->deposit_amount / 100);
+                                break;
+                            case 'DEPOSIT_FIXED':
+                            case 'DEPOSIT_FIXED_PER_ORDER':
+                                $chargeAmount = $depositRule->deposit_amount;
+                                break;
+                            case 'NONE':
+                                $chargeAmount = 0;
+                                break;
+                        }
+                    } else {
+                        $chargeAmount = $order->total_amount; // fallback full
+                    }
+                // } 
+                // else {
+                //     $chargeAmount = $order->total_amount; // full payment
+                // }
+
+                if ($chargeAmount > 0) {
+                    $pi = \Stripe\PaymentIntent::create([
+                        'customer'  => $stripeCustomer->id,
+                        'amount' => intval(round($chargeAmount * 100)),
+                        'currency' => $order->currency,
+                        'automatic_payment_methods' => ['enabled' => true],
+                        'receipt_email' => $customer->email,
+                        'capture_method' => 'manual',
+                        'description' => 'TourBeez Booking',
+                        'statement_descriptor_suffix' => $order->order_number,
+                        'metadata'  => $metaData,
+                        'setup_future_usage'=> 'off_session',
+                    ]);
+
+                    // Save intent details
+                    $order->payment_intent_client_secret = $pi->client_secret;
+                    $order->payment_intent_id = $pi->id;
+                    $order->booked_amount = $chargeAmount;
+                    $order->balance_amount = $order->total_amount - $chargeAmount;
+
+                    // ✅ If frontend sent payment_method_id, confirm & capture immediately
+                    if ($request->filled('payment_intent_id')) {
+                        $pi = \Stripe\PaymentIntent::retrieve($pi->id);
+                        $pi->confirm(['payment_method' => $request->payment_intent_id]);
+                        $pi->capture();
+
+                        $order->payment_status = 'paid';
+                        $order->balance_amount = 0;
+                    }
+                } else {
+                    $si = \Stripe\SetupIntent::create([
+                        'customer'  => $stripeCustomer->id,
+                        'automatic_payment_methods' => ['enabled' => true],
+                        'usage'     => 'off_session',
+                        'metadata'  => $metaData
+                    ]);
+                    $order->payment_intent_client_secret = $si->client_secret;
+                    $order->payment_intent_id = $si->id;
+                }
+
+                // Booking fee
+                $booking_fee = $request->booking_fee ?? 0;
+                if($booking_fee > 0 && get_setting('price_booking_fee')){
+                    $bookingFeeType = get_setting('tour_booking_fee_type');
+                    if($bookingFeeType == 'FIXED'){
+                        $booking_fee = get_setting('tour_booking_fee');
+                    } elseif($bookingFeeType == 'PERCENT') {
+                        $booking_fee = $order->total_amount * get_setting('tour_booking_fee')/100;
+                    }
+                }
+
+                $order->booking_fee = $booking_fee;
+                $order->stripe_customer_id = $stripeCustomer->id;
+                $order->save();
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Stripe Payment Error: '.$e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Payment setup failed: '.$e->getMessage()
+                ], 500);
             }
-        // } 
-        // else {
-        //     $chargeAmount = $order->total_amount; // full payment
-        // }
-
-        if ($chargeAmount > 0) {
-            $pi = \Stripe\PaymentIntent::create([
-                'customer'  => $stripeCustomer->id,
-                'amount' => intval(round($chargeAmount * 100)),
-                'currency' => $order->currency,
-                'automatic_payment_methods' => ['enabled' => true],
-                'receipt_email' => $customer->email,
-                'capture_method' => 'manual',
-                'description' => 'TourBeez Booking',
-                'statement_descriptor_suffix' => $order->order_number,
-                'metadata'  => $metaData,
-                'setup_future_usage'=> 'off_session',
-            ]);
-
-            // Save intent details
-            $order->payment_intent_client_secret = $pi->client_secret;
-            $order->payment_intent_id = $pi->id;
-            $order->booked_amount = $chargeAmount;
-            $order->balance_amount = $order->total_amount - $chargeAmount;
-
-            // ✅ If frontend sent payment_method_id, confirm & capture immediately
-            if ($request->filled('payment_intent_id')) {
-                $pi = \Stripe\PaymentIntent::retrieve($pi->id);
-                $pi->confirm(['payment_method' => $request->payment_intent_id]);
-                $pi->capture();
-
-                $order->payment_status = 'paid';
-                $order->balance_amount = 0;
-            }
-        } else {
-            $si = \Stripe\SetupIntent::create([
-                'customer'  => $stripeCustomer->id,
-                'automatic_payment_methods' => ['enabled' => true],
-                'usage'     => 'off_session',
-                'metadata'  => $metaData
-            ]);
-            $order->payment_intent_client_secret = $si->client_secret;
-            $order->payment_intent_id = $si->id;
         }
 
-        // Booking fee
-        $booking_fee = $request->booking_fee ?? 0;
-        if($booking_fee > 0 && get_setting('price_booking_fee')){
-            $bookingFeeType = get_setting('tour_booking_fee_type');
-            if($bookingFeeType == 'FIXED'){
-                $booking_fee = get_setting('tour_booking_fee');
-            } elseif($bookingFeeType == 'PERCENT') {
-                $booking_fee = $order->total_amount * get_setting('tour_booking_fee')/100;
-            }
+
         }
-
-        $order->booking_fee = $booking_fee;
-        $order->stripe_customer_id = $stripeCustomer->id;
-        $order->save();
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::error('Stripe Payment Error: '.$e->getMessage());
-        return response()->json([
-            'status' => false,
-            'message' => 'Payment setup failed: '.$e->getMessage()
-        ], 500);
-    }
-}
-
-
-
 
 
 
@@ -823,6 +852,7 @@ public function store(Request $request)
 
     public function order_template_details(Request $request)
     {
+
         try{
             $order_id = $request->order_id;
             $order_template_id = $request->order_template_id;
@@ -1290,7 +1320,10 @@ public function store(Request $request)
                 } else{
                     return response()->json(['success' => false, 'message' => $confirmPayment->message]);
                 }
-            } else {
+            } elseif($order->payment_status == 5) {
+                
+                return response()->json(['success' => true, 'message' => 'Please enter payment details before confirming the order']);
+            }else {
                 $order->save();
                 return response()->json(['success' => true, 'message' => 'Order is already charged']);
             }
