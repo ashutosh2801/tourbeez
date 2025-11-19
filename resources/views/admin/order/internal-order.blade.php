@@ -314,7 +314,7 @@ function removeTour(id) {
 }
 
 // ================= Load Single Tour Details =================
-function loadTourDetails(tourId, count) {
+function loadTourDetails32242(tourId, count) {
     if(!tourId) return;
 
     $.ajax({
@@ -322,32 +322,138 @@ function loadTourDetails(tourId, count) {
         type: 'POST',
         data: { id: tourId, tourCount: count, _token: '{{ csrf_token() }}' },
         success: function(response){
-            const $container = $(`#tour_details_${count}`);
-            $container.html(response);
+    console.log('loadTourDetails response:', response);
 
-            TB.plugins.dateRange();
-            TB.plugins.timePicker();
-            TB.plugins.bootstrapSelect('refresh');
+    const $container = $(`#tour_details_${count}`);
+    $container.html(response);
 
-            $container.find(".aiz-date-range").each(function(){
-                $(this).off("apply.daterangepicker").on("apply.daterangepicker", function(ev, picker){
-                    const selectedDate = picker.startDate.format("YYYY-MM-DD");
-                    $('#tour_startdate').val(selectedDate).trigger('change');
-                    
-                    fetchTourSessions(tourId, selectedDate, count);
-                });
-            });
-        },
+    // re-init plugins for newly inserted HTML
+    TB.plugins.dateRange();
+    TB.plugins.timePicker();
+    TB.plugins.bootstrapSelect('refresh');
+
+    // ---- pick the date input (match server HTML). Try multiple fallbacks ----
+    const $dateInput = $container.find('.tour-startdate, .tour_startdate_field, input[name="tour_startdate[]"]').first();
+
+    if ($dateInput.length) {
+        // If server already set a value attribute, make sure the UI shows it
+        const preValue = $dateInput.val() || $dateInput.attr('value') || '';
+        if (preValue) {
+            // set the raw input value
+            $dateInput.val(preValue).trigger('change');
+            // If the TB dateRange initializes a daterangepicker object, set its startDate
+            try {
+                const drp = $dateInput.data('daterangepicker');
+                if (drp && typeof drp.setStartDate === 'function') {
+                    drp.setStartDate(preValue);
+                }
+            } catch (err) {
+                console.warn('Failed to set daterangepicker startDate:', err);
+            }
+        }
+
+        // Bind apply handler (remove old first to avoid duplicates)
+        $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker){
+            const selectedDate = picker.startDate.format("YYYY-MM-DD");
+            // set value for this input only
+            $(this).val(selectedDate).trigger('change');
+
+            // fetch sessions for this row only
+            fetchTourSessions(tourId, selectedDate, count);
+        });
+
+        // If input already has a date, trigger fetch immediately so sessions populate
+        if (preValue) {
+            fetchTourSessions(tourId, preValue, count);
+        }
+    } else {
+        console.warn('Date input not found inside container #tour_details_' + count);
+    }
+},
+
         error: function(err){
+
             console.error(err);
         }
     });
 }
 
+function loadTourDetails(tourId, count) {
+    if (!tourId) return;
+
+    $.ajax({
+        url: '{{ route("tour.single") }}',
+        type: 'POST',
+        data: { id: tourId, tourCount: count, _token: '{{ csrf_token() }}' },
+
+        success: function(response) {
+
+            const $container = $(`#tour_details_${count}`);
+            $container.html(response);
+
+            // Re-init plugins for new HTML
+            TB.plugins.dateRange();
+            TB.plugins.timePicker();
+            TB.plugins.bootstrapSelect('refresh');
+
+            // Find date input
+            const $dateInput = $container.find(
+                '.tour-startdate, .tour_startdate_field, input[name="tour_startdate[]"]'
+            ).first();
+
+            if ($dateInput.length) {
+
+                // Get server date OR today
+                const serverDate =
+                    $dateInput.attr('value') ||
+                    $dateInput.val() ||
+                    '';
+
+                const initialDate = serverDate
+                    ? serverDate
+                    : moment().format("YYYY-MM-DD");
+
+                // Set input value before attaching DRP
+                $dateInput.val(initialDate);
+
+                // Remove old handler + attach new one
+                $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {
+                    const selectedDate = picker.startDate.format("YYYY-MM-DD");
+                    $(this).val(selectedDate).trigger('change');
+                    fetchTourSessions(tourId, selectedDate, count);
+                });
+
+                // Set the start date inside daterangepicker widget after it initializes
+                setTimeout(() => {
+                    try {
+                        const drp = $dateInput.data('daterangepicker');
+                        if (drp && drp.setStartDate) {
+                            drp.setStartDate(initialDate);
+                            drp.setEndDate(initialDate);
+                        }
+                    } catch (e) {}
+
+                    // Fetch sessions for initial date only once
+                    fetchTourSessions(tourId, initialDate, count);
+
+                }, 250);
+            } else {
+                console.warn("Date input NOT FOUND for row:", count);
+            }
+        },
+
+        error: function(err) {
+            console.error(err);
+        }
+    });
+}
+
+
+
 // ================= Fetch Tour Sessions =================
 function fetchTourSessions(tourId, selectedDate, count) {
     const $container = $(`#tour_details_${count}`);
-    const $timeField = $container.find("input[name='tour_starttime[]'], select[name='tour_starttime[]']");
+    const $timeField = $container.find("input[name='tour_starttime[]'], select[name='tour_starttime[]']").first();
 
     if(!tourId || !selectedDate) return;
 
@@ -357,22 +463,25 @@ function fetchTourSessions(tourId, selectedDate, count) {
         data: { tour_id: tourId, date: selectedDate },
         dataType: "json",
         success: function(resp) {
-            let options = '<option value="">-- Select Session --</option>';
+            let options = '';
             if(resp.data && resp.data.length > 0){
                 $.each(resp.data, function(i, session){
+                    // If your API returns strings, use session; if objects, adapt.
                     options += `<option value="${session}">${session}</option>`;
                 });
             } else {
                 options = '<option value="">No sessions available</option>';
             }
 
-            $timeField.replaceWith(`<select name="tour_starttime[]" class="form-control">${options}</select>`);
+            // Replace the time field within this container only
+            $timeField.replaceWith(`<select name="tour_starttime[]" class="form-control tour-time">${options}</select>`);
         },
         error: function(xhr){
             console.error("Failed to fetch sessions:", xhr.responseText);
         }
     });
 }
+
 </script>
 
 <script src="https://js.stripe.com/v3/"></script>
@@ -586,8 +695,9 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
 document.addEventListener("change", function(e){
     if(e.target.classList.contains("pickup-dropdown")) {
-        const tour = e.target.dataset.tour;
-        const otherBox = document.getElementById("pickup_other_" + tour);
+        // const tour = e.target.dataset.tour;
+
+        const otherBox = document.getElementById("pickup-other-box");
 
         if(e.target.value === "other") {
             otherBox.style.display = "block";
