@@ -277,6 +277,7 @@ public function store(Request $request)
             'order_number'  => unique_order(),
             'currency'      => $request->currency ?? 'CAD',
             'order_status'  => $request->order_status,
+            'payment_status'=> 5,
             'total_amount'  => 0,
             'balance_amount'=> 0,
             'created_by'    => auth()->user()->id,
@@ -308,9 +309,14 @@ public function store(Request $request)
             ]);
         } else {
             // Fallback to request inputs
+
+            $user = User::where('email', $request->customer_email)->first();
+
+            $user_id = $user?->id ?? 0;
+
             $customer = OrderCustomer::create([
                 'order_id'     => $order->id,
-                'user_id'      => 0,
+                'user_id'      => $user_id,
                 'first_name'   => $request->customer_first_name ?? 'N/A',
                 'last_name'    => $request->customer_last_name ?? 'N/A',
                 'email'        => $request->customer_email ?? 'N/A',

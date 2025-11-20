@@ -524,6 +524,11 @@ function fetchTourSessions(tourId, selectedDate, count) {
         }
     });
 
+    
+
+</script>
+
+<script>
     // Toggle fields
     document.querySelectorAll("input[name='payment_type']").forEach(el => {
         el.addEventListener("change", function() {
@@ -537,7 +542,8 @@ function fetchTourSessions(tourId, selectedDate, count) {
         });
     });
     $(document).ready(function () {
-        $('#addNewCustomerBtn').on('click', function () {
+        $(document).on('click', '#addNewCustomerBtn', function () {
+            
              $('#newCustomerFields').removeClass('d-none');
             $('#newCustomerFields').removeClass('d-none');
             $('#customer').val('').trigger('change');
@@ -556,7 +562,6 @@ function fetchTourSessions(tourId, selectedDate, count) {
             }
         });
     });
-
 </script>
 
 <script>
@@ -706,6 +711,92 @@ document.addEventListener("change", function(e){
         }
     }
 });
+</script>
+
+
+<script>
+    // =====================================================
+// DYNAMIC TOTAL CALCULATION FOR EACH TOUR ROW
+// =====================================================
+
+function calculateRowTotal(row) {
+
+    
+
+    let subtotal = 0;
+
+    // -----------------------------------------
+    // 1) PRICING QTY * PRICE
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
+        const qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_price_"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+
+        subtotal += qty * price;
+    });
+
+    // -----------------------------------------
+    // 2) ADDONS QTY * PRICE
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
+        const qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_extra_price_"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+
+        subtotal += qty * price;
+    });
+
+    // -----------------------------------------
+    // 3) TAXES — read tax rows & recalc live
+    // -----------------------------------------
+    row.querySelectorAll('.tax-row').forEach((taxRow) => {
+        const feeType = taxRow.dataset.type;
+        const feeValue = parseFloat(taxRow.dataset.value);
+
+        let tax = 0;
+
+        if (feeType === "percentage") {
+            tax = subtotal * (feeValue / 100);
+        } else {
+            tax = feeValue;
+        }
+
+        // update tax amount live
+        taxRow.querySelector('.tax-amount').textContent = tax.toFixed(2);
+
+        subtotal += tax;
+    });
+
+    // -----------------------------------------
+    // 4) UPDATE UI SUBTOTAL
+    // -----------------------------------------
+    const subtotalBox = row.querySelector('.subtotal-box');
+    if (subtotalBox) {
+        subtotalBox.textContent = subtotal.toFixed(2);
+    }
+}
+
+// =====================================================
+// EVENT LISTENERS — trigger on every quantity change
+// =====================================================
+
+$(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']", function () {
+
+    const row = this.closest("[id^='row_']");
+    calculateRowTotal(row);
+});
+
+
+
 </script>
 
 

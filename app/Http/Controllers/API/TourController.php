@@ -1849,17 +1849,25 @@ class TourController extends Controller
             $tax = $price ?? 0;
             $subtotal += $tax;
 
-            $str .= '
-                <tr>
-                    <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
-                    <td class="text-right">'. price_format($tax) .'</td>
-                </tr>';
+            // $str .= '
+            //     <tr>
+            //         <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
+            //         <td class="text-right">'. price_format($tax) .'</td>
+            //     </tr>';
+
+                $str .= '<tr class="tax-row" 
+                data-type="'.$item->fee_type.'" 
+                data-value="'.$item->tax_fee_value.'">
+                <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
+                <td class="text-right tax-amount">'. price_format($tax) .'</td>
+            </tr>';
         }
     }
 
     $str .= '
         <tr>
             <th>Subtotal</th>
+            <th class="text-right subtotal-box">'. price_format($subtotal) .'</th>
             <th class="text-right">'. price_format($subtotal) .'</th>
         </tr>
     </table>';
@@ -2075,17 +2083,24 @@ $pickupHtml .= '</div>';
                         $tax = get_tax($subtotal, $item->fee_type, $item->tax_fee_value) ?? 0;
                         $subtotal += $tax;
 
-                        $str .= '<tr>
-                            <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
-                            <td class="text-right">'. price_format($tax) .'</td>
-                        </tr>';
+                        // $str .= '<tr>
+                        //     <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
+                        //     <td class="text-right">'. price_format($tax) .'</td>
+                        // </tr>';
+                        $str .= '<tr class="tax-row" 
+                data-type="'.$item->fee_type.'" 
+                data-value="'.$item->tax_fee_value.'">
+                <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
+                <td class="text-right tax-amount">'. price_format($tax) .'</td>
+            </tr>';
                     }
                 }
 
                 $str .= '
                     <tr>
                         <th>Subtotal</th>
-                        <th class="text-right">'. price_format($subtotal) .'</th>
+                        
+                        <th class="text-right subtotal-box">'. price_format($subtotal) .'</th>
                     </tr>
                 </table>
                 </div>';
