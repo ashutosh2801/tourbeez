@@ -247,7 +247,7 @@ class OrderController extends Controller
         else if(!empty($order->tour->pickups) && isset($order->tour->pickups[0]) && $order->tour->pickups[0]?->name === 'Pickup') {
             $tourPickups[0] = 'Pickup';
 
-            $comment = DB::table('pickup_tour')
+            $comment = \DB::table('pickup_tour')
                         ->where('tour_id', $order->tour->id)
                         ->where('pickup_id', $order->tour->pickups[0]?->id)  // a single pickup ID
                         ->value('comment');
