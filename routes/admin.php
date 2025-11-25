@@ -55,7 +55,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     
     Route::resource('/orders', OrderController::class);
     Route::get('/order/rezdy-manifest', [OrderController::class, 'showPdfFiles']);
-    Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus']);
+    Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
     Route::get('/order-manifest', [OrderController::class, 'manifest'])->name('orders.manifest');
     Route::post('/internal-order/store', [OrderController::class, 'internalOrderStore'])->name('orders.internal.store');
     Route::get('/ordersmanifest/download', [OrderController::class, 'downloadManifest'])->name('orders.manifest.download');
@@ -240,6 +240,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/orders/{order}/payment-details', [OrderController::class, 'getPaymentDetails'])->name('orders.payment-details');
     Route::post('orders/{order}/refund', [OrderController::class, 'refundPayment'])
     ->name('orders.refundPayment');
+    Route::post('/admin/orders/{order}/refund-multiple', [OrderController::class, 'refundMultiple'])->name('orders.refundMultiple');
     Route::post('orders/{order}/refund2322', [OrderController::class, 'refundPayment'])->name('orders.refund');
 
 

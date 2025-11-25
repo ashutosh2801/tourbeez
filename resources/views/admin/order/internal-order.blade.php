@@ -314,69 +314,7 @@ function removeTour(id) {
 }
 
 // ================= Load Single Tour Details =================
-function loadTourDetails32242(tourId, count) {
-    if(!tourId) return;
 
-    $.ajax({
-        url: '{{ route("tour.single") }}',
-        type: 'POST',
-        data: { id: tourId, tourCount: count, _token: '{{ csrf_token() }}' },
-        success: function(response){
-    console.log('loadTourDetails response:', response);
-
-    const $container = $(`#tour_details_${count}`);
-    $container.html(response);
-
-    // re-init plugins for newly inserted HTML
-    TB.plugins.dateRange();
-    TB.plugins.timePicker();
-    TB.plugins.bootstrapSelect('refresh');
-
-    // ---- pick the date input (match server HTML). Try multiple fallbacks ----
-    const $dateInput = $container.find('.tour-startdate, .tour_startdate_field, input[name="tour_startdate[]"]').first();
-
-    if ($dateInput.length) {
-        // If server already set a value attribute, make sure the UI shows it
-        const preValue = $dateInput.val() || $dateInput.attr('value') || '';
-        if (preValue) {
-            // set the raw input value
-            $dateInput.val(preValue).trigger('change');
-            // If the TB dateRange initializes a daterangepicker object, set its startDate
-            try {
-                const drp = $dateInput.data('daterangepicker');
-                if (drp && typeof drp.setStartDate === 'function') {
-                    drp.setStartDate(preValue);
-                }
-            } catch (err) {
-                console.warn('Failed to set daterangepicker startDate:', err);
-            }
-        }
-
-        // Bind apply handler (remove old first to avoid duplicates)
-        $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker){
-            const selectedDate = picker.startDate.format("YYYY-MM-DD");
-            // set value for this input only
-            $(this).val(selectedDate).trigger('change');
-
-            // fetch sessions for this row only
-            fetchTourSessions(tourId, selectedDate, count);
-        });
-
-        // If input already has a date, trigger fetch immediately so sessions populate
-        if (preValue) {
-            fetchTourSessions(tourId, preValue, count);
-        }
-    } else {
-        console.warn('Date input not found inside container #tour_details_' + count);
-    }
-},
-
-        error: function(err){
-
-            console.error(err);
-        }
-    });
-}
 
 function loadTourDetails(tourId, count) {
     if (!tourId) return;
@@ -391,19 +329,16 @@ function loadTourDetails(tourId, count) {
             const $container = $(`#tour_details_${count}`);
             $container.html(response);
 
-            // Re-init plugins for new HTML
             TB.plugins.dateRange();
             TB.plugins.timePicker();
             TB.plugins.bootstrapSelect('refresh');
 
-            // Find date input
             const $dateInput = $container.find(
                 '.tour-startdate, .tour_startdate_field, input[name="tour_startdate[]"]'
             ).first();
 
             if ($dateInput.length) {
 
-                // Get server date OR today
                 const serverDate =
                     $dateInput.attr('value') ||
                     $dateInput.val() ||
@@ -413,27 +348,37 @@ function loadTourDetails(tourId, count) {
                     ? serverDate
                     : moment().format("YYYY-MM-DD");
 
-                // Set input value before attaching DRP
                 $dateInput.val(initialDate);
 
-                // Remove old handler + attach new one
                 $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {
                     const selectedDate = picker.startDate.format("YYYY-MM-DD");
                     $(this).val(selectedDate).trigger('change');
+
+                    
                     fetchTourSessions(tourId, selectedDate, count);
                 });
 
-                // Set the start date inside daterangepicker widget after it initializes
                 setTimeout(() => {
                     try {
                         const drp = $dateInput.data('daterangepicker');
-                        if (drp && drp.setStartDate) {
+                        if (drp) {
+
+                            // ----------- LIMIT START DATE -------------
+                            const tourStartDate = moment(initialDate, "YYYY-MM-DD");
+                            const today = moment().startOf('day');
+
+                            const minAllowedDate = moment.max(tourStartDate, today);
+
+                            drp.minDate = minAllowedDate;
+                            drp.updateView();
+                            drp.updateCalendars();
+                            // -------------------------------------------
+
                             drp.setStartDate(initialDate);
                             drp.setEndDate(initialDate);
                         }
                     } catch (e) {}
 
-                    // Fetch sessions for initial date only once
                     fetchTourSessions(tourId, initialDate, count);
 
                 }, 250);
@@ -447,6 +392,7 @@ function loadTourDetails(tourId, count) {
         }
     });
 }
+
 
 
 
@@ -719,11 +665,12 @@ document.addEventListener("change", function(e){
 // DYNAMIC TOTAL CALCULATION FOR EACH TOUR ROW
 // =====================================================
 
-function calculateRowTotal(row) {
+function calculateRowTotal34234(row) {
 
     
 
     let subtotal = 0;
+    let withouttax = 0;
 
     // -----------------------------------------
     // 1) PRICING QTY * PRICE
@@ -735,9 +682,22 @@ function calculateRowTotal(row) {
             'input[name^="tour_pricing_price_"]'
         );
 
-        const price = parseFloat(priceInput.value) || 0;
+        
 
-        subtotal += qty * price;
+        const priceTypeInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_type"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+        const priceType = priceTypeInput.value;
+        
+        if(priceType === "FIXED"){
+            subtotal = price;
+        } else{
+            subtotal += qty * price;
+        }
+
+        
     });
 
     // -----------------------------------------
@@ -755,6 +715,123 @@ function calculateRowTotal(row) {
         subtotal += qty * price;
     });
 
+    withouttax = subtotal;
+
+    // -----------------------------------------
+    // 3) TAXES — read tax rows & recalc live
+    // -----------------------------------------
+    row.querySelectorAll('.tax-row').forEach((taxRow) => {
+    const feeType = taxRow.dataset.type;
+    const feeValue = parseFloat(taxRow.dataset.value);
+// FIXED_PER_ORDER
+    let tax = 0;
+    
+    if (feeType === "PERCENT") {
+        tax = subtotal * (feeValue / 100);
+    } else {
+        tax = feeValue;
+    }
+
+    // Format tax for UI
+    const formattedTax = new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(tax);
+    
+    taxRow.querySelector('.tax-amount').textContent = formattedTax;
+
+    
+    
+    subtotal += tax;
+});
+
+
+    // -----------------------------------------
+    // 4) UPDATE UI SUBTOTAL
+    // -----------------------------------------
+
+    const withouttaxBox = row.querySelector('.withouttax-box');
+    if (withouttaxBox) {
+        withouttaxBox.textContent = withouttax.toFixed(2);
+    }
+    const subtotalBox = row.querySelector('.subtotal-box');
+    if (subtotalBox) {
+        subtotalBox.textContent = subtotal.toFixed(2);
+    }
+}
+
+
+function calculateRowTotal(row) {
+
+    let subtotal = 0;
+    let withouttax = 0;
+
+    // -----------------------------------------
+    // 1) PRICING QTY * PRICE
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
+        let qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_price_"]'
+        );
+
+        const priceTypeInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_type_"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+        const priceType = priceTypeInput.value;
+
+        // -----------------------------------------
+        // ADDITION: ENFORCE MIN/MAX IF FIXED
+        // -----------------------------------------
+        const minQty = qtyInput.getAttribute("min");
+        const maxQty = qtyInput.getAttribute("max");
+
+
+        if (priceType === "FIXED") {
+
+            // if (minQty !== null && qty < parseFloat(minQty)) {
+            //     alert("Quantity cannot be less than minimum allowed (" + minQty + ").");
+            //     qty = parseFloat(minQty);
+            //     qtyInput.value = qty;
+            // }
+
+            if (maxQty !== null && qty > parseFloat(maxQty)) {
+                alert("Quantity cannot be more than maximum allowed (" + maxQty + ").");
+                qty = parseFloat(maxQty);
+                qtyInput.value = qty;
+            }
+
+        }
+        // -----------------------------------------
+
+        if (priceType === "FIXED") {
+            subtotal = price;
+        } else {
+            subtotal += qty * price;
+        }
+
+    });
+
+    // -----------------------------------------
+    // 2) ADDONS QTY * PRICE
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
+        const qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_extra_price_"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+
+        subtotal += qty * price;
+    });
+
+    withouttax = subtotal;
+
     // -----------------------------------------
     // 3) TAXES — read tax rows & recalc live
     // -----------------------------------------
@@ -764,14 +841,18 @@ function calculateRowTotal(row) {
 
         let tax = 0;
 
-        if (feeType === "percentage") {
+        if (feeType === "PERCENT") {
             tax = subtotal * (feeValue / 100);
         } else {
             tax = feeValue;
         }
 
-        // update tax amount live
-        taxRow.querySelector('.tax-amount').textContent = tax.toFixed(2);
+        const formattedTax = new Intl.NumberFormat('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(tax);
+
+        taxRow.querySelector('.tax-amount').textContent = formattedTax;
 
         subtotal += tax;
     });
@@ -779,11 +860,16 @@ function calculateRowTotal(row) {
     // -----------------------------------------
     // 4) UPDATE UI SUBTOTAL
     // -----------------------------------------
+    const withouttaxBox = row.querySelector('.withouttax-box');
+    if (withouttaxBox) {
+        withouttaxBox.textContent = withouttax.toFixed(2);
+    }
     const subtotalBox = row.querySelector('.subtotal-box');
     if (subtotalBox) {
         subtotalBox.textContent = subtotal.toFixed(2);
     }
 }
+
 
 // =====================================================
 // EVENT LISTENERS — trigger on every quantity change
@@ -794,6 +880,8 @@ $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_ext
     const row = this.closest("[id^='row_']");
     calculateRowTotal(row);
 });
+
+
 
 
 

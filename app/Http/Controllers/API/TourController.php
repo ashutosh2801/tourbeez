@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Order;
+use App\Models\OrderTour;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\Tour;
 use App\Models\TourReview;
@@ -1842,6 +1843,13 @@ class TourController extends Controller
     // ---------------------------------------------------
     $str .= '<table class="table">';
 
+    $str .= '
+
+        <tr>
+            <th>total</th>
+            <th class="text-right withouttax-box">'. price_format($subtotal) .'</th>
+            <th class="text-right">'. price_format($subtotal) .'</th>
+        </tr>';
     if ($data->taxes_fees) {
         foreach ($data->taxes_fees as $item) {
 
@@ -1865,6 +1873,7 @@ class TourController extends Controller
     }
 
     $str .= '
+
         <tr>
             <th>Subtotal</th>
             <th class="text-right subtotal-box">'. price_format($subtotal) .'</th>
@@ -2022,9 +2031,14 @@ $pickupHtml .= '</div>';
                                     <td colspan="2">
                                         <h4 style="font-size:16px; font-weight:600">Quantities</h4>
                                     </td>
+                                    <input type="hidden" name="tour_pricing_type" value="'.$data->price_type.'" /> 
                                 </tr>';
 
                                 if($data->pricings) {
+
+                                    $minQuantity = $data->detail->quantity_min;
+                                    $maxQuantity = $data->detail->quantity_max;
+
                                     $i=0;
                                     foreach($data->pricings as $pricing) {
                                         $num = ($i == 0) ? 1 : 0;
@@ -2036,8 +2050,9 @@ $pickupHtml .= '</div>';
                                         $str .= '<tr>
                                             <td width="60">
                                                 <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
-                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl">
+                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl" max="'.$maxQuantity.'" min="'.$minQuantity.'">
                                                 <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$pricing->price.'" /> 
+                                                <input type="hidden" name="tour_pricing_type_'.$_tourId.'[]" value="'.$data->price_type.'" /> 
                                             </td>
                                             <td>'.$pricing->label.' ('. price_format($pricing->price) .')</td>
                                         </tr>';
@@ -2078,6 +2093,13 @@ $pickupHtml .= '</div>';
 
                 $str .= $pickupHtml;
 
+                $str .= '
+
+                <tr>
+                    <th>Sub Total</th>
+                    <th class="text-right withouttax-box">'. price_format($subtotal) .'</th>
+                </tr>';
+
                 if($data->taxes_fees) {
                     foreach ($data->taxes_fees as $item) {                    
                         $tax = get_tax($subtotal, $item->fee_type, $item->tax_fee_value) ?? 0;
@@ -2098,7 +2120,7 @@ $pickupHtml .= '</div>';
 
                 $str .= '
                     <tr>
-                        <th>Subtotal</th>
+                        <th>Total</th>
                         
                         <th class="text-right subtotal-box">'. price_format($subtotal) .'</th>
                     </tr>
@@ -2108,6 +2130,38 @@ $pickupHtml .= '</div>';
 
     return $str;
 }
+
+
+public function singleCalendar(Request $request)
+{
+    $tour = Tour::find($request->id);
+
+    $orderTour = OrderTour::where('order_id', $request->order_id)->first();
+
+    if (!$tour) {
+        return response()->json(['error' => 'Not found'], 404);
+    }
+
+    $schedules = $tour->schedules ?? [];
+
+    // Get next available date
+    $tour_start_date = $this->getNextAvailableDate($tour->id, $schedules);
+    $tour_start_date = is_array($tour_start_date) 
+        ? ($tour_start_date['date'] ?? '') 
+        : $tour_start_date;
+
+    // Disabled dates
+    $disabled_dates  = $this->getDisabledTourDates($tour->id, $schedules);
+
+    return response()->json([
+        'tour_date' => $orderTour->tour_date,
+        'tour_time' => $orderTour->tour_time,
+        'tour_id' => $tour->id,
+        'start_date' => $tour_start_date,
+        'disabled_dates' => $disabled_dates,
+    ]);
+}
+
 
 
 

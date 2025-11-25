@@ -190,6 +190,110 @@ class OrderController extends Controller
         //     ], 500);
         // }
     }
+
+    public function getOrderDetailByOrderID( Request $request, $orderID )
+    {
+        // $order = Order::where('id', decrypt($orderID))->first();
+
+        $order = Order::findOrFail(decrypt($orderID));
+
+        if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Order not found.',
+            ], 404);
+        }
+
+        $tour_pricing = $order->order_tour->tour_pricing ? json_decode($order->order_tour->tour_pricing) : [];
+        $cartItems=[];
+        foreach($tour_pricing as $tp) {
+            $cartItems[] = [
+                'id'        => $tp->tour_pricing_id,
+                'price'     => $tp->price,
+                'label'     => $tp->label,
+                'price_type'=> $tp->price_type ?? '',
+                'qty_used'  => 1,
+                'quantity'  => $tp->quantity,
+            ];
+        }
+
+        $extra_pricing = $order->order_tour->tour_extra ? json_decode($order->order_tour->tour_extra) : [];
+        $cartAdons=[]; $total = 0;
+        foreach($extra_pricing as $ep) {
+            $extraAddon = Addon::find($ep->tour_extra_id);
+            $cartAdons[] = [
+                "id"        => $ep->tour_extra_id,
+                "price"     => $ep->price,
+                "label"     => $extraAddon->name,
+                "quantity"  => $ep->quantity,
+            ];
+        }
+         
+        $tour_fees = $order->order_tour->tour_fees ? json_decode($order->order_tour->tour_fees) : [];
+        $tourFees = [];
+        foreach($tour_fees as $tf) {
+            $tourFees[] = [
+                "id"    => $tf->tour_taxes_id,
+                "label" => $tf->label,
+                "type"  => $tf->type,
+                "value" => $tf->value,
+            ];
+        }
+
+        $tourPickups = [];
+        if(!empty($order->tour->pickups) && isset($order->tour->pickups[0]) && $order->tour->pickups[0]?->name === 'No Pickup') {
+            $tourPickups[] = 'No Pickup';
+        }
+        else if(!empty($order->tour->pickups) && isset($order->tour->pickups[0]) && $order->tour->pickups[0]?->name === 'Pickup') {
+            $tourPickups[0] = 'Pickup';
+
+            $comment = DB::table('pickup_tour')
+                        ->where('tour_id', $order->tour->id)
+                        ->where('pickup_id', $order->tour->pickups[0]?->id)  // a single pickup ID
+                        ->value('comment');
+
+
+            $tourPickups[1] = $comment ?? "Enter the pickup location";
+        }
+        else if (!empty($order->tour->pickups) && isset($order->tour->pickups[0])) {
+            $tourPickups = $order->tour->pickups[0]?->locations ?? [];
+        }
+        else {
+            $tourPickups[] = 'No Pickup';
+        }
+
+        $customer = $order->customer;
+
+        $image = uploaded_asset($order->tour->main_image->id ?? 0, 'medium');        
+
+        $data = [
+            "order_number"  => $order->order_number,
+            "currency"      => $order->currency,
+            "total_amount"  => $order->total_amount,
+            "orderId"       => $order->id,
+            "tourId"        => $order->tour_id,
+            "tourTitle"     => $order->tour?->title,
+            "tourSlug"      => $order->tour?->slug,
+            "tourImage"     => $image,
+            "selectedDate"  => $order->order_tour->tour_date,
+            "selectedTime"  => $order->order_tour->tour_time,
+            "tourPrice"     => $order->total_amount,
+            "sessionId"     => $order->session_id ?? strtotime('now'),
+            "userId"        => $order->user_id ?? 0,
+            "minQty"        => $order->tour->detail->quantity_min,
+            "maxQty"        => $order->tour->detail->quantity_max,
+            "tourFees"      => $tourFees,
+            "tourPickups"   => $tourPickups,
+            "customer"      => $customer,
+            "cartItems"     => $cartItems,
+            "cartAdons"     => $cartAdons,
+        ];
+
+        return response()->json([
+            'status' => true,
+            'data' => $data,
+        ], 200);
+    }
     
 
     /**

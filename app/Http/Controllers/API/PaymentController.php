@@ -946,7 +946,7 @@ class PaymentController extends Controller
 
             // Always include fallback addresses from .env
             $defaultEmails = [
-                env('MAIL_FROM_ADDRESS'),
+                // env('MAIL_FROM_ADDRESS'),
                 env('MAIL_FROM_ADMIN_ADDRESS')
             ];
 
@@ -1023,7 +1023,7 @@ class PaymentController extends Controller
 
                 if($recipient == 'admin'){
                     Log::info('Admin recipients:', $email);
-                     $sentMessage = $mailer->to($email)->send(new AdminBookingMail($array, $event['uid']));
+                     $sentMessage = $mailer->to(env('MAIL_FROM_ADDRESS'))->bcc($email)->send(new AdminBookingMail($array, $event['uid']));
                 } else{
                         $sentMessage = $mailer->to($email)->send(new EmailManager($array));
                         
