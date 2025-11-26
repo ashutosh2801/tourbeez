@@ -4,7 +4,7 @@
             <h3 class="card-title">Itinerary</h3>
             <div class="card-tools"></div>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             @if ($errors->any())
                 <div class="alert alert-danger">
                     <ul class="list-unstyled">
@@ -50,7 +50,7 @@
                     }
                 @endphp
 
-                <div class="card-body" id="ItineraryContainer">
+                <div class="card-body p-0" id="ItineraryContainer">
                     @foreach ($ItineraryOptions as $index => $option) 
                     <div id="ItineraryRow_{{ $index }}" class="itinerary-row"> 
                         <input type="hidden" name="ItineraryOptions[{{ $index }}][id]" value="{{ old("ItineraryOptions.$index.id", $option['id']) }}" class="form-control" />
@@ -118,14 +118,20 @@
                 </div>
 
                 <div class="text-right">
-                    <button type="button" onclick="addItinerary()" class="btn border-t-indigo-100 btn-outline">Add itinerary</button>
+                    <button type="button" onclick="addItinerary()" class="btn btn-success">+ Add itinerary</button>
                 </div>
             </div>
 
             <div class="card-footer" style="display:block">
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.pickups', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
-                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.faqs', encrypt($data->id)) }}" class="btn btn-primary">Next</a>           
+                <div class="row">
+                    <div class="col-md-6">
+                        <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
+                    </div>
+                    <div class="col-md-6 align-buttons">
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.pickups', encrypt($data->id)) }}" class="btn btn-secondary"> <i class="fas fa-chevron-left"></i> Back</a>
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.faqs', encrypt($data->id)) }}" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                </div>
             </div>
             </form>
         </div>

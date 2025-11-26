@@ -7552,6 +7552,19 @@ ul.social.colored [class*="linkedin"] {
     background-color: #edf3ff;
 }
 
+.nav-currency {
+    height: auto;
+    padding: 1rem;
+}
+
+.nav-currency i {
+    color: #225de4;
+}
+
+.nav-currency:hover, .nav-currency:focus {
+    background-color: #edf3ff;
+}
+
 .nav-clear {
     color: #225de4 !important;
     padding: 1rem !important;
@@ -8054,7 +8067,7 @@ a.dropdown-footer:hover {
 .btn-selected {
     background: #225de4;
     color: #FFF;
-    margin: 0 8px 0 0;
+    margin: 0 8px 8px 0;
 }
 
 .btn-selected:hover {
@@ -8502,6 +8515,7 @@ a.dropdown-footer:hover {
 
 .tour-edit-body .nav {
     padding-top: 50px;
+    padding-bottom: 20px;
 }
 
 .tour-edit-body .nav.nav-pills .nav-link {
@@ -8526,6 +8540,10 @@ a.dropdown-footer:hover {
     border: 1px solid #aeb0b4;
 }
 
+.basic-detail .card-header {
+    border-radius: 0 10px 0 0;
+}
+
 #videosContainer .btn-preview {
     background-color: #01228b;
     color: #FFF;
@@ -8548,11 +8566,302 @@ a.dropdown-footer:hover {
     width: 100%;
 }
 
+.extra-body .card .card-body {
+    padding: 0;
+    border-radius: 0;
+}
+
+.extra-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.extra-body .card-header .card-tools {
+    text-align: right;
+}
+
+.card-footer .align-buttons {
+    text-align: right;
+}
+
+.tour-mb-dropdown {
+    margin-bottom: 15px;
+}
+
+.tour-mb-dropdown .dropdown-menu.dropdown-menu-lg {
+    width: 320px;
+    min-width: 320px;
+    transform: none !important;
+    height: 250px;
+    overflow-y: scroll;
+    top: 42px !important;
+    width: 100%;
+}
+
+.schedule-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.schedule-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.schedule-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.schedule-body .card-header .row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+}
+
+.schedule-body .card-header .card-tools {
+    text-align: right;
+}
+
+.schedule-body .card .card-body {
+    padding: 0;
+    border-radius: 0;
+}
+
+.schedule-body .schedule-card .card-body {
+    padding: 20px 25px;
+}
+
+.location-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.location-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.location-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.location-body .bootstrap-select .btn {
+    border: 1px solid #aeb0b4;
+}
+
+.pickup-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.pickup-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.pickup-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.pickup-body .card-header .row {
+    width: 100%;
+}
+
+.pickup-body .card-header .card-tools {
+    text-align: right;
+}
+
+.itinerary-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.itinerary-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.itinerary-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.faq-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.faq-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.faq-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.inclusions-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.inclusions-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.inclusions-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.exclusions-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.exclusions-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.exclusions-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.optionals-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.optionals-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.optionals-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.taxfee-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.taxfee-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.taxfee-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.gallery-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.gallery-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.gallery-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
 @media (max-width: 767px) {
 
-    .tour-edit-footer .btn-success {
-        width: 100%;
+    .tour-edit-head .card-tools {
+        float: left;
         margin-top: 10px;
+    }
+
+    .desktop-menu {
+        display: none;
+    }
+
+    .card-footer .btn-success {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .card-footer .align-buttons {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .basic-detail .card-header {
+        border-radius: 10px 10px 0 0;
+    }
+
+    .extra-body .card-header {
+        border-radius: 10px 10px 0 0;
+    }
+
+    .basic-detail #videosContainer .input-group-prepend {
+        width: 100%;
+        display: block;
+    }
+
+    .basic-detail #videosContainer input {
+        width: 100%;
+        margin: 10px 0;
+    }
+
+    .basic-detail #videosContainer .btn-preview {
+        width: 85%;
+        border-radius: 8px;
+    }
+
+    .basic-detail input, .basic-detail .input-group, .basic-detail select {
+        margin-bottom: 15px;
+    }
+
+    .profile-name {
+        display: none;
+    }
+
+    .schedule-body .card-header .card-tools {
+        text-align: left;
+        margin-top: 10px;
+    }
+
+    .schedule-body .schedule-card .input-group {
+        margin-bottom: 15px;
+    }
+
+    .schedule-body .schedule-card select {
+        margin-top: 15px;
+    }
+
+    .extra-body .card-header .card-tools {
+        margin-top: 10px;
+        text-align: left;
+    }
+
+    .pickup-body .card-header .card-tools {
+        text-align: left;
+        margin-top: 10px;
+    }
+
+    .itinerary-body .card-header,
+    .faq-body .card-header,
+    .inclusions-body .card-header,
+    .exclusions-body .card-header,
+    .optionals-body .card-header,
+    .location-body .card-header,
+    .pickup-body .card-header,
+    .schedule-body .card-header,
+    .taxfee-body .card-header,
+    .gallery-body .card-header {
+        border-radius: 10px 10px 0 0;
+    }
+}
+
+@media (min-width: 767px) {
+
+    .tour-mb-dropdown {
+        display: none;
     }
 
 }

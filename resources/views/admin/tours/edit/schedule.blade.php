@@ -2,15 +2,19 @@
     <form class="needs-validation" novalidate action="{{ route('admin.tour.schedule_update', $data->id) }}" method="POST" enctype="multipart/form-data" autocomplete="off">
     <div class="card card-primary">
         <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center w-100">
-                <h3 class="card-title mb-0">Scheduling</h3>
-                <div>
-                    <button type="button" id="add-schedule" class="btn btn-sm btn-success">
-                        + Add Schedule
-                    </button>
-                    <a href="{{ route('admin.tour.edit.schedule-calendar', $data->id) }}" class="btn btn-sm btn-success">
-                        Schedule Calendar
-                    </a>
+            <div class="row">
+                <div class="col-md-5">
+                    <h3 class="card-title mb-0">Scheduling</h3>
+                </div>
+                <div class="col-md-7">
+                    <div class="card-tools">
+                        <button type="button" id="add-schedule" class="btn btn-sm btn-success">
+                            + Add Schedule
+                        </button>
+                        <a href="{{ route('admin.tour.edit.schedule-calendar', $data->id) }}" class="btn btn-sm btn-success">
+                            Schedule Calendar
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -32,10 +36,10 @@
             <div class="accordion" id="scheduleAccordion">
                 @foreach($data->schedules as $index => $schedule)
                 <div class="card mb-3 schedule-card" data-index="{{ $index }}">
-                    <div class="card-primary" id="heading{{ $index }}" style="background-color:#343a41; cursor: pointer; padding-right:15px;">
+                    <div class="card-primary" id="heading{{ $index }}" style="background-color:#edf3ff; cursor: pointer; padding-right:15px;">
                         <div class="d-flex justify-content-between align-items-center w-100">
                             <h5 class="mb-0">
-                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ $index }}" aria-expanded="true" aria-controls="collapse{{ $index }}" style="color:#fff;">
+                                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse{{ $index }}" aria-expanded="true" aria-controls="collapse{{ $index }}" style="color:#343a41;font-weight: bold;">
                                     Schedule #{{ $index+1 }}
                                 </button>
                             </h5>
@@ -313,9 +317,15 @@
 
         </div>
         <div class="card-footer" style="display:block">
-            <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
-            <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
-            <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.location', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
+          <div class="row">
+            <div class="col-md-6">
+              <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
+            </div>
+            <div class="col-md-6 align-buttons">
+              <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" class="btn btn-secondary"> <i class="fas fa-chevron-left"></i> Back</a>
+              <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.location', encrypt($data->id)) }}" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></a>
+            </div>
+          </div>
         </div>
     </div>
     </form>
@@ -325,13 +335,13 @@
 <template id="schedule-template">
     <div class="card mb-3 schedule-card" data-index="__INDEX__">
 
-        <div class="card-primary" id="heading__INDEX__" style="background-color:#343a41; cursor: pointer; padding-right:15px;">
+        <div class="card-primary" id="heading__INDEX__" style="background-color:#edf3ff; cursor: pointer; padding-right:15px;">
             <div class="d-flex justify-content-between align-items-center w-100">
 
 
         <!-- <div class="card-header d-flex justify-content-between"  style="background-color:#343a41; cursor: pointer; padding-right:15px;"> -->
             <h5 class="mb-0">
-                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse__INDEX__" aria-expanded="true" style="color:#fff;">Schedule #__INDEX__</button>
+                <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse__INDEX__" aria-expanded="true" style="color:#343a41;font-weight: bold;">Schedule #__INDEX__</button>
             </h5>
             <button type="button" class="btn btn-danger btn-sm remove-schedule">Remove</button>
         </div>

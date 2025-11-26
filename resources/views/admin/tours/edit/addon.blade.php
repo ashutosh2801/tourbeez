@@ -6,12 +6,12 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 </style>
 <div class="card">
     <div class="card card-primary">
-        <div class="card-header" style="border-radius: 0 10px 0 0;">
+        <div class="card-header">
           <div class="row">
-            <div class="col-md-8">
+            <div class="col-md-8 col-12">
               <h3 class="card-title">Extra</h3>
             </div>
-            <div class="col-md-4 text-right">
+            <div class="col-md-4 col-12">
               <div class="card-tools">
                   <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-success">+ Create New</a>
               </div>
@@ -61,14 +61,14 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
               </table>
             </div>
         </div>
-        <div class="card-footer tour-edit-footer" style="display:block">
+        <div class="card-footer" style="display:block">
           <div class="row">
             <div class="col-md-6">
+              <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
+            </div>
+            <div class="col-md-6 align-buttons">
               <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit', encrypt($data->id)) }}" class="btn btn-secondary"> <i class="fas fa-chevron-left"></i> Back</a>
               <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></a>
-            </div>
-            <div class="col-md-6 text-right">
-              <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
             </div>
           </div>
         </div>
