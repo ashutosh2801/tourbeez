@@ -179,7 +179,7 @@
                 <div class="col-md-9">
                     <h5 class="m-0">Created on {{ date__format($order->created_at) }} online on your booking form</h5>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}">
                     <button class="btn charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
                         Charge now
                     </button>
@@ -465,6 +465,10 @@
                                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                                     </div>
                                                 </div>
+
+                                                <div>
+                                                    <input type="text" class="tour_startdate_display border-0" readonly>
+                                                </div>
                                             </td>
 
                                             <td class="text-right" width="200">
@@ -521,11 +525,12 @@
                                                     <tr>
                                                         <td width="60">
                                                             <input type="hidden" name="tour_pricing_id_{{$_tourId}}[]" value="{{ $pricing->id }}" />  
-                                                            <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="{{$pricing->quantity_used}}" class="form-contorl text-center">
+                                                            <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" class="form-contorl text-center">
                                                             <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
                                                              
 
                                                             <input type="hidden" name="tour_pricing_type_{{$_tourId}}[]" value="{{ $order_tour->price_type }}" /> 
+                                                            <input type="hidden" name="tour_pricing_min_{{$_tourId}}[]" value="{{$pricing->quantity_used}}">
                                                         </td>
                                                         <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency, $order->currency) }})</td>
                                                     </tr>
@@ -735,7 +740,8 @@
                         </div>
                     </div>
 
-                     <div class="card  {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}">
+                     <!-- <div class="card  {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}"> -->
+                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="headingThree">
                             <h2 class="my-0 py-0">
                                 <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Payment Details</button>                     
@@ -744,7 +750,7 @@
 
                         <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
                             <div class="card-body">
-                                <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div>
+                                <!-- <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div> -->
                                 
                                 <table class="table">    
                                     <tr>
@@ -755,7 +761,9 @@
                                         <td></td>
                                         <td>Balance</td>
                                         <td>Paid</td>
-                                        <td>Refund</td>
+                                        @if($order->payments->isNotEmpty())
+                                            <td>Refund</td>
+                                        @endif
 
 
 
@@ -785,20 +793,21 @@
                                           type="button">
                                           Refund
                                         </button> -->
-
-                                        <button class="btn btn-sm btn-danger refund-all-btn"
-                                            data-order-id="{{ $order->id }}"
-                                            data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
-                                            Refund
-                                        </button>
+                                        @if($order->payments->isNotEmpty())
+                                            <button class="btn btn-sm btn-danger refund-all-btn"
+                                                data-order-id="{{ $order->id }}"
+                                                data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
+                                                Refund
+                                            </button>
+                                        @endif
                                     </td>
                                      </tr>
 
                                 </table>
-
+                                @if($order->payments->isNotEmpty())
                                 <h5 class="mt-4">💳 Payment Details</h5>
 
-                                    @if($order->payments->isNotEmpty())
+                                    
                                         <table class="table table-sm table-bordered">
                                             <thead>
                                                 <tr>
@@ -856,7 +865,7 @@
                                             </tbody>
                                         </table>
                                     @else
-                                        <p class="text-muted">No payments have been recorded yet.</p>
+                                        <!-- <p class="text-muted">No payments have been recorded yet.</p> -->
                                     @endif
 
 
@@ -873,13 +882,13 @@
                             <div id="addPaymentSection">
                                 <div class="form-group">
                                     <label>Amount</label>
-                                    <input type="number" id="addPaymentAmount" class="form-control" min="1" placeholder="Enter amount">
+                                    <input hidden type="number" id="addPaymentAmount" class="form-control" min="1" placeholder="Enter amount" value="">
                                 </div>
 
                                 <div id="cardFields">
                                     <div class="form-group">
                                         <label for="card-element">Card Details</label>
-                                        <div id="card-element" class="form-control" style="padding:10px; height:auto;"></div>
+                                        <div id="card-element" class="form-control col-6" style="padding:10px; height:auto;"></div>
                                         <small id="card-errors" class="text-danger mt-2"></small>
                                     </div>
                                 </div>
@@ -915,7 +924,7 @@
                                     </thead>
                                     <tbody>
                                         @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
-                                            @foreach($order->emailHistories as $email)
+                                            @foreach($order->emailHistories->sortByDesc('created_at') as $email)
                                                 <tr>
                                                     <td>{{ $email->created_at }}</td>
                                                     <td>{{ $email->to_email }}</td>
@@ -1263,7 +1272,7 @@
             <tr>
                 <td>
                     <select onchange="loadOrderTour(this.value)" name="load_order_tour" 
-                        id="load_order_tour" class="form-control aiz-selectpicker" 
+                        id="load_order_tour" class="form-control aiz-selectpicker border" 
                         data-live-search="true" style="max-width: 500px">
                         <option value="">Select Tour</option>` 
                         + tourOptions() + 
@@ -1775,12 +1784,38 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
     });
 
+    function getTotalFromSubtotalBoxes() {
+        let total = 0;
+
+        document.querySelectorAll('.subtotal-box').forEach(el => {
+            const val = parseFloat(el.textContent.trim()) || 0;
+            total += val;
+        });
+
+        return total;
+    }
+
     // Handle payment
     const submitBtn = document.getElementById("addPaymentSubmit");
     submitBtn.addEventListener("click", async function() {
-        const amount = document.getElementById("addPaymentAmount").value;
+
+        
+        // const amount = document.getElementById("addPaymentAmount").value;
+
+        const amount = getTotalFromSubtotalBoxes();
+
+        
+        document.getElementById("addPaymentAmount").value = amount;
         if (!amount || amount <= 0) {
-            alert("Please enter a valid amount");
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please enter a valid amount',
+            }).then(() => {
+
+            });
+            
             return;
         }
 
@@ -1807,7 +1842,7 @@ document.addEventListener("DOMContentLoaded", function() {
             exp_month: paymentMethod.card.exp_month,
             exp_year: paymentMethod.card.exp_year,
         };
-
+        showLoader("Adding Payment. Please wait...");
         // Send payment info to backend
         const response = await fetch("{{ route('admin.orders.addPayment', $order->id) }}", {
             method: "POST",
@@ -1828,10 +1863,26 @@ document.addEventListener("DOMContentLoaded", function() {
         const data = await response.json();
 
         if (data.success) {
-            alert("Payment added successfully!");
-            location.reload();
+
+
+            Swal.fire({
+                icon: 'success',
+                title:'Success',
+                text: 'Payment added successfully!',
+            }).then(() => {
+                location.reload();
+            });
+            
+            
         } else {
-            alert("Error: " + data.message);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message,
+            }).then(() => {
+
+            });
             submitBtn.disabled = false;
             submitBtn.textContent = "Pay Now";
         }
@@ -1861,7 +1912,14 @@ document.addEventListener("DOMContentLoaded", function(e) {
         const reason = document.getElementById('refundReason').value;
 
         if (!amount || amount <= 0) {
-            alert("Please enter a valid refund amount.");
+            
+            Swal.fire({
+                icon: 'success',
+                title:'Success',
+                text: 'Please enter a valid refund amount.!',
+            }).then(() => {
+                
+            });
             return;
         }
 
@@ -1887,9 +1945,24 @@ document.addEventListener("DOMContentLoaded", function(e) {
         btn.textContent = "Confirm Refund";
 
         if (data.success) {
-            alert("Refund successful!");
-            location.reload();
+            
+            Swal.fire({
+                icon: 'success',
+                title:'Success',
+                text: 'Refund successful!',
+            }).then(() => {
+                location.reload();
+            });
+
+            // location.reload();
         } else {
+            Swal.fire({
+                icon: 'error',
+                title:'Error',
+                text: data.message,
+            }).then(() => {
+                location.reload();
+            });
             alert("Error: " + data.message);
         }
     });
@@ -2249,7 +2322,9 @@ function refreshCalendarAndSession23432(tourId, count, order_id) {
 }
 
 function refreshCalendarAndSession(tourId, count, order_id) {
-    showLoader("Loading… Please wait");
+    // alert(23432);
+
+    // showLoader("Loading… Please wait");
     $.ajax({
         url: "{{ route('tour.calendar') }}",
         type: "POST",
@@ -2270,6 +2345,10 @@ function refreshCalendarAndSession(tourId, count, order_id) {
             // Set disabled dates
             $row.find(".disabled-dates").val(JSON.stringify(res.disabled_dates));
 
+
+            const pretty = moment(res.tour_date).format("ddd MMM DD YYYY");
+            $row.find(".tour_startdate_display").val(pretty);
+
             // Reinitialize date picker
             TB.plugins.dateRange();
 
@@ -2281,6 +2360,9 @@ function refreshCalendarAndSession(tourId, count, order_id) {
                     let selectedDate = picker.startDate.format("YYYY-MM-DD");
                     $(this).val(selectedDate).trigger("change");
 
+                    const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
+                    $row.find(".tour_startdate_display").val(pretty);
+
                     fetchTourSessions(tourId, selectedDate, count);
                 });
 
@@ -2290,26 +2372,47 @@ function refreshCalendarAndSession(tourId, count, order_id) {
                 const drp = $dateInput.data("daterangepicker");
 
                 if (drp) {
-                    const initialDate = res.start_date;
-                    const today       = moment().startOf('day');
+                    // const initialDate = res.start_date;
+                    // const today       =  moment().startOf('day');
 
-                    const minDate = moment(initialDate).isAfter(today)
-                        ? moment(initialDate)
+                    // const minDate = moment(initialDate).isAfter(today)
+                    //     ? moment(initialDate)
+                    //     : today;
+
+                    // drp.minDate = minDate;
+                    // drp.setStartDate(initialDate);
+                    // drp.setEndDate(initialDate);
+                    // drp.updateView();
+                    // drp.updateCalendars();
+
+
+                    const initialDate = res.tour_date; // KEEP CONSISTENCY
+                    const today = moment().startOf("day");
+
+                    // Set min date properly
+                    const minDate = moment(res.start_date).isAfter(today)
+                        ? moment(res.start_date)
                         : today;
 
+                    // Apply settings to daterangepicker
                     drp.minDate = minDate;
                     drp.setStartDate(initialDate);
                     drp.setEndDate(initialDate);
+
+                    // Move calendar highlight to the correct active date
+                    drp.updateElement(); 
                     drp.updateView();
                     drp.updateCalendars();
                 }
 
+                
+
                 // Fetch sessions for initial date
-                fetchTourSessions(tourId, res.start_date, count);
+                fetchTourSessions(tourId, res.start_date, count, res.tour_time);
 
             }, 200);
 
-            hideLoader();
+            // hideLoader();
         }
     });
 }
@@ -2317,8 +2420,8 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 
 function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
 
-  
-
+    showLoader("Loading… Please wait");
+    
    
     // const $container = $(`#tour_details_${count}`);
 
@@ -2337,12 +2440,15 @@ function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
 
     if(!tourId || !selectedDate) return;
 
+    
+
     $.ajax({
         url: "/admin/tour-sessions",
         type: "GET",
         data: { tour_id: tourId, date: selectedDate },
         dataType: "json",
         success: function(resp) {
+            hideLoader();
 
             
             let options = '';
@@ -2361,7 +2467,7 @@ function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
              const newSelect = $(`<select name="tour_starttime[]" class="form-control tour-time">${options}</select>`);
 
             $timeField.replaceWith(newSelect);
-
+            
             if (selectedTime !== null && selectedTime !== "" && selectedTime !== undefined) {
                 newSelect.val(selectedTime);
             }

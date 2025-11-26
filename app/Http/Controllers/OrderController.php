@@ -256,6 +256,8 @@ public function store(Request $request)
     // }
 
 
+
+
     $data = $request->all();
 
     // Make sure at least one tour is selected
@@ -269,6 +271,29 @@ public function store(Request $request)
 
     $firstTourId = $tourIds[0]; // Keep this for orders.tour_id foreign key
 
+
+    $minList = $request['tour_pricing_min_'.$firstTourId]; // you can send this hidden
+    $qtyList = $request['tour_pricing_qty_'.$firstTourId];
+
+    $valid = false;
+
+    foreach ($qtyList as $index => $qty) {
+        $minRequired = $minList[$index];
+
+        // qty must be >= min AND qty must not be zero
+        if ((int)$qty > 0 && (int)$qty >= (int)$minRequired) {
+
+            $valid = true;
+            break;
+        }
+    }
+
+    if (!$valid) {
+        return back()->withErrors([
+            'quantity_error' => 'At least one quantity must meet the minimum requirement.'
+        ])->withInput();
+    }
+
     DB::beginTransaction();
     try {
         // ===== Create Order =====
@@ -276,7 +301,7 @@ public function store(Request $request)
             'tour_id'       => $firstTourId,
             'user_id'       => auth()->id() ?? 0,
             'order_number'  => unique_order(),
-            'currency'      => $request->currency ?? 'CAD',
+            'currency'      => $request->currency ?? 'USD',
             'order_status'  => $request->order_status,
             'payment_status'=> 5,
             'total_amount'  => 0,
@@ -478,31 +503,32 @@ public function store(Request $request)
                 ];
 
                 $chargeAmount = 0;
+                $chargeAmount = $order->total_amount;
 
                 // if ($adv_deposite == "deposit") {
-                    $depositRule = \App\Models\TourSpecialDeposit::where('tour_id', $firstTourId)->first();
-                    if(!$depositRule){
-                        $depositRule = \App\Models\TourSpecialDeposit::where('type', 'global')->first();
-                    }
-                    if ($depositRule && $depositRule->use_deposit) {
-                        switch ($depositRule->charge) {
-                            case 'FULL':
-                                $chargeAmount = $order->total_amount;
-                                break;
-                            case 'DEPOSIT_PERCENT':
-                                $chargeAmount = $order->total_amount * ($depositRule->deposit_amount / 100);
-                                break;
-                            case 'DEPOSIT_FIXED':
-                            case 'DEPOSIT_FIXED_PER_ORDER':
-                                $chargeAmount = $depositRule->deposit_amount;
-                                break;
-                            case 'NONE':
-                                $chargeAmount = 0;
-                                break;
-                        }
-                    } else {
-                        $chargeAmount = $order->total_amount; // fallback full
-                    }
+                    // $depositRule = \App\Models\TourSpecialDeposit::where('tour_id', $firstTourId)->first();
+                    // if(!$depositRule){
+                    //     $depositRule = \App\Models\TourSpecialDeposit::where('type', 'global')->first();
+                    // }
+                    // if ($depositRule && $depositRule->use_deposit) {
+                    //     switch ($depositRule->charge) {
+                    //         case 'FULL':
+                    //             $chargeAmount = $order->total_amount;
+                    //             break;
+                    //         case 'DEPOSIT_PERCENT':
+                    //             $chargeAmount = $order->total_amount * ($depositRule->deposit_amount / 100);
+                    //             break;
+                    //         case 'DEPOSIT_FIXED':
+                    //         case 'DEPOSIT_FIXED_PER_ORDER':
+                    //             $chargeAmount = $depositRule->deposit_amount;
+                    //             break;
+                    //         case 'NONE':
+                    //             $chargeAmount = 0;
+                    //             break;
+                    //     }
+                    // } else {
+                    //     $chargeAmount = $order->total_amount; // fallback full
+                    // }
                 // } 
                 // else {
                 //     $chargeAmount = $order->total_amount; // full payment
@@ -513,7 +539,10 @@ public function store(Request $request)
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($chargeAmount * 100)),
                         'currency' => $order->currency,
-                        'automatic_payment_methods' => ['enabled' => true],
+                        'automatic_payment_methods' => [
+                                                            'enabled' => true,
+                                                            'allow_redirects' => 'never',  // 🔥 prevents Stripe from requiring return_url
+                                                        ],
                         'receipt_email' => $customer->email,
                         'capture_method' => 'manual',
                         'description' => 'TourBeez Booking',
@@ -526,6 +555,9 @@ public function store(Request $request)
                     $order->payment_intent_client_secret = $pi->client_secret;
                     $order->payment_intent_id = $pi->id;
                     $order->booked_amount = $chargeAmount;
+                    $order->payment_status = 3;
+                    $order->payment_method = 'card';
+                    
                     $order->balance_amount = max($order->total_amount - ($chargeAmount ?? 0), 0); //$order->total_amount - $chargeAmount;
 
                     // ✅ If frontend sent payment_method_id, confirm & capture immediately
@@ -534,7 +566,7 @@ public function store(Request $request)
                         $pi->confirm(['payment_method' => $request->payment_intent_id]);
                         $pi->capture();
 
-                        $order->payment_status = 'paid';
+                        $order->payment_status = 1;
                         $order->balance_amount = 0;
                     }
                 } else {
@@ -659,10 +691,38 @@ public function store(Request $request)
         $order->additional_info = $request->additional_info;
 
         $tourIds = $request->tour_id; // [19, 21, 90, 11]
+
+
+        
+
+
         $orderId = $id;
         $total   = 0;
         if($orderId && is_array($request->tour_id)) {
             foreach ($tourIds as $index => $tourId) {
+
+                $minList = $request['tour_pricing_min_'.$tourId]; // you can send this hidden
+                $qtyList = $request['tour_pricing_qty_'.$tourId];
+
+                $valid = false;
+                
+                foreach ($qtyList as $index => $qty) {
+                    $minRequired = $minList[$index];
+
+                    // qty must be >= min AND qty must not be zero
+                    if ((int)$qty > 0 && (int)$qty >= (int)$minRequired) {
+
+                        $valid = true;
+                        break;
+                    }
+                }
+
+                if (!$valid) {
+                    return back()->withErrors([
+                        'quantity_error' => 'At least one quantity must meet the minimum requirement.'
+                    ])->withInput();
+                }
+
                 $startDate = $request->tour_startdate[$index];
                 $startTime = $request->tour_starttime[$index];
 
@@ -2313,8 +2373,8 @@ public function refundPayment(Request $request, Order $order)
             ]);
 
             // Update order values
-            $order->booked_amount += $amount;
-            $order->balance_amount = max(0, $order->total_amount - $order->booked_amount);
+            // $order->booked_amount += $amount;
+            // $order->balance_amount = max(0, $order->total_amount - $order->booked_amount);
             $order->payment_status = $order->balance_amount <= 0 ? 1 : 0;
             $order->save();
 
@@ -2624,7 +2684,7 @@ public function refundMultiple(Request $request, Order $order)
 
         $remaining -= $refundNow;
     }
-    dd($refund);
+    
     // Update order totals
     $order->booked_amount -= $refundTarget;
     $order->balance_amount = max($order->total_amount - $order->booked_amount, 0);

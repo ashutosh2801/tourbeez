@@ -64,49 +64,31 @@
         <div class="card-body">
 
             {{-- Existing Customer Dropdown --}}
-            <div class="form-group">
-                <label for="customer">Select Existing Customer</label>
-                <select name="customer_id" id="customer" class="form-control aiz-selectpicker" data-live-search="true">
-                    <option value="">-- Select Customer --</option>
-                    @foreach($customers as $customer)
-                        <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->email }}</option>
-                    @endforeach
-                </select>
-            </div>
 
-            <div class="text-center my-3">
-                <button type="button" id="addNewCustomerBtn" class="btn btn-sm btn-primary">
-                    <i class="fa fa-user-plus"></i> Add New Customer
-                </button>
+            <div class="row d-flex justify-content-between align-items-center">
+                
+                
+                <div class="form-group col-md-5">
+                    <label for="customer">Select Existing Customer</label>
+                    <select name="customer_id" id="customer" class="form-control aiz-selectpicker border" data-live-search="true">
+                        <option value="">-- Select Customer --</option>
+                        @foreach($customers as $customer)
+                            <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->email }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group col-md-2 text-center">  OR</div>
+
+                <div class="text-center my-3 col-md-5 ">
+                    <button type="button" id="addNewCustomerBtn" class="btn btn-sm btn-primary">
+                        <i class="fa fa-user-plus"></i> Add New Customer
+                    </button>
+                </div>
             </div>
 
             {{-- New Customer Fields (hidden by default) --}}
-            <!-- <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
-                <h5 class="mb-3">New Customer Information</h5>
-
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="customer_first_name">First Name</label>
-                        <input type="text" name="customer_first_name" id="customer_first_name" class="form-control">
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label for="customer_last_name">Last Name</label>
-                        <input type="text" name="customer_last_name" id="customer_last_name" class="form-control">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="customer_email">Email</label>
-                        <input type="email" name="customer_email" id="customer_email" class="form-control">
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label for="customer_phone">Phone</label>
-                        <input type="text" name="customer_phone" id="customer_phone" class="form-control">
-                    </div>
-                </div>
-
-            </div> -->
+  
 
             <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
                 <h5 class="mb-3">New Customer Information</h5>
@@ -168,7 +150,7 @@
                     <h2 class="my-0 py-0">
                         <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
                             data-toggle="collapse" data-target="#collapseTwo">
-                            <i class="fa fa-angle-down"></i> Tour Details
+                            <i class="fa fa-angle-right"></i> Tour Details
                         </button>
                     </h2>
                 </div>
@@ -198,7 +180,7 @@
             </div>
 
             <!-- ================= Payment Details ================= -->
-            <!-- <div class="card">
+            <div class="card">
                 <div class="card-header bg-secondary py-0" id="headingThree">
                     <h2 class="my-0 py-0">
                         <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
@@ -223,10 +205,10 @@
                         </div>
 
                         {{-- Stripe Credit Card Fields --}}
-                        <div id="cardFields">
+                        <div id="cardFields" style="display:none;">
                             <div class="form-group">
                                 <label for="card-element">Card Details</label>
-                                <div id="card-element" class="form-control" style="padding: 10px; height: auto;"></div>
+                                <div id="card-element" class="form-control col-6" style="padding: 10px; height: auto;"></div>
                                 <small id="card-errors" class="text-danger mt-2"></small>
                             </div>
                         </div>
@@ -251,7 +233,7 @@
                         </div>
                     </div>
                 </div>
-            </div> -->
+            </div> 
 
             <!-- ================= Form Actions ================= -->
             <div class="card-footer" style="display:block">
@@ -261,7 +243,23 @@
         </div>
     </form>
 </div>
+<div id="globalLoader" 
+     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(255,255,255,0.6); z-index:99999;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+                text-align:center; font-size:18px;">
 
+        <div class="loader-spinner" 
+             style="width:40px; height:40px; border:4px solid #ccc; 
+                    border-top-color:#3498db; border-radius:50%;
+                    animation: spin 0.8s linear infinite; margin:auto;">
+        </div>
+
+        <div style="margin-top:10px; font-weight:bold; color:#333;">
+            Processing...
+        </div>
+    </div>
+</div>
 @section('js')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
@@ -280,6 +278,8 @@ function tourOptions() {
 
 // ================= Add Tour Row =================
 function addTour() {
+
+    showLoader("Loading… Please wait");
     const container = document.getElementById('tourContainer');
     const newRow = document.createElement('div');
     newRow.setAttribute('id', `row_${tourCount}`);
@@ -291,7 +291,7 @@ function addTour() {
                 <td>
                     <select onchange="loadTourDetails(this.value, ${tourCount})" 
                         name="tour_id[]" 
-                        class="form-control aiz-selectpicker" data-live-search="true">
+                        class="form-control aiz-selectpicker border" data-live-search="true">
                         <option value="">Select Tour</option>` + tourOptions() + `</select>
                 </td>
                 <td>
@@ -305,6 +305,7 @@ function addTour() {
     container.appendChild(newRow);
     TB.plugins.bootstrapSelect('refresh');
     tourCount++;
+    hideLoader();
 }
 
 // ================= Remove Tour Row =================
@@ -318,6 +319,8 @@ function removeTour(id) {
 
 function loadTourDetails(tourId, count) {
     if (!tourId) return;
+
+    showLoader("Loading… Please wait");
 
     $.ajax({
         url: '{{ route("tour.single") }}',
@@ -354,6 +357,10 @@ function loadTourDetails(tourId, count) {
                     const selectedDate = picker.startDate.format("YYYY-MM-DD");
                     $(this).val(selectedDate).trigger('change');
 
+                    const $row = $("#row_" + count);
+
+                    const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
+                    $row.find(".tour_startdate_display").val(pretty);
                     
                     fetchTourSessions(tourId, selectedDate, count);
                 });
@@ -380,6 +387,7 @@ function loadTourDetails(tourId, count) {
                     } catch (e) {}
 
                     fetchTourSessions(tourId, initialDate, count);
+                    hideLoader();
 
                 }, 250);
             } else {
@@ -402,13 +410,17 @@ function fetchTourSessions(tourId, selectedDate, count) {
     const $timeField = $container.find("input[name='tour_starttime[]'], select[name='tour_starttime[]']").first();
 
     if(!tourId || !selectedDate) return;
-
+    showLoader("Loading… Please wait");
+    const $row = $("#row_" + count);
+    const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
+    $row.find(".tour_startdate_display").val(pretty);
     $.ajax({
         url: "/admin/tour-sessions",
         type: "GET",
         data: { tour_id: tourId, date: selectedDate },
         dataType: "json",
         success: function(resp) {
+
             let options = '';
             if(resp.data && resp.data.length > 0){
                 $.each(resp.data, function(i, session){
@@ -421,6 +433,7 @@ function fetchTourSessions(tourId, selectedDate, count) {
 
             // Replace the time field within this container only
             $timeField.replaceWith(`<select name="tour_starttime[]" class="form-control tour-time">${options}</select>`);
+            hideLoader();
         },
         error: function(xhr){
             console.error("Failed to fetch sessions:", xhr.responseText);
@@ -476,14 +489,26 @@ function fetchTourSessions(tourId, selectedDate, count) {
 
 <script>
     // Toggle fields
+    // document.querySelectorAll("input[name='payment_type']").forEach(el => {
+    //     el.addEventListener("change", function() {
+    //         if (this.value === "card") {
+    //             document.getElementById("cardFields").style.display = "block";
+    //             document.getElementById("transactionFields").style.display = "none";
+    //         } else {
+    //             document.getElementById("cardFields").style.display = "none";
+    //             document.getElementById("transactionFields").style.display = "block";
+    //         }
+    //     });
+    // });
+
     document.querySelectorAll("input[name='payment_type']").forEach(el => {
-        el.addEventListener("change", function() {
+        el.addEventListener("click", function () {
             if (this.value === "card") {
-                document.getElementById("cardFields").style.display = "block";
-                document.getElementById("transactionFields").style.display = "none";
+                cardFields.style.display = "block";
+                transactionFields.style.display = "none";
             } else {
-                document.getElementById("cardFields").style.display = "none";
-                document.getElementById("transactionFields").style.display = "block";
+                cardFields.style.display = "none";
+                transactionFields.style.display = "block";
             }
         });
     });
@@ -885,8 +910,18 @@ $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_ext
 
 
 
-</script>
 
+</script>
+<script>
+    function showLoader(message = "Processing...") {
+        $("#globalLoader").find("div:last").text(message);
+        $("#globalLoader").show();
+    }
+
+    function hideLoader() {
+        $("#globalLoader").hide();
+    }
+</script>
 
 @endsection
 </x-admin>

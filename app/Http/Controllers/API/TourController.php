@@ -2005,6 +2005,9 @@ $pickupHtml .= '</div>';
                                     <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                 </div>
                             </div>
+                            <div>
+                                <input type="text" class="tour_startdate_display border-0" readonly>
+                            </div>
                         </td>
 
                         <td class="text-right" width="200">
@@ -2045,14 +2048,18 @@ $pickupHtml .= '</div>';
                                         if($i == 0) {
                                             $subtotal += ($num * $pricing->price);
                                         }
+
+
                                         $i++;
 
                                         $str .= '<tr>
                                             <td width="60">
                                                 <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
-                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl" max="'.$maxQuantity.'" min="'.$minQuantity.'">
+                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl" max="'.$maxQuantity.'" >
                                                 <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$pricing->price.'" /> 
                                                 <input type="hidden" name="tour_pricing_type_'.$_tourId.'[]" value="'.$data->price_type.'" /> 
+                                                <input type="hidden" name="tour_pricing_min_'.$_tourId.'[]" value="'.$pricing->quantity_used.'">
+                                                
                                             </td>
                                             <td>'.$pricing->label.' ('. price_format($pricing->price) .')</td>
                                         </tr>';
