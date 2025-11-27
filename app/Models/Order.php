@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\OrderCustomer;
 use App\Models\OrderEmailHistory;
 use App\Models\OrderMeta;
+use App\Models\OrderPayment;
 use App\Models\Scopes\SupplierOrderScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -34,6 +35,8 @@ class Order extends Model
 
     protected $fillable = [
         'tour_id',
+        'sub_tour_id',
+        'created_by',
         'user_id',
         'session_id',
         'order_number',
@@ -43,16 +46,20 @@ class Order extends Model
         'payment_intent_id',
         'payment_intent_client_secret',
         'stripe_customer_id',
+        'card_info',
+        'transaction_id',
+        'booking_fee',
         'total_amount',
         'balance_amount',
+        'booked_amount',
         'currency',
         'order_status',
-        'action_name',
+        'additional_info',
         'email_sent',
-        'sub_tour_id',
         'admin_email_sent',
-        'created_by',
-        'is_abandon_mail_sent'
+        'is_abandon_mail_sent',
+        'action_name',
+        'adv_deposite',
     ];
 
     public function tour_detail($id, $label='all') {
@@ -156,6 +163,11 @@ class Order extends Model
     public function emailHistories()
     {
         return $this->hasMany(OrderEmailHistory::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(OrderPayment::class);
     }
 
 }

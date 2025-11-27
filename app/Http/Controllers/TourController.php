@@ -34,6 +34,7 @@ use Redirect;
 use Str;
 use Validator;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\ToursImport;
 
 class TourController extends Controller
 {
@@ -154,6 +155,11 @@ class TourController extends Controller
                 $query->whereDoesntHave('schedules');
             }
         }
+
+        if ($request->has('trustpilot_review') && $request->trustpilot_review != '') {
+            $query->where('trustpilot_review', $request->trustpilot_review);
+        }
+        
 
         if ($request->filled('schedule_expiry')) {
             $today = now()->startOfDay();
@@ -604,7 +610,97 @@ class TourController extends Controller
         $str = '';
         $subtotal = 0;
         if($data) {
-            $_tourId = $data->id;
+
+        $_tourId = $data->id;
+
+
+        $pickups = [];
+
+
+
+
+
+        $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
+    <h4 style="font-size:16px; font-weight:600">Pickup Options</h4>';
+
+
+// CASE 1: NO PICKUP
+if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'No Pickup') {
+
+    $pickupHtml .= '
+        <p>No Pickup Available</p>
+
+        <input type="hidden" name="pickup_id" value="0">
+        <input type="hidden" name="pickup_name" value="">
+    ';
+}
+
+
+
+// CASE 2: PICKUP (text input + comment)
+else if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'Pickup') {
+
+    $comment = \DB::table('pickup_tour')
+                    ->where('tour_id', $data->id)
+                    ->where('pickup_id', $data->pickups[0]?->id)
+                    ->value('comment');
+
+    $commentText = $comment ?? "Enter the pickup location";
+
+    $pickupHtml .= '
+        <label>Pickup Location</label>
+        <input type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
+
+        <small style="color:#777; display:block; margin-top:5px;">'.$commentText.'</small>
+
+        <input type="hidden" name="pickup_id" value="0">
+    ';
+}
+
+
+
+// CASE 3: MULTIPLE LOCATIONS (dropdown + other option)
+else if (!empty($data->pickups) && isset($data->pickups[0])) {
+
+    $locations = $data->pickups[0]?->locations ?? [];
+
+    $pickupHtml .= '
+        <label>Select Pickup Point</label>
+        <select name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
+            <option value="">Select Pickup Point</option>';
+
+            foreach($locations as $loc) {
+                $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
+            }
+
+            $pickupHtml .= '<option value="other">Other</option>';
+
+    $pickupHtml .= '
+        </select>
+
+        <div id="pickup-other-box" style="display:none; margin-top:10px">
+            <label>Enter Pickup Location</label>
+            <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
+        </div>
+    ';
+}
+
+$pickupHtml .= '</div>';
+
+
+
+
+
+
+
+
+        /* ------------------------------------------
+           ADD PICKUP HTML TO MAIN STRING
+        -------------------------------------------*/
+
+        
+
+
             $row_id = 'row_'.$request->tourCount;
             $str = '<div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
                     <input type="hidden" name="tour_id[]" value="' .  $data->id . '" />  
@@ -701,6 +797,8 @@ class TourController extends Controller
                     
                     <table class="table">';
 
+                    $str .= $pickupHtml;
+
                     $taxesfees = $data->taxes_fees;
                     if( $taxesfees ) {
                         foreach ($taxesfees as $key => $item) {                    
@@ -723,6 +821,7 @@ class TourController extends Controller
                     </table>
                     </div>';
         }
+
         return $str;
     }
 
@@ -2472,6 +2571,37 @@ class TourController extends Controller
         // 📦 Export
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ToursExport($request), $fileName);
     }
+
+
+    public function importPrice(Request $request)
+    {
+
+            $request->validate([
+                'file' => 'required|mimes:csv,xlsx,xls',
+            ]);
+
+            Excel::import(new ToursImport, $request->file('file'));
+
+            return back()->with('success', 'Tour prices updated successfully!');
+
+        return back()->with('success', "$updatedCount tour prices have been updated successfully.");
+    }
+
+    public function markReview(Request $request)
+    {
+        $request->validate([
+            'skus' => 'required|string'
+        ]);
+
+        // Split and trim SKUs
+        $skus = array_map('trim', explode(',', $request->skus));
+
+        // Update tours matching SKUs
+        $updated = Tour::whereIn('unique_code', $skus)->update(['trustpilot_review' => 1]);
+
+        return redirect()->back()->with('success', "{$updated} tour(s) marked as reviewed successfully.");
+    }
+
 
 
 

@@ -1,13 +1,15 @@
 <?php
 
+use App\Exports\ToursSampleExport;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AddonController;
-use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AizUploadController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CollectionController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CountryController;
+use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\ExclusionController;
@@ -26,12 +28,15 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SmsTemplateController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\SubCateoryController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard',[ProfileController::class,'dashboard'])->name('dashboard');
@@ -39,8 +44,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/suplier_update', [ProfileController::class, 'suplierUpdate'])->name('profile.suplier_update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/convert-currency', [CurrencyController::class, 'convert'])->name('currency.convert');
 
     Route::resource('/user',UserController::class);
+    Route::get('/user_supplier',[SupplierController::class, 'index'])->name('supplier.index');
     Route::resource('/customers',CustomerController::class);
     Route::resource('/role',RoleController::class);
     Route::resource('/permission',PermissionController::class);
@@ -50,7 +57,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     
     Route::resource('/orders', OrderController::class);
     Route::get('/order/rezdy-manifest', [OrderController::class, 'showPdfFiles']);
-    Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus']);
+    Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
     Route::get('/order-manifest', [OrderController::class, 'manifest'])->name('orders.manifest');
     Route::post('/internal-order/store', [OrderController::class, 'internalOrderStore'])->name('orders.internal.store');
     Route::get('/ordersmanifest/download', [OrderController::class, 'downloadManifest'])->name('orders.manifest.download');
@@ -110,6 +117,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
     Route::get('/export-tours', [TourController::class, 'exportTours'])->name('tours.export');
+    Route::post('/tours/mark-review', [TourController::class, 'markReview'])
+    ->name('tours.markReview');
+
+    Route::get('/download-sample-excel', function () {
+        return Excel::download(new ToursSampleExport, 'tours_sample.xlsx');
+    })->name('tours.sample.download');
 
 
     // Tour Preview
@@ -139,6 +152,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/tours/save-coupon', [TourController::class, 'saveCoupon'])->name('tour.saveCoupon');
     Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');
     Route::post('/tours/toggle-status', [TourController::class, 'toggleStatus'])->name('tour.toggleStatus');
+    Route::post('/tours/import-price', [TourController::class, 'importPrice'])->name('tours.importPrice');
+
     // Route::post('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit..special.deposit');
     Route::put('/tour/special-deposit/{id}', [TourController::class, 'specialDepositUpdate'])->name('tour.special-deposit');
     Route::put('/tour/review/{id}', [TourController::class, 'reviewUpdate'])->name('tour.review');
@@ -225,6 +240,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/order/bulk-delete', [OrderController::class, 'bulkDelete'])->name('order.bulkDelete');
     Route::post('/orders/{order}/charge', [OrderController::class, 'capturePayment'])->name('orders.charge');
     Route::post('/orders/{order}/payment-details', [OrderController::class, 'getPaymentDetails'])->name('orders.payment-details');
+    Route::post('orders/{order}/refund', [OrderController::class, 'refundPayment'])
+    ->name('orders.refundPayment');
+    Route::post('/admin/orders/{order}/refund-multiple', [OrderController::class, 'refundMultiple'])->name('orders.refundMultiple');
+    Route::post('orders/{order}/refund2322', [OrderController::class, 'refundPayment'])->name('orders.refund');
+
+
+    Route::post('/admin/orders/{order}/add-payment', [OrderController::class, 'addStripePayment'])
+    ->name('orders.addPayment');
 
     // SMS Templates
     Route::resource('/sms-templates', SmsTemplateController::class);

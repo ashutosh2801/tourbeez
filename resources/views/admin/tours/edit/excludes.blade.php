@@ -6,7 +6,7 @@
                 <!-- <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-info">Create New</a> -->
             </div>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             @if ($errors->any())
                 <div class="alert alert-danger">
                     <ul class="list-unstyled">
@@ -44,7 +44,7 @@
 
                 <div id="FeatureRow_{{ $index }}"> 
                     <input type="hidden" name="ExclusionOptions[{{ $index }}][id]" id="ExclusionOptions_id_{{ $index }}" 
-                    value="{{ old("ExclusionOptions.$index.id", $option['id']) }}" class="form-control" />
+                    value="{{ old("ExclusionOptions.$index.id", $option['id'] ?? '') }}" class="form-control" />
 
                     
                     <div class="row">
@@ -83,9 +83,15 @@
 
             </div>
             <div class="card-footer" style="display:block">
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.inclusions', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
-                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.taxesfees', encrypt($data->id)) }}" class="btn btn-primary">Next</a>           
+                <div class="row">
+                    <div class="col-md-6">
+                        <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
+                    </div>
+                    <div class="col-md-6 align-buttons">
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.inclusions', encrypt($data->id)) }}" class="btn btn-secondary"> <i class="fas fa-chevron-left"></i> Back</a>
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.taxesfees', encrypt($data->id)) }}" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                </div>
             </div>
             </form>
         </div>

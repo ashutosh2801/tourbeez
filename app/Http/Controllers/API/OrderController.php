@@ -9,6 +9,7 @@ use App\Models\City;
 use App\Models\Order;
 use App\Models\OrderCustomer;
 use App\Models\OrderMeta;
+use App\Models\OrderPayment;
 use App\Models\OrderTour;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\Tour;
@@ -189,6 +190,110 @@ class OrderController extends Controller
         //     ], 500);
         // }
     }
+
+    public function getOrderDetailByOrderID( Request $request, $orderID )
+    {
+        // $order = Order::where('id', decrypt($orderID))->first();
+
+        $order = Order::findOrFail(decrypt($orderID));
+
+        if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Order not found.',
+            ], 404);
+        }
+
+        $tour_pricing = $order->order_tour->tour_pricing ? json_decode($order->order_tour->tour_pricing) : [];
+        $cartItems=[];
+        foreach($tour_pricing as $tp) {
+            $cartItems[] = [
+                'id'        => $tp->tour_pricing_id,
+                'price'     => $tp->price,
+                'label'     => $tp->label,
+                'price_type'=> $tp->price_type ?? '',
+                'qty_used'  => 1,
+                'quantity'  => $tp->quantity,
+            ];
+        }
+
+        $extra_pricing = $order->order_tour->tour_extra ? json_decode($order->order_tour->tour_extra) : [];
+        $cartAdons=[]; $total = 0;
+        foreach($extra_pricing as $ep) {
+            $extraAddon = Addon::find($ep->tour_extra_id);
+            $cartAdons[] = [
+                "id"        => $ep->tour_extra_id,
+                "price"     => $ep->price,
+                "label"     => $extraAddon->name,
+                "quantity"  => $ep->quantity,
+            ];
+        }
+         
+        $tour_fees = $order->order_tour->tour_fees ? json_decode($order->order_tour->tour_fees) : [];
+        $tourFees = [];
+        foreach($tour_fees as $tf) {
+            $tourFees[] = [
+                "id"    => $tf->tour_taxes_id,
+                "label" => $tf->label,
+                "type"  => $tf->type,
+                "value" => $tf->value,
+            ];
+        }
+
+        $tourPickups = [];
+        if(!empty($order->tour->pickups) && isset($order->tour->pickups[0]) && $order->tour->pickups[0]?->name === 'No Pickup') {
+            $tourPickups[] = 'No Pickup';
+        }
+        else if(!empty($order->tour->pickups) && isset($order->tour->pickups[0]) && $order->tour->pickups[0]?->name === 'Pickup') {
+            $tourPickups[0] = 'Pickup';
+
+            $comment = \DB::table('pickup_tour')
+                        ->where('tour_id', $order->tour->id)
+                        ->where('pickup_id', $order->tour->pickups[0]?->id)  // a single pickup ID
+                        ->value('comment');
+
+
+            $tourPickups[1] = $comment ?? "Enter the pickup location";
+        }
+        else if (!empty($order->tour->pickups) && isset($order->tour->pickups[0])) {
+            $tourPickups = $order->tour->pickups[0]?->locations ?? [];
+        }
+        else {
+            $tourPickups[] = 'No Pickup';
+        }
+
+        $customer = $order->customer;
+
+        $image = uploaded_asset($order->tour->main_image->id ?? 0, 'medium');        
+
+        $data = [
+            "order_number"  => $order->order_number,
+            "currency"      => $order->currency,
+            "total_amount"  => $order->total_amount,
+            "orderId"       => $order->id,
+            "tourId"        => $order->tour_id,
+            "tourTitle"     => $order->tour?->title,
+            "tourSlug"      => $order->tour?->slug,
+            "tourImage"     => $image,
+            "selectedDate"  => $order->order_tour->tour_date,
+            "selectedTime"  => $order->order_tour->tour_time,
+            "tourPrice"     => $order->total_amount,
+            "sessionId"     => $order->session_id ?? strtotime('now'),
+            "userId"        => $order->user_id ?? 0,
+            "minQty"        => $order->tour->detail->quantity_min,
+            "maxQty"        => $order->tour->detail->quantity_max,
+            "tourFees"      => $tourFees,
+            "tourPickups"   => $tourPickups,
+            "customer"      => $customer,
+            "cartItems"     => $cartItems,
+            "cartAdons"     => $cartAdons,
+        ];
+
+        return response()->json([
+            'status' => true,
+            'data' => $data,
+        ], 200);
+    }
     
 
     /**
@@ -224,7 +329,10 @@ class OrderController extends Controller
             ], 404);
         }
 
-        $order = Order::create([
+        $order = Order::updateOrCreate(
+        [
+            'id' => $request->orderId ?? null, // condition: check if orderId exists
+        ],[
             'tour_id'       => $request->tourId,
             'user_id'       => $request->userId ?? 0,
             'session_id'    => $request->sessionId, // optional if using guest carts
@@ -613,6 +721,68 @@ class OrderController extends Controller
 
                     $order->payment_intent_client_secret = $pi->client_secret;
                     $order->payment_intent_id = $pi->id;
+                    // Retrieve card details from payment method if available
+                try {
+                    $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
+                    if (!empty($retrievedIntent->payment_method)) {
+                        $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                        // return $paymentMethod;
+                        if ($paymentMethod->type === 'card') {
+                            $cardDetails = [
+                                'brand'     => $paymentMethod->card->brand ?? null,
+                                'last4'     => $paymentMethod->card->last4 ?? null,
+                                'exp_month' => $paymentMethod->card->exp_month ?? null,
+                                'exp_year'  => $paymentMethod->card->exp_year ?? null,
+                            ];
+
+                            // Optional: store in Order table (if fields exist)
+                            $order->card_brand = $cardDetails['brand'];
+                            $order->card_last4 = $cardDetails['last4'];
+                            $order->card_exp_month = $cardDetails['exp_month'];
+                            $order->card_exp_year = $cardDetails['exp_year'];
+                        }
+
+
+                        // OrderPayment::create([
+                        //     'order_id'          => $order->id,
+                        //     'payment_intent_id' => $pi->id,
+                        //     'transaction_id'    => null, // no charge yet until capture
+                        //     'payment_method'    => 'card',
+                        //     'card_brand'        => $paymentMethod->card->brand ?? null,
+                        //     'card_last4'        => $paymentMethod->card->last4 ?? null,
+                        //     'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                        //     'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                        //     'amount'            => ($adv_deposite == 'deposit')
+                        //                             ? $chargeAmount
+                        //                             : $order->total_amount,
+                        //     'currency'          => $order->currency,
+                        //     'status'            => 'pending', // manual capture pending
+                        //     'action'            => $adv_deposite,
+                        //     'response_payload'  => json_encode($pi),
+                        // ]);
+                    }
+
+                    OrderPayment::create([
+                            'order_id'          => $order->id,
+                            'payment_intent_id' => $pi->id,
+                            'transaction_id'    => null, // no charge yet until capture
+                            'payment_method'    => $paymentMethod->type,
+                            'card_brand'        => $paymentMethod->card->brand ?? null,
+                            'card_last4'        => $paymentMethod->card->last4 ?? null,
+                            'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                            'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                            'amount'            => ($adv_deposite == 'deposit')
+                                                    ? $chargeAmount
+                                                    : $order->total_amount,
+                            'currency'          => $order->currency,
+                            'status'            => 'uncaptured', // manual capture pending
+                            'action'            => $adv_deposite,
+                            'response_payload'  => json_encode($pi),
+                        ]);
+                } catch (\Exception $cardError) {
+                    \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
+                }
+
                 } else {
                     // No charge needed
                     $si = \Stripe\SetupIntent::create([
@@ -623,8 +793,33 @@ class OrderController extends Controller
                     ]);               
                     $order->payment_intent_client_secret = $si->client_secret;
                     $order->payment_intent_id = $si->id;
+
+
+                    $retrievedIntent = \Stripe\PaymentIntent::retrieve($si->id);
+                    
+                    $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                    OrderPayment::create([
+                            'order_id'          => $order->id,
+                            'payment_intent_id' => $si->id,
+                            'transaction_id'    => null, // no charge yet until capture
+                            'payment_method'    => 'card',
+                            'card_brand'        => $paymentMethod->card->brand ?? null,
+                            'card_last4'        => $paymentMethod->card->last4 ?? null,
+                            'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                            'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                            'amount'            => ($adv_deposite == 'deposit')
+                                                    ? $chargeAmount
+                                                    : $order->total_amount,
+                            'currency'          => $order->currency,
+                            'status'            => 'uncaptured', // manual capture pending
+                            'action'            => $adv_deposite,
+                            'response_payload'  => json_encode($pi),
+                        ]);
+
                 }
             }else if($adv_deposite == "full") {
+
+
                 $pi = \Stripe\PaymentIntent::create([
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($order->total_amount * 100)),
@@ -640,6 +835,45 @@ class OrderController extends Controller
                     ]);
                 $order->payment_intent_client_secret = $pi->client_secret;
                 $order->payment_intent_id = $pi->id;
+
+                $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
+                    
+                $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                OrderPayment::create([
+                            'order_id'          => $order->id,
+                            'payment_intent_id' => $pi->id,
+                            'transaction_id'    => null, // no charge yet until capture
+                            'payment_method'    => 'card',
+                            'card_brand'        => $paymentMethod->card->brand ?? null,
+                            'card_last4'        => $paymentMethod->card->last4 ?? null,
+                            'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                            'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                            'amount'            => ($adv_deposite == 'deposit')
+                                                    ? $chargeAmount
+                                                    : $order->total_amount,
+                            'currency'          => $order->currency,
+                            'status'            => 'pending', // manual capture pending
+                            'action'            => $adv_deposite,
+                            'response_payload'  => json_encode($pi),
+                        ]);
+
+
+                // ✅ Fetch and store card details (if available)
+                try {
+                    $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
+                    if (!empty($retrievedIntent->payment_method)) {
+                        $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+
+                        if ($paymentMethod->type === 'card') {
+                            $order->card_brand = $paymentMethod->card->brand ?? null;
+                            $order->card_last4 = $paymentMethod->card->last4 ?? null;
+                            $order->card_exp_month = $paymentMethod->card->exp_month ?? null;
+                            $order->card_exp_year = $paymentMethod->card->exp_year ?? null;
+                        }
+                    }
+                } catch (\Exception $cardError) {
+                    \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
+                }
             }
 
 
@@ -678,6 +912,7 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Get session time 

@@ -14,6 +14,8 @@ class CustomerController extends Controller
     public function index()
     {
         $data = User::where('user_type', 'Member')->orderBy('id','DESC')->get();
+
+       
         return view('admin.customer.index', compact('data'));
     }
 

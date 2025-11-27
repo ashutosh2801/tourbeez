@@ -7,75 +7,86 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 <div class="card">
     <div class="card card-primary">
         <div class="card-header">
-            <h3 class="card-title">Pickups</h3>
-            <div class="card-tools">
-                <a href="{{ route('admin.pickups.create') }}" class="btn btn-sm btn-info">Create New</a>
+          <div class="row">
+            <div class="col-md-8">
+              <h3 class="card-title">Pickups</h3>
             </div>
-        </div>
-        <form class="needs-validation" novalidate action="{{ route('admin.tour.pickup_update', $data->id) }}" method="POST"
-        enctype="multipart/form-data">
-        <div class="card-body">            
-            @method('PUT')
-            @csrf
-            <table class="table table-striped align-middle" id="pickupTable">
-                <tbody>
-                  <!-- <tr draggable="true">
-                        <th><input  type="radio" class="check_all" name="pickups[]" value="0" style="width: 20px;height: 20px;" /></th>
-                        <td colspan="2">
-                            <a href="javascript:void(0)" class="text-info">No Pickups</a>
-                            <p class="m-0 text-sm text-gray-100">I do not offer pickups for this product</p>
-                        </td>
-                    </tr> -->
-                    @php
-                    $i=1;
-                    $existing_pickups = $data->pickups->pluck('id')->toArray();
-                    @endphp
-                    @foreach ($pickups as $item)
-                        <tr draggable="true" data-id="{{ $item->id }}">
-                            <th>
-                                <input type="radio" class="check_all pickup-radio"
-                                       name="pickups[]" value="{{ $item->id }}"
-                                       {{ (is_array($existing_pickups) && in_array($item->id, $existing_pickups)) ? 'checked' : '' }}>
-                            </th>
-
-                            <td colspan="2">
-                                <a target="_blank" href="{{ route('admin.pickups.edit', encrypt($item->id)) }}" class="text-info">
-                                    {{ $item->name }}
-                                </a>
-                                @foreach ($item->locations as $location)
-                                    <p class="m-0 text-sm text-gray-100">{{ $location->location }}, {{ $location->address }}</p>
-                                @endforeach
-
-                                {{-- Only for pickup --}}
-                                @if (strtolower($item->name) == 'pickup')
-
-
-                                    @php
-                                        $comment = \DB::table('pickup_tour')
-                                            ->where('tour_id', $data->id)
-                                            ->where('pickup_id', $item->id)  // a single pickup ID
-                                            ->value('comment'); 
-
-                                    @endphp
-                                    <div class="pickup-comment-box mt-2" style="display: none;">
-                                        <textarea name="comment[{{ $item->id }}]"
-                                                  class="form-control"
-                                                  placeholder="Add a comment...">{{ $comment }}</textarea>
-                                    </div>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-
-                </tbody>
-            </table>
-        </div>
-        <div class="card-footer" style="display:block">
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.location', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
-                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.itinerary', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
+            <div class="col-md-4 col-12">
+              <div class="card-tools">
+                  <a href="{{ route('admin.pickups.create') }}" class="btn btn-sm btn-success"> + Create New</a>
+              </div>
             </div>
-            </form>
+          </div>            
+        </div>
+        <form class="needs-validation" novalidate action="{{ route('admin.tour.pickup_update', $data->id) }}" method="POST" enctype="multipart/form-data">
+          <div class="card-body p-0">            
+              @method('PUT')
+              @csrf
+              <table class="table table-striped align-middle" id="pickupTable">
+                  <tbody>
+                    <!-- <tr draggable="true">
+                          <th><input  type="radio" class="check_all" name="pickups[]" value="0" style="width: 20px;height: 20px;" /></th>
+                          <td colspan="2">
+                              <a href="javascript:void(0)" class="text-info">No Pickups</a>
+                              <p class="m-0 text-sm text-gray-100">I do not offer pickups for this product</p>
+                          </td>
+                      </tr> -->
+                      @php
+                      $i=1;
+                      $existing_pickups = $data->pickups->pluck('id')->toArray();
+                      @endphp
+                      @foreach ($pickups as $item)
+                          <tr draggable="true" data-id="{{ $item->id }}">
+                              <th>
+                                  <input type="radio" class="check_all pickup-radio"
+                                        name="pickups[]" value="{{ $item->id }}"
+                                        {{ (is_array($existing_pickups) && in_array($item->id, $existing_pickups)) ? 'checked' : '' }}>
+                              </th>
+
+                              <td colspan="2">
+                                  <a target="_blank" href="{{ route('admin.pickups.edit', encrypt($item->id)) }}" class="text-info">
+                                      {{ $item->name }}
+                                  </a>
+                                  @foreach ($item->locations as $location)
+                                      <p class="m-0 text-sm text-gray-100">{{ $location->location }}, {{ $location->address }}</p>
+                                  @endforeach
+
+                                  {{-- Only for pickup --}}
+                                  @if (strtolower($item->name) == 'pickup')
+
+
+                                      @php
+                                          $comment = \DB::table('pickup_tour')
+                                              ->where('tour_id', $data->id)
+                                              ->where('pickup_id', $item->id)  // a single pickup ID
+                                              ->value('comment'); 
+
+                                      @endphp
+                                      <div class="pickup-comment-box mt-2" style="display: none;">
+                                          <textarea name="comment[{{ $item->id }}]"
+                                                    class="form-control"
+                                                    placeholder="Add a comment...">{{ $comment }}</textarea>
+                                      </div>
+                                  @endif
+                              </td>
+                          </tr>
+                      @endforeach
+
+                  </tbody>
+              </table>
+          </div>
+          <div class="card-footer" style="display:block">
+            <div class="row">
+              <div class="col-md-6">
+                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
+              </div>
+              <div class="col-md-6 align-buttons">
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.location', encrypt($data->id)) }}" class="btn btn-secondary"> <i class="fas fa-chevron-left"></i> Back</a>
+                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.itinerary', encrypt($data->id)) }}" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></a>
+              </div>
+            </div>
+          </div>
+        </form>
     </div>
 </div>
 

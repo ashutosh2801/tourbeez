@@ -216,7 +216,7 @@ class AizUploadController extends Controller
         }
         
         if ($request->search != null) {
-            $uploads->where('file_original_name', 'like', '%'.$request->search.'%');
+            $uploads->where('medium_name', 'like', '%'.$request->search.'%');
         }
         if ($request->sort != null) {
             switch ($request->sort) {
@@ -409,6 +409,5 @@ class AizUploadController extends Controller
         preg_match('/(youtu\.be\/|v=)([A-Za-z0-9_-]{11})/', $url, $matches);
         return $matches[2] ?? null;
     }
-
 
 }

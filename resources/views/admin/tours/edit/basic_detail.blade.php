@@ -105,8 +105,6 @@
                         
                     </div>
 
-
-
                     <div class="col-lg-2">
                         <div class="form-group">
                             <label for="order_email" class="form-label d-block no-wrap" style="font-size: 14px;">Email Confirmation</label>
@@ -327,7 +325,30 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-lg-6">
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="form-group">
+                            <label for="offerd_price" class="form-label">Offered Price</label>
+                            <div class="row">
 
+                                <!-- Coupon Value -->
+                                <div class="col-lg-6">
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="">$</span>
+                                        </div>
+                                        <input type="number" 
+                                               placeholder="Value" 
+                                               name="" 
+                                               id="offerd_price" 
+                                               value="" 
+                                               class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                                                     
                     <div class="col-lg-12">
@@ -466,7 +487,7 @@
                                             <span class="input-group-text">https://www.youtube.com/watch?v=</span>
                                         </div>
                                         <input type="text" name="videos[]" class="form-control" value="{{ $video }}">
-                                        <button type="button" class="btn btn-sm btn-primary mr-2" onclick="previewVideo('{{ $video }}')">Preview</button>
+                                        <button type="button" class="btn btn-sm btn-primary btn-preview mr-2" onclick="previewVideo('{{ $video }}')">Preview</button>
                                         <button type="button" class="btn btn-sm btn-danger" onclick="removeVideo(this)"><i class="fa fa-minus"></i></button>
                                     </div>
                                 @endforeach
@@ -575,9 +596,15 @@
             </div>           
 
             <div class="card-footer" style="display:block">
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.index') }}" class="btn btn-secondary">Back</a>
-                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
+                <div class="row">
+                    <div class="col-md-6">
+                        <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success"> <i class="fas fa-save"></i> Save</button>
+                    </div>
+                    <div class="col-md-6 align-buttons">
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.index') }}" class="btn btn-secondary"> <i class="fas fa-chevron-left"></i> Back</a>               
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                </div>
             </div>
         </form>
     </div>
@@ -832,4 +859,36 @@ function stopPreview() {
 
 
 </script>
+
+<script>
+    function calculateOfferedPrice() {
+        let finalPrice = parseFloat($('#advertised_price').val()) || 0;
+        let couponType = $('#coupon_type').val();
+        let couponValue = parseFloat($('#coupon_value').val()) || 0;
+
+        let offeredPrice = finalPrice;
+
+        if (couponType === 'percentage') {
+            let pct = couponValue / 100;
+
+            // avoid divide by zero
+            if (pct >= 1) pct = 0.99;
+
+            offeredPrice = finalPrice / (1 - pct);
+        } 
+        else if (couponType === 'fixed') {
+            offeredPrice = finalPrice + couponValue;
+        }
+
+        $('#offerd_price').val(offeredPrice.toFixed(2));
+    }
+
+    $('#advertised_price, #coupon_type, #coupon_value').on('input change', function () {
+        calculateOfferedPrice();
+    });
+
+    calculateOfferedPrice();
+</script>
+
+
 @endsection

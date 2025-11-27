@@ -29,11 +29,7 @@ use Illuminate\Support\Facades\Route;
 
 // Route::get('/tour-sessions', [OrderController::class, 'getSessionTimes']);
 // Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
-    // Route::get('/location-banner', [CommonController::class, 'getLocationBanner']);
-
-
-
-
+// Route::get('/location-banner', [CommonController::class, 'getLocationBanner']);
 
 Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
 
@@ -47,12 +43,10 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/single-city/{id}',[CommonController::class,'single_city']);
     Route::post('/contact',[CommonController::class,'contact']);
     Route::post('/careers',[CommonController::class,'careers']);
-    Route::get('/recommendations', [CommonController::class, 'recommendations']);
-    
+    Route::get('/recommendations', [CommonController::class, 'recommendations']);    
     Route::get('/location-banner', [CommonController::class, 'getLocationBanner']);
 
     Route::get('/category-tours', [TourController::class, 'toursByCategory'])->name('tour.category');
-
     Route::get('/tours',[TourController::class,'index']);
     Route::get('/tour/search', [TourController::class, 'search']);
     Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
@@ -83,7 +77,6 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
     Route::post('/verify-payment', [PaymentController::class, 'verifyPayment']);
     Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
-
 
     // Route::get('/supplier/register', [SupplierController::class, 'showForm'])->name('supplier.register');
     Route::post('/suppliers', [SupplierController::class, 'store']);

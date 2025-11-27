@@ -9,6 +9,7 @@ use App\Models\Addon;
 use App\Models\EmailTemplate;
 use App\Models\Order;
 use App\Models\OrderEmailHistory;
+use App\Models\OrderPayment;
 use App\Models\Pickup;
 use App\Models\PickupLocation;
 use App\Models\TourPricing;
@@ -192,7 +193,7 @@ class PaymentController extends Controller
             $action_name = $request->action_name;
             $intentId = explode('_secret_', $clientSecret)[0];
 
-            $payment_status = 0;
+            $payment_status = 3;
             $balance_amount = 0;
             $payment_method = null;
             $order_status   = 3;
@@ -230,7 +231,7 @@ class PaymentController extends Controller
                 // Reserve flow → Retrieve SetupIntent
                 $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
 
-                $payment_status = 0; // Not paid yet
+                $payment_status = 3; // Not paid yet
                 $total_amount   = 0;
                 $balance_amount = 0; // Full amount still pending
                 $payment_method = ''; // future use
@@ -261,7 +262,7 @@ class PaymentController extends Controller
             }
             
             // Update booking
-            $booking->payment_status = $payment_status;
+            $booking->payment_status = 3;
             //$booking->total_amount   = $total_amount;
             //$booking->balance_amount = $balance_amount;
             $booking->order_status   = $order_status;
@@ -399,6 +400,191 @@ class PaymentController extends Controller
            
     }
 
+    public function verifyPayment2323(Request $request)
+{
+    $request->validate([
+        'client_secret' => 'required|string',
+    ]);
+
+    Stripe::setApiKey(env('STRIPE_SECRET'));
+
+    try {
+        $clientSecret = $request->client_secret;
+        $action_name  = $request->action_name ?? 'book';
+        $intentId     = explode('_secret_', $clientSecret)[0];
+
+        $payment_status = 0;
+        $balance_amount = 0;
+        $payment_method = null;
+        $order_status   = 3;
+        $card_last4     = null;
+        $card_brand     = null;
+
+        if ($action_name === "book") {
+            // Retrieve PaymentIntent
+            $paymentIntent = PaymentIntent::retrieve($intentId);
+            $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
+            $payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
+
+            $booking = Order::with([
+                'tour',
+                'tour.location',
+                'tour.detail',
+                'customer'
+            ])->where('payment_intent_id', $paymentIntent->id)->first();
+
+            $balance_amount = 0;
+        } else {
+            // Reserve flow → Retrieve SetupIntent
+            $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
+
+            $payment_status = 0; // Not paid yet
+            $payment_method = 'card'; // Saved card for future charges
+
+            // Retrieve attached payment method if exists
+            if ($setupIntent->payment_method) {
+                $pm = \Stripe\PaymentMethod::retrieve($setupIntent->payment_method);
+                $card_last4 = $pm->card->last4 ?? null;
+                $card_brand = $pm->card->brand ?? null;
+            }
+
+            $booking = Order::with([
+                'tour',
+                'tour.location',
+                'tour.detail',
+                'customer'
+            ])->where('payment_intent_id', $setupIntent->id)->first();
+        }
+
+        if (!$booking) {
+            return response()->json([
+                'status'  => 'failed',
+                'message' => 'Order not found!',
+            ], 400);
+        }
+
+        // Update booking
+        $booking->payment_status  = $payment_status;
+        $booking->order_status    = $order_status;
+        $booking->payment_method  = $payment_method;
+        $booking->updated_at      = now();
+        $booking->save();
+
+        // Prepare pricing
+        $pricing = [];
+        $tour_pricing = json_decode($booking->order_tour->tour_pricing);
+        if (!empty($tour_pricing) && is_array($tour_pricing)) {
+            foreach ($tour_pricing as $tp) {
+                $tourPricing = TourPricing::find($tp->tour_pricing_id);
+                $label = str_ireplace('Group', 'Participants', $tourPricing->label);
+                $pricing[] = [
+                    'label' => $label,
+                    'qty'   => $tp->quantity,
+                    'price' => $tp->price,
+                    'total' => $tp->total_price
+                ];
+            }
+        }
+
+        // Prepare extras
+        $extra = [];
+        $extra_pricing = json_decode($booking->order_tour->tour_extra);
+        if (!empty($extra_pricing) && is_array($extra_pricing)) {
+            foreach ($extra_pricing as $ep) {
+                $extraAddon = Addon::find($ep->tour_extra_id);
+                $extra[] = [
+                    'label' => $extraAddon->name,
+                    'qty'   => $ep->quantity,
+                    'price' => $ep->price,
+                    'total' => $ep->total_price
+                ];
+            }
+        }
+
+        // Prepare fees
+        $fees = [];
+        $fees_pricing = json_decode($booking->order_tour->tour_fees);
+        if (!empty($fees_pricing) && is_array($fees_pricing)) {
+            foreach ($fees_pricing as $fp) {
+                $fees[] = [
+                    'label' => $fp->label,
+                    'price' => $fp->price,
+                    'total' => $fp->price
+                ];
+            }
+        }
+
+        // Pickup info
+        $pickName = '';
+        if ($booking->customer && $booking->customer->pickup_name) {
+            $pickName = $booking->customer->pickup_name;
+        } elseif ($booking->customer && $booking->customer->pickup_id) {
+            $pickLocation = PickupLocation::find($booking->customer->pickup_id);
+            $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+        }
+
+        // Tour image
+        $image = uploaded_asset($booking->tour?->main_image->id ?? 0, 'medium');
+
+        // Prepare detail
+        $detail = [
+            'action_name'      => $booking->action_name,
+            'order_number'     => $booking->order_number,
+            'number_of_guests' => $booking->number_of_guests,
+            'total_amount'     => $booking->total_amount ?? 0,
+            'balance_amount'   => $booking->balance_amount ?? 0,
+            'currency'         => $booking->currency,
+            'payment_method'   => ucfirst($booking->payment_method),
+            'card_last4'       => $card_last4,
+            'card_brand'       => $card_brand,
+            'customer'         => $booking->customer,
+            'pickup'           => $pickName,
+            'tour_date'        => date('D, M d, Y', strtotime($booking->order_tour->tour_date)),
+            'tour_time'        => $booking->order_tour->tour_time,
+            'created_at'       => date('Y-m-d', strtotime($booking->created_at)),
+            'tour'             => [
+                'image'       => $image,
+                'title'       => $booking->tour?->title,
+                'address'     => $booking->tour?->location->address,
+                'pricing'     => $pricing,
+                'extra'       => $extra,
+                'fees'        => $fees,
+                't_and_c'     => $booking->tour?->terms_and_conditions,
+                'order_email' => $booking->tour?->order_email,
+            ],
+        ];
+
+        // Send emails if not already sent
+        if ($booking && !$booking->tour?->order_email && !$booking->email_sent) {
+            self::sendOrderDetailMail($detail, $action_name);
+            $booking->email_sent = true;
+        }
+
+        if ($booking && !$booking->admin_email_sent) {
+            self::sendOrderDetailMail($detail, 'admin');
+            $booking->admin_email_sent = true;
+        }
+
+        $booking->save();
+
+        // Notify admin
+        $admin = User::findOrFail($booking->tour->user_id);
+        $admin->notify(new NewOrderNotification($booking));
+
+        return response()->json([
+            'status'  => 'succeeded',
+            'booking' => $detail,
+        ]);
+    } catch (\Exception $e) {
+        Log::error('VerifyPayment Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
     //this function need name should should change
     public static function sendOrderDetailMail($detail, $action_name = 'book')
     {
@@ -458,68 +644,68 @@ class PaymentController extends Controller
 
 
             $TOUR_PAYMENT_HISTORY =    '
-                                <style>
-                                @media only screen and (max-width: 640px) {
-                                  .wrapper {
-                                    width: 100% !important;
-                                    padding: 0 10px !important;
-                                  }
-                                  .table, .header_table {
-                                    width: 100% !important;
-                                  }
-                                  .table td {
-                                    display: block;
-                                    width: 100% !important;
-                                    text-align: left !important;
-                                  }
-                                  .table h3, .table small {
-                                    text-align: left !important;
-                                  }
-                                }
-                                </style>
-                                </head>
-                                <body style="margin:0; padding:0; font-family: \'Lato\', Helvetica, Arial, sans-serif; background-color: #f9f9f9;">
-                                <div class="wrapper" style="width:640px; margin:0 auto;">
+            <style>
+            @media only screen and (max-width: 640px) {
+                .wrapper {
+                width: 100% !important;
+                padding: 0 10px !important;
+                }
+                .table, .header_table {
+                width: 100% !important;  
+                }
+                .table td {
+                display: block;
+                width: 100% !important;
+                text-align: left !important;
+                }
+                .table h3, .table small {
+                text-align: left !important;
+                }
+            }
+            </style>
+            </head>
+            <body style="margin:0; padding:0; font-family: \'Lato\', Helvetica, Arial, sans-serif; background-color: #f9f9f9;">
+            <div class="wrapper" style="width:640px; margin:0 auto;">
 
-                                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:100%; max-width:640px;">
-                                  <tr>
-                                    <td style="padding: 30px 30px 15px;">
-                                      <h3 style="font-size:19px; margin: 0;"><strong>Payment History</strong></h3>
-                                    </td>
-                                  </tr>
-                                </table>
+            <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:100%; max-width:640px;">
+                <tr>
+                <td style="padding: 30px 30px 15px;">
+                    <h3 style="font-size:19px; margin: 0;"><strong>Payment History</strong></h3>
+                </td>
+                </tr>
+            </table>
 
-                                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-collapse:collapse; background-color:#fff; width:100%; max-width:640px; border-left:30px solid #fff; border-right:30px solid #fff; border-bottom:30px solid #fff;">
-                                  <tbody>
-                                    <tr>
-                                      <td style="width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
-                                      </td>
-                                      <td style="width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
-                                      </td>
-                                      <td style="width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
-                                      </td>
-                                    </tr>
+            <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-collapse:collapse; background-color:#fff; width:100%; max-width:640px; border-left:30px solid #fff; border-right:30px solid #fff; border-bottom:30px solid #fff;">
+                <tbody>
+                <tr>
+                    <td style="width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
+                    </td>
+                    <td style="width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
+                    </td>
+                    <td style="width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
+                    </td>
+                </tr>
 
-                                    <tr>
-                                      <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
-                                      <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail["created_at"] . '</td>
-                                      <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:10px;" valign="top"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency) . '</strong></td>
-                                    </tr>
+                <tr>
+                    <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
+                    <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail["created_at"] . '</td>
+                    <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:11px;" valign="top"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency) . '</strong></td>
+                </tr>
 
-                                    <tr>
-                                      <td style="border-top:2pt solid #000; border-bottom:2pt solid #000;">&nbsp;</td>
-                                      <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                        <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-                                      </td>
-                                      <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                        <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency). '</strong></h3>
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                </table>';
+                <tr>
+                    <td style="border-top:2pt solid #000; border-bottom:2pt solid #000;">&nbsp;</td>
+                    <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
+                    </td>
+                    <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                    <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency). '</strong></h3>
+                    </td>
+                </tr>
+                </tbody>
+            </table>';
 
 
             $TOUR_ITEM_SUMMARY = '';
@@ -531,7 +717,7 @@ class PaymentController extends Controller
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
                 
                 $TOUR_ITEM_SUMMARY .= '
-                <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
+                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table">
                     <tbody>
                     <tr>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
@@ -541,20 +727,20 @@ class PaymentController extends Controller
                     </tbody>
                 </table>
 
-                <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
+                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
                     <tbody>
                         <tr>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">#</small>
                             </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
                             </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
                                 &nbsp;
                             </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
                             </td>
                         </tr>';
                 
@@ -608,7 +794,7 @@ class PaymentController extends Controller
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
                             </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                                 ' . price_format_with_currency($taxAmount, $order->currency) . '
@@ -623,13 +809,45 @@ class PaymentController extends Controller
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
+                            <h3 style="color:#000; margin:0; font-size:15px"><strong>Total</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:#000; margin:0; font-size:19px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
+                            <h3 style="color:#000; margin:0; font-size:15px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
                         </td>
-                    </tr>
-                    </tbody>
+                    </tr>';
+
+                if ($order->balance_amount > 0) {
+                    // balance amount
+                    $TOUR_ITEM_SUMMARY .= '
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <h3 style="color:red; margin:0; font-size:15px"><strong>Balance</strong></h3>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($order->balance_amount, $order->currency) . '</strong></h3>
+                        </td>
+                    </tr>'; 
+                }
+                
+                $paid = $order->total_amount - $order->balance_amount;
+                if ($paid > 0) {                    
+                    // paid amount
+                    $TOUR_ITEM_SUMMARY .= '
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>Paid</strong></h3>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>' . price_format_with_currency($paid, $order->currency) . '</strong></h3>
+                        </td>
+                    </tr>'; 
+                }    
+                
+                $TOUR_ITEM_SUMMARY .=  '</tbody>
                 </table>';
             }
             
@@ -642,7 +860,7 @@ class PaymentController extends Controller
             }
             // if($pickup_address) {
             //     $pickup_address = '
-            //       <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
+            //       <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
             //       <h3 style="color: #fff; margin-top: 5px; font-size: 15px; margin-bottom: 5px;">
             //         <strong>' . $pickup_address . '</strong>
             //       </h3>';
@@ -728,7 +946,7 @@ class PaymentController extends Controller
 
             // Always include fallback addresses from .env
             $defaultEmails = [
-                env('MAIL_FROM_ADDRESS'),
+                // env('MAIL_FROM_ADDRESS'),
                 env('MAIL_FROM_ADMIN_ADDRESS')
             ];
 
@@ -805,7 +1023,7 @@ class PaymentController extends Controller
 
                 if($recipient == 'admin'){
                     Log::info('Admin recipients:', $email);
-                     $sentMessage = $mailer->to($email)->send(new AdminBookingMail($array, $event['uid']));
+                     $sentMessage = $mailer->to(env('MAIL_FROM_ADDRESS'))->bcc($email)->send(new AdminBookingMail($array, $event['uid']));
                 } else{
                         $sentMessage = $mailer->to($email)->send(new EmailManager($array));
                         

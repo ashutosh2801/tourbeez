@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Mail\CommonMail;
 use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Models\OrderEmailHistory;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
@@ -30,11 +31,12 @@ class CheckAbandonedOrders extends Command
         
         if ($orders->isEmpty()) {
             $this->info('No abandoned orders found.');
-            Log::info('No abandoned orders found.');
+            \Log::info('No abandoned orders found.');
             return;
         }
 
         foreach ($orders as $order) {
+
             try {
                 $emailTemplate = EmailTemplate::where('identifier', 'order_abandon')->first();
 
@@ -48,14 +50,14 @@ class CheckAbandonedOrders extends Command
                     $customer = $order->orderUser;
                 }
 
-                if(!$customer->email){
+                if($customer && !$customer->email){
                     continue;
                 }
                 $pickup_address = '';
-                if( $order->customer->pickup_name ) {
+                if($order->customer && $order->customer->pickup_name ) {
                     $pickup_address = $order->customer->pickup_name;
                 }
-                else if($order->customer->pickup_id) {
+                else if($order->customer && $order->customer->pickup_id) {
                     $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
                 }
 
@@ -88,6 +90,8 @@ class CheckAbandonedOrders extends Command
                 //     new CommonMail($subject, $body, null, null, null, true)
                 // );
 
+                
+
                 Mail::to($customer->email)->send(
                     new CommonMail($subject, $body, null, null, null, true)
                 );
@@ -96,12 +100,15 @@ class CheckAbandonedOrders extends Command
                 $order->save();
 
                 // ✅ Log email history (if you use OrderEmailHistory)
-                // $order->emailHistory()->create([
-                //     'subject' => $subject,
-                //     'body' => $body,
-                //     'recipient' => $customer->email,
-                //     'email_type' => 'order_abandon',
-                // ]);
+
+                OrderEmailHistory::create([
+                    'order_id'  => $order->id,
+                    'to_email'  => $customer->email,
+                    'from_email'=> env('MAIL_FROM_ADDRESS'),
+                    'subject'   => $subject,
+                    'body'      => $body,
+                    'message_id' => Null // need to update this
+                ]);
                 
 
                 \Log::info("Abandoned order email sent for order {$order->order_number}");

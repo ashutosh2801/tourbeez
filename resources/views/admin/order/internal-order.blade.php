@@ -2,6 +2,16 @@
 @section('title', 'Internal Orders Create')
 
 <div class="card">
+
+        @if ($errors->any())
+    <div class="alert alert-danger mb-4 p-3 rounded">
+        <ul class="mb-0 pl-4">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
     <form id="orderForm" action="{{ route('admin.orders.store') }}" method="POST">
         @csrf
 
@@ -21,13 +31,17 @@
             </div>
             <div>
                 <select name="order_status" class="form-control">
-                    <option value="CONFIRMED" selected>Confirmed</option>
-                    <option value="NEW">New</option>
-                    <option value="ON_HOLD">On Hold</option>
-                    <option value="PENDING_SUPPLIER">Pending Supplier</option>
-                    <option value="PENDING_CUSTOMER">Pending Customer</option>
-                    <option value="CANCELLED">Cancelled</option>
-                    <option value="ABANDONED_CART">Abandoned Cart</option>
+
+                    <option value="4" selected>Pending Customer</option>
+                    <option value="3" >Pending Supplier</option>
+                    <option value="5" >Confirmed</option>
+                    <option value="0">New</option> <!-- Not in switch, will show "Not completed" -->
+                    <option value="2">On Hold</option>
+                    
+                    
+                    <option value="6">Cancelled</option>
+                    <option value="7">Abandoned Cart</option>
+
                 </select>
             </div>
             <button type="submit" class="btn btn-primary">Create Order</button>
@@ -35,30 +49,7 @@
 
         <div class="accordion" id="accordionExample">
 
-            <!-- ================= Customer Details ================= -->
-           <!--  <div class="card">
-                <div class="card-header bg-secondary py-0" id="headingOne">
-                    <h2 class="my-0 py-0">
-                        <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
-                            data-toggle="collapse" data-target="#collapseOne">
-                            <i class="fa fa-angle-right"></i> Customer Details
-                        </button>                                  
-                    </h2>
-                </div>
-                <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label for="customer">Select Customer</label>
-                            <select name="customer_id" id="customer" class="form-control aiz-selectpicker" data-live-search="true">
-                                <option value="">Select Customer</option>
-                                @foreach($customers as $customer)
-                                    <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->email }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div> -->
+           
             <div class="card">
 <div class="card">
     <div class="card-header bg-secondary py-0" id="headingOne">
@@ -73,64 +64,80 @@
         <div class="card-body">
 
             {{-- Existing Customer Dropdown --}}
-            <div class="form-group">
-                <label for="customer">Select Existing Customer</label>
-                <select name="customer_id" id="customer" class="form-control aiz-selectpicker" data-live-search="true">
-                    <option value="">-- Select Customer --</option>
-                    @foreach($customers as $customer)
-                        <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->email }}</option>
-                    @endforeach
-                </select>
-            </div>
 
-            <div class="text-center my-3">
-                <button type="button" id="addNewCustomerBtn" class="btn btn-sm btn-primary">
-                    <i class="fa fa-user-plus"></i> Add New Customer
-                </button>
+            <div class="row d-flex justify-content-between align-items-center">
+                
+                
+                <div class="form-group col-md-5">
+                    <label for="customer">Select Existing Customer</label>
+                    <select name="customer_id" id="customer" class="form-control aiz-selectpicker border" data-live-search="true">
+                        <option value="">-- Select Customer --</option>
+                        @foreach($customers as $customer)
+                            <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->email }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group col-md-2 text-center">  OR</div>
+
+                <div class="text-center my-3 col-md-5 ">
+                    <button type="button" id="addNewCustomerBtn" class="btn btn-sm btn-primary">
+                        <i class="fa fa-user-plus"></i> Add New Customer
+                    </button>
+                </div>
             </div>
 
             {{-- New Customer Fields (hidden by default) --}}
+  
+
             <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
                 <h5 class="mb-3">New Customer Information</h5>
 
                 <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label for="customer_first_name">First Name</label>
-                        <input type="text" name="customer_first_name" id="customer_first_name" class="form-control">
+                        <label for="customer_first_name">First Name *</label>
+                        <input type="text" name="customer_first_name" id="customer_first_name"
+                               class="form-control" minlength="2">
+                        <small class="text-danger d-none" id="error_first_name">Enter a valid first name</small>
                     </div>
+
                     <div class="form-group col-md-6">
-                        <label for="customer_last_name">Last Name</label>
-                        <input type="text" name="customer_last_name" id="customer_last_name" class="form-control">
+                        <label for="customer_last_name">Last Name *</label>
+                        <input type="text" name="customer_last_name" id="customer_last_name"
+                               class="form-control" minlength="2">
+                        <small class="text-danger d-none" id="error_last_name">Enter a valid last name</small>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label for="customer_email">Email</label>
-                        <input type="email" name="customer_email" id="customer_email" class="form-control">
+                        <label for="customer_email">Email *</label>
+                        <input type="email" name="customer_email" id="customer_email"
+                               class="form-control" >
+                        <small class="text-danger d-none" id="error_email">Enter a valid email</small>
                     </div>
-                    <div class="form-group col-md-6">
-                        <label for="customer_phone">Phone</label>
-                        <input type="text" name="customer_phone" id="customer_phone" class="form-control">
-                    </div>
-                </div>
 
-                <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label for="pickup_id">Pickup ID</label>
-                        <input type="text" name="pickup_id" id="pickup_id" class="form-control">
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label for="pickup_name">Pickup Name</label>
-                        <input type="text" name="pickup_name" id="pickup_name" class="form-control">
-                    </div>
-                </div>
+                        <label for="customer_phone">Phone (with country code) *</label>
 
-                <div class="form-group">
-                    <label for="additional_info">Instructions <span class="text-danger">*</span></label>
-                    <textarea name="additional_info" id="additional_info" class="form-control" required></textarea>
+                        <!-- Allow typing "+" -->
+                        <input 
+                            id="customer_phone"
+                            name="customer_phone"
+                            type="tel"
+                            class="form-control"
+                            autocomplete="tel"
+                            inputmode="tel"
+                        />
+
+                        <!-- Hidden field that stores full E.164 number -->
+                        <input type="hidden" id="full_phone" name="full_phone">
+
+                        <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
+                    </div>
                 </div>
             </div>
+
 
         </div>
     </div>
@@ -143,7 +150,7 @@
                     <h2 class="my-0 py-0">
                         <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
                             data-toggle="collapse" data-target="#collapseTwo">
-                            <i class="fa fa-angle-down"></i> Tour Details
+                            <i class="fa fa-angle-right"></i> Tour Details
                         </button>
                     </h2>
                 </div>
@@ -190,7 +197,7 @@
                         <div class="form-group">
                             <label><strong>Payment Method</strong></label><br>
                             <label class="mr-3">
-                                <input type="radio" name="payment_type" value="card" checked> Credit Card (Stripe)
+                                <input type="radio" name="payment_type" value="card"> Credit Card (Stripe)
                             </label>
                             <label>
                                 <input type="radio" name="payment_type" value="transaction"> Transaction
@@ -198,10 +205,10 @@
                         </div>
 
                         {{-- Stripe Credit Card Fields --}}
-                        <div id="cardFields">
+                        <div id="cardFields" style="display:none;">
                             <div class="form-group">
                                 <label for="card-element">Card Details</label>
-                                <div id="card-element" class="form-control" style="padding: 10px; height: auto;"></div>
+                                <div id="card-element" class="form-control col-6" style="padding: 10px; height: auto;"></div>
                                 <small id="card-errors" class="text-danger mt-2"></small>
                             </div>
                         </div>
@@ -226,18 +233,37 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> 
 
             <!-- ================= Form Actions ================= -->
             <div class="card-footer" style="display:block">
-                <button style="padding:0.6rem 2rem" type="submit" id="createOrderBtn" class="btn btn-success">Create Order</button>
+                <button style="padding:0.6rem 2rem" type="submit" id="createOrderBtn" class="btn btn-primary">Create Order</button>
                 <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </div>
     </form>
 </div>
+<div id="globalLoader" 
+     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(255,255,255,0.6); z-index:99999;">
+    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+                text-align:center; font-size:18px;">
 
+        <div class="loader-spinner" 
+             style="width:40px; height:40px; border:4px solid #ccc; 
+                    border-top-color:#3498db; border-radius:50%;
+                    animation: spin 0.8s linear infinite; margin:auto;">
+        </div>
+
+        <div style="margin-top:10px; font-weight:bold; color:#333;">
+            Processing...
+        </div>
+    </div>
+</div>
 @section('js')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
+
 <script>
 let tourCount = 1;
 
@@ -251,33 +277,88 @@ function tourOptions() {
 }
 
 // ================= Add Tour Row =================
-function addTour() {
+// function addTour() {
+
+//     showLoader("Loading… Please wait");
+//     const container = document.getElementById('tourContainer');
+//     const newRow = document.createElement('div');
+//     newRow.setAttribute('id', `row_${tourCount}`);
+
+//     newRow.innerHTML = `
+//     <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px">
+//         <table class="table">
+//             <tr>
+//                 <td>
+//                     <select onchange="loadTourDetails(this.value, ${tourCount})" 
+//                         name="tour_id[]" 
+//                         class="form-control aiz-selectpicker border" data-live-search="true">
+//                         <option value="">Select Tour</option>` + tourOptions() + `</select>
+//                 </td>
+//                 <td>
+//                     <button type="button" onclick="removeTour('row_${tourCount}')" class="btn btn-danger">Remove</button>
+//                 </td>
+//             </tr>
+//         </table>
+//         <div id="tour_details_${tourCount}"></div>
+//     </div>`;
+
+//     container.appendChild(newRow);
+//     TB.plugins.bootstrapSelect('refresh');
+//     tourCount++;
+//     hideLoader();
+// }
+
+function addTour(savedTourId = null, index = null, silentMode = false) {
+
+    showLoader("Loading… Please wait");
+
+    // If index not provided → add new row
+    if (index === null) {
+        index = tourCount;
+    }
+
     const container = document.getElementById('tourContainer');
     const newRow = document.createElement('div');
-    newRow.setAttribute('id', `row_${tourCount}`);
+    newRow.setAttribute('id', `row_${index}`);
 
     newRow.innerHTML = `
     <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px">
         <table class="table">
             <tr>
                 <td>
-                    <select onchange="loadTourDetails(this.value, ${tourCount})" 
-                        name="tour_id[]" 
-                        class="form-control aiz-selectpicker" data-live-search="true">
+                    <select 
+                        onchange="loadTourDetails(this.value, ${index})"
+                        name="tour_id[${index}]" 
+                        class="form-control aiz-selectpicker border" data-live-search="true">
                         <option value="">Select Tour</option>` + tourOptions() + `</select>
                 </td>
                 <td>
-                    <button type="button" onclick="removeTour('row_${tourCount}')" class="btn btn-danger">Remove</button>
+                    <button type="button" onclick="removeTour('row_${index}')" class="btn btn-danger">Remove</button>
                 </td>
             </tr>
         </table>
-        <div id="tour_details_${tourCount}"></div>
+        <div id="tour_details_${index}"></div>
     </div>`;
 
     container.appendChild(newRow);
+
     TB.plugins.bootstrapSelect('refresh');
-    tourCount++;
+
+    // Restore selected tour (if coming from localStorage)
+    if (savedTourId) {
+        newRow.querySelector(`select[name="tour_id[${index}]"]`).value = savedTourId;
+        newRow.querySelector(`select[name="tour_id[${index}]"]`)
+            .dispatchEvent(new Event("change"));
+    }
+
+    // Increase global counter only for user-added rows
+    if (!silentMode) {
+        tourCount++;
+    }
+
+    hideLoader();
 }
+
 
 // ================= Remove Tour Row =================
 function removeTour(id) {
@@ -286,14 +367,20 @@ function removeTour(id) {
 }
 
 // ================= Load Single Tour Details =================
+
+
 function loadTourDetails(tourId, count) {
-    if(!tourId) return;
+    if (!tourId) return;
+
+    showLoader("Loading… Please wait");
 
     $.ajax({
         url: '{{ route("tour.single") }}',
         type: 'POST',
         data: { id: tourId, tourCount: count, _token: '{{ csrf_token() }}' },
-        success: function(response){
+
+        success: function(response) {
+
             const $container = $(`#tour_details_${count}`);
             $container.html(response);
 
@@ -301,50 +388,111 @@ function loadTourDetails(tourId, count) {
             TB.plugins.timePicker();
             TB.plugins.bootstrapSelect('refresh');
 
-            $container.find(".aiz-date-range").each(function(){
-                $(this).off("apply.daterangepicker").on("apply.daterangepicker", function(ev, picker){
+            const $dateInput = $container.find(
+                '.tour-startdate, .tour_startdate_field, input[name="tour_startdate[]"]'
+            ).first();
+
+            if ($dateInput.length) {
+
+                const serverDate =
+                    $dateInput.attr('value') ||
+                    $dateInput.val() ||
+                    '';
+
+                const initialDate = serverDate
+                    ? serverDate
+                    : moment().format("YYYY-MM-DD");
+
+                $dateInput.val(initialDate);
+
+                $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {
                     const selectedDate = picker.startDate.format("YYYY-MM-DD");
-                    $('#tour_startdate').val(selectedDate).trigger('change');
+                    $(this).val(selectedDate).trigger('change');
+
+                    const $row = $("#row_" + count);
+
+                    const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
+                    $row.find(".tour_startdate_display").val(pretty);
                     
                     fetchTourSessions(tourId, selectedDate, count);
                 });
-            });
+
+                setTimeout(() => {
+                    try {
+                        const drp = $dateInput.data('daterangepicker');
+                        if (drp) {
+
+                            // ----------- LIMIT START DATE -------------
+                            const tourStartDate = moment(initialDate, "YYYY-MM-DD");
+                            const today = moment().startOf('day');
+
+                            const minAllowedDate = moment.max(tourStartDate, today);
+
+                            drp.minDate = minAllowedDate;
+                            drp.updateView();
+                            drp.updateCalendars();
+                            // -------------------------------------------
+
+                            drp.setStartDate(initialDate);
+                            drp.setEndDate(initialDate);
+                        }
+                    } catch (e) {}
+
+                    fetchTourSessions(tourId, initialDate, count);
+                    hideLoader();
+
+                }, 250);
+            } else {
+                console.warn("Date input NOT FOUND for row:", count);
+            }
         },
-        error: function(err){
+
+        error: function(err) {
             console.error(err);
         }
     });
 }
 
+
+
+
 // ================= Fetch Tour Sessions =================
 function fetchTourSessions(tourId, selectedDate, count) {
     const $container = $(`#tour_details_${count}`);
-    const $timeField = $container.find("input[name='tour_starttime[]'], select[name='tour_starttime[]']");
+    const $timeField = $container.find("input[name='tour_starttime[]'], select[name='tour_starttime[]']").first();
 
     if(!tourId || !selectedDate) return;
-
+    showLoader("Loading… Please wait");
+    const $row = $("#row_" + count);
+    const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
+    $row.find(".tour_startdate_display").val(pretty);
     $.ajax({
         url: "/admin/tour-sessions",
         type: "GET",
         data: { tour_id: tourId, date: selectedDate },
         dataType: "json",
         success: function(resp) {
-            let options = '<option value="">-- Select Session --</option>';
+
+            let options = '';
             if(resp.data && resp.data.length > 0){
                 $.each(resp.data, function(i, session){
+                    // If your API returns strings, use session; if objects, adapt.
                     options += `<option value="${session}">${session}</option>`;
                 });
             } else {
                 options = '<option value="">No sessions available</option>';
             }
 
-            $timeField.replaceWith(`<select name="tour_starttime[]" class="form-control">${options}</select>`);
+            // Replace the time field within this container only
+            $timeField.replaceWith(`<select name="tour_starttime[]" class="form-control tour-time">${options}</select>`);
+            hideLoader();
         },
         error: function(xhr){
             console.error("Failed to fetch sessions:", xhr.responseText);
         }
     });
 }
+
 </script>
 
 <script src="https://js.stripe.com/v3/"></script>
@@ -387,34 +535,597 @@ function fetchTourSessions(tourId, selectedDate, count) {
         }
     });
 
+    
+
+</script>
+
+<script>
     // Toggle fields
+    // document.querySelectorAll("input[name='payment_type']").forEach(el => {
+    //     el.addEventListener("change", function() {
+    //         if (this.value === "card") {
+    //             document.getElementById("cardFields").style.display = "block";
+    //             document.getElementById("transactionFields").style.display = "none";
+    //         } else {
+    //             document.getElementById("cardFields").style.display = "none";
+    //             document.getElementById("transactionFields").style.display = "block";
+    //         }
+    //     });
+    // });
+
     document.querySelectorAll("input[name='payment_type']").forEach(el => {
-        el.addEventListener("change", function() {
+        el.addEventListener("click", function () {
             if (this.value === "card") {
-                document.getElementById("cardFields").style.display = "block";
-                document.getElementById("transactionFields").style.display = "none";
+                cardFields.style.display = "block";
+                transactionFields.style.display = "none";
             } else {
-                document.getElementById("cardFields").style.display = "none";
-                document.getElementById("transactionFields").style.display = "block";
+                cardFields.style.display = "none";
+                transactionFields.style.display = "block";
             }
         });
     });
     $(document).ready(function () {
-        $('#addNewCustomerBtn').on('click', function () {
+        $(document).on('click', '#addNewCustomerBtn', function () {
+            
+             $('#newCustomerFields').removeClass('d-none');
             $('#newCustomerFields').removeClass('d-none');
-            $('#customer').val('').trigger('change'); // clear existing dropdown
-            $('#additional_info').attr('required', true); // make message field required
+            $('#customer').val('').trigger('change');
+
+            $("#customer_first_name").prop("required", true);
+            $("#customer_last_name").prop("required", true);
+            $("#customer_email").prop("required", true);
+            $("#customer_phone").prop("required", true);
         });
 
         $('#customer').on('change', function () {
             if ($(this).val()) {
                 // If existing customer selected → hide new fields
                 $('#newCustomerFields').addClass('d-none');
-                $('#additional_info').attr('required', false); // remove required
+                // remove required
             }
         });
     });
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    /* ======================================================
+       INTL TEL INPUT INITIALIZATION
+    ====================================================== */
+    const phoneInput = document.querySelector("#customer_phone");
+
+    const iti = window.intlTelInput(phoneInput, {
+        initialCountry: "auto",
+        separateDialCode: true,
+        nationalMode: false,
+        geoIpLookup: function (callback) {
+            fetch("https://ipapi.co/json/")
+                .then(res => res.json())
+                .then(data => callback(data.country_code))
+                .catch(() => callback("US"));
+        },
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
+    });
+
+
+
+
+    /* ======================================================
+       ALLOW + AUTO-DETECT COUNTRY FROM FULL NUMBER
+    ====================================================== */
+    phoneInput.addEventListener("input", function () {
+        let value = this.value.trim();
+
+        // Allow the first character to be "+"
+        if (value.startsWith("+")) {
+            // Remove non-numeric characters except +
+            value = value.replace(/[^0-9+]/g, "");
+            this.value = value;
+
+            // Auto-detect country if number has enough digits
+            if (value.length > 3) {
+                iti.setNumber(value);
+            }
+            return; // stop here, do not apply numeric restrictions below
+        }
+    });
+    document.getElementById("full_phone").value = iti.getNumber();
+    /* ======================================================
+       BLOCK LETTERS — only numbers allowed
+    ====================================================== */
+    phoneInput.addEventListener("keypress", function (e) {
+        const char = String.fromCharCode(e.which);
+
+        // Allow "+" only as first character
+        if (char === "+" && this.value.length === 0) return;
+
+        if (!/[0-9]/.test(char)) {
+            e.preventDefault();
+        }
+    });
+
+    /* ======================================================
+       BLOCK INVALID PASTE (allow + at start)
+    ====================================================== */
+
+
+    /* ======================================================
+       UPDATE HIDDEN FULL NUMBER
+    ====================================================== */
+    function updateFullNumber() {
+        document.getElementById("full_phone").value = iti.getNumber();
+    }
+
+    phoneInput.addEventListener("input", updateFullNumber);
+    phoneInput.addEventListener("countrychange", updateFullNumber);
+
+    /* ======================================================
+       FIELD VALIDATIONS
+    ====================================================== */
+    function validateFields() {
+        let valid = true;
+
+        // FIRST NAME
+        const first = document.getElementById("customer_first_name");
+        if (!/^[A-Za-z]{2,}$/.test(first.value.trim())) {
+            document.getElementById("error_first_name").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_first_name").classList.add("d-none");
+        }
+
+        // LAST NAME
+        const last = document.getElementById("customer_last_name");
+        if (!/^[A-Za-z]{2,}$/.test(last.value.trim())) {
+            document.getElementById("error_last_name").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_last_name").classList.add("d-none");
+        }
+
+        // EMAIL
+        const email = document.getElementById("customer_email");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.value.trim())) {
+            document.getElementById("error_email").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_email").classList.add("d-none");
+        }
+
+        // PHONE VALIDATION (Intl Tel Input)
+        if (!iti.isValidNumber()) {
+            document.getElementById("error_phone").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_phone").classList.add("d-none");
+        }
+
+        return valid;
+    }
+
+    /* ======================================================
+       FORM SUBMIT VALIDATION
+    ====================================================== */
+    document.querySelector("form").addEventListener("submit", function (e) {
+        updateFullNumber(); // always update before form submit
+
+        if (!validateFields()) {
+            e.preventDefault();
+            alert("Please correct the highlighted fields.");
+        }
+    });
+
+});
 
 </script>
+<script>
+document.addEventListener("change", function(e){
+    if(e.target.classList.contains("pickup-dropdown")) {
+        // const tour = e.target.dataset.tour;
+
+        const otherBox = document.getElementById("pickup-other-box");
+
+        if(e.target.value === "other") {
+            otherBox.style.display = "block";
+        } else {
+            otherBox.style.display = "none";
+        }
+    }
+});
+</script>
+
+
+<script>
+    // =====================================================
+// DYNAMIC TOTAL CALCULATION FOR EACH TOUR ROW
+// =====================================================
+
+function calculateRowTotal34234(row) {
+
+    
+
+    let subtotal = 0;
+    let withouttax = 0;
+
+    // -----------------------------------------
+    // 1) PRICING QTY * PRICE
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
+        const qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_price_"]'
+        );
+
+        
+
+        const priceTypeInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_type"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+        const priceType = priceTypeInput.value;
+        
+        if(priceType === "FIXED"){
+            subtotal = price;
+        } else{
+            subtotal += qty * price;
+        }
+
+        
+    });
+
+    // -----------------------------------------
+    // 2) ADDONS QTY * PRICE
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
+        const qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_extra_price_"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+
+        subtotal += qty * price;
+    });
+
+    withouttax = subtotal;
+
+    // -----------------------------------------
+    // 3) TAXES — read tax rows & recalc live
+    // -----------------------------------------
+    row.querySelectorAll('.tax-row').forEach((taxRow) => {
+    const feeType = taxRow.dataset.type;
+    const feeValue = parseFloat(taxRow.dataset.value);
+// FIXED_PER_ORDER
+    let tax = 0;
+    
+    if (feeType === "PERCENT") {
+        tax = subtotal * (feeValue / 100);
+    } else {
+        tax = feeValue;
+    }
+
+    // Format tax for UI
+    const formattedTax = new Intl.NumberFormat('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(tax);
+    
+    taxRow.querySelector('.tax-amount').textContent = formattedTax;
+
+    
+    
+    subtotal += tax;
+});
+
+
+    // -----------------------------------------
+    // 4) UPDATE UI SUBTOTAL
+    // -----------------------------------------
+
+    const withouttaxBox = row.querySelector('.withouttax-box');
+    if (withouttaxBox) {
+        withouttaxBox.textContent = withouttax.toFixed(2);
+    }
+    const subtotalBox = row.querySelector('.subtotal-box');
+    if (subtotalBox) {
+        subtotalBox.textContent = subtotal.toFixed(2);
+    }
+}
+
+
+function calculateRowTotal(row) {
+
+    let subtotal = 0;
+    let withouttax = 0;
+
+    // -----------------------------------------
+    // 1) PRICING QTY * PRICE
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
+        let qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_price_"]'
+        );
+
+        const priceTypeInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_type_"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+        const priceType = priceTypeInput.value;
+
+        // -----------------------------------------
+        // ADDITION: ENFORCE MIN/MAX IF FIXED
+        // -----------------------------------------
+        const minQty = qtyInput.getAttribute("min");
+        const maxQty = qtyInput.getAttribute("max");
+
+
+        if (priceType === "FIXED") {
+
+            // if (minQty !== null && qty < parseFloat(minQty)) {
+            //     alert("Quantity cannot be less than minimum allowed (" + minQty + ").");
+            //     qty = parseFloat(minQty);
+            //     qtyInput.value = qty;
+            // }
+
+            if (maxQty !== null && qty > parseFloat(maxQty)) {
+                alert("Quantity cannot be more than maximum allowed (" + maxQty + ").");
+                qty = parseFloat(maxQty);
+                qtyInput.value = qty;
+            }
+
+        }
+        // -----------------------------------------
+
+        if (priceType === "FIXED") {
+            subtotal = price;
+        } else {
+            subtotal += qty * price;
+        }
+
+    });
+
+    // -----------------------------------------
+    // 2) ADDONS QTY * PRICE
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
+        const qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_extra_price_"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+
+        subtotal += qty * price;
+    });
+
+    withouttax = subtotal;
+
+    // -----------------------------------------
+    // 3) TAXES — read tax rows & recalc live
+    // -----------------------------------------
+    row.querySelectorAll('.tax-row').forEach((taxRow) => {
+        const feeType = taxRow.dataset.type;
+        const feeValue = parseFloat(taxRow.dataset.value);
+
+        let tax = 0;
+
+        if (feeType === "PERCENT") {
+            tax = subtotal * (feeValue / 100);
+        } else {
+            tax = feeValue;
+        }
+
+        const formattedTax = new Intl.NumberFormat('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(tax);
+
+        taxRow.querySelector('.tax-amount').textContent = formattedTax;
+
+        subtotal += tax;
+    });
+
+    // -----------------------------------------
+    // 4) UPDATE UI SUBTOTAL
+    // -----------------------------------------
+    const withouttaxBox = row.querySelector('.withouttax-box');
+    if (withouttaxBox) {
+        withouttaxBox.textContent = withouttax.toFixed(2);
+    }
+    const subtotalBox = row.querySelector('.subtotal-box');
+    if (subtotalBox) {
+        subtotalBox.textContent = subtotal.toFixed(2);
+    }
+}
+
+
+// =====================================================
+// EVENT LISTENERS — trigger on every quantity change
+// =====================================================
+
+$(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']", function () {
+
+    const row = this.closest("[id^='row_']");
+    calculateRowTotal(row);
+});
+
+
+
+
+
+
+</script>
+<script>
+    function showLoader(message = "Processing...") {
+        $("#globalLoader").find("div:last").text(message);
+        $("#globalLoader").show();
+    }
+
+    function hideLoader() {
+        $("#globalLoader").hide();
+    }
+</script>
+
+<script>
+function autoPersistForm(formSelector) {
+    const form = document.querySelector(formSelector);
+    if (!form) return;
+
+    const STORE_KEY = form.id + "_formdata";
+
+    // Pull saved data safely
+    let saved = {};
+    try {
+        saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+    } catch (e) {
+        localStorage.removeItem(STORE_KEY);
+        saved = {};
+    }
+
+    // ==========================================
+    // 1. Detect all dynamic tour indexes safely
+    // Only match keys that EXACTLY end with [number]
+    // ==========================================
+    const indexedKeys = Object.keys(saved).filter(k => /\[\d+\]$/.test(k));
+
+    // Extract all index numbers
+    const indexList = [...new Set(
+        indexedKeys
+            .map(k => {
+                const m = k.match(/\[(\d+)\]$/);
+                return m ? parseInt(m[1], 10) : null;
+            })
+            .filter(i => i !== null)
+    )];
+
+    // Number of dynamic rows last time
+    const dynamicCount = indexList.length;
+
+    // ==========================================
+    // 2. Restore dynamic tour rows (if addTour exists)
+    // ==========================================
+    let dynamicReady = Promise.resolve();
+
+    if (dynamicCount > 0 && typeof addTour === "function") {
+
+        dynamicReady = new Promise(resolve => {
+
+            let current = 0;
+
+            function addNext() {
+                if (current >= dynamicCount) return resolve();
+
+                // We only need tour_id for row creation
+                const tourId = saved[`tour_id[${current}]`] || null;
+
+                // Create the row (silent mode)
+                addTour(tourId, current + 1, true);
+
+                current++;
+
+                // Give AJAX time to load row content
+                setTimeout(addNext, 350);
+            }
+
+            addNext();
+        });
+    }
+
+    // ==========================================
+    // 3. After rows exist → restore field values
+    // ==========================================
+    dynamicReady.then(() => {
+
+        setTimeout(() => {
+
+            Object.entries(saved).forEach(([name, value]) => {
+
+                const fields = form.querySelectorAll(`[name="${CSS.escape(name)}"]`);
+                if (!fields.length) return;
+
+                fields.forEach(field => {
+                    if (field.type === "checkbox" || field.type === "radio") {
+                        field.checked = value;
+                    } else {
+                        field.value = value;
+                    }
+
+                    field.dispatchEvent(new Event("change"));
+                });
+            });
+
+        }, 400); // ensure AJAX/DOM are ready
+    });
+
+    // ==========================================
+    // 4. Save data before submission
+    // ==========================================
+    form.addEventListener("submit", () => {
+
+        const data = {};
+
+        [...form.elements].forEach(el => {
+            if (!el.name) return;
+
+            const key = el.name;
+
+            if (el.type === "checkbox" || el.type === "radio") {
+                data[key] = el.checked;
+            } else {
+                data[key] = el.value;
+            }
+        });
+
+        localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    });
+
+    // ==========================================
+    // 5. Clear saved data if PHP says no errors
+    // Set window.hasFormError = true on error pages
+    // ==========================================
+    if (window.hasFormError === false) {
+        localStorage.removeItem(STORE_KEY);
+    }
+}
+
+
+</script>
+
+<script>
+
+    window.hasFormError = @json($errors->any() || count(old()) > 0);
+
+    
+    console.log("hasFormError:", window.hasFormError, "old values:", @json(old()));
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    
+    if (window.hasFormError) {
+        showLoader('Please wait...');
+        // Validation failed → restore old values
+        autoPersistForm("#orderForm");
+
+        hideLoader();
+    } else {
+        // Validation passed → clear old saved values
+        const STORE_KEY = "orderForm_formdata"; // form id + "_formdata"
+        localStorage.removeItem(STORE_KEY);
+    }
+});
+</script>
+
+
+
 @endsection
 </x-admin>

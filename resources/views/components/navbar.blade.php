@@ -1,7 +1,7 @@
-<nav class="main-header navbar navbar-expand navbar-dark navbar-light">
+<nav class="main-header navbar navbar-expand navbar-light">
     <ul class="navbar-nav">
         <li class="nav-item">
-            <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            <a class="nav-link menu-bar" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
     </ul>
 
@@ -29,8 +29,15 @@
         $unreadCount = $notificationsQuery->whereNull('read_at')->count();
     @endphp
 
+    <li>
+      <button id="openCurrencyModal" class="btn nav-currency"  title="Convert currency to USD">
+        
+        <i class="fas fa-calculator fa-lg"></i>
+      </button>
+    </li>
+
     <li class="nav-item dropdown">
-        <a class="nav-link" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
+        <a class="nav-link nav-notify" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
             <i class="far fa-bell fa-lg"></i>
             @if($unreadCount > 0)
                 <span class="badge badge-danger navbar-badge">{{ $unreadCount }}</span>
@@ -42,13 +49,11 @@
             <div class="dropdown-divider"></div>
 
             @forelse($unreadNotifications as $notification)
-                <a href="{{ route('admin.notifications.read', $notification->id) }}" target="_blank" class="dropdown-item">
-                    <i class="fas fa-circle text-primary mr-2"></i>
+                <a href="{{ route('admin.notifications.read', $notification->id) }}" target="_blank" class="dropdown-item unread">
                     <strong>{{ $notification->data['title'] ?? 'Notification' }}</strong><br>
                     <small class="text-wrap">{{ $notification->data['message'] ?? '' }}</small><br>
                     <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
                 </a>
-                <div class="dropdown-divider"></div>
             @empty
                 <span class="dropdown-item text-muted">No new notifications</span>
             @endforelse
@@ -60,27 +65,33 @@
     </li>
 
     {{-- Clear Cache --}}
-    <li class="nav-item">
-        <a href="{{ route('admin.clear.cache') }}" class="btn btn-info btn-sm">
-            <i class="fas fa-wrench"></i> Clear Cache
-        </a> &nbsp;
+    <li class="nav-item tooltip">
+        <a href="{{ route('admin.clear.cache') }}" class="nav-link nav-clear">
+            <i class="fas fa-wrench fa-lg"></i>
+        </a>
+        <span class="tooltip-text">Clear Cache</span>
     </li>
 
-    {{-- Profile --}}
-    <li class="nav-item">
-        <a href="{{ route('admin.profile.edit') }}" class="btn btn-success btn-sm {{ Route::is('admin.profile.edit') ? 'active' : '' }}">
-            <i class="nav-icon fas fa-user"></i> {{ Auth::user()->name }} Profile
-        </a> &nbsp;
-    </li>
-
-    {{-- Logout --}}
-    <li class="nav-item">
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit" name="submit" class="btn btn-danger btn-sm">
-                <i class="fas fa-sign-out-alt"></i> Log out
-            </button>    
-        </form>
+    <li class="nav-item dropdown">
+        <a class="nav-link nav-profile" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
+            <span class="profile-name">{{ Auth::user()->name }}</span> <img src="{{ asset('admin/dist/img/avatar4.png') }}" class="img-circle elevation-2" width="40" height="40">
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right profile-dropdown">
+            <a href="{{ route('admin.profile.edit') }}" class="{{ Route::is('admin.profile.edit') ? 'active' : '' }} text-center">
+                <img src="{{ asset('admin/dist/img/avatar4.png') }}" class="img-circle elevation-2" width="40" height="40">
+                <b>{{ Auth::user()->name }}</b>
+                Admin
+            </a>
+            <a href="{{ route('admin.profile.edit') }}" class="{{ Route::is('admin.profile.edit') ? 'active' : '' }} link">
+                <i class="nav-icon fas fa-user"></i> My Profile
+            </a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" name="submit" class="link">
+                    <i class="fas fa-sign-out-alt"></i> Sign out
+                </button>    
+            </form>
+        </div>
     </li>
 </ul>
 </nav>
@@ -107,6 +118,54 @@
     </div>
   </div>
 </div>
+
+<!-- Live Currency Conversion Modal -->
+<!-- Live Currency Conversion Modal -->
+<div class="modal fade" id="currencyModal" tabindex="-1" aria-labelledby="currencyModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="currencyForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="currencyModalLabel">Convert to USD</h5>
+          <!-- <button type="button" id="closeCurrencyModalTop" class="btn-close" aria-label="Close"></button> -->
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="currency" class="form-label">Select Currency</label>
+            <select class="form-control " id="currency" name="from" required>
+
+                @foreach(config('constants.currencies') as $sign => $country)
+                  <option value="{{ $sign }}">{{ $sign . '-' . $country}}</option>
+                @endforeach
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="amount" class="form-label">Enter Price</label>
+            <input type="number" step="0.01" class="form-control" id="amount" name="amount" placeholder="Enter amount" required>
+          </div>
+
+          <div class="mt-3">
+            <label class="form-label">Converted (USD)</label>
+            <input type="text" id="convertedUsd" class="form-control" readonly placeholder="0.00">
+          </div>
+          <div class="mt-2 text-end">
+            <button type="button" id="copyUsdBtn" class="btn btn-outline-success btn-sm">
+                Copy USD Value
+            </button>
+        </div>
+        </div>
+
+        <!-- <div class="modal-footer">
+          <button type="button" id="closeCurrencyModalBottom" class="btn btn-secondary">Close</button>
+        </div> -->
+      </form>
+    </div>
+  </div>
+</div>
+
+
 
 {{-- SCRIPT --}}
 <script>
@@ -241,4 +300,92 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('notificationDropdown').addEventListener('click', loadNotifications);
 });
 });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('currencyModal');
+    const openBtn = document.getElementById('openCurrencyModal');
+
+    // Open modal using Bootstrap JS class (no data attributes)
+    openBtn.addEventListener('click', function () {
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+    });
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modalElement = document.getElementById('currencyModal');
+    const openBtn = document.getElementById('openCurrencyModal');
+    // const closeBtnTop = document.getElementById('closeCurrencyModalTop');
+    // const closeBtnBottom = document.getElementById('closeCurrencyModalBottom');
+    const copyBtn = document.getElementById('copyUsdBtn');
+    const convertedUsdInput = document.getElementById('convertedUsd');
+
+    const modalInstance = new bootstrap.Modal(modalElement, { backdrop: true, keyboard: true });
+
+    // Open modal
+    openBtn.addEventListener('click', () => modalInstance.show());
+
+    // Copy USD value to clipboard
+    copyBtn.addEventListener('click', async () => {
+        const value = convertedUsdInput.value.trim();
+        if (!value) {
+            alert('No USD value to copy!');
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(value);
+            copyBtn.innerText = 'Copied!';
+            copyBtn.classList.add('btn-success');
+            setTimeout(() => {
+                copyBtn.innerText = 'Copy USD Value';
+                copyBtn.classList.remove('btn-success');
+            }, 1500);
+        } catch (err) {
+            alert('Failed to copy. Please copy manually.');
+        }
+    });
+});
+</script>
+
+
+
+
+<script>
+    function convertToUSD() {
+        const amount = document.getElementById('amount').value;
+        const currency = document.getElementById('currency').value;
+
+        if (!amount || amount <= 0) return;
+
+        fetch('{{ route('admin.currency.convert') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                amount: amount,
+                from: currency
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('convertedUsd').value = data.usd_amount;
+        })
+        .catch(() => {
+            document.getElementById('convertedUsd').value = 'Error';
+        });
+    }
+
+    // Attach event listeners for input and currency change
+    document.addEventListener('DOMContentLoaded', function () {
+        const amountInput = document.getElementById('amount');
+        const currencySelect = document.getElementById('currency');
+
+        amountInput.addEventListener('input', convertToUSD);
+        currencySelect.addEventListener('change', convertToUSD);
+    });
 </script>
