@@ -154,35 +154,51 @@
             </ul>
             </li>
         @endcan
-        @can('show_customers') 
-        <li class="nav-item">
-            <a href="{{ route('admin.customers.index') }}"
-                class="nav-link {{ areActiveRoutes(['customers.index']) }}">
-                <i class="nav-icon fas fa-users"></i>
-                <p>{{ translate('Customers') }}</p>
-            </a>
-        </li>
-        @endcan   
+          
         @can('show_users')  
         <li class="nav-item">
             <a href="javascript:void(0);" class="nav-link">
                 <i class="nav-icon fas fa-user-cog"></i>
-                <p>{{ translate('Staff')}}
+                <p>{{ translate('Appearance')}}
                     <span class="aiz-side-nav-arrow right"></span>
                 </p>                    
             </a>
             <ul class="aiz-side-nav-list level-2">
+
+                @can('show_customers') 
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.customers.index') }}"
+                        class="aiz-side-nav-link nav-link {{ areActiveRoutes(['customers.index']) }}">
+                        <i class="nav-icon fas fa-user"></i>
+                        <p>{{ translate('Customers') }} 
+                            <span class="badge badge-warning right">{{ $customerCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                @endcan
+                @can('show_users') 
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.supplier.index') }}"
+                        class="aiz-side-nav-link nav-link {{ areActiveRoutes(['customers.index']) }}">
+                        <i class="nav-icon fas fa-user"></i>
+                        <p>{{ translate('Suppliers') }} 
+                            <span class="badge badge-warning right">{{ $supplierCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                @endcan
                 @can('show_users')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.user.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.user.index') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user"></i>
                         <p>{{ translate('Staff')}}
-                            <span class="badge badge-warning right">{{ $userCount }}</span>
+                            <span class="badge badge-warning right">{{ $excludedUsers }}</span>
                         </p>
                     </a>
                 </li>
-                @endcan   
+                @endcan  
+                  
                 @role('Super Admin')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.role.index') }}"

@@ -1103,6 +1103,8 @@ function autoPersistForm(formSelector) {
 <script>
 
     window.hasFormError = @json($errors->any() || count(old()) > 0);
+
+    
     console.log("hasFormError:", window.hasFormError, "old values:", @json(old()));
 </script>
 
@@ -1110,8 +1112,11 @@ function autoPersistForm(formSelector) {
 document.addEventListener("DOMContentLoaded", () => {
     
     if (window.hasFormError) {
+        showLoader('Please wait...');
         // Validation failed → restore old values
         autoPersistForm("#orderForm");
+
+        hideLoader();
     } else {
         // Validation passed → clear old saved values
         const STORE_KEY = "orderForm_formdata"; // form id + "_formdata"

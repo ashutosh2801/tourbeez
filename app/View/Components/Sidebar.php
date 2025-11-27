@@ -28,6 +28,10 @@ class Sidebar extends Component
      */
     public function __construct()
     {
+
+        
+
+
         $userCount = User::count();
         view()->share('userCount',$userCount);
         
@@ -66,6 +70,21 @@ class Sidebar extends Component
 
         $CityCount = City::count();
         view()->share('CityCount',$CityCount);
+
+
+        $customerCount = User::where('user_type', 'Member')->orderBy('id','DESC')->count();
+
+        view()->share('customerCount',$customerCount);
+
+        $supplierCount = User::where('role', 'Supplier')->orderBy('id','DESC')->count();
+
+        view()->share('supplierCount',$supplierCount);
+
+        $excludedUsers = User::where('user_type', '!=', 'Member')
+            ->where('role', '!=', 'Supplier')->where('role', '<>', 'Super Admin')
+            ->count();
+
+        view()->share('excludedUsers', $excludedUsers);
 
 
 
