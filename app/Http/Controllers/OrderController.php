@@ -332,6 +332,9 @@ public function store(Request $request)
     $pickupId   = $request->pickup_id ?? [];
     $pickupName = $request->pickup_name ?? [];
 
+    $pickupId = is_array($pickupId) ? $pickupId : [];
+    $pickupName = is_array($pickupName) ? $pickupName : [];
+
     // --------------------------------------------
     // 1) Check once if any selected tour has "No Pickup"
     // --------------------------------------------
@@ -349,6 +352,15 @@ public function store(Request $request)
         // --------------------------------------------
         // 2) Require at least ONE pickupId or pickupName
         // --------------------------------------------
+
+        if (!is_array($pickupId)) {
+            $pickupId = [$pickupId];
+        }
+
+        if (!is_array($pickupName)) {
+            $pickupName = [$pickupName];
+        }
+
         $anyPickupIdFilled = array_filter($pickupId);
         $anyPickupNameFilled = array_filter(array_map('trim', $pickupName));
 
