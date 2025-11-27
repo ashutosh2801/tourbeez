@@ -15,6 +15,15 @@ class SupplierController extends Controller
         return view('supplier.registration');
     }
 
+    public function index()
+    {
+
+         $data = User::where('role', 'Supplier')->orderBy('id','DESC')->get();   
+        
+        // $data = User::where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
+        return view('admin.user.index', compact('data'));
+    }
+
     public function store(Request $request)
     {
         // Step 1–4 basic details validation
