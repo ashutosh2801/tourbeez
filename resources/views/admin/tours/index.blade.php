@@ -101,7 +101,7 @@
                             </select>
                         </div>
                         <div class="col-md-2 col-6">
-                            <button type="submit" class="btn btn-search"> <i class="fas fa-search"></i> Search</button>
+                            <button type="submit" class="btn btn-search mb-2"> <i class="fas fa-search"></i> Search</button>
                         </div>
                         <div class="col-12">
                             <a href="{{ route('admin.tour.index')}}" class="btn-clear"> <i class="fas fa-times"></i> Clear Search</a>

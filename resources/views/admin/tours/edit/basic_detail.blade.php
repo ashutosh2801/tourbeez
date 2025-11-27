@@ -63,7 +63,7 @@
 
 <div class="card">
     <div class="card card-primary">
-        <div class="card-header" style="border-radius: 0 10px 0 0;">
+        <div class="card-header">
             <h3 class="card-title">Basic Details</h3>            
         </div>
         @if ($errors->any())
@@ -596,9 +596,15 @@
             </div>           
 
             <div class="card-footer" style="display:block">
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.index') }}" class="btn btn-secondary">Back</a>
-                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" class="btn btn-primary">Next</a>
+                <div class="row">
+                    <div class="col-md-6">
+                        <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success"> <i class="fas fa-save"></i> Save</button>
+                    </div>
+                    <div class="col-md-6 align-buttons">
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.index') }}" class="btn btn-secondary"> <i class="fas fa-chevron-left"></i> Back</a>               
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                </div>
             </div>
         </form>
     </div>

@@ -30,7 +30,7 @@
     @endphp
 
     <li>
-      <button id="openCurrencyModal" class="btn"  title="Convert currency to USD">
+      <button id="openCurrencyModal" class="btn nav-currency"  title="Convert currency to USD">
         
         <i class="fas fa-calculator fa-lg"></i>
       </button>
@@ -74,7 +74,7 @@
 
     <li class="nav-item dropdown">
         <a class="nav-link nav-profile" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
-            {{ Auth::user()->name }} <img src="{{ asset('admin/dist/img/avatar4.png') }}" class="img-circle elevation-2" width="40" height="40">
+            <span class="profile-name">{{ Auth::user()->name }}</span> <img src="{{ asset('admin/dist/img/avatar4.png') }}" class="img-circle elevation-2" width="40" height="40">
         </a>
         <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right profile-dropdown">
             <a href="{{ route('admin.profile.edit') }}" class="{{ Route::is('admin.profile.edit') ? 'active' : '' }} text-center">
