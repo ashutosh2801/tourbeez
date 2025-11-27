@@ -28,6 +28,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SmsTemplateController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\SubCateoryController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
@@ -46,6 +47,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/convert-currency', [CurrencyController::class, 'convert'])->name('currency.convert');
 
     Route::resource('/user',UserController::class);
+    Route::get('/user_supplier',[SupplierController::class, 'index'])->name('supplier.index');
     Route::resource('/customers',CustomerController::class);
     Route::resource('/role',RoleController::class);
     Route::resource('/permission',PermissionController::class);

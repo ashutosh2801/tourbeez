@@ -212,6 +212,11 @@ public function store(Request $request)
     $request->merge([
     'customer_id' => $request->customer_id ?: null
 ]);
+
+
+
+    
+
     // dd($request->all());
     $validated = $request->validate([
 
@@ -235,6 +240,35 @@ public function store(Request $request)
         'tour_starttime.*'     => 'string',
 
         'additional_info'      => 'nullable|string|max:500',
+        'pickup_id.*' => ['required', function($attribute, $value, $fail) use ($request) {
+        $index = explode('.', $attribute)[1]; // get index of the tour row
+        $tourId = $request->tour_id[$index] ?? null;
+        $pickupValue = $value;
+
+        // Get tour pickups
+        $tour = \App\Models\Tour::find($tourId);
+        if(!$tour) return;
+
+        $pickups = $tour->pickups;
+
+        if(!empty($pickups) && isset($pickups[0])) {
+            $firstPickup = $pickups[0];
+            if($firstPickup->name === 'Pickup' || $firstPickup->name !== 'No Pickup') {
+                // Pickup required
+                if($pickupValue === null || $pickupValue === '') {
+                    $fail('Pickup is required for tour '.$tour->title);
+                }
+
+                // If "other", check pickup_name
+                if($pickupValue === 'other') {
+                    $pickupName = $request->pickup_name[$index] ?? '';
+                    if(trim($pickupName) === '') {
+                        $fail('Please enter pickup location for tour '.$tour->title);
+                    }
+                }
+            }
+        }
+    }],
 
     ], [
 
@@ -257,7 +291,6 @@ public function store(Request $request)
 
 
 
-
     $data = $request->all();
 
     // Make sure at least one tour is selected
@@ -268,6 +301,7 @@ public function store(Request $request)
             'message' => 'No tour selected.',
         ], 422);
     }
+    $tourIds = array_values($tourIds);
 
     $firstTourId = $tourIds[0]; // Keep this for orders.tour_id foreign key
 
@@ -292,6 +326,37 @@ public function store(Request $request)
         return back()->withErrors([
             'quantity_error' => 'At least one quantity must meet the minimum requirement.'
         ])->withInput();
+    }
+
+
+    $pickupId   = $request->pickup_id ?? [];
+    $pickupName = $request->pickup_name ?? [];
+
+    // --------------------------------------------
+    // 1) Check once if any selected tour has "No Pickup"
+    // --------------------------------------------
+    $hasNoPickupTour = \App\Models\Tour::whereIn('id', $tourIds)
+        ->whereHas('pickups', function($q) {
+            $q->where('name', 'No Pickup');
+        })
+        ->exists();
+
+    // If ANY tour has "No Pickup", no validation needed
+    if ($hasNoPickupTour) {
+        // Skip validation
+    } else {
+
+        // --------------------------------------------
+        // 2) Require at least ONE pickupId or pickupName
+        // --------------------------------------------
+        $anyPickupIdFilled = array_filter($pickupId);
+        $anyPickupNameFilled = array_filter(array_map('trim', $pickupName));
+
+        if (empty($anyPickupIdFilled) && empty($anyPickupNameFilled)) {
+            return back()->withErrors([
+                'pickup_error' => 'Pickup or pickup name is required.'
+            ])->withInput();
+        }
     }
 
     DB::beginTransaction();

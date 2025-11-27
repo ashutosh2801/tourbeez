@@ -1913,7 +1913,7 @@ public function single(Request $request)
         // YOUR ORIGINAL PICKUP LOGIC
         // ================================
         $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
-    <h4 style="font-size:16px; font-weight:600">Pickup Options</h4>';
+    <h4 style="font-size:16px; font-weight:600"></h4>';
 
 
 // CASE 1: NO PICKUP

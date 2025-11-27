@@ -1864,7 +1864,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         if (data.success) {
 
-
+            hideLoader();
             Swal.fire({
                 icon: 'success',
                 title:'Success',
@@ -1875,7 +1875,7 @@ document.addEventListener("DOMContentLoaded", function() {
             
             
         } else {
-
+            hideLoader();
             Swal.fire({
                 icon: 'error',
                 title: 'Error',

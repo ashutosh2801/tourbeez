@@ -277,36 +277,88 @@ function tourOptions() {
 }
 
 // ================= Add Tour Row =================
-function addTour() {
+// function addTour() {
+
+//     showLoader("Loading… Please wait");
+//     const container = document.getElementById('tourContainer');
+//     const newRow = document.createElement('div');
+//     newRow.setAttribute('id', `row_${tourCount}`);
+
+//     newRow.innerHTML = `
+//     <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px">
+//         <table class="table">
+//             <tr>
+//                 <td>
+//                     <select onchange="loadTourDetails(this.value, ${tourCount})" 
+//                         name="tour_id[]" 
+//                         class="form-control aiz-selectpicker border" data-live-search="true">
+//                         <option value="">Select Tour</option>` + tourOptions() + `</select>
+//                 </td>
+//                 <td>
+//                     <button type="button" onclick="removeTour('row_${tourCount}')" class="btn btn-danger">Remove</button>
+//                 </td>
+//             </tr>
+//         </table>
+//         <div id="tour_details_${tourCount}"></div>
+//     </div>`;
+
+//     container.appendChild(newRow);
+//     TB.plugins.bootstrapSelect('refresh');
+//     tourCount++;
+//     hideLoader();
+// }
+
+function addTour(savedTourId = null, index = null, silentMode = false) {
 
     showLoader("Loading… Please wait");
+
+    // If index not provided → add new row
+    if (index === null) {
+        index = tourCount;
+    }
+
     const container = document.getElementById('tourContainer');
     const newRow = document.createElement('div');
-    newRow.setAttribute('id', `row_${tourCount}`);
+    newRow.setAttribute('id', `row_${index}`);
 
     newRow.innerHTML = `
     <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px">
         <table class="table">
             <tr>
                 <td>
-                    <select onchange="loadTourDetails(this.value, ${tourCount})" 
-                        name="tour_id[]" 
+                    <select 
+                        onchange="loadTourDetails(this.value, ${index})"
+                        name="tour_id[${index}]" 
                         class="form-control aiz-selectpicker border" data-live-search="true">
                         <option value="">Select Tour</option>` + tourOptions() + `</select>
                 </td>
                 <td>
-                    <button type="button" onclick="removeTour('row_${tourCount}')" class="btn btn-danger">Remove</button>
+                    <button type="button" onclick="removeTour('row_${index}')" class="btn btn-danger">Remove</button>
                 </td>
             </tr>
         </table>
-        <div id="tour_details_${tourCount}"></div>
+        <div id="tour_details_${index}"></div>
     </div>`;
 
     container.appendChild(newRow);
+
     TB.plugins.bootstrapSelect('refresh');
-    tourCount++;
+
+    // Restore selected tour (if coming from localStorage)
+    if (savedTourId) {
+        newRow.querySelector(`select[name="tour_id[${index}]"]`).value = savedTourId;
+        newRow.querySelector(`select[name="tour_id[${index}]"]`)
+            .dispatchEvent(new Event("change"));
+    }
+
+    // Increase global counter only for user-added rows
+    if (!silentMode) {
+        tourCount++;
+    }
+
     hideLoader();
 }
+
 
 // ================= Remove Tour Row =================
 function removeTour(id) {
@@ -922,6 +974,153 @@ $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_ext
         $("#globalLoader").hide();
     }
 </script>
+
+<script>
+function autoPersistForm(formSelector) {
+    const form = document.querySelector(formSelector);
+    if (!form) return;
+
+    const STORE_KEY = form.id + "_formdata";
+
+    // Pull saved data safely
+    let saved = {};
+    try {
+        saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+    } catch (e) {
+        localStorage.removeItem(STORE_KEY);
+        saved = {};
+    }
+
+    // ==========================================
+    // 1. Detect all dynamic tour indexes safely
+    // Only match keys that EXACTLY end with [number]
+    // ==========================================
+    const indexedKeys = Object.keys(saved).filter(k => /\[\d+\]$/.test(k));
+
+    // Extract all index numbers
+    const indexList = [...new Set(
+        indexedKeys
+            .map(k => {
+                const m = k.match(/\[(\d+)\]$/);
+                return m ? parseInt(m[1], 10) : null;
+            })
+            .filter(i => i !== null)
+    )];
+
+    // Number of dynamic rows last time
+    const dynamicCount = indexList.length;
+
+    // ==========================================
+    // 2. Restore dynamic tour rows (if addTour exists)
+    // ==========================================
+    let dynamicReady = Promise.resolve();
+
+    if (dynamicCount > 0 && typeof addTour === "function") {
+
+        dynamicReady = new Promise(resolve => {
+
+            let current = 0;
+
+            function addNext() {
+                if (current >= dynamicCount) return resolve();
+
+                // We only need tour_id for row creation
+                const tourId = saved[`tour_id[${current}]`] || null;
+
+                // Create the row (silent mode)
+                addTour(tourId, current + 1, true);
+
+                current++;
+
+                // Give AJAX time to load row content
+                setTimeout(addNext, 350);
+            }
+
+            addNext();
+        });
+    }
+
+    // ==========================================
+    // 3. After rows exist → restore field values
+    // ==========================================
+    dynamicReady.then(() => {
+
+        setTimeout(() => {
+
+            Object.entries(saved).forEach(([name, value]) => {
+
+                const fields = form.querySelectorAll(`[name="${CSS.escape(name)}"]`);
+                if (!fields.length) return;
+
+                fields.forEach(field => {
+                    if (field.type === "checkbox" || field.type === "radio") {
+                        field.checked = value;
+                    } else {
+                        field.value = value;
+                    }
+
+                    field.dispatchEvent(new Event("change"));
+                });
+            });
+
+        }, 400); // ensure AJAX/DOM are ready
+    });
+
+    // ==========================================
+    // 4. Save data before submission
+    // ==========================================
+    form.addEventListener("submit", () => {
+
+        const data = {};
+
+        [...form.elements].forEach(el => {
+            if (!el.name) return;
+
+            const key = el.name;
+
+            if (el.type === "checkbox" || el.type === "radio") {
+                data[key] = el.checked;
+            } else {
+                data[key] = el.value;
+            }
+        });
+
+        localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    });
+
+    // ==========================================
+    // 5. Clear saved data if PHP says no errors
+    // Set window.hasFormError = true on error pages
+    // ==========================================
+    if (window.hasFormError === false) {
+        localStorage.removeItem(STORE_KEY);
+    }
+}
+
+
+</script>
+
+<script>
+
+    window.hasFormError = @json($errors->any() || count(old()) > 0);
+    console.log("hasFormError:", window.hasFormError, "old values:", @json(old()));
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    
+    if (window.hasFormError) {
+        // Validation failed → restore old values
+        autoPersistForm("#orderForm");
+    } else {
+        // Validation passed → clear old saved values
+        const STORE_KEY = "orderForm_formdata"; // form id + "_formdata"
+        localStorage.removeItem(STORE_KEY);
+    }
+});
+</script>
+
+
 
 @endsection
 </x-admin>
