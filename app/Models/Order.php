@@ -35,6 +35,8 @@ class Order extends Model
 
     protected $fillable = [
         'tour_id',
+        'sub_tour_id',
+        'created_by',
         'user_id',
         'session_id',
         'order_number',
@@ -44,16 +46,20 @@ class Order extends Model
         'payment_intent_id',
         'payment_intent_client_secret',
         'stripe_customer_id',
+        'card_info',
+        'transaction_id',
+        'booking_fee',
         'total_amount',
         'balance_amount',
+        'booked_amount',
         'currency',
         'order_status',
-        'action_name',
+        'additional_info',
         'email_sent',
-        'sub_tour_id',
         'admin_email_sent',
-        'created_by',
-        'is_abandon_mail_sent'
+        'is_abandon_mail_sent',
+        'action_name',
+        'adv_deposite',
     ];
 
     public function tour_detail($id, $label='all') {

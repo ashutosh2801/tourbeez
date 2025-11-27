@@ -28,6 +28,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SmsTemplateController;
 use App\Http\Controllers\StateController;
 use App\Http\Controllers\SubCateoryController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
@@ -46,6 +47,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/convert-currency', [CurrencyController::class, 'convert'])->name('currency.convert');
 
     Route::resource('/user',UserController::class);
+    Route::get('/user_supplier',[SupplierController::class, 'index'])->name('supplier.index');
     Route::resource('/customers',CustomerController::class);
     Route::resource('/role',RoleController::class);
     Route::resource('/permission',PermissionController::class);
@@ -55,7 +57,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     
     Route::resource('/orders', OrderController::class);
     Route::get('/order/rezdy-manifest', [OrderController::class, 'showPdfFiles']);
-    Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus']);
+    Route::post('/orders/{id}/update-status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
     Route::get('/order-manifest', [OrderController::class, 'manifest'])->name('orders.manifest');
     Route::post('/internal-order/store', [OrderController::class, 'internalOrderStore'])->name('orders.internal.store');
     Route::get('/ordersmanifest/download', [OrderController::class, 'downloadManifest'])->name('orders.manifest.download');
@@ -240,6 +242,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/orders/{order}/payment-details', [OrderController::class, 'getPaymentDetails'])->name('orders.payment-details');
     Route::post('orders/{order}/refund', [OrderController::class, 'refundPayment'])
     ->name('orders.refundPayment');
+    Route::post('/admin/orders/{order}/refund-multiple', [OrderController::class, 'refundMultiple'])->name('orders.refundMultiple');
     Route::post('orders/{order}/refund2322', [OrderController::class, 'refundPayment'])->name('orders.refund');
 
 
