@@ -1,4 +1,8 @@
-
+@php
+$performance['total_refund'] = 1500;
+$performance['total_discount'] = 2500;
+$performance['total_owed'] = 6544.01;
+@endphp
 <div class="mb-3">
     <div class="dash-perform">
         <div class="row">
@@ -17,44 +21,67 @@
             </div>
         </div>
     </div>
+</div>
 
-    <div class="total-record bg-white border rounded-lg">
-        <div class="row">
-            <div class="col-md-2 col-6 p-0">
-                <div class="border-r py-3 text-center mb-border-b">
-                    <p>Number of Orders</p>
-                    <h2>{{ $performance['number_of_orders'] }}</h2>
+<div class="total-record">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="order-number bg-white border rounded-lg-custom p-3 mb-3">
+                <div class="row">
+                    <div class="col-md-12">
+                        <p>Number of Orders</p>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="circle-chart">
+                            <svg>
+                                <circle class="circle-bg" cx="75" cy="75" r="70"></circle>
+                                <circle class="circle-progress" cx="75" cy="75" r="70"></circle>
+                            </svg>
+                            <div class="circle-text" id="order-number">0</div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-2 col-6 p-0">
-                <div class="border-r py-3 text-center mb-border-b">
-                    <p>Value of Orders</p>
-                    <h2>$ {{ number_format($performance['value_of_orders'], 2) }}</h2>
+        </div>
+        <div class="col-md-4">
+            <div class="order-number bg-white border rounded-lg-custom p-3 mb-3">
+                <div class="row">
+                    <div class="col-md-12">
+                        <p>Value of Orders</p>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="circle-chart">
+                            <svg>
+                                <circle class="circle-bg" cx="75" cy="75" r="70"></circle>
+                                <circle class="circle-progress" cx="75" cy="75" r="70"></circle>
+                            </svg>
+                            <div class="circle-text" id="order-value">$ 0</div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-2 col-6 p-0">
-                <div class="border-r py-3 text-center mb-border-b">
-                    <p>Total Paid</p>
-                    <h2>$ {{ number_format($performance['total_paid'], 2) }}</h2>
+        </div>
+        <div class="col-md-4">
+            <div class="order-number bg-white border rounded-lg-custom p-3 mb-3">
+                <div class="row">
+                    <div class="col-md-12">
+                        <p>Total Paid</p>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="circle-chart">
+                            <svg>
+                                <circle class="circle-bg" cx="75" cy="75" r="70"></circle>
+                                <circle class="circle-progress" cx="75" cy="75" r="70"></circle>
+                            </svg>
+                            <div class="circle-text" id="total-paid">$ 0</div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-2 col-6 p-0">
-                <div class="border-r py-3 text-center mb-border-b">
-                    <p>Total Refund</p>
-                    <h2>$ {{ number_format($performance['total_refund'], 2) }}</h2>
-                </div>
-            </div>
-            <div class="col-md-2 col-6 p-0">
-                <div class="border-r py-3 text-center mb-border-b">
-                    <p>Total Discount</p>
-                    <h2>$ {{ number_format($performance['total_discount'], 2) }}</h2>
-                </div>
-            </div>
-            <div class="col-md-2 col-6 p-0">
-                <div class="py-3 text-center mb-border-b">
-                    <p>Total Owed</p>
-                    <h2>$ {{ number_format($performance['total_owed'], 2) }}</h2>
-                </div>
+        </div>
+        <div class="col-md-12">
+            <div class="bg-white border rounded-lg-custom p-3 mb-3">
+                <div id="mountainChart"></div>
             </div>
         </div>
     </div>
@@ -365,3 +392,143 @@
         </div>
     </div>
 </div>
+
+<script>
+  // Select all circle progress elements first
+  const circles = document.querySelectorAll('.circle-progress');
+
+  // Number of Orders
+  const orders = {{ $performance['number_of_orders'] ?? 0 }};
+  const maxOrders = 1000;
+  const progressOrders = circles[0];
+  const orderNumber = document.getElementById('order-number');
+  const ordersOffset = 440 - (440 * (orders / maxOrders));
+
+  setTimeout(() => {
+    progressOrders.style.strokeDashoffset = ordersOffset;
+  }, 500);
+
+  let countOrders = 0;
+  const stepOrders = Math.ceil(orders / 50);
+  const intervalOrders = setInterval(() => {
+    countOrders += stepOrders;
+    if(countOrders >= orders) {
+      countOrders = orders;
+      clearInterval(intervalOrders);
+    }
+    orderNumber.textContent = countOrders;
+  }, 20);
+
+  // Value of Orders
+  const orderValueAmount = {{ $performance['value_of_orders'] ?? 0 }};
+  const maxValue = 500000;
+  const progressValue = circles[1];
+  const orderValueText = document.getElementById('order-value');
+  const valueOffset = 440 - (440 * (orderValueAmount / maxValue));
+
+  setTimeout(() => {
+    progressValue.style.strokeDashoffset = valueOffset;
+  }, 500);
+
+  let countValue = 0;
+  const stepValue = Math.ceil(orderValueAmount / 100);
+  const intervalValue = setInterval(() => {
+    countValue += stepValue;
+    if(countValue >= orderValueAmount) {
+      countValue = orderValueAmount;
+      clearInterval(intervalValue);
+    }
+    orderValueText.textContent = '$' + countValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }, 15);
+
+  // Total Paid
+  const totalPaidAmount = {{ $performance['total_paid'] ?? 0 }};
+  const maxPaid = 500000;
+  const progressPaid = circles[2];
+  const totalPaidText = document.getElementById('total-paid');
+  const paidOffset = 440 - (440 * (totalPaidAmount / maxPaid));
+
+  setTimeout(() => {
+    progressPaid.style.strokeDashoffset = paidOffset;
+  }, 500);
+
+  let countPaid = 0;
+  const stepPaid = Math.ceil(totalPaidAmount / 100);
+  const intervalPaid = setInterval(() => {
+    countPaid += stepPaid;
+    if(countPaid >= totalPaidAmount) {
+      countPaid = totalPaidAmount;
+      clearInterval(intervalPaid);
+    }
+    totalPaidText.textContent = '$' + countPaid.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }, 15);
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var options = {
+            chart: {
+                type: 'area',
+                height: 350,
+                toolbar: { show: false },
+                zoom: { enabled: false },
+                events: {
+                    mouseMove: function() {}, // allow scroll
+                }
+            },
+
+            colors: ['#ff4d4d', '#ffaa00', '#3b82f6'], // Refund, Discount, Owed
+
+            series: [{
+                name: 'Total Refund',
+                data: [0, {{ $performance['total_refund'] }}]
+            },
+            {
+                name: 'Total Discount',
+                data: [0, {{ $performance['total_discount'] }}]
+            },
+            {
+                name: 'Total Owed',
+                data: [0, {{ $performance['total_owed'] }}]
+            }],
+
+            fill: {
+                type: "gradient",
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.4,
+                    opacityTo: 0.1,
+                    stops: [0, 90, 100]
+                }
+            },
+
+            stroke: {
+                curve: 'smooth',
+                width: 4
+            },
+
+            xaxis: {
+                categories: ['Start', 'Now'],
+                labels: { style: { fontSize: '14px' } }
+            },
+
+            yaxis: {
+                labels: { formatter: val => "$ " + val.toLocaleString() }
+            },
+
+            tooltip: {
+                y: {
+                    formatter: val => "$ " + Number(val).toLocaleString()
+                }
+            },
+
+            legend: {
+                position: 'top'
+            }
+        };
+
+        var chart = new ApexCharts(document.querySelector("#mountainChart"), options);
+        chart.render();
+    });
+</script>
