@@ -336,11 +336,11 @@
                                 <div class="col-lg-6">
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text" id="basic-addon1">$</span>
+                                            <span class="input-group-text" id="">$</span>
                                         </div>
                                         <input type="number" 
                                                placeholder="Value" 
-                                               name="offerd_price" 
+                                               name="" 
                                                id="offerd_price" 
                                                value="" 
                                                class="form-control">
