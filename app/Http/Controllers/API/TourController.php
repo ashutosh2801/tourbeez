@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Order;
+use App\Models\OrderTour;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\Tour;
 use App\Models\TourReview;
@@ -1492,6 +1493,685 @@ class TourController extends Controller
 
         return response()->json($response);
     }
+
+
+    public function single32(Request $request)
+    {
+
+        $data = Tour::with(['pickups', 'pickups.locations', 'pricings', 'addons', 'taxes_fees'])
+                    ->find($request->id);
+
+        
+
+        if (!$data) return '';
+
+        $_tourId = $data->id;
+        $subtotal = 0;
+
+        // ----------------------------------------------------------
+        // ★ ADDED: GET START DATE + DISABLED DATES FROM API LOGIC
+        // ----------------------------------------------------------
+        $schedules = $data->schedules ?? collect();
+
+        $tour_start_date = $this->getNextAvailableDate($data->id, $schedules);
+        $disabled_dates  = $this->getDisabledTourDates($data->id, $schedules);
+
+        // fallback if null
+        if (!$tour_start_date) {
+            $tour_start_date = now()->format('Y-m-d');
+        }
+
+        // ----------------------------------------------------------
+        // BUILD PICKUP HTML (unchanged)
+        // ----------------------------------------------------------
+        $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
+            <h4 style="font-size:16px; font-weight:600">Pickup Options</h4>';
+
+        if (!empty($data->pickups) && $data->pickups[0]?->name === 'No Pickup') {
+            $pickupHtml .= '
+                <p>No Pickup Available</p>
+                <input type="hidden" name="pickup_id" value="0">
+                <input type="hidden" name="pickup_name" value="">
+            ';
+        }
+        elseif (!empty($data->pickups) && $data->pickups[0]?->name === 'Pickup') {
+
+            $comment = \DB::table('pickup_tour')
+                            ->where('tour_id', $data->id)
+                            ->where('pickup_id', $data->pickups[0]?->id)
+                            ->value('comment');
+
+            $pickupHtml .= '
+                <label>Pickup Location</label>
+                <input type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
+                <small style="color:#777; display:block; margin-top:5px;">'.($comment ?? "Enter the pickup location").'</small>
+                <input type="hidden" name="pickup_id" value="0">
+            ';
+        }
+        else {
+            $locations = $data->pickups[0]?->locations ?? [];
+
+            $pickupHtml .= '
+                <label>Select Pickup Point</label>
+                <select name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
+                    <option value="">Select Pickup Point</option>';
+
+            foreach ($locations as $loc) {
+                $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
+            }
+
+            $pickupHtml .= '
+                    <option value="other">Other</option>
+                </select>
+
+                <div id="pickup-other-box" style="display:none; margin-top:10px">
+                    <label>Enter Pickup Location</label>
+                    <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
+                </div>';
+        }
+
+        $pickupHtml .= '</div>';
+
+        // ----------------------------------------------------------
+        // MAIN HTML OUTPUT
+        // ----------------------------------------------------------
+        $row_id = 'row_'.$request->tourCount;
+
+        $str = '<div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
+                    <input type="hidden" name="tour_id[]" value="'.$data->id.'" />  
+
+                    <table class="table">
+                        <tr>
+                            <td width="600"><h3 class="text-lg">'.$data->title.'</h3></td>
+
+                            <!-- ★ ADDED tour_start_date -->
+                            <td class="text-right" width="200">
+                                <div class="input-group">
+                                    <input 
+                                        type="text" 
+                                        class="aiz-date-range form-control tour-start-date" 
+                                        id="tour_startdate_'.$request->tourCount.'" 
+                                        name="tour_startdate[]" 
+                                        placeholder="Select Date" 
+                                        data-single="true" 
+                                        data-show-dropdown="true"
+                                        data-tour-id="'.$data->id.'" 
+                                        data-count="'.$request->tourCount.'"
+                                        data-disabled-dates="'.htmlspecialchars(json_encode($disabled_dates)).'"
+                                        value="'.$tour_start_date.'">
+
+                                    <div class="input-group-append">
+                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="text-right" width="200">
+                                <div class="input-group">
+                                    <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime_'.$request->tourCount.'" class="form-control aiz-time-picker">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                                    </div>                       
+                                </div>
+                            </td>
+
+                            <td class="text-right">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeTour(\''.$row_id.'\')">-</button>
+                                <button type="button" onclick="addTour()" class="btn btn-sm btn-info">+</button>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="table">'.$pickupHtml.'</table>
+
+                    <!-- Pricing + Addons + Tax (unchanged) -->
+                    ... REMAINING SAME ...
+                </div>';
+
+        return $str;
+    }
+
+    public function single343(Request $request)
+{
+    $data = Tour::with(['detail', 'schedules', 'pricings', 'addons', 'taxes_fees', 'pickups.locations'])
+                ->find($request->id);
+
+    if (!$data) {
+        return 'Tour not found';
+    }
+
+    $count = $request->tourCount;
+    $_tourId = $data->id;
+
+    // ---------------------------------------------------
+    // GET NEXT AVAILABLE DATE + DISABLED DATES
+    // ---------------------------------------------------
+    $tour_start_date_arr = $this->getNextAvailableDate($data->id, $data->schedules);
+    $disabled_dates = $this->getDisabledTourDates($data->id, $data->schedules);
+
+    // Convert {date: "..."} into plain string
+    $tour_start_date = is_array($tour_start_date_arr)
+                        ? ($tour_start_date_arr['date'] ?? '')
+                        : ($tour_start_date_arr->date ?? '');
+
+    $disabledJson = json_encode($disabled_dates);
+
+
+    // ---------------------------------------------------
+    // PICKUP HTML
+    // ---------------------------------------------------
+    $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
+        <h4 style="font-size:16px; font-weight:600">Pickup Options</h4>';
+
+    if (!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'No Pickup') {
+
+        $pickupHtml .= '
+            <p>No Pickup Available</p>
+            <input type="hidden" name="pickup_id" value="0">
+            <input type="hidden" name="pickup_name" value="">
+        ';
+    }
+
+    else if (!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'Pickup') {
+
+        $comment = \DB::table('pickup_tour')
+                        ->where('tour_id', $data->id)
+                        ->where('pickup_id', $data->pickups[0]?->id)
+                        ->value('comment');
+
+        $commentText = $comment ?? "Enter the pickup location";
+
+        $pickupHtml .= '
+            <label>Pickup Location</label>
+            <input type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
+
+            <small style="color:#777; display:block; margin-top:5px;">'.$commentText.'</small>
+            <input type="hidden" name="pickup_id" value="0">
+        ';
+    }
+
+    else if (!empty($data->pickups) && isset($data->pickups[0])) {
+
+        $locations = $data->pickups[0]?->locations ?? [];
+
+        $pickupHtml .= '
+            <label>Select Pickup Point</label>
+            <select name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
+                <option value="">Select Pickup Point</option>';
+
+                foreach ($locations as $loc) {
+                    $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
+                }
+
+                $pickupHtml .= '<option value="other">Other</option>';
+
+        $pickupHtml .= '
+            </select>
+
+            <div id="pickup-other-box" style="display:none; margin-top:10px">
+                <label>Enter Pickup Location</label>
+                <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
+            </div>
+        ';
+    }
+
+    $pickupHtml .= '</div>';
+
+    // ---------------------------------------------------
+    // MAIN HTML BLOCK
+    // ---------------------------------------------------
+    $row_id = 'row_'.$count;
+    $subtotal = 0;
+
+    $str = '
+    <div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
+
+        <input type="hidden" name="tour_id[]" value="' .  $data->id . '" />
+
+        <table class="table">
+            <tr>
+                <td width="600"><h3 class="text-lg">'.$data->title.'</h3></td>
+
+                <td width="200" class="text-right">
+                    <div class="input-group">
+                        <input type="text"
+                               class="aiz-date-range form-control tour-startdate"
+                               data-count="'.$count.'"
+                               id="tour_startdate_'.$count.'"
+                               name="tour_startdate[]"
+                               data-single="true"
+                               data-show-dropdown="true"
+                               data-disabled-dates=\''.$disabledJson.'\'
+                               value="'.$tour_start_date.'">
+
+                        <div class="input-group-append">
+                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                        </div>
+                    </div>
+                </td>
+
+                <td width="200" class="text-right">
+                    <div class="input-group">
+                        <input type="text" placeholder="Time"
+                               name="tour_starttime[]"
+                               id="tour_starttime_'.$count.'"
+                               class="form-control aiz-time-picker"
+                               data-minute-step="1">
+
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                        </div>
+                    </div>
+                </td>
+
+                <td class="text-right">
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeTour(\''.$row_id.'\')">-</button>
+                    <button type="button" onclick="addTour()" class="btn btn-sm btn-info">+</button>
+                </td>
+            </tr>
+        </table>
+
+        
+    ';
+
+    // ---------------------------------------------------
+    // PRICING BLOCK (kept exactly as original)
+    // ---------------------------------------------------
+    $str .= '<table class="table" style="background:#ebebeb">
+                <tr>
+                    <td style="width:200px" width="200">
+                        <table class="table">
+                            <tr>
+                                <td colspan="2">
+                                    <h4 style="font-size:16px; font-weight:600">Quantities</h4>
+                                </td>
+                            </tr>';
+
+    if ($data->pricings) {
+        $i = 0;
+        foreach ($data->pricings as $pricing) {
+            $num = ($i++ == 0) ? 1 : 0;
+            if ($num) $subtotal += ($num * $pricing->price);
+
+            $str .= '
+                <tr>
+                    <td width="60">
+                        <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
+                        <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl">
+                        <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$pricing->price.'" /> 
+                    </td>
+                    <td>'.$pricing->label.' ('. price_format($pricing->price) .')</td>
+                </tr>';
+        }
+    }
+
+    $str .= '</table>
+            </td>
+            <td style="width:200px">
+                <table class="table">
+                    <tr>
+                        <td colspan="2">
+                            <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
+                        </td>
+                    </tr>';
+
+    if ($data->addons) {
+        foreach ($data->addons as $extra) {
+            $price = $extra->price;
+
+            $str .= '
+                <tr>
+                    <td width="60">
+                        <input type="hidden" name="tour_extra_id_'.$_tourId.'[]" value="'.$extra->id.'" />  
+                        <input type="number" name="tour_extra_qty_'.$_tourId.'[]" value="0" style="width:60px" min="0" class="form-contorl text-center">
+                        <input type="hidden" name="tour_extra_price_'.$_tourId.'[]" value="'.$price.'" /> 
+                    </td>
+                    <td>'.$extra->name.' ('. price_format($extra->price) .')</td>
+                </tr>';
+        }
+    }
+
+    $str .= '</table>
+            </td>
+        </tr>
+    </table>' ;
+
+    $str .=$pickupHtml;
+
+    // ---------------------------------------------------
+    // TAXES & FEES
+    // ---------------------------------------------------
+    $str .= '<table class="table">';
+
+    $str .= '
+
+        <tr>
+            <th>total</th>
+            <th class="text-right withouttax-box">'. price_format($subtotal) .'</th>
+            <th class="text-right">'. price_format($subtotal) .'</th>
+        </tr>';
+    if ($data->taxes_fees) {
+        foreach ($data->taxes_fees as $item) {
+
+            $price = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
+            $tax = $price ?? 0;
+            $subtotal += $tax;
+
+            // $str .= '
+            //     <tr>
+            //         <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
+            //         <td class="text-right">'. price_format($tax) .'</td>
+            //     </tr>';
+
+                $str .= '<tr class="tax-row" 
+                data-type="'.$item->fee_type.'" 
+                data-value="'.$item->tax_fee_value.'">
+                <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
+                <td class="text-right tax-amount">'. price_format($tax) .'</td>
+            </tr>';
+        }
+    }
+
+    $str .= '
+
+        <tr>
+            <th>Subtotal</th>
+            <th class="text-right subtotal-box">'. price_format($subtotal) .'</th>
+            <th class="text-right">'. price_format($subtotal) .'</th>
+        </tr>
+    </table>';
+
+    $str .= '</div>'; // end main div
+
+    return $str;
+}
+
+
+public function single(Request $request)
+{
+    $data  = Tour::find($request->id);
+    $str = '';
+    $subtotal = 0;
+
+    if($data) {
+
+        $_tourId = $data->id;
+
+        // ================================
+        // ADD YOUR NEW DATE LOGIC HERE
+        // ================================
+        $schedules = $data->schedules ?? [];
+
+        $tour_start_date = $this->getNextAvailableDate($data->id, $schedules);
+        $tour_start_date = is_array($tour_start_date) ? ($tour_start_date['date'] ?? '') : $tour_start_date;
+
+        $disabled_dates  = $this->getDisabledTourDates($data->id, $schedules);
+        $disabled_dates_json = json_encode($disabled_dates);
+
+
+        // ================================
+        // YOUR ORIGINAL PICKUP LOGIC
+        // ================================
+        $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
+        <h4 style="font-size:16px; font-weight:600"></h4>';
+
+
+        // CASE 1: NO PICKUP
+        if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'No Pickup') {
+
+            $pickupHtml .= '
+                <p>No Pickup Available</p>
+
+                <input type="hidden" name="pickup_id" value="0">
+                <input type="hidden" name="pickup_name" value="">
+            ';
+        }
+
+
+
+        // CASE 2: PICKUP (text input + comment)
+        else if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'Pickup') {
+
+            $comment = \DB::table('pickup_tour')
+                            ->where('tour_id', $data->id)
+                            ->where('pickup_id', $data->pickups[0]?->id)
+                            ->value('comment');
+
+            $commentText = $comment ?? "Enter the pickup location";
+
+            $pickupHtml .= '
+                <label>Pickup Location</label>
+                <input required type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
+
+                <small style="color:#777; display:block; margin-top:5px;">'.$commentText.'</small>
+
+                <input type="hidden" name="pickup_id" value="0">
+            ';
+        }
+
+
+
+        // CASE 3: MULTIPLE LOCATIONS (dropdown + other option)
+        else if (!empty($data->pickups) && isset($data->pickups[0])) {
+
+            $locations = $data->pickups[0]?->locations ?? [];
+
+            $pickupHtml .= '
+                <label>Select Pickup Point</label>
+                <select required name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
+                    <option value="">Select Pickup Point</option>';
+
+                    foreach($locations as $loc) {
+                        $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
+                    }
+
+                    $pickupHtml .= '<option value="other">Other</option>';
+
+            $pickupHtml .= '
+                </select>
+
+                <div id="pickup-other-box" style="display:none; margin-top:10px">
+                    <label>Enter Pickup Location</label>
+                    <input required type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
+                </div>
+            ';
+        }
+
+        $pickupHtml .= '</div>';
+
+        // ================================
+        // RENDER HTML START
+        // ================================
+        $row_id = 'row_'.$request->tourCount;
+
+        $str = '<div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
+                <input type="hidden" name="tour_id[]" value="'.$data->id.'" />  
+                <input type="hidden" class="disabled-dates" value=\''.$disabled_dates_json.'\'>
+                <table class="table">
+                    <tr>
+                        <td width="600"><h3 class="text-lg">' .  $data->title . '</h3></td>
+                        <td class="text-right" width="200">
+                            <div class="input-group">
+                                <input type="text" 
+                                    class="aiz-date-range form-control tour_startdate_field"
+                                    id="tour_startdate"
+                                    name="tour_startdate[]"
+                                    placeholder="Select Date" 
+                                    data-single="true" 
+                                    data-show-dropdown="true" 
+                                    value="'.$tour_start_date.'">
+
+                                <div class="input-group-append">
+                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                </div>
+                            </div>
+                            <div>
+                                <input type="text" class="tour_startdate_display border-0" readonly>
+                            </div>
+                        </td>
+
+                        <td class="text-right" width="200">
+                            <div class="input-group">
+                                <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                                </div>                       
+                            </div>
+                        </td>
+
+                        <td class="text-right">
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeTour(\''.$row_id.'\')">-</button>
+                            <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
+                        </td>
+                    </tr>
+                </table>
+
+                <table class="table" style="background:#ebebeb">
+                    <tr>
+                        <td style="width:200px" width="200">
+                            <table class="table">
+                                <tr>
+                                    <td colspan="2">
+                                        <h4 style="font-size:16px; font-weight:600">Quantities</h4>
+                                    </td>
+                                    <input type="hidden" name="tour_pricing_type" value="'.$data->price_type.'" /> 
+                                </tr>';
+
+                                if($data->pricings) {
+
+                                    $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min;
+                                    $maxQuantity = $data->detail->quantity_max;
+
+                                    $i=0;
+                                    foreach($data->pricings as $pricing) {
+                                        $num = ($i == 0) ? 1 : 0;
+                                        if($i == 0) {
+                                            $subtotal += ($num * $pricing->price);
+                                        }
+
+
+                                        $i++;
+
+                                        $str .= '<tr>
+                                            <td width="60">
+                                                <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
+                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl" min="'.$minQuantity.'" max="'.$maxQuantity.'" >
+                                                <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$pricing->price.'" /> 
+                                                <input type="hidden" name="tour_pricing_type_'.$_tourId.'[]" value="'.$data->price_type.'" /> 
+                                                <input type="hidden" name="tour_pricing_min_'.$_tourId.'[]" value="'.$pricing->quantity_used.'">
+                                                
+                                            </td>
+                                            <td>'.$pricing->label.' ('. price_format($pricing->price) .')</td>
+                                        </tr>';
+                                    }
+                                }
+
+                            $str .= '</table>
+                        </td>
+
+                        <td style="width:200px">
+                            <table class="table">
+                                <tr>
+                                    <td colspan="2">
+                                        <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
+                                    </td>
+                                </tr>';
+
+                                if ($data->addons) {
+                                    foreach($data->addons as $extra) {
+                                        $price = $extra->price;                                        
+                                        $str.= '<tr>
+                                            <td width="60">
+                                                <input type="hidden" name="tour_extra_id_'.$_tourId.'[]" value="'. $extra->id .'" />  
+                                                <input type="number" name="tour_extra_qty_'.$_tourId.'[]" value="0" style="width:60px" min="0" class="form-contorl text-center">
+                                                <input type="hidden" name="tour_extra_price_'.$_tourId.'[]" value="'.$price.'" /> 
+                                            </td>
+                                            <td>'.$extra->name.' ('.price_format($extra->price).')</td>
+                                        </tr>';
+                                    }
+                                }
+                                
+                            $str .= '</table>
+                        </td>
+                    </tr>
+                </table>
+                
+                <table class="table">';
+
+                $str .= $pickupHtml;
+
+                $str .= '
+
+                <tr>
+                    <th>Sub Total</th>
+                    <th class="text-right withouttax-box">'. price_format($subtotal) .'</th>
+                </tr>';
+
+                if($data->taxes_fees) {
+                    foreach ($data->taxes_fees as $item) {                    
+                        $tax = get_tax($subtotal, $item->fee_type, $item->tax_fee_value) ?? 0;
+                        $subtotal += $tax;
+
+                        // $str .= '<tr>
+                        //     <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
+                        //     <td class="text-right">'. price_format($tax) .'</td>
+                        // </tr>';
+                        $str .= '<tr class="tax-row" 
+                data-type="'.$item->fee_type.'" 
+                data-value="'.$item->tax_fee_value.'">
+                <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
+                <td class="text-right tax-amount">'. price_format($tax) .'</td>
+            </tr>';
+                    }
+                }
+
+                $str .= '
+                    <tr>
+                        <th>Total</th>
+                        
+                        <th class="text-right subtotal-box">'. price_format($subtotal) .'</th>
+                    </tr>
+                </table>
+                </div>';
+    }
+
+    return $str;
+}
+
+
+public function singleCalendar(Request $request)
+{
+    $tour = Tour::find($request->id);
+
+    $orderTour = OrderTour::where('order_id', $request->order_id)->first();
+
+    if (!$tour) {
+        return response()->json(['error' => 'Not found'], 404);
+    }
+
+    $schedules = $tour->schedules ?? [];
+
+    // Get next available date
+    $tour_start_date = $this->getNextAvailableDate($tour->id, $schedules);
+    $tour_start_date = is_array($tour_start_date) 
+        ? ($tour_start_date['date'] ?? '') 
+        : $tour_start_date;
+
+    // Disabled dates
+    $disabled_dates  = $this->getDisabledTourDates($tour->id, $schedules);
+
+    return response()->json([
+        'tour_date' => $orderTour->tour_date,
+        'tour_time' => $orderTour->tour_time,
+        'tour_id' => $tour->id,
+        'start_date' => $tour_start_date,
+        'disabled_dates' => $disabled_dates,
+    ]);
+}
+
+
+
+
 
 
 

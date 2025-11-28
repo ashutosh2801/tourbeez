@@ -63,14 +63,18 @@ class WishlistController extends Controller
             $wishlist = Wishlist::firstOrCreate([
                 'user_id' => $userId,
                 'tour_id' => $tourId,
+                'session_id' => $sessionId ?? null,
             ]);
             return response()->json(['message' => 'Added to wishlist', 'wishlist' => $wishlist]);
-        } else {
+        } else if ( $sessionId ) {
             $wishlist = Wishlist::firstOrCreate([
                 'tour_id' => $tourId,
                 'session_id' => $sessionId,
             ]);
             return response()->json(['message' => 'Added to session wishlist', 'wishlist' => $wishlist]);
+        }
+        else {
+            return response()->json(['status' => false, 'message' => 'User ID or Session ID is required.'], 400);
         }
     }
 
@@ -82,16 +86,21 @@ class WishlistController extends Controller
             $sessionId = $request->session_id;
 
             $tours = Tour::whereHas('wishlists', function ($query) use ($userId, $sessionId) {
-                        if($userId) {
+                        if ($userId && $sessionId) {
+                            // user logged in and session exists → match either
+                            $query->where('user_id', $userId)
+                                ->orWhere('session_id', $sessionId);
+                        } elseif ($userId) {
+                            // only user ID
                             $query->where('user_id', $userId);
-                        }
-                        if($sessionId) {
+                        } elseif ($sessionId) {
+                            // only session ID
                             $query->where('session_id', $sessionId);
                         }
                     })
                     ->paginate(12);
             
-            //dd($tours->toSql());
+            //dd( getFullSql($tours));
 
             $items = [];
             foreach ($tours->items() as $d) {
@@ -128,11 +137,11 @@ class WishlistController extends Controller
                 $discounted_price = $d->price;
     
                 if ($discount && $discount > 0) {
-                    if ($d->coupon_type == 'fixed') {
+                    if ($d->coupon_type === 'fixed') {
                         // Original price = price + coupon value
                         $original_price   = round($d->price + $discount);
                         $discounted_price = $d->price;
-                    } elseif ($d->coupon_type == 'percentage') {
+                    } elseif ($d->coupon_type === 'percentage') {
                         // Original price = inflated by coupon percentage
                         $original = $d->price / (1 - ($discount / 100));
                         $original_price = round($original);

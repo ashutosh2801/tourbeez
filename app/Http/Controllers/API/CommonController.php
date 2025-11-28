@@ -286,26 +286,32 @@ class CommonController extends Controller
 
         // Prepare the response data based on the  city and state type
         if ( $type == 's1' ) {
-            $data['state'] = [
-                'id'    => $d->state->id,
-                'name'  => 'Things to do in '.ucfirst( $d->state->name ),
-                'url'   => '/'.Str::slug( $d->state->name ).'/'.$d->state->id.'/s1',
-                'image' => $d->state->upload_id ? uploaded_asset( $d->state->upload_id ) : '',
-                'meta_title'      => $meta_title,
-                'meta_description'=> $meta_description,
-            ];
+            if($d->state){
+                $data['state'] = [
+                    'id'    => $d->state->id,
+                    'name'  => 'Things to do in '.ucfirst( $d->state->name ),
+                    'url'   => '/'.Str::slug( $d->state->name ).'/'.$d->state->id.'/s1',
+                    'image' => $d->state->upload_id ? uploaded_asset( $d->state->upload_id ) : '',
+                    'meta_title'      => $meta_title,
+                    'meta_description'=> $meta_description,
+                ];
+            }
+            
         }
 
         // Prepare the response data based on the  city, state and country type
         if ( $type == 'c2' ) {
-            $data['country'] = [
-                'id'    => $d->state->country->id,
-                'name'  => 'Things to do in '.ucfirst( $d->state->country->name ),
-                'url'   => '/'.Str::slug( $d->state->country->name ).'/'.$d->state->country->id.'/c2',
-                'image' => $d->state?->country?->upload_id ? uploaded_asset( $d->state->country->upload_id ) : '',
-                'meta_title'      => $meta_title,
-                'meta_description'=> $meta_description,
-            ];
+            if($d->state && $d->state->country){
+                $data['country'] = [
+                    'id'    => $d->state->country->id,
+                    'name'  => 'Things to do in '.ucfirst( $d->state->country->name ),
+                    'url'   => '/'.Str::slug( $d->state->country->name ).'/'.$d->state->country->id.'/c2',
+                    'image' => $d->state?->country?->upload_id ? uploaded_asset( $d->state->country->upload_id ) : '',
+                    'meta_title'      => $meta_title,
+                    'meta_description'=> $meta_description,
+                ];
+            }
+            
         }
 
         if ( $type == 'c3' ) {
