@@ -18,7 +18,7 @@ class SupplierController extends Controller
     public function index()
     {
 
-         $data = User::where('role', 'Supplier')->orderBy('id','DESC')->get();   
+         $data = User::where('role', 'Supplier')->where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();   
         
         // $data = User::where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
         return view('admin.user.index', compact('data'));
