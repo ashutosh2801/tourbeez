@@ -376,19 +376,18 @@
                         </div>
                         <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
                             <div class="card-body">
-                                    <ul class="flex flex-row">
-                                        <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"><i class="fas fa-user-tie"></i>  {{ $order->customer?->name }}</a></li>
-                                        <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
-                                        <li><i class="fas fa-phone-square-alt"></i> {{ $order->customer?->phone }}</li>
-                                    </ul>
-                                
+                                <ul class="flex flex-row">
+                                    <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"><i class="fas fa-user-tie"></i>  {{ $order->customer?->name }}</a></li>
+                                    <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
+                                    <li><i class="fas fa-phone-square-alt"></i> {{ $order->customer?->phone }}</li>
+                                </ul>                                
                             </div>
                         </div>
                     </div>
 
                     <div class="card tour-details">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
-                                <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-down"></i> Tour Details</button>
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-down"></i> Tour Details</button>
                         </div>
                         <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
                             <div class="card-body">                               
@@ -737,8 +736,7 @@
                                 <table class="table">    
                                     <tr>
                                         <td>Payment Type</td>
-                                        <td>Ref number</td>
-                                        
+                                        <td>Ref number</td>                                        
                                         <td>Total</td>
                                         <td></td>
                                         <td>Balance</td>
@@ -852,30 +850,30 @@
 
 
 
-                            </div>
-                        </div>
-                        <div class="text-left mt-3">
-                            <button id="addPaymentBtn" type="button" class="btn btn-primary">
-                                + Add Payment
-                            </button>
-                        </div>
-                        <!-- Hidden Add Payment Form -->
-                        <div id="addPaymentBlock" class="mt-3" style="display:none;">
-                            <div id="addPaymentSection">
-                                <div class="form-group">
-                                    <label>Amount</label>
-                                    <input hidden type="number" id="addPaymentAmount" class="form-control" min="1" placeholder="Enter amount" value="">
+                                <div class="text-left mt-3">
+                                    <button id="addPaymentBtn" type="button" class="btn btn-primary">
+                                        + Add Payment
+                                    </button>
                                 </div>
+                                <!-- Hidden Add Payment Form -->
+                                <div id="addPaymentBlock" class="mt-3" style="display:none;">
+                                    <div id="addPaymentSection">
+                                        <div class="form-group hidden">
+                                            <label>Amount</label>
+                                            <input hidden type="number" id="addPaymentAmount" class="form-control" min="1" placeholder="Enter amount" value="">
+                                        </div>
 
-                                <div id="cardFields">
-                                    <div class="form-group">
-                                        <label for="card-element">Card Details</label>
-                                        <div id="card-element" class="form-control col-6" style="padding:10px; height:auto;"></div>
-                                        <small id="card-errors" class="text-danger mt-2"></small>
+                                        <div id="cardFields">
+                                            <div class="form-group">
+                                                <label for="card-element">Card Details</label>
+                                                <div id="card-element" class="form-control col-6" style="padding:10px; height:auto;"></div>
+                                                <small id="card-errors" class="text-danger mt-2"></small>
+                                            </div>
+                                        </div>
+
+                                        <button id="addPaymentSubmit" class="btn btn-success">Pay Now</button>
                                     </div>
                                 </div>
-
-                                <button id="addPaymentSubmit" class="btn btn-success">Pay Now</button>
                             </div>
                         </div>
                     </div> 
@@ -1338,7 +1336,7 @@
         const id     = radio.id;
         const label  = document.querySelector(`label[for="${id}"]`).textContent.trim();
         const group  = radio.closest('.btn-group');
-        // const button = group.querySelector('button.dropdown-toggle');
+        const button = group.querySelector('button.dropdown-toggle');
 
         // Update button text
         button.textContent = label;
@@ -1745,6 +1743,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     addBtn.addEventListener("click", () => {
         block.style.display = block.style.display === "none" ? "block" : "none";
+        addBtn.innerHTML = block.style.display === "none" ? "+ Add Payment" : "- Cancel Payment";
     });
 
     // Initialize Stripe

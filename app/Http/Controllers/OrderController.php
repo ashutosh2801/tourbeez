@@ -2201,37 +2201,56 @@ public function refundPayment(Request $request, Order $order)
         try {
             \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
+            $tour       = $order->tour;
+            $customer   = $order->customer;
+
+            $metaData = [
+                'bookedDate'    => $order->created_at,
+                'orderId'       => $order->id,
+                'orderNumber'   => $order->order_number,
+                'tourName'      => $tour->title,
+                'tourDate'      => $tour->tour_date,
+                'tourTime'      => $tour->tour_time,
+                'customerId'    => $customer->id,
+                'customerEmail' => $customer->email,
+                'customerName'  => $customer->name,
+                'planName'      => "TourBeez Plan",
+                'status'        => 'Pending supplier',
+                'totalAmount'   => $order->balance_amount
+            ];
+
             $paymentIntent = \Stripe\PaymentIntent::create([
-                'amount' => (int) ($request->amount * 100),
-                'currency' => strtoupper($order->currency ?? 'cad'),
-                'customer' => $order->stripe_customer_id,
-                'payment_method' => $request->payment_method_id,
-                'off_session' => true,
-                'confirm' => true,
+                'amount'            => (int) ($order->balance_amount * 100),
+                'currency'          => strtoupper($order->currency ?? 'usd'),
+                'customer'          => $order->stripe_customer_id,
+                'payment_method'    => $request->payment_method_id,
+                'off_session'       => true,
+                'confirm'           => true,
+                'description'       => '(#' . $order->order_number . ') ' .$tour->title,
+                'metadata'          => $metaData,
+                'statement_descriptor_suffix' =>  $order->order_number,
             ]);
 
             // Store in order_payments table
             $order->payments()->create([
-                'order_id'        => $order->id,
+                'order_id'          => $order->id,
                 'payment_intent_id' => $paymentIntent->id,
-                'transaction_id'  => NULL,
-                'payment_method'  => 'stripe',
-                'amount'          => (int) ($request->amount),
-                'currency'        => strtoupper($order->currency ?? 'cad'),
-                'status'          => $paymentIntent->status,
-                'action'          => 'deposit',
-                'response_payload'=> json_encode($paymentIntent),
-                'card_last4'      => $request->card_last4,
-                'card_brand'      => $request->card_brand,
-                'card_exp_month'  => $request->card_exp_month,
-                'card_exp_year'   => $request->card_exp_year,
+                'transaction_id'    => NULL,
+                'payment_method'    => 'stripe',
+                'amount'            => (float) ($request->amount),
+                'currency'          => strtoupper($order->currency ?? 'usd'),
+                'status'            => $paymentIntent->status,
+                'action'            => 'deposit',
+                'response_payload'  => json_encode($paymentIntent),
+                'card_last4'        => $request->card_last4,
+                'card_brand'        => $request->card_brand,
+                'card_exp_month'    => $request->card_exp_month,
+                'card_exp_year'     => $request->card_exp_year,
             ]);
-
-
 
             // Update main order summary
             $order->booked_amount += $request->amount;
-            $order->balance_amount = max($order->total_amount - $order->booked_amount, 0);
+            $order->balance_amount = max($order->total_amount - $order->balance_amount, 0);
             $order->save();
 
             return response()->json([
@@ -2700,8 +2719,6 @@ public function refundMultiple(Request $request, Order $order)
         'amount' => 'required|numeric|min:0.5'
     ]);
 
-
-
     $refundTarget = $request->amount;
     $remaining = $refundTarget;
 
@@ -2713,7 +2730,7 @@ public function refundMultiple(Request $request, Order $order)
         ], 400);
     }
 
-    // ❌ Prevent negative booked amount updates
+    // Prevent negative booked amount updates
     if (($order->booked_amount - $refundTarget) < 0) {
         return response()->json([
             'success' => false,
@@ -2739,7 +2756,7 @@ public function refundMultiple(Request $request, Order $order)
 
         $refund = \Stripe\Refund::create([
             'payment_intent' => $payment->payment_intent_id,
-            'amount' => (int)($refundNow * 100)
+            'amount' => (float)($refundNow * 100)
         ]);
         
         $payment->update([

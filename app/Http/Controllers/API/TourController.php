@@ -1566,7 +1566,7 @@ class TourController extends Controller
 
                 <div id="pickup-other-box" style="display:none; margin-top:10px">
                     <label>Enter Pickup Location</label>
-                    <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
+                    <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually" value=" ">
                 </div>';
         }
 
@@ -1710,7 +1710,7 @@ class TourController extends Controller
 
             <div id="pickup-other-box" style="display:none; margin-top:10px">
                 <label>Enter Pickup Location</label>
-                <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
+                <input type="text" name="pickup_name" value=" " class="form-control" placeholder="Enter location manually">
             </div>
         ';
     }
@@ -1972,7 +1972,7 @@ public function single(Request $request)
 
                 <div id="pickup-other-box" style="display:none; margin-top:10px">
                     <label>Enter Pickup Location</label>
-                    <input required type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
+                    <input required type="text" name="pickup_name" class="form-control" placeholder="Enter location manually" value=" ">
                 </div>
             ';
         }
@@ -2039,17 +2039,20 @@ public function single(Request $request)
 
                                 if($data->pricings) {
 
-                                    $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min;
                                     $maxQuantity = $data->detail->quantity_max;
 
-                                    $i=0;
+                                    $i=0; $j=0;
                                     foreach($data->pricings as $pricing) {
                                         $num = ($i == 0) ? 1 : 0;
                                         if($i == 0) {
                                             $subtotal += ($num * $pricing->price);
                                         }
 
-
+                                        $minQuantity = 0;
+                                        if($j === 0) {
+                                            $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min; 
+                                            $j++;
+                                        }
                                         $i++;
 
                                         $str .= '<tr>

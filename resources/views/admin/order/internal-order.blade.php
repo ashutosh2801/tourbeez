@@ -729,8 +729,10 @@ document.addEventListener("change", function(e){
 
         if(e.target.value === "other") {
             otherBox.style.display = "block";
+            otherBox.value = "";
         } else {
             otherBox.style.display = "none";
+            otherBox.value = " ";
         }
     }
 });
