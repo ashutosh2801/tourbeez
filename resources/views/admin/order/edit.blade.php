@@ -734,51 +734,52 @@
                             <div id="collapseThree" class="collapse " aria-labelledby="headingThree" data-parent="#accordionExample">
                                 <div class="card-body">
                                     <!-- <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div> -->
-                                    
-                                    <table class="table">    
-                                        <thead>
-                                            <tr>
-                                                <th>Payment Type</th>
-                                                <th>Ref number</th>
-                                                <th>Total</th>
-                                                <th></th>
-                                                <th>Balance</th>
-                                                <th>Paid</th>
-                                                @if($order->payments->isNotEmpty())
-                                                    <th>Refund</th>
-                                                @endif
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>{{ ucwords($order->payment_method)}}</td>
-                                                <td>{{ ucwords($order->payment_intent_id)}}</td>
-                                                <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-                                                <td></td>
-                                                @if($order->payment_status ==3) <td>{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
-                                                @else
-                                                <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
-                                                @endif
-                                                <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
-                                                <td>
-                                                    <!-- <button class="btn btn-sm btn-danger refund-btn" 
-                                                    style="width:150px; display:inline-block;" 
-                                                    data-order-id="{{ $order->id }}" 
-                                                    data-amount="{{ $order->booked_amount }}" 
-                                                    type="button">
-                                                    Refund
-                                                    </button> -->
+                                    <div class="table-viewport">
+                                        <table class="table">    
+                                            <thead>
+                                                <tr>
+                                                    <th>Payment Type</th>
+                                                    <th>Ref number</th>
+                                                    <th>Total</th>
+                                                    <th></th>
+                                                    <th>Balance</th>
+                                                    <th>Paid</th>
                                                     @if($order->payments->isNotEmpty())
-                                                        <button class="btn btn-sm btn-danger refund-all-btn"
-                                                            data-order-id="{{ $order->id }}"
-                                                            data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
-                                                            Refund
-                                                        </button>
+                                                        <th>Refund</th>
                                                     @endif
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>{{ ucwords($order->payment_method)}}</td>
+                                                    <td>{{ ucwords($order->payment_intent_id)}}</td>
+                                                    <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                                    <td></td>
+                                                    @if($order->payment_status ==3) <td>{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
+                                                    @else
+                                                    <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
+                                                    @endif
+                                                    <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
+                                                    <td>
+                                                        <!-- <button class="btn btn-sm btn-danger refund-btn" 
+                                                        style="width:150px; display:inline-block;" 
+                                                        data-order-id="{{ $order->id }}" 
+                                                        data-amount="{{ $order->booked_amount }}" 
+                                                        type="button">
+                                                        Refund
+                                                        </button> -->
+                                                        @if($order->payments->isNotEmpty())
+                                                            <button class="btn btn-sm btn-danger refund-all-btn"
+                                                                data-order-id="{{ $order->id }}"
+                                                                data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
+                                                                Refund
+                                                            </button>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                     @if($order->payments->isNotEmpty())
                                     <h5 class="mt-4">💳 Payment Details</h5>
                                     <table class="table table-sm table-bordered">
@@ -876,35 +877,37 @@
                             </div>
                             <div id="collapseFour" class="collapse " aria-labelledby="headingFour" data-parent="#accordionExample">
                                 <div class="card-body">
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>To</th>
-                                                <th>From</th>
-                                                <th>Subject</th>
-                                                <th>Status</th>
-                                                <!-- <th>Content</th> -->
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
-                                                @foreach($order->emailHistories->sortByDesc('created_at') as $email)
-                                                    <tr>
-                                                        <td>{{ $email->created_at }}</td>
-                                                        <td>{{ $email->to_email }}</td>
-                                                        <td>{{ $email->from_email }}</td>
-                                                        <td>{{ $email->subject }}</td>
-                                                        <td>{{ ucwords($email->status) }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            @else
+                                    <div class="table-viewport">
+                                        <table class="table">
+                                            <thead>
                                                 <tr>
-                                                    <td colspan="5">No email history found</td>
+                                                    <th>Date</th>
+                                                    <th>To</th>
+                                                    <th>From</th>
+                                                    <th>Subject</th>
+                                                    <th>Status</th>
+                                                    <!-- <th>Content</th> -->
                                                 </tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
+                                                    @foreach($order->emailHistories->sortByDesc('created_at') as $email)
+                                                        <tr>
+                                                            <td>{{ $email->created_at }}</td>
+                                                            <td>{{ $email->to_email }}</td>
+                                                            <td>{{ $email->from_email }}</td>
+                                                            <td>{{ $email->subject }}</td>
+                                                            <td>{{ ucwords($email->status) }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                @else
+                                                    <tr>
+                                                        <td colspan="5">No email history found</td>
+                                                    </tr>
+                                                @endif
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -912,11 +915,11 @@
 
                     <div class="card-footer" style="display:block">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 order-2 order-md-1">
                                 <a href="{{ route('admin.orders.index') }}" class="btn btn-cancel"> <i class="fas fa-times"></i> Cancel</a>
                                 <a onclick="return confirm('Are you sure?')" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-danger confirm-delete"> <i class="fas fa-trash-alt"></i> Delete</a>
                             </div>
-                            <div class="col-md-6 align-buttons">
+                            <div class="col-md-6 align-buttons order-1 order-md-2">
                                 <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Save order</button>
                             </div>
                         </div>

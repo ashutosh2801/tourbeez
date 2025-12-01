@@ -8064,24 +8064,50 @@ a.dropdown-footer:hover {
     background: #edf3ff;
 }
 
-.btn-selected {
-    background: #225de4;
+.tour-main-body .btn-options .btn {
     color: #FFF;
     margin: 0 8px 8px 0;
 }
 
-.btn-selected:hover {
-    background: #01228b;
-    color: #FFF;
+.tour-main-body .btn-options .btn i {
+    margin-right: 3px;
 }
 
-.btn-selected i {
-    margin-right: 3px;
+.tour-main-body .btn-options .btn-ExpoImpo {
+    background-color: #a2a2a2;
+}
+
+.tour-main-body .btn-options .btn-ExpoImpo:hover {
+    background-color: #505050;
+}
+
+.tour-main-body .btn-options .btn-MarkReview {
+    background-color: #108e00;
+}
+
+.tour-main-body .btn-options .btn-MarkReview:hover {
+    background-color: #19a506;
+}
+
+.tour-main-body .btn-options .btn-enable {
+    background-color: #5aa8b2;
+}
+
+.tour-main-body .btn-options .btn-enable:hover {
+    background-color: #66c0cb;
+}
+
+.tour-main-body .btn-options .btn-discount {
+    background-color: #c2ab21;
+}
+
+.tour-main-body .btn-options .btn-discount:hover {
+    background-color: #dfc422;
 }
 
 @media (max-width: 767px) {
 
-    .btn-selected {
+    .tour-main-body .btn-options .btn {
         margin-bottom: 8px;
         font-size: 12px;
         width: 46%;
@@ -8172,7 +8198,7 @@ a.dropdown-footer:hover {
 }
 
 .order-edit .bs-example{
-    margin: 20px 0;
+    margin: 20px 0 0;
 }
 
 .info-blog {
@@ -8318,6 +8344,18 @@ a.dropdown-footer:hover {
     }
     .order-edit .card-footer .btn-save {
         width: 100%;
+    }
+    .order-edit .accordion .card-header .btn {
+        font-size: 14px;
+    }
+
+    .order-edit .card-footer .btn-cancel {
+        width: 47%;
+    }
+
+    .order-edit .card-footer .confirm-delete {
+        width: 47%;
+        float: right;
     }
 }
 
@@ -8775,6 +8813,117 @@ a.dropdown-footer:hover {
     border-radius: 0 10px 0 0;
 }
 
+.message-body,
+.reminder-body,
+.followup-body,
+.PaymentRequest-body,
+.seo-body,
+.SeoScore-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.message-body .card,
+.reminder-body .card,
+.followup-body .card,
+.PaymentRequest-body .card,
+.seo-body .card,
+.SeoScore-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.message-body .card-header,
+.reminder-body .card-header,
+.followup-body .card-header,
+.PaymentRequest-body .card-header,
+.seo-body .card-header,
+.SeoScore-body .card-header {
+    border-radius: 0;
+    background-color: #333 !important;
+}
+
+.message-body .message-nav,
+.reminder-body .reminder-nav,
+.followup-body .followup-nav,
+.PaymentRequest-body .PaymentRequest-nav,
+.seo-body .seo-nav,
+.SeoScore-body .SeoScore-nav {
+    padding: 0;
+    background: #17a2b8;
+    color: #FFF;
+    border-radius: 0 10px 0 0;
+}
+
+.message-body .message-nav .nav-link.active,
+.reminder-body .reminder-nav .nav-link.active,
+.followup-body .followup-nav .nav-link.active,
+.PaymentRequest-body .PaymentRequest-nav .nav-link.active,
+.seo-body .seo-nav .nav-link.active,
+.SeoScore-body .SeoScore-nav .nav-link.active {
+    color: #000;
+    padding: 13px 25px;
+}
+
+.message-body .message-nav .nav-link,
+.reminder-body .reminder-nav .nav-link,
+.followup-body .followup-nav .nav-link,
+.PaymentRequest-body .PaymentRequest-nav .nav-link,
+.seo-body .seo-nav .nav-link,
+.SeoScore-body .SeoScore-nav .nav-link {
+    color: #FFF;
+    padding: 13px 25px;
+}
+
+.message-body .message-nav .nav-link:hover,
+.reminder-body .reminder-nav .nav-link:hover,
+.followup-body .followup-nav .nav-link:hover,
+.PaymentRequest-body .PaymentRequest-nav .nav-link:hover,
+.seo-body .seo-nav .nav-link:hover,
+.SeoScore-body .SeoScore-nav .nav-link:hover {
+    background-color: #edf3ff;
+}
+
+.deposit-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.deposit-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.deposit-body .card-header {
+    border-radius: 0 10px 0 0;
+    background: #343a41;
+    color: #FFF;
+}
+
+.deposit-body .card-header.sub-heading {
+    border-radius: 0;
+}
+
+.special-deposit-footer {
+    background-color: #FFF;
+    border-top: 1px solid #ebedf2;
+    border-left: 1px solid #ebedf2;
+}
+
+.review-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.review-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.review-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
 @media (max-width: 767px) {
 
     .tour-edit-head .card-tools {
@@ -8859,8 +9008,29 @@ a.dropdown-footer:hover {
     .pickup-body .card-header,
     .schedule-body .card-header,
     .taxfee-body .card-header,
-    .gallery-body .card-header {
+    .gallery-body .card-header,
+    .message-body .message-nav,
+    .reminder-body .reminder-nav,
+    .followup-body .followup-nav,
+    .PaymentRequest-body .PaymentRequest-nav,
+    .seo-body .seo-nav,
+    .SeoScore-body .SeoScore-nav,
+    .deposit-body .card-header {
         border-radius: 10px 10px 0 0;
+    }
+
+    .SeoScore-body .cardbox {
+        background: #f6f6f6;
+        border-radius: 2px;
+        display: inline-block;
+        height: auto;
+        margin: 1rem 0;
+        position: relative;
+        width: 100%;
+    }
+
+    .SeoScore-body .cardbox .focus {
+        margin-left: 0;
     }
 }
 
@@ -8871,3 +9041,10 @@ a.dropdown-footer:hover {
     }
 
 }
+
+.logo-expanded { display: block; }
+.logo-collapsed { display: none; }
+
+/* When sidebar is collapsed */
+.sidebar-collapse .logo-expanded { display: none; }
+.sidebar-collapse .logo-collapsed { display: block; }
