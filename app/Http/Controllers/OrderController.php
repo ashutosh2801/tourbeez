@@ -1783,6 +1783,37 @@ class OrderController extends Controller
                 throw new \Exception("Invalid charge amount.");
             }
 
+            $tour = Tour::find($order->orderTours()->first()->tour_id);
+            if (!$tour) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tour not found.'
+                ], 404);
+            }
+
+            $customer = User::find($order->user_id);
+            if (!$customer) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Customer not found.'
+                ], 404);    
+            }
+
+            $metaData = [
+                'bookedDate'    => $order->created_at,
+                'orderId'       => $order->id,
+                'orderNumber'   => $order->order_number,
+                'tourName'      => $tour->title,
+                'tourDate'      => $tour->tour_date,
+                'tourTime'      => $tour->tour_time,
+                'customerId'    => $customer->id,
+                'customerEmail' => $customer->email,
+                'customerName'  => $customer->name,
+                'planName'      => "TourBeez Plan",
+                'status'        => 'Pending supplier',
+                'totalAmount'   => $chargeAmount
+            ];
+
             // Create a new PaymentIntent for off-session charge
             $newIntent = \Stripe\PaymentIntent::create([
                 'customer'             => $customerId,
@@ -1793,11 +1824,9 @@ class OrderController extends Controller
                 'automatic_payment_methods' => ['enabled' => true],
                 'off_session'          => true,
                 'confirm'              => true,
-                'description'          => "Manual charge for Order #{$order->order_number}",
-                'metadata'             => [
-                    'order_id' => $order->id,
-                    'action'   => 'manual_charge'
-                ]
+                'description'          => "#{$order->order_number} - {$tour->title}",
+                'metadata'             => $metaData,
+                'statement_descriptor_suffix' =>  $order->order_number,
             ]);
 
             // Save card info
