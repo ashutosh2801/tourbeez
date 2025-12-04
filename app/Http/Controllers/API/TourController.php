@@ -1566,7 +1566,7 @@ class TourController extends Controller
 
                 <div id="pickup-other-box" style="display:none; margin-top:10px">
                     <label>Enter Pickup Location</label>
-                    <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
+                    <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually" value=" ">
                 </div>';
         }
 
@@ -1710,7 +1710,7 @@ class TourController extends Controller
 
             <div id="pickup-other-box" style="display:none; margin-top:10px">
                 <label>Enter Pickup Location</label>
-                <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
+                <input type="text" name="pickup_name" value=" " class="form-control" placeholder="Enter location manually">
             </div>
         ';
     }
@@ -1913,71 +1913,71 @@ public function single(Request $request)
         // YOUR ORIGINAL PICKUP LOGIC
         // ================================
         $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
-    <h4 style="font-size:16px; font-weight:600"></h4>';
+        <h4 style="font-size:16px; font-weight:600"></h4>';
 
 
-// CASE 1: NO PICKUP
-if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'No Pickup') {
+        // CASE 1: NO PICKUP
+        if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'No Pickup') {
 
-    $pickupHtml .= '
-        <p>No Pickup Available</p>
+            $pickupHtml .= '
+                <p>No Pickup Available</p>
 
-        <input type="hidden" name="pickup_id" value="0">
-        <input type="hidden" name="pickup_name" value="">
-    ';
-}
-
-
-
-// CASE 2: PICKUP (text input + comment)
-else if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'Pickup') {
-
-    $comment = \DB::table('pickup_tour')
-                    ->where('tour_id', $data->id)
-                    ->where('pickup_id', $data->pickups[0]?->id)
-                    ->value('comment');
-
-    $commentText = $comment ?? "Enter the pickup location";
-
-    $pickupHtml .= '
-        <label>Pickup Location</label>
-        <input type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
-
-        <small style="color:#777; display:block; margin-top:5px;">'.$commentText.'</small>
-
-        <input type="hidden" name="pickup_id" value="0">
-    ';
-}
+                <input type="hidden" name="pickup_id" value="0">
+                <input type="hidden" name="pickup_name" value="">
+            ';
+        }
 
 
 
-// CASE 3: MULTIPLE LOCATIONS (dropdown + other option)
-else if (!empty($data->pickups) && isset($data->pickups[0])) {
+        // CASE 2: PICKUP (text input + comment)
+        else if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'Pickup') {
 
-    $locations = $data->pickups[0]?->locations ?? [];
+            $comment = \DB::table('pickup_tour')
+                            ->where('tour_id', $data->id)
+                            ->where('pickup_id', $data->pickups[0]?->id)
+                            ->value('comment');
 
-    $pickupHtml .= '
-        <label>Select Pickup Point</label>
-        <select name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
-            <option value="">Select Pickup Point</option>';
+            $commentText = $comment ?? "Enter the pickup location";
 
-            foreach($locations as $loc) {
-                $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
-            }
+            $pickupHtml .= '
+                <label>Pickup Location</label>
+                <input required type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
 
-            $pickupHtml .= '<option value="other">Other</option>';
+                <small style="color:#777; display:block; margin-top:5px;">'.$commentText.'</small>
 
-    $pickupHtml .= '
-        </select>
+                <input type="hidden" name="pickup_id" value="0">
+            ';
+        }
 
-        <div id="pickup-other-box" style="display:none; margin-top:10px">
-            <label>Enter Pickup Location</label>
-            <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually">
-        </div>
-    ';
-}
 
-$pickupHtml .= '</div>';
+
+        // CASE 3: MULTIPLE LOCATIONS (dropdown + other option)
+        else if (!empty($data->pickups) && isset($data->pickups[0])) {
+
+            $locations = $data->pickups[0]?->locations ?? [];
+
+            $pickupHtml .= '
+                <label>Select Pickup Point</label>
+                <select required name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
+                    <option value="">Select Pickup Point</option>';
+
+                    foreach($locations as $loc) {
+                        $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
+                    }
+
+                    $pickupHtml .= '<option value="other">Other</option>';
+
+            $pickupHtml .= '
+                </select>
+
+                <div id="pickup-other-box" style="display:none; margin-top:10px">
+                    <label>Enter Pickup Location</label>
+                    <input required type="text" name="pickup_name" class="form-control" placeholder="Enter location manually" value=" ">
+                </div>
+            ';
+        }
+
+        $pickupHtml .= '</div>';
 
         // ================================
         // RENDER HTML START
@@ -2039,23 +2039,26 @@ $pickupHtml .= '</div>';
 
                                 if($data->pricings) {
 
-                                    $minQuantity = $data->detail->quantity_min;
                                     $maxQuantity = $data->detail->quantity_max;
 
-                                    $i=0;
+                                    $i=0; $j=0;
                                     foreach($data->pricings as $pricing) {
                                         $num = ($i == 0) ? 1 : 0;
                                         if($i == 0) {
                                             $subtotal += ($num * $pricing->price);
                                         }
 
-
+                                        $minQuantity = 0;
+                                        if($j === 0) {
+                                            $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min; 
+                                            $j++;
+                                        }
                                         $i++;
 
                                         $str .= '<tr>
                                             <td width="60">
                                                 <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
-                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl" max="'.$maxQuantity.'" >
+                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl" min="'.$minQuantity.'" max="'.$maxQuantity.'" >
                                                 <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$pricing->price.'" /> 
                                                 <input type="hidden" name="tour_pricing_type_'.$_tourId.'[]" value="'.$data->price_type.'" /> 
                                                 <input type="hidden" name="tour_pricing_min_'.$_tourId.'[]" value="'.$pricing->quantity_used.'">

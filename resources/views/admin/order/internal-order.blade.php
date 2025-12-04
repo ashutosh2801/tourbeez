@@ -3,7 +3,7 @@
 
 <div class="card">
 
-        @if ($errors->any())
+    @if ($errors->any())
     <div class="alert alert-danger mb-4 p-3 rounded">
         <ul class="mb-0 pl-4">
             @foreach ($errors->all() as $error)
@@ -11,234 +11,265 @@
             @endforeach
         </ul>
     </div>
-@endif
-    <form id="orderForm" action="{{ route('admin.orders.store') }}" method="POST">
-        @csrf
+    @endif
 
-        <!-- ================= Header ================= -->
-        <div class="card-header d-flex justify-content-between align-items-center bg-secondary p-3 mb-3 rounded text-black">
-            <div class="form-group">
-                <h4 class="m-0">New Order</h4>
-                <small>Created by {{ auth()->user()->name }}</small>
-            </div>
+    <!-- ================= Header ================= -->
+    <div class="card-header d-flex justify-content-between align-items-center bg-secondary p-3 mb-3 rounded">
+        <div class="form-group">
+            <h4 class="m-0">New Order</h4>
+            <small>Created by {{ auth()->user()->name }}</small>
         </div>
+    </div>
+
+    <form id="orderForm" class="p-2" action="{{ route('admin.orders.store') }}" method="POST">
+        @csrf        
 
         <!-- ================= Balance + Status ================= -->
-        <div class="d-flex justify-content-between align-items-center bg-secondary p-3 mb-3 rounded">
+        <div class="d-flex justify-content-between align-items-center p-3 mb-3 rounded z-10">
             <div>
                 <strong id="totalDue">$0.00</strong><br>
                 <small>Balance</small>
             </div>
             <div>
                 <select name="order_status" class="form-control">
-
-                    <option value="4" selected>Pending Customer</option>
-                    <option value="3" >Pending Supplier</option>
-                    <option value="5" >Confirmed</option>
-                    <option value="0">New</option> <!-- Not in switch, will show "Not completed" -->
+                    <option value="0">New</option> 
+                    <option value="4" >Pending Customer</option>
+                    <option value="3">Pending Supplier</option>
+                    <option value="5" selected>Confirmed</option>
                     <option value="2">On Hold</option>
-                    
-                    
                     <option value="6">Cancelled</option>
                     <option value="7">Abandoned Cart</option>
-
                 </select>
             </div>
             <button type="submit" class="btn btn-primary">Create Order</button>
         </div>
 
-        <div class="accordion" id="accordionExample">
-
-           
-            <div class="card">
-<div class="card">
-    <div class="card-header bg-secondary py-0" id="headingOne">
-        <h2 class="my-0 py-0">
-            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
-                data-toggle="collapse" data-target="#collapseOne">
-                <i class="fa fa-angle-right"></i> Customer Details
-            </button>                                  
-        </h2>
-    </div>
-    <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
-        <div class="card-body">
-
-            {{-- Existing Customer Dropdown --}}
-
-            <div class="row d-flex justify-content-between align-items-center">
-                
-                
-                <div class="form-group col-md-5">
-                    <label for="customer">Select Existing Customer</label>
-                    <select name="customer_id" id="customer" class="form-control aiz-selectpicker border" data-live-search="true">
-                        <option value="">-- Select Customer --</option>
-                        @foreach($customers as $customer)
-                            <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->email }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group col-md-2 text-center">  OR</div>
-
-                <div class="text-center my-3 col-md-5 ">
-                    <button type="button" id="addNewCustomerBtn" class="btn btn-sm btn-primary">
-                        <i class="fa fa-user-plus"></i> Add New Customer
-                    </button>
-                </div>
-            </div>
-
-            {{-- New Customer Fields (hidden by default) --}}
-  
-
-            <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
-                <h5 class="mb-3">New Customer Information</h5>
-
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="customer_first_name">First Name *</label>
-                        <input type="text" name="customer_first_name" id="customer_first_name"
-                               class="form-control" minlength="2">
-                        <small class="text-danger d-none" id="error_first_name">Enter a valid first name</small>
+        <div class="accordion" id="accordionExample">           
+            <div class="card" style="overflow: visible;">
+                <div class="card">
+                    <div class="card-header bg-secondary py-0 z-10" id="headingOne">
+                        <h2 class="my-0 py-0">
+                            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapseOne">
+                                <i class="fa fa-angle-right"></i> Customer Details
+                            </button>                                  
+                        </h2>
                     </div>
+                    <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
+                        <div class="card-body">
 
-                    <div class="form-group col-md-6">
-                        <label for="customer_last_name">Last Name *</label>
-                        <input type="text" name="customer_last_name" id="customer_last_name"
-                               class="form-control" minlength="2">
-                        <small class="text-danger d-none" id="error_last_name">Enter a valid last name</small>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="customer_email">Email *</label>
-                        <input type="email" name="customer_email" id="customer_email"
-                               class="form-control" >
-                        <small class="text-danger d-none" id="error_email">Enter a valid email</small>
-                    </div>
-
-                    <div class="form-group col-md-6">
-                        <label for="customer_phone">Phone (with country code) *</label>
-
-                        <!-- Allow typing "+" -->
-                        <input 
-                            id="customer_phone"
-                            name="customer_phone"
-                            type="tel"
-                            class="form-control"
-                            autocomplete="tel"
-                            inputmode="tel"
-                        />
-
-                        <!-- Hidden field that stores full E.164 number -->
-                        <input type="hidden" id="full_phone" name="full_phone">
-
-                        <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
-                    </div>
-                </div>
-            </div>
-
-
-        </div>
-    </div>
-</div>
-
-
-            <!-- ================= Tour Details ================= -->
-            <div class="card">
-                <div class="card-header bg-secondary py-0" id="headingTwo">
-                    <h2 class="my-0 py-0">
-                        <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
-                            data-toggle="collapse" data-target="#collapseTwo">
-                            <i class="fa fa-angle-right"></i> Tour Details
-                        </button>
-                    </h2>
-                </div>
-                <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
-                    <div class="card-body">
-                        <div id="tourContainer"></div>
-                        <button type="button" onclick="addTour()" class="btn btn-info mb-2">+ Add Tour</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ================= Additional Information ================= -->
-            <div class="card">
-                <div class="card-header bg-secondary py-0" id="headingFour">
-                    <h2 class="my-0 py-0">
-                        <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
-                            data-toggle="collapse" data-target="#collapseFour">
-                            <i class="fa fa-angle-right"></i> Additional Information
-                        </button>
-                    </h2>
-                </div>
-                <div id="collapseFour" class="collapse show" aria-labelledby="headingFour" data-parent="#accordionExample">
-                    <div class="card-body">
-                        <textarea class="form-control" name="additional_info" rows="4" placeholder="Additional information"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ================= Payment Details ================= -->
-            <div class="card">
-                <div class="card-header bg-secondary py-0" id="headingThree">
-                    <h2 class="my-0 py-0">
-                        <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
-                            data-toggle="collapse" data-target="#collapseThree">
-                            <i class="fa fa-angle-right"></i> Payment Details
-                        </button>                     
-                    </h2>
-                </div>
-
-                <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
-                    <div class="card-body">
-
-                        {{-- Choose Payment Option --}}
-                        <div class="form-group">
-                            <label><strong>Payment Method</strong></label><br>
-                            <label class="mr-3">
-                                <input type="radio" name="payment_type" value="card"> Credit Card (Stripe)
-                            </label>
-                            <label>
-                                <input type="radio" name="payment_type" value="transaction"> Transaction
-                            </label>
-                        </div>
-
-                        {{-- Stripe Credit Card Fields --}}
-                        <div id="cardFields" style="display:none;">
-                            <div class="form-group">
-                                <label for="card-element">Card Details</label>
-                                <div id="card-element" class="form-control col-6" style="padding: 10px; height: auto;"></div>
-                                <small id="card-errors" class="text-danger mt-2"></small>
-                            </div>
-                        </div>
-
-                        {{-- Transaction Fields (inline) --}}
-                        <div id="transactionFields" style="display:none;">
-                            <div class="form-row align-items-center">
-                                <div class="form-group col-md-6">
-                                    <label for="transaction_id">Transaction ID</label>
-                                    <input type="text" name="transaction_id" class="form-control" placeholder="Enter transaction ID">
-                                </div>
-                                <div class="form-group col-md-6">
-                                    <label for="payment_method">Payment Type</label>
-                                    <select name="payment_method" class="form-control">
-                                        <option value="">Select Type</option>
-                                        <option value="stripe">Stripe</option>
-                                        <option value="paypal">PayPal</option>
-                                        <option value="bank">Bank Transfer</option>
+                            {{-- Existing Customer Dropdown --}}
+                            <div class="row d-flex justify-content-between align-items-center">
+                                <div class="form-group col-md-5">
+                                    <label for="customer">Select Existing Customer</label>
+                                    <select name="customer_id" id="customer" class="form-control aiz-selectpicker z-100 border" data-live-search="true">
+                                        <option value="">-- Select Customer --</option>
+                                        @foreach($customers as $customer)
+                                            <option value="{{ $customer->id }}">{{ ucwords($customer->name) }} - {{ $customer->email }} - {{ $customer->phone ?? 'NA' }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
+
+                                <div class="form-group col-md-2 text-center font-thin text-lg">  OR</div>
+
+                                <div class="text-center my-3 col-md-5 ">
+                                    <button type="button" id="addNewCustomerBtn" class="btn btn-md btn-primary">
+                                        <i class="fa fa-user-plus"></i> Add New Customer
+                                    </button>
+                                </div>
                             </div>
+
+                            {{-- New Customer Fields (hidden by default) --}}
+                            <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
+                                <h5 class="mb-3">New Customer Information</h5>
+
+                                <div class="form-row">
+                                    <div class="form-group col-lg-3 col-md-6">
+                                        <label for="customer_first_name">First Name *</label>
+                                        <input type="text" name="customer_first_name" id="customer_first_name"
+                                            class="form-control" minlength="2">
+                                        <small class="text-danger d-none" id="error_first_name">Enter a valid first name</small>
+                                    </div>
+
+                                    <div class="form-group col-lg-3 col-md-6">
+                                        <label for="customer_last_name">Last Name *</label>
+                                        <input type="text" name="customer_last_name" id="customer_last_name"
+                                            class="form-control" minlength="2">
+                                        <small class="text-danger d-none" id="error_last_name">Enter a valid last name</small>
+                                    </div>
+
+                                    <div class="form-group col-lg-3 col-md-6">
+                                        <label for="customer_email">Email *</label>
+                                        <input type="email" name="customer_email" id="customer_email"
+                                            class="form-control" >
+                                        <small class="text-danger d-none" id="error_email">Enter a valid email</small>
+                                    </div>
+
+                                    <div class="form-group col-lg-3 col-md-6">
+                                        <label for="customer_phone">Phone (with country code) *</label>
+
+                                        <!-- Allow typing "+" -->
+                                        <input 
+                                            id="customer_phone"
+                                            name="customer_phone"
+                                            type="tel"
+                                            class="form-control"
+                                            autocomplete="tel"
+                                            inputmode="tel"
+                                        />
+
+                                        <!-- Hidden field that stores full E.164 number -->
+                                        <input type="hidden" id="full_phone" name="full_phone">
+
+                                        <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
+                                    </div>
+                                </div>
+                            </div>
+
+
                         </div>
                     </div>
                 </div>
-            </div> 
 
-            <!-- ================= Form Actions ================= -->
-            <div class="card-footer" style="display:block">
-                <button style="padding:0.6rem 2rem" type="submit" id="createOrderBtn" class="btn btn-primary">Create Order</button>
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
+
+                <!-- ================= Tour Details ================= -->
+                <div class="card">
+                    <div class="card-header bg-secondary py-0" id="headingTwo">
+                        <h2 class="my-0 py-0">
+                            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapseTwo">
+                                <i class="fa fa-angle-right"></i> Tour Details
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                        <div class="card-body">
+                            <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px">
+                                <table class="table">
+                                    <tr>
+                                        <td style="border: none; padding: 0;">
+                                            <select 
+                                                onchange="loadTourDetails(this.value, 0)"
+                                                name="tour_id0" 
+                                                class="form-control aiz-selectpicker border" data-live-search="true">
+                                                <option value="">Select Tour</option>
+                                                @foreach($tours as $tour)
+                                                    <option value="{{ $tour->id }}">{{ $tour->title }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div id="tour_details_0"></div>
+                            </div>
+                            <div id="tourContainer"></div>
+                            <button type="button" onclick="addTour()" class="btn btn-sm btn-info px-5">+ Add Tour</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= Additional Information ================= -->
+                <div class="card">
+                    <div class="card-header bg-secondary py-0" id="headingFour">
+                        <h2 class="my-0 py-0">
+                            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapseFour">
+                                <i class="fa fa-angle-right"></i> Additional Information
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseFour" class="collapse show" aria-labelledby="headingFour" data-parent="#accordionExample">
+                        <div class="card-body">
+                            <textarea class="form-control" name="additional_info" rows="4" placeholder="Additional information"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= Payment Details ================= -->
+                <div class="card">
+                    <div class="card-header bg-secondary py-0" id="headingThree">
+                        <h2 class="my-0 py-0">
+                            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapseThree">
+                                <i class="fa fa-angle-right"></i> Payment Details
+                            </button>                     
+                        </h2>
+                    </div>
+
+                    <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+                        <div class="card-body">
+
+                            {{-- Choose Payment Option --}}
+                            <div class="form-group">
+                                <label><strong>Payment Method</strong></label><br>
+                                <label class="mr-3">
+                                    <input type="radio" name="payment_type" value="card"> Credit Card (Stripe)
+                                </label>
+                                <label class="mr-3">
+                                    <input type="radio" name="payment_type" value="transaction"> Cash
+                                </label>
+                                <label>
+                                    <input type="radio" name="payment_type" value="other"> Other
+                                </label>
+                            </div>
+
+                            {{-- Stripe Credit Card Fields --}}
+                            <div id="cardFields" style="display:none;">
+                                <div class="form-group">
+                                    <label for="card-element">Card Details</label>
+                                    <div id="card-element" class="form-control col-6" style="padding: 10px; height: auto;"></div>
+                                    <div class="mt-3"><label><input type="checkbox" value="1" name="charge_ccnow" id="charge_ccnow" /> Charge credit card now</label></div>
+                                    <small id="card-errors" class="text-danger mt-2"></small>
+                                </div>
+                                <div class="form-group hidden" id="charge_ccnow_amount">
+                                    <div class="form-group  col-6">
+                                        <label>Amount</label>
+                                        <div class="input-group">
+                                            <div class="input-group-append">
+                                                <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                            </div>    
+                                            <input type="text" class="form-control" id="addPaymentAmount" name="charge_ccnow_amount" placeholder="0.00">                                            
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Transaction Fields (inline) --}}
+                            <div id="transactionFields" style="display:none;">
+                                <div class="form-row align-items-center">
+                                    <div class="form-group col-md-6">
+                                        <label for="transaction_id">Ref. Number</label>
+                                        <input type="text" name="transaction_id" class="form-control" placeholder="Enter Ref. Number">
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <label for="payment_method">Payment Type</label>
+                                        <select name="payment_method" class="form-control">
+                                            <option value="">Select Type</option>
+                                            <option value="stripe">Stripe</option>
+                                            <option value="paypal">PayPal</option>
+                                            <option value="bank">Bank Transfer</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="cashFields" style="display:none;">
+                                <div class="form-group col-md-6">
+                                    <label for="transaction_id">Other</label>
+                                    <input type="text" name="other" class="form-control" placeholder="Enter other payment details" />
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div> 
+
+                <!-- ================= Form Actions ================= -->
+                <div class="card-footer" style="display:block">
+                    <button style="padding:0.6rem 2rem" type="submit" id="createOrderBtn" class="btn btn-primary">Create Order</button>
+                    <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
             </div>
         </div>
     </form>
@@ -276,38 +307,6 @@ function tourOptions() {
     return options;
 }
 
-// ================= Add Tour Row =================
-// function addTour() {
-
-//     showLoader("Loading… Please wait");
-//     const container = document.getElementById('tourContainer');
-//     const newRow = document.createElement('div');
-//     newRow.setAttribute('id', `row_${tourCount}`);
-
-//     newRow.innerHTML = `
-//     <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px">
-//         <table class="table">
-//             <tr>
-//                 <td>
-//                     <select onchange="loadTourDetails(this.value, ${tourCount})" 
-//                         name="tour_id[]" 
-//                         class="form-control aiz-selectpicker border" data-live-search="true">
-//                         <option value="">Select Tour</option>` + tourOptions() + `</select>
-//                 </td>
-//                 <td>
-//                     <button type="button" onclick="removeTour('row_${tourCount}')" class="btn btn-danger">Remove</button>
-//                 </td>
-//             </tr>
-//         </table>
-//         <div id="tour_details_${tourCount}"></div>
-//     </div>`;
-
-//     container.appendChild(newRow);
-//     TB.plugins.bootstrapSelect('refresh');
-//     tourCount++;
-//     hideLoader();
-// }
-
 function addTour(savedTourId = null, index = null, silentMode = false) {
 
     showLoader("Loading… Please wait");
@@ -323,16 +322,16 @@ function addTour(savedTourId = null, index = null, silentMode = false) {
 
     newRow.innerHTML = `
     <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px">
-        <table class="table">
+        <table class="table" width="100%">
             <tr>
-                <td>
+                <td width="90%" style="border: none; padding: 0;">
                     <select 
                         onchange="loadTourDetails(this.value, ${index})"
                         name="tour_id[${index}]" 
                         class="form-control aiz-selectpicker border" data-live-search="true">
                         <option value="">Select Tour</option>` + tourOptions() + `</select>
                 </td>
-                <td>
+                <td style="border: none; padding: 0; text-align: right;">
                     <button type="button" onclick="removeTour('row_${index}')" class="btn btn-danger">Remove</button>
                 </td>
             </tr>
@@ -367,8 +366,6 @@ function removeTour(id) {
 }
 
 // ================= Load Single Tour Details =================
-
-
 function loadTourDetails(tourId, count) {
     if (!tourId) return;
 
@@ -442,6 +439,10 @@ function loadTourDetails(tourId, count) {
                     hideLoader();
 
                 }, 250);
+                $("input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']").each(function () {
+                    handleQtyInput.call(this);
+                });
+
             } else {
                 console.warn("Date input NOT FOUND for row:", count);
             }
@@ -453,8 +454,20 @@ function loadTourDetails(tourId, count) {
     });
 }
 
+function handleQtyInput() {
+    const row = this.closest("[id^='row_']");
+    calculateRowTotal(row);
+}
 
-
+$(document).ready(function () {
+    $(document).on("change", "#charge_ccnow", function () {
+        if (this.checked) {
+            $("#charge_ccnow_amount").show();
+        } else {
+            $("#charge_ccnow_amount").hide();
+        }
+    });
+});
 
 // ================= Fetch Tour Sessions =================
 function fetchTourSessions(tourId, selectedDate, count) {
@@ -467,7 +480,7 @@ function fetchTourSessions(tourId, selectedDate, count) {
     const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
     $row.find(".tour_startdate_display").val(pretty);
     $.ajax({
-        url: "/admin/tour-sessions",
+        url: "{{ route('admin.tour.sessions') }}",
         type: "GET",
         data: { tour_id: tourId, date: selectedDate },
         dataType: "json",
@@ -540,27 +553,20 @@ function fetchTourSessions(tourId, selectedDate, count) {
 </script>
 
 <script>
-    // Toggle fields
-    // document.querySelectorAll("input[name='payment_type']").forEach(el => {
-    //     el.addEventListener("change", function() {
-    //         if (this.value === "card") {
-    //             document.getElementById("cardFields").style.display = "block";
-    //             document.getElementById("transactionFields").style.display = "none";
-    //         } else {
-    //             document.getElementById("cardFields").style.display = "none";
-    //             document.getElementById("transactionFields").style.display = "block";
-    //         }
-    //     });
-    // });
-
     document.querySelectorAll("input[name='payment_type']").forEach(el => {
         el.addEventListener("click", function () {
             if (this.value === "card") {
                 cardFields.style.display = "block";
                 transactionFields.style.display = "none";
-            } else {
+                cashFields.style.display = "none";
+            } else if (this.value === "transaction") {
                 cardFields.style.display = "none";
                 transactionFields.style.display = "block";
+                cashFields.style.display = "none";
+            } else if (this.value === "other") {
+                cardFields.style.display = "none";
+                transactionFields.style.display = "none";
+                cashFields.style.display = "block";
             }
         });
     });
@@ -729,8 +735,10 @@ document.addEventListener("change", function(e){
 
         if(e.target.value === "other") {
             otherBox.style.display = "block";
+            otherBox.value = "";
         } else {
             otherBox.style.display = "none";
+            otherBox.value = " ";
         }
     }
 });
@@ -742,9 +750,7 @@ document.addEventListener("change", function(e){
 // DYNAMIC TOTAL CALCULATION FOR EACH TOUR ROW
 // =====================================================
 
-function calculateRowTotal34234(row) {
-
-    
+function calculateRowTotal34234(row) {    
 
     let subtotal = 0;
     let withouttax = 0;
@@ -834,6 +840,7 @@ function calculateRowTotal34234(row) {
     const subtotalBox = row.querySelector('.subtotal-box');
     if (subtotalBox) {
         subtotalBox.textContent = subtotal.toFixed(2);
+        document.getElementById("totalDue").innerText = subtotal.toFixed(2);
     }
 }
 
@@ -929,7 +936,7 @@ function calculateRowTotal(row) {
             maximumFractionDigits: 2
         }).format(tax);
 
-        taxRow.querySelector('.tax-amount').textContent = formattedTax;
+        taxRow.querySelector('.tax-amount').textContent = '$'+formattedTax;
 
         subtotal += tax;
     });
@@ -939,30 +946,25 @@ function calculateRowTotal(row) {
     // -----------------------------------------
     const withouttaxBox = row.querySelector('.withouttax-box');
     if (withouttaxBox) {
-        withouttaxBox.textContent = withouttax.toFixed(2);
+        withouttaxBox.textContent = '$'+withouttax.toFixed(2);
     }
     const subtotalBox = row.querySelector('.subtotal-box');
     if (subtotalBox) {
-        subtotalBox.textContent = subtotal.toFixed(2);
+        document.getElementById("totalDue").innerText = '$'+subtotal.toFixed(2);
+        document.getElementById("addPaymentAmount").value = subtotal.toFixed(2);
+        subtotalBox.textContent = '$'+subtotal.toFixed(2);
+
     }
 }
 
 
 // =====================================================
-// EVENT LISTENERS — trigger on every quantity change
+// EVENT LISTENERS — trigger on every quantity and extra change
 // =====================================================
-
 $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']", function () {
-
     const row = this.closest("[id^='row_']");
     calculateRowTotal(row);
 });
-
-
-
-
-
-
 </script>
 <script>
     function showLoader(message = "Processing...") {
