@@ -1,81 +1,80 @@
-<div class="card">
-    <div class="card card-primary">
-        <div class="card-header">
-            <h3 class="card-title">Tour Inclusions</h3>
-        </div>
-        <div class="card-body">
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul class="list-unstyled">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-            <form class="needs-validation" novalidate action="{{ route('admin.tour.inclusion_update', $data->id) }}" method="POST"
-            enctype="multipart/form-data">
-            @method('PUT')
-            @csrf
-            <div class="">
-                
-                @php
-                $InclusionOptions = old('InclusionOptions', $data->inclusions?->map(function ($item) {
-                                                return [
-                                                    'id'     => $item->id,
-                                                    'name'   => $item->name,
-                                                ];
-                                        })->filter()->values()->toArray());
-                            
-                $count = count($InclusionOptions);
-                if($count == 0){
-                    $InclusionOptions = old('InclusionOptions', [ ['id' => '', 'name' => '', 'type' => ''] ]);
-                    $count = 1;
-                }
-                @endphp
 
-                @foreach ($InclusionOptions as $index => $option) 
+<div class="card card-primary">
+    <div class="card-header">
+        <h3 class="card-title">Tour Inclusions</h3>
+    </div>
+    <div class="card-body">
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="list-unstyled">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        <form class="needs-validation" novalidate action="{{ route('admin.tour.inclusion_update', $data->id) }}" method="POST"
+        enctype="multipart/form-data">
+        @method('PUT')
+        @csrf
+        <div class="">
+            
+            @php
+            $InclusionOptions = old('InclusionOptions', $data->inclusions?->map(function ($item) {
+                                            return [
+                                                'id'     => $item->id,
+                                                'name'   => $item->name,
+                                            ];
+                                    })->filter()->values()->toArray());
+                        
+            $count = count($InclusionOptions);
+            if($count == 0){
+                $InclusionOptions = old('InclusionOptions', [ ['id' => '', 'name' => '', 'type' => ''] ]);
+                $count = 1;
+            }
+            @endphp
 
-                <div id="FeatureRow_{{ $index }}"> 
-                    <input type="hidden" name="InclusionOptions[{{ $index }}][id]" id="InclusionOptions_id_{{ $index }}" 
-                    value="{{ old("InclusionOptions.$index.id", $option['id']) }}" class="form-control" />
+            @foreach ($InclusionOptions as $index => $option) 
 
-                    <div class="row">
-                        @if ($count == 1)                        
-                        <div class="col-lg-12">
-                            <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
-                                <label for="include_name" class="form-label">Tour Inclusions</label>
-                                <select class="form-control" data-live-search="true" onchange="fetchInclude(this.value, {{ $index }})">
-                                    <option value="">Select one</option>
-                                    @foreach ($data->inclusions as $item)
-                                    <option value="{{ $item->id }}">{{ $item->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+            <div id="FeatureRow_{{ $index }}"> 
+                <input type="hidden" name="InclusionOptions[{{ $index }}][id]" id="InclusionOptions_id_{{ $index }}" 
+                value="{{ old("InclusionOptions.$index.id", $option['id']) }}" class="form-control" />
+
+                <div class="row">
+                    @if ($count == 1)                        
+                    <div class="col-lg-12">
+                        <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
+                            <label for="include_name" class="form-label">Tour Inclusions</label>
+                            <select class="form-control" data-live-search="true" onchange="fetchInclude(this.value, {{ $index }})">
+                                <option value="">Select one</option>
+                                @foreach ($data->inclusions as $item)
+                                <option value="{{ $item->id }}">{{ $item->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
-                        @endif
+                    </div>
+                    @endif
 
-                        <div class="col-lg-12">
-                            <div class="form-group mb-2">
-                                <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><i class="fas fa-pencil-alt"></i></span>
-                                    </div>
-                                    <input type="text" name="InclusionOptions[{{ $index }}][name]" id="include_name_{{ $index }}" value="{{ old("InclusionOptions.$index.name", $option['name']) }}"
-                                        class="form-control  mr-2" placeholder="Enter name">
+                    <div class="col-lg-12">
+                        <div class="form-group mb-2">
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-pencil-alt"></i></span>
                                 </div>
+                                <input type="text" name="InclusionOptions[{{ $index }}][name]" id="include_name_{{ $index }}" value="{{ old("InclusionOptions.$index.name", $option['name']) }}"
+                                    class="form-control  mr-2" placeholder="Enter name">
                             </div>
                         </div>
                     </div>
                 </div>
-                @endforeach
-
-                <div id="includesContainer"></div>
-
             </div>
-            
-            </form>
+            @endforeach
+
+            <div id="includesContainer"></div>
+
         </div>
+        
+        </form>
     </div>
 </div>
 

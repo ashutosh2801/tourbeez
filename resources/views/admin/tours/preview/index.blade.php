@@ -2,55 +2,63 @@
     @section('title','Preview Tour')
     
     <div class="row">
-        <div class="col-lg-12">
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h5 class="mb-0 h6">{{ $data->title }}</h5>
-                    <div class="card-tools">
-                        <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-primary btn-sm" target="_blank">{{translate('View Tour Online')}}</a>
-                        <a href="{{ route('admin.tour.edit', encrypt($data->id)) }}" class="btn btn-info btn-sm">Back</a>
+        <div class="col-lg-12 tour-edit-body">
+            <div class="card-primary mb-3">
+                <div class="card-header tour-edit-head">
+                    <div class="row">
+                        <div class="col-md-8 col-12">
+                            <h5 class="card-title">{{ $data->title }}</h5>
+                        </div>
+                        <div class="col-md-4 col-12">
+                            <div class="card-tools">
+                                <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-view-tour" target="_blank">{{translate('View Tour Online')}}</a>
+                                <a href="{{ route('admin.tour.index') }}" class="btn btn-back">Back</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body">
+            </div>
+            <div class="preview-tour-body">
+                <div class="card-body p-0">
                     <div class="row">
                         <div class="col-12">
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.basic_detail')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.addon')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.schedule')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.location')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.pickup')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.itinerary')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.faqs')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.includes')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.excludes')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.taxes_nd_fees')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.gallery')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.message')
                             </div>
-                            <div class="card">
+                            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                                 @include('admin.tours.preview.meta_information')
                             </div>                                
                         </div>

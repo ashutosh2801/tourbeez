@@ -387,9 +387,9 @@
 
                     <div class="card tour-details">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
-                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-down"></i> Tour Details</button>
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-right"></i> Tour Details</button>
                         </div>
-                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                        <div id="collapseTwo" class="collapse " aria-labelledby="headingTwo" data-parent="#accordionExample">
                             <div class="card-body">                               
                                 
                                 <div id="tour_all">
@@ -646,7 +646,7 @@
                         <div class="card-header bg-secondary py-0" id="heading4">
                                 <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
                         </div>
-                        <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
+                        <div id="collapse4" class="collapse " aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
                                  <div style="border:1px solid #eaecef;">
                                     <table class="table">
@@ -724,129 +724,124 @@
                     </div>
 
                      <!-- <div class="card  {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}"> -->
-                     <div class="card payment-details">
+                    <div class="card payment-details">
                         <div class="card-header bg-secondary py-0" id="headingThree">
                                 <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Payment Details</button>
                         </div>
 
-                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+                        <div id="collapseThree" class="collapse " aria-labelledby="headingThree" data-parent="#accordionExample">
                             <div class="card-body">
                                 <!-- <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div> -->
                                 
-                                <table class="table">    
-                                    <tr>
-                                        <td>Payment Type</td>
-                                        <td>Ref number</td>                                        
-                                        <td>Total</td>
-                                        <td>Balance</td>
-                                        <td>Paid</td>
-                                        @if($order->payments->isNotEmpty())
-                                            <td>Refund</td>
-                                        @endif
+                                <table class="table">  
+                                    <thead>  
+                                        <tr>
+                                            <th>Payment Type</th>
+                                            <th>Ref number</th>                                        
+                                            <th>Total</th>
+                                            <th>Balance</th>
+                                            <th>Paid</th>
+                                            @if($order->payments->isNotEmpty())
+                                                <th>Refund</th>
+                                            @endif
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>{{ ucwords($order->payment_method)}}</td>
+                                            <td>{{ ucwords($order->payment_intent_id)}}</td>
+                                            
+                                            <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
 
+                                            @if($order->payment_status === 3)
 
+                                            <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
+                                            @else
 
-                                    </tr>
-                                    <tr>
-                                    <td>{{ ucwords($order->payment_method)}}</td>
-                                    <td>{{ ucwords($order->payment_intent_id)}}</td>
-                                    
-                                    <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-
-                                    @if($order->payment_status === 3)
-
-                                        <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
-                                    @else
-
-                                        <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
-                                    @endif
-                                    
-                                    <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
-                                   <td>
-                                        <!-- <button class="btn btn-sm btn-danger refund-btn" 
-                                          style="width:150px; display:inline-block;" 
-                                          data-order-id="{{ $order->id }}" 
-                                          data-amount="{{ $order->booked_amount }}" 
-                                          type="button">
-                                          Refund
-                                        </button> -->
-                                        @if($order->booked_amount > 0 && $order->payments->isNotEmpty())
-                                            <button class="btn btn-sm btn-danger refund-all-btn"
-                                                data-order-id="{{ $order->id }}"
-                                                data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
+                                            <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
+                                            @endif
+                                            
+                                            <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
+                                            <td>
+                                                <!-- <button class="btn btn-sm btn-danger refund-btn" 
+                                                style="width:150px; display:inline-block;" 
+                                                data-order-id="{{ $order->id }}" 
+                                                data-amount="{{ $order->booked_amount }}" 
+                                                type="button">
                                                 Refund
-                                            </button>
-                                        @endif
-                                    </td>
-                                     </tr>
-
+                                                </button> -->
+                                                @if($order->booked_amount > 0 && $order->payments->isNotEmpty())
+                                                    <button class="btn btn-sm btn-danger refund-all-btn"
+                                                        data-order-id="{{ $order->id }}"
+                                                        data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
+                                                        Refund
+                                                    </button>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                                 @if($order->payments->isNotEmpty())
                                 <h5 class="mt-4">💳 Payment Details</h5>
-
-                                    
-                                        <table class="table table-sm table-bordered">
-                                            <thead>
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Amount</th>
+                                                <th>Card</th>
+                                                <th>Status</th>
+                                                <th>Action</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($order->payments as $payment)
                                                 <tr>
-                                                    <th>#</th>
-                                                    <th>Amount</th>
-                                                    <th>Card</th>
-                                                    <th>Status</th>
-                                                    <th>Action</th>
-                                                    <th>Date</th>
+                                                    <td>{{ $payment->id }}</td>
+                                                    <td>{{ price_format_with_currency($payment->amount, $payment->currency) }}</td>
+                                                    <td>
+                                                        {{ strtoupper($payment->card_brand) ?? 'N/A' }} 
+                                                        •••• {{ $payment->card_last4 ?? '----' }}  
+                                                        <br>
+                                                        <small>Exp: {{ $payment->card_exp_month }}/{{ $payment->card_exp_year }}</small>
+                                                    </td>
+                                                    <td>
+                                                        @if($payment->status === 'succeeded')
+                                                            <span class="badge bg-success">Succeeded</span>
+                                                        @elseif($payment->status === 'pending')
+                                                            <span class="badge bg-warning text-dark">Pending</span>
+                                                        @elseif($payment->status === 'failed')
+                                                            <span class="badge bg-danger">Failed</span>
+                                                        @elseif($payment->status === 'refunded')
+                                                            <span class="badge bg-secondary">Refunded</span>
+                                                        @elseif($payment->status === 'partial_refunded')
+                                                            <span class="badge bg-secondary">Partial Refunded </span> <span>{{(price_format_with_currency( $payment->refund_amount))}}</span>  
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        
+                                                        @if($payment->status === 'succeeded' || $payment->status === 'partial_refunded')
+                                                            <button 
+                                                                type="button"  
+                                                                class="btn btn-danger btn-sm open-refund-modal" 
+                                                                data-id="{{ $payment->id }}" 
+                                                                data-amount="{{ $payment->amount }}"
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#refundModal">
+                                                                <i class="fa fa-undo"></i> Refund
+                                                            </button>
+                                                        @else
+                                                            <span class="text-muted">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ $payment->created_at->format('d M Y h:i A') }}</td>
                                                 </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($order->payments as $payment)
-                                                    <tr>
-                                                        <td>{{ $payment->id }}</td>
-                                                        <td>{{ price_format_with_currency($payment->amount, $payment->currency) }}</td>
-                                                        <td>
-                                                            {{ strtoupper($payment->card_brand) ?? 'N/A' }} 
-                                                            •••• {{ $payment->card_last4 ?? '----' }}  
-                                                            <br>
-                                                            <small>Exp: {{ $payment->card_exp_month }}/{{ $payment->card_exp_year }}</small>
-                                                        </td>
-                                                        <td>
-                                                            @if($payment->status === 'succeeded')
-                                                                <span class="badge bg-success">Succeeded</span>
-                                                            @elseif($payment->status === 'pending')
-                                                                <span class="badge bg-warning text-dark">Pending</span>
-                                                            @elseif($payment->status === 'failed')
-                                                                <span class="badge bg-danger">Failed</span>
-                                                            @elseif($payment->status === 'refunded')
-                                                                <span class="badge bg-secondary">Refunded</span>
-                                                            @elseif($payment->status === 'partial_refunded')
-                                                                <span class="badge bg-secondary">Partial Refunded </span> <span>{{(price_format_with_currency( $payment->refund_amount))}}</span>  
-                                                            @endif
-                                                        </td>
-                                                        <td>
-                                                            
-                                                            @if($payment->status === 'succeeded' || $payment->status === 'partial_refunded')
-                                                                <button 
-                                                                    type="button"  
-                                                                    class="btn btn-danger btn-sm open-refund-modal" 
-                                                                    data-id="{{ $payment->id }}" 
-                                                                    data-amount="{{ $payment->amount }}"
-                                                                    data-bs-toggle="modal" 
-                                                                    data-bs-target="#refundModal">
-                                                                    <i class="fa fa-undo"></i> Refund
-                                                                </button>
-                                                            @else
-                                                                <span class="text-muted">—</span>
-                                                            @endif
-                                                        </td>
-                                                        <td>{{ $payment->created_at->format('d M Y h:i A') }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    @else
-                                        <!-- <p class="text-muted">No payments have been recorded yet.</p> -->
-                                    @endif
-
-
-
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                @else
+                                    <!-- <p class="text-muted">No payments have been recorded yet.</p> -->
+                                @endif
                             </div>
                             <div class="text-left mt-3">
                                 <button id="addPaymentBtn" type="button" class="btn btn-primary">
@@ -890,13 +885,13 @@
 
 
 
-</div> -->
+                    </div> -->
 
                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="heading5">
                             <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse5"><i class="fa fa-angle-right"></i> Order Email History</button>                     
                         </div>
-                        <div id="collapse5" class="collapse show" aria-labelledby="heading5" data-parent="#accordionExample">
+                        <div id="collapse5" class="collapse " aria-labelledby="heading5" data-parent="#accordionExample">
                             <div class="card-body">
                                 <table class="table">
                                     <thead>
@@ -932,9 +927,15 @@
                     </div>
 
                     <div class="card-footer" style="display:block">
-                        <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Save order</button>
-                        <a href="{{ route('admin.orders.index') }}" class="btn btn-cancel">Cancel</a>
-                        <a onclick="return confirm('Are you sure?')" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-danger confirm-delete">Delete</a>
+                        <div class="row">
+                            <div class="col-md-6 order-2 order-md-1">
+                                <a href="{{ route('admin.orders.index') }}" class="btn btn-cancel"> <i class="fas fa-times"></i> Cancel</a>
+                                <a onclick="return confirm('Are you sure?')" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-danger confirm-delete"> <i class="fas fa-trash-alt"></i> Delete</a>
+                            </div>
+                            <div class="col-md-6 align-buttons order-1 order-md-2">
+                                <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Save order</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

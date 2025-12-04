@@ -1,6 +1,6 @@
 <x-admin>
     @section('title','Tours')
-    <div class="card rounded-lg-custom border">
+    <div class="tour-main-body card rounded-lg-custom border">
 
         <!-- Search Form (GET) -->
         <form class="my-0" id="filterForm" method="GET" action="{{ route('admin.tour.index') }}">
@@ -100,7 +100,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-2 col-6">
+                        <div class="col-md-2 col-12">
                             <button type="submit" class="btn btn-search mb-2"> <i class="fas fa-search"></i> Search</button>
                         </div>
                         <div class="col-12">
@@ -117,26 +117,26 @@
          </form> --}}
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center w-100">
-                <div class="card-tools">
+                <div class="card-tools btn-options">
                     
-                    <a href="#" onclick="exportFilteredTours()" class="btn btn-selected"> <i class="fas fa-file-export"></i> Export Tours</a>
-                    <button type="button" class="btn btn-selected" data-toggle="modal" data-target="#importPriceModal">
+                    <a href="#" onclick="exportFilteredTours()" class="btn btn-ExpoImpo"> <i class="fas fa-file-export"></i> Export Tours</a>
+                    <button type="button" class="btn btn-ExpoImpo" data-toggle="modal" data-target="#importPriceModal">
                         <i class="fas fa-file-import"></i> Import Price
                     </button>
-                    <button type="button" class="btn btn-selected" data-toggle="modal" data-target="#markReviewModal">
+                    <button type="button" class="btn btn-MarkReview" data-toggle="modal" data-target="#markReviewModal">
                         <i class="fas fa-star"></i> Mark Review
                     </button>
 
-                    <button id="enableDisableTour" type="button" class="btn btn-selected"> <i class="fas fa-sync"></i> Enable/Disable</button>
+                    <button id="enableDisableTour" type="button" class="btn btn-enable"> <i class="fas fa-sync"></i> Enable/Disable</button>
 
-                    <button id="saveTourCoupon" type="button" class="btn btn-selected"> <i class="fas fa-tags"></i> Create Discount</button>
-                    <button id="saveSortOrder" type="button" class="btn btn-selected"> <i class="fas fa-save"></i> Save Sort Order</button>
+                    <button id="saveTourCoupon" type="button" class="btn btn-discount"> <i class="fas fa-tags"></i> Create Discount</button>
+                    <button id="saveSortOrder" type="button" class="btn btn-success btn-save"> <i class="fas fa-save"></i> Save Sort Order</button>
 
                     @can('add_tour') 
-                    <a href="{{ route('admin.tour.create') }}" class="btn btn-selected"> <i class="fas fa-calendar-plus"></i> Create New Tour</a>
+                    <a href="{{ route('admin.tour.create') }}" class="btn btn-success btn-create"> <i class="fas fa-calendar-plus"></i> Create New Tour</a>
                     @endcan
                     @can('delete_tour') 
-                    <button type="submit" class="btn btn-selected" onclick="return confirm('Are you sure to delete selected orders?')">
+                    <button type="submit" class="btn btn-danger btn-delete" onclick="return confirm('Are you sure to delete selected orders?')">
                         <i class="fas fa-trash-alt"></i> Delete Selected
                     </button>
                     @endcan

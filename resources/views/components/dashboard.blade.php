@@ -131,7 +131,7 @@
     </div>
 </div>
 
-<div>
+<!-- <div>
     <div class="row">
         <div class="col-md-6 order-panel">
             <div class="bg-white rounded-lg-custom border p-3">
@@ -386,7 +386,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <script>
   // Select all circle progress elements first

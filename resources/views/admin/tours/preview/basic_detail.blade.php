@@ -1,5 +1,4 @@
-<div class="card">
-    <div class="card card-primary">
+    <div class="card-primary">
         <div class="card-header">
             <h3 class="card-title">Basic Details</h3>            
         </div>
@@ -303,7 +302,6 @@
             
         </form>
     </div>
-</div>
 
 @section('js')
 @parent

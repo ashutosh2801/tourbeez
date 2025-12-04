@@ -5,8 +5,6 @@
         </li>
     </ul>
 
-
-
     <ul class="navbar-nav ml-auto">
 
     {{-- Notifications Dropdown --}}
@@ -31,7 +29,6 @@
 
     <li>
       <button id="openCurrencyModal" class="btn nav-currency"  title="Convert currency to USD">
-        
         <i class="fas fa-calculator fa-lg"></i>
       </button>
     </li>
