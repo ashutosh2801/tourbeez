@@ -4,50 +4,48 @@ tr.dragging {opacity: 1;}
 tr.drag-over-top {border-top: 3px solid blue;}
 tr.drag-over-bottom {border-bottom: 3px solid blue;}
 </style>
-<div class="card">
-    <div class="card card-primary">    
-        <div class="card-header">
-            <h3 class="card-title">Taxes and Fees</h3>            
-        </div>
-        <form class="needs-validation" novalidate action="{{ route('admin.tour.taxfee_update', $data->id) }}" method="POST"
-    enctype="multipart/form-data">
-        <div class="card-body">
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul class="list-unstyled">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-            
-            @method('PUT')
-            @csrf
-            <table class="table table-striped align-middle" id="taxTable">
-                <tbody>
-                  
-                    @php
-                    $i=1;
-                    $existing_taxes_fees = $data->taxes_fees->pluck('id')->toArray();
-                    @endphp
-                    @foreach ($taxesfees as $item)
-                        <tr draggable="true" data-id="{{ $item->id }}">
-                            <th width="60"><input type="checkbox" class="check_all_tax" name="taxes[]" value="{{ $item->id }}" style="width: 20px;height: 20px;"
-                            {{ (is_array($existing_taxes_fees) && in_array($item->id, $existing_taxes_fees)) ? 'checked' : '' }} /></th>
-                            <td>
-                                <a target="_blank" href="{{ route('admin.taxes.edit', encrypt($item->id)) }}" class="text-info">{{ $item->label }}</a>  <br />                             
-                                {{ ($item->tax_fee_type=='FEE' ? '$' : '') . number_format($item->tax_fee_value,1) . ($item->tax_fee_type=='TAX' ? '%' : '') }}
-                            </td>                                                  
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            
-        </div>
-        
-            </form>
+
+<div class="card card-primary">    
+    <div class="card-header">
+        <h3 class="card-title">Taxes and Fees</h3>            
     </div>
+    <form class="needs-validation" novalidate action="{{ route('admin.tour.taxfee_update', $data->id) }}" method="POST" enctype="multipart/form-data">
+    <div class="card-body p-0">
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="list-unstyled">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+        
+        @method('PUT')
+        @csrf
+        <table class="table table-striped align-middle" id="taxTable">
+            <tbody>
+              
+                @php
+                $i=1;
+                $existing_taxes_fees = $data->taxes_fees->pluck('id')->toArray();
+                @endphp
+                @foreach ($taxesfees as $item)
+                    <tr draggable="true" data-id="{{ $item->id }}">
+                        <th width="60"><input type="checkbox" class="check_all_tax" name="taxes[]" value="{{ $item->id }}" style="width: 20px;height: 20px;"
+                        {{ (is_array($existing_taxes_fees) && in_array($item->id, $existing_taxes_fees)) ? 'checked' : '' }} /></th>
+                        <td>
+                            <a target="_blank" href="{{ route('admin.taxes.edit', encrypt($item->id)) }}" class="text-info">{{ $item->label }}</a>  <br />                             
+                            {{ ($item->tax_fee_type=='FEE' ? '$' : '') . number_format($item->tax_fee_value,1) . ($item->tax_fee_type=='TAX' ? '%' : '') }}
+                        </td>                                                  
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+        
+    </div>
+    
+        </form>
 </div>
 
 @section('js')

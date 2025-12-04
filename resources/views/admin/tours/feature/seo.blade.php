@@ -1,19 +1,27 @@
 <x-admin>
     @section('title','Edit Tour')
     <div class="row">
-        <div class="col-lg-12">
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h5 class="mb-0 h6">{{ $data->title }}</h5>
-                    <div class="card-tools">
-                        <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-primary btn-sm" target="_blank">{{translate('View Tour Online')}}</a>
-                        <a href="{{ route('admin.tour.index') }}" class="btn btn-info btn-sm">Back</a>
+        <div class="col-lg-12 tour-edit-body">
+            <div class="card-primary mb-3">
+                <div class="card-header tour-edit-head">
+                    <div class="row">
+                        <div class="col-md-8 col-12">
+                            <h5 class="card-title">{{ $data->title }}</h5>
+                        </div>
+                        <div class="col-md-4 col-12">
+                            <div class="card-tools">
+                                <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-view-tour" target="_blank">{{translate('View Tour Online')}}</a>
+                                <a href="{{ route('admin.tour.index') }}" class="btn btn-back">Back</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body">
+            </div>
+            <div class="card-primary bg-white border rounded-lg-custom">
+                <div class="card-body p-0">
                     <div class="row">
-                        <div class="col-2">
-                        <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                        <div class="col-2 pr-0 desktop-menu">
+                            <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                                 <a class="nav-link" href="{{ route('admin.tour.edit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Basic Details')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" ><i class="fas fa-caret-right"></i> {{translate('Extra')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Scheduling')}}</a>
@@ -32,23 +40,21 @@
                                 <a class="nav-link" href="{{ route('admin.tour.edit.review', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Review')}}</a>                                
                             </div>
                         </div>
-                        <div class="col-10">
+                        <div class="col-md-10 col-12 pl-0">
                             <div class="tab-content" id="v-pills-tabContent">                               
                                 <div class="tab-pane fade show active" id="meta_information" role="tabpanel" aria-labelledby="v-pills-messages-tab-13">
-                                   
-                                        <div class="card">
-                                            <div class="nav nav-pills mb-3 justify-center align-center" id="v-pills-tab" role="tablist" aria-orientation="horizontal">
-                                                <a class="nav-link active" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Seo')}}</a>
-                                                <a class="nav-link" href="{{ route('admin.tour.edit.seoscore', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Seo Score')}}</a>
-                                            </div>
+                                    <div class="card seo-body">
+                                        <div class="seo-nav nav nav-pills mb-2 justify-center align-center" id="v-pills-tab" role="tablist" aria-orientation="horizontal">
+                                            <a class="nav-link active" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Seo')}}</a>
+                                            <a class="nav-link" href="{{ route('admin.tour.edit.seoscore', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Seo Score')}}</a>
+                                        </div>
 
-                                            <div class="tab-content" id="v-pills-tabContent">
-                                                <div class="tab-pane fade show active" id="reminders" role="tabpanel" aria-labelledby="v-pills-tab-100">
-                                                    @include('admin.tours.edit.info_seo')
-                                                </div>
+                                        <div class="tab-content" id="v-pills-tabContent">
+                                            <div class="tab-pane fade show active" id="reminders" role="tabpanel" aria-labelledby="v-pills-tab-100">
+                                                @include('admin.tours.edit.info_seo')
                                             </div>
                                         </div>
-                                  
+                                    </div>
                                 </div>
                             </div>
                         </div>

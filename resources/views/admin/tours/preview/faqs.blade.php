@@ -1,89 +1,88 @@
-<div class="card">
-    <div class="card card-primary">
-        <div class="card-header">
-            <h3 class="card-title">FAQs</h3>            
-        </div>
-        <div class="card-body">
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul class="list-unstyled">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-            <form class="needs-validation" novalidate action="{{ route('admin.tour.faq_update', $data->id) }}" method="POST"
-            enctype="multipart/form-data">
-            @method('PUT')
-            @csrf
-            <div class="">
 
-                @php
-                $FaqOptions = old('FaqOptions', $data->faqs?->map(function ($item) {
-                                                return [
-                                                    'id'         => $item->id,
-                                                    'question'   => $item->question,
-                                                    'answer'     => $item->answer,
-                                                ];
-                                            })->toArray());
-                            
-                $count = count($FaqOptions);
-                if($count == 0){
-                    $FaqOptions = old('FaqOptions', [ ['id' => '', 'question' => '', 'answer' => ''] ]);
-                    $count = 1;
-                }
-                @endphp
-
-                <div id="FaqContainer">
-                    @foreach ($FaqOptions as $index => $option) 
-
-                    <div id="FaqRow_{{ $index }}"> 
-                    <input type="hidden" name="FaqOptions[{{ $index }}][id]" id="FaqOptions_id" 
-                    value="{{ old("FaqOptions.$index.id", $option['id']) }}" class="form-control" />
-
-                    <div class="row">                    
-                        <div class="col-lg-12">
-                            <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
-                                <label for="faq_question" class="form-label">FAQs</label>
-                                <select class="form-control" data-live-search="true" id="faq" onchange="fetchFaq(this.value, {{ $index }})">
-                                    <option value="">Select one</option>
-                                    @foreach ($data->faqAll() as $item)
-                                    <option value="{{ $item->id }}">{{ $item->question }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-lg-8">
-                            <div class="form-group">
-                                <label for="faq_question" class="form-label">Question</label>
-                                <input type="text" name="FaqOptions[{{ $index }}][question]" id="faq_question_{{ $index }}" value="{{ old("FaqOptions.$index.question", $option['question']) }}"
-                                    class="form-control" placeholder="Enter question">
-                                @error('faq_question')
-                                    <small class="form-text text-danger">{{ $message }}</small>
-                                @enderror
-                            </div>
-                        </div>
-                        <div class="col-lg-12">
-                            <div class="form-group">
-                                <label for="faq_answer" class="form-label"> Answer</label>
-                                <textarea type="text" name="FaqOptions[{{ $index }}][answer]" id="faq_answer_{{ $index }}"
-                                    class="form-control"  placeholder="Enter answer" rows="4">{{ old("FaqOptions.$index.answer", $option['answer']) }}</textarea>
-                                @error('faq_answer')
-                                    <small class="form-text text-danger">{{ $message }}</small>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-                    <hr />
-                    </div>
+<div class="card-primary">
+    <div class="card-header">
+        <h3 class="card-title">FAQs</h3>            
+    </div>
+    <div class="card-body">
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="list-unstyled">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
                     @endforeach
+                </ul>
+            </div>
+        @endif
+        <form class="needs-validation" novalidate action="{{ route('admin.tour.faq_update', $data->id) }}" method="POST"
+        enctype="multipart/form-data">
+        @method('PUT')
+        @csrf
+        <div class="">
+
+            @php
+            $FaqOptions = old('FaqOptions', $data->faqs?->map(function ($item) {
+                                            return [
+                                                'id'         => $item->id,
+                                                'question'   => $item->question,
+                                                'answer'     => $item->answer,
+                                            ];
+                                        })->toArray());
+                        
+            $count = count($FaqOptions);
+            if($count == 0){
+                $FaqOptions = old('FaqOptions', [ ['id' => '', 'question' => '', 'answer' => ''] ]);
+                $count = 1;
+            }
+            @endphp
+
+            <div id="FaqContainer">
+                @foreach ($FaqOptions as $index => $option) 
+
+                <div id="FaqRow_{{ $index }}"> 
+                <input type="hidden" name="FaqOptions[{{ $index }}][id]" id="FaqOptions_id" 
+                value="{{ old("FaqOptions.$index.id", $option['id']) }}" class="form-control" />
+
+                <div class="row">                    
+                    <div class="col-lg-12">
+                        <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
+                            <label for="faq_question" class="form-label">FAQs</label>
+                            <select class="form-control" data-live-search="true" id="faq" onchange="fetchFaq(this.value, {{ $index }})">
+                                <option value="">Select one</option>
+                                @foreach ($data->faqAll() as $item)
+                                <option value="{{ $item->id }}">{{ $item->question }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="form-group">
+                            <label for="faq_question" class="form-label">Question</label>
+                            <input type="text" name="FaqOptions[{{ $index }}][question]" id="faq_question_{{ $index }}" value="{{ old("FaqOptions.$index.question", $option['question']) }}"
+                                class="form-control" placeholder="Enter question">
+                            @error('faq_question')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div>
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                            <label for="faq_answer" class="form-label"> Answer</label>
+                            <textarea type="text" name="FaqOptions[{{ $index }}][answer]" id="faq_answer_{{ $index }}"
+                                class="form-control"  placeholder="Enter answer" rows="4">{{ old("FaqOptions.$index.answer", $option['answer']) }}</textarea>
+                            @error('faq_answer')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div>
                 </div>
-                
+                <hr />
+                </div>
+                @endforeach
             </div>
             
-            </form>
         </div>
+        
+        </form>
     </div>
 </div>
 
