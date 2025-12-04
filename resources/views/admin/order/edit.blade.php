@@ -179,11 +179,11 @@
                 <div class="col-md-9">
                     <h5 class="m-0">Created on {{ date__format($order->created_at) }} online on your booking form</h5>
                 </div>
-                <div class="col-md-3 {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}">
+                <!-- <div class="col-md-3 {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}">
                     <button class="btn charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
                         Charge now
                     </button>
-                </div>
+                </div> -->
             </div>
         </div>
         <div class="card-body order-edit">
@@ -376,19 +376,18 @@
                         </div>
                         <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
                             <div class="card-body">
-                                    <ul class="flex flex-row">
-                                        <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"><i class="fas fa-user-tie"></i>  {{ $order->customer?->name }}</a></li>
-                                        <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
-                                        <li><i class="fas fa-phone-square-alt"></i> {{ $order->customer?->phone }}</li>
-                                    </ul>
-                                
+                                <ul class="flex flex-row">
+                                    <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"><i class="fas fa-user-tie"></i>  {{ $order->customer?->name }}</a></li>
+                                    <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
+                                    <li><i class="fas fa-phone-square-alt"></i> {{ $order->customer?->phone }}</li>
+                                </ul>                                
                             </div>
                         </div>
                     </div>
 
                     <div class="card tour-details">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
-                                <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-down"></i> Tour Details</button>
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-down"></i> Tour Details</button>
                         </div>
                         <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
                             <div class="card-body">                               
@@ -647,7 +646,7 @@
                         <div class="card-header bg-secondary py-0" id="heading4">
                                 <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
                         </div>
-                        <div id="collapse4" class="collapse" aria-labelledby="heading4" data-parent="#accordionExample">
+                        <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
                                  <div style="border:1px solid #eaecef;">
                                     <table class="table">
@@ -737,10 +736,8 @@
                                 <table class="table">    
                                     <tr>
                                         <td>Payment Type</td>
-                                        <td>Ref number</td>
-                                        
+                                        <td>Ref number</td>                                        
                                         <td>Total</td>
-                                        <td></td>
                                         <td>Balance</td>
                                         <td>Paid</td>
                                         @if($order->payments->isNotEmpty())
@@ -755,18 +752,16 @@
                                     <td>{{ ucwords($order->payment_intent_id)}}</td>
                                     
                                     <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-                                        <td></td>
 
-                                        @if($order->payment_status ==3)
+                                    @if($order->payment_status === 3)
 
+                                        <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
+                                    @else
 
-                                            <td>{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
-                                        @else
-
-                                            <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
-                                        @endif
-                                        
-                                        <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
+                                        <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
+                                    @endif
+                                    
+                                    <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
                                    <td>
                                         <!-- <button class="btn btn-sm btn-danger refund-btn" 
                                           style="width:150px; display:inline-block;" 
@@ -775,7 +770,7 @@
                                           type="button">
                                           Refund
                                         </button> -->
-                                        @if($order->payments->isNotEmpty())
+                                        @if($order->booked_amount > 0 && $order->payments->isNotEmpty())
                                             <button class="btn btn-sm btn-danger refund-all-btn"
                                                 data-order-id="{{ $order->id }}"
                                                 data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
@@ -853,16 +848,28 @@
 
 
                             </div>
+                            <div class="text-left mt-3">
+                                <button id="addPaymentBtn" type="button" class="btn btn-primary">
+                                    + Add Payment
+                                </button>
+                                @if(str_contains( $order->payment_method_id, 'pm_'))
+                                <button id="chargeSavedCard" type="button" class="btn btn-info charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
+                                    Charge now
+                                </button>
+                                @endif
+
+                                @if(str_contains( $order->payment_method_id, 'pi_'))
+                                <button class="btn btn-primary charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
+                                    Charge now
+                                </button>
+                                @endif
+                            </div>
                         </div>
-                        <div class="text-left mt-3">
-                            <button id="addPaymentBtn" type="button" class="btn btn-primary">
-                                + Add Payment
-                            </button>
-                        </div>
+                    </div>
                         <!-- Hidden Add Payment Form -->
-                        <div id="addPaymentBlock" class="mt-3" style="display:none;">
+                        <!-- <div id="addPaymentBlock" class="mt-3" style="display:none;">
                             <div id="addPaymentSection">
-                                <div class="form-group">
+                                <div class="form-group hidden">
                                     <label>Amount</label>
                                     <input hidden type="number" id="addPaymentAmount" class="form-control" min="1" placeholder="Enter amount" value="">
                                 </div>
@@ -883,15 +890,13 @@
 
 
 
-</div>
+</div> -->
 
                     <div class="card">
-                        <div class="card-header bg-secondary py-0" id="headingThree">
-                            <h2 class="my-0 py-0">
-                                <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Order Email History</button>                     
-                            </h2>
+                        <div class="card-header bg-secondary py-0" id="heading5">
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse5"><i class="fa fa-angle-right"></i> Order Email History</button>                     
                         </div>
-                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+                        <div id="collapse5" class="collapse show" aria-labelledby="heading5" data-parent="#accordionExample">
                             <div class="card-body">
                                 <table class="table">
                                     <thead>
@@ -1091,7 +1096,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Carge Payment</h5>
+        <h5 class="modal-title">Charge Payment</h5>
       </div>
       <div class="modal-body">
 
@@ -1115,8 +1120,14 @@
 
 
         <div class="mb-3">
-          <label>Amount (current order balance: {{ price_format_with_currency($order->balance_amount, $order->currency) }}) </label>
-          <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required>
+            <label>Amount (current order balance: {{ price_format_with_currency($order->balance_amount, $order->currency) }}) </label>
+            <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
+            <div class="input-group">
+                <div class="input-group-append">
+                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                </div>    
+                <input type="text" class="form-control" id="chargeAmount" name="amount" placeholder="0.00" value="{{ $order->balance_amount }}" required style="width: 100px;">                                            
+            </div>
         </div>
 
         <!-- Card details block (will be shown/hidden) -->
@@ -1338,7 +1349,7 @@
         const id     = radio.id;
         const label  = document.querySelector(`label[for="${id}"]`).textContent.trim();
         const group  = radio.closest('.btn-group');
-        // const button = group.querySelector('button.dropdown-toggle');
+        const button = group.querySelector('button.dropdown-toggle');
 
         // Update button text
         button.textContent = label;
@@ -1452,7 +1463,7 @@
 });
 
 
-    $(document).on('click', '.charge-btn', function(e) {
+$(document).on('click', '.charge-btn', function(e) {
     e.preventDefault();
     let orderId = $(this).data('order-id');
     let customerName = $(this).data('customer-name');
@@ -1463,10 +1474,7 @@
     $('#showChargeAmount').html(balance);
     $('#chargeOrderId').val(orderId);
     $('#chargeAmount').val(balance);
-    $('#chargeModal').modal('show');
-
-
-    
+    $('#chargeModal').modal('show');    
 });
 
 // Handle charge form submit
@@ -1476,6 +1484,10 @@ $('#chargeForm').on('submit', function(e) {
 
     let orderId = $('#chargeOrderId').val();
     let amount  = $('#chargeAmount').val();
+
+    const btn = document.querySelector("button[form='chargeForm'][type='submit']");
+    btn.disabled = true;
+    btn.textContent = "Processing...";
 
     $.ajax({
         // url: 'staging/admin/orders/' + orderId + '/charge',
@@ -1488,8 +1500,6 @@ $('#chargeForm').on('submit', function(e) {
         success: function(response) {
             $('#chargeModal').modal('hide');
             if(response.message){
-                // alert(response.message);
-
                 Swal.fire({
                     icon: response.success ? 'success' : 'error',
                     title: response.success ? 'Success' : 'Error',
@@ -1508,7 +1518,9 @@ $('#chargeForm').on('submit', function(e) {
                 });
             }
             
-            location.reload();
+            btn.disabled = false;
+            btn.textContent = "Charge Now";
+           location.reload();
         },
         error: function(xhr) {
 
@@ -1745,6 +1757,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     addBtn.addEventListener("click", () => {
         block.style.display = block.style.display === "none" ? "block" : "none";
+        addBtn.innerHTML = block.style.display === "none" ? "+ Add Payment" : "- Cancel Payment";
     });
 
     // Initialize Stripe
@@ -2425,7 +2438,7 @@ function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
     
 
     $.ajax({
-        url: "/admin/tour-sessions",
+        url: "{{ route('admin.tour.sessions') }}",
         type: "GET",
         data: { tour_id: tourId, date: selectedDate },
         dataType: "json",
