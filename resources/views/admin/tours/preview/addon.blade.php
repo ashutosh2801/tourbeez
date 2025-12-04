@@ -4,51 +4,47 @@ tr.dragging {opacity: 1;}
 tr.drag-over-top {border-top: 3px solid blue;}
 tr.drag-over-bottom {border-bottom: 3px solid blue;}
 </style>
-<div class="card">
-    <div class="card card-primary">
-        <div class="card-header">
-            <h3 class="card-title">Extra</h3>
-        </div>
-        <form class="needs-validation" novalidate action="{{ route('admin.tour.addon_update', $data->id) }}" method="POST"
-    enctype="multipart/form-data">
-        <div class="card-body">
-            
-            @csrf
-            <table class="table table-striped align-middle" id="myTable">
-                <thead>
-                    <tr>
-                        <th><input type="checkbox" id="check_all" style="width: 20px;height: 20px;" /></th>
-                        <th>Image</th>
-                        <th width="200">Name</th>
-                        <th>Description</th>
-                        <th>Price</th>
-                        <th width="150">Customer choice</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php
-                    $i=1;
-                    $existing_addons = $data->addons->pluck('id')->toArray();
-                    @endphp
-                    @foreach ($addons as $item)
-                        <tr draggable="true" data-id="{{ $item->id }}" data-order="{{ $item->order ? $item->order : $i++  }}">
-                            <th><input {{ (is_array($existing_addons) && in_array($item->id, $existing_addons)) ? 'checked' : '' }} type="checkbox" class="check_all" name="addons[]" value="{{ $item->id }}" style="width: 20px;height: 20px;" /></th>
-                            <td>
-                                <img class="img-md" src="{{ uploaded_asset($item->image) }}" height="150"  alt="{{translate('photo')}}">
-                            </td>
-                            <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
-                            <td>{{ substr($item->description,0,150) }}...</td>
-                            <td>{{ price_format_with_currency($item->price) }}</td>
-                            <td>{{ $item->customer_choice }}</td>
-                                                  
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        
-            </form>
+
+<div class="card-primary">
+    <div class="card-header">
+        <h3 class="card-title">Extra</h3>
     </div>
+    <form class="needs-validation" novalidate action="{{ route('admin.tour.addon_update', $data->id) }}" method="POST" enctype="multipart/form-data">
+      <div class="card-body p-0">
+          @csrf
+          <table class="table table-striped align-middle" id="myTable">
+              <thead>
+                  <tr>
+                      <th><input type="checkbox" id="check_all" style="width: 20px;height: 20px;" /></th>
+                      <th>Image</th>
+                      <th width="200">Name</th>
+                      <th>Description</th>
+                      <th>Price</th>
+                      <th width="150">Customer choice</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  @php
+                  $i=1;
+                  $existing_addons = $data->addons->pluck('id')->toArray();
+                  @endphp
+                  @foreach ($addons as $item)
+                      <tr draggable="true" data-id="{{ $item->id }}" data-order="{{ $item->order ? $item->order : $i++  }}">
+                          <th><input {{ (is_array($existing_addons) && in_array($item->id, $existing_addons)) ? 'checked' : '' }} type="checkbox" class="check_all" name="addons[]" value="{{ $item->id }}" style="width: 20px;height: 20px;" /></th>
+                          <td>
+                              <img class="img-md" src="{{ uploaded_asset($item->image) }}" height="150"  alt="{{translate('photo')}}">
+                          </td>
+                          <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
+                          <td>{{ substr($item->description,0,150) }}...</td>
+                          <td>{{ price_format_with_currency($item->price) }}</td>
+                          <td>{{ $item->customer_choice }}</td>
+                                                
+                      </tr>
+                  @endforeach
+              </tbody>
+          </table>
+      </div>
+    </form>
 </div>
 
 @section('js')
