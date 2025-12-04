@@ -387,9 +387,9 @@
 
                     <div class="card tour-details">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
-                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-down"></i> Tour Details</button>
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-right"></i> Tour Details</button>
                         </div>
-                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                        <div id="collapseTwo" class="collapse " aria-labelledby="headingTwo" data-parent="#accordionExample">
                             <div class="card-body">                               
                                 
                                 <div id="tour_all">
@@ -646,7 +646,7 @@
                         <div class="card-header bg-secondary py-0" id="heading4">
                                 <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
                         </div>
-                        <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
+                        <div id="collapse4" class="collapse " aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
                                  <div style="border:1px solid #eaecef;">
                                     <table class="table">
@@ -891,7 +891,7 @@
                         <div class="card-header bg-secondary py-0" id="heading5">
                             <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse5"><i class="fa fa-angle-right"></i> Order Email History</button>                     
                         </div>
-                        <div id="collapse5" class="collapse show" aria-labelledby="heading5" data-parent="#accordionExample">
+                        <div id="collapse5" class="collapse " aria-labelledby="heading5" data-parent="#accordionExample">
                             <div class="card-body">
                                 <table class="table">
                                     <thead>
