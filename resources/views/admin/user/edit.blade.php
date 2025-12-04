@@ -65,7 +65,7 @@
                 {{-- ===== USER BASIC INFO ===== --}}
                 <div class="row">
                     <div class="col-lg-6">
-                        <label>Name*</label>
+                        <label>Name* </label>
                         <input type="text" class="form-control" name="name" required value="{{ $user->name }}">
                         <x-error>name</x-error>
                     </div>
@@ -125,7 +125,7 @@
                 @php
                     $supplier = $user->supplier ?? null;
                 @endphp
-                @if($user->role == 'Supplier')
+                @if($supplier && $user->role == 'Supplier')
                     <h4 class="mt-4 mb-3">Supplier Information</h4>
                     <div class="row">
                         <div class="col-lg-6">
@@ -142,7 +142,7 @@
                                 <option value="" disabled>Supplier Type</option>
                                     @foreach (['Tour Operator','Transportation', 'Hotel', 'Attraction','Restaurant', 'Other' ] as $type)
                                         @if($role->name != 'Super Admin')
-                                            <option value="{{ $type }}" {{ $type == $supplier->supplier_type ? 'selected' : '' }}>
+                                            <option value="{{ $type }}" {{ $type == $supplier?->supplier_type ? 'selected' : '' }}>
                                                 {{ $type }}
                                             </option>
                                         @endif
@@ -210,7 +210,7 @@
                             <textarea name="certifications" class="form-control">{{ $supplier->certifications ?? '' }}</textarea>
                         </div>
 
-                    
+                        
                         <div class="col-lg-6">
                             <label>Payment Method</label>
                             <select name="payment_method" class="form-control">
@@ -221,6 +221,7 @@
                                 <option value="Other" {{ $supplier->payment_method == 'Other'? 'selected' : '' }}>Other</option>
                             </select>
                         </div>
+
 
                         <div class="col-lg-6">
                             <label>Bank Details</label>
