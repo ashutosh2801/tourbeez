@@ -1,43 +1,41 @@
-<div class="card">
-    <div class="card card-primary">
-        <div class="card-header">
-            <h3 class="card-title">Gallery</h3>            
-        </div>
-        @if ($errors->any())
-            <div class="alert alert-danger">
-                <ul class="list-unstyled">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-        <form class="needs-validation" novalidate action="{{ route('admin.tour.gallery_update', $data->id) }}" method="POST"
-            enctype="multipart/form-data">
-            @method('PUT')
-            @csrf
-            <div class="card-body">
-                <div class="row" id="GalleryContainer">
-                    @php $i = 1; @endphp
-                    @foreach ($data->galleries as $image)
-                    <div class="col-lg-2">
-                        <div class="form-group">
-                            <label class="form-label">{{ $i++ }} Image</label>
-                            <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
-                                <!-- <div class="input-group-prepend">
-                                    <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
-                                </div>
-                                <div class="form-control file-amount">{{translate('Choose Photo')}}</div> -->
-                                <input type="hidden" name="gallery[]" class="selected-files" value="{{ $image->id }}">
-                            </div>
-                            <div class="file-preview box md"></div>
-                        </div>
-                    </div>    
-                    @endforeach                    
-                </div>
-            </div>            
-        </form>
+<div class="card-primary">
+    <div class="card-header">
+        <h3 class="card-title">Gallery</h3>            
     </div>
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul class="list-unstyled">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+    <form class="needs-validation" novalidate action="{{ route('admin.tour.gallery_update', $data->id) }}" method="POST"
+        enctype="multipart/form-data">
+        @method('PUT')
+        @csrf
+        <div class="card-body">
+            <div class="row" id="GalleryContainer">
+                @php $i = 1; @endphp
+                @foreach ($data->galleries as $image)
+                <div class="col-lg-2">
+                    <div class="form-group">
+                        <label class="form-label">{{ $i++ }} Image</label>
+                        <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
+                            <!-- <div class="input-group-prepend">
+                                <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
+                            </div>
+                            <div class="form-control file-amount">{{translate('Choose Photo')}}</div> -->
+                            <input type="hidden" name="gallery[]" class="selected-files" value="{{ $image->id }}">
+                        </div>
+                        <div class="file-preview box md"></div>
+                    </div>
+                </div>    
+                @endforeach                    
+            </div>
+        </div>            
+    </form>
 </div>
 
 @section('js')

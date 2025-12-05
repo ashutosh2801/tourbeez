@@ -813,7 +813,7 @@ class OrderController extends Controller
                             'currency'          => $order->currency,
                             'status'            => 'uncaptured', // manual capture pending
                             'action'            => $adv_deposite,
-                            'response_payload'  => json_encode($pi),
+                            'response_payload'  => json_encode($si),
                         ]);
 
                 }

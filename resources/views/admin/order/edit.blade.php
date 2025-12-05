@@ -167,620 +167,622 @@
 @endphp
 
     <form action="{{ route('admin.orders.update',$order->id) }}" method="POST">
-        @method('PUT')
-        @csrf
-        <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
-        <input type="hidden" name="order_number" id="order_number" value="{{ $order->order_number }}" /> 
+    @method('PUT')
+    @csrf
+    <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
+    <input type="hidden" name="order_number" id="order_number" value="{{ $order->order_number }}" /> 
 
 
-        <div class="mb-3 card-primary order-edit-head">
-            <div class="card-header">
+    <div class="card card-primary rounded-lg-custom border order-edit-head">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-md-9">
+                    <h5 class="m-0">Created on {{ date__format($order->created_at) }} online on your booking form</h5>
+                </div>
+                <!-- <div class="col-md-3 {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}">
+                    <button class="btn charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
+                        Charge now
+                    </button>
+                </div> -->
+            </div>
+        </div>
+        <div class="card-body order-edit">
+            <div>
                 <div class="row">
-                    <div class="col-md-9">
-                        <h5>Created on {{ date__format($order->created_at) }} online on your booking form</h5>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-hand-holding-usd"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Balance</p>
+                                <button type="button" class="btn btn-balance dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    @if($order->payment_status ==3)
+
+                                        <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</strong>
+                                    @else
+
+                                        <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
+                                    @endif
+
+                                    
+                                </button>
+                                <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
+
+                                    @if($order->payment_status ==3)
+                                        <li class="payment-details-breakdown--item">
+                                            <strong class="payment-details-breakdown--text">Uncaptured</strong>
+                                            <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
+                                        </li>
+                                    @else
+                                        <li class="payment-details-breakdown--item">
+                                            <strong class="payment-details-breakdown--text">Paid</strong>
+                                            <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
+                                        </li>
+
+                                    @endif
+                                    <li class="payment-details-breakdown--item">
+                                        <strong class="payment-details-breakdown--text">Total</strong>
+                                        <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->total_amount, $order->currency) }}</strong>
+                                    </li>
+                                    <li class="payment-details-breakdown--item">
+                                        <strong class="payment-details-breakdown--text">Refunded</strong>
+                                        <strong class="payment-details-breakdown--text">{{  price_format_with_currency(0, $order->currency) }}</strong>
+                                    </li>
+                                    @if($order->payment_status == 3)
+                                        <li class="payment-details-breakdown--item">
+                                        <strong class="payment-details-breakdown--text">Balance</strong>
+                                            <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</strong>
+                                        </li>
+
+                                    @else
+                                        <li class="payment-details-breakdown--item">
+                                        <strong class="payment-details-breakdown--text">Balance</strong>
+                                            <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
+                                        </li>
+
+                                    @endif
+                                    
+
+                                    <!-- Divider -->
+                                    <li role="separator" class="divider"></li>
+
+                                    <!-- Action Button -->
+                                    
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-3 {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}">
-                        <button class="btn charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                            Charge now
-                        </button>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-stream"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Order Status</p>
+                                <button type="button" class="btn btn-status dropdown-toggle arrow childOrderEnabled"
+                                    data-element-to-update=".payment-status"
+                                    data-selected="{{ $order->status }}"
+                                    data-toggle="dropdown"
+                                    aria-haspopup="true"
+                                    aria-expanded="false">
+                                    {{ $statuses[$order->status] ?? 'Unknown' }}
+                                </button>
+                                <ul class="dropdown-menu dropdown-value">
+                                    @foreach ($statuses as $key => $label)
+                                        <li>
+                                            <input type="radio"
+                                                id="{{ $key }}"
+                                                name="order_status"
+                                                value="{{ $key }}"
+                                                autocomplete="off"
+                                                {{ $order->status === $key ? 'checked' : '' }}>
+                                            <label for="{{ $key }}" class="{{ $key }}">
+                                                <i class="fa fa-circle" aria-hidden="true"></i>
+                                                {{ $label }}
+                                            </label>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-envelope-open-text"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Email</p>
+                                <select class="form-control form-option" name="email_template_name" id="email_template_name">
+                                    <option value="" >Select</option>
+
+                                    
+
+                                    @foreach($email_templates as $email_template)
+
+                                        @if(in_array($email_template->identifier, $expectEmails))
+                                            @continue
+                                        @endif
+
+
+                                        <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>SMS</p>
+                                <select class="form-control form-option" name="sms_template_name" id="sms_template_name">
+                                    <option value="" >Select</option>
+
+                                    @foreach($sms_templates as $sms_template)
+                                
+
+                                    <option value="{{$sms_template->id}}" >{{snakeToWords($sms_template->identifier)}} -> Send Now</option>
+
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div> -->
+                    <div class="info-blog">
+                        <div class="info-stats4">
+                            <div class="info-icon flex-shrink-0">
+                                <i class="fas fa-print"></i>
+                            </div>
+                            <div class="sale-num">
+                                <p>Print</p>
+                                <select class="form-control form-option" name="print_template_name" id="print_template_name">
+                                    <option value="" >Select</option>
+
+                                    @foreach($email_templates as $email_template)
+
+                                        @if(in_array($email_template->identifier, $expectEmails))
+                                            @continue
+                                        @endif
+
+
+                                        <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Print Now</option>
+                                    @endforeach
+                                    <!-- <option value="Order Details" >Order Details -> Send Now</option>
+                                    <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
+                                    <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
+                                    <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
+                                    <option value="Reminder 2nd" >Reminder 2nd -> Send Now</option>
+                                    <option value="Reminder 3rd" >Reminder 3rd -> Send Now</option>
+                                    <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
+                                    <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
+                                    <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
+                                    <option value="Simple Email" >Simple Email -> Send Now</option> -->
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="card card-primary rounded-lg-custom border">
-            <div class="card-body order-edit">
-                <div>
-                    <div class="row">
-                        <div class="info-blog">
-                            <div class="info-stats4">
-                                <div class="info-icon flex-shrink-0">
-                                    <i class="fas fa-hand-holding-usd"></i>
-                                </div>
-                                <div class="sale-num">
-                                    <p>Balance</p>
-                                    <button type="button" class="btn btn-balance dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        @if($order->payment_status ==3)
-
-                                            <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</strong>
-                                        @else
-
-                                            <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
-                                        @endif
-
-                                        
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-value payment-details-breakdown--container">
-
-                                        @if($order->payment_status ==3)
-                                            <li class="payment-details-breakdown--item">
-                                                <strong class="payment-details-breakdown--text">Uncaptured</strong>
-                                                <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
-                                            </li>
-                                        @else
-                                            <li class="payment-details-breakdown--item">
-                                                <strong class="payment-details-breakdown--text">Paid</strong>
-                                                <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
-                                            </li>
-
-                                        @endif
-                                        <li class="payment-details-breakdown--item">
-                                            <strong class="payment-details-breakdown--text">Total</strong>
-                                            <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->total_amount, $order->currency) }}</strong>
-                                        </li>
-                                        <li class="payment-details-breakdown--item">
-                                            <strong class="payment-details-breakdown--text">Refunded</strong>
-                                            <strong class="payment-details-breakdown--text">{{  price_format_with_currency(0, $order->currency) }}</strong>
-                                        </li>
-                                        @if($order->payment_status == 3)
-                                            <li class="payment-details-breakdown--item">
-                                            <strong class="payment-details-breakdown--text">Balance</strong>
-                                                <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</strong>
-                                            </li>
-
-                                        @else
-                                            <li class="payment-details-breakdown--item">
-                                            <strong class="payment-details-breakdown--text">Balance</strong>
-                                                <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
-                                            </li>
-
-                                        @endif
-                                        
-
-                                        <!-- Divider -->
-                                        <li role="separator" class="divider"></li>
-
-                                        <!-- Action Button -->
-                                        
-                                    </ul>
-                                </div>
-                            </div>
+            
+            <div class="bs-example">
+                <div class="accordion" id="accordionExample">
+                    <div class="card customer-details">
+                        <div class="card-header bg-secondary py-0" id="headingOne">
+                            <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne"><i class="fa fa-angle-right"></i>Customer Details</button>
                         </div>
-                        <div class="info-blog">
-                            <div class="info-stats4">
-                                <div class="info-icon flex-shrink-0">
-                                    <i class="fas fa-stream"></i>
-                                </div>
-                                <div class="sale-num">
-                                    <p>Order Status</p>
-                                    <button type="button" class="btn btn-status dropdown-toggle arrow childOrderEnabled"
-                                        data-element-to-update=".payment-status"
-                                        data-selected="{{ $order->status }}"
-                                        data-toggle="dropdown"
-                                        aria-haspopup="true"
-                                        aria-expanded="false">
-                                        {{ $statuses[$order->status] ?? 'Unknown' }}
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-value">
-                                        @foreach ($statuses as $key => $label)
-                                            <li>
-                                                <input type="radio"
-                                                    id="{{ $key }}"
-                                                    name="order_status"
-                                                    value="{{ $key }}"
-                                                    autocomplete="off"
-                                                    {{ $order->status === $key ? 'checked' : '' }}>
-                                                <label for="{{ $key }}" class="{{ $key }}">
-                                                    <i class="fa fa-circle" aria-hidden="true"></i>
-                                                    {{ $label }}
-                                                </label>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="info-blog">
-                            <div class="info-stats4">
-                                <div class="info-icon flex-shrink-0">
-                                    <i class="fas fa-envelope-open-text"></i>
-                                </div>
-                                <div class="sale-num">
-                                    <p>Email</p>
-                                    <select class="form-control form-option" name="email_template_name" id="email_template_name">
-                                        <option value="" >Select</option>
-
-                                        
-
-                                        @foreach($email_templates as $email_template)
-
-                                            @if(in_array($email_template->identifier, $expectEmails))
-                                                @continue
-                                            @endif
-
-
-                                            <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Send Now</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- <div class="info-blog">
-                            <div class="info-stats4">
-                                <div class="info-icon flex-shrink-0">
-                                    <i class="fas fa-comments"></i>
-                                </div>
-                                <div class="sale-num">
-                                    <p>SMS</p>
-                                    <select class="form-control form-option" name="sms_template_name" id="sms_template_name">
-                                        <option value="" >Select</option>
-
-                                        @foreach($sms_templates as $sms_template)
-                                    
-
-                                        <option value="{{$sms_template->id}}" >{{snakeToWords($sms_template->identifier)}} -> Send Now</option>
-
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                        </div> -->
-                        <div class="info-blog">
-                            <div class="info-stats4">
-                                <div class="info-icon flex-shrink-0">
-                                    <i class="fas fa-print"></i>
-                                </div>
-                                <div class="sale-num">
-                                    <p>Print</p>
-                                    <select class="form-control form-option" name="print_template_name" id="print_template_name">
-                                        <option value="" >Select</option>
-
-                                        @foreach($email_templates as $email_template)
-
-                                            @if(in_array($email_template->identifier, $expectEmails))
-                                                @continue
-                                            @endif
-
-
-                                            <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Print Now</option>
-                                        @endforeach
-                                        <!-- <option value="Order Details" >Order Details -> Send Now</option>
-                                        <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
-                                        <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
-                                        <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
-                                        <option value="Reminder 2nd" >Reminder 2nd -> Send Now</option>
-                                        <option value="Reminder 3rd" >Reminder 3rd -> Send Now</option>
-                                        <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
-                                        <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
-                                        <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
-                                        <option value="Simple Email" >Simple Email -> Send Now</option> -->
-                                    </select>
-                                </div>
+                        <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
+                            <div class="card-body">
+                                <ul class="flex flex-row">
+                                    <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"><i class="fas fa-user-tie"></i>  {{ $order->customer?->name }}</a></li>
+                                    <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
+                                    <li><i class="fas fa-phone-square-alt"></i> {{ $order->customer?->phone }}</li>
+                                </ul>                                
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="bs-example">
-                    <div class="accordion" id="accordionExample">
-                        <div class="card customer-details">
-                            <div class="card-header bg-secondary py-0" id="headingOne">
-                                <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne"><i class="fa fa-angle-right"></i>Customer Details</button>
-                            </div>
-                            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
-                                <div class="card-body">
-                                        <ul class="flex flex-row">
-                                            <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"><i class="fas fa-user-tie"></i>  {{ $order->customer?->name }}</a></li>
-                                            <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
-                                            <li><i class="fas fa-phone-square-alt"></i> {{ $order->customer?->phone }}</li>
-                                        </ul>
-                                    
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="card tour-details">
-                            <div class="card-header bg-secondary py-0" id="headingTwo">
-                                    <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-right"></i> Tour Details</button>
-                            </div>
-                            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionExample">
-                                <div class="card-body">                               
-                                    
-                                    <div id="tour_all">
-                                        @php $count = count( $order->orderTours ); $index=0; @endphp
-                                        @foreach ($order->orderTours as $order_tour)
-                                        @php
-                                            $row_id = 'row_'.$index++;
-                                            $subtotal = 0;
-                                            $_tourId = $order_tour->tour_id;
-                                        @endphp
-                                        <div id="{{ $row_id }}" style="border:1px solid #eaecef;">
-                                            <input type="hidden" name="tour_id[]" value="{{ $order_tour->tour_id }}" />    
-                                            <!-- <table class="table">
-                                            <tr>
+                    <div class="card tour-details">
+                        <div class="card-header bg-secondary py-0" id="headingTwo">
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-right"></i> Tour Details</button>
+                        </div>
+                        <div id="collapseTwo" class="collapse " aria-labelledby="headingTwo" data-parent="#accordionExample">
+                            <div class="card-body">                               
+                                
+                                <div id="tour_all">
+                                    @php $count = count( $order->orderTours ); $index=0; @endphp
+                                    @foreach ($order->orderTours as $order_tour)
+                                    @php
+                                        $row_id = 'row_'.$index++;
+                                        $subtotal = 0;
+                                        $_tourId = $order_tour->tour_id;
+                                    @endphp
+                                    <div id="{{ $row_id }}" style="border:1px solid #eaecef;">
+                                        <input type="hidden" name="tour_id[]" value="{{ $order_tour->tour_id }}" />    
+                                        <!-- <table class="table">
+                                        <tr>
+                                                <td width="600"><h3 class="text-lg">{{ $order_tour->tour?->title }}</h3></td>
+                                                <td class="text-right" width="200">
+                                                    <div class="input-group">
+                                                        <input type="text" class="aiz-date-range form-control" id="tour_startdate" name="tour_startdate[]" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="{{ $order_tour->tour_date }}">
+                                                        <div class="input-group-append">
+                                                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-right" width="200">
+                                                    <div class="input-group">
+
+
+                                                        <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="{{ $order_tour->tour_time }}" class="form-control aiz-time-picker" data-minute-step="1"> 
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                        </div>                       
+                                                    </div>
+                                                </td>
+                                                {{-- <td class="text-right" width="200">
+                                                    <div class="input-group">
+                                                        <div class="input-group-prepend">
+                                                            <span class="input-group-text">$</span>
+                                                        </div>                       
+                                                        <input type="text" placeholder="99.99" name="tour_price[]" id="tour_price" value="{{ $order_tour->total_amount }}" class="form-control"> 
+                                                    </div>
+                                                </td> --}}
+                                                <td class="text-right">
+                                                    <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button>
+                                                    <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
+                                                </td>
+                                            </tr> 
+                                        </table> -->
+                                        <div class="table-viewport">
+                                            <table class="table">
+                                                <tr id="row_{{ $row_id }}">
                                                     <td width="600"><h3 class="text-lg">{{ $order_tour->tour?->title }}</h3></td>
+
                                                     <td class="text-right" width="200">
                                                         <div class="input-group">
-                                                            <input type="text" class="aiz-date-range form-control" id="tour_startdate" name="tour_startdate[]" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="{{ $order_tour->tour_date }}">
+                                                            <input type="text"
+                                                                class="aiz-date-range form-control tour_startdate"
+                                                                name="tour_startdate[]"
+                                                                placeholder="Select Date"
+                                                                data-single="true"
+                                                                data-show-dropdown="true"
+                                                                value="{{ $order_tour->tour_date }}">
                                                             <div class="input-group-append">
                                                                 <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                                             </div>
                                                         </div>
+
+                                                        <div>
+                                                            <input type="text" class="tour_startdate_display border-0" readonly>
+                                                        </div>
                                                     </td>
+
                                                     <td class="text-right" width="200">
                                                         <div class="input-group">
-
-
-                                                            <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="{{ $order_tour->tour_time }}" class="form-control aiz-time-picker" data-minute-step="1"> 
+                                                            <input type="text"
+                                                                placeholder="Time"
+                                                                name="tour_starttime[]"
+                                                                class="form-control aiz-time-picker tour_starttime"
+                                                                data-minute-step="1"
+                                                                value="{{ $order_tour->tour_time }}">
                                                             <div class="input-group-prepend">
                                                                 <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                                            </div>                       
+                                                            </div>
                                                         </div>
                                                     </td>
-                                                    {{-- <td class="text-right" width="200">
-                                                        <div class="input-group">
-                                                            <div class="input-group-prepend">
-                                                                <span class="input-group-text">$</span>
-                                                            </div>                       
-                                                            <input type="text" placeholder="99.99" name="tour_price[]" id="tour_price" value="{{ $order_tour->total_amount }}" class="form-control"> 
-                                                        </div>
-                                                    </td> --}}
+
                                                     <td class="text-right">
                                                         <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button>
                                                         <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
                                                     </td>
-                                                </tr> 
-                                            </table> -->
-                                            <div class="table-viewport">
-                                                <table class="table">
-                                                    <tr id="row_{{ $row_id }}">
-                                                        <td width="600"><h3>{{ $order_tour->tour?->title }}</h3></td>
+                                                </tr>
+                                            </table>
 
-                                                        <td class="text-right" width="200">
-                                                            <div class="input-group">
-                                                                <input type="text"
-                                                                    class="aiz-date-range form-control tour_startdate"
-                                                                    name="tour_startdate[]"
-                                                                    placeholder="Select Date"
-                                                                    data-single="true"
-                                                                    data-show-dropdown="true"
-                                                                    value="{{ $order_tour->tour_date }}">
-                                                                <div class="input-group-append">
-                                                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                                                </div>
-                                                            </div>
-
-                                                            <div>
-                                                                <input type="text" class="tour_startdate_display border-0" readonly>
-                                                            </div>
-                                                        </td>
-
-                                                        <td class="text-right" width="200">
-                                                            <div class="input-group">
-                                                                <input type="text"
-                                                                    placeholder="Time"
-                                                                    name="tour_starttime[]"
-                                                                    class="form-control aiz-time-picker tour_starttime"
-                                                                    data-minute-step="1"
-                                                                    value="{{ $order_tour->tour_time }}">
-                                                                <div class="input-group-prepend">
-                                                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-
-                                                        <td class="text-right">
-                                                            <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button>
-                                                            <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-
-                                                <table class="table m-0" style="background:#ebebeb">
-                                                    <tr>
-                                                        <td style="width:200px">
-                                                            <table class="table">
-                                                                <tr>
-                                                                    <td colspan="2">
-                                                                        <h4 style="font-size:16px; font-weight:600">Quantities</h4>
-                                                                    </td>
-                                                                </tr>
-                                                                @if ($order_tour->tour)
-                                                                @php
-                                                                    $tour_pricing = !empty($order_tour->tour_pricing) ? ( json_decode($order_tour->tour_pricing) ) : [];
-                                                                @endphp
+                                            <table class="table m-0" style="background:#ebebeb">
+                                                <tr>
+                                                    <td style="width:200px">
+                                                        <table class="table">
+                                                            <tr>
+                                                                <td colspan="2">
+                                                                    <h4 style="font-size:16px; font-weight:600">Quantities</h4>
+                                                                </td>
+                                                            </tr>
+                                                            @if ($order_tour->tour)
+                                                            @php
+                                                                $tour_pricing = !empty($order_tour->tour_pricing) ? ( json_decode($order_tour->tour_pricing) ) : [];
+                                                            @endphp
 
 
-                                                                @foreach($order_tour->tour?->pricings as $pricing)
-                                                                @php
-                                                                    $price = $pricing->price;
-                                                                    $result = getTourPricingDetails($tour_pricing, $pricing->id);
-                                                                    if(isset($result['price'])) {
-                                                                        $price = $result['price'];
-                                                                        if($order_tour->tour?->price_type =='FIXED'){
-                                                                            $subtotal = $subtotal + $price;
-                                                                        } else{
-                                                                            $subtotal = $subtotal + ($result['quantity'] * $price);
-                                                                        }
-                                                                        
-                                                                    }
-                                                                @endphp
-                                                                <tr>
-                                                                    <td width="60">
-                                                                        <input type="hidden" name="tour_pricing_id_{{$_tourId}}[]" value="{{ $pricing->id }}" />  
-                                                                        <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" class="form-contorl text-center">
-                                                                        <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
-                                                                        
-
-                                                                        <input type="hidden" name="tour_pricing_type_{{$_tourId}}[]" value="{{ $order_tour->price_type }}" /> 
-                                                                        <input type="hidden" name="tour_pricing_min_{{$_tourId}}[]" value="{{$pricing->quantity_used}}">
-                                                                    </td>
-                                                                    <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency, $order->currency) }})</td>
-                                                                </tr>
-                                                                @endforeach
-                                                                @endif
-                                                            </table>
-                                                        </td>
-                                                        <td style="width:200px">
-                                                            <table class="table">
-                                                                <tr>
-                                                                    <td colspan="2">
-                                                                        <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
-                                                                    </td>
-                                                                </tr>
-                                                                @if ($order_tour->tour)
-                                                                @php
-                                                                    $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
-                                                                @endphp
-                                                                @foreach($order_tour->tour?->addons as $extra)
-                                                                @php
-                                                                    $price = $extra->price;
-                                                                    $result = getTourExtraDetails($tour_extra, $extra->id);
-                                                                    if(isset($result['price'])) {
-                                                                        $price = $result['price'];
+                                                            @foreach($order_tour->tour?->pricings as $pricing)
+                                                            @php
+                                                                $price = $pricing->price;
+                                                                $result = getTourPricingDetails($tour_pricing, $pricing->id);
+                                                                if(isset($result['price'])) {
+                                                                    $price = $result['price'];
+                                                                    if($order_tour->tour?->price_type =='FIXED'){
+                                                                        $subtotal = $subtotal + $price;
+                                                                    } else{
                                                                         $subtotal = $subtotal + ($result['quantity'] * $price);
                                                                     }
-                                                                @endphp
-                                                                <tr>
-                                                                    <td width="60">
-                                                                        <input type="hidden" name="tour_extra_id_{{$_tourId}}[]" value="{{ $extra->id }}" />  
-                                                                        <input type="number" name="tour_extra_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
-                                                                        <input type="hidden" name="tour_extra_price_{{$_tourId}}[]" value="{{ $price }}" /> 
-                                                                    </td>
-                                                                    <td>{{ $extra->name }} ({{ price_format_with_currency($extra->price, $order->currency) }})</td>
-                                                                </tr>
-                                                                @endforeach
-                                                                @endif
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                </table>
+                                                                    
+                                                                }
+                                                            @endphp
+                                                            <tr>
+                                                                <td width="60">
+                                                                    <input type="hidden" name="tour_pricing_id_{{$_tourId}}[]" value="{{ $pricing->id }}" />  
+                                                                    <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" class="form-contorl text-center">
+                                                                    <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
+                                                                    
 
-                                                <table class="table m-0">
-                                                    @php
-
-                                                    $withoutTax = $subtotal;
-                                                    $i=1;
-                                                    $taxesfees = $order_tour->tour->taxes_fees;
-                                                    @endphp 
-                                                    <tr>
-                                                        <th>Sub Total </th>
-                                                        <th class="text-right withouttax-box">  {{ price_format_with_currency($withoutTax, $order->currency) }} </th>
-                                                    </tr>
-
-                                                    @if( $taxesfees )
-                                                    @foreach ($taxesfees as $key => $item)  
-                                                    @php
-                                                    $price      = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
-                                                    $tax        = $price ?? 0;
-                                                    $subtotal   = $subtotal + $tax; 
-                                                    @endphp 
-                                                    <tr class="tax-row" data-type="{{ $item->fee_type }} " data-value="{{ $item->tax_fee_value}} ">
-                                                        <td>{{ $item->label }} ({{ taxes_format($item->fee_type, $item->tax_fee_value) }})</td>
-                                                        <td class="text-right tax-amount">{{ price_format_with_currency($tax, $order->currency) }}</td>
-                                                    </tr>
-
-                                                    
-
-                                                    
-                                                    @endforeach
-                                                    @endif
-
-                                                    
-
-                                                    <tr>
-                                                        <th>Total </th>
-                                                        <th class="text-right subtotal-box">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
-                                                    </tr>
-                                                </table>
-                                            </div>
-                                        </div>
-                                        @endforeach
-                                    </div>
-                                    
-                                    <div id="tourContainer"></div>
-
-                                    <div class="cummulative-total" style="border:1px solid #eaecef; border-top: 0;">
-                                        <table class="table m-0">
-                                            @if ($order->bookingFee->value('value'))
-                                                <tr>
-                                                    <td><b>Booking fee</b> (included in price)</td>
-                                                    <td class="text-right">{{ price_format_with_currency($order->bookingFee->value('value'), $order->currency) }}</td>
+                                                                    <input type="hidden" name="tour_pricing_type_{{$_tourId}}[]" value="{{ $order_tour->price_type }}" /> 
+                                                                    <input type="hidden" name="tour_pricing_min_{{$_tourId}}[]" value="{{$pricing->quantity_used}}">
+                                                                </td>
+                                                                <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency, $order->currency) }})</td>
+                                                            </tr>
+                                                            @endforeach
+                                                            @endif
+                                                        </table>
+                                                    </td>
+                                                    <td style="width:200px">
+                                                        <table class="table">
+                                                            <tr>
+                                                                <td colspan="2">
+                                                                    <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
+                                                                </td>
+                                                            </tr>
+                                                            @if ($order_tour->tour)
+                                                            @php
+                                                                $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
+                                                            @endphp
+                                                            @foreach($order_tour->tour?->addons as $extra)
+                                                            @php
+                                                                $price = $extra->price;
+                                                                $result = getTourExtraDetails($tour_extra, $extra->id);
+                                                                if(isset($result['price'])) {
+                                                                    $price = $result['price'];
+                                                                    $subtotal = $subtotal + ($result['quantity'] * $price);
+                                                                }
+                                                            @endphp
+                                                            <tr>
+                                                                <td width="60">
+                                                                    <input type="hidden" name="tour_extra_id_{{$_tourId}}[]" value="{{ $extra->id }}" />  
+                                                                    <input type="number" name="tour_extra_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
+                                                                    <input type="hidden" name="tour_extra_price_{{$_tourId}}[]" value="{{ $price }}" /> 
+                                                                </td>
+                                                                <td>{{ $extra->name }} ({{ price_format_with_currency($extra->price, $order->currency) }})</td>
+                                                            </tr>
+                                                            @endforeach
+                                                            @endif
+                                                        </table>
+                                                    </td>
                                                 </tr>
-                                            @endif
-                                            {{-- <tr>
-                                                <td><b>Booking fee</b> (included in price)</td>
-                                                <td class="text-right">{{ $order->bookingFee ? price_format_with_currency($order->bookingFee->value('value'), $order->currency) : "NA" }} </td>
-                                            </tr> --}}
-                                            <tr>
-                                                <td class="cummulative-total"><b>Total</b></td>
-                                                <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-                                            </tr>
-                                            <tr class="cummulative-total" style="color: red">
-                                                <td><b>Balance</b></td>
+                                            </table>
 
-                                                @if($order->payment_status ==3)
+                                            <table class="table m-0">
+                                                @php
 
-
-                                                    <td class="text-right cummulative-total"><b>{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</b></td>
-                                                @else
-
-                                                    <td class="text-right cummulative-total"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
-                                                @endif
-
-                                                
-                                            </tr>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card additional-info">
-                            <div class="card-header bg-secondary py-0" id="heading4">
-                                <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
-                            </div>
-                            <div id="collapse4" class="collapse" aria-labelledby="heading4" data-parent="#accordionExample">
-                                <div class="card-body">
-                                    <div style="border:1px solid #eaecef;">
-                                        <table class="table">
-                                            <!-- <tr>
-                                                <td><b>Tour Guest</b> </td>
-                                                <td class="text-right">{{ $order->order_tour->number_of_guests }} </td>
-                                            </tr>
-                                            
-                                            <tr>
-                                                <td><b>Category</b></td>
-                                                <td class="text-right">{{ $order->tour['catogory'] ?? '-' }}</td>
-                                            </tr>
-
-                                            
-                                            <tr>
-                                                <td><b>Tour Types</b></td>
-                                                <td class="text-right">{{ $order->tour->category->name ?? '-' }}</td>
-                                            </tr>
-                                            
-                                            <tr>
-                                                <td><b>Price Type</b></td>
-                                                <td class="text-right">{{ snakeToWords($order->tour->price_type)  ?? '-' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>Country</b></td>
-                                                <td class="text-right">{{ $order->tour->location->country->name ?? '-' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>State</b></td>
-                                                <td class="text-right">{{ $order->tour->location->state->name ?? '-' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <td><b>City</b></td>
-                                                <td class="text-right">{{  $order->tour->location->city->name ?? '-' }}</td>
-                                            </tr> -->
-
-                                            @php
-                                                $pickName = '';
-                                                $instruction = '';
-                                                if($order->customer && $order->customer->pickup_name){
-                                                    $pickName = $order->customer->pickup_name;
-                                                    $instruction = $order->customer->instructions;
-                                                } elseif($order->customer && $order->customer->pickup_id) {
-                                                    $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
-                                                    $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
-                                                    $instruction = $order->customer->instructions;
-                                                }
-                                            @endphp
-                                            <tr>
-                                                <td><b>Pickup Location</b></td>
-                                                <td class="text-right">{{ $pickName }}</td> 
-                                                
-
-                                            </tr>
-                                            
-                                            <!-- @foreach ($order->tour->pickups as $pickup)
-                                            
+                                                $withoutTax = $subtotal;
+                                                $i=1;
+                                                $taxesfees = $order_tour->tour->taxes_fees;
+                                                @endphp 
                                                 <tr>
-                                                    <td><b>Pickup Charge</b></td>
-                                                    <td class="text-right">{{ $pickup->pickup_charge }}</td>
-                                                </tr> 
-                                            @endforeach -->
+                                                    <th>Sub Total </th>
+                                                    <th class="text-right withouttax-box">  {{ price_format_with_currency($withoutTax, $order->currency) }} </th>
+                                                </tr>
 
-                                            <tr>
-                                                <td><b>Intructions</b></td>
-                                                <td class="text-right">{{ $instruction }}</td> 
+                                                @if( $taxesfees )
+                                                @foreach ($taxesfees as $key => $item)  
+                                                @php
+                                                $price      = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
+                                                $tax        = $price ?? 0;
+                                                $subtotal   = $subtotal + $tax; 
+                                                @endphp 
+                                                <tr class="tax-row" data-type="{{ $item->fee_type }} " data-value="{{ $item->tax_fee_value}} ">
+                                                    <td>{{ $item->label }} ({{ taxes_format($item->fee_type, $item->tax_fee_value) }})</td>
+                                                    <td class="text-right tax-amount">{{ price_format_with_currency($tax, $order->currency) }}</td>
+                                                </tr>
+
                                                 
 
-                                            </tr>
-                                            
-                                        </table>
+                                                
+                                                @endforeach
+                                                @endif
+
+                                                
+
+                                                <tr>
+                                                    <th>Total </th>
+                                                    <th class="text-right subtotal-box">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
+                                                </tr>
+                                            </table>
+                                        </div>
                                     </div>
+                                    @endforeach
+                                </div>
+                                
+                                <div id="tourContainer"></div>
+
+                                <div class="cummulative-total" style="border:1px solid #eaecef; border-top: 0;">
+                                    <table class="table m-0">
+                                        @if ($order->bookingFee->value('value'))
+                                            <tr>
+                                                <td><b>Booking fee</b> (included in price)</td>
+                                                <td class="text-right">{{ price_format_with_currency($order->bookingFee->value('value'), $order->currency) }}</td>
+                                            </tr>
+                                        @endif
+                                        {{-- <tr>
+                                            <td><b>Booking fee</b> (included in price)</td>
+                                            <td class="text-right">{{ $order->bookingFee ? price_format_with_currency($order->bookingFee->value('value'), $order->currency) : "NA" }} </td>
+                                        </tr> --}}
+                                        <tr>
+                                            <td class="cummulative-total"><b>Total</b></td>
+                                            <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        </tr>
+                                        <tr class="cummulative-total" style="color: red">
+                                            <td><b>Balance</b></td>
+
+                                            @if($order->payment_status ==3)
+
+
+                                                <td class="text-right cummulative-total"><b>{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</b></td>
+                                            @else
+
+                                                <td class="text-right cummulative-total"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
+                                            @endif
+
+                                            
+                                        </tr>
+                                    </table>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- <div class="card  {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}"> -->
-                        <div class="card payment-details">
-                            <div class="card-header bg-secondary py-0" id="headingThree">
-                                <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Payment Details</button>
-                            </div>
-                            <div id="collapseThree" class="collapse " aria-labelledby="headingThree" data-parent="#accordionExample">
-                                <div class="card-body">
-                                    <!-- <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div> -->
-                                    
-                                    <table class="table">    
-                                        <thead>
+                    <div class="card additional-info">
+                        <div class="card-header bg-secondary py-0" id="heading4">
+                                <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
+                        </div>
+                        <div id="collapse4" class="collapse " aria-labelledby="heading4" data-parent="#accordionExample">
+                            <div class="card-body">
+                                 <div style="border:1px solid #eaecef;">
+                                    <table class="table">
+                                        <!-- <tr>
+                                            <td><b>Tour Guest</b> </td>
+                                            <td class="text-right">{{ $order->order_tour->number_of_guests }} </td>
+                                        </tr>
+                                        
+                                        <tr>
+                                            <td><b>Category</b></td>
+                                            <td class="text-right">{{ $order->tour['catogory'] ?? '-' }}</td>
+                                        </tr>
+
+                                        
+                                        <tr>
+                                            <td><b>Tour Types</b></td>
+                                            <td class="text-right">{{ $order->tour->category->name ?? '-' }}</td>
+                                        </tr>
+                                        
+                                        <tr>
+                                            <td><b>Price Type</b></td>
+                                            <td class="text-right">{{ snakeToWords($order->tour->price_type)  ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>Country</b></td>
+                                            <td class="text-right">{{ $order->tour->location->country->name ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>State</b></td>
+                                            <td class="text-right">{{ $order->tour->location->state->name ?? '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><b>City</b></td>
+                                            <td class="text-right">{{  $order->tour->location->city->name ?? '-' }}</td>
+                                        </tr> -->
+
+                                        @php
+                                            $pickName = '';
+                                            $instruction = '';
+                                            if($order->customer && $order->customer->pickup_name){
+                                                $pickName = $order->customer->pickup_name;
+                                                $instruction = $order->customer->instructions;
+                                            } elseif($order->customer && $order->customer->pickup_id) {
+                                                $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
+                                                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                                                $instruction = $order->customer->instructions;
+                                            }
+                                        @endphp
+                                        <tr>
+                                            <td><b>Pickup Location</b></td>
+                                            <td class="text-right">{{ $pickName }}</td> 
+                                            
+
+                                        </tr>
+                                         
+                                        <!-- @foreach ($order->tour->pickups as $pickup)
+                                           
                                             <tr>
-                                                <th>Payment Type</th>
-                                                <th>Ref number</th>
-                                                <th>Total</th>
-                                                <th></th>
-                                                <th>Balance</th>
-                                                <th>Paid</th>
-                                                @if($order->payments->isNotEmpty())
-                                                    <th>Refund</th>
-                                                @endif
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>{{ ucwords($order->payment_method)}}</td>
-                                                <td>{{ ucwords($order->payment_intent_id)}}</td>
-                                                <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-                                                <td></td>
-                                                @if($order->payment_status ==3) <td>{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
-                                                @else
-                                                <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
-                                                @endif
-                                                <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
-                                                <td>
-                                                    <!-- <button class="btn btn-sm btn-danger refund-btn" 
-                                                    style="width:150px; display:inline-block;" 
-                                                    data-order-id="{{ $order->id }}" 
-                                                    data-amount="{{ $order->booked_amount }}" 
-                                                    type="button">
-                                                    Refund
-                                                    </button> -->
-                                                    @if($order->payments->isNotEmpty())
-                                                        <button class="btn btn-sm btn-danger refund-all-btn"
-                                                            data-order-id="{{ $order->id }}"
-                                                            data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
-                                                            Refund
-                                                        </button>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        </tbody>
+                                                <td><b>Pickup Charge</b></td>
+                                                <td class="text-right">{{ $pickup->pickup_charge }}</td>
+                                            </tr> 
+                                        @endforeach -->
+
+                                        <tr>
+                                            <td><b>Intructions</b></td>
+                                            <td class="text-right">{{ $instruction }}</td> 
+                                            
+
+                                        </tr>
+                                        
                                     </table>
-                                    @if($order->payments->isNotEmpty())
-                                    <h5 class="mt-4">💳 Payment Details</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                     <!-- <div class="card  {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}"> -->
+                    <div class="card payment-details">
+                        <div class="card-header bg-secondary py-0" id="headingThree">
+                                <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Payment Details</button>
+                        </div>
+
+                        <div id="collapseThree" class="collapse " aria-labelledby="headingThree" data-parent="#accordionExample">
+                            <div class="card-body">
+                                <!-- <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div> -->
+                                
+                                <table class="table">  
+                                    <thead>  
+                                        <tr>
+                                            <th>Payment Type</th>
+                                            <th>Ref number</th>                                        
+                                            <th>Total</th>
+                                            <th>Balance</th>
+                                            <th>Paid</th>
+                                            @if($order->payments->isNotEmpty())
+                                                <th>Refund</th>
+                                            @endif
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>{{ ucwords($order->payment_method)}}</td>
+                                            <td>{{ ucwords($order->payment_intent_id)}}</td>
+                                            
+                                            <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+
+                                            @if($order->payment_status === 3)
+
+                                            <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
+                                            @else
+
+                                            <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
+                                            @endif
+                                            
+                                            <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
+                                            <td>
+                                                <!-- <button class="btn btn-sm btn-danger refund-btn" 
+                                                style="width:150px; display:inline-block;" 
+                                                data-order-id="{{ $order->id }}" 
+                                                data-amount="{{ $order->booked_amount }}" 
+                                                type="button">
+                                                Refund
+                                                </button> -->
+                                                @if($order->booked_amount > 0 && $order->payments->isNotEmpty())
+                                                    <button class="btn btn-sm btn-danger refund-all-btn"
+                                                        data-order-id="{{ $order->id }}"
+                                                        data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
+                                                        Refund
+                                                    </button>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                @if($order->payments->isNotEmpty())
+                                <h5 class="mt-4">💳 Payment Details</h5>
                                     <table class="table table-sm table-bordered">
                                         <thead>
                                             <tr>
@@ -837,93 +839,109 @@
                                             @endforeach
                                         </tbody>
                                     </table>
-                                    @else
-                                        <!-- <p class="text-muted">No payments have been recorded yet.</p> -->
-                                    @endif
+                                @else
+                                    <!-- <p class="text-muted">No payments have been recorded yet.</p> -->
+                                @endif
+                            </div>
+                            <div class="text-left mt-3">
+                                <button id="addPaymentBtn" type="button" class="btn btn-primary">
+                                    + Add Payment
+                                </button>
+                                @if(str_contains( $order->payment_method_id, 'pm_'))
+                                <button id="chargeSavedCard" type="button" class="btn btn-info charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
+                                    Charge now
+                                </button>
+                                @endif
 
-                                    <div class="text-left mt-3">
-                                        <button id="addPaymentBtn" type="button" class="btn btn-success">
-                                            + Add Payment
-                                        </button>
-                                    </div>
-                                    <!-- Hidden Add Payment Form -->
-                                    <div id="addPaymentBlock" class="mt-3" style="display:none;">
-                                        <div id="addPaymentSection">
-                                            <div class="form-group">
-                                                <label>Amount</label>
-                                                <input hidden type="number" id="addPaymentAmount" class="form-control" min="1" placeholder="Enter amount" value="">
-                                            </div>
-
-                                            <div id="cardFields">
-                                                <div class="form-group">
-                                                    <label for="card-element">Card Details</label>
-                                                    <div id="card-element" class="form-control col-12" style="padding:10px; height:auto;"></div>
-                                                    <small id="card-errors" class="text-danger mt-2"></small>
-                                                </div>
-                                            </div>
-
-                                            <button id="addPaymentSubmit" class="btn btn-success">Pay Now</button>
-                                        </div>
-                                    </div>
-
+                                @if(str_contains( $order->payment_method_id, 'pi_'))
+                                <button class="btn btn-primary charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
+                                    Charge now
+                                </button>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                        <!-- Hidden Add Payment Form -->
+                        <!-- <div id="addPaymentBlock" class="mt-3" style="display:none;">
+                            <div id="addPaymentSection">
+                                <div class="form-group hidden">
+                                    <label>Amount</label>
+                                    <input hidden type="number" id="addPaymentAmount" class="form-control" min="1" placeholder="Enter amount" value="">
                                 </div>
-                            </div>
-                        </div> 
 
-                        <div class="card email-history">
-                            <div class="card-header bg-secondary py-0" id="headingFour">
-                                <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseFour"><i class="fa fa-angle-right"></i> Order Email History</button>
+                                <div id="cardFields">
+                                    <div class="form-group">
+                                        <label for="card-element">Card Details</label>
+                                        <div id="card-element" class="form-control col-6" style="padding:10px; height:auto;"></div>
+                                        <small id="card-errors" class="text-danger mt-2"></small>
+                                    </div>
+                                </div>
+
+                                <button id="addPaymentSubmit" class="btn btn-success">Pay Now</button>
                             </div>
-                            <div id="collapseFour" class="collapse " aria-labelledby="headingFour" data-parent="#accordionExample">
-                                <div class="card-body">
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>To</th>
-                                                <th>From</th>
-                                                <th>Subject</th>
-                                                <th>Status</th>
-                                                <!-- <th>Content</th> -->
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
-                                                @foreach($order->emailHistories->sortByDesc('created_at') as $email)
-                                                    <tr>
-                                                        <td>{{ $email->created_at }}</td>
-                                                        <td>{{ $email->to_email }}</td>
-                                                        <td>{{ $email->from_email }}</td>
-                                                        <td>{{ $email->subject }}</td>
-                                                        <td>{{ ucwords($email->status) }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            @else
+                        </div>
+                    </div> 
+
+
+
+
+                    </div> -->
+
+                    <div class="card">
+                        <div class="card-header bg-secondary py-0" id="heading5">
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse5"><i class="fa fa-angle-right"></i> Order Email History</button>                     
+                        </div>
+                        <div id="collapse5" class="collapse " aria-labelledby="heading5" data-parent="#accordionExample">
+                            <div class="card-body">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>To</th>
+                                            <th>From</th>
+                                            <th>Subject</th>
+                                            <th>Status</th>
+                                            <!-- <th>Content</th> -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
+                                            @foreach($order->emailHistories->sortByDesc('created_at') as $email)
                                                 <tr>
-                                                    <td colspan="5">No email history found</td>
+                                                    <td>{{ $email->created_at }}</td>
+                                                    <td>{{ $email->to_email }}</td>
+                                                    <td>{{ $email->from_email }}</td>
+                                                    <td>{{ $email->subject }}</td>
+                                                    <td>{{ ucwords($email->status) }}</td>
                                                 </tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                </div>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="5">No email history found</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
 
                     <div class="card-footer" style="display:block">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6 order-2 order-md-1">
                                 <a href="{{ route('admin.orders.index') }}" class="btn btn-cancel"> <i class="fas fa-times"></i> Cancel</a>
                                 <a onclick="return confirm('Are you sure?')" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-danger confirm-delete"> <i class="fas fa-trash-alt"></i> Delete</a>
                             </div>
-                            <div class="col-md-6 align-buttons">
+                            <div class="col-md-6 align-buttons order-1 order-md-2">
                                 <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Save order</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            
         </div>
+    </div>
     </form>
 
 
@@ -1079,7 +1097,7 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Carge Payment</h5>
+        <h5 class="modal-title">Charge Payment</h5>
       </div>
       <div class="modal-body">
 
@@ -1103,8 +1121,14 @@
 
 
         <div class="mb-3">
-          <label>Amount (current order balance: {{ price_format_with_currency($order->balance_amount, $order->currency) }}) </label>
-          <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required>
+            <label>Amount (current order balance: {{ price_format_with_currency($order->balance_amount, $order->currency) }}) </label>
+            <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
+            <div class="input-group">
+                <div class="input-group-append">
+                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                </div>    
+                <input type="text" class="form-control" id="chargeAmount" name="amount" placeholder="0.00" value="{{ $order->balance_amount }}" required style="width: 100px;">                                            
+            </div>
         </div>
 
         <!-- Card details block (will be shown/hidden) -->
@@ -1326,7 +1350,7 @@
         const id     = radio.id;
         const label  = document.querySelector(`label[for="${id}"]`).textContent.trim();
         const group  = radio.closest('.btn-group');
-        // const button = group.querySelector('button.dropdown-toggle');
+        const button = group.querySelector('button.dropdown-toggle');
 
         // Update button text
         button.textContent = label;
@@ -1440,7 +1464,7 @@
 });
 
 
-    $(document).on('click', '.charge-btn', function(e) {
+$(document).on('click', '.charge-btn', function(e) {
     e.preventDefault();
     let orderId = $(this).data('order-id');
     let customerName = $(this).data('customer-name');
@@ -1451,10 +1475,7 @@
     $('#showChargeAmount').html(balance);
     $('#chargeOrderId').val(orderId);
     $('#chargeAmount').val(balance);
-    $('#chargeModal').modal('show');
-
-
-    
+    $('#chargeModal').modal('show');    
 });
 
 // Handle charge form submit
@@ -1464,6 +1485,10 @@ $('#chargeForm').on('submit', function(e) {
 
     let orderId = $('#chargeOrderId').val();
     let amount  = $('#chargeAmount').val();
+
+    const btn = document.querySelector("button[form='chargeForm'][type='submit']");
+    btn.disabled = true;
+    btn.textContent = "Processing...";
 
     $.ajax({
         // url: 'staging/admin/orders/' + orderId + '/charge',
@@ -1476,8 +1501,6 @@ $('#chargeForm').on('submit', function(e) {
         success: function(response) {
             $('#chargeModal').modal('hide');
             if(response.message){
-                // alert(response.message);
-
                 Swal.fire({
                     icon: response.success ? 'success' : 'error',
                     title: response.success ? 'Success' : 'Error',
@@ -1496,7 +1519,9 @@ $('#chargeForm').on('submit', function(e) {
                 });
             }
             
-            location.reload();
+            btn.disabled = false;
+            btn.textContent = "Charge Now";
+           location.reload();
         },
         error: function(xhr) {
 
@@ -1733,6 +1758,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     addBtn.addEventListener("click", () => {
         block.style.display = block.style.display === "none" ? "block" : "none";
+        addBtn.innerHTML = block.style.display === "none" ? "+ Add Payment" : "- Cancel Payment";
     });
 
     // Initialize Stripe
@@ -2413,7 +2439,7 @@ function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
     
 
     $.ajax({
-        url: "/admin/tour-sessions",
+        url: "{{ route('admin.tour.sessions') }}",
         type: "GET",
         data: { tour_id: tourId, date: selectedDate },
         dataType: "json",

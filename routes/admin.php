@@ -33,12 +33,19 @@ use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\API\TourController as APITourController;
+use App\Http\Controllers\API\OrderController as APIOrderController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+
+    Route::get('/tour/{slug}/fetch_one', [APITourController::class, 'fetch_one'])->name('tour.fetch_one');
+    Route::get('/tour-sessions', [APIOrderController::class, 'getSessionTimes'])->name('tour.sessions');
+    Route::get('/tour/{slug}/booking', [APITourController::class, 'fetch_booking'])->name('tour.fetch_booking');
+
     Route::get('/dashboard',[ProfileController::class,'dashboard'])->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -259,11 +266,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/email-templates/update', [EmailTemplateController::class, 'update'])->name('email-templates.update');
     Route::get('/email-templates/preview/{id}', [EmailTemplateController::class, 'preview'])->name('email-templates.preview');
 
-
-    Route::get('/tour/{slug}/fetch_one', [\App\Http\Controllers\API\TourController::class, 'fetch_one']);
-    Route::get('/tour-sessions', [\App\Http\Controllers\API\OrderController::class, 'getSessionTimes']);
-    Route::get('/tour/{slug}/booking', [\App\Http\Controllers\API\TourController::class, 'fetch_booking']);
-
     
     Route::get('/clear-cache', function() {
         Artisan::call('cache:clear');
@@ -284,7 +286,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/notifications/read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.read');
 
     Route::get('/notifications/fetch-all', [NotificationController::class, 'fetchAll'])->name('notifications.fetchAll');
-// Route::get('/notifications/read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.read');   
+    // Route::get('/notifications/read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.read');   
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
 
     Route::resource('contacts', ContactController::class)->only(['index', 'show', 'destroy']);

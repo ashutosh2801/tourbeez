@@ -4,52 +4,51 @@ tr.dragging {opacity: 1;}
 tr.drag-over-top {border-top: 3px solid blue;}
 tr.drag-over-bottom {border-bottom: 3px solid blue;}
 </style>
-<div class="card">
-    <div class="card card-primary">
-        <div class="card-header">
-            <h3 class="card-title">Pickups</h3>
-        </div>
-        <form class="needs-validation" novalidate action="{{ route('admin.tour.pickup_update', $data->id) }}" method="POST"
-        enctype="multipart/form-data">
-        <div class="card-body">            
-            @method('PUT')
-            @csrf
-            <table class="table table-striped align-middle" id="pickupTable">
-                <tbody>
-                  
-                    @php
-                    $i=1;
-                    $existing_pickups = $data->pickups->pluck('id')->toArray();
-                    @endphp
-                    @foreach ($pickups as $item)
-                        <tr draggable="true" data-id="{{ $item->id }}">
-                            <th><input type="radio" class="check_all" name="pickups[]" value="{{ $item->id }}" style="width: 20px;height: 20px;"
-                            {{ (is_array($existing_pickups) && in_array($item->id, $existing_pickups)) ? 'checked' : '' }} /></th>
 
-                            @if (strtolower($item->name) !== 'no pickups')
-                            <td>
-                                <a target="_blank" href="{{ route('admin.pickups.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a>
-                                @foreach ($item->locations as $location)
-                                    <p class="m-0 text-sm text-gray-100">{{ $location->location }}, {{ $location->address }}</p>
-                                @endforeach
-                            </td>
-                            <td>{{ count($item->locations)  }} <span></span>{{ translate('Locations') }}</td>                                                  
-                            @else
-                            <td colspan="2">
-                                <a href="#" class="text-info">{{ $item->name }}</a>
-                                @foreach ($item->locations as $location)
-                                    <p class="m-0 text-sm text-gray-100">{{ $location->address }}</p>
-                                @endforeach
-                            </td>
-                            @endif
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        
-            </form>
+<div class="card-primary">
+    <div class="card-header">
+        <h3 class="card-title">Pickups</h3>
     </div>
+    <form class="needs-validation" novalidate action="{{ route('admin.tour.pickup_update', $data->id) }}" method="POST"
+    enctype="multipart/form-data">
+    <div class="card-body p-0">            
+        @method('PUT')
+        @csrf
+        <table class="table table-striped align-middle" id="pickupTable">
+            <tbody>
+              
+                @php
+                $i=1;
+                $existing_pickups = $data->pickups->pluck('id')->toArray();
+                @endphp
+                @foreach ($pickups as $item)
+                    <tr draggable="true" data-id="{{ $item->id }}">
+                        <th><input type="radio" class="check_all" name="pickups[]" value="{{ $item->id }}" style="width: 20px;height: 20px;"
+                        {{ (is_array($existing_pickups) && in_array($item->id, $existing_pickups)) ? 'checked' : '' }} /></th>
+
+                        @if (strtolower($item->name) !== 'no pickups')
+                        <td>
+                            <a target="_blank" href="{{ route('admin.pickups.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a>
+                            @foreach ($item->locations as $location)
+                                <p class="m-0 text-sm text-gray-100">{{ $location->location }}, {{ $location->address }}</p>
+                            @endforeach
+                        </td>
+                        <td>{{ count($item->locations)  }} <span></span>{{ translate('Locations') }}</td>                                                  
+                        @else
+                        <td colspan="2">
+                            <a href="#" class="text-info">{{ $item->name }}</a>
+                            @foreach ($item->locations as $location)
+                                <p class="m-0 text-sm text-gray-100">{{ $location->address }}</p>
+                            @endforeach
+                        </td>
+                        @endif
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    
+        </form>
 </div>
 
 @section('js')
