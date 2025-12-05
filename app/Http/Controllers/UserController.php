@@ -18,9 +18,9 @@ class UserController extends Controller
 
     public function index()
     {
-
+        
          $data = User::where('user_type', '!=', 'Member')
-            ->where('role', '!=', 'Supplier')->where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
+            ->where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
             
         
         // $data = User::where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
@@ -56,8 +56,9 @@ class UserController extends Controller
 
     public function edit($id)
     {
-        
+
         $user = User::where('id',decrypt($id))->first();
+
         return view('admin.user.edit',compact('user'));
     }
     

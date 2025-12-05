@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\OrderCustomer;
 use App\Models\UserSupplier;
 use App\Notifications\CustomResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -67,5 +68,9 @@ class User extends Authenticatable
     }
     public function supplier() {
         return $this->hasOne(UserSupplier::class, 'user_id');
+    }
+
+    public function customer() {
+        return $this->hasOne(OrderCustomer::class, 'user_id');
     }
 }

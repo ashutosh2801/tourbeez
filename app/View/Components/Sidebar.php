@@ -72,6 +72,7 @@ class Sidebar extends Component
         view()->share('CityCount',$CityCount);
 
 
+
         $customerCount = User::where('user_type', 'Member')->orderBy('id','DESC')->count();
 
         view()->share('customerCount',$customerCount);
