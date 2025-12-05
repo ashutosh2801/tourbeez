@@ -54,7 +54,6 @@ class SupplierController extends Controller
 
         $logoFile = $request->hasFile('company_logo') ? 
             $request->file('company_logo')->store('suppliers/logos', 'public') : null;
-
         $serviceImages = [];
         if ($request->hasFile('service_images')) {
             foreach ($request->file('service_images') as $image) {

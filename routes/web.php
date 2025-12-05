@@ -1,13 +1,14 @@
 <?php
 
 use App\Http\Controllers\AizUploadController;
-use App\Http\Controllers\TourController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\EmailController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\LoginWithOTPController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SocialiteController;
 use App\Http\Controllers\StateController;
+use App\Http\Controllers\TourController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 /*
@@ -21,14 +22,21 @@ use Illuminate\Support\Str;
 |
 */
 Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
+// Auth routes
+// require __DIR__.'/auth.php';
+require('auth.php');
 
-Route::get('/', function () {
-    $readmePath = base_path('WELCOME.md');
+// Admin Routes
+require('admin.php');
 
-    return view('welcome', [
-        'readmeContent' => Str::markdown(file_get_contents($readmePath)),
-    ]);
-});
+Route::get('/export', [ExportController::class, 'index']);
+
+Route::get('/{any}', function () {
+    return file_get_contents(public_path('index.html'));
+})->where('any', '.*');
+
+
+
 
 Route::get('/sitemaps/categories.xml', [SitemapController::class, 'categories']);
 Route::get('/sitemaps/destinations.xml', [SitemapController::class, 'destinations']);
@@ -37,6 +45,9 @@ Route::get('/sitemaps/tours.xml', [SitemapController::class, 'tours']);
 
 Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
 Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
+
+
+
 
 Route::post('/states/get_state_by_country', [StateController::class,'get_state_by_country'])->name('states.get_state_by_country');
 Route::post('/cities/get_cities_by_state', [CityController::class,'get_cities_by_state'])->name('cities.get_cities_by_state');
@@ -69,7 +80,4 @@ Route::prefix('oauth/')->group(function(){
 
 
 
-// Auth routes
-require __DIR__.'/auth.php';
-// Admin Routes
-require('admin.php');
+
