@@ -4,41 +4,39 @@
 {{-- Include Bootstrap Icons --}}
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-<div class="card">
+<div class="card-primary mb-3">
     <form method="GET" action="{{ route('admin.orders.manifest') }}">
-        <div class="card-header">
+        <div class="card-header order-manifest-head">
             <div class="d-flex justify-content-between align-items-center w-100">
-                <h3 class="card-title mb-0">Session Manifest</h3>
+                <h3 class="card-title text-white">Session Manifest</h3>
                 <div class="d-flex align-items-center gap-1">
-                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" id="prev-date" style="height: 32px; width: 32px;">
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center left-btn" id="prev-date">
                         <i class="bi bi-chevron-left"></i>
                     </button>
-
-                    <input type="date" name="date" id="filter-date" class="form-control form-control-sm"
-                           value="{{ request('date', \Carbon\Carbon::today()->toDateString()) }}"
-                           style="height: 32px;" />
-
-                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" id="next-date" style="height: 32px; width: 32px;">
+                    <input type="date" name="date" id="filter-date" class="form-control form-control-sm filterDate" value="{{ request('date', \Carbon\Carbon::today()->toDateString()) }}" />
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center right-btn" id="next-date">
                         <i class="bi bi-chevron-right"></i>
                     </button>
                 </div>
                 <a href="{{ route('admin.orders.manifest.download', ['date' => request('date')]) }}"
-                   class="btn btn-outline-success btn-sm">
+                   class="btn btn-success btn-sm">
                    <i class="bi bi-download"></i> Download PDF
                 </a>
             </div>
         </div>
     </form>
+</div>
 
-    <div class="card-body">
+<div class="card-primary bg-white border rounded-lg-custom">
+    <div class="card-body p-0">
         @forelse($sessions as $index => $session)
-            <div class="card mb-2 border">
-                <div class="card-header d-flex justify-content-between align-items-center bg-light"
-                     style="cursor: pointer;"
-                     data-bs-toggle="collapse"
-                     data-bs-target="#session-{{ $index }}"
-                     aria-expanded="false"
-                     aria-controls="session-{{ $index }}">
+            <div class="card mb-2 border b-radius-0">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light b-radius-0"
+                        style="cursor: pointer;"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#session-{{ $index }}"
+                        aria-expanded="false"
+                        aria-controls="session-{{ $index }}">
                     <strong>{{ $session['slot_time'] }}</strong>
 
                     <div class="d-flex align-items-center gap-3">
@@ -76,7 +74,7 @@
                                         </td>
                                         <td>
                                             <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}"
-                                               class="alink" target="_blank">
+                                                class="alink" target="_blank">
                                                 {{ $order->customer?->name }}
                                             </a>
                                         </td>
@@ -94,7 +92,7 @@
                 </div>
             </div>
         @empty
-            <p>No sessions found for this date.</p>
+            <p class="m-0 p-3">No sessions found for this date.</p>
         @endforelse
     </div>
 </div>

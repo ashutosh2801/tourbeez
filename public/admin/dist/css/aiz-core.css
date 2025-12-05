@@ -7710,6 +7710,10 @@ a.dropdown-footer:hover {
     border-left: 1px solid #dee2e6 !important;
 }
 
+.b-radius-0 {
+    border-radius: 0 !important;
+}
+
 .total-record {
     margin: 0;
     border-radius: 0 0 10px 10px !important;
@@ -9341,4 +9345,39 @@ table.dataTable {
         max-width: 100%;
     }
 
+}
+
+.order-manifest-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.order-manifest-head .left-btn {
+    height: 32px;
+    width: 32px;
+    background: #FFF;
+    border: 1px solid #FFF;
+    border-radius: 4px 0 0 4px;
+}
+
+.order-manifest-head .right-btn {
+    height: 32px;
+    width: 32px;
+    background: #FFF;
+    border: 1px solid #FFF;
+    border-radius: 0 4px 4px 0;
+}
+
+.order-manifest-head .left-btn:hover,
+.order-manifest-head .right-btn:hover {
+    color: #000;
+}
+
+.order-manifest-head .filterDate {
+    height: 32px;
+    border: 0;
+    border-radius: 0;
+    border-left: 1px solid #c0c0c0;
+    border-right: 1px solid #c0c0c0;
+    color: #000;
 }
