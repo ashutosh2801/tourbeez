@@ -35,6 +35,8 @@
                 @php
                     $orderCustomer = $user->customer;
 
+                    $orderCustomer = $orderCustomer?? $user;
+
                 @endphp
 
 
