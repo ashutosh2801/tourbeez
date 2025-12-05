@@ -5,12 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\OrderCustomer;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Role;
 
 class CustomerController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+    public function __construct()
+    {
+        $roles = Role::all();
+        view()->share('roles',$roles);
+    }
     public function index()
     {
         $data = User::where('user_type', 'Member')
@@ -25,7 +31,7 @@ class CustomerController extends Controller
      */
     public function create()
     {
-        //
+        return view('admin.user.create');
     }
 
     /**

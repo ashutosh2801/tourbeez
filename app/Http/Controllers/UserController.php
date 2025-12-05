@@ -133,7 +133,7 @@ class UserController extends Controller
 
         return redirect()->back()
             // ->route('admin.user.index')
-            ->with('success', 'User and supplier details updated successfully.');
+            ->with('success', 'User details updated successfully.');
     }
 
 

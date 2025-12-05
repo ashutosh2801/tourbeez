@@ -3,7 +3,7 @@
     <div class="card">
         <div class="card-header">
             <h3 class="card-title">Customers</h3>
-            <div class="card-tools"><a href="{{ route('admin.customers.create') }}" class="btn btn-sm btn-primary">Add New</a></div>
+            <!-- <div class="card-tools"><a href="{{ route('admin.customers.create') }}" class="btn btn-sm btn-primary">Add New</a></div> -->
         </div>
         <div class="card-body">
             <table class="table table-striped" id="userTable">
