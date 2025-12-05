@@ -1,10 +1,21 @@
 <x-admin>
     <div class="row">
-        <div class="col-lg-6 mx-auto">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0 h6">{{translate('Edit State Info')}}</h5>
+        <div class="col-lg-12">
+            <div class="card-primary mb-3">
+                <div class="card-header edit-state-head">
+                    <div class="row">
+                        <div class="col-md-8 col-6">
+                            <h3 class="card-title">{{translate('Edit State Info')}}</h3>
+                        </div>
+                        <div class="col-md-4 col-6">
+                            <div class="card-tools">
+                                <a class="btn btn-sm btn-back" href="{{ route('admin.states.index') }}">Back</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+            </div>
+            <div class="card-primary bg-white border rounded-lg-custom edit-state-body">
                 <div class="card-body">
                     <form action="{{ route('admin.states.update', $state->id) }}" method="POST">
                         <input name="_method" type="hidden" value="PATCH">
@@ -31,7 +42,7 @@
                         </div>
 
                         <div class="form-group mb-3 text-right">
-                            <button type="submit" class="btn btn-primary">{{translate('Update')}}</button>
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Update')}}</button>
                         </div>
                     </form>
                 </div>

@@ -9127,12 +9127,26 @@ table.dataTable {
     float: right;
 }
 
-@media (max-width: 767px) {
+.card-primary .card-header.create-category-header,
+.card-primary .card-header.create-tourType-header {
+    border-radius: 10px;
+    background: #01228b;
+}
 
-    .create-extra-header .card-tools {
-        float: left;
-        margin-top: 10px;
-    }
+.create-category-header .row,
+.create-tourType-header .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.create-category-header .card-tools,
+.create-tourType-header .card-tools {
+    float: right;
+}
+
+@media (max-width: 767px) {
 
     div.dataTables_wrapper div.dataTables_length, 
     div.dataTables_wrapper div.dataTables_filter, 
@@ -9229,19 +9243,22 @@ table.dataTable {
 
 }
 
-.tour-type-head {
+.tour-type-head,
+.edit-tourType-body {
     border-radius: 10px;
     background: #01228b !important;
 }
 
-.tour-type-head .row{
+.tour-type-head .row,
+.edit-tourType-body .row {
     display: flex;
     justify-content: space-between;
     width: 100%;
     align-items: center;
 }
 
-.tour-type-head .card-tools {
+.tour-type-head .card-tools,
+.edit-tourType-body .card-tools {
     float: right;
 }
 
@@ -9255,18 +9272,26 @@ table.dataTable {
 }
 
 .countries-head,
-.states-head {
+.states-head,
+.city-head,
+.edit-state-head,
+.edit-city-head {
     border-radius: 10px;
     background: #01228b !important;
 }
 
 .countries-head .card-tools,
-.states-head .card-tools {
+.states-head .card-tools,
+.city-head .card-tools,
+.edit-state-head .card-tools,
+.edit-city-head .card-tools {
     float: right;
 }
 
 .countries-head .row,
-.states-head .row {
+.states-head .row,
+.city-head .row,
+.edit-state-head .row {
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -9274,12 +9299,14 @@ table.dataTable {
 }
 
 .countries-body .search-section,
-.states-body .search-section {
+.states-body .search-section,
+.city-body .search-section {
     padding: 15px;
 }
 
 .countries-body .search-section input,
-.states-body .search-section input {
+.states-body .search-section input,
+.city-body .search-section input {
     height: auto;
     padding: 10px;
     border-radius: 10px;
@@ -9288,7 +9315,8 @@ table.dataTable {
 }
 
 .countries-body .aiz-pagination,
-.states-body .aiz-pagination {
+.states-body .aiz-pagination,
+.city-body .aiz-pagination {
     border-top: 1px solid #eceff7;
     padding: 20px 10px;
 }
@@ -9299,6 +9327,18 @@ table.dataTable {
     font-weight: 400;
 }
 
-.add-modal .bootstrap-select .btn {
+.add-modal .bootstrap-select .btn,
+.edit-state-body .bootstrap-select .btn,
+.edit-city-body .bootstrap-select .btn {
     border: 1px solid #aeb0b4 !important;
+}
+
+@media (max-width: 767px) {
+
+    .countries-body .search-section input,
+    .states-body .search-section input,
+    .city-body .search-section input {
+        max-width: 100%;
+    }
+
 }

@@ -5,12 +5,12 @@
             <div class="card-primary mb-3">
                 <div class="card-header create-extra-header">
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-md-8 col-6">
                             <h3 class="card-title">Create Extra</h3>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4 col-6">
                             <div class="card-tools">
-                                <a href="{{ route('admin.addon.index') }}" class="btn btn-back">Back</a>
+                                <a href="{{ route('admin.addon.index') }}" class="btn btn-sm btn-back">Back</a>
                             </div>
                         </div>
                     </div>

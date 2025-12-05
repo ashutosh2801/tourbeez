@@ -15,7 +15,7 @@
                 @can('add_category')
                     <div class="col-md-4 col-6">
                         <div class="card-tools">
-                            <a href="{{ route('admin.category.create') }}" class="btn btn-sm btn-back">Back</a>
+                            <a href="{{ route('admin.category.create') }}" class="btn btn-sm btn-success"> + Create New</a>
                         </div>
                     </div>
                 @endcan
