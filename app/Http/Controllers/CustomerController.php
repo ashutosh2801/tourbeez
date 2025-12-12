@@ -13,7 +13,8 @@ class CustomerController extends Controller
      */
     public function index()
     {
-        $data = User::where('user_type', 'Member')->orderBy('id','DESC')->get();
+        $data = User::where('user_type', 'Member')
+            ->where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
 
        
         return view('admin.customer.index', compact('data'));
@@ -50,7 +51,9 @@ class CustomerController extends Controller
     public function edit(string $id)
     {
         $user = User::findOrFail(decrypt($id) );
-        return view('admin.customer.edit', compact('user'));
+        $orderCustomer = User::findOrFail(decrypt($id) );
+        
+        return view('admin.customer.edit', compact('user', 'orderCustomer'));
     }
 
     /**

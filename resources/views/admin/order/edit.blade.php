@@ -385,9 +385,9 @@ $expectEmails = ['order_pending', 'payment_receipt'];
 
                     <div class="card tour-details">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
-                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-down"></i> Tour Details</button>
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-right"></i> Tour Details</button>
                         </div>
-                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                        <div id="collapseTwo" class="collapse " aria-labelledby="headingTwo" data-parent="#accordionExample">
                             <div class="card-body">                               
                                 
                                 <div id="tour_all">
@@ -604,7 +604,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                         <div class="card-header bg-secondary py-0" id="heading4">
                                 <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
                         </div>
-                        <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
+                        <div id="collapse4" class="collapse " aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
                                  <div style="border:1px solid #eaecef;">
                                     <table class="table">
@@ -1071,9 +1071,15 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                     </div>
 
                     <div class="card-footer" style="display:block">
-                        <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Save order</button>
-                        <a href="{{ route('admin.orders.index') }}" class="btn btn-cancel">Cancel</a>
-                        <a onclick="return confirm('Are you sure?')" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-danger confirm-delete">Delete</a>
+                        <div class="row">
+                            <div class="col-md-6 order-2 order-md-1">
+                                <a href="{{ route('admin.orders.index') }}" class="btn btn-cancel"> <i class="fas fa-times"></i> Cancel</a>
+                                <a onclick="return confirm('Are you sure?')" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-danger confirm-delete"> <i class="fas fa-trash-alt"></i> Delete</a>
+                            </div>
+                            <div class="col-md-6 align-buttons order-1 order-md-2">
+                                <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Save order</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

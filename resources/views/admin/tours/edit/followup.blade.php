@@ -130,10 +130,16 @@
                 </div>
             </div>
 
-            <div class="card-footer" style="display:block">                
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.message.reminder', encrypt($data->id)) }}" class="btn btn-secondary">Back</a>
-                <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success">Save</button>
-                <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.message.paymentrequest', encrypt($data->id)) }}" class="btn btn-primary">Next</a>   
+            <div class="card-footer" style="display:block">
+                <div class="row">
+                    <div class="col-md-6">
+                        <button style="padding:0.6rem 2rem" type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
+                    </div>
+                    <div class="col-md-6 align-buttons">
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.message.reminder', encrypt($data->id)) }}" class="btn btn-secondary"> <i class="fas fa-chevron-left"></i> Back</a>
+                        <a style="padding:0.6rem 2rem" href="{{ route('admin.tour.edit.message.paymentrequest', encrypt($data->id)) }}" class="btn btn-secondary">Next <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                </div>
             </div>
         </form>
     </div>

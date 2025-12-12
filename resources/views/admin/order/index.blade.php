@@ -75,7 +75,7 @@
                         <div class="col-md-2 col-6">
                             <button type="submit" class="btn btn-search"> <i class="fas fa-search"></i> Search</button>
                         </div>
-                        <div class="col-md-2 col-6">
+                        <div class="col-md-12 col-12">
                             <a href="{{ route('admin.orders.index') }}" class="btn-clear" style="margin-top:10px;display: block;"> <i class="fas fa-times"></i> Clear Search</a>
                         </div>
                     </div>
@@ -103,10 +103,10 @@
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center w-100">
                     <div class="card-tools">
-                        <a type="button" class="btn btn-selected" href="{{ route('admin.orders.create') }}">
+                        <a type="button" class="btn btn-success" href="{{ route('admin.orders.create') }}">
                             <i class="fas fa-calendar-plus"></i> Create Internal Order
                         </a>
-                        <button type="submit" class="btn btn-selected" onclick="return confirm('Are you sure to delete selected orders?')">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure to delete selected orders?')">
                             <i class="fas fa-trash-alt"></i> Delete Selected
                         </button>
                     </div>

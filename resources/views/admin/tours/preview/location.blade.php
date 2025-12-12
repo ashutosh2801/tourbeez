@@ -1,104 +1,103 @@
-<div class="card">
-    <div class="card card-primary">
-        <div class="card-header">
-            <h3 class="card-title">Location</h3>
-        </div>
-        <div class="card-body">
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul class="list-unstyled">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-            <form class="needs-validation" novalidate action="{{ route('admin.tour.location_update', $data->id) }}" method="POST" enctype="multipart/form-data" autocomplete="off">
-            @csrf
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-lg-8">
-                        <div class="form-group">
-                            <label for="country" class="form-label">Country *</label>
-                            @php $countries = \App\Models\Country::where('status',1)->get(); @endphp
-                            <select name="country" id="country_id" class="form-control aiz-selectpicker" data-live-search="true" >
-                                <option value="">{{translate('Select One')}}</option>
-                                @foreach ($countries as $country)
-                                    <option value="{{ $country->id }}"
-                                    {{ old('country')==$country->id || $data->country==$country->id ? 'selected':'' }}>{{ strtoupper($country->name) }}</option>
-                                @endforeach
-                            </select>
-                            @error('country')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                    </div>
 
-                    <div class="col-lg-8">
-                        <div class="form-group">
-                            <label for="state" class="form-label">State *</label>
-                            <select name="state" id="state_id" class="form-control aiz-selectpicker" data-live-search="true" >
-
-                            </select>
-                            @error('state')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-lg-8">
-                        <div class="form-group">
-                            <label for="city" class="form-label">City *</label>
-                            <select name="city" id="city_id" class="form-control aiz-selectpicker" data-live-search="true" >
-
-                            </select>
-                            @error('city')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-lg-8">
-                        <div class="form-group">
-                            <label for="destination" class="form-label">Tourism destination*</label>
-                            <input type="text" name="destination" id="destination" value="{{ old('destination') ? : $data->destination }}"
-                                class="form-control" placeholder="Ex: Niagara Falls" autocomplete="off">
-                                
-                            @error('destination')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="address" class="form-label">Address *</label>
-                            <input type="text" name="address" id="autocomplete" value="{{ old('address') ? old('address') : $data->address }}"
-                                class="form-control" placeholder="Ex: Niagara Falls State Park" autocomplete="off">
-                                
-                            @error('address')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                    </div> 
-
-                    <div class="col-lg-2">
-                        <div class="form-group">
-                            <label for="postal_code" class="form-label">Postal/ZIP code*</label>
-                            <input type="text" name="postal_code" id="postal_code" value="{{ old('postal_code') ? old('postal_code') : $data->postal_code }}"
-                                class="form-control" placeholder="Ex: 14303" autocomplete="off">
-                                
-                            @error('postal_code')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                    </div> 
-
-                </div>
+<div class="card-primary">
+    <div class="card-header">
+        <h3 class="card-title">Location</h3>
+    </div>
+    <div class="card-body">
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="list-unstyled">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
-            
-            </form>
+        @endif
+        <form class="needs-validation" novalidate action="{{ route('admin.tour.location_update', $data->id) }}" method="POST" enctype="multipart/form-data" autocomplete="off">
+        @csrf
+        <div class="card-body p-0">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="form-group">
+                        <label for="country" class="form-label">Country *</label>
+                        @php $countries = \App\Models\Country::where('status',1)->get(); @endphp
+                        <select name="country" id="country_id" class="form-control aiz-selectpicker" data-live-search="true" >
+                            <option value="">{{translate('Select One')}}</option>
+                            @foreach ($countries as $country)
+                                <option value="{{ $country->id }}"
+                                {{ old('country')==$country->id || $data->country==$country->id ? 'selected':'' }}>{{ strtoupper($country->name) }}</option>
+                            @endforeach
+                        </select>
+                        @error('country')
+                            <small class="form-text text-danger">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="form-group">
+                        <label for="state" class="form-label">State *</label>
+                        <select name="state" id="state_id" class="form-control aiz-selectpicker" data-live-search="true" >
+
+                        </select>
+                        @error('state')
+                            <small class="form-text text-danger">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="form-group">
+                        <label for="city" class="form-label">City *</label>
+                        <select name="city" id="city_id" class="form-control aiz-selectpicker" data-live-search="true" >
+
+                        </select>
+                        @error('city')
+                            <small class="form-text text-danger">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="form-group">
+                        <label for="destination" class="form-label">Tourism destination*</label>
+                        <input type="text" name="destination" id="destination" value="{{ old('destination') ? : $data->destination }}"
+                            class="form-control" placeholder="Ex: Niagara Falls" autocomplete="off">
+                            
+                        @error('destination')
+                            <small class="form-text text-danger">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label for="address" class="form-label">Address *</label>
+                        <input type="text" name="address" id="autocomplete" value="{{ old('address') ? old('address') : $data->address }}"
+                            class="form-control" placeholder="Ex: Niagara Falls State Park" autocomplete="off">
+                            
+                        @error('address')
+                            <small class="form-text text-danger">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div> 
+
+                <div class="col-lg-2">
+                    <div class="form-group">
+                        <label for="postal_code" class="form-label">Postal/ZIP code*</label>
+                        <input type="text" name="postal_code" id="postal_code" value="{{ old('postal_code') ? old('postal_code') : $data->postal_code }}"
+                            class="form-control" placeholder="Ex: 14303" autocomplete="off">
+                            
+                        @error('postal_code')
+                            <small class="form-text text-danger">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div> 
+
+            </div>
         </div>
+        
+        </form>
     </div>
 </div>
 
