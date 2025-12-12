@@ -33,7 +33,7 @@
             <div>
                 <select name="order_status" class="form-control">
                     <option value="0">New</option> 
-                    <option value="4" >Pending Customer</option>
+                    <option value="4">Pending Customer</option>
                     <option value="3">Pending Supplier</option>
                     <option value="5" selected>Confirmed</option>
                     <option value="2">On Hold</option>
@@ -131,7 +131,6 @@
                     </div>
                 </div>
 
-
                 <!-- ================= Tour Details ================= -->
                 <div class="card">
                     <div class="card-header bg-secondary py-0" id="headingTwo">
@@ -151,7 +150,7 @@
                                             <select 
                                                 onchange="loadTourDetails(this.value, 0)"
                                                 name="tour_id0" 
-                                                class="form-control aiz-selectpicker border" data-live-search="true">
+                                                class="form-control col-6 aiz-selectpicker border" data-live-search="true">
                                                 <option value="">Select Tour</option>
                                                 @foreach($tours as $tour)
                                                     <option value="{{ $tour->id }}">{{ $tour->title }}</option>
@@ -179,28 +178,123 @@
                         </h2>
                     </div>
                     <div id="collapseFour" class="collapse show" aria-labelledby="headingFour" data-parent="#accordionExample">
-                        <div class="card-body">
-                            <textarea class="form-control" name="additional_info" rows="4" placeholder="Additional information"></textarea>
+                        <div class="card-body row">
+                            <div class="col-6">
+                                <textarea class="form-control" name="additional_info" rows="2" placeholder="Add Special Requirements"></textarea>
+                                <p style="color:#777;font-size:14px">Special Requirements visible by everybody</p>
+                            </div>
+                            <div class="col-6">
+                                <textarea class="form-control" name="internal_notes" rows="2" placeholder="Add  Internal Notes"></textarea>
+                                <p style="color:#777;font-size:14px">Internal Notes only visible by supplier</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ================= Payment Details ================= -->
+                <!-- ================= Customer Payment ================= -->
                 <div class="card">
                     <div class="card-header bg-secondary py-0" id="headingThree">
                         <h2 class="my-0 py-0">
                             <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
                                 data-toggle="collapse" data-target="#collapseThree">
-                                <i class="fa fa-angle-right"></i> Payment Details
+                                <i class="fa fa-angle-right"></i> Customer Payment
                             </button>                     
                         </h2>
                     </div>
 
                     <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+
+                        <div class="card-total bg-light p-3 mb-3 ">
+                            Total: <span id="totalPayment">$0.00</span>
+                            <input type="text" id="total_amount" readonly placeholder="0.00">
+                        </div>
                         <div class="card-body">
 
+
+                            <div class="p-2 mb-2 bglight">
+                                <div class="mb-2"><label><input type="checkbox" value="1" name="add_ccnow" id="add_ccnow" > Add a credit card to this order</label></div>
+
+                                <div id="card-element-wrapper" class="hidden">
+                                    <div id="card-element" class="form-control col-6" style="padding: 10px; height: auto;"></div>
+
+                                    <div class="mt-3"><label><input type="checkbox" value="1" name="charge_ccnow" id="charge_ccnow" /> Charge credit card now</label></div>
+
+                                    <div class="form-group hidden" id="charge_ccnow_amount">
+                                        <div class="form-group  col-6">
+                                            <label>Amount</label>
+                                            <div class="input-group">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                                </div>    
+                                                <input type="text" class="form-control decimal" id="addPaymentAmount" name="charge_ccnow_amount" placeholder="0.00">                                            
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-light p-2">                                   
+
+                                <div id="paymentTemplate">
+                                    <div class="row paymentRow my-2 border-b-1 border-blue-300">
+                                        <div class="col-2">
+                                            <select class="form-control" name="paymentType[]">
+                                                <option value="">Payment type...</option>
+                                                <option value="CASH">Cash</option>
+                                                <option value="CREDITCARD">Credit Card</option>
+                                                <option value="ALIPAY">Alipay</option>
+                                                <option value="BANKTRANSFER">Bank Transfer</option>
+                                                <option value="BANKCHEQUE">Cheque</option>
+                                                <option value="REFUND">Refund</option>
+                                                <option value="PAYPAL">Paypal</option>
+                                                <option value="VOUCHER">Voucher</option>
+                                                <option value="PROMO_CODE">Promo code</option>
+                                                <option value="FREE">Free of charge</option>
+                                                <option value="INVOICE">Invoice</option>
+                                                <option value="OTHER">Other</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-3">
+                                            <input class="form-control" name="transactionId[]" placeholder="Ref. number" autocomplete="off" />
+                                        </div>
+
+                                        <div class="col-s">
+                                            <div class="input-group">
+                                                <input type="text" class="aiz-date-range form-control"
+                                                    name="collection_date[]" data-format="ddd MMM DD, YYYY" data-single="true" autocomplete="off" placeholder="Date">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-2">
+                                            <div class="input-group">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                                </div>
+                                                <input type="text" class="form-control" name="amount[]" placeholder="0.00" autocomplete="off">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-2 text-right">
+                                            <button type="button" class="btn btn-success btn-sm addRow">+</button>
+                                            <button type="button" class="btn btn-danger btn-sm removeRow">-</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="paymentWrapper"></div>
+
+
+                            </div>
+
+                            
+
                             {{-- Choose Payment Option --}}
-                            <div class="form-group">
+                            <!-- <div class="form-group">
                                 <label><strong>Payment Method</strong></label><br>
                                 <label class="mr-3">
                                     <input type="radio" name="payment_type" value="card"> Credit Card (Stripe)
@@ -211,10 +305,10 @@
                                 <label>
                                     <input type="radio" name="payment_type" value="other"> Other
                                 </label>
-                            </div>
+                            </div> -->
 
                             {{-- Stripe Credit Card Fields --}}
-                            <div id="cardFields" style="display:none;">
+                            <!-- <div id="cardFields" style="display:none;">
                                 <div class="form-group">
                                     <label for="card-element">Card Details</label>
                                     <div id="card-element" class="form-control col-6" style="padding: 10px; height: auto;"></div>
@@ -233,10 +327,10 @@
                                         
                                     </div>
                                 </div>
-                            </div>
+                            </div> -->
 
                             {{-- Transaction Fields (inline) --}}
-                            <div id="transactionFields" style="display:none;">
+                            <!-- <div id="transactionFields" style="display:none;">
                                 <div class="form-row align-items-center">
                                     <div class="form-group col-md-6">
                                         <label for="transaction_id">Ref. Number</label>
@@ -259,7 +353,7 @@
                                     <label for="transaction_id">Other</label>
                                     <input type="text" name="other" class="form-control" placeholder="Enter other payment details" />
                                 </div>
-                            </div>
+                            </div> -->
 
                         </div>
                     </div>
@@ -358,7 +452,6 @@ function addTour(savedTourId = null, index = null, silentMode = false) {
     hideLoader();
 }
 
-
 // ================= Remove Tour Row =================
 function removeTour(id) {
     const row = document.getElementById(id);
@@ -403,12 +496,12 @@ function loadTourDetails(tourId, count) {
                 $dateInput.val(initialDate);
 
                 $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {
-                    const selectedDate = picker.startDate.format("YYYY-MM-DD");
+                    const selectedDate = picker.startDate.format("ddd MMM DD, YYYY");
                     $(this).val(selectedDate).trigger('change');
 
                     const $row = $("#row_" + count);
 
-                    const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
+                    const pretty = moment(selectedDate).format("ddd MMM DD, YYYY");
                     $row.find(".tour_startdate_display").val(pretty);
                     
                     fetchTourSessions(tourId, selectedDate, count);
@@ -460,6 +553,13 @@ function handleQtyInput() {
 }
 
 $(document).ready(function () {
+    $(document).on("change", "#add_ccnow", function () {
+        if (this.checked) {
+            $("#card-element-wrapper").show();
+        } else {
+            $("#card-element-wrapper").hide();
+        }
+    });
     $(document).on("change", "#charge_ccnow", function () {
         if (this.checked) {
             $("#charge_ccnow_amount").show();
@@ -526,8 +626,8 @@ function fetchTourSessions(tourId, selectedDate, count) {
     // Handle form submit
     const form = document.getElementById('orderForm');
     form.addEventListener('submit', async function(event) {
-        const selectedPayment = document.querySelector("input[name='payment_type']:checked").value;
-        if (selectedPayment === "card") {
+        const selectedPayment = document.querySelector("input[name='add_ccnow']:checked").value;
+        if (selectedPayment) {
             event.preventDefault();
 
             const { paymentMethod, error } = await stripe.createPaymentMethod({
@@ -553,6 +653,47 @@ function fetchTourSessions(tourId, selectedDate, count) {
 </script>
 
 <script>
+document.addEventListener("click", function(e) {
+    // Add row
+    if (e.target.classList.contains("addRow")) {
+        let html = document.querySelector("#paymentTemplate").innerHTML;
+        document.querySelector("#paymentWrapper").insertAdjacentHTML("beforeend", html);
+
+        // re-init datepicker if needed
+        if ($(".aiz-date-range").length) {
+            $(".aiz-date-range").daterangepicker({
+                singleDatePicker: true,      // Enable single-date mode
+                showDropdowns: true,
+                locale: {
+                    format: 'ddd MMM DD, YYYY'
+                }
+            });
+        }
+    }
+
+    // Remove row
+    if (e.target.classList.contains("removeRow")) {
+        let row = e.target.closest(".paymentRow");
+        row.remove();
+    }
+});
+</script>
+
+<script>
+function calculateTotal() {
+    let sum = 0;
+
+    $('input[name="amount[]"]').each(function () {
+        let val = parseFloat($(this).val());
+        if (!isNaN(val)) {
+            sum += val;
+        }
+    });
+
+    $('#total_amount').val(sum.toFixed(2));
+    $('#totalDue').text('$'+sum.toFixed(2));    
+}
+
     document.querySelectorAll("input[name='payment_type']").forEach(el => {
         el.addEventListener("click", function () {
             if (this.value === "card") {
@@ -570,6 +711,7 @@ function fetchTourSessions(tourId, selectedDate, count) {
             }
         });
     });
+    
     $(document).ready(function () {
         $(document).on('click', '#addNewCustomerBtn', function () {
             
@@ -589,6 +731,45 @@ function fetchTourSessions(tourId, selectedDate, count) {
                 $('#newCustomerFields').addClass('d-none');
                 // remove required
             }
+        });
+
+        $(document).on('blur', '.decimal', function () {
+            let val = $(this).val();
+
+            // If empty, do nothing
+            if (val === "") return;
+
+            // Convert to number and force 2 decimals
+            let num = parseFloat(val);
+
+            // If not a valid number → reset to empty or 0.00 (your choice)
+            if (isNaN(num)) {
+                $(this).val("");
+                return;
+            }
+
+            // Set back with 2 decimals
+            $(this).val(num.toFixed(2));
+        });
+
+        $(document).on('blur', 'input[name="amount[]"]', function () {
+            let val = $(this).val().trim();
+
+            if (val === "") {
+                calculateTotal();
+                return;
+            }
+
+            let num = parseFloat(val);
+
+            if (isNaN(num)) {
+                $(this).val("");
+                calculateTotal();
+                return;
+            }
+
+            $(this).val(num.toFixed(2));
+            calculateTotal();
         });
     });
 </script>
@@ -613,9 +794,6 @@ document.addEventListener("DOMContentLoaded", function () {
         },
         utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
     });
-
-
-
 
     /* ======================================================
        ALLOW + AUTO-DETECT COUNTRY FROM FULL NUMBER
@@ -724,15 +902,12 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
-
 </script>
+
 <script>
 document.addEventListener("change", function(e){
     if(e.target.classList.contains("pickup-dropdown")) {
-        // const tour = e.target.dataset.tour;
-
         const otherBox = document.getElementById("pickup-other-box");
-
         if(e.target.value === "other") {
             otherBox.style.display = "block";
             otherBox.value = "";
@@ -744,14 +919,12 @@ document.addEventListener("change", function(e){
 });
 </script>
 
-
 <script>
-    // =====================================================
+// =====================================================
 // DYNAMIC TOTAL CALCULATION FOR EACH TOUR ROW
 // =====================================================
 
-function calculateRowTotal34234(row) {    
-
+function calculateRowTotal34234(row) {
     let subtotal = 0;
     let withouttax = 0;
 
@@ -843,7 +1016,6 @@ function calculateRowTotal34234(row) {
         document.getElementById("totalDue").innerText = subtotal.toFixed(2);
     }
 }
-
 
 function calculateRowTotal(row) {
 
@@ -951,12 +1123,11 @@ function calculateRowTotal(row) {
     const subtotalBox = row.querySelector('.subtotal-box');
     if (subtotalBox) {
         document.getElementById("totalDue").innerText = '$'+subtotal.toFixed(2);
+        document.getElementById("totalPayment").innerText = '$'+subtotal.toFixed(2);
         document.getElementById("addPaymentAmount").value = subtotal.toFixed(2);
         subtotalBox.textContent = '$'+subtotal.toFixed(2);
-
     }
 }
-
 
 // =====================================================
 // EVENT LISTENERS — trigger on every quantity and extra change
@@ -966,15 +1137,16 @@ $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_ext
     calculateRowTotal(row);
 });
 </script>
-<script>
-    function showLoader(message = "Processing...") {
-        $("#globalLoader").find("div:last").text(message);
-        $("#globalLoader").show();
-    }
 
-    function hideLoader() {
-        $("#globalLoader").hide();
-    }
+<script>
+function showLoader(message = "Processing...") {
+    $("#globalLoader").find("div:last").text(message);
+    $("#globalLoader").show();
+}
+
+function hideLoader() {
+    $("#globalLoader").hide();
+}
 </script>
 
 <script>
@@ -1098,15 +1270,10 @@ function autoPersistForm(formSelector) {
         localStorage.removeItem(STORE_KEY);
     }
 }
-
-
 </script>
 
 <script>
-
-    window.hasFormError = @json($errors->any() || count(old()) > 0);
-
-    
+    window.hasFormError = @json($errors->any() || count(old()) > 0);   
     console.log("hasFormError:", window.hasFormError, "old values:", @json(old()));
 </script>
 
@@ -1126,8 +1293,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 </script>
-
-
 
 @endsection
 </x-admin>

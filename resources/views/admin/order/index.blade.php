@@ -16,7 +16,7 @@
                         </div>
                         <?php /*
                         <div class="col-md-2">
-                            <select name="product" class="form-control form-control-sm" onchange="this.form.submit()">
+                            <select name="product" class="form-control form-control-sm" >
                                 <option value="">All Tours</option>
                                 @foreach ($products as $product)
                                     <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>{{ $product->title }}</option>
@@ -33,14 +33,14 @@
                             </select>
                         </div>
                         <div class="col-md-2 col-6">
-                            <select name="payment_status" class="form-control" onchange="this.form.submit()">
+                            <select name="payment_status" class="form-control" >
                                 <option value="">Payment Status</option>
                                 <option value="1" {{ request('payment_status') === '1' ? 'selected' : '' }}>Paid</option>
                                 <option value="0" {{ request('payment_status') === '0' ? 'selected' : '' }}>Unpaid</option>
                             </select>
                         </div>
                         <div class="col-md-2 col-6">
-                            <select name="order_status" class="form-control" onchange="this.form.submit()">
+                            <select name="order_status" class="form-control" >
                                 <option value="">Order Status</option>
                                 @foreach ($statuses as $key => $label)
                                 <option value="{{ $key }}" {{ request('order_status') == $key ? 'selected' : '' }}>{{ $label }}</option>
@@ -51,7 +51,7 @@
                             <input type="date" name="tour_start_date" class="form-control" value="{{ request('tour_start_date') }}">
                         </div>
                         <div class="col-md-2 col-6">
-                            <select name="date_filter" class="form-control" onchange="this.form.submit()">
+                            <select name="date_filter" class="form-control" >
                                 <option value="">Filter by Order Created</option>
                                 <option value="last_7" {{ request('date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
                                 <option value="last_15" {{ request('date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
@@ -62,7 +62,7 @@
                             </select>
                         </div>
                         <div class="col-md-2 col-6">
-                            <select name="tour_date_filter" class="form-control" onchange="this.form.submit()">
+                            <select name="tour_date_filter" class="form-control" >
                                 <option value="">All Tour Dates</option>
                                 <option value="last_7" {{ request('tour_date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
                                 <option value="last_15" {{ request('tour_date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>

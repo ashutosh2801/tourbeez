@@ -8237,7 +8237,7 @@ a.dropdown-footer:hover {
     align-items: center;
 }
 
-.order-edit-head .charge-btn {
+/* .order-edit-head .charge-btn {
     background: #8f97ab;
     color: #ffffff !important;
     border-color: #8f97ab;
@@ -8248,7 +8248,7 @@ a.dropdown-footer:hover {
     background: #5a6268;
     color: #ffffff !important;
     border-color: #5a6268;
-}
+} */
 
 .order-edit .accordion>.card>.card-header {
     border-radius: 0;
@@ -8265,7 +8265,7 @@ a.dropdown-footer:hover {
     font-size: 16px;
     font-weight: bold;
     color: #000;
-    border-radius: 8px;
+    border-radius: 8px 8px 0 0;
     margin-bottom: 0;
 }
 

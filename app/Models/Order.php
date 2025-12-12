@@ -75,6 +75,11 @@ class Order extends Model
         return $this->hasMany(OrderTour::class);
     }
 
+    public function paymentDetails()
+    {
+        return $this->hasMany(OrderPaymentDetail::class);
+    }
+
     public function orderMetas()
     {
         return $this->hasMany(OrderMeta::class);
@@ -168,6 +173,18 @@ class Order extends Model
     public function payments()
     {
         return $this->hasMany(OrderPayment::class);
+    }
+
+    public function actions()
+    {
+        return $this->hasMany(OrderActions::class);
+    }
+
+    public function latestPayment()
+    {
+        return $this->hasOne(OrderPayment::class)
+                    ->where('collection_type', 'Inside')
+                    ->where('amount', '>', 0);
     }
 
 }
