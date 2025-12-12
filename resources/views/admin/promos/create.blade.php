@@ -57,7 +57,7 @@
                             </div>
 
                             {{-- STATUS (keep same name) --}}
-                            <div class="form-group">
+                            <!-- <div class="form-group">
                                 <label>Status</label>
                                 <select
                                     class="form-control"
@@ -68,7 +68,7 @@
                                     <option value="ISSUED" {{ old('Promos.status') == 'ISSUED' ? 'selected' : '' }}>Issued</option>
                                     <option value="EXPIRED" {{ old('Promos.status') == 'EXPIRED' ? 'selected' : '' }}>Expired</option>
                                 </select>
-                            </div>
+                            </div> -->
 
                             {{-- APPLIED ON --}}
                             <div class="form-group">
@@ -349,7 +349,10 @@
                                     <div class="col-md-6">
                                         <select name="Product[id]" id="Product_id" class="form-control" data-help="help_applicable_product">
                                             <option value="">Select...</option>
-                                            {{-- Fill via AJAX if needed --}}
+                                            @foreach($tours as $tour)
+                                            
+                                                <option value="{{$tour->id}}">{{ $tour->title }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                 </div>
@@ -368,10 +371,11 @@
                                     <div class="col-md-6">
                                         <select name="Category[id]" id="Category_id" class="form-control" data-help="help_applicable_product">
                                             <option value="">Select...</option>
-                                            <option value="609060">Tours</option>
-                                            <option value="609329">Niagara Falls Day Tours</option>
-                                            <option value="609330">Niagara Falls Evening Tours</option>
-                                            <option value="609331">Niagara Falls Private Tours</option>
+
+                                            @foreach($categories as $category)
+                                                <option value="{{ $category->id}}">{{ $category->name}}</option>
+                                            @endforeach
+                                            
                                         </select>
                                     </div>
                                 </div>

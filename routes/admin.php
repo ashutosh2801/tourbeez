@@ -1,6 +1,8 @@
 <?php
 
 use App\Exports\ToursSampleExport;
+use App\Http\Controllers\API\OrderController as APIOrderController;
+use App\Http\Controllers\API\TourController as APITourController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AddonController;
 use App\Http\Controllers\AizUploadController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PickupController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PromoController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SmsTemplateController;
@@ -33,8 +36,7 @@ use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\API\TourController as APITourController;
-use App\Http\Controllers\API\OrderController as APIOrderController;
+use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
@@ -290,5 +292,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
 
     Route::resource('contacts', ContactController::class)->only(['index', 'show', 'destroy']);
+
+    Route::resource('promos', PromoController::class);
+    Route::resource('vouchers', VoucherController::class);
+    Route::post('/apply-promo', [PromoController::class, 'apply'])->name('promo.apply');
 
 });

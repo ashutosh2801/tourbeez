@@ -70,6 +70,32 @@
                     </a>
                 </li>
                 @endcan
+
+                 @can('show_categories') 
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.promos.index') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.promos.index') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-cannabis"></i>
+                        <p>{{  translate('Promo Code') }}
+                            <span class="badge badge-warning right">{{ $TourTypeCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                @endcan
+
+                 @can('show_categories') 
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.vouchers.index') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.vouchers.index') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-cannabis"></i>
+                        <p>{{  translate('Vouchers Code') }}
+                            <span class="badge badge-warning right">{{ $TourTypeCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                @endcan
+
+
                 @can('show_attributes') 
                 <li class="aiz-side-nav-item">
                     <a href="javascript:void(0);" class="aiz-side-nav-link nav-link">

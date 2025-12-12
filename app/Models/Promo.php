@@ -8,22 +8,42 @@ class Promo extends Model
 {
     protected $fillable = [
         'code',
-        'type',
-        'value',
-        'min_amount',
         'status',
-        'start_date',
-        'end_date',
+        'quantity_rule',
+        'issue_date',
+        'expiry_date',
+        'travel_from_date',
+        'travel_to_date',
+        'redemption_limit',
         'max_uses',
+        'min_amount',
+        'include_taxes_and_fees',
+        'include_extras',
+        'internal',
+        'value_type',
+        'voucher_value',
+        'value_percent',
+        'internal_notes',
+        'valid_days',
+        'product_id',
+        'category_id',
         'used_count',
-        'description',   // Added
-        'is_global',     // Added
-        'per_user_limit' // Added
+    ];
+
+    protected $dates = [
+        'issue_date',
+        'expiry_date',
+        'travel_from_date',
+        'travel_to_date',
     ];
 
     protected $casts = [
-        'start_date' => 'datetime',
-        'end_date'   => 'datetime',
-        'is_global'  => 'boolean',
+
+
+        'valid_days' => 'array',
+        'include_taxes_and_fees' => 'boolean',
+        'include_extras' => 'boolean',
+        'internal' => 'boolean',
     ];
 }
+

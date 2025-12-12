@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Category;
 use App\Models\Promo;
+use App\Models\Tour;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class PromoController extends Controller
 {
@@ -18,15 +20,17 @@ class PromoController extends Controller
     /** Show create form */
     public function create()
     {
-        return view('admin.promos.create');
+        $tours = Tour::all();
+        $categories = Category::all();
+        return view('admin.promos.create', compact('tours', 'categories'));
     }
 
     /** Store promo */
     public function store(Request $request)
     {
+        
         $data = $request->validate([
             'Promos.code' => 'required|unique:promos,code',
-            'Promos.status' => 'required|in:ISSUED,EXPIRED',
             'Promos.quantityRule' => 'required|in:ORDER,PRODUCT,QUANTITY',
             'Promos.issueDate' => 'nullable|date',
             'Promos.expiryDate' => 'nullable|date|after_or_equal:Promos.issueDate',
@@ -35,66 +39,113 @@ class PromoController extends Controller
             'Promos.redemptionLimit' => 'required|in:UNLIMITED,LIMITED',
             'Promos.maxUses' => 'nullable|integer|min:1',
             'Promos.minAmount' => 'nullable|numeric|min:0',
-            'Promos.includeTaxesAndFees' => 'nullable|boolean',
-            'Promos.includeExtras' => 'nullable|boolean',
-            'Promos.internal' => 'nullable|boolean',
-            'Promos.valueType' => 'required|in:VALUE_LIMITPRODUCT,VALUE,VALUE_LIMITCATALOG,PERCENT_LIMITPRODUCT,PERCENT,PERCENT_LIMITCATALOG',
+
+            'Promos.includeTaxesAndFees' => 'boolean',
+            'Promos.includeExtras' => 'boolean',
+            'Promos.internal' => 'boolean',
+
+            'Promos.valueType' => 'required|in:VALUE_LIMITPRODUCT,VALUE,VALUE_LIMITCATEGORY,PERCENT_LIMITPRODUCT,PERCENT,PERCENT_LIMITCATEGORY',
+
             'Promos.voucherValue' => 'nullable|numeric|min:0',
             'Promos.valuePercent' => 'nullable|numeric|min:0|max:100',
             'Promos.internalNotes' => 'nullable|string',
+
             'validRedemptionDaysIndex' => 'nullable|array',
             'validRedemptionDaysIndex.*' => 'integer|between:1,7',
-            'Product.id' => 'nullable|exists:products,id',
-            'Category.id' => 'nullable|exists:catalogs,id',
+
+            'Product.id' => 'nullable|exists:tours,id',
+            'Category.id' => 'nullable|exists:categories,id',
         ]);
 
-        // Flatten the nested array for model
-        $promoData = $data['Promos'];
+        // MAIN ARRAY (Promos)
+
+        $promoData = array_combine(
+            array_map('Illuminate\Support\Str::snake', array_keys($data['Promos'])),
+            array_values($data['Promos'])
+        );
+
+        // Initialize
         $promoData['used_count'] = 0;
 
-        // Store validRedemptionDaysIndex separately if needed
+        // Save JSON Days
         $promoData['valid_days'] = $data['validRedemptionDaysIndex'] ?? [];
 
-        // Assign product or catalog if selected
+        // Foreign keys
         $promoData['product_id'] = $data['Product']['id'] ?? null;
         $promoData['category_id'] = $data['Category']['id'] ?? null;
 
+        // dd($promoData);
+
         Promo::create($promoData);
 
-        return redirect()->route('admin.promos.index')
-                         ->with('success', 'Promo created successfully.');
+        return redirect()
+            ->route('admin.promos.index')
+            ->with('success', 'Promo created successfully.');
     }
+
 
     /** Show edit form */
     public function edit($id)
     {
         $promo = Promo::findOrFail($id);
-        return view('admin.promos.edit', compact('promo'));
+        $tours = Tour::all();
+        $categories = Category::all();
+
+        return view('admin.promos.edit', compact('promo', 'tours', 'categories'));
     }
 
     /** Update promo */
-    public function update(Request $request, $id)
+    public function update(Request $request, Promo $promo)
     {
-        $promo = Promo::findOrFail($id);
-
         $data = $request->validate([
-            'type' => 'required|in:PERCENT,FIXED',
-            'value' => 'required|numeric|min:0',
-            'min_amount' => 'nullable|numeric|min:0',
-            'status' => 'required|in:ACTIVE,INACTIVE,EXPIRED',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'max_uses' => 'nullable|integer|min:1',
+            'Promos.code' => 'required|unique:promos,code,' . $promo->id,
+            'Promos.quantityRule' => 'required|in:ORDER,PRODUCT,QUANTITY',
+            'Promos.issueDate' => 'nullable|date',
+            'Promos.expiryDate' => 'nullable|date|after_or_equal:Promos.issueDate',
+            'Promos.travelFromDate' => 'nullable|date',
+            'Promos.travelToDate' => 'nullable|date|after_or_equal:Promos.travelFromDate',
+            'Promos.redemptionLimit' => 'required|in:UNLIMITED,LIMITED',
+            'Promos.maxUses' => 'nullable|integer|min:1',
+            'Promos.minAmount' => 'nullable|numeric|min:0',
+
+            'Promos.includeTaxesAndFees' => 'boolean',
+            'Promos.includeExtras' => 'boolean',
+            'Promos.internal' => 'boolean',
+
+            'Promos.valueType' => 'required|in:VALUE_LIMITPRODUCT,VALUE,VALUE_LIMITCATEGORY,PERCENT_LIMITPRODUCT,PERCENT,PERCENT_LIMITCATEGORY',
+
+            'Promos.voucherValue' => 'nullable|numeric|min:0',
+            'Promos.valuePercent' => 'nullable|numeric|min:0|max:100',
+            'Promos.internalNotes' => 'nullable|string',
+
+            'validRedemptionDaysIndex' => 'nullable|array',
+            'validRedemptionDaysIndex.*' => 'integer|between:1,7',
+
+            'Product.id' => 'nullable|exists:tours,id',
+            'Category.id' => 'nullable|exists:categories,id',
         ]);
 
-        // Prevent manual override of used_count
-        unset($data['used_count']);
+        // Convert Promos keys to snake_case
+        $promoData = array_combine(
+            array_map('Illuminate\Support\Str::snake', array_keys($data['Promos'])),
+            array_values($data['Promos'])
+        );
 
-        $promo->update($data);
+        // Save JSON
+        $promoData['valid_days'] = $data['validRedemptionDaysIndex'] ?? [];
 
-        return redirect()->route('admin.promos.index')
-                         ->with('success', 'Promo updated successfully.');
+        // Foreign keys
+        $promoData['product_id'] = $data['Product']['id'] ?? null;
+        $promoData['category_id'] = $data['Category']['id'] ?? null;
+
+        // Update record
+        $promo->update($promoData);
+
+        return redirect()
+            ->route('admin.promos.index')
+            ->with('success', 'Promo updated successfully.');
     }
+
 
     /** Delete promo */
     public function destroy($id)
@@ -164,4 +215,45 @@ class PromoController extends Controller
             'final_amount' => round($final_amount, 2),
         ]);
     }
+
+    public function fetch_coupon($coupon)
+    {
+        $promo = Promo::where('code', $coupon)->first();
+
+        if (!$promo) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Promo code not found.'
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'promo' => [
+                'id' => $promo->id,
+                'code' => $promo->code,
+                'status' => $promo->status,
+                'quantity_rule' => $promo->quantity_rule,
+                'issue_date' => $promo->issue_date,
+                'expiry_date' => $promo->expiry_date,
+                'travel_from_date' => $promo->travel_from_date,
+                'travel_to_date' => $promo->travel_to_date,
+                'redemption_limit' => $promo->redemption_limit,
+                'max_uses' => $promo->max_uses,
+                'min_amount' => $promo->min_amount,
+                'include_taxes_and_fees' => $promo->include_taxes_and_fees,
+                'include_extras' => $promo->include_extras,
+                'internal' => $promo->internal,
+                'value_type' => $promo->value_type,
+                'voucher_value' => $promo->voucher_value,
+                'value_percent' => $promo->value_percent,
+                'internal_notes' => $promo->internal_notes,
+                'valid_days' => $promo->valid_days,
+                'product_id' => $promo->product_id,
+                'category_id' => $promo->category_id,
+                'used_count' => $promo->used_count,
+            ]
+        ]);
+    }
+
 }

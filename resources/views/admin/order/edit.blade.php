@@ -862,7 +862,7 @@
                         </div>
                     </div>
                         <!-- Hidden Add Payment Form -->
-                        <!-- <div id="addPaymentBlock" class="mt-3" style="display:none;">
+                         <div id="addPaymentBlock" class="mt-3" style="display:none;">
                             <div id="addPaymentSection">
                                 <div class="form-group hidden">
                                     <label>Amount</label>
@@ -880,12 +880,12 @@
                                 <button id="addPaymentSubmit" class="btn btn-success">Pay Now</button>
                             </div>
                         </div>
-                    </div> 
+                    </di1v> 
 
 
 
 
-                    </div> -->
+                    </div>
 
                     <div class="card">
                         <div class="card-header bg-secondary py-0" id="heading5">

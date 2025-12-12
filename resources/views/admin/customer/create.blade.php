@@ -169,6 +169,10 @@
                             <textarea name="bank_details" class="form-control"></textarea>
                         </div>
 
+       
+
+
+
                         <div class="col-lg-6">
                             <label>Currency</label>
                             <input type="text" name="currency" class="form-control" placeholder="e.g. USD, INR">

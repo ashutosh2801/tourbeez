@@ -51,14 +51,14 @@
                 </table>
             </div>
         </div>
-    </div>
+                                          </div>
     @section('js')
         <script>
             $(function() {
                 $('#categoryTable').DataTable({
                     "paging": true,
                     "searching": true,
-                    "ordering": true,
+                    "ordering": true,          
                     "responsive": true,
                 });
             });

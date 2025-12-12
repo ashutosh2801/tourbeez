@@ -5,10 +5,12 @@ use App\Http\Controllers\API\CategoryController;
 use App\Http\Controllers\API\CommonController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PaymentController;
+use App\Http\Controllers\API\SupplierController;
 use App\Http\Controllers\API\TourController;
 use App\Http\Controllers\API\WishlistController;
-use App\Http\Controllers\API\SupplierController;
 use App\Http\Controllers\EmailController;
+use App\Http\Controllers\PromoController;
+use App\Http\Controllers\VoucherController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -80,6 +82,9 @@ Route::middleware(['api.key'])->group(function () {
 
     // Route::get('/supplier/register', [SupplierController::class, 'showForm'])->name('supplier.register');
     Route::post('/suppliers', [SupplierController::class, 'store']);
+    Route::get('/fetch_coupon/{coupon}', [PromoController::class, 'fetch_coupon']);
+    Route::get('/fetch_voucher/{voucher}', [VoucherController::class, 'fetch_voucher']);
+
 
     // Route::post('/supplier/register', function(Request $request){
     //     return response()->json([
