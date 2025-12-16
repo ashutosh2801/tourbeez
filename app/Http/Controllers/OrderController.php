@@ -558,6 +558,7 @@ class OrderController extends Controller
             $balanceAmount = $totalOrderAmount - $totalPaymentAmount;
             $order->total_amount = $totalOrderAmount;
             $order->balance_amount = $balanceAmount;
+            $order->booked_amount = $totalOrderAmount - $balanceAmount;
             
             // dd($request->payment_type);
             if( $order->save() ){
@@ -1112,6 +1113,7 @@ class OrderController extends Controller
 
         $order->total_amount    = $total;
         $order->balance_amount  = $balanceAmount;
+        $order->booked_amount  = $total - $balanceAmount;
         
         if( $order->save() ) {
 
@@ -1337,9 +1339,18 @@ class OrderController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Order $order)
+    public function destroy($id)
     {
-        //
+
+        $order = Order::where('id', decrypt($id))->first();
+        // $tour->title .= '-deleted';
+        // $tour->slug .= '-deleted-' . Str::random(6);
+        // $tour->save();
+        if ($order->delete()) {
+            return redirect()->route('admin.orders.index')->with('success', 'Order info has been deleted successfull');
+        } else {
+            return back()->route('admin.orders.index')->with('error', 'Sorry! Something went wrong.');;
+        }
     }
 
     public function bulkDelete(Request $request)

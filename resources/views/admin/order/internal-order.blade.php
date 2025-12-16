@@ -729,6 +729,10 @@ function calculateTotal() {
             if ($(this).val()) {
                 // If existing customer selected → hide new fields
                 $('#newCustomerFields').addClass('d-none');
+                $("#customer_first_name").prop("required", false);
+                $("#customer_last_name").prop("required", false);
+                $("#customer_email").prop("required", false);
+                $("#customer_phone").prop("required", false);
                 // remove required
             }
         });

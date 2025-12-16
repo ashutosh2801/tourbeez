@@ -1074,7 +1074,13 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                         <div class="row">
                             <div class="col-md-6 order-2 order-md-1">
                                 <a href="{{ route('admin.orders.index') }}" class="btn btn-cancel"> <i class="fas fa-times"></i> Cancel</a>
-                                <a onclick="return confirm('Are you sure?')" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-danger confirm-delete"> <i class="fas fa-trash-alt"></i> Delete</a>
+                                <!-- <a onclick="return confirm('Are you sure?')" href="javascript:void(0)" class="btn btn-danger confirm-delete"> <i class="fas fa-trash-alt"></i> Delete</a> -->
+
+                                <a href="javascript:void(0)"
+                                   data-url="{{ route('admin.order.destroy', encrypt($order->id)) }}"
+                                   class="btn btn-danger btn-delete-order">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </a>
                             </div>
                             <div class="col-md-6 align-buttons order-1 order-md-2">
                                 <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Save order</button>
@@ -2760,5 +2766,37 @@ document.getElementById('refundAllForm').addEventListener('submit', async functi
     }
 });
 </script>
+
+<script>
+$(document).on('click', '.btn-delete-order', function () {
+    if (!confirm('Are you sure?')) {
+        return false;
+    }
+
+    let url = $(this).data('url');
+    let row = $(this).closest('tr'); // optional: remove row after delete
+
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: {
+            _method: 'DELETE',
+            _token: '{{ csrf_token() }}'
+        },
+        success: function (response) {
+            // remove row from table
+            row.fadeOut(300, function () {
+                $(this).remove();
+            });
+
+            alert(response.message ?? 'Order deleted successfully');
+        },
+        error: function (xhr) {
+            alert('Something went wrong. Please try again.');
+        }
+    });
+});
+</script>
+
 @endsection
 </x-admin>

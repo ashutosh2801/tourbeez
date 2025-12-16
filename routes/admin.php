@@ -71,6 +71,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::get('/tour-manifest', [OrderController::class, 'tourManifest'])->name('orders.tour.manifest');
     Route::get('toursmanifest/download', [OrderController::class, 'downloadTourManifest'])->name('orders.tour.manifest.download');
+
+    Route::delete('/order/destroy/{id}', [OrderController::class, 'destroy'])->name('order.destroy');
+
     
     // Country
     Route::resource('/countries', CountryController::class);
