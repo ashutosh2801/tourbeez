@@ -351,8 +351,9 @@ class TourController extends Controller
         ]);
     }
 
-
-
+    /**
+     * Fetch booking related info for a tour.
+     */
     public function fetch_booking(Request $request, $slug)
     {
         // Remove query logging to reduce overhead in production
@@ -456,7 +457,6 @@ class TourController extends Controller
         ]);
     }
 
-
     private function getDisabledTourDates_fromdb(int $tourId): array
     {
         // ✅ Load the precomputed meta row for this tour
@@ -516,8 +516,6 @@ class TourController extends Controller
     /**
      * Fetch booking related info for a tour.
      */
-
-
     public function fetch_sub_tours(Request $request, $id, $date)
     {
         $subTours = Tour::select([
@@ -1997,9 +1995,10 @@ public function single(Request $request)
                                     id="tour_startdate"
                                     name="tour_startdate[]"
                                     placeholder="Select Date" 
+                                    data-format="ddd MMM DD, YYYY"
                                     data-single="true" 
                                     data-show-dropdown="true" 
-                                    value="'.$tour_start_date.'">
+                                    value="'.date('D M d, Y',strtotime($tour_start_date)).'">
 
                                 <div class="input-group-append">
                                     <span class="input-group-text"><i class="fas fa-calendar"></i></span>
