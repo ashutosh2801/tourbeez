@@ -26,6 +26,15 @@
         </div>
 
         <div class="card-body">
+            @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="list-unstyled">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
             <div class="row">
                 <!-- Form -->
                 <div class="col-md-9">
@@ -241,11 +250,18 @@
                                 <div class="col-md-2 mt-1">
 
                                     <input type="hidden" name="reusable" value="0">
-                                    <input type="checkbox" name="reusable" value="1">
+                                    <input type="checkbox" name="reusable" value="1" id="reusableCheckbox">
                                 </div>
                             </div>
 
-                           
+                           <div class="valueType-REMAININGVALUE row " style="display:none">
+                                <label class="col-md-3">Remaining Value</label>
+                                <div class="col-md-6 input-group">
+                                    <span class="input-group-text">$</span>
+                                    
+                                    <input type="number" step="0.01" name="remainingValue" class="form-control">
+                                </div>
+                            </div>
 
                             {{-- PRODUCT --}}
                             <div class="valueType-PRODUCT row mt-2" style="display:none">
@@ -365,16 +381,7 @@
                 createModeSelect.addEventListener('change', toggleCreateMode);
                 toggleCreateMode();
 
-                // VALUE TYPE
-                function toggleValueType() {
-                    const type = document.getElementById('valueType').value;
-                    document.getElementById('voucherValueBox').classList.toggle('d-none', type !== 'VALUE');
-                    document.getElementById('productBox').classList.toggle('d-none', !(type === 'PRODUCT' || type === 'VALUE_LIMITPRODUCT'));
-                    document.getElementById('categoryBox').classList.toggle('d-none', type !== 'VALUE_LIMITCATEGORY');
-                }
-                const valueTypeSelect = document.getElementById('valueType');
-                valueTypeSelect.addEventListener('change', toggleValueType);
-                toggleValueType();
+                
 
                 // FORM VALIDATION
                 document.getElementById('voucherForm').addEventListener('submit', function(e) {
@@ -465,6 +472,102 @@
                     valueTypeSelect.addEventListener("change", toggleValueType);
                     toggleValueType();
                 });
+
+                document.addEventListener("DOMContentLoaded", function () {
+
+                    const reusableCheckbox = document.getElementById("reusableCheckbox");
+
+                    
+                    const remainingRow = document.querySelector(".valueType-REMAININGVALUE");
+                    const remainingInput = document.querySelector('input[name="remainingValue"]');
+
+                    if (!reusableCheckbox || !remainingRow) return;
+
+                    function toggleRemainingValue() {
+                        if (reusableCheckbox.checked) {
+                            remainingRow.style.display = "flex";
+                        } else {
+                            remainingRow.style.display = "none";
+                            remainingInput.value = "";
+                        }
+                    }
+
+                    reusableCheckbox.addEventListener("change", toggleRemainingValue);
+                    toggleRemainingValue(); // initial state
+                });
+
+
+
         </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+
+                const valueTypeSelect = document.getElementById("Voucher_valueType");
+                const container = document.querySelector(".valueTypeContainer");
+                const reusableCheckbox = document.getElementById("reusableCheckbox");
+                const remainingRow = document.querySelector(".valueType-REMAININGVALUE");
+                const remainingInput = document.querySelector('input[name="remainingValue"]');
+
+                function hideAll() {
+                    document
+                        .querySelectorAll(".valueTypeContainer .row")
+                        .forEach(el => el.style.display = "none");
+                }
+
+                function show(selector) {
+                    document
+                        .querySelectorAll(selector)
+                        .forEach(el => el.style.display = "flex");
+                }
+
+                function toggleValueType() {
+                    const type = valueTypeSelect.value;
+
+                    container.style.display = type ? "block" : "none";
+                    hideAll();
+
+                    if (type === "VALUE") {
+                        show(".valueType-VALUE");
+                    }
+
+                    if (type === "VALUE_LIMITPRODUCT") {
+                        show(".valueType-VALUE");
+                        show(".valueType-PRODUCT");
+                    }
+
+                    if (type === "VALUE_LIMITCATEGORY") {
+                        show(".valueType-VALUE");
+                        show(".valueType-CATEGORY");
+                    }
+
+                    if (type === "PRODUCT") {
+                        show(".valueType-PRODUCT");
+                    }
+
+                    toggleRemainingValue(); // re-check on value type change
+                }
+
+                function toggleRemainingValue() {
+                    if (!reusableCheckbox || !remainingRow) return;
+
+                    if (reusableCheckbox.checked && valueTypeSelect.value === "VALUE") {
+                        remainingRow.style.display = "flex";
+                    } else {
+                        remainingRow.style.display = "none";
+                        if (remainingInput) remainingInput.value = "";
+                    }
+                }
+
+                valueTypeSelect.addEventListener("change", toggleValueType);
+                if (reusableCheckbox) {
+                    reusableCheckbox.addEventListener("change", toggleRemainingValue);
+                }
+
+                // ✅ IMPORTANT: run once for EDIT mode
+                toggleValueType();
+            });
+            </script>
+
+
     @endsection
 </x-admin>

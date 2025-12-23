@@ -33,7 +33,7 @@ class VoucherController extends Controller
     }
 
     // Store voucher
-    public function store(Request $request)
+    public function store324(Request $request)
     {
         dd($request->all());
         $data = $request->validate([
@@ -88,13 +88,125 @@ class VoucherController extends Controller
                          ->with('success', 'Voucher created successfully.');
     }
 
+
+
+public function store(Request $request)
+{
+    // dd($request->all());
+    $rules = [
+        'createMode' => 'required|in:Automactic,MANUAL',
+
+        'issueDate' => 'required|date',
+        'expiryDate' => 'required|date|after_or_equal:issueDate',
+
+        'travelFromDate' => 'nullable|date',
+        'travelToDate' => 'nullable|date|after_or_equal:travelFromDate',
+
+        'validRedemptionDays' => 'nullable|array',
+        'validRedemptionDays.*' => 'integer|min:1|max:7',
+
+        'agent' => 'nullable|string|max:255',
+        'internalReference' => 'nullable|string|max:255',
+
+        'minAmount' => 'nullable|numeric|min:0',
+
+        'includeTaxesFees' => 'required|boolean',
+        'includeExtras' => 'required|boolean',
+
+        'valueType' => 'required|string|max:255',
+
+        'internalNotes' => 'nullable|string',
+        'reusable' => 'boolean',
+        'remainingValue' => 'nullable|numeric|min:0',
+    ];
+
+    /*
+    |---------------------------------------
+    | Create mode rules
+    |---------------------------------------
+    */
+    if ($request->createMode === 'MANUAL') {
+        $rules['codesList'] = 'required|string';
+    } else {
+        $rules['quantity'] = 'required|integer|min:1';
+    }
+
+    /*
+    |---------------------------------------
+    | Value type rules
+    |---------------------------------------
+    */
+    if (in_array($request->valueType, ['VALUE','VALUE_LIMITPRODUCT','VALUE_LIMITCATEGORY'])) {
+        $rules['voucherValue'] = 'nullable|numeric|min:0.01';
+    }
+
+    if (in_array($request->valueType, ['PRODUCT','VALUE_LIMITPRODUCT'])) {
+        $rules['productId'] = 'nullable|integer|min:1';
+    }
+
+    if ($request->valueType === 'VALUE_LIMITCATEGORY') {
+        $rules['categoryId'] = 'nullable|integer|min:1';
+    }
+
+    /*
+    |---------------------------------------
+    | Reusable logic
+    |---------------------------------------
+    */
+    if ($request->boolean('reusable')) {
+        $rules['remainingValue'] = 'nullable|numeric|min:0.01';
+    }
+
+    $data = $request->validate($rules);
+
+    Voucher::create([
+        'create_mode' => $data['createMode'],
+        'codes_list' => $data['codesList'] ?? null,
+        'quantity' => $data['quantity'] ?? null,
+
+        'issue_date' => $data['issueDate'],
+        'expiry_date' => $data['expiryDate'],
+
+        'travel_from_date' => $data['travelFromDate'] ?? null,
+        'travel_to_date' => $data['travelToDate'] ?? null,
+
+        'valid_redemption_days' => $data['validRedemptionDays'] ?? null,
+
+        'agent' => $data['agent'] ?? null,
+        'internal_reference' => $data['internalReference'] ?? null,
+
+        'min_amount' => $data['minAmount'] ?? null,
+
+        'include_taxes_fees' => $data['includeTaxesFees'],
+        'include_extras' => $data['includeExtras'],
+
+        'value_type' => $data['valueType'],
+        'voucher_value' => $data['voucherValue'] ?? null,
+
+        'reusable' => $data['reusable'] ?? 0,
+        'remaining_value' => $data['remainingValue'] ?? null,
+
+        'product_id' => $data['productId'] ?? null,
+        'category_id' => $data['categoryId'] ?? null,
+
+        'internal_notes' => $data['internalNotes'] ?? null,
+    ]);
+
+    return redirect()
+        ->route('admin.vouchers.index')
+        ->with('success', 'Voucher created successfully');
+}
+
+
+
     // Edit form
     public function edit(Voucher $voucher)
     {
         $products = Product::all();
         $categories = Category::all();
-        $agents = Agent::all();
-        return view('admin.vouchers.edit', compact('voucher', 'products', 'categories', 'agents'));
+        $agents = Category::all();
+        $tours = Tour::all();
+        return view('admin.vouchers.edit', compact('voucher', 'products', 'categories', 'agents', 'tours'));
     }
 
     // Update voucher

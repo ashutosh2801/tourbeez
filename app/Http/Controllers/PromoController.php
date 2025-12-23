@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\OrderCustomer;
 use App\Models\Promo;
 use App\Models\Tour;
 use Carbon\Carbon;
@@ -216,7 +217,7 @@ class PromoController extends Controller
         ]);
     }
 
-    public function fetch_coupon($coupon)
+    public function fetch_coupon($coupon, $email = null)
     {
         $promo = Promo::where('code', $coupon)->first();
 
@@ -226,6 +227,24 @@ class PromoController extends Controller
                 'message' => 'Promo code not found.'
             ], 404);
         }
+
+        if(($promo->redemption_limit == 'LIMITED' &&  ($promo->used_count <= $promo->max_uses) ) || $promo->internal){
+            return response()->json([
+                'status' => false,
+                'message' => 'Promo code max limit reached.'
+            ], 404);
+        }
+        $coupon_used_by = OrderCustomer::where('promo_code', $coupon)->pluck('email')->toArray();
+
+        if($email && in_array($email, $coupon_used_by)){
+            return response()->json([
+                'status' => false,
+                'message' => 'Promo code aleady used.'
+            ], 404);
+        }
+        
+
+
 
         return response()->json([
             'status' => true,
@@ -252,6 +271,7 @@ class PromoController extends Controller
                 'product_id' => $promo->product_id,
                 'category_id' => $promo->category_id,
                 'used_count' => $promo->used_count,
+                'coupon_used_by' => $coupon_used_by,
             ]
         ]);
     }

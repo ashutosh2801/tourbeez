@@ -259,12 +259,12 @@
                             </div>
 
                             {{-- PRODUCT QUANTITIES --}}
-                            <div class="valueType valueType-PRODUCT-quantities-holder row mt-3" style="display:none;">
+                            <!-- <div class="valueType valueType-PRODUCT-quantities-holder row mt-3" style="display:none;">
                                 <label class="col-md-2 col-form-label">Quantities</label>
                                 <div class="col-md-6 valueType-PRODUCT-quantities">
                                     {{-- JS dynamically renders --}}
                                 </div>
-                            </div>
+                            </div> -->
 
                             {{-- CATEGORY --}}
                             <div class="valueType valueType-CATALOG row mt-3" style="display:none;">
@@ -287,11 +287,29 @@
 
                             {{-- PRICE OPTIONS --}}
                             <div class="valueType valueType-PRODUCT-price-option-holder row mt-3" style="display:none;">
-                                <label class="col-md-2 col-form-label">Apply Discount To</label>
-                                <div class="col-md-6 choose-price-options valueType-PRODUCT-price-option">
-                                    {{-- JS will render here --}}
+                                    <label class="col-md-2 col-form-label">Apply Discount To</label>
+                                    <div class="col-md-6 choose-price-options valueType-PRODUCT-price-option">
+                                        <div class="controls valueType-PRODUCT-price-option choose-price-options">
+            
+                                        <label class="radio">
+                                          <input type="radio" name="PriceOption[selectPriceOption]" class="select-price-option" value="0" checked="" data-gtm-form-interact-field-id="14">
+                                          Apply to everyone             </label>
+                                        <label class="radio">
+                                            <input type="radio" name="PriceOption[selectPriceOption]" class="select-price-option" value="1" data-gtm-form-interact-field-id="9">
+                                            Only to :               </label>
+                                        <div class="list-price-option">
+                                                            <label class="checkbox">
+                                                <input type="checkbox" name="PriceOption[0][selected]" data-gtm-form-interact-field-id="10">
+                                                Adult(13+) <input name="PriceOption[0][id]" id="PriceOption_0_id" type="hidden" value="56763349">                   </label>
+                                                            <label class="checkbox">
+                                                <input type="checkbox" name="PriceOption[1][selected]" data-gtm-form-interact-field-id="11">
+                                                Child(3-12) <input name="PriceOption[1][id]" id="PriceOption_1_id" type="hidden" value="56763350">                  </label>
+                                                            <label class="checkbox">
+                                                <input type="checkbox" name="PriceOption[2][selected]" data-gtm-form-interact-field-id="12">
+                                                Infant(2 and under) <input name="PriceOption[2][id]" id="PriceOption_2_id" type="hidden" value="44503888">                  </label>
+                                                        </div>
+                                            </div>                                    </div>
                                 </div>
-                            </div>
 
                         </div>
 
@@ -431,6 +449,53 @@ $(document).ready(function () {
 
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const holder = document.querySelector('.valueType-PRODUCT-price-option-holder');
+
+    if (!holder) return;
+
+    function togglePriceOptions(container) {
+        const selected = container.querySelector('.select-price-option:checked');
+        const listPriceOption = container.querySelector('.list-price-option');
+
+        if (!selected || !listPriceOption) return;
+
+        if (selected.value === "1") {
+            listPriceOption.style.display = 'block';
+        } else {
+            listPriceOption.style.display = 'none';
+
+            // Reset checkboxes when switching back to everyone
+            listPriceOption.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+        }
+    }
+
+    // 🔁 Event delegation (works for dynamic HTML)
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('select-price-option')) {
+            const container = e.target.closest('.valueType-PRODUCT-price-option');
+            if (container) {
+                togglePriceOptions(container);
+            }
+        }
+    });
+
+    // ⏱ Handle EDIT mode (HTML already rendered)
+    const observer = new MutationObserver(() => {
+        document.querySelectorAll('.valueType-PRODUCT-price-option').forEach(container => {
+            togglePriceOptions(container);
+        });
+    });
+
+    observer.observe(holder, { childList: true, subtree: true });
+
+});
+</script>
+
 
 @endsection
 

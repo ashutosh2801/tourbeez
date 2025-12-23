@@ -144,7 +144,7 @@
                                             <span class="input-group-text" id="basic-addon1">$</span>
                                         </div>
                                         <input type="text" placeholder="99.50" name="PriceOption[{{ $index }}][price]" id="PriceOption_price" 
-                                        value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control" >
+                                        value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control price-option-input" >
                                         
                                     </div>  
                                     @error("PriceOption.$index.price")
@@ -607,5 +607,23 @@ function removeVideos(id) {
     }
 }
 
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const advertisedPriceInput = document.getElementById('advertised_price');
+    const firstPriceOption = document.querySelector('.price-option-input'); // 👈 FIRST ONLY
+
+    if (firstPriceOption) {
+        firstPriceOption.addEventListener('input', function () {
+            const value = this.value.trim();
+
+            if (value !== '') {
+                advertisedPriceInput.value = value;
+            }
+        });
+    }
+
+});
 </script>
 @endsection

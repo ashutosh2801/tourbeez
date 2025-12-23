@@ -129,8 +129,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
     Route::get('/export-tours', [TourController::class, 'exportTours'])->name('tours.export');
+    
     Route::post('/tours/mark-review', [TourController::class, 'markReview'])
     ->name('tours.markReview');
+
+    Route::get('/tour/{id}/edit/parent-tour', [TourController::class, 'parentTour'])->name('tour.edit.parent');
+    
+
+
+
+
 
     Route::get('/download-sample-excel', function () {
         return Excel::download(new ToursSampleExport, 'tours_sample.xlsx');
@@ -169,6 +177,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Route::post('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit..special.deposit');
     Route::put('/tour/special-deposit/{id}', [TourController::class, 'specialDepositUpdate'])->name('tour.special-deposit');
     Route::put('/tour/review/{id}', [TourController::class, 'reviewUpdate'])->name('tour.review');
+
+    Route::put('/tour/parent-tour/{id}', [TourController::class, 'parentUpdate'])
+    ->name('tour.parent');
     Route::get('/tours/{id}/sub-create', [TourController::class, 'createSubTour'])->name('tours.sub-create');
     Route::post('/tours/{id}/sub-tour-store', [TourController::class, 'subTourStore'])->name('tour.sub-tour-store');
     Route::get('/tours/{id}/sub-edit', [TourController::class, 'editSubTour'])->name('tour.sub-tour.edit');

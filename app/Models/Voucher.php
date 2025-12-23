@@ -7,23 +7,44 @@ use Illuminate\Database\Eloquent\Model;
 class Voucher extends Model
 {
     protected $fillable = [
-        'title',
-        'code',
-        'type',
-        'value',
-        'min_amount',
-        'status',
-        'start_date',
-        'end_date',
-        'max_uses',
-        'used_count',
+        'create_mode',
+        'codes_list',
+        'quantity',
+
+        'issue_date',
+        'expiry_date',
+
+        'travel_from_date',
+        'travel_to_date',
+
+        'valid_redemption_days',
+
         'agent',
+        'internal_reference',
+
+        'min_amount',
+
+        'include_taxes_fees',
+        'include_extras',
+
+        'value_type',
+        'voucher_value',
+
+        'reusable',
+        'remaining_value',
+
+        'product_id',
         'category_id',
-        'last_text_input',
+
+        'internal_notes',
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date' => 'date',
+
+        'valid_redemption_days' => 'array',
+
+        'include_taxes_fees' => 'boolean',
+        'include_extras' => 'boolean',
+        'reusable' => 'boolean',
     ];
 }

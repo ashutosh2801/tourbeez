@@ -82,6 +82,7 @@
                     </a>
                 </li>
                 @endcan
+                
 
                  @can('show_categories') 
                 <li class="aiz-side-nav-item">
