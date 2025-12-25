@@ -8,6 +8,7 @@ use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Models\OrderActions;
 use App\Models\OrderEmailHistory;
 use App\Models\OrderPayment;
 use App\Models\Pickup;
@@ -202,6 +203,8 @@ class PaymentController extends Controller
                 // Retrieve PaymentIntent
                 $paymentIntent = PaymentIntent::retrieve($intentId);
 
+
+
                 $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
                 $payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
 
@@ -253,6 +256,63 @@ class PaymentController extends Controller
                                 'customer'
                             ])->where('payment_intent_id', $setupIntent->id)->first();
             }
+            // ================= CARD DETAILS (NO CAPTURE, NO WEBHOOK) =================
+                try {
+   
+                    if (!empty($paymentIntent->payment_method)) {
+
+                        $paymentMethod = \Stripe\PaymentMethod::retrieve(
+                            $paymentIntent->payment_method
+                        );
+
+                        // if ($paymentMethod->type === 'card') {
+
+
+                            OrderPayment::create([
+                                'order_id'          => $booking->id,
+                                'payment_intent_id' => $booking->payment_intent_id,
+                                'transaction_id'    => null, // no charge yet until capture
+                                'payment_type'      => strtoupper($paymentMethod->type),
+                                'payment_method'    => $paymentMethod->type,
+                                'card_brand'        => $paymentMethod->card->brand ?? null,
+                                'card_last4'        => $paymentMethod->card->last4 ?? null,
+                                'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                                'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                                'amount'            => $booking->booked_amount,
+                                'currency'          => $booking->currency,
+                                'status'            => 'uncaptured', // manual capture pending
+                                'action'            => $action_name,
+                                'response_payload'  => null,
+                                'collection_date'   => now(),
+                            ]);
+
+                            // Update OrderPayment (preferred)
+                            // OrderPayment::create([
+                            //         'payment_method' => 'card',
+                            //         'card_brand'     => $paymentMethod->card->brand ?? null,
+                            //         'card_last4'     => $paymentMethod->card->last4 ?? null,
+                            //         'card_exp_month' => $paymentMethod->card->exp_month ?? null,
+                            //         'card_exp_year'  => $paymentMethod->card->exp_year ?? null,
+                            //         'status'         => $paymentIntent->status === 'requires_capture'
+                            //                             ? 'authorized'
+                            //                             : $paymentIntent->status,
+                            //     ]);
+
+                            // Optional: also store on orders table (if fields exist)
+                            // $booking->card_brand     = $paymentMethod->card->brand ?? null;
+                            // $booking->card_last4     = $paymentMethod->card->last4 ?? null;
+                            // $booking->card_exp_month = $paymentMethod->card->exp_month ?? null;
+                            // $booking->card_exp_year  = $paymentMethod->card->exp_year ?? null;
+                            $booking->save();
+                        // }
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning(
+                        'Card details not saved for PI ' . $paymentIntent->id . ' : ' . $e->getMessage()
+                    );
+                }
+                // ========================================================================
+
 
             if (!$booking) {
                 return response()->json([
@@ -362,7 +422,14 @@ class PaymentController extends Controller
             
             if ($booking && !$booking->tour?->order_email && !$booking->email_sent) {                    
                 $mailsent = self::sendOrderDetailMail($detail, $action_name);
-                
+                $order_actions = [
+                    'order_id'         => $booking->id,
+                    'performed_by'     => $booking->customer->id,
+                    'notes'            => $booking->customer->name." Pending order mail sent {$booking->order_number}",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ];
+                OrderActions::insert($order_actions);
                 
                 $booking->email_sent = true;
                 // $booking->save();
@@ -370,6 +437,15 @@ class PaymentController extends Controller
 
             if ($booking && !$booking->admin_email_sent) {                    
                 $mailsent = self::sendOrderDetailMail($detail, 'admin');
+
+                $order_actions = [
+                    'order_id'         => $booking->id,
+                    'performed_by'     => $booking->customer->id,
+                    'notes'            => " New order mail sent to Admin {$booking->order_number}",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ];
+                OrderActions::insert($order_actions);
                 
                 Log::info('admin email sent' . $booking->admin_email_sent);
                 $booking->admin_email_sent = true;
