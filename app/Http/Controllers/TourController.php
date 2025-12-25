@@ -206,6 +206,51 @@ class TourController extends Controller
             });
         }
 
+        if ($request->filled('last_updated')) {
+
+            $today = now()->startOfDay();
+
+            switch ($request->last_updated) {
+
+                case 'today':
+                    $query->whereDate('updated_at', $today);
+                    break;
+
+                case 'last_7':
+                    $query->whereBetween('updated_at', [
+                        $today->copy()->subDays(7),
+                        now()
+                    ]);
+                    break;
+
+                case 'last_15':
+                    $query->whereBetween('updated_at', [
+                        $today->copy()->subDays(15),
+                        now()
+                    ]);
+                    break;
+
+                case 'this_week':
+                    $query->whereBetween('updated_at', [
+                        now()->startOfWeek(),
+                        now()->endOfWeek()
+                    ]);
+                    break;
+
+                case 'upcoming_15':
+                    $query->whereBetween('updated_at', [
+                        $today,
+                        now()->addDays(15)
+                    ]);
+                    break;
+
+                case 'expired':
+                    $query->where('updated_at', '<', $today);
+                    break;
+            }
+        }
+
+
 
         $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
 

@@ -7,18 +7,11 @@
             <div class="card-header">
                 <div class="search-options">
                     <div class="row">
-                        <div class="col-md-4 col-6">
+                        <div class="col-md-2 col-6">
                             <input type="text" name="search" class="form-control" placeholder="Search tour" value="{{ request('search') }}" />
-                        </div>
-                        <div class="col-md-4 col-6">
-                            <select name="category" class="form-control select-searchable">
-                                <option value="">All Categories</option>
-                                @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        </div>                        
+                        <div class="col-md-2 col-6">
+                            <input placeholder="date range" class="form-control datarange-pickur" type="text" />
                         </div>
                         <div class="col-md-2 col-6">
                             <select name="city" id="city-select" class="form-control">
@@ -100,6 +93,17 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-md-2 col-6">
+                            <select name="last_updated" class="form-control">
+                                <option value="">Last updated</option>
+                                <option value="today" {{ request('last_updated') == 'today' ? 'selected' : '' }}>Today</option>
+                                <option value="last_7" {{ request('last_updated') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
+                                <option value="last_15" {{ request('last_updated') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
+                                <option value="this_week" {{ request('last_updated') == 'this_week' ? 'selected' : '' }}>This Week</option>
+                                <option value="upcoming_15" {{ request('last_updated') == 'upcoming_15' ? 'selected' : '' }}>Upcoming 15 Days</option>
+                                <option value="expired" {{ request('last_updated') == 'expired' ? 'selected' : '' }}>Expired</option>
+                            </select>
+                        </div>
                         <div class="col-md-2 col-12">
                             <button type="submit" class="btn btn-search mb-2"> <i class="fas fa-search"></i> Search</button>
                         </div>
@@ -155,7 +159,7 @@
                             <th>{{ translate('Title') }}</th>
                             <th width="150">{{ translate('Price') }}</th>
                             <th width="150">{{ translate('SKU') }}</th>
-                            <th width="10">{{ translate('Trustpilot Review') }}</th>
+                            <th width="10">{{ translate('Reviews') }}</th>
                             <th width="200">{{ translate('Category') }}</th>
                             <th width="150">{{ translate('Actions') }}</th>
                         </tr>
@@ -182,7 +186,7 @@
                                     @endcan
 
                                     <div class="text-sm mt-2"> {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-success text-hover" target="_blank">{{translate('View Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-success text-hover" target="_blank">{{ $tour->subTours()->exists() ? translate('View Sub Tours') : translate('Create Sub Tours')}}</a></div>
-                                    <div class="text-sm text-gray-500 mt-2"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
+                                    <div class="text-sm text-gray-500 mt-2"><i style="font-size:11px"><b>By:</b> {{ $tour->user->name }} </i> <i style="font-size:13px"><b>at:</b> {{ $tour->updated_at }}</i></div>
                                 </td>    
                                 <td>{{ price_format_with_currency($tour->price) }}</td>
                                 <td>{{ $tour->unique_code }}</td>

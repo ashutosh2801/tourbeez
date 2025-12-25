@@ -45,6 +45,9 @@ Route::get('/sitemaps/tours.xml', [SitemapController::class, 'tours']);
 Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
 Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
 
+
+
+
 Route::post('/states/get_state_by_country', [StateController::class,'get_state_by_country'])->name('states.get_state_by_country');
 Route::post('/cities/get_cities_by_state', [CityController::class,'get_cities_by_state'])->name('cities.get_cities_by_state');
 
@@ -73,3 +76,7 @@ Route::prefix('oauth/')->group(function(){
         Route::get('/callback',[SocialiteController::class,'HandleFaceBookCallBack'])->name('callback');
     });
 });
+
+
+
+

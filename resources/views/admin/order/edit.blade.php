@@ -163,7 +163,6 @@
 $statuses = config('constants.order_statuses');
 $expectEmails = ['order_pending', 'payment_receipt'];
 
-
 @endphp
 
     <form id="orderForm" action="{{ route('admin.orders.update',$order->id) }}" method="POST">
