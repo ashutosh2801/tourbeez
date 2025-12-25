@@ -7,6 +7,7 @@ use App\Models\Addon;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Order;
+use App\Models\OrderActions;
 use App\Models\OrderCustomer;
 use App\Models\OrderMeta;
 use App\Models\OrderPayment;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Stripe\Customer;
 use Stripe\Stripe;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
@@ -506,10 +508,11 @@ class OrderController extends Controller
                       ->orWhere('expiry_date', '>=', now()->toDateString());
                 })
                 ->first();
+            $promo->used_by = $promo->used_by + 1;
+            $promo->save();
         }
 
-        $promo->used_by = $promo->used_by + 1;
-        $promo->save();
+        
         
         try {
             // Save or update customer
@@ -720,7 +723,7 @@ class OrderController extends Controller
                 
 
 
-                if ($promo) {
+                if ($request->filled('promo_code')) {
 
                 switch ($promo->value_type) {
 
@@ -792,6 +795,8 @@ class OrderController extends Controller
 
                 // dd($chargeAmount);
                 if ($chargeAmount > 0) {
+
+                    
                     $pi = \Stripe\PaymentIntent::create([
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($chargeAmount * 100)),
@@ -978,7 +983,16 @@ class OrderController extends Controller
 
             $order->booking_fee = $booking_fee;
             $order->stripe_customer_id = $stripeCustomer->id;
-            $order->save();           
+            $order->save();
+
+            $order_actions = [
+                    'order_id'         => $order->id,
+                    'performed_by'     => $customer->id,
+                    'notes'            => $customer->name." placed a new order {$order->order_number}",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ];
+            OrderActions::insert($order_actions);           
 
             return response()->json([
                 'status'            => true,

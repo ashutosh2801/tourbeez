@@ -262,11 +262,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/order/order_sms_send/', [OrderController::class, 'order_sms_send'])->name('order_sms_send');
     Route::delete('/order/bulk-delete', [OrderController::class, 'bulkDelete'])->name('order.bulkDelete');
     Route::post('/orders/{order}/charge', [OrderController::class, 'capturePayment'])->name('orders.charge');
+    Route::post('/orders/{order}/captureInitialPayment', [OrderController::class, 'captureInitialPayment'])->name('orders.captureInitialPayment');
+    Route::post('/orders/{order}/cancelInitialPayment', [OrderController::class, 'cancelInitialPayment'])->name('orders.cancelInitialPayment');
+
+
+    
+
     Route::post('/orders/{order}/payment-details', [OrderController::class, 'getPaymentDetails'])->name('orders.payment-details');
     Route::post('orders/{order}/refund', [OrderController::class, 'refundPayment'])
     ->name('orders.refundPayment');
     Route::post('/admin/orders/{order}/refund-multiple', [OrderController::class, 'refundMultiple'])->name('orders.refundMultiple');
     Route::post('orders/{order}/refund2322', [OrderController::class, 'refundPayment'])->name('orders.refund');
+
+    Route::post('/orders/{order}/remove-card', [OrderController::class, 'removeCard'])
+    ->name('orders.remove-card');
+    Route::post('/orders/{order}/add-card', [OrderController::class, 'addCard'])
+    ->name('orders.add-card');
 
 
     Route::post('/admin/orders/{order}/add-payment', [OrderController::class, 'addStripePayment'])

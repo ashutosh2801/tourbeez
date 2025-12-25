@@ -162,6 +162,8 @@
 @php
 $statuses = config('constants.order_statuses');
 $expectEmails = ['order_pending', 'payment_receipt'];
+
+
 @endphp
 
     <form id="orderForm" action="{{ route('admin.orders.update',$order->id) }}" method="POST">
@@ -225,7 +227,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     </li>
                                     <li class="payment-details-breakdown--item">
                                         <strong class="payment-details-breakdown--text">Refunded</strong>
-                                        <strong class="payment-details-breakdown--text">{{  price_format_with_currency(0, $order->currency) }}</strong>
+                                        <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'refunded')->sum('refund_amount'), $order->currency) }}</strong>
                                     </li>
                                     @if($order->payment_status == 3)
                                         <li class="payment-details-breakdown--item">
@@ -704,8 +706,8 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                             @endforeach
 
                             <div class="card-total bg-light p-3 mb-3 ">
-                                Total: <span id="totalPayment1">USD {{ (float)$totalPaid }}</span>
-                                <input type="text" id="total_amount" readonly placeholder="0.00" value="{{ (float)$totalPaid }}">
+                                Total: <span id="totalPayment1">{{ price_format_with_currency((float)$totalPaid, $order->currency) }} </span>
+                                <!-- <input type="text" id="total_amount" readonly placeholder="0.00" value="{{ (float)$totalPaid }}"> -->
                             </div>
                             <div class="card-body">
 
@@ -715,25 +717,59 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     <div>
                                         <p>Stored Credit Card :</p>
                                         <div class="row">
-                                            <div class="col-3">
-                                                XXXXXXXXXXXX{{ $order->latestPayment->card_last4 }} ({{ strtoupper($order->latestPayment->card_brand) }})
-                                            </div>
-                                            <div class="col-3">
-                                                @if(str_contains( $order->payment_method_id, 'pm_'))
-                                                <button id="chargeSavedCard" type="button" class="btn btn-info charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
-                                                    Charge Now
-                                                </button>
-                                                @elseif(str_contains( $order->payment_method_id, 'pi_'))
-                                                <button class="btn btn-primary charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                                                    Charge Now
-                                                </button>
+
+
+
+                                            @if($order->payment_intent_id)
+                                            <div class="col-2">
+                                                @if($order->latestPayment->card_last4)
+                                                    {{ $order->latestPayment->card_last4}} ({{ strtoupper($order->latestPayment->card_brand) }})
+                                                @else
+
+                                                    <svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#00D66F" d="M0 0h32v32H0z"></path><path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path></svg>    Link
                                                 @endif
                                             </div>
-                                            <div class="col-3"><a href="javascript:void(0)" onclick="return confirm('Are you sure?')">Remove Credit Card</a></div>
+                                            @endif
+                                            <div class="col-2">
+                                                @if(str_contains( $order->payment_intent_id, 'pm_'))
+                                                <a id="chargeSavedCard" type="button" class=" charge-btn font-base" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
+                                                    <strong>Charge Now</strong>
+                                                </a>
+
+
+                                                @elseif(str_contains( $order->payment_intent_id, 'pi_'))
+                                                <a class=" charge-btn font-base" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
+                                                    <strong>Charge Now</strong>
+                                                </a>
+                                                @endif
+                                                
+                                            </div>
+                                            @if($order->payment_intent_id)
+                                            
+                                                <div class="col-2">
+                                                    <!-- <div class=" btn "> -->
+                                                    
+
+                                                    <a href="javascript:void(0)"
+                                                       onclick="removeCard({{ $order->id }})"
+                                                       class="text-black font-base">
+                                                       <strong>Remove Credit Card</strong>
+                                                    </a>
+                                                    <!-- </div> -->
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
+                                    @else
+
+                                        <!-- <button class="btn btn-primary capture-btn" data-order-id="{{ $order->id }}" type="button">
+                                                    Capture Now
+                                                </button> -->
+                                                
                                     @endif
+                                    @if(!$order->payment_intent_id)
                                     <div class="mb-2"><label><input type="checkbox" value="1" name="add_ccnow" id="add_ccnow" > Add a credit card to this order</label></div>
+                                    @endif
 
                                     <div id="card-element-wrapper" class="hidden">
                                         <div id="card-element" class="form-control col-6" style="padding: 10px; height: auto;"></div>
@@ -753,14 +789,16 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             </div>
                                         </div>
 
-                                        <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Submit</button>
+                                        <!-- <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Submit</button> -->
+
+                                        <button type="button" class="btn btn-success" data-action="add-card"><i class="fas fa-save"></i>Save Card</button>
 
                                     </div>
                                     
                                     
                                 </div>
 
-                                <div class="bg-light px-2 mt-2"> 
+                                <div class="bg-light px-2 mt-5"> 
                                     <div id="paymentTemplate1">
                                         @php
                                         $refFlaf = 0;
@@ -774,20 +812,39 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             </div>
 
                                             <div class="col-3">
-                                                STRIPE: {{ $payment->transaction_id }}
+                                                STRIPE: {{ $payment->transaction_id ?? $payment->payment_intent_id }}
                                                 <input type="hidden" name="transactionId[]" value="{{ $payment->transaction_id }}" />
                                             </div>
 
                                             <div class="col-2">
-                                                {{ $payment->collection_date }}
+                                                
+
+                                                {{ $payment->collection_date?  \Carbon\Carbon::parse($payment->collection_date)->format('M d Y g:i A') : '' }}
                                                 <input type="hidden" name="collection_date[]" value="{{ $payment->collection_date }}" />
                                             </div>
 
-                                            <div class="col-2">
+                                            <div class="col-1">
                                                 {{ $payment->currency }} {{ number_format($payment->amount,2) }}
                                                 <input type="hidden" name="amount[]" value="{{ $payment->amount }}" />
                                             </div>
-
+                                            @if($payment->status == 'uncaptured' )
+                                            <div class="col-1">
+                                                <button class="btn-sm btn-primary capture-btn" data-order-id="{{ $order->id }}" type="button">
+                                                    Capture Now 
+                                               </button>
+                                                 
+                                            </div>
+                                            <div class="col-1">
+                                               
+                                                <button class="btn-sm btn-danger cancel-btn" data-order-id="{{ $order->id }}" type="button">
+                                                    Cancel Payment
+                                                </button>
+                                            </div>
+                                            @else
+                                                <div class="col-1">
+                                                </div>
+                                            @endif
+                                            @if($payment->status == 'succeeded')
                                             <div class="col-1">
                                                 @if($payment->amount > 0 && $payment->collection_type === 'Inside' && $refFlaf==0)
                                                     @php $refFlaf = 1; @endphp
@@ -798,8 +855,12 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                     </button>
                                                 @endif
                                             </div>
+                                            @else
+                                                
+                                            @endif
+                                            
 
-                                            <div class="col-2 text-right">
+                                            <div class="col-1 text-right">
                                                 <button type="button" class="btn btn-danger btn-sm removeRow">-</button>
                                             </div>
                                         </div>
@@ -898,6 +959,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     @endif                                    
                                     <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
                                    <td>
+
                                         <!-- <button class="btn btn-sm btn-danger refund-btn" 
                                           style="width:150px; display:inline-block;" 
                                           data-order-id="{{ $order->id }}" 
@@ -1045,7 +1107,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             <th>From</th>
                                             <th>Subject</th>
                                             <th>Status</th>
-                                            <!-- <th>Content</th> -->
+                                            <th>Content</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1057,6 +1119,20 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                     <td>{{ $email->from_email }}</td>
                                                     <td>{{ $email->subject }}</td>
                                                     <td>{{ ucwords($email->status) }}</td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-primary view-email-btn">
+                                                            View
+                                                        </button>
+
+                                                        <textarea class="d-none email-body">
+                                                            {!! $email->body !!}
+                                                        </textarea>
+
+                                                        <input type="hidden" class="email-to" value="{{ $email->to_email }}">
+                                                        <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
+                                                        <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
+                                                        <input type="hidden" class="email-subject" value="{{ $email->subject }}">
+                                                    </td>
                                                 </tr>
                                             @endforeach
                                         @else
@@ -1255,13 +1331,13 @@ $expectEmails = ['order_pending', 'payment_receipt'];
           
         </div>
 
-        @if($order->payment_status == 3)
+        @if($order->payment_status == 31)
 
 
-        <div class="mb-3">
-          <label class="text-danger">Please confirm the order before charging the amount </label>
+        <!-- <div class="mb-3"> -->
+          <!-- <label class="text-danger">Please confirm the order before charging the amount </label> -->
           <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
-        </div>
+        <!-- </div> -->
         @else
         <form id="chargeForm">
           <input type="hidden" id="chargeOrderId" name="order_id">
@@ -1288,7 +1364,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
         <!-- <button type="button" class="btn btn-primary" id="confirmCharge">Confirm Charge</button> -->
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 
-        @if($order->payment_status == 3)
+        @if($order->payment_status == 31)
             <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
         @else
         <button type="submit" form="chargeForm" class="btn btn-primary">Charge</button>
@@ -1348,6 +1424,54 @@ $expectEmails = ['order_pending', 'payment_receipt'];
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="emailPreviewModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-wide" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Email Preview</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="mb-2">
+                    <strong>To:</strong> <span id="preview_to"></span>
+                </div>
+
+                <div class="mb-2">
+                    <strong>CC:</strong> <span id="preview_cc"></span>
+                </div>
+
+                <div class="mb-2">
+                    <strong>BCC:</strong> <span id="preview_bcc"></span>
+                </div>
+
+                <div class="mb-2">
+                    <strong>Subject:</strong> <span id="preview_subject"></span>
+                </div>
+
+                <hr>
+
+                <div id="preview_body" style="min-height:300px;">
+                    <!-- BODY RENDERS HERE -->
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 
 
 <!-- GLOBAL REUSABLE LOADER -->
@@ -2797,6 +2921,239 @@ $(document).on('click', '.btn-delete-order', function () {
     });
 });
 </script>
+
+<script>
+    $(document).on('click', '.view-email-btn', function () {
+
+    let row = $(this).closest('td');
+
+    let to      = row.find('.email-to').val();
+    let cc      = row.find('.email-cc').val();
+    let bcc     = row.find('.email-bcc').val();
+    let subject = row.find('.email-subject').val();
+    let body    = row.find('.email-body').val();
+
+    $('#preview_to').text(to || '-');
+    $('#preview_cc').text(cc || '-');
+    $('#preview_bcc').text(bcc || '-');
+    $('#preview_subject').text(subject || '-');
+
+    // Render HTML body safely
+    $('#preview_body').html(body);
+
+    $('#emailPreviewModal').modal('show');
+});
+
+
+</script>
+<script>
+
+const removeCardUrl = "{{ route('admin.orders.remove-card', ':orderId') }}";
+function removeCard(orderId) {
+    if (!confirm('Are you sure you want to remove this card?')) return;
+
+    fetch(removeCardUrl.replace(':orderId', orderId), {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(res => {
+        alert(res.message);
+        location.reload();
+    })
+    .catch(() => alert('Something went wrong'));
+}
+</script>
+<script>
+/* ================= STRIPE INIT (ONCE) ================= */
+
+const stripe = Stripe("{{ env('STRIPE_KEY') }}");
+const elements = stripe.elements();
+
+let cardElement = elements.create('card');
+let cardMounted = false;
+
+/* ================= SHOW / HIDE CARD ================= */
+
+document.getElementById('add_ccnow').addEventListener('change', function () {
+    const wrapper = document.getElementById('card-element-wrapper');
+
+    if (this.checked) {
+        wrapper.classList.remove('hidden');
+
+        if (!cardMounted) {
+            cardElement.mount('#card-element');
+            cardMounted = true;
+        }
+    } else {
+        wrapper.classList.add('hidden');
+        // ❌ NEVER unmount Stripe element
+    }
+});
+
+/* ================= BUTTON HANDLER ================= */
+
+document.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', function () {
+        if (this.dataset.action === 'add-card') {
+            addCardOnly();
+        }
+    });
+});
+
+/* ================= ADD CARD ONLY ================= */
+
+async function addCardOnly() {
+
+    if (!cardMounted) {
+        alert('Please enter card details first');
+        return;
+    }
+
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement
+    });
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    fetch("{{ route('admin.orders.add-card', $order->id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            payment_method: paymentMethod.id
+        })
+    })
+    .then(res => res.json())
+    .then(res => {
+        alert(res.message);
+        location.reload();
+    })
+    .catch(() => alert('Something went wrong'));
+}
+</script>
+
+<script>
+$(document).on('click', '.capture-btn', function () {
+
+    const orderId = $(this).data('order-id');
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: 'Are you sure you want to capture this payment?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, capture it',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            url: "{{ route('admin.orders.captureInitialPayment', '__ORDER_ID__') }}"
+                    .replace('__ORDER_ID__', orderId),
+            type: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            beforeSend: function () {
+                Swal.fire({
+                    title: 'Processing...',
+                    text: 'Capturing payment',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function (response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: response.message ?? 'Payment has been captured successfully'
+                }).then(() => {
+                    location.reload();
+                });
+            },
+            error: function (xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: xhr.responseJSON?.message ?? 'Payment capture failed'
+                });
+            }
+        });
+
+    });
+});
+</script>
+
+<script>
+$(document).on('click', '.cancel-btn', function () {
+
+    const orderId = $(this).data('order-id');
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: 'Are you sure you want to cancel this payment?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, cancel it',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            url: "{{ route('admin.orders.cancelInitialPayment', '__ORDER_ID__') }}"
+                    .replace('__ORDER_ID__', orderId),
+            type: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            beforeSend: function () {
+                Swal.fire({
+                    title: 'Processing...',
+                    text: 'cancelling payment',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function (response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: response.message ?? 'Payment has been canceled successfully'
+                }).then(() => {
+                    location.reload();
+                });
+            },
+            error: function (xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: xhr.responseJSON?.message ?? 'Payment canceled failed'
+                });
+            }
+        });
+
+    });
+});
+</script>
+
+
+
 
 @endsection
 </x-admin>
