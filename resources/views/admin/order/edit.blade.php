@@ -170,7 +170,6 @@ $expectEmails = ['order_pending', 'payment_receipt'];
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
     <input type="hidden" name="order_number" id="order_number" value="{{ $order->order_number }}" /> 
 
-
     <div class="card card-primary rounded-lg-custom border order-edit-head1">
         <div class="card-header">
             <div class="row">
@@ -774,7 +773,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             </div>
 
                                             <div class="col-3">
-                                                STRIPE: {{ $payment->transaction_id }}
+                                                @if($payment->collection_type === 'Inside') STRIPE: @endif {{ $payment->transaction_id }}
                                                 <input type="hidden" name="transactionId[]" value="{{ $payment->transaction_id }}" />
                                             </div>
 

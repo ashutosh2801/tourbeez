@@ -14,7 +14,7 @@
     <meta property="og:description" content="{{ $description ?? '' }}">
     <meta property="og:image" content="{{ $image ?? asset('public/512x512.jpg') }}">
     <meta property="og:url" content="{{ $url ?? url()->current() }}">
-    <meta property="og:type" content="article">
+    <meta property="og:type" content="tours">
 
     {{-- Twitter Card --}}
     <meta name="twitter:card" content="summary_large_image">

@@ -27,12 +27,24 @@ class CrawlerResponse
     public function handle(Request $request, Closure $next)
     {
         $ua = strtolower($request->userAgent());        
+        $ip = $request->ip();
+        $url = $request->fullUrl();
+
+        logger()->info('UA LOG', [
+            'ua'  => $ua,
+            'ip'  => $ip,
+            'url' => $url,
+        ]);
+
         
         $bots = [
             // Social
             'facebookexternalhit', 'facebot', 'twitterbot', 'linkedinbot',
             'pinterest', 'slackbot', 'discordbot', 'whatsapp',
             'telegrambot', 'skypeuripreview', 'teamsbot',
+
+            // iOS / Apple Preview (CRITICAL)
+            'applebot', 'cfnetwork', 'darwin',
 
             // Search Engines
             'googlebot', 'bingbot', 'duckduckbot',
@@ -48,6 +60,27 @@ class CrawlerResponse
             'applebot', 'embedly', 'quora link preview',
             'outbrain', 'rogerbot', 'ahrefsbot', 'semrushbot'
         ];
+
+        // $bots = [
+        //     // Social / Preview Bots
+        //     'facebookexternalhit', 'facebot', 'whatsapp', 'instagram', 'meta-externalagent',
+
+        //     // iOS / Apple Preview (CRITICAL)
+        //     'applebot', 'applewebkit', 'cfnetwork', 'darwin',
+
+        //     // Chat Apps
+        //     'telegrambot', 'slackbot',  'discordbot', 'skypeuripreview', 'teamsbot',
+
+        //     // Search Engines
+        //     'googlebot', 'bingbot', 'duckduckbot', 'baiduspider', 'yandex', 'sogou', 'petalbot',
+
+        //     // SEO / Validators
+        //     'lighthouse', 'schema-markup-validator', 'google rich results test', 'google-structured-data-testing-tool',
+
+        //     // Crawlers
+        //     'ahrefsbot', 'semrushbot', 'rogerbot', 'embedly', 'quora link preview', 'outbrain'
+        // ];
+
 
         foreach ($bots as $bot) {
             
