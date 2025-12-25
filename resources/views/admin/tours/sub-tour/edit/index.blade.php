@@ -22,7 +22,7 @@
                                 
                                 <a class="nav-link" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Scheduling')}}</a>
 
-                                
+                                <a class="nav-link" href="{{ route('admin.tour.edit.parent', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Parent Tour')}}</a>
 
                             </div>
                            

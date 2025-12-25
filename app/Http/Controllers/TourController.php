@@ -2073,6 +2073,46 @@ $pickupHtml .= '</div>';
         return view('admin.tours.feature.review', compact( 'data', 'tourReview'));
     }
 
+    public function parentTour($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+
+        // $tours = Tour::whereNull('parent_id')->get();
+
+        $tours = Tour::where(function ($q) {
+            $q->whereNull('parent_id')
+              ->orWhere('parent_id', 0);
+        })->get();
+
+        
+        $parentTour = $data->parent ?? new \App\Models\Tour();
+
+        return view('admin.tours.feature.parent', compact( 'data', 'parentTour', 'tours'));
+    }
+
+
+    public function parentUpdate(Request $request, $id)
+    {
+        $tour = Tour::findOrFail($id);
+        
+        if ($request->has('remove_parent') && $request->remove_parent != 0) {
+            $tour->parent_id = null;
+            $tour->save();
+
+            return back()->with('success', 'Parent tour removed successfully.');
+        }
+
+        $request->validate([
+            'parent_id' => 'required|exists:tours,id'
+        ]);
+
+        $tour->parent_id = $request->parent_id;
+        $tour->save();
+
+        return back()->with('success', 'Parent tour updated successfully.');
+    }
+
+
    
     public function reviewUpdate(Request $request, $id)
     {

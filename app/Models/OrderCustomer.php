@@ -25,6 +25,7 @@ class OrderCustomer extends Model
         'instructions',
         'pickup_id',
         'pickup_name',
+        'promo_code',
     ];
 
     public function getActivitylogOptions(): LogOptions
