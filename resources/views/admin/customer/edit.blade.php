@@ -6,7 +6,12 @@
             <div class="card-tools"><a href="{{ route('admin.user.index') }}" class="btn btn-sm btn-dark">Back</a></div>
         </div>
         <div class="card-body">
-            <form action="{{ route('admin.user.update',$user) }}" method="POST">
+            
+         
+                <form action="{{ route('admin.customers.source.update', [
+    'id' => encrypt($user->id),
+    'source' => $source
+]) }}" method="POST">
                 @method('PUT')
                 @csrf
                 <input type="hidden" name="id" value="{{ $user->id }}">
@@ -58,7 +63,7 @@
 
                         <div class="col-lg-6">
                             <label>Email</label>
-                            <input type="email" name="oc_email" class="form-control" value="{{ $orderCustomer->email }}">
+                            <input type="email" name="oc_email" class="form-control" value="{{ $orderCustomer->email }}" disabled>
                         </div>
 
                         <div class="col-lg-6">
@@ -66,7 +71,7 @@
                             <input type="text" name="oc_phone" class="form-control" value="{{ $orderCustomer->phone }}">
                         </div>
 
-                        <div class="col-lg-12">
+                        <!-- <div class="col-lg-12">
                             <label>Instructions</label>
                             <textarea name="oc_instructions" class="form-control">{{ $orderCustomer->instructions }}</textarea>
                         </div>
@@ -79,7 +84,7 @@
                         <div class="col-lg-6">
                             <label>Pickup Name</label>
                             <textarea name="oc_pickup_name" class="form-control">{{ $orderCustomer->pickup_name }}</textarea>
-                        </div>
+                        </div> -->
 
                         <!-- <div class="col-lg-6">
                             <label>Stripe Customer ID</label>

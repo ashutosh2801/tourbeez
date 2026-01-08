@@ -197,7 +197,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                 <button type="button" class="btn btn-balance dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     @if($order->payment_status === 3)
 
-                                        <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</strong>
+                                        <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
                                     @else
 
                                         <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
@@ -210,8 +210,17 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     @if($order->payment_status ==3)
                                         <li class="payment-details-breakdown--item">
                                             <strong class="payment-details-breakdown--text">Uncaptured</strong>
-                                            <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
+                                            <!-- <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong> -->
+
+                                            <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
+
                                         </li>
+
+                                        <li class="payment-details-breakdown--item">
+                                            <strong class="payment-details-breakdown--text">Paid</strong>
+                                            <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount'), $order->currency) }}</strong>
+                                        </li>
+                                        
                                     @else
                                         <li class="payment-details-breakdown--item">
                                             <strong class="payment-details-breakdown--text">Paid</strong>
@@ -230,7 +239,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     @if($order->payment_status == 3)
                                         <li class="payment-details-breakdown--item">
                                         <strong class="payment-details-breakdown--text">Balance</strong>
-                                            <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</strong>
+                                            <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
                                         </li>
 
                                     @else
@@ -387,7 +396,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                         <div class="card-header bg-secondary py-0" id="headingTwo">
                             <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-right"></i> Tour Details</button>
                         </div>
-                        <div id="collapseTwo" class="collapse " aria-labelledby="headingTwo" data-parent="#accordionExample">
+                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
                             <div class="card-body">                               
                                 
                                 <div id="tour_all">
@@ -604,42 +613,11 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                         <div class="card-header bg-secondary py-0" id="heading4">
                                 <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
                         </div>
-                        <div id="collapse4" class="collapse " aria-labelledby="heading4" data-parent="#accordionExample">
+                        <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
                                  <div style="border:1px solid #eaecef;">
                                     <table class="table">
-                                        <!-- <tr>
-                                            <td><b>Tour Guest</b> </td>
-                                            <td class="text-right">{{ $order->order_tour->number_of_guests }} </td>
-                                        </tr>
                                         
-                                        <tr>
-                                            <td><b>Category</b></td>
-                                            <td class="text-right">{{ $order->tour['catogory'] ?? '-' }}</td>
-                                        </tr>
-
-                                        
-                                        <tr>
-                                            <td><b>Tour Types</b></td>
-                                            <td class="text-right">{{ $order->tour->category->name ?? '-' }}</td>
-                                        </tr>
-                                        
-                                        <tr>
-                                            <td><b>Price Type</b></td>
-                                            <td class="text-right">{{ snakeToWords($order->tour->price_type)  ?? '-' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><b>Country</b></td>
-                                            <td class="text-right">{{ $order->tour->location->country->name ?? '-' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><b>State</b></td>
-                                            <td class="text-right">{{ $order->tour->location->state->name ?? '-' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><b>City</b></td>
-                                            <td class="text-right">{{  $order->tour->location->city->name ?? '-' }}</td>
-                                        </tr> -->
 
                                         @php
                                             $pickName = '';
@@ -704,7 +682,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                             @endforeach
 
                             <div class="card-total bg-light p-3 mb-3 ">
-                                Total: <span id="totalPayment1">{{ price_format_with_currency((float)$totalPaid, $order->currency) }} </span>
+                                Total: <span id="totalPayment1">{{ price_format_with_currency((float)$order->payments->where('status', 'succeeded')->sum('amount')) }} </span>
                                 <!-- <input type="text" id="total_amount" readonly placeholder="0.00" value="{{ (float)$totalPaid }}"> -->
                             </div>
                             <div class="card-body">
@@ -721,6 +699,31 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             @if($order->payment_intent_id)
                                             <div class="col-2">
                                                 @if($order->latestPayment->card_last4)
+                                                    
+                                                    <svg width="48" height="40" viewBox="0 0 48 40" xmlns="http://www.w3.org/2000/svg">
+                                                              <rect width="48" height="40" rx="4" fill="#ffffff"/>
+
+                                                              <!-- Mastercard logo -->
+                                                              <circle cx="18" cy="15" r="10" fill="#EB001B"/>
+                                                              <circle cx="30" cy="15" r="10" fill="#F79E1B"/>
+                                                              <path d="M24 7.5a10 10 0 0 1 0 15a10 10 0 0 1 0-15z" fill="#FF5F00"/>
+
+                                                              <!-- Text below -->
+                                                              <text
+                                                                x="24"
+                                                                y="34"
+                                                                text-anchor="middle"
+                                                                font-family="Arial, Helvetica, sans-serif"
+                                                                font-size="7"
+                                                                font-weight="600"
+                                                                fill="#000">
+                                                                mastercard
+                                                              </text>
+                                                            </svg>
+
+                                                    
+
+
                                                     {{ $order->latestPayment->card_last4}} ({{ strtoupper($order->latestPayment->card_brand) }})
                                                 @else
 
@@ -805,7 +808,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                         <input type="hidden" name="paymentId[]" value="{{ $payment->id }}" />
                                         <div class="row paymentRow py-2 border border-black-300">
                                             <div class="col-2">
-                                                {{ $payment->payment_type }}
+                                                {{ $payment->payment_type == 'CARD' ? 'CREDITCARD': $payment->payment_type  }}
                                                 <input type="hidden" name="paymentType[]" value="{{ $payment->payment_type }}" />
                                             </div>
 
@@ -822,37 +825,46 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             </div>
 
                                             <div class="col-1">
-                                                {{ $payment->currency }} {{ number_format($payment->amount,2) }}
+                                                {{ price_format_with_currency($payment->amount, strtoupper($payment->currency)) }}
                                                 <input type="hidden" name="amount[]" value="{{ $payment->amount }}" />
                                             </div>
-                                            @if($payment->status == 'uncaptured' )
-                                            <div class="col-1">
-                                                <button class="btn-sm btn-primary capture-btn" data-order-id="{{ $order->id }}" type="button">
-                                                    Capture Now 
+                                            @if($payment->status == 'uncaptured')
+                                            <div class="col-3">
+                                                <button class="btn-sm btn-primary capture-btn" data-uncapture-amount="{{ $payment->amount }}" data-order-id="{{ $order->id }}" type="button">
+                                                    Capture 
                                                </button>
-                                                 
-                                            </div>
-                                            <div class="col-1">
-                                               
                                                 <button class="btn-sm btn-danger cancel-btn" data-order-id="{{ $order->id }}" type="button">
-                                                    Cancel Payment
+                                                    Cancel
                                                 </button>
                                             </div>
+                                            
                                             @else
-                                                <div class="col-1">
+                                                @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded')
+                                                <div class="col-3">
                                                 </div>
+                                                @else
+                                                <div class="col-2">
+                                                </div>
+                                                @endif
+                                                
                                             @endif
-                                            @if($payment->status == 'succeeded')
-                                            <div class="col-1">
-                                                @if($payment->amount > 0 && $payment->collection_type === 'Inside' && $refFlaf==0)
+                                            @if($payment->status == 'succeeded' || $payment->status == 'partial_refunded')
+                                            
+                                                @if($payment->amount > 0 && $payment->collection_type === 'Inside' )
+                                                <div class="col-1">
                                                     @php $refFlaf = 1; @endphp
-                                                    <button class="btn btn-sm btn-danger refund-all-btn"
-                                                        data-order-id="{{ $order->id }}"
-                                                        data-amount="{{ $order->booked_amount }}">
+                                                    
+
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-danger open-payment-refund"
+                                                            data-order-id="{{ $order->id }}"
+                                                            data-payment-id="{{ $payment->id }}"
+                                                            data-amount="{{ $payment->amount }}">
                                                         Refund
                                                     </button>
+                                                    </div>
                                                 @endif
-                                            </div>
+                                            
                                             @else
                                                 
                                             @endif
@@ -922,6 +934,10 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                         </div>
                     </div> 
 
+                    
+
+
+
                     <?php /*
                     <div class="card payment-details">
                         <div class="card-header bg-secondary py-0" id="headingPaymentDetails">
@@ -966,11 +982,13 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                           Refund
                                         </button> -->
                                         @if($order->booked_amount > 0 && $order->payments->isNotEmpty())
-                                            <button class="btn btn-sm btn-danger refund-all-btn"
-                                                data-order-id="{{ $order->id }}"
-                                                data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
-                                                Refund
-                                            </button>
+                                            <button type="button"
+                                                            class="btn btn-sm btn-danger open-payment-refund"
+                                                            data-order-id="{{ $order->id }}"
+                                                            data-payment-id="{{ $payment->id }}"
+                                                            data-amount="{{ $payment->amount }}">
+                                                        Refund
+                                                    </button>
                                         @endif
                                     </td>
                                     </tr>
@@ -1372,29 +1390,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
   </div>
 </div>
 
-<div class="modal fade" id="refundModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Refund Payment</h5>
-      </div>
-      <div class="modal-body">
-        <form id="refundForm">
-          <input type="hidden" id="refundPaymentId" name="payment_id">
 
-          <div class="mb-3">
-            <label>Please enter the amount to refund</label>
-            <input type="number" id="refundAmount" name="amount" class="form-control" min="0" step="0.01" required>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" form="refundForm" class="btn btn-danger">Confirm Refund</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <div class="modal fade" id="refundAllModal" tabindex="-1">
   <div class="modal-dialog">
@@ -1469,6 +1465,54 @@ $expectEmails = ['order_pending', 'payment_receipt'];
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="paymentRefundModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Refund Payment</h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form id="refundForm">
+          <input type="hidden" id="refundPaymentId" name="payment_id">
+
+          <div class="mb-3">
+            <label>Refund Amount</label>
+            <input
+              type="number"
+              id="refundAmount"
+              name="amount"
+              class="form-control"
+              step="0.01"
+              min="0.01"
+              required
+            >
+            <small class="text-muted">
+              Max refundable amount: <strong id="maxRefundText"></strong>
+            </small>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          Cancel
+        </button>
+        <button type="submit" form="refundForm" class="btn btn-danger">
+          Confirm Refund
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
 
 
@@ -2314,7 +2358,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
         const paymentId = document.getElementById('refundPaymentId').value;
         const amount = document.getElementById('refundAmount').value;
-        const reason = document.getElementById('refundReason').value;
+        // const reason = document.getElementById('refundReason').value;
 
         if (!amount || amount <= 0) {
             
@@ -2340,8 +2384,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             },
             body: JSON.stringify({
                 payment_id: paymentId,
-                amount: amount,
-                reason: reason
+                amount: amount
             })
         });
 
@@ -2368,7 +2411,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             }).then(() => {
                 location.reload();
             });
-            alert("Error: " + data.message);
+            
         }
     });
 });
@@ -2830,12 +2873,29 @@ function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
     });
 }
 
+// $(document).on('click', '.refund-all-btn', function (e) {
+//     e.preventDefault();
+//     $('#refundAllOrderId').val($(this).data('order-id'));
+//     $('#refundAllAmount').val($(this).data('amount'));
+//     $('#refundAllModal').modal('show');
+
+
+// });
 $(document).on('click', '.refund-all-btn', function (e) {
     e.preventDefault();
-    $('#refundAllOrderId').val($(this).data('order-id'));
-    $('#refundAllAmount').val($(this).data('amount'));
-    $('#refundAllModal').modal('show');
+
+    const paymentId = $(this).data('payment-id');
+    const maxAmount = parseFloat($(this).data('amount'));
+
+    $('#refundPaymentId').val(paymentId);
+
+    $('#refundAmount')
+        .val(maxAmount)          // default full refund
+        .attr('max', maxAmount); // ⬅️ limit max refund
+
+    $('#refundModal').modal('show');
 });
+
 
 document.getElementById('refundAllForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -3044,6 +3104,7 @@ async function addCardOnly() {
 $(document).on('click', '.capture-btn', function () {
 
     const orderId = $(this).data('order-id');
+    const amount  = $(this).data('uncapture-amount')
 
     Swal.fire({
         title: 'Are you sure?',
@@ -3061,7 +3122,8 @@ $(document).on('click', '.capture-btn', function () {
                     .replace('__ORDER_ID__', orderId),
             type: 'POST',
             data: {
-                _token: $('meta[name="csrf-token"]').attr('content')
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                amount: amount
             },
             beforeSend: function () {
                 Swal.fire({
@@ -3148,6 +3210,39 @@ $(document).on('click', '.cancel-btn', function () {
 
     });
 });
+</script>
+<script>
+
+let maxRefundAmount = 0;
+
+$(document).on('click', '.open-payment-refund', function () {
+
+    let paymentId = $(this).data('payment-id');
+    maxRefundAmount = parseFloat($(this).data('amount'));
+
+    $('#refundPaymentId').val(paymentId);
+    $('#refundAmount').val(maxRefundAmount);
+    $('#refundAmount').attr('max', maxRefundAmount);
+
+    $('#maxRefundText').text(maxRefundAmount.toFixed(2));
+
+    $('#paymentRefundModal').modal('show');
+});
+
+// ✅ Enforce max while typing
+$(document).on('input', '#refundAmount', function () {
+    let value = parseFloat($(this).val());
+
+    if (value > maxRefundAmount) {
+        $(this).val(maxRefundAmount);
+    }
+});
+
+
+
+
+
+
 </script>
 
 

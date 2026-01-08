@@ -25,10 +25,11 @@
                             <td>{{ $user->name }}</td>
                             <td>{{ $user->email }}</td>
                             <td>{{ $user->phonenumber }}</td>
-                            <!-- <td>{{ $user->created_at }}</td> -->
+                            
                             <td>
-                                <a href="{{ route('admin.customers.edit', encrypt($user->id)) }}"
-                                    class="btn btn-sm btn-primary">Edit</a>
+                                <!-- <a href="{{ route('admin.customers.edit', encrypt($user->id)) }}"
+                                    class="btn btn-sm btn-primary">Edit</a> -->
+                                    <a href="{{ route('admin.customers.edit.source', ['id' => encrypt($user->id),'source' => $user->source]) }}" class="btn btn-sm btn-primary">Edit</a>
                             </td>
                             <td>
                                 <form action="{{ route('admin.customers.destroy', encrypt($user->id)) }}" method="POST"
@@ -42,13 +43,16 @@
                     @endforeach
                 </tbody>
             </table>
+            <div class="card-footer">
+                {{ $data->links() }}
+            </div>
         </div>
     </div>
     @section('js')
         <script>
             $(function() {
                 $('#userTable').DataTable({
-                    "paging": true,
+                    "paging": false,
                     "searching": true,
                     "ordering": true,
                     "responsive": true,
