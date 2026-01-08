@@ -34,8 +34,40 @@ if(!function_exists('getFullSql')) {
     }
 }
 
-if(!function_exists('countThingsToDo')) {
-    function countThingsToDo($id, $type) {
+if (!function_exists('countThingsToDo')) {
+    function countThingsToDo($id, $type)
+    {
+        $cacheKey = "things_to_do_count:{$type}:{$id}";
+
+        return Cache::remember($cacheKey, 86400, function () use ($id, $type) {
+
+            $query = Tour::where('status', 1)
+                ->whereNull('deleted_at');
+
+            if ($id) {
+                if ($type === 'c3') {
+                    $query->whereHas('categories', fn ($q) =>
+                        $q->where('categories.id', $id)
+                    );
+                } else {
+                    $query->whereHas('location', function ($q) use ($id, $type) {
+                        match ($type) {
+                            'c1' => $q->where('city_id', $id),
+                            's1' => $q->where('state_id', $id),
+                            'c2' => $q->where('country_id', $id),
+                            default => null,
+                        };
+                    });
+                }
+            }
+
+            return $query->count();
+        }) ?? 0;
+    }
+}
+
+if(!function_exists('countThingsToDo3242')) {
+    function countThingsToDo32423($id, $type) {
         $query = Tour::select(['id'])
             ->with([
                 'categories:id',

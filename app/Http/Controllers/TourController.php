@@ -83,7 +83,9 @@ class TourController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Tour::query();
+        $query = Tour::query()->onlyRoot();
+
+	
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -205,6 +207,51 @@ class TourController extends Controller
                 }
             });
         }
+
+        if ($request->filled('last_updated')) {
+
+            $today = now()->startOfDay();
+
+            switch ($request->last_updated) {
+
+                case 'today':
+                    $query->whereDate('updated_at', $today);
+                    break;
+
+                case 'last_7':
+                    $query->whereBetween('updated_at', [
+                        $today->copy()->subDays(7),
+                        now()
+                    ]);
+                    break;
+
+                case 'last_15':
+                    $query->whereBetween('updated_at', [
+                        $today->copy()->subDays(15),
+                        now()
+                    ]);
+                    break;
+
+                case 'this_week':
+                    $query->whereBetween('updated_at', [
+                        now()->startOfWeek(),
+                        now()->endOfWeek()
+                    ]);
+                    break;
+
+                case 'upcoming_15':
+                    $query->whereBetween('updated_at', [
+                        $today,
+                        now()->addDays(15)
+                    ]);
+                    break;
+
+                case 'expired':
+                    $query->where('updated_at', '<', $today);
+                    break;
+            }
+        }
+
 
 
         $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
@@ -549,7 +596,7 @@ class TourController extends Controller
             $tour_detail->IsTerms               = $request->IsTerms?1:0;
             $tour_detail->terms_and_conditions  = $request->terms_and_conditions;
             $tour_detail->meta_title            = $request->title;
-            $tour_detail->meta_description	    = $request->title;
+            $tour_detail->meta_description      = $request->title;
             $tour_detail->focus_keyword         = $request->title;
             $tour_detail->videos         = $request->videos;
             $tour_detail->save();

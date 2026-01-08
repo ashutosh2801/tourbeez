@@ -477,7 +477,7 @@ class OrderController extends Controller
             'formData.email'      => 'required|email|max:255',
             'formData.phone'      => 'required|string|max:20',
             'formData.instructions' => 'nullable|string|max:255',
-            'formData.pickup_id' => 'nullable|numeric|max:255',
+            'formData.pickup_id' => 'nullable|numeric',
             'formData.pickup_name' => 'nullable|string|max:255',
             'formData.adv_deposite' => 'nullable|string|max:255',
             'formData.booking_fee' => 'nullable|numeric|max:255',
@@ -515,6 +515,10 @@ class OrderController extends Controller
         
         
         try {
+
+            if(isset($data['pickup_id']) && $data['pickup_id']){
+                $data['pickup_id'] = 0;
+            }
             // Save or update customer
             $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
             $data = $request->input('formData');
