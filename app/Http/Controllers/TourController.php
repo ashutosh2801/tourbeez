@@ -83,7 +83,9 @@ class TourController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Tour::query();
+        $query = Tour::query()->onlyRoot();
+
+	
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -594,7 +596,7 @@ class TourController extends Controller
             $tour_detail->IsTerms               = $request->IsTerms?1:0;
             $tour_detail->terms_and_conditions  = $request->terms_and_conditions;
             $tour_detail->meta_title            = $request->title;
-            $tour_detail->meta_description	    = $request->title;
+            $tour_detail->meta_description      = $request->title;
             $tour_detail->focus_keyword         = $request->title;
             $tour_detail->videos         = $request->videos;
             $tour_detail->save();

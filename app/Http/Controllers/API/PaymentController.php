@@ -268,7 +268,13 @@ class PaymentController extends Controller
                         // if ($paymentMethod->type === 'card') {
 
 
-                            OrderPayment::create([
+                            OrderPayment::updateOrCreate(
+                            // ✅ Unique condition
+                            [
+                                'payment_intent_id' => $booking->payment_intent_id,
+                            ],
+                            // ✅ Data to update or insert
+                            [
                                 'order_id'          => $booking->id,
                                 'payment_intent_id' => $booking->payment_intent_id,
                                 'transaction_id'    => null, // no charge yet until capture
@@ -284,7 +290,8 @@ class PaymentController extends Controller
                                 'action'            => $action_name,
                                 'response_payload'  => null,
                                 'collection_date'   => now(),
-                            ]);
+                            ]
+                        );
 
                             // Update OrderPayment (preferred)
                             // OrderPayment::create([
