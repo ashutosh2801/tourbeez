@@ -74,21 +74,33 @@
                                         </div>
                                         <div class="col-md-2">
                                             <label for="pickup_time">Pickup time</label>
-                                            <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="PickupLocations[{{ $index }}][time]">
-                                                <option value="">Select one</option>
-                                                @php
-                                                $old_time = old("PickupLocations.$index.time", $option['time'])
-                                                @endphp
-                                                @for ($hour = 0; $hour <= 12; $hour++)
-                                                    @foreach ([0, 15, 30, 45] as $minute)
-                                                    @php
-                                                        $time = \Carbon\Carbon::createFromTime($hour == 12 ? 12 : $hour, $minute);
-                                                        $formatted = $time->format('h:i A');
-                                                    @endphp
-                                                    <option {{  (strtolower($old_time)==strtolower($formatted)) ? 'selected' : '' }} value="{{ $formatted }}">{{ $formatted }}</option>
-                                                    @endforeach
-                                                @endfor
-                                            </select>
+    <select class="form-control aiz-selectpicker"
+        data-live-search="true"
+        id="pickup_time"
+        name="PickupLocations[{{ $index }}][time]">
+
+    <option value="">Select one</option>
+
+    @php
+        $old_time = old("PickupLocations.$index.time", $option['time'] ?? null);
+    @endphp
+
+    @for ($hour = 0; $hour < 24; $hour++)
+        @for ($minute = 0; $minute < 60; $minute++)
+            @php
+                $time = \Carbon\Carbon::createFromTime($hour, $minute);
+                $formatted = $time->format('h:i A');
+            @endphp
+
+            <option value="{{ $formatted }}"
+                {{ strtolower($old_time) === strtolower($formatted) ? 'selected' : '' }}>
+                {{ $formatted }}
+            </option>
+        @endfor
+    @endfor
+
+</select>
+
                                             @error('pickup_time')
                                                 <small class="form-text text-danger">{{ $message }}</small>
                                             @enderror
