@@ -29,6 +29,13 @@ class Tour extends Model
     {
         static::addGlobalScope(new SupplierScope('user_id'));
     }
+    public function scopeOnlyRoot($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('parent_id')
+              ->orWhere('parent_id', 0);
+        });
+    }
 
     public function getActivitylogOptions(): LogOptions
     {

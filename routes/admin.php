@@ -58,6 +58,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/user',UserController::class);
     Route::get('/user_supplier',[SupplierController::class, 'index'])->name('supplier.index');
     Route::resource('/customers',CustomerController::class);
+
+    Route::get('/customers/{id}/{source}/edit',[CustomerController::class, 'editFromSource'])->name('customers.edit.source');
+    Route::put(
+    '/customers-source/{id}/{source}',
+    [CustomerController::class, 'updateSource']
+)->name('customers.source.update');
+    
     Route::resource('/role',RoleController::class);
     Route::resource('/permission',PermissionController::class);
     Route::resource('/category',CategoryController::class);

@@ -695,7 +695,7 @@ class OrderController extends Controller
                                     ],[
                                         'order_id'         => $order->id,
                                         'performed_by'     => Auth::id(),
-                                        'notes'            => "System charged credit card $last4 for $chargeAmount ".$order->currency. " Reference number is ".$pi->id,
+                                        'notes'            => "System charged credit card $last4 for $chargeAmount " .$order->currency. " Reference number is ".$pi->id,
                                         'created_at'       => now(),
                                         'updated_at'       => now()
                                     ]
@@ -2414,6 +2414,7 @@ class OrderController extends Controller
 
     public function refundPayment(Request $request, Order $order)
     {
+
         $request->validate([
             'payment_id' => 'required|integer',
             'amount' => 'required|numeric|min:0.5',
@@ -2427,6 +2428,10 @@ class OrderController extends Controller
         $remainingRefundable = $payment->amount - $alreadyRefunded;
 
         if ($remainingRefundable <= 0) {
+             $payment->update([
+                'status' => 'refunded',
+            ]);
+
             return response()->json(['success' => false, 'message' => 'This payment has already been fully refunded.']);
         }
 
@@ -2454,7 +2459,7 @@ class OrderController extends Controller
                 'status' => $newStatus,
                 'refund_id' => $refund->id ?? null,
                 'refunded_at' => now(),
-                'refund_amount' => $newRefundTotal, // cumulative refund
+                'refund_amount' => $payment->amount - $newRefundTotal, // cumulative refund
                 'refund_reason' => $request->reason,
             ]);
 
@@ -2469,7 +2474,7 @@ class OrderController extends Controller
                 'collection_date'   => now(),
                 'amount'            => $newRefundTotal,
                 'currency'          => $order->currency,
-                'status'            => $newStatus,
+                'status'            => 'refunded',
                 'action'            => 'manual_charge',
                 'response_payload'  => json_encode($refund),
             ]);
@@ -2477,7 +2482,7 @@ class OrderController extends Controller
             $order_actions = [
                 'order_id'         => $order->id,
                 'performed_by'     => Auth::id(),
-                'notes'            => "Refund of payment (STRIPE: {$refund->id}) has been processed by ".Auth::user()->name.". Refund amount is : ${$newRefundTotal}",
+                'notes'            => "Refund of payment (STRIPE: {$refund->id}) has been processed by ".Auth::user()->name.". Refund amount is : {$order->currency} {$newRefundTotal} ",
                 'created_at'       => now(),
                 'updated_at'       => now()
             ];
@@ -2496,7 +2501,8 @@ class OrderController extends Controller
             ]);
 
         } catch (\Stripe\Exception\ApiErrorException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+
+            return response()->json(['success' => false, 'message' => $e->getMessage() . "weew"]);
         }
     }
 
@@ -3118,21 +3124,23 @@ class OrderController extends Controller
     //     }
     // }
 
-     public function captureInitialPayment($orderId)
+     public function captureInitialPayment(Request $request, $orderId)
      {
         $order = Order::findOrFail($orderId);
-        $confirmPayment = self::confirmPayment($order->id, $order->adv_deposite, $order->booked_amount);
+
+        $uncaptureAmount = $request->amount;
+        $confirmPayment = self::confirmPayment($order->id, $order->adv_deposite, $uncaptureAmount);
         $confirmPayment = $confirmPayment->getData();
-                
+          
         if($confirmPayment->status === 'succeeded'){
             
-            $order->payment_status == 1;
+            $order->payment_status = 1;
             $order->save();
             $order_actions = [
                 [
                     'order_id'         => $order->id,
                     'performed_by'     => Auth::id(),
-                    'notes'            => "Payment $order->booked_amount is captured",
+                    'notes'            => "Capture of payment has been processed by ".Auth::user()->name.". Capture amount is : {$order->currency} {$uncaptureAmount} ",
                     'created_at'       => now(),
                     'updated_at'       => now()
                 ]
@@ -3141,8 +3149,12 @@ class OrderController extends Controller
 
             return response()->json(['success' => true, 'message' => 'Payment is captured']);
 
-        } 
-            return response()->json(['success' => false, 'message' => $confirmPayment->message]);
+        } else if($confirmPayment->status === 'already_capture'){
+            $order->payment_status = 1;
+            $order->save();
+            
+        }
+        return response()->json(['success' => false, 'message' => $confirmPayment->message]);
      }
 
     public function cancelInitialPayment($orderId)
@@ -3213,7 +3225,16 @@ class OrderController extends Controller
         // CASE 1: Already captured
         // ----------------------------------------------------
         if ($paymentIntent->status === 'succeeded') {
+
+            $orderPayment = OrderPayment::where('payment_intent_id', $paymentIntent->id)->first();
+            $orderPayment->status = 'succeeded';
+            $orderPayment->save();
+            DB::commit();
+
+
+
             return response()->json([
+                'status'  => 'already_capture',
                 'success' => false,
                 'message' => 'This payment has already been captured.'
             ], 400);
@@ -3223,7 +3244,7 @@ class OrderController extends Controller
         // CAPTURE PAYMENT
         // ----------------------------------------------------
         $captureAmount = (int) round($amount * 100);
-
+        
         $capturedIntent = $paymentIntent->capture([
             'amount_to_capture' => $captureAmount,
         ]);
@@ -3250,27 +3271,31 @@ class OrderController extends Controller
             }
         }
 
-        // ----------------------------------------------------
-        // CREATE ORDER PAYMENT (NO UPDATE)
-        // ----------------------------------------------------
-        OrderPayment::create([
-            'order_id'          => $order->id,
+        
+
+        OrderPayment::updateOrCreate(
+        // ✅ Unique condition
+        [
             'payment_intent_id' => $capturedIntent->id,
-            'transaction_id'    => $transactionId,
-            'payment_method'    => 'card',
-            'payment_type'      => 'CREDITCARD',
-            'collection_type'   => 'Inside',
-            'collection_date'   => now()->toDateString(),
-            'card_brand'        => $cardBrand,
-            'card_last4'        => $cardLast4,
-            'amount'            => $amount,
-            'currency'          => $capturedIntent->currency ?? $order->currency,
-            'status'            => 'succeeded',
-            'action'            => $action_name,
-            'response_payload'  => json_encode($capturedIntent),
-            'created_at'        => now(),
-            'updated_at'        => now(),
-        ]);
+        ],
+        // ✅ Data to update or insert
+        [
+            'order_id'         => $order->id,
+            'transaction_id'   => $transactionId,
+            'payment_method'   => 'card',
+            
+            'collection_type'  => 'Inside',
+            'collection_date'  => now()->toDateString(),
+            'card_brand'       => $cardBrand,
+            'card_last4'       => $cardLast4,
+            'amount'           => $amount,
+            'currency'         => $capturedIntent->currency ?? $order->currency,
+            'status'           => 'succeeded',
+            'action'           => $action_name,
+            'response_payload' => json_encode($capturedIntent),
+            'updated_at'       => now(),
+        ]
+    );
 
         // ----------------------------------------------------
         // UPDATE ORDER STATUS
@@ -3292,6 +3317,7 @@ class OrderController extends Controller
 
         return response()->json([
             'success' => false,
+            'status'  => 'failed',
             'message' => $e->getMessage()
         ], 400);
     }
