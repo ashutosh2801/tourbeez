@@ -220,7 +220,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
 
                                         <li class="payment-details-breakdown--item">
                                             <strong class="payment-details-breakdown--text">Paid</strong>
-                                            <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount'), $order->currency) }}</strong>
+                                            <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency) }}</strong>
                                         </li>
                                         
                                     @else
@@ -236,7 +236,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     </li>
                                     <li class="payment-details-breakdown--item">
                                         <strong class="payment-details-breakdown--text">Refunded</strong>
-                                        <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'refunded')->sum('refund_amount'), $order->currency) }}</strong>
+                                        <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency) }}</strong>
                                     </li>
                                     @if($order->payment_status == 3)
                                         <li class="payment-details-breakdown--item">
@@ -597,11 +597,13 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             @if($order->payment_status ==3)
 
 
-                                                <td class="text-right cummulative-total"><b>{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</b></td>
+                                                <td class="text-right cummulative-total"><b>{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</b></td>
                                             @else
 
                                                 <td class="text-right cummulative-total"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
                                             @endif
+
+
 
                                             
                                         </tr>
@@ -683,9 +685,14 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                 @endphp
                             @endforeach
 
-                            <div class="card-total bg-light p-3 mb-3 ">
-                                Total: <span id="totalPayment1">{{ price_format_with_currency((float)$order->payments->where('status', 'succeeded')->sum('amount')) }} </span>
-                                <!-- <input type="text" id="total_amount" readonly placeholder="0.00" value="{{ (float)$totalPaid }}"> -->
+                            <div class="card-total bg-light p-3 mb-3 row align-items-end">
+                                <div id="totalPayment1" class="col-md-6 text-start">
+                                    Paid: {{ price_format_with_currency((float)$order->payments->where('status','succeeded')->sum('amount'), $order->currency) }}
+                                </div>
+
+                                <div id="refundtotal" class="col-md-6 text-end " style="color:red;">
+                                    Refunded: {{ price_format_with_currency((float)$order->payments->whereIn('status',['refunded','partial_refunded'])->sum('amount'), $order->currency) }}
+                                </div>
                             </div>
                             <div class="card-body">
 
@@ -809,7 +816,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                         @foreach ($order->payments as $payment)   
                                         <input type="hidden" name="paymentId[]" value="{{ $payment->id }}" />
                                         <div class="row paymentRow py-2 border border-black-300">
-                                            <div class="col-2">
+                                            <div class="col-1">
                                                 {{ $payment->payment_type == 'CARD' ? 'CREDITCARD': $payment->payment_type  }}
                                                 <input type="hidden" name="paymentType[]" value="{{ $payment->payment_type }}" />
                                             </div>
@@ -826,8 +833,11 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 <input type="hidden" name="collection_date[]" value="{{ $payment->collection_date }}" />
                                             </div>
 
-                                            <div class="col-1">
+                                            <div class="col-2">
                                                 {{ price_format_with_currency($payment->amount, strtoupper($payment->currency)) }}
+                                                @if($payment->refund_amount > 0)
+                                                <p style="color: red">(Refunded {{ (price_format_with_currency($payment->refund_amount, strtoupper($payment->currency)) )}})</p>
+                                                @endif
                                                 <input type="hidden" name="amount[]" value="{{ $payment->amount }}" />
                                             </div>
                                             @if($payment->status == 'uncaptured')
@@ -856,7 +866,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 <div class="col-1">
                                                     @php $refFlaf = 1; @endphp
                                                     
-
+                                                    @if($payment->amount > $payment->refund_amount)
                                                     <button type="button"
                                                             class="btn btn-sm btn-danger open-payment-refund"
                                                             data-order-id="{{ $order->id }}"
@@ -864,6 +874,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                             data-amount="{{ $payment->amount }}">
                                                         Refund
                                                     </button>
+                                                    @endif
                                                     </div>
                                                 @endif
                                             
