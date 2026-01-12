@@ -20,7 +20,7 @@ class UserController extends Controller
     {
         
          $data = User::where('user_type', '!=', 'Member')
-            ->where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
+            ->where('role', '<>', 'Super Admin')->where('role', '<>', 'Admin')->orderBy('id','DESC')->paginate(10);
             
         
         // $data = User::where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
@@ -133,7 +133,7 @@ class UserController extends Controller
 
         return redirect()->back()
             // ->route('admin.user.index')
-            ->with('success', 'User and supplier details updated successfully.');
+            ->with('success', 'User details updated successfully.');
     }
 
 

@@ -7,10 +7,12 @@ use App\Models\Addon;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Order;
+use App\Models\OrderActions;
 use App\Models\OrderCustomer;
 use App\Models\OrderMeta;
 use App\Models\OrderPayment;
 use App\Models\OrderTour;
+use App\Models\Promo;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\Tour;
 use App\Models\TourPricing;
@@ -24,6 +26,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Stripe\Customer;
 use Stripe\Stripe;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
@@ -474,7 +477,7 @@ class OrderController extends Controller
             'formData.email'      => 'required|email|max:255',
             'formData.phone'      => 'required|string|max:20',
             'formData.instructions' => 'nullable|string|max:255',
-            'formData.pickup_id' => 'nullable|numeric|max:255',
+            'formData.pickup_id' => 'nullable|numeric',
             'formData.pickup_name' => 'nullable|string|max:255',
             'formData.adv_deposite' => 'nullable|string|max:255',
             'formData.booking_fee' => 'nullable|numeric|max:255',
@@ -497,7 +500,25 @@ class OrderController extends Controller
             ], 404);
         }
 
+        if ($request->filled('promo_code')) {
+            $promo = Promo::where('code', $request->promo_code)
+                ->where('status', 'ISSUED')
+                ->where(function ($q) {
+                    $q->whereNull('expiry_date')
+                      ->orWhere('expiry_date', '>=', now()->toDateString());
+                })
+                ->first();
+            $promo->used_by = $promo->used_by + 1;
+            $promo->save();
+        }
+
+        
+        
         try {
+
+            if(isset($data['pickup_id']) && $data['pickup_id']){
+                $data['pickup_id'] = 0;
+            }
             // Save or update customer
             $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
             $data = $request->input('formData');
@@ -511,7 +532,8 @@ class OrderController extends Controller
             $customer->phone        = $data['phone'];
             $customer->instructions = isset($data['instructions']) ? $data['instructions'] : '';
             $customer->pickup_id    = isset($data['pickup_id']) ?  $data['pickup_id'] : '';
-            $customer->pickup_name  = isset($data['pickup_name']) ? ucwords($data['pickup_name']) : '';            
+            $customer->pickup_name  = isset($data['pickup_name']) ? ucwords($data['pickup_name']) : '';          
+            $customer->promo_code   = $request->promo_code;          
             $customer->save();
 
             Stripe::setApiKey(env('STRIPE_SECRET'));
@@ -699,6 +721,77 @@ class OrderController extends Controller
                     // Deposit not enabled → fallback to full
                     $chargeAmount = $order->total_amount;
                 }
+
+
+
+                
+
+
+                if ($request->filled('promo_code')) {
+
+                switch ($promo->value_type) {
+
+                    /* ================= FIXED ================= */
+
+                    case 'VALUE':
+                        $discountAmount = min($promo->voucher_value, $item_total);
+                        break;
+
+                    case 'VALUE_LIMITPRODUCT':
+                        foreach ($pricing as $item) {
+                            if ($item['tour_pricing_id'] == $promo->product_id) {
+                                $discountAmount = min(
+                                    $promo->voucher_value,
+                                    $item['total_price']
+                                );
+                                break;
+                            }
+                        }
+                        break;
+
+                    case 'VALUE_LIMITCATEGORY':
+                        foreach ($pricing as $item) {
+                            $product = TourPricing::find($item['tour_pricing_id']);
+                            if ($product && $product->category_id == $promo->category_id) {
+                                $discountAmount = min(
+                                    $promo->voucher_value,
+                                    $item['total_price']
+                                );
+                            }
+                        }
+                        break;
+
+                    /* ================= PERCENT ================= */
+
+                    case 'PERCENT':
+                        $discountAmount = ($item_total * $promo->value_percent) / 100;
+                        break;
+
+                    case 'PERCENT_LIMITPRODUCT':
+                        foreach ($pricing as $item) {
+                            if ($item['tour_pricing_id'] == $promo->product_id) {
+                                $discountAmount = ($item['total_price'] * $promo->value_percent) / 100;
+                                break;
+                            }
+                        }
+                        break;
+
+                    case 'PERCENT_LIMITCATEGORY':
+                        foreach ($pricing as $item) {
+                            $product = TourPricing::find($item['tour_pricing_id']);
+                            if ($product && $product->category_id == $promo->category_id) {
+                                $discountAmount += ($item['total_price'] * $promo->value_percent) / 100;
+                            }
+                        }
+                        break;
+                }
+
+                // Safety
+                $discountAmount = round(min($discountAmount, $item_total), 2);
+
+                $chargeAmount = $chargeAmount - $discountAmount;
+            }
+
                 // ✅ Update amounts in order
                 $order->total_amount   = $order->total_amount; // full tour price (unchanged)
                 $order->booked_amount  = $chargeAmount;        // what’s being charged now
@@ -706,6 +799,8 @@ class OrderController extends Controller
 
                 // dd($chargeAmount);
                 if ($chargeAmount > 0) {
+
+                    
                     $pi = \Stripe\PaymentIntent::create([
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($chargeAmount * 100)),
@@ -892,7 +987,16 @@ class OrderController extends Controller
 
             $order->booking_fee = $booking_fee;
             $order->stripe_customer_id = $stripeCustomer->id;
-            $order->save();           
+            $order->save();
+
+            $order_actions = [
+                    'order_id'         => $order->id,
+                    'performed_by'     => $customer->id,
+                    'notes'            => $customer->name." placed a new order {$order->order_number}",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ];
+            OrderActions::insert($order_actions);           
 
             return response()->json([
                 'status'            => true,

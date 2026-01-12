@@ -940,6 +940,8 @@ updateUploaderFiles: function () {
                 });
                 if (single) {
                     $this.on("apply.daterangepicker", function (ev, picker) {
+                        //const displayFormat = 'MMM DD, YYYY'; 
+                        //$this.val(picker.startDate.format(displayFormat));
                         $this.val(picker.startDate.format(format));
                     });
                 } else {

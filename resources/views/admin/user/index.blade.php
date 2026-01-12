@@ -51,13 +51,16 @@
                     @endforeach
                 </tbody>
             </table>
+            <div class="card-footer">
+                {{ $data->links() }}
+            </div>
         </div>
     </div>
     @section('js')
         <script>
             $(function() {
                 $('#userTable').DataTable({
-                    "paging": true,
+                    "paging": false,
                     "searching": true,
                     "ordering": true,
                     "responsive": true,

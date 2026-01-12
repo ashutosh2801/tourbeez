@@ -7,9 +7,11 @@ use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Models\OrderActions;
 use App\Models\OrderCustomer;
 use App\Models\OrderEmailHistory;
 use App\Models\OrderPayment;
+use App\Models\OrderPaymentDetail;
 use App\Models\OrderTour;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
@@ -25,10 +27,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
 use Stripe\Stripe;
+use Validator;
 
 
 class OrderController extends Controller
@@ -187,7 +191,7 @@ class OrderController extends Controller
         // $tours = $products;
 
         $tours = Tour::with('pricings', 'addons', 'taxes_fees', 'pickups', 'location.country', 'location.state', 'location.city')->get();
-        $customers = User::all();
+        $customers = User::where('user_type', 'member')->get();
 
         return view('admin.order.internal-order', compact('tours', 'customers'));
     }
@@ -275,8 +279,6 @@ class OrderController extends Controller
         //     return redirect()->back()->withErrors($validated)->withInput();
         // }
 
-
-
         $data = $request->all();
         // dd($data);
 
@@ -362,15 +364,17 @@ class OrderController extends Controller
         try {
             // ===== Create Order =====
             $order = Order::create([
-                'tour_id'       => $firstTourId,
-                'user_id'       => auth()->id() ?? 0,
-                'order_number'  => unique_order(),
-                'currency'      => $request->currency ?? 'USD',
-                'order_status'  => $request->order_status,
-                'payment_status'=> 5,
-                'total_amount'  => 0,
-                'balance_amount'=> 0,
-                'created_by'    => auth()->user()->id,
+                'tour_id'           => $firstTourId,
+                'user_id'           => auth()->id() ?? 0,
+                'order_number'      => unique_order(),
+                'currency'          => $request->currency ?? 'USD',
+                'order_status'      => $request->order_status,
+                'payment_status'    => 5,
+                'total_amount'      => 0,
+                'balance_amount'    => 0,
+                'additional_info'   => $request->additional_info ?? '',
+                'internal_notes'    => $request->internal_notes ?? '',
+                'created_by'        => auth()->user()->id,
             ]);
 
             // ===== Customer =====
@@ -399,7 +403,6 @@ class OrderController extends Controller
                 ]);
             } else {
                 // Fallback to request inputs
-
                 $user = User::where('email', $request->customer_email)->first();
 
                 $user_id = $user?->id ?? 0;
@@ -407,15 +410,17 @@ class OrderController extends Controller
                 $customer = OrderCustomer::create([
                     'order_id'     => $order->id,
                     'user_id'      => $user_id,
-                    'first_name'   => $request->customer_first_name ?? 'N/A',
-                    'last_name'    => $request->customer_last_name ?? 'N/A',
-                    'email'        => $request->customer_email ?? 'N/A',
-                    'phone'        => $request->full_phone ?? 'N/A',
-                    'instructions' => $request->additional_info ?? '',
-                    'pickup_id'    => $request->pickup_id ?? '',
-                    'pickup_name'  => $request->pickup_name ?? '',
+                    'first_name'   => $request->customer_first_name,
+                    'last_name'    => $request->customer_last_name,
+                    'email'        => $request->customer_email ,
+                    'phone'        => $request->full_phone,
+                    'instructions' => $request->additional_info ?? null,
+                    'pickup_id'    => $request->pickup_id ?? null,
+                    'pickup_name'  => $request->pickup_name ?? null,
                 ]);
             }
+
+            //echo '<pre>'; print_r( $customer ); echo '</pre>'; exit;
 
             // ===== Loop Through Tours =====
             $totalOrderAmount = 0;
@@ -500,36 +505,64 @@ class OrderController extends Controller
                 OrderTour::create([
                     'order_id'         => $order->id,
                     'tour_id'          => $tourId,
-                    'tour_date'         => $selectedDate,
-                    'tour_time'         => $selectedTime,
+                    'tour_date'        => $selectedDate,
+                    'tour_time'        => $selectedTime,
                     'tour_pricing'     => json_encode($pricing),
                     'tour_extra'       => json_encode($extras),
                     'tour_fees'        => json_encode($fees),
                     'number_of_guests' => $quantity,
                     'total_amount'     => $subtotal,
-
-                    'tour_date'         => $selectedDate,
-                    'tour_time'         => $selectedTime,
                 ]);
             }
 
-            // ===== Update Order totals =====
-            $order->total_amount = $totalOrderAmount;
-            $order->balance_amount = $totalOrderAmount;
-            $order->payment_method = $request->payment_type;
-            $order->save();
-            // dd($request->payment_type);
-            if($request->payment_type){
+            $totalPaymentAmount = 0;
+            if ($request->paymentType) {
+                $payments = [];
 
-                if($request->payment_type == 'other'){
-                    $order->balance_amount = 0;
-                    $order->save();
-                } else if($request->payment_type == 'transaction'){
-                    $order->booked_amount = $totalOrderAmount;
-                    $order->balance_amount = 0;
-                    $order->transaction_id = $request->transaction_id;
-                    $order->save();
-                } else {
+                foreach ($request->paymentType as $i => $type) {
+                    //$amount = $request->amount[$i] ?? null;
+
+                    $amount          = $request->amount[$i] ?? null;
+                    $collection_date = $request->collection_date[$i] ?? null;
+                    $transactionId   = $request->transactionId[$i] ?? null;
+
+                    // Skip empty rows
+                    if (empty($type) && empty($amount)) {
+                        continue;
+                    }
+
+                    // Add amount to total (only if valid)
+                    if (!empty($amount)) {
+                        $totalPaymentAmount += floatval($amount);
+                    }
+
+                    $payments[] = [
+                                'order_id'          => $order->id,
+                                'payment_intent_id' => null,
+                                'transaction_id'    => $transactionId,
+                                'payment_type'      => $type,
+                                'collection_type'   => 'Outside',
+                                'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
+                                'amount'            => $amount,
+                                'currency'          => $order->currency,
+                                'status'            => 'successful',
+                                'created_at'        => now(),
+                                'updated_at'        => now(),
+                            ];
+                }
+                OrderPayment::insert($payments);
+            }
+
+
+            // ===== Update Order totals =====
+            $balanceAmount = $totalOrderAmount - $totalPaymentAmount;
+            $order->total_amount = $totalOrderAmount;
+            $order->balance_amount = $balanceAmount;
+            $order->booked_amount = $totalOrderAmount - $balanceAmount;
+            
+            // dd($request->payment_type);
+            if( $order->save() ){
+
                 // ===== Stripe Payment Handling =====
                 try {
                     \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
@@ -543,10 +576,9 @@ class OrderController extends Controller
                             'phone' => $customer->phone,
                         ]);
                     } else {
+                        $name = $customer->first_name.' '.$customer->last_name;
                         $stripeCustomer = \Stripe\Customer::retrieve($order->stripe_customer_id);
                     }
-
-                    //$adv_deposite = $request->adv_deposite ?? 'full'; // or deposit/full
 
                     $metaData = [
                         'bookedDate'    => $order->created_at,
@@ -561,20 +593,22 @@ class OrderController extends Controller
                         'totalAmount'   => $order->total_amount,
                     ];
 
-                    $charge_ccnow = (int)$request->charge_ccnow;
-                    $chargeAmount = (float)$request->charge_ccnow_amount;
-                    //$chargeAmount = $order->total_amount;
+                    $add_ccnow      = (int)$request->add_ccnow;
+                    $charge_ccnow   = (int)$request->charge_ccnow;
+                    $chargeAmount   = (float)$request->charge_ccnow_amount;
+
 
                     if ($chargeAmount > 0) {
+                        $order_actions = [];
                         if ( $charge_ccnow ) {
                             $pi = \Stripe\PaymentIntent::create([
                                 'customer'  => $stripeCustomer->id,
                                 'amount' => intval(round($chargeAmount * 100)),
                                 'currency' => $order->currency,
                                 'automatic_payment_methods' => [
-                                                            'enabled' => true,
-                                                            'allow_redirects' => 'never',  // 🔥 prevents Stripe from requiring return_url
-                                                        ],
+                                    'enabled' => true,
+                                    'allow_redirects' => 'never',  // 🔥 prevents Stripe from requiring return_url
+                                ],
                                 'receipt_email' => $customer->email,
                                 'capture_method' => 'manual',
                                 'description' => $tour->title,
@@ -582,10 +616,10 @@ class OrderController extends Controller
                                 'metadata'  => $metaData,
                                 'setup_future_usage'=> 'off_session',
                             ]);
-                            $order->balance_amount  = max($order->total_amount - ($chargeAmount ?? 0), 0); 
+                            $order->balance_amount  = max($balanceAmount - ($chargeAmount ?? 0), 0); 
                             $order->booked_amount   = $chargeAmount;
                             $order->payment_status  = 1; // Paid
-                            
+                            $order->payment_method  = 'card';
                             $order->payment_intent_client_secret = $pi->client_secret;
                             $order->payment_intent_id = $pi->id;
                             $order->payment_method_id = $request->payment_intent_id;
@@ -595,11 +629,82 @@ class OrderController extends Controller
                                 $pi = \Stripe\PaymentIntent::retrieve($pi->id);
                                 $pi->confirm(['payment_method' => $request->payment_intent_id]);
                                 $pi->capture();
+
+                                // $payments = [
+                                //     'order_id'       => $order->id,
+                                //     'payment_type'   => 'CREDITCARD',
+                                //     'transaction_id' => $pi->id,
+                                //     'date'           => now(),
+                                //     'amount'         => $chargeAmount,
+                                //     'collection_type'=> 'Inside',
+                                //     'created_at'     => now(),
+                                //     'updated_at'     => now(),
+                                // ];
+
+                                // OrderPaymentDetail::insert($payments);
+
+                                $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_intent_id);
+
+                                $card = $paymentMethod->card;
+
+                                $brand  = $card->brand;          // visa, mastercard
+                                $last4  = $card->last4;          // 4242
+                                // $expMonth = $card->exp_month;    // 12
+                                // $expYear  = $card->exp_year;     // 2029
+                                // $funding = $card->funding;       // credit/debit/prepaid
+                                // $country = $card->country;       // US, IN
+
+                                OrderPayment::create([
+                                    'order_id'          => $order->id,
+                                    'payment_intent_id' => $pi->id,
+                                    'transaction_id'    => $pi->charges->data[0]->id ?? $pi->id,
+                                    'payment_method'    => 'card',
+                                    'payment_type'      => 'CREDITCARD',
+                                    'collection_type'   => 'Inside',
+                                    'collection_date'   => date('Y-m-d'),
+                                    'card_brand'        => $brand,
+                                    'card_last4'        => $last4,
+                                    'amount'            => $chargeAmount,
+                                    'currency'          => $order->currency,
+                                    'status'            => 'succeeded',
+                                    'action'            => 'manual_charge',
+                                    'response_payload'  => json_encode($pi),
+                                    'created_at'        => now(),
+                                    'updated_at'        => now(),
+                                ]);
+
+                                // ===== Save OrderActions =====
+                                $order_actions = [[
+                                        'order_id'         => $order->id,
+                                        'performed_by'     => Auth::id(),
+                                        'notes'            => "<a href='". route('admin.customers.edit', encrypt($customer->id)) ."'>".$name."</a> made a new order on your booking form",
+                                        'created_at'       => now(),
+                                        'updated_at'       => now()
+                                    ],[
+                                        'order_id'         => $order->id,
+                                        'performed_by'     => Auth::id(),
+                                        'notes'            => "Order created for ".$tour->title." on ".$order->created_at->format('Y-m-d H:i:s'),
+                                        'created_at'       => now(),
+                                        'updated_at'       => now()
+                                    ],[
+                                        'order_id'         => $order->id,
+                                        'performed_by'     => Auth::id(),
+                                        'notes'            => "System attached credit card $last4 ($brand) to this order",
+                                        'created_at'       => now(),
+                                        'updated_at'       => now()
+                                    ],[
+                                        'order_id'         => $order->id,
+                                        'performed_by'     => Auth::id(),
+                                        'notes'            => "System charged credit card $last4 for $chargeAmount " .$order->currency. " Reference number is ".$pi->id,
+                                        'created_at'       => now(),
+                                        'updated_at'       => now()
+                                    ]
+                                ];
                             }
                         }
-                        else {
+                        else if( $add_ccnow ) {
                             // 2️⃣ Attach Payment Method to Customer
-                            \Stripe\PaymentMethod::retrieve($request->payment_intent_id)
+                            $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_intent_id)
                                 ->attach(['customer' => $stripeCustomer->id]);
 
                             // 3️⃣ Set this payment method as default
@@ -609,13 +714,91 @@ class OrderController extends Controller
                                 ]
                             ]);
 
-                            $order->balance_amount  = $order->total_amount; 
-                            $order->booked_amount   = 0;
-                            $order->payment_status  = 0; // Unpaid                        
-                            $order->payment_method_id = $request->payment_intent_id;
+
+                            $card = $paymentMethod->card;
+                            $brand  = $card->brand;          // visa, mastercard
+                            $last4  = $card->last4;          // 4242
+
+                            $order->balance_amount      = $balanceAmount; 
+                            $order->booked_amount       = 0;
+                            $order->payment_status      = 0; // Unpaid                        
+                            $order->payment_method_id   = $request->payment_intent_id;
+                            $order->payment_method      = 'card';
+
+                            // $payments = [
+                            //     'order_id'       => $order->id,
+                            //     'payment_type'   => 'CREDITCARD',
+                            //     'transaction_id' => $request->payment_intent_id,
+                            //     'date'           => now(),
+                            //     'amount'         => 0,
+                            //     'collection_type'=> 'Outside',
+                            //     'created_at'     => now(),
+                            //     'updated_at'     => now(),
+                            // ];
+
+                            // OrderPaymentDetail::insert($payments);
+
+                            OrderPayment::create([
+                                'order_id'          => $order->id,
+                                'payment_intent_id' => $request->payment_intent_id,
+                                'payment_type'      => 'CREDITCARD',
+                                'collection_type'   => 'Inside',
+                                'collection_date'   => date('Y-m-d'),
+                                'amount'            => $chargeAmount,
+                                'currency'          => $order->currency,
+                                'status'            => 'pending',
+                                'created_at'        => now(),
+                                'updated_at'        => now(),
+                            ]);
+
+                            // ===== Save OrderActions =====
+                            $order_actions = [[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => $customer->id,
+                                    'notes'            => "<a href='". route('admin.customers.edit', encrypt($customer->id)) ."'>".$name."</a> made a new order on your booking form",
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ],[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => $customer->id,
+                                    'notes'            => "Order created for ".$tour->title." on ".$order->created_at->format('Y-m-d H:i:s'),
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ],[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => $customer->id,
+                                    'notes'            => "System attached credit card $last4 ($brand) to this order",
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ]
+                            ];
+                        }
+                        else {
+                            $order->balance_amount      = $balanceAmount; 
+                            $order->booked_amount       = 0;
+                            $order->payment_status      = 0; // Unpaid  
+                            
+                            // ===== Save OrderActions =====
+                            $order_actions = [[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => $customer->id,
+                                    'notes'            => "<a href='". route('admin.customers.edit', encrypt($customer->id)) ."'>".$name."</a> made a new order on your booking form",
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ],[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => $customer->id,
+                                    'notes'            => "Order created for ".$tour->title." on ".$order->created_at->format('Y-m-d H:i:s'),
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ]
+                            ];
                         }
 
-                    } else {
+                        OrderActions::insert($order_actions);
+
+
+                    } /*else {
                         $si = \Stripe\SetupIntent::create([
                             'customer'  => $stripeCustomer->id,
                             'automatic_payment_methods' => ['enabled' => true],
@@ -624,7 +807,7 @@ class OrderController extends Controller
                         ]);
                         $order->payment_intent_client_secret = $si->client_secret;
                         $order->payment_intent_id = $si->id;
-                    }
+                    }*/
 
                     // Booking fee
                     $booking_fee = $request->booking_fee ?? 0;
@@ -650,12 +833,6 @@ class OrderController extends Controller
                     ], 500);
                 }
             }
-
-
-            }
-
-
-
 
             DB::commit();
 
@@ -700,6 +877,7 @@ class OrderController extends Controller
             'payment_request'
         ])->get();
         $sms_templates = SmsTemplate::get();
+        $customers = User::where('user_type', 'member')->get();
         return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates']));
     }
 
@@ -708,24 +886,26 @@ class OrderController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $validator = $request->validate([
+        $validator = Validator::make($request->all(), [
             'order_status'   => 'required|max:255',
+            'tour_startdate.*' => 'required|date',
+            'tour_starttime.*' => 'required|string|max:10',
         ],
         [
             'order_status.required'   => 'Please select order status',
+            'tour_startdate.required'   => 'Please select tour start date',
+            'tour_starttime.required'   => 'Please select tour start time',
         ]);
 
-        //echo '<pre>'; print_r( $_POST ); exit;
+        if( $validator->fails() ){
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
         
         $order = Order::findOrFail( $id );
         $order->order_status    = $request->order_status;
         $order->additional_info = $request->additional_info;
 
-        $tourIds = $request->tour_id; // [19, 21, 90, 11]
-
-
-        
-
+        $tourIds = $request->tour_id; // [19, 21, 90, 11]       
 
         $orderId = $id;
         $total   = 0;
@@ -856,9 +1036,7 @@ class OrderController extends Controller
                     if( $taxesfees ) {
                         foreach ($taxesfees as $key => $item) { 
                             $price      = get_tax($total, $item->fee_type, $item->tax_fee_value);
-                            $tax        = $price ?? 0;
-
-                            
+                            $tax        = $price ?? 0;                            
 
                             \Log::info($tax);
                             $subtotal   = $subtotal + $tax; 
@@ -869,22 +1047,310 @@ class OrderController extends Controller
                     }
                 }
             }
-        }
-        $order->total_amount = $total;
-        $order->balance_amount =max($order->total_amount - ($order->booked_amount ?? 0), 0);// $total - $order->total_amount;
-        
-        if( !$order->save() )
-        return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Something went wrong!');
 
-        return redirect()->back()->withErrors($validator)->withInput()->with('success', 'Order has beend updated!');
+            $totalPaymentAmount = 0;
+            if ($request->paymentType) {
+                $existingPaymentIds = $order->payments->pluck('id')->toArray(); // Load existing payments
+                
+                foreach ($request->paymentType as $i => $type) {
+
+                    $paymentId       = $request->paymentId[$i] ?? null;
+                    $amount          = $request->amount[$i] ?? null;
+                    $collection_date = $request->collection_date[$i] ?? null;
+                    $transactionId   = $request->transactionId[$i] ?? null;
+
+                    // Skip empty rows
+                    if (empty($type) && empty($amount)) {
+                        continue;
+                    }
+
+                    // Add amount to total (only if valid) 
+                    if (!empty($amount)) { 
+                        $totalPaymentAmount += floatval($amount); 
+                    }
+
+                    if ($paymentId) {
+
+                        // REMOVE the ID from existing IDs list
+                        if (($key = array_search($paymentId, $existingPaymentIds)) !== false) {
+                            unset($existingPaymentIds[$key]);
+                        }
+
+                        // UPDATE existing row
+                        // OrderPayment::where('id', $paymentId)->update([
+                        //     'payment_type'   => $type,
+                        //     'transaction_id' => $request->transactionId[$i] ?? null,
+                        //     'collection_date'=> $request->date[$i] ?? null,
+                        //     'amount'         => $amount,
+                        //     'updated_at'     => now(),
+                        // ]);
+
+                    } else {
+                        // INSERT new row
+                        OrderPayment::create([
+                            'order_id'       => $order->id,
+                            'payment_type'   => $type,
+                            'transaction_id' => $transactionId,
+                            'collection_date'=> Carbon::parse($collection_date)->format('Y-m-d'),
+                            'currency'       => 'USD',
+                            'amount'         => $amount,
+                            'collection_type'=> 'Outside',
+                            'status'         => 'successful',
+                            'created_at'     => now(),
+                            'updated_at'     => now(),
+                        ]);
+                    }
+                }  
+                
+                // These are the payments that were NOT included in updated request
+                if (!empty($existingPaymentIds)) {
+                    OrderPayment::whereIn('id', $existingPaymentIds)->delete();
+                }
+            }
+        }
+
+        $balanceAmount = $total - $totalPaymentAmount;
+
+        $order->total_amount    = $total;
+        $order->balance_amount  = $balanceAmount;
+        $order->booked_amount  = $total - $balanceAmount;
+        
+        if( $order->save() ) {
+
+            // ===== Stripe Payment Handling =====
+            try {
+                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+                $customer = $order->customer;
+
+                // Check if customer already linked
+                if (!$order->stripe_customer_id) {
+                    $name = $customer->first_name.' '.$customer->last_name;
+                    $stripeCustomer = \Stripe\Customer::create([
+                        'name'  => $name,
+                        'email' => $customer->email,
+                        'phone' => $customer->phone,
+                    ]);
+                } else {
+                    $name = $customer->first_name.' '.$customer->last_name;
+                    $stripeCustomer = \Stripe\Customer::retrieve($order->stripe_customer_id);
+                }
+
+                $add_ccnow      = (int)$request->add_ccnow;
+                $charge_ccnow   = (int)$request->charge_ccnow;
+                $chargeAmount   = (float)$request->charge_ccnow_amount;
+
+                $metaData = [
+                    'bookedDate'    => $order->created_at,
+                    'orderId'       => $order->id,
+                    'orderNumber'   => $order->order_number,
+                    'tourName'      => $tour->title ?? 'Multiple Tours',
+                    'customerId'    => $customer->id,
+                    'customerEmail' => $customer->email,
+                    'customerName'  => $customer->first_name.' '.$customer->last_name,
+                    'planName'      => "TourBeez Plan",
+                    'status'        => 'Pending supplier',
+                    'totalAmount'   => $chargeAmount,
+                ];
+
+                //echo '<pre>'; print_r( $request->payment_intent_id ); echo '</pre>'; exit;
+
+                if ($chargeAmount > 0) {
+                    $order_actions = [];
+                    if ( $charge_ccnow ) {
+                        $pi = \Stripe\PaymentIntent::create([
+                            'customer'  => $stripeCustomer->id,
+                            'amount' => intval(round($chargeAmount * 100)),
+                            'currency' => $order->currency,
+                            'automatic_payment_methods' => [
+                                'enabled' => true,
+                                'allow_redirects' => 'never',  // 🔥 prevents Stripe from requiring return_url
+                            ],
+                            'receipt_email' => $customer->email,
+                            'capture_method' => 'manual',
+                            'description' => $tour->title,
+                            'statement_descriptor_suffix' => $order->order_number,
+                            'metadata'  => $metaData,
+                            'setup_future_usage'=> 'off_session',
+                        ]);
+                        $order->balance_amount  = max($balanceAmount - ($chargeAmount ?? 0), 0); 
+                        $order->booked_amount   = $order->booked_amount + $chargeAmount;
+                        $order->payment_status  = 1; // Paid
+                        $order->payment_method  = 'card';
+
+                        // ✅ If frontend sent payment_method_id, confirm & capture immediately
+                        if ($request->filled('payment_intent_id')) {
+                            $pi = \Stripe\PaymentIntent::retrieve($pi->id);
+                            $pi->confirm(['payment_method' => $request->payment_intent_id]);
+                            $pi->capture();
+
+                            $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_intent_id);
+
+                            $card = $paymentMethod->card;
+                            $brand  = $card->brand;          // visa, mastercard
+                            $last4  = $card->last4;          // 4242
+
+                            OrderPayment::create([
+                                'order_id'          => $order->id,
+                                'payment_intent_id' => $pi->id,
+                                'transaction_id'    => $pi->charges->data[0]->id ?? $pi->id,
+                                'payment_method'    => 'card',
+                                'payment_type'      => 'CREDITCARD',
+                                'collection_type'   => 'Inside',
+                                'collection_date'   => date('Y-m-d'),
+                                'card_brand'        => $brand,
+                                'card_last4'        => $last4,
+                                'amount'            => $chargeAmount,
+                                'currency'          => $order->currency,
+                                'status'            => 'succeeded',
+                                'action'            => 'manual_charge',
+                                'response_payload'  => json_encode($pi),
+                                'created_at'        => now(),
+                                'updated_at'        => now(),
+                            ]);
+
+                            // ===== Save OrderActions =====
+                            $order_actions = [
+                                [
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => Auth::id(),
+                                    'notes'            => "System attached new credit card $last4 ($brand) to this order",
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ],[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => Auth::id(),
+                                    'notes'            => "System charged credit card $last4 for $chargeAmount ".$order->currency. " Reference number is ".$pi->id,
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ]
+                            ];
+                        }
+                    }
+                    else if( $add_ccnow ) {
+                        // 2️⃣ Attach Payment Method to Customer
+                        $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_intent_id)
+                            ->attach(['customer' => $stripeCustomer->id]);
+
+                        // 3️⃣ Set this payment method as default
+                        \Stripe\Customer::update($stripeCustomer->id, [
+                            'invoice_settings' => [
+                                'default_payment_method' => $request->payment_intent_id,
+                            ]
+                        ]);
+
+
+                        $card = $paymentMethod->card;
+                        $brand  = $card->brand;          // visa, mastercard
+                        $last4  = $card->last4;          // 4242
+
+                        $order->balance_amount      = $balanceAmount; 
+                        $order->booked_amount       = 0;
+                        $order->payment_status      = 0; // Unpaid                        
+                        $order->payment_method_id   = $request->payment_intent_id;
+                        $order->payment_method      = 'card';
+
+                        OrderPayment::create([
+                            'order_id'          => $order->id,
+                            'payment_intent_id' => $request->payment_intent_id,
+                            'payment_type'      => 'CREDITCARD',
+                            'collection_type'   => 'Inside',
+                            'collection_date'   => date('Y-m-d'),
+                            'amount'            => $chargeAmount,
+                            'currency'          => $order->currency,
+                            'status'            => 'pending',
+                            'created_at'        => now(),
+                            'updated_at'        => now(),
+                        ]);
+
+                        // ===== Save OrderActions =====
+                        $order_actions = [
+                            [
+                                'order_id'         => $order->id,
+                                'performed_by'     => Auth::id(),
+                                'notes'            => "System attached new credit card $last4 ($brand) to this order",
+                                'created_at'       => now(),
+                                'updated_at'       => now()
+                            ]
+                        ];
+                    }
+                    else {
+                        $order->balance_amount      = $balanceAmount; 
+                        $order->booked_amount       = 0;
+                        $order->payment_status      = 0; // Unpaid  
+                        
+                        // ===== Save OrderActions =====
+                        $order_actions = [
+                            [
+                                'order_id'         => $order->id,
+                                'performed_by'     => Auth::id(),
+                                'notes'            => "Order updated for ".$tour->title." on ".$order->created_at->format('Y-m-d H:i:s'),
+                                'created_at'       => now(),
+                                'updated_at'       => now()
+                            ]
+                        ];
+                    }
+
+                    $order->save();
+
+                    OrderActions::insert($order_actions);
+
+                }
+
+                // Booking fee
+                $booking_fee = $request->booking_fee ?? 0;
+                if($booking_fee > 0 && get_setting('price_booking_fee')){
+                    $bookingFeeType = get_setting('tour_booking_fee_type');
+                    if($bookingFeeType == 'FIXED'){
+                        $booking_fee = get_setting('tour_booking_fee');
+                    } elseif($bookingFeeType == 'PERCENT') {
+                        $booking_fee = $order->total_amount * get_setting('tour_booking_fee')/100;
+                    }
+                }
+
+                $order->booking_fee = $booking_fee;
+                $order->stripe_customer_id = $stripeCustomer->id;
+                $order->save();
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Stripe Payment Error: '.$e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Payment setup failed: '.$e->getMessage()
+                ], 500);
+            }
+
+            $order_actions = [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => Auth::user()->name. " updated <a href='". route('admin.customers.edit', encrypt($customer->id)) ."'>".$customer->first_name ." ".$customer->last_name."'s</a> order",
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
+            OrderActions::insert($order_actions);
+
+            return redirect()->back()->withErrors($validator)->withInput()->with('success', 'Order has beend updated!');
+        }
+
+        return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Something went wrong!');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Order $order)
+    public function destroy($id)
     {
-        //
+
+        $order = Order::where('id', decrypt($id))->first();
+        // $tour->title .= '-deleted';
+        // $tour->slug .= '-deleted-' . Str::random(6);
+        // $tour->save();
+        if ($order->delete()) {
+            return redirect()->route('admin.orders.index')->with('success', 'Order info has been deleted successfull');
+        } else {
+            return back()->route('admin.orders.index')->with('error', 'Sorry! Something went wrong.');;
+        }
     }
 
     public function bulkDelete(Request $request)
@@ -902,17 +1368,14 @@ class OrderController extends Controller
 
     public function order_mail_send(Request $request)
     {
-
-        $cc_mail   = $request->input('cc_mail');
-        $bcc_mail   = $request->input('bcc_mail');
+        $cc_mail = $request->input('cc_mail');
+        $bcc_mail= $request->input('bcc_mail');
         $email   = $request->input('email');
         $subject = $request->input('subject');
         $header  = $request->input('header');
         $body    = $request->input('body');
         $footer  = $request->input('footer');
         $event   = $request->input('event');
-
-
 
         if (env('MAIL_FROM_ADDRESS')) {
             $array = [
@@ -928,14 +1391,11 @@ class OrderController extends Controller
 
                 // Explicitly use Mailgun mailer
                 $mailer = Mail::mailer('mailgun');
-                // $mailer = Mail::mailer();
 
                 // Send email and capture message inf
-
                 $sentMessage = $mailer->to($email);
                 
-                if( $cc_mail ) {
-                    
+                if( $cc_mail ) {                    
                     $sentMessage->cc(explode(',', $cc_mail));
                 }
                 if( $bcc_mail ) {
@@ -953,8 +1413,6 @@ class OrderController extends Controller
                     }
                 }
 
-
-
                 // Get order_id from request
                 $order_id = $request->input('order_id') ?? optional($request->order)->id;
 
@@ -968,6 +1426,15 @@ class OrderController extends Controller
                     'status'     => 'sent',
                     'message_id' => $messageId, // ✅ store for webhook tracking
                 ]);
+
+                $order_actions = [
+                    'order_id'         => $order_id,
+                    'performed_by'     => Auth::id(),
+                    'notes'            => Auth::user()->name." sent order details by email to {$email}",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ];
+                OrderActions::insert($order_actions);
 
                 return response()->json(['status' => 'success', 'message_id' => $messageId]);
             } catch (\Exception $e) {
@@ -1429,27 +1896,54 @@ class OrderController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
+
         $order = Order::findOrFail($id);
         $order->order_status = $request->status;
+
+
+        $order_actions = [
+            [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => Auth::user()->name . " Updated the status to $request->status in this order",
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ]
+        ];
+        OrderActions::insert($order_actions);
         
-        if($request->status == 'Confirmed' ){
+        if($request->status == 'Confirmed234' ){
+
+            $order->payment_status == 1;
+                    $order->save();
 
             // dd($order->order_status, $request->status, $order->payment_status);
             if($order->payment_status == 3){
 
-                // $confirmPayment = self::confirmPayment($order->id, $order->adv_deposite, $order->booked_amount);
+                $confirmPayment = self::confirmPayment($order->id, $order->adv_deposite, $order->booked_amount);
 
-                // $confirmPayment = $confirmPayment->getData();
+                $confirmPayment = $confirmPayment->getData();
                 
-                // if($confirmPayment->status === 'succeeded'){
+                if($confirmPayment->status === 'succeeded'){
                     
                     $order->payment_status == 1;
                     $order->save();
+                    $order_actions = [
+                        [
+                            'order_id'         => $order->id,
+                            'performed_by'     => Auth::id(),
+                            'notes'            => "Payment $order->booked_amount is captured",
+                            'created_at'       => now(),
+                            'updated_at'       => now()
+                        ]
+                    ];
+                    OrderActions::insert($order_actions);
+
                     return response()->json(['success' => true, 'message' => 'Order confirmed']);
 
-                // } else{
-                //     return response()->json(['success' => false, 'message' => $confirmPayment->message]);
-                // }
+                } else{
+                    return response()->json(['success' => false, 'message' => $confirmPayment->message]);
+                }
             } elseif($order->payment_status == 5) {
                 
                 return response()->json(['success' => true, 'message' => 'Please enter payment details before confirming the order']);
@@ -1468,7 +1962,7 @@ class OrderController extends Controller
             
         }
 
-        else if ($request->status == 'Cancelled') {
+        else if ($request->status == 'Cancelled234324') {
 
             // Only cancel if payment not captured yet
             if ($order->payment_status == 3) { // 3 = authorized only
@@ -1497,6 +1991,17 @@ class OrderController extends Controller
                     $order->payment_status = 7;
                     $order->booked_amount = 0;
                     $order->save();
+
+                    $order_actions = [
+                        [
+                            'order_id'         => $order->id,
+                            'performed_by'     => Auth::id(),
+                            'notes'            => "Uncaptured Payment is Cancelled",
+                            'created_at'       => now(),
+                            'updated_at'       => now()
+                        ]
+                    ];
+                    OrderActions::insert($order_actions);
 
                     return response()->json([
                         'success' => true,
@@ -1793,10 +2298,15 @@ class OrderController extends Controller
 
             $customer = User::find($order->user_id);
             if (!$customer) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Customer not found.'
-                ], 404);    
+
+                $customer = $order->customer;
+                if(!$customer){
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Customer not found.'
+                    ], 404);
+                }
+                    
             }
 
             $metaData = [
@@ -1845,6 +2355,9 @@ class OrderController extends Controller
                 'payment_intent_id' => $newIntent->id,
                 'transaction_id'    => $newIntent->charges->data[0]->id ?? $newIntent->id,
                 'payment_method'    => 'card',
+                'payment_type'      => 'CREDITCARD',
+                'collection_type'   => 'Inside',
+                'collection_date'   => now(),
                 'card_brand'        => $brand,
                 'card_last4'        => $last4,
                 'amount'            => $chargeAmount,
@@ -1853,6 +2366,15 @@ class OrderController extends Controller
                 'action'            => 'manual_charge',
                 'response_payload'  => json_encode($newIntent),
             ]);
+
+            $order_actions = [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => Auth::user()->name ." charged {$order->currency} {$chargeAmount} on credit card XXXXXXXXXXXX{$last4}. Reference number is {$newIntent->id}",
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
+            OrderActions::insert($order_actions);
 
             DB::commit();
 
@@ -1892,6 +2414,7 @@ class OrderController extends Controller
 
     public function refundPayment(Request $request, Order $order)
     {
+
         $request->validate([
             'payment_id' => 'required|integer',
             'amount' => 'required|numeric|min:0.5',
@@ -1905,6 +2428,10 @@ class OrderController extends Controller
         $remainingRefundable = $payment->amount - $alreadyRefunded;
 
         if ($remainingRefundable <= 0) {
+             $payment->update([
+                'status' => 'refunded',
+            ]);
+
             return response()->json(['success' => false, 'message' => 'This payment has already been fully refunded.']);
         }
 
@@ -1932,9 +2459,34 @@ class OrderController extends Controller
                 'status' => $newStatus,
                 'refund_id' => $refund->id ?? null,
                 'refunded_at' => now(),
-                'refund_amount' => $newRefundTotal, // cumulative refund
+                'refund_amount' => $payment->amount - $newRefundTotal, // cumulative refund
                 'refund_reason' => $request->reason,
             ]);
+
+            // Save payment record
+            OrderPayment::create([
+                'order_id'          => $order->id,
+                'payment_intent_id' => $refund->id,
+                'transaction_id'    => $refund->id,
+                'payment_method'    => 'card',
+                'payment_type'      => 'REFUND',
+                'collection_type'   => 'Inside',
+                'collection_date'   => now(),
+                'amount'            => $newRefundTotal,
+                'currency'          => $order->currency,
+                'status'            => 'refunded',
+                'action'            => 'manual_charge',
+                'response_payload'  => json_encode($refund),
+            ]);
+
+            $order_actions = [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => "Refund of payment (STRIPE: {$refund->id}) has been processed by ".Auth::user()->name.". Refund amount is : {$order->currency} {$newRefundTotal} ",
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
+            OrderActions::insert($order_actions);
 
             // Update order amounts
             $order->booked_amount -= $request->amount;
@@ -1949,7 +2501,8 @@ class OrderController extends Controller
             ]);
 
         } catch (\Stripe\Exception\ApiErrorException $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+
+            return response()->json(['success' => false, 'message' => $e->getMessage() . "weew"]);
         }
     }
 
@@ -2364,122 +2917,413 @@ class OrderController extends Controller
         }
     }
 
-    public function confirmPayment($orderId, $action_name = 'full', $amount)
-    {
-        DB::beginTransaction();
+    // public function confirmPayment23432($orderId, $action_name = 'full', $amount)
+    // {
+    //     DB::beginTransaction();
 
-        try {
-            $order = Order::findOrFail($orderId);
+    //     try {
+    //         $order = Order::findOrFail($orderId);
 
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+    //         \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
-            $intentId = $order->payment_intent_id;
-            $customerId = $order->stripe_customer_id;
-            $paymentMethodId = null;
+    //         $intentId = $order->payment_intent_id;
+    //         $customerId = $order->stripe_customer_id;
+    //         $paymentMethodId = null;
 
-            if (!$intentId) {
-                throw new \Exception("No payment intent found for this order.");
-            }
+    //         if (!$intentId) {
+    //             throw new \Exception("No payment intent found for this order.");
+    //         }
 
-            // Retrieve existing payment intent
-            $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+    //         // Retrieve existing payment intent
+    //         // $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
 
-            // ----------------------------------------------------
-            // CASE 1: Already captured
-            // ----------------------------------------------------
-            if ($paymentIntent->status === 'succeeded') {
-                return response()->json([
-                    'success' => false,
-                    'message' => "This payment has already been captured."
-                ], 400);
-            }
+    //         $paymentIntent =  \Stripe\PaymentIntent::retrieve([
+    //             'id' => $intentId,
+    //             'expand' => ['charges.data.payment_method_details']
+    //         ]);
 
-            // ----------------------------------------------------
-            // CASE 2: Intent exists but not captured (requires_capture)
-            // ----------------------------------------------------
-            if ($paymentIntent->status === 'requires_capture') {
 
-                // stripe expects integer cents
-                $captureAmount = (int) ($amount * 100);
+            
 
-                // call capture on the retrieved instance (NOT statically)
-                $captured = $paymentIntent->capture([
-                    'amount_to_capture' => $captureAmount
-                ]);
+    //         // ----------------------------------------------------
+    //         // CASE 1: Already captured
+    //         // ----------------------------------------------------
+    //         if ($paymentIntent->status === 'succeeded') {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => "This payment has already been captured."
+    //             ], 400);
+    //         }
 
-                // Save record
-                OrderPayment::create([
-                    'order_id' => $order->id,
-                    'payment_intent_id' => $captured->id,
-                    'transaction_id' => $captured->charges->data[0]->id ?? null,
-                    'amount' => $amount,
-                    'currency' => $captured->currency ?? $order->currency,
-                    'status' => 'succeeded',
-                    'action' => $action_name,
-                    'response_payload' => json_encode($captured)
-                ]);
+    //         // ----------------------------------------------------
+    //         // CASE 2: Intent exists but not captured (requires_capture)
+    //         // ----------------------------------------------------
+    //         // if ($paymentIntent->status === 'requires_capture') {
 
-                // Update order values
-                // $order->booked_amount += $amount;
-                // $order->balance_amount = max(0, $order->total_amount - $order->booked_amount);
-                $order->payment_status = $order->balance_amount <= 0 ? 1 : 0;
-                $order->save();
+    //         //     // stripe expects integer cents
+    //         //     $captureAmount = (int) ($amount * 100);
 
-                DB::commit();
+    //         //     // call capture on the retrieved instance (NOT statically)
+    //         //     $captured = $paymentIntent->capture([
+    //         //         'amount_to_capture' => $captureAmount
+    //         //     ]);
+    //         //     if (!empty($paymentIntent->charges->data)) {
+    //         //         $charge = $paymentIntent->charges->data[0];
 
-                return response()->json([
-                    'success' => true,
-                    'status' => 'succeeded',
-                    'message' => "Payment captured successfully.",
-                    'data' => $captured
-                ]);
-            }
+    //         //         if (isset($charge->payment_method_details->card)) {
+    //         //             $card = $charge->payment_method_details->card;
 
-            // ----------------------------------------------------
-            // CASE 3: Intent is setup-intent (seti_xxx) or invalid → create new PI
-            // ----------------------------------------------------
-            if (Str::startsWith($intentId, 'seti_')) {
-                $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
-                $paymentMethodId = $setupIntent->payment_method;
-            } else {
-                $paymentMethodId = $paymentIntent->payment_method;
-            }
+    //         //             OrderPayment::where('payment_intent_id', $paymentIntent->id)
+    //         //                 ->update([
+    //         //                     'transaction_id' => $charge->id,
+    //         //                     'card_brand' => $card->brand,
+    //         //                     'card_last4' => $card->last4,
+    //         //                     'status' => $paymentIntent->status === 'requires_capture'
+    //         //                                 ? 'uncaptured'
+    //         //                                 : 'succeeded',
+    //         //                 ]);
+    //         //         }
+    //         //     }
+    //         //     // Save record
+    //         //     OrderPayment::create([
+    //         //         'order_id' => $order->id,
+    //         //         'payment_intent_id' => $captured->id,
+    //         //         'transaction_id' => $captured->charges->data[0]->id ?? null,
+    //         //         'amount' => $amount,
+    //         //         'currency' => $captured->currency ?? $order->currency,
+    //         //         'status' => 'succeeded',
+    //         //         'action' => $action_name,
+    //         //         'response_payload' => json_encode($captured)
+    //         //     ]);
 
-            if (!$paymentMethodId) {
-                throw new \Exception("No payment method found for this customer.");
-            }
 
-            // Create NEW payment intent because no valid uncaptured PI exists
-            $newIntent = \Stripe\PaymentIntent::create([
-                'amount'               => (int) ($amount * 100),
-                'currency'             => $order->currency,
-                'customer'             => $customerId,
-                'payment_method'       => $paymentMethodId,
-                'off_session'          => true,
-                'confirm'              => true,
-                'description'          => "Charge for Order #{$order->id}",
-            ]);
 
-            $order->payment_intent_id = $newIntent->id;
+
+
+    //         //     // Update order values
+    //         //     // $order->booked_amount += $amount;
+    //         //     // $order->balance_amount = max(0, $order->total_amount - $order->booked_amount);
+    //         //     $order->payment_status = $order->balance_amount <= 0 ? 1 : 0;
+    //         //     $order->save();
+
+    //         //     DB::commit();
+
+    //         //     return response()->json([
+    //         //         'success' => true,
+    //         //         'status' => 'succeeded',
+    //         //         'message' => "Payment captured successfully.",
+    //         //         'data' => $captured
+    //         //     ]);
+    //         // }
+
+
+    //         try {
+    //     // Stripe expects amount in cents
+    //     $captureAmount = (int) round($amount * 100);
+
+    //     // Capture payment
+    //     $capturedIntent = $paymentIntent->capture([
+    //         'amount_to_capture' => $captureAmount,
+    //     ]);
+
+    //     // Defaults
+    //     $transactionId = null;
+    //     $cardBrand = null;
+    //     $cardLast4 = null;
+
+    //     // Extract charge & card details AFTER capture
+    //     if (!empty($capturedIntent->charges->data)) {
+    //         $charge = $capturedIntent->charges->data[0];
+    //         $transactionId = $charge->id;
+
+    //         if (isset($charge->payment_method_details->card)) {
+    //             $card = $charge->payment_method_details->card;
+    //             $cardBrand = $card->brand;
+    //             $cardLast4 = $card->last4;
+    //         }
+    //     }
+
+    //     // ✅ CREATE new payment record
+    //     OrderPayment::create([
+    //         'order_id'          => $order->id,
+    //         'payment_intent_id' => $capturedIntent->id,
+    //         'transaction_id'    => $transactionId,
+    //         'payment_method'    => 'card',
+    //         'payment_type'      => 'CREDITCARD',
+    //         'collection_type'   => 'Inside',
+    //         'collection_date'   => now()->toDateString(),
+    //         'card_brand'        => $cardBrand,
+    //         'card_last4'        => $cardLast4,
+    //         'amount'            => $amount,
+    //         'currency'          => $capturedIntent->currency ?? $order->currency,
+    //         'status'            => 'succeeded',
+    //         'action'            => $action_name,
+    //         'response_payload'  => json_encode($capturedIntent),
+    //         'created_at'        => now(),
+    //         'updated_at'        => now(),
+    //     ]);
+
+    //     // Update order status
+    //     // $order->booked_amount += $amount;
+    //     // $order->balance_amount = max(0, $order->total_amount - $order->booked_amount);
+    //     $order->payment_status = $order->balance_amount <= 0 ? 1 : 0;
+    //     $order->save();
+
+    //     DB::commit();
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'status'  => 'succeeded',
+    //         'message' => 'Payment captured successfully.',
+    //         'data'    => $capturedIntent,
+    //     ]);
+
+    //         // ----------------------------------------------------
+    //         // CASE 3: Intent is setup-intent (seti_xxx) or invalid → create new PI
+    //         // ----------------------------------------------------
+    //         if (Str::startsWith($intentId, 'seti_')) {
+    //             $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
+    //             $paymentMethodId = $setupIntent->payment_method;
+    //         } else {
+    //             $paymentMethodId = $paymentIntent->payment_method;
+    //         }
+
+    //         if (!$paymentMethodId) {
+    //             throw new \Exception("No payment method found for this customer.");
+    //         }
+
+    //         // Create NEW payment intent because no valid uncaptured PI exists
+    //         $newIntent = \Stripe\PaymentIntent::create([
+    //             'amount'               => (int) ($amount * 100),
+    //             'currency'             => $order->currency,
+    //             'customer'             => $customerId,
+    //             'payment_method'       => $paymentMethodId,
+    //             'off_session'          => true,
+    //             'confirm'              => true,
+    //             'description'          => "Charge for Order #{$order->id}",
+    //         ]);
+
+    //         $order->payment_intent_id = $newIntent->id;
+    //         $order->save();
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => "Payment captured.",
+    //             'data'    => $newIntent
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => $e->getMessage()
+    //         ], 400);
+    //     }
+    // }
+
+     public function captureInitialPayment(Request $request, $orderId)
+     {
+        $order = Order::findOrFail($orderId);
+
+        $uncaptureAmount = $request->amount;
+        $confirmPayment = self::confirmPayment($order->id, $order->adv_deposite, $uncaptureAmount);
+        $confirmPayment = $confirmPayment->getData();
+          
+        if($confirmPayment->status === 'succeeded'){
+            
+            $order->payment_status = 1;
             $order->save();
+            $order_actions = [
+                [
+                    'order_id'         => $order->id,
+                    'performed_by'     => Auth::id(),
+                    'notes'            => "Capture of payment has been processed by ".Auth::user()->name.". Capture amount is : {$order->currency} {$uncaptureAmount} ",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ]
+            ];
+            OrderActions::insert($order_actions);
 
+            return response()->json(['success' => true, 'message' => 'Payment is captured']);
+
+        } else if($confirmPayment->status === 'already_capture'){
+            $order->payment_status = 1;
+            $order->save();
+            
+        }
+        return response()->json(['success' => false, 'message' => $confirmPayment->message]);
+     }
+
+    public function cancelInitialPayment($orderId)
+     {
+        $order = Order::findOrFail($orderId);
+
+
+
+        $cancel = self::cancelUncapturedAmount($order->id);
+
+                $response = $cancel->getData();
+
+                if ($response->success) {
+
+                    // Update to payment_status = 0 (payment cancelled)
+                    $order->payment_status = 7;
+                    $order->booked_amount = 0;
+                    $order->save();
+
+                    $order_actions = [
+                        [
+                            'order_id'         => $order->id,
+                            'performed_by'     => Auth::id(),
+                            'notes'            => "Uncaptured Payment is Cancelled",
+                            'created_at'       => now(),
+                            'updated_at'       => now()
+                        ]
+                    ];
+                    OrderActions::insert($order_actions);
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Payment authorization cancelled successfully.'
+                    ]);
+
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $response->message
+                    ]);
+                }
+
+
+        } 
+
+    public function confirmPayment($orderId, $action_name = 'full', $amount)
+{
+    DB::beginTransaction();
+
+    try {
+        $order = Order::findOrFail($orderId);
+
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        $intentId = $order->payment_intent_id;
+        $customerId = $order->stripe_customer_id;
+
+        if (!$intentId) {
+            throw new \Exception("No payment intent found for this order.");
+        }
+
+        // Retrieve payment intent
+        $paymentIntent = \Stripe\PaymentIntent::retrieve([
+            'id' => $intentId
+        ]);
+
+        // ----------------------------------------------------
+        // CASE 1: Already captured
+        // ----------------------------------------------------
+        if ($paymentIntent->status === 'succeeded') {
+
+            $orderPayment = OrderPayment::where('payment_intent_id', $paymentIntent->id)->first();
+            $orderPayment->status = 'succeeded';
+            $orderPayment->save();
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => "Payment captured.",
-                'data'    => $newIntent
-            ]);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
 
             return response()->json([
+                'status'  => 'already_capture',
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'This payment has already been captured.'
             ], 400);
         }
+
+        // ----------------------------------------------------
+        // CAPTURE PAYMENT
+        // ----------------------------------------------------
+        $captureAmount = (int) round($amount * 100);
+        
+        $capturedIntent = $paymentIntent->capture([
+            'amount_to_capture' => $captureAmount,
+        ]);
+
+        // ----------------------------------------------------
+        // CARD DETAILS (FIXED & RELIABLE)
+        // ----------------------------------------------------
+        $transactionId = $capturedIntent->latest_charge ?? null;
+        $cardBrand = null;
+        $cardLast4 = null;
+
+        if ($transactionId) {
+            $charge = \Stripe\Charge::retrieve([
+                'id' => $transactionId,
+                'expand' => ['payment_method_details.card']
+            ]);
+
+            if (
+                isset($charge->payment_method_details) &&
+                isset($charge->payment_method_details->card)
+            ) {
+                $cardBrand = $charge->payment_method_details->card->brand ?? null;
+                $cardLast4 = $charge->payment_method_details->card->last4 ?? null;
+            }
+        }
+
+        
+
+        OrderPayment::updateOrCreate(
+        // ✅ Unique condition
+        [
+            'payment_intent_id' => $capturedIntent->id,
+        ],
+        // ✅ Data to update or insert
+        [
+            'order_id'         => $order->id,
+            'transaction_id'   => $transactionId,
+            'payment_method'   => 'card',
+            
+            'collection_type'  => 'Inside',
+            'collection_date'  => now()->toDateString(),
+            'card_brand'       => $cardBrand,
+            'card_last4'       => $cardLast4,
+            'amount'           => $amount,
+            'currency'         => $capturedIntent->currency ?? $order->currency,
+            'status'           => 'succeeded',
+            'action'           => $action_name,
+            'response_payload' => json_encode($capturedIntent),
+            'updated_at'       => now(),
+        ]
+    );
+
+        // ----------------------------------------------------
+        // UPDATE ORDER STATUS
+        // ----------------------------------------------------
+        $order->payment_status = $order->balance_amount <= 0 ? 1 : 0;
+        $order->save();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'status'  => 'succeeded',
+            'message' => 'Payment captured successfully.',
+            'data'    => $capturedIntent,
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'success' => false,
+            'status'  => 'failed',
+            'message' => $e->getMessage()
+        ], 400);
     }
+}
+
+
 
     public function confirmInitialPayment($orderId)
     {
@@ -2719,14 +3563,37 @@ class OrderController extends Controller
             
             $payment->update([
                 'refund_amount' => $alreadyRefunded + $refundNow,
-                'refunded_at' => now(),
-                'refund_id' => $refund->id,
-                'status' => ($alreadyRefunded + $refundNow) >= $payment->amount ?
-                            'refunded' : 'partial_refunded'
+                'refunded_at'   => now(),
+                'refund_id'     => $refund->id,
+                'status'        => ($alreadyRefunded + $refundNow) >= $payment->amount ? 'refunded' : 'partial_refunded'
             ]);
 
             $remaining -= $refundNow;
         }
+
+        OrderPayment::create([
+            'order_id'          => $order->id,
+            'payment_intent_id' => $refund->id,
+            'transaction_id'    => $refund->id,
+            'payment_method'    => 'card',
+            'payment_type'      => 'REFUND',
+            'collection_type'   => 'Inside',
+            'collection_date'   => now(),
+            'amount'            => $refundTarget,
+            'currency'          => $order->currency,
+            'status'            => 'refunded',
+            'action'            => 'manual_charge',
+            'response_payload'  => json_encode($refund),
+        ]);
+
+        $order_actions = [
+            'order_id'         => $order->id,
+            'performed_by'     => Auth::id(),
+            'notes'            => "Refund of payment (STRIPE: {$refund->id}) has been processed by ".Auth::user()->name.". Refund amount is : {$order->currency} {$refundTarget}",
+            'created_at'       => now(),
+            'updated_at'       => now()
+        ];
+        OrderActions::insert($order_actions);
         
         // Update order totals
         $order->booked_amount -= $refundTarget;
@@ -2736,6 +3603,131 @@ class OrderController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Refunded $refundTarget successfully."
+        ]);
+    }
+
+    public function removeCard(Order $order)
+    {
+        try {
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+
+            $paymentIntentId = $order->payment_intent_id;
+
+            if (!$paymentIntentId) {
+                return response()->json(['message' => 'No card found'], 400);
+            }
+
+            // CASE 1: Stored as PaymentMethod directly (pm_xxx)
+            if (str_starts_with($paymentIntentId, 'pm_')) {
+                $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentIntentId);
+                $paymentMethod->detach();
+            }
+
+            // CASE 2: Stored as PaymentIntent (pi_xxx)
+            if (str_starts_with($paymentIntentId, 'pi_')) {
+                $intent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
+
+                if ($intent->payment_method) {
+                    $paymentMethod = \Stripe\PaymentMethod::retrieve($intent->payment_method);
+                    $paymentMethod->detach();
+                }
+            }
+
+            // Clean DB references
+            $order->update([
+                'payment_intent_id' => null
+            ]);
+
+            // if ($order->latestPayment) {
+            //     $order->latestPayment->update([
+            //         'card_last4' => null,
+            //         'card_brand' => null,
+            //     ]);
+            // }
+            $order_actions = [
+                    'order_id'         => $order->id,
+                    'performed_by'     => Auth::id(),
+                    'notes'            => "Credit card removed successfully has been processed by " . Auth::user()->name,
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ];
+            OrderActions::insert($order_actions);
+
+            return response()->json([
+                'message' => 'Credit card removed successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function addCard(Request $request, Order $order)
+    {
+        $request->validate([
+            'payment_method' => 'required|string'
+        ]);
+
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        // Ensure Stripe customer exists
+        if (
+            empty($order->stripe_customer_id) ||
+            !str_starts_with($order->stripe_customer_id, 'cus_')
+        ) {
+            $customer = \Stripe\Customer::create([
+                'name'  => $order->customer?->name,
+                'email' => $order->customer?->email,
+            ]);
+
+            $order->update([
+                'stripe_customer_id' => $customer->id
+            ]);
+        }
+
+        // Retrieve PaymentMethod
+        $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_method);
+
+        // Attach card to SAME customer (FIXED)
+        $paymentMethod->attach([
+            'customer' => $order->stripe_customer_id
+        ]);
+
+        // Set as default card
+        \Stripe\Customer::update($order->stripe_customer_id, [
+            'invoice_settings' => [
+                'default_payment_method' => $paymentMethod->id
+            ]
+        ]);
+
+        // Store minimal info for UI
+        $order->update([
+            'payment_intent_id' => $paymentMethod->id
+        ]);
+
+        $order->payments()->create([
+            'payment_type'   => 'CREDITCARD',
+            'transaction_id' => $paymentMethod->id,
+            'card_last4'     => $paymentMethod->card->last4,
+            'card_brand'     => $paymentMethod->card->brand,
+            'amount'         => 0,
+            'currency'       => 'USD',
+            'collection_type'=> 'Inside'
+        ]);
+        $order_actions = [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => "Credit card ({{ $paymentMethod->card->last4 }})   ({{ $paymentMethod->card->brand }}) added successfully has been processed by " . Auth::user()->name,
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
+        OrderActions::insert($order_actions);
+
+        return response()->json([
+            'message' => 'Card added successfully to this customer'
         ]);
     }
 

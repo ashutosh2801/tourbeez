@@ -160,20 +160,20 @@
 @endsection
 
 @php
-    $statuses = config('constants.order_statuses');
+$statuses = config('constants.order_statuses');
+$expectEmails = ['order_pending', 'payment_receipt'];
 
-    $expectEmails = ['order_pending', 'payment_receipt'];
-    
+
 @endphp
 
-    <form action="{{ route('admin.orders.update',$order->id) }}" method="POST">
+    <form id="orderForm" action="{{ route('admin.orders.update',$order->id) }}" method="POST">
     @method('PUT')
     @csrf
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
     <input type="hidden" name="order_number" id="order_number" value="{{ $order->order_number }}" /> 
 
 
-    <div class="card card-primary rounded-lg-custom border order-edit-head">
+    <div class="card card-primary rounded-lg-custom border order-edit-head1">
         <div class="card-header">
             <div class="row">
                 <div class="col-md-9">
@@ -181,7 +181,7 @@
                 </div>
                 <!-- <div class="col-md-3 {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}">
                     <button class="btn charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                        Charge now
+                        Charge Now
                     </button>
                 </div> -->
             </div>
@@ -197,9 +197,9 @@
                             <div class="sale-num">
                                 <p>Balance</p>
                                 <button type="button" class="btn btn-balance dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    @if($order->payment_status ==3)
+                                    @if($order->payment_status === 3)
 
-                                        <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</strong>
+                                        <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
                                     @else
 
                                         <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
@@ -212,8 +212,17 @@
                                     @if($order->payment_status ==3)
                                         <li class="payment-details-breakdown--item">
                                             <strong class="payment-details-breakdown--text">Uncaptured</strong>
-                                            <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
+                                            <!-- <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong> -->
+
+                                            <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
+
                                         </li>
+
+                                        <li class="payment-details-breakdown--item">
+                                            <strong class="payment-details-breakdown--text">Paid</strong>
+                                            <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount'), $order->currency) }}</strong>
+                                        </li>
+                                        
                                     @else
                                         <li class="payment-details-breakdown--item">
                                             <strong class="payment-details-breakdown--text">Paid</strong>
@@ -227,12 +236,12 @@
                                     </li>
                                     <li class="payment-details-breakdown--item">
                                         <strong class="payment-details-breakdown--text">Refunded</strong>
-                                        <strong class="payment-details-breakdown--text">{{  price_format_with_currency(0, $order->currency) }}</strong>
+                                        <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'refunded')->sum('refund_amount'), $order->currency) }}</strong>
                                     </li>
                                     @if($order->payment_status == 3)
                                         <li class="payment-details-breakdown--item">
                                         <strong class="payment-details-breakdown--text">Balance</strong>
-                                            <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</strong>
+                                            <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
                                         </li>
 
                                     @else
@@ -389,7 +398,7 @@
                         <div class="card-header bg-secondary py-0" id="headingTwo">
                             <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-right"></i> Tour Details</button>
                         </div>
-                        <div id="collapseTwo" class="collapse " aria-labelledby="headingTwo" data-parent="#accordionExample">
+                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
                             <div class="card-body">                               
                                 
                                 <div id="tour_all">
@@ -402,53 +411,20 @@
                                     @endphp
                                     <div id="{{ $row_id }}" style="border:1px solid #eaecef;">
                                         <input type="hidden" name="tour_id[]" value="{{ $order_tour->tour_id }}" />    
-                                        <!-- <table class="table">
-                                        <tr>
-                                                <td width="600"><h3 class="text-lg">{{ $order_tour->tour?->title }}</h3></td>
-                                                <td class="text-right" width="200">
-                                                    <div class="input-group">
-                                                        <input type="text" class="aiz-date-range form-control" id="tour_startdate" name="tour_startdate[]" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="{{ $order_tour->tour_date }}">
-                                                        <div class="input-group-append">
-                                                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="text-right" width="200">
-                                                    <div class="input-group">
-
-
-                                                        <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="{{ $order_tour->tour_time }}" class="form-control aiz-time-picker" data-minute-step="1"> 
-                                                        <div class="input-group-prepend">
-                                                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                                        </div>                       
-                                                    </div>
-                                                </td>
-                                                {{-- <td class="text-right" width="200">
-                                                    <div class="input-group">
-                                                        <div class="input-group-prepend">
-                                                            <span class="input-group-text">$</span>
-                                                        </div>                       
-                                                        <input type="text" placeholder="99.99" name="tour_price[]" id="tour_price" value="{{ $order_tour->total_amount }}" class="form-control"> 
-                                                    </div>
-                                                </td> --}}
-                                                <td class="text-right">
-                                                    <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button>
-                                                    <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
-                                                </td>
-                                            </tr> 
-                                        </table> -->
+                                        
                                         <div class="table-viewport">
                                             <table class="table">
                                                 <tr id="row_{{ $row_id }}">
                                                     <td width="600"><h3 class="text-lg">{{ $order_tour->tour?->title }}</h3></td>
 
-                                                    <td class="text-right" width="200">
+                                                    <td class="text-right" width="230">
                                                         <div class="input-group">
                                                             <input type="text"
                                                                 class="aiz-date-range form-control tour_startdate"
                                                                 name="tour_startdate[]"
                                                                 placeholder="Select Date"
                                                                 data-single="true"
+                                                                data-format="ddd MMM DD, YYYY"
                                                                 data-show-dropdown="true"
                                                                 value="{{ $order_tour->tour_date }}">
                                                             <div class="input-group-append">
@@ -521,7 +497,7 @@
                                                                     <input type="hidden" name="tour_pricing_type_{{$_tourId}}[]" value="{{ $order_tour->price_type }}" /> 
                                                                     <input type="hidden" name="tour_pricing_min_{{$_tourId}}[]" value="{{$pricing->quantity_used}}">
                                                                 </td>
-                                                                <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency, $order->currency) }})</td>
+                                                                <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency) }})</td>
                                                             </tr>
                                                             @endforeach
                                                             @endif
@@ -585,15 +561,8 @@
                                                     <td>{{ $item->label }} ({{ taxes_format($item->fee_type, $item->tax_fee_value) }})</td>
                                                     <td class="text-right tax-amount">{{ price_format_with_currency($tax, $order->currency) }}</td>
                                                 </tr>
-
-                                                
-
-                                                
                                                 @endforeach
                                                 @endif
-
-                                                
-
                                                 <tr>
                                                     <th>Total </th>
                                                     <th class="text-right subtotal-box">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
@@ -646,42 +615,11 @@
                         <div class="card-header bg-secondary py-0" id="heading4">
                                 <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
                         </div>
-                        <div id="collapse4" class="collapse " aria-labelledby="heading4" data-parent="#accordionExample">
+                        <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
                                  <div style="border:1px solid #eaecef;">
                                     <table class="table">
-                                        <!-- <tr>
-                                            <td><b>Tour Guest</b> </td>
-                                            <td class="text-right">{{ $order->order_tour->number_of_guests }} </td>
-                                        </tr>
                                         
-                                        <tr>
-                                            <td><b>Category</b></td>
-                                            <td class="text-right">{{ $order->tour['catogory'] ?? '-' }}</td>
-                                        </tr>
-
-                                        
-                                        <tr>
-                                            <td><b>Tour Types</b></td>
-                                            <td class="text-right">{{ $order->tour->category->name ?? '-' }}</td>
-                                        </tr>
-                                        
-                                        <tr>
-                                            <td><b>Price Type</b></td>
-                                            <td class="text-right">{{ snakeToWords($order->tour->price_type)  ?? '-' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><b>Country</b></td>
-                                            <td class="text-right">{{ $order->tour->location->country->name ?? '-' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><b>State</b></td>
-                                            <td class="text-right">{{ $order->tour->location->state->name ?? '-' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><b>City</b></td>
-                                            <td class="text-right">{{  $order->tour->location->city->name ?? '-' }}</td>
-                                        </tr> -->
 
                                         @php
                                             $pickName = '';
@@ -723,175 +661,461 @@
                         </div>
                     </div>
 
-                     <!-- <div class="card  {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}"> -->
+                    <!-- ================= Customer Payment ================= -->
                     <div class="card payment-details">
                         <div class="card-header bg-secondary py-0" id="headingThree">
-                                <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseThree"><i class="fa fa-angle-right"></i> Payment Details</button>
+                            <button type="button" class="btn btn-link collapsed py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapseThree">
+                                <i class="fa fa-angle-right"></i> Customer Payment
+                            </button>                     
                         </div>
 
-                        <div id="collapseThree" class="collapse " aria-labelledby="headingThree" data-parent="#accordionExample">
+                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+                            @php $totalPaid = 0; @endphp
+                            @foreach ($order->payments as $payment)
+                                @php
+                                    if($payment->amount > 0 && $payment->payment_type === 'REFUND'){
+                                        $totalPaid = $totalPaid - $payment->amount;
+                                    }
+                                    else {
+                                        $totalPaid = $totalPaid + $payment->amount;
+                                    }
+                                @endphp
+                            @endforeach
+
+                            <div class="card-total bg-light p-3 mb-3 ">
+                                Total: <span id="totalPayment1">{{ price_format_with_currency((float)$order->payments->where('status', 'succeeded')->sum('amount')) }} </span>
+                                <!-- <input type="text" id="total_amount" readonly placeholder="0.00" value="{{ (float)$totalPaid }}"> -->
+                            </div>
+                            <div class="card-body">
+
+                                <div class="mb-2 bglight">
+                                    
+                                    @if ($order->latestPayment)
+                                    <div>
+                                        <p>Stored Credit Card :</p>
+                                        <div class="row">
+
+
+
+                                            @if($order->payment_intent_id)
+                                            <div class="col-2">
+                                                @if($order->latestPayment->card_last4)
+                                                    
+                                                    <svg width="48" height="40" viewBox="0 0 48 40" xmlns="http://www.w3.org/2000/svg">
+                                                              <rect width="48" height="40" rx="4" fill="#ffffff"/>
+
+                                                              <!-- Mastercard logo -->
+                                                              <circle cx="18" cy="15" r="10" fill="#EB001B"/>
+                                                              <circle cx="30" cy="15" r="10" fill="#F79E1B"/>
+                                                              <path d="M24 7.5a10 10 0 0 1 0 15a10 10 0 0 1 0-15z" fill="#FF5F00"/>
+
+                                                              <!-- Text below -->
+                                                              <text
+                                                                x="24"
+                                                                y="34"
+                                                                text-anchor="middle"
+                                                                font-family="Arial, Helvetica, sans-serif"
+                                                                font-size="7"
+                                                                font-weight="600"
+                                                                fill="#000">
+                                                                mastercard
+                                                              </text>
+                                                            </svg>
+
+                                                    
+
+
+                                                    {{ $order->latestPayment->card_last4}} ({{ strtoupper($order->latestPayment->card_brand) }})
+                                                @else
+
+                                                    <svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#00D66F" d="M0 0h32v32H0z"></path><path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path></svg>    Link
+                                                @endif
+                                            </div>
+                                            @endif
+                                            <div class="col-2">
+                                                @if(str_contains( $order->payment_intent_id, 'pm_'))
+                                                <a id="chargeSavedCard" type="button" class=" charge-btn font-base" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
+                                                    <strong>Charge Now</strong>
+                                                </a>
+
+
+                                                @elseif(str_contains( $order->payment_intent_id, 'pi_'))
+                                                <a class=" charge-btn font-base" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
+                                                    <strong>Charge Now</strong>
+                                                </a>
+                                                @endif
+                                                
+                                            </div>
+                                            @if($order->payment_intent_id)
+                                            
+                                                <div class="col-2">
+                                                    <!-- <div class=" btn "> -->
+                                                    
+
+                                                    <a href="javascript:void(0)"
+                                                       onclick="removeCard({{ $order->id }})"
+                                                       class="text-black font-base">
+                                                       <strong>Remove Credit Card</strong>
+                                                    </a>
+                                                    <!-- </div> -->
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @else
+
+                                        <!-- <button class="btn btn-primary capture-btn" data-order-id="{{ $order->id }}" type="button">
+                                                    Capture Now
+                                                </button> -->
+                                                
+                                    @endif
+                                    @if(!$order->payment_intent_id)
+                                    <div class="mb-2"><label><input type="checkbox" value="1" name="add_ccnow" id="add_ccnow" > Add a credit card to this order</label></div>
+                                    @endif
+
+                                    <div id="card-element-wrapper" class="hidden">
+                                        <div id="card-element" class="form-control col-6" style="padding: 10px; height: auto;"></div>
+
+                                        <div class="mt-3"><label><input type="checkbox" value="1" name="charge_ccnow" id="charge_ccnow" /> Charge credit card now</label></div>
+
+                                        <div class="form-group hidden" id="charge_ccnow_amount">
+                                            <div class="form-group  col-6">
+                                                <label>Amount</label>
+                                                <div class="input-group">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                                    </div>    
+                                                    <input type="text" class="form-control decimal" id="addPaymentAmount" name="charge_ccnow_amount" placeholder="0.00">                                            
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+
+                                        <!-- <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Submit</button> -->
+
+                                        <button type="button" class="btn btn-success" data-action="add-card"><i class="fas fa-save"></i>Save Card</button>
+
+                                    </div>
+                                    
+                                    
+                                </div>
+
+                                <div class="bg-light px-2 mt-5"> 
+                                    <div id="paymentTemplate1">
+                                        @php
+                                        $refFlaf = 0;
+                                        @endphp
+                                        @foreach ($order->payments as $payment)   
+                                        <input type="hidden" name="paymentId[]" value="{{ $payment->id }}" />
+                                        <div class="row paymentRow py-2 border border-black-300">
+                                            <div class="col-2">
+                                                {{ $payment->payment_type == 'CARD' ? 'CREDITCARD': $payment->payment_type  }}
+                                                <input type="hidden" name="paymentType[]" value="{{ $payment->payment_type }}" />
+                                            </div>
+
+                                            <div class="col-3">
+                                                STRIPE: {{ $payment->transaction_id ?? $payment->payment_intent_id }}
+                                                <input type="hidden" name="transactionId[]" value="{{ $payment->transaction_id }}" />
+                                            </div>
+
+                                            <div class="col-2">
+                                                
+
+                                                {{ $payment->collection_date?  \Carbon\Carbon::parse($payment->collection_date)->format('M d Y g:i A') : '' }}
+                                                <input type="hidden" name="collection_date[]" value="{{ $payment->collection_date }}" />
+                                            </div>
+
+                                            <div class="col-1">
+                                                {{ price_format_with_currency($payment->amount, strtoupper($payment->currency)) }}
+                                                <input type="hidden" name="amount[]" value="{{ $payment->amount }}" />
+                                            </div>
+                                            @if($payment->status == 'uncaptured')
+                                            <div class="col-3">
+                                                <button class="btn-sm btn-primary capture-btn" data-uncapture-amount="{{ $payment->amount }}" data-order-id="{{ $order->id }}" type="button">
+                                                    Capture 
+                                               </button>
+                                                <button class="btn-sm btn-danger cancel-btn" data-order-id="{{ $order->id }}" type="button">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                            
+                                            @else
+                                                @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded')
+                                                <div class="col-3">
+                                                </div>
+                                                @else
+                                                <div class="col-2">
+                                                </div>
+                                                @endif
+                                                
+                                            @endif
+                                            @if($payment->status == 'succeeded' || $payment->status == 'partial_refunded')
+                                            
+                                                @if($payment->amount > 0 && $payment->collection_type === 'Inside' )
+                                                <div class="col-1">
+                                                    @php $refFlaf = 1; @endphp
+                                                    
+
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-danger open-payment-refund"
+                                                            data-order-id="{{ $order->id }}"
+                                                            data-payment-id="{{ $payment->id }}"
+                                                            data-amount="{{ $payment->amount }}">
+                                                        Refund
+                                                    </button>
+                                                    </div>
+                                                @endif
+                                            
+                                            @else
+                                                
+                                            @endif
+                                            
+
+                                            <div class="col-1 text-right">
+                                                <button type="button" class="btn btn-danger btn-sm removeRow">-</button>
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    </div>
+
+                                    <div id="paymentTemplate">
+                                        <div class="row paymentRow p-2 my-2">
+                                            <div class="col-2">
+                                                <select class="form-control" name="paymentType[]">
+                                                    <option value="">Payment type...</option>
+                                                    <option value="CASH">Cash</option>
+                                                    <option value="CREDITCARD">Credit Card</option>
+                                                    <option value="ALIPAY">Alipay</option>
+                                                    <option value="BANKTRANSFER">Bank Transfer</option>
+                                                    <option value="BANKCHEQUE">Cheque</option>
+                                                    <option value="REFUND">Refund</option>
+                                                    <option value="PAYPAL">Paypal</option>
+                                                    <option value="VOUCHER">Voucher</option>
+                                                    <option value="PROMO_CODE">Promo code</option>
+                                                    <option value="FREE">Free of charge</option>
+                                                    <option value="INVOICE">Invoice</option>
+                                                    <option value="OTHER">Other</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="col-3">
+                                                <input class="form-control" name="transactionId[]" placeholder="Ref. number" autocomplete="off" />
+                                            </div>
+
+                                            <div class="col-2">
+                                                <div class="input-group">
+                                                    <input type="text" class="aiz-date-range form-control"
+                                                        name="collection_date[]" data-format="ddd MMM DD, YYYY" data-single="true" autocomplete="off" placeholder="Date">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-2">
+                                                <div class="input-group">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                                    </div>
+                                                    <input type="text" class="form-control" name="amount[]" placeholder="0.00" autocomplete="off">
+                                                </div>
+                                            </div>
+
+                                            <div class="col-3 text-right">
+                                                <button type="button" class="btn btn-success btn-sm addRow">+</button>
+                                                <button type="button" class="btn btn-danger btn-sm removeRow">-</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="paymentWrapper"></div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div> 
+
+                    
+
+
+
+                    <?php /*
+                    <div class="card payment-details">
+                        <div class="card-header bg-secondary py-0" id="headingPaymentDetails">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapsePaymentDetails">
+                                <i class="fa fa-angle-right"></i> Payment Details
+                            </button>
+                        </div>
+
+                        <div id="collapsePaymentDetails" class="collapse show" aria-labelledby="headingPaymentDetails" data-parent="#accordionExample">
                             <div class="card-body">
                                 <!-- <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div> -->
                                 
-                                <table class="table">  
-                                    <thead>  
+                                <table class="table">    
+                                    <tr>
+                                        <td>Payment Type</td>
+                                        <td>Ref number</td>                                        
+                                        <td>Total</td>
+                                        <td>Balance</td>
+                                        <td>Paid</td>
+                                        @if($order->payments->isNotEmpty())
+                                            <td>Refund</td>
+                                        @endif
+                                    </tr>
+                                    <tr>
+                                    <td>{{ ucwords($order->payment_method)}}</td>
+                                    <td>{{ ucwords($order->payment_intent_id)}}</td>                                    
+                                    <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                    @if($order->payment_status === 3)
+                                        <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
+                                    @else
+                                        <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
+                                    @endif                                    
+                                    <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
+                                   <td>
+
+                                        <!-- <button class="btn btn-sm btn-danger refund-btn" 
+                                          style="width:150px; display:inline-block;" 
+                                          data-order-id="{{ $order->id }}" 
+                                          data-amount="{{ $order->booked_amount }}" 
+                                          type="button">
+                                          Refund
+                                        </button> -->
+                                        @if($order->booked_amount > 0 && $order->payments->isNotEmpty())
+                                            <button type="button"
+                                                            class="btn btn-sm btn-danger open-payment-refund"
+                                                            data-order-id="{{ $order->id }}"
+                                                            data-payment-id="{{ $payment->id }}"
+                                                            data-amount="{{ $payment->amount }}">
+                                                        Refund
+                                                    </button>
+                                        @endif
+                                    </td>
+                                    </tr>
+                                </table>
+                                
+                                @if($order->payments->isNotEmpty())
+                                <h5 class="mt-4">💳 Payment Details</h5>                                    
+                                <table class="table table-sm table-bordered">
+                                    <thead>
                                         <tr>
-                                            <th>Payment Type</th>
-                                            <th>Ref number</th>                                        
-                                            <th>Total</th>
-                                            <th>Balance</th>
-                                            <th>Paid</th>
-                                            @if($order->payments->isNotEmpty())
-                                                <th>Refund</th>
-                                            @endif
+                                            <th>#</th>
+                                            <th>Amount</th>
+                                            <th>Card</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                            <th>Date</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>{{ ucwords($order->payment_method)}}</td>
-                                            <td>{{ ucwords($order->payment_intent_id)}}</td>
-                                            
-                                            <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-
-                                            @if($order->payment_status === 3)
-
-                                            <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount + $order->booked_amount, $order->currency) }}</td>
-                                            @else
-
-                                            <td class="{{ (float)$order->balance_amount>0 ? 'text-danger' : '' }}">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
-                                            @endif
-                                            
-                                            <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
-                                            <td>
-                                                <!-- <button class="btn btn-sm btn-danger refund-btn" 
-                                                style="width:150px; display:inline-block;" 
-                                                data-order-id="{{ $order->id }}" 
-                                                data-amount="{{ $order->booked_amount }}" 
-                                                type="button">
-                                                Refund
-                                                </button> -->
-                                                @if($order->booked_amount > 0 && $order->payments->isNotEmpty())
-                                                    <button class="btn btn-sm btn-danger refund-all-btn"
-                                                        data-order-id="{{ $order->id }}"
-                                                        data-amount="{{ $order->booked_amount }}" style="width:150px; display:inline-block;">
-                                                        Refund
-                                                    </button>
-                                                @endif
-                                            </td>
-                                        </tr>
+                                        @foreach($order->payments as $payment)
+                                            <tr>
+                                                <td>{{ $payment->id }}</td>
+                                                <td>{{ price_format_with_currency($payment->amount, $payment->currency) }}</td>
+                                                <td>
+                                                    {{ strtoupper($payment->card_brand) ?? 'N/A' }} 
+                                                    •••• {{ $payment->card_last4 ?? '----' }}  
+                                                    <br>
+                                                    <small>Exp: {{ $payment->card_exp_month }}/{{ $payment->card_exp_year }}</small>
+                                                </td>
+                                                <td>
+                                                    @if($payment->status === 'succeeded')
+                                                        <span class="badge bg-success">Succeeded</span>
+                                                    @elseif($payment->status === 'pending')
+                                                        <span class="badge bg-warning text-dark">Pending</span>
+                                                    @elseif($payment->status === 'failed')
+                                                        <span class="badge bg-danger">Failed</span>
+                                                    @elseif($payment->status === 'refunded')
+                                                        <span class="badge bg-secondary">Refunded</span>
+                                                    @elseif($payment->status === 'partial_refunded')
+                                                        <span class="badge bg-secondary">Partial Refunded </span> <span>{{(price_format_with_currency( $payment->refund_amount))}}</span>  
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    
+                                                    @if($payment->status === 'succeeded' || $payment->status === 'partial_refunded')
+                                                        <button 
+                                                            type="button"  
+                                                            class="btn btn-danger btn-sm open-refund-modal" 
+                                                            data-id="{{ $payment->id }}" 
+                                                            data-amount="{{ $payment->amount }}"
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#refundModal">
+                                                            <i class="fa fa-undo"></i> Refund
+                                                        </button>
+                                                    @else
+                                                        <span class="text-muted">—</span>
+                                                    @endif
+                                                </td>
+                                                <td>{{ $payment->created_at->format('d M Y h:i A') }}</td>
+                                            </tr>
+                                        @endforeach
                                     </tbody>
                                 </table>
-                                @if($order->payments->isNotEmpty())
-                                <h5 class="mt-4">💳 Payment Details</h5>
-                                    <table class="table table-sm table-bordered">
-                                        <thead>
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Amount</th>
-                                                <th>Card</th>
-                                                <th>Status</th>
-                                                <th>Action</th>
-                                                <th>Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($order->payments as $payment)
-                                                <tr>
-                                                    <td>{{ $payment->id }}</td>
-                                                    <td>{{ price_format_with_currency($payment->amount, $payment->currency) }}</td>
-                                                    <td>
-                                                        {{ strtoupper($payment->card_brand) ?? 'N/A' }} 
-                                                        •••• {{ $payment->card_last4 ?? '----' }}  
-                                                        <br>
-                                                        <small>Exp: {{ $payment->card_exp_month }}/{{ $payment->card_exp_year }}</small>
-                                                    </td>
-                                                    <td>
-                                                        @if($payment->status === 'succeeded')
-                                                            <span class="badge bg-success">Succeeded</span>
-                                                        @elseif($payment->status === 'pending')
-                                                            <span class="badge bg-warning text-dark">Pending</span>
-                                                        @elseif($payment->status === 'failed')
-                                                            <span class="badge bg-danger">Failed</span>
-                                                        @elseif($payment->status === 'refunded')
-                                                            <span class="badge bg-secondary">Refunded</span>
-                                                        @elseif($payment->status === 'partial_refunded')
-                                                            <span class="badge bg-secondary">Partial Refunded </span> <span>{{(price_format_with_currency( $payment->refund_amount))}}</span>  
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        
-                                                        @if($payment->status === 'succeeded' || $payment->status === 'partial_refunded')
-                                                            <button 
-                                                                type="button"  
-                                                                class="btn btn-danger btn-sm open-refund-modal" 
-                                                                data-id="{{ $payment->id }}" 
-                                                                data-amount="{{ $payment->amount }}"
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#refundModal">
-                                                                <i class="fa fa-undo"></i> Refund
-                                                            </button>
-                                                        @else
-                                                            <span class="text-muted">—</span>
-                                                        @endif
-                                                    </td>
-                                                    <td>{{ $payment->created_at->format('d M Y h:i A') }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
                                 @else
-                                    <!-- <p class="text-muted">No payments have been recorded yet.</p> -->
+                                    <p class="text-muted">No payments have been recorded yet.</p>
                                 @endif
                             </div>
-                            <div class="text-left mt-3">
+                            <!-- <div class="text-left mt-3">
                                 <button id="addPaymentBtn" type="button" class="btn btn-primary">
                                     + Add Payment
                                 </button>
                                 @if(str_contains( $order->payment_method_id, 'pm_'))
                                 <button id="chargeSavedCard" type="button" class="btn btn-info charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
-                                    Charge now
+                                    Charge Now
                                 </button>
                                 @endif
 
                                 @if(str_contains( $order->payment_method_id, 'pi_'))
                                 <button class="btn btn-primary charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                                    Charge now
+                                    Charge Now
                                 </button>
                                 @endif
+                            </div> -->
+                        </div>
+                    </div> 
+                    */ ?>
+
+
+                    <div class="card">
+                        <div class="card-header py-0">
+                            <button type="button" class="btn btn-link"> Recent Actions</button>                     
+                        </div>
+                        <div>
+                            <div class="card-body">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Subject</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if(!empty($order->actions) && is_iterable($order->actions))
+                                            @foreach($order->actions->sortByDesc('created_at') as $action)
+                                                <tr>
+                                                    <td>{{ $action->created_at }}</td>
+                                                    <td>{!! $action->notes !!}</td>
+                                                </tr>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="5">No action history found</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
-                        <!-- Hidden Add Payment Form -->
-                        <!-- <div id="addPaymentBlock" class="mt-3" style="display:none;">
-                            <div id="addPaymentSection">
-                                <div class="form-group hidden">
-                                    <label>Amount</label>
-                                    <input hidden type="number" id="addPaymentAmount" class="form-control" min="1" placeholder="Enter amount" value="">
-                                </div>
-
-                                <div id="cardFields">
-                                    <div class="form-group">
-                                        <label for="card-element">Card Details</label>
-                                        <div id="card-element" class="form-control col-6" style="padding:10px; height:auto;"></div>
-                                        <small id="card-errors" class="text-danger mt-2"></small>
-                                    </div>
-                                </div>
-
-                                <button id="addPaymentSubmit" class="btn btn-success">Pay Now</button>
-                            </div>
-                        </div>
-                    </div> 
-
-
-
-
-                    </div> -->
 
                     <div class="card">
-                        <div class="card-header bg-secondary py-0" id="heading5">
-                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse5"><i class="fa fa-angle-right"></i> Order Email History</button>                     
+                        <div class="card-header py-0">
+                            <button type="button" class="btn btn-link"> Order Email History</button>                     
                         </div>
-                        <div id="collapse5" class="collapse " aria-labelledby="heading5" data-parent="#accordionExample">
+                        <div>
                             <div class="card-body">
                                 <table class="table">
                                     <thead>
@@ -901,7 +1125,7 @@
                                             <th>From</th>
                                             <th>Subject</th>
                                             <th>Status</th>
-                                            <!-- <th>Content</th> -->
+                                            <th>Content</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -913,6 +1137,20 @@
                                                     <td>{{ $email->from_email }}</td>
                                                     <td>{{ $email->subject }}</td>
                                                     <td>{{ ucwords($email->status) }}</td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-primary view-email-btn">
+                                                            View
+                                                        </button>
+
+                                                        <textarea class="d-none email-body">
+                                                            {!! $email->body !!}
+                                                        </textarea>
+
+                                                        <input type="hidden" class="email-to" value="{{ $email->to_email }}">
+                                                        <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
+                                                        <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
+                                                        <input type="hidden" class="email-subject" value="{{ $email->subject }}">
+                                                    </td>
                                                 </tr>
                                             @endforeach
                                         @else
@@ -930,7 +1168,13 @@
                         <div class="row">
                             <div class="col-md-6 order-2 order-md-1">
                                 <a href="{{ route('admin.orders.index') }}" class="btn btn-cancel"> <i class="fas fa-times"></i> Cancel</a>
-                                <a onclick="return confirm('Are you sure?')" href="{{ route('admin.tour.destroy', encrypt($order->id)) }}" class="btn btn-danger confirm-delete"> <i class="fas fa-trash-alt"></i> Delete</a>
+                                <!-- <a onclick="return confirm('Are you sure?')" href="javascript:void(0)" class="btn btn-danger confirm-delete"> <i class="fas fa-trash-alt"></i> Delete</a> -->
+
+                                <a href="javascript:void(0)"
+                                   data-url="{{ route('admin.order.destroy', encrypt($order->id)) }}"
+                                   class="btn btn-danger btn-delete-order">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </a>
                             </div>
                             <div class="col-md-6 align-buttons order-1 order-md-2">
                                 <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Save order</button>
@@ -1091,8 +1335,6 @@
   </div>
 </div>
 
-
-
 <div class="modal fade" id="chargeModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -1107,13 +1349,13 @@
           
         </div>
 
-        @if($order->payment_status == 3)
+        @if($order->payment_status == 31)
 
 
-        <div class="mb-3">
-          <label class="text-danger">Please confirm the order before charging the amount </label>
+        <!-- <div class="mb-3"> -->
+          <!-- <label class="text-danger">Please confirm the order before charging the amount </label> -->
           <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
-        </div>
+        <!-- </div> -->
         @else
         <form id="chargeForm">
           <input type="hidden" id="chargeOrderId" name="order_id">
@@ -1140,7 +1382,7 @@
         <!-- <button type="button" class="btn btn-primary" id="confirmCharge">Confirm Charge</button> -->
         <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 
-        @if($order->payment_status == 3)
+        @if($order->payment_status == 31)
             <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
         @else
         <button type="submit" form="chargeForm" class="btn btn-primary">Charge</button>
@@ -1149,34 +1391,8 @@
     </div>
   </div>
 </div>
-<div class="modal fade" id="refundModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Refund Payment</h5>
-      </div>
-      <div class="modal-body">
-        <form id="refundForm">
-          <input type="hidden" id="refundPaymentId" name="payment_id">
 
-          <div class="mb-3">
-            <label>Refund Amount</label>
-            <input type="number" id="refundAmount" name="amount" class="form-control" min="0" step="0.01" required>
-          </div>
 
-          <!-- <div class="mb-3">
-            <label>Reason (optional)</label>
-            <input type="text" id="refundReason" name="reason" class="form-control">
-          </div> -->
-        </form>
-      </div>
-      <div class="modal-footer">
-        <!-- <button type="button" class="btn btn-default" data-bs-dismiss="modal">Cancel</button> -->
-        <button type="submit" form="refundForm" class="btn btn-danger">Confirm Refund</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <div class="modal fade" id="refundAllModal" tabindex="-1">
   <div class="modal-dialog">
@@ -1196,6 +1412,7 @@
         </form>
       </div>
       <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Cancel</button>
         <button type="submit" form="refundAllForm" class="btn btn-danger">
             Confirm Refund
         </button>
@@ -1203,6 +1420,102 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="emailPreviewModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg modal-wide" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Email Preview</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="mb-2">
+                    <strong>To:</strong> <span id="preview_to"></span>
+                </div>
+
+                <div class="mb-2">
+                    <strong>CC:</strong> <span id="preview_cc"></span>
+                </div>
+
+                <div class="mb-2">
+                    <strong>BCC:</strong> <span id="preview_bcc"></span>
+                </div>
+
+                <div class="mb-2">
+                    <strong>Subject:</strong> <span id="preview_subject"></span>
+                </div>
+
+                <hr>
+
+                <div id="preview_body" style="min-height:300px;">
+                    <!-- BODY RENDERS HERE -->
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="paymentRefundModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Refund Payment</h5>
+        <button type="button" class="close" data-dismiss="modal">
+          <span>&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <form id="refundForm">
+          <input type="hidden" id="refundPaymentId" name="payment_id">
+
+          <div class="mb-3">
+            <label>Refund Amount</label>
+            <input
+              type="number"
+              id="refundAmount"
+              name="amount"
+              class="form-control"
+              step="0.01"
+              min="0.01"
+              required
+            >
+            <small class="text-muted">
+              Max refundable amount: <strong id="maxRefundText"></strong>
+            </small>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          Cancel
+        </button>
+        <button type="submit" form="refundForm" class="btn btn-danger">
+          Confirm Refund
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
 
 
 <!-- GLOBAL REUSABLE LOADER -->
@@ -1243,6 +1556,148 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+function calculateTotal() {
+    let sum = 0;
+    let sum_paid = 0;
+
+    $('input[name="amount[]"]').each(function () {
+        let val = parseFloat($(this).val());
+        if (!isNaN(val)) {
+            sum += val;
+        }
+    });
+
+    // $('input[name="paid_amount[]"]').each(function () {
+    //     let val = parseFloat($(this).val());
+    //     if (!isNaN(val)) {
+    //         sum_paid += val;
+    //     }
+    // });
+
+    let total_due = {{ $order->total_amount }} - sum;
+
+    $('#total_amount').val(sum.toFixed(2));
+    $('#totalDue').text('USD'+total_due.toFixed(2));    
+} 
+
+$(document).ready(function () {
+    $(document).on("change", "#add_ccnow", function () {
+        if (this.checked) {
+            $("#card-element-wrapper").show();
+        } else {
+            $("#card-element-wrapper").hide();
+        }
+    });
+    $(document).on("change", "#charge_ccnow", function () {
+        if (this.checked) {
+            $("#charge_ccnow_amount").show();
+        } else {
+            $("#charge_ccnow_amount").hide();
+        }
+    });
+});
+    
+$(document).ready(function () {
+        $(document).on('click', '#addNewCustomerBtn', function () {            
+            $('#newCustomerFields').removeClass('d-none');
+            $('#newCustomerFields').removeClass('d-none');
+            $('#customer').val('').trigger('change');
+
+            $("#customer_first_name").prop("required", true);
+            $("#customer_last_name").prop("required", true);
+            $("#customer_email").prop("required", true);
+            $("#customer_phone").prop("required", true);
+        });
+
+        $('#customer').on('change', function () {
+            if ($(this).val()) {
+                $('#newCustomerFields').addClass('d-none');
+            }
+        });
+
+        $(document).on('blur', '.decimal', function () {
+            let val = $(this).val();
+
+            // If empty, do nothing
+            if (val === "") return;
+
+            // Convert to number and force 2 decimals
+            let num = parseFloat(val);
+
+            // If not a valid number → reset to empty or 0.00 (your choice)
+            if (isNaN(num)) {
+                $(this).val("");
+                return;
+            }
+
+            // Set back with 2 decimals
+            $(this).val(num.toFixed(2));
+        });
+
+        $(document).on('blur', 'input[name="amount[]"]', function () {
+            let val = $(this).val().trim();
+
+            if (val === "") {
+                calculateTotal();
+                return;
+            }
+
+            let num = parseFloat(val);
+
+            if (isNaN(num)) {
+                $(this).val("");
+                calculateTotal();
+                return;
+            }
+
+            $(this).val(num.toFixed(2));
+            calculateTotal();
+        });
+    });
+</script>
+
+<script>
+document.addEventListener("click", function(e) {
+    // Add row
+    if (e.target.classList.contains("addRow")) {
+        let html = document.querySelector("#paymentTemplate").innerHTML;
+        document.querySelector("#paymentWrapper").insertAdjacentHTML("beforeend", html);
+
+        // re-init datepicker if needed
+        if ($(".aiz-date-range").length) {
+            // $(".aiz-date-range").daterangepicker({
+            //     singleDatePicker: true,      // Enable single-date mode
+            //     showDropdowns: true,
+            //     locale: {
+            //         format: 'ddd MMM DD, YYYY'
+            //     }
+            // });
+            $(".aiz-date-range").daterangepicker({
+                singleDatePicker: true,
+                showDropdowns: true,
+                locale: {
+                    format: 'ddd MMM DD, YYYY'   // Display format for the user
+                }
+            })/*.on('apply.daterangepicker', function(ev, picker) {
+
+                // Convert selected date to YYYY-MM-DD format
+                var dbDate = picker.startDate.format('YYYY-MM-DD');
+
+                // Store date in a hidden input used for database insert
+                $(this).closest('form').find('input[name="date[]"]').val(dbDate);
+            })*/;
+        }
+    }
+
+    // Remove row
+    if (e.target.classList.contains("removeRow")) {
+        let row = e.target.closest(".paymentRow");
+        row.remove();
+    }
+});
+</script>
 
 <script>
     let tourCount = {{ $count ? $count : 1 }}
@@ -1342,6 +1797,7 @@
         });
     });
 </script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
 
@@ -1451,16 +1907,12 @@
                     r.setAttribute("data-prev", r.value);
                 }
             });
-
-
         });
     });
 
-
     // ✅ Only update UI on page load, not backend
-
-    const init = document.querySelector('input[name="order_status"]:checked');
-    if (init) updateStatusUI(init);
+    // const init = document.querySelector('input[name="order_status"]:checked');
+    // if (init) updateStatusUI(init);
 });
 
 
@@ -1521,11 +1973,9 @@ $('#chargeForm').on('submit', function(e) {
             
             btn.disabled = false;
             btn.textContent = "Charge Now";
-           location.reload();
+            location.reload();
         },
         error: function(xhr) {
-
-
             Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -1536,9 +1986,8 @@ $('#chargeForm').on('submit', function(e) {
         }
     });
 });
-
-
 </script>
+
 <script>
 $(document).ready(function(){    
     //Order Email Modal
@@ -1548,7 +1997,6 @@ $(document).ready(function(){
         var order_template_id = $(this).val();
 
         var print_template = false;
-
 
         if (print_template) {
             $('.printMailbutton').show();
@@ -1582,9 +2030,7 @@ $(document).ready(function(){
                 $('#identifier').val(response.email_template.identifier);
                 $('#subject').val(response.email_template.subject);
                 $('#event').val(JSON.stringify(response.event));
-                //$('#header').summernote('code', response.email_template.header);
                 $('#body').summernote('code', response.body);
-                //$('#footer').summernote('code', response.footer);
                 $('#order_template_modal').modal("show");
                 $('#email_template_name').val('');
             },
@@ -1600,7 +2046,6 @@ $(document).ready(function(){
         var order_id = $('#order_id').val();
         var order_template_id = $(this).val();
         var print_template = true;
-
 
         if (print_template) {
             $('.printMailbutton').show();
@@ -1634,10 +2079,7 @@ $(document).ready(function(){
                 $('#identifier').val(response.email_template.identifier);
                 $('#subject').val(response.email_template.subject);
                 $('#event').val(JSON.stringify(response.event));
-                //$('#header').summernote('code', response.email_template.header);
                 $('#body').summernote('code', response.body);
-                //$('#footer').summernote('code', response.footer);
-               
 
                 $('#order_template_modal').modal("show");
                 
@@ -1746,21 +2188,10 @@ $(document).on('click', '.refund-btn', function(e) {
     $('#refundAmount').val(amount);
     $('#refundModal').modal('show');
 });
-
-
-
 </script>
 <script src="https://js.stripe.com/v3/"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const addBtn = document.getElementById("addPaymentBtn");
-    const block = document.getElementById("addPaymentBlock");
-
-    addBtn.addEventListener("click", () => {
-        block.style.display = block.style.display === "none" ? "block" : "none";
-        addBtn.innerHTML = block.style.display === "none" ? "+ Add Payment" : "- Cancel Payment";
-    });
-
     // Initialize Stripe
     const stripe = Stripe("{{ env('STRIPE_KEY') }}");
     const elements = stripe.elements();
@@ -1791,15 +2222,38 @@ document.addEventListener("DOMContentLoaded", function() {
         return total;
     }
 
-    // Handle payment
+    // Handle form submit
+    const form = document.getElementById('orderForm');
+    form.addEventListener('submit', async function(event) {
+        const selectedPayment = document.querySelector("input[name='add_ccnow']:checked").value;
+        if (selectedPayment) {
+            event.preventDefault();
+
+            const { paymentMethod, error } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: card,
+            });
+
+            if (error) {
+                document.getElementById('card-errors').textContent = error.message;
+            } else {
+                let hiddenInput = document.createElement('input');
+                hiddenInput.setAttribute('type', 'hidden');
+                hiddenInput.setAttribute('name', 'payment_intent_id');
+                hiddenInput.setAttribute('value', paymentMethod.id);
+                form.appendChild(hiddenInput);
+                //form.submit();
+
+                HTMLFormElement.prototype.submit.call(form);
+            }
+        }
+    });
+
+/*    // Handle payment
     const submitBtn = document.getElementById("addPaymentSubmit");
     submitBtn.addEventListener("click", async function() {
-
         
-        // const amount = document.getElementById("addPaymentAmount").value;
-
         const amount = getTotalFromSubtotalBoxes();
-
         
         document.getElementById("addPaymentAmount").value = amount;
         if (!amount || amount <= 0) {
@@ -1883,6 +2337,7 @@ document.addEventListener("DOMContentLoaded", function() {
             submitBtn.textContent = "Pay Now";
         }
     });
+*/
 });
 </script>
 
@@ -1905,7 +2360,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
 
         const paymentId = document.getElementById('refundPaymentId').value;
         const amount = document.getElementById('refundAmount').value;
-        const reason = document.getElementById('refundReason').value;
+        // const reason = document.getElementById('refundReason').value;
 
         if (!amount || amount <= 0) {
             
@@ -1931,8 +2386,7 @@ document.addEventListener("DOMContentLoaded", function(e) {
             },
             body: JSON.stringify({
                 payment_id: paymentId,
-                amount: amount,
-                reason: reason
+                amount: amount
             })
         });
 
@@ -1959,13 +2413,10 @@ document.addEventListener("DOMContentLoaded", function(e) {
             }).then(() => {
                 location.reload();
             });
-            alert("Error: " + data.message);
+            
         }
     });
-
 });
-
-
 </script>
 
 <script>
@@ -2090,34 +2541,21 @@ $(document).on('click', '.printMailbutton', function () {
         .then(() => hideLoader())
         .catch(() => hideLoader());
 });
-
-
-
-
-
-
-
-
-
-
-
-
 </script>
 
 <script>
-    function showLoader(message = "Processing...") {
-        $("#globalLoader").find("div:last").text(message);
-        $("#globalLoader").show();
-    }
+function showLoader(message = "Processing...") {
+    $("#globalLoader").find("div:last").text(message);
+    $("#globalLoader").show();
+}
 
-    function hideLoader() {
-        $("#globalLoader").hide();
-    }
+function hideLoader() {
+    $("#globalLoader").hide();
+}
 </script>
 
 <script>
-    
-    function calculateRowTotal(row, hide) {
+function calculateRowTotal(row, hide) {
 
     let subtotal = 0;
     let withouttax = 0;
@@ -2144,7 +2582,6 @@ $(document).on('click', '.printMailbutton', function () {
         // -----------------------------------------
         const minQty = qtyInput.getAttribute("min");
         const maxQty = qtyInput.getAttribute("max");
-
 
         if (priceType === "FIXED") {
 
@@ -2193,16 +2630,12 @@ $(document).on('click', '.printMailbutton', function () {
     // -----------------------------------------
     row.querySelectorAll('.tax-row').forEach((taxRow) => {
         const feeType = taxRow.dataset.type;
-        const feeValue = parseFloat(taxRow.dataset.value);
-        
+        const feeValue = parseFloat(taxRow.dataset.value);        
 
-        let tax = 0;
+        let tax = 0;        
         
-        
-        if (feeType === "PERCENT" || feeType === "PERCENT ") {
-            
-            tax = subtotal * (feeValue / 100);
-            
+        if (feeType === "PERCENT" || feeType === "PERCENT ") {            
+            tax = subtotal * (feeValue / 100);            
         } else {
             tax = feeValue;
         }
@@ -2213,7 +2646,6 @@ $(document).on('click', '.printMailbutton', function () {
         }).format(tax);
         
         taxRow.querySelector('.tax-amount').textContent = formattedTax;
-
         subtotal += tax;
     });
 
@@ -2226,7 +2658,11 @@ $(document).on('click', '.printMailbutton', function () {
     }
     const subtotalBox = row.querySelector('.subtotal-box');
     if (subtotalBox) {
-        subtotalBox.textContent = subtotal.toFixed(2);
+        // subtotalBox.textContent = subtotal.toFixed(2);
+        document.getElementById("totalDue").innerText = 'USD'+subtotal.toFixed(2);
+        // document.getElementById("totalPayment").innerText = 'USD'+subtotal.toFixed(2);
+        // document.getElementById("addPaymentAmount").value = subtotal.toFixed(2);
+        subtotalBox.textContent = 'USD'+subtotal.toFixed(2);
     }
     if(hide){
         $('.cummulative-total').hide();
@@ -2240,17 +2676,16 @@ $(document).on('click', '.printMailbutton', function () {
 // =====================================================
 
 $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']", function () {
-
     const row = this.closest("[id^='row_']");
     calculateRowTotal(row, true);
 });
 
-$(document).ready(function () {
-    $("input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']").each(function () {
-        const row = this.closest("[id^='row_']");
-        calculateRowTotal(row, false);
-    });
-});
+// $(document).ready(function () {
+//     $("input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']").each(function () {
+//         const row = this.closest("[id^='row_']");
+//         calculateRowTotal(row, false);
+//     });
+// });
 
 $(document).ready(function () {
 
@@ -2353,7 +2788,7 @@ function refreshCalendarAndSession(tourId, count, order_id) {
                 .off("apply.daterangepicker")
                 .on("apply.daterangepicker", function (ev, picker) {
 
-                    let selectedDate = picker.startDate.format("YYYY-MM-DD");
+                    let selectedDate = picker.startDate.format("ddd MMM DD, YYYY");
                     $(this).val(selectedDate).trigger("change");
 
                     const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
@@ -2368,19 +2803,6 @@ function refreshCalendarAndSession(tourId, count, order_id) {
                 const drp = $dateInput.data("daterangepicker");
 
                 if (drp) {
-                    // const initialDate = res.start_date;
-                    // const today       =  moment().startOf('day');
-
-                    // const minDate = moment(initialDate).isAfter(today)
-                    //     ? moment(initialDate)
-                    //     : today;
-
-                    // drp.minDate = minDate;
-                    // drp.setStartDate(initialDate);
-                    // drp.setEndDate(initialDate);
-                    // drp.updateView();
-                    // drp.updateCalendars();
-
 
                     const initialDate = res.tour_date; // KEEP CONSISTENCY
                     const today = moment().startOf("day");
@@ -2399,9 +2821,7 @@ function refreshCalendarAndSession(tourId, count, order_id) {
                     drp.updateElement(); 
                     drp.updateView();
                     drp.updateCalendars();
-                }
-
-                
+                }                
 
                 // Fetch sessions for initial date
                 fetchTourSessions(tourId, res.start_date, count, res.tour_time);
@@ -2417,26 +2837,11 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
 
     showLoader("Loading… Please wait");
-    
-   
-    // const $container = $(`#tour_details_${count}`);
 
     const $row = $("#row_" + count);
-
-            // 1. Update date
-            // const $dateInput = $row.find("input[name='tour_startdate[]']");
-
-    // const $dateInput = $row.find(".tour_startdate");
-
-    // console.log($container);
-    // const $timeField = $container.find("input[name='tour_starttime[]'], select[name='tour_starttime[]']").first();
-
     const $timeField = $row.find(".tour_starttime, select[name='tour_starttime[]']").first();
 
-
-    if(!tourId || !selectedDate) return;
-
-    
+    if(!tourId || !selectedDate) return;  
 
     $.ajax({
         url: "{{ route('admin.tour.sessions') }}",
@@ -2450,17 +2855,13 @@ function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
             let options = '';
             if(resp.data && resp.data.length > 0){
                 $.each(resp.data, function(i, session){
-                    // If your API returns strings, use session; if objects, adapt.
                     options += `<option value="${session}">${session}</option>`;
                 });
             } else {
                 options = '<option value="">No sessions available</option>';
             }
 
-            // Replace the time field within this container only
-            // $timeField.replaceWith(`<select name="tour_starttime[]" class="form-control tour-time">${options}</select>`);
-
-             const newSelect = $(`<select name="tour_starttime[]" class="form-control tour-time">${options}</select>`);
+            const newSelect = $(`<select name="tour_starttime[]" class="form-control tour-time">${options}</select>`);
 
             $timeField.replaceWith(newSelect);
             
@@ -2474,12 +2875,29 @@ function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
     });
 }
 
+// $(document).on('click', '.refund-all-btn', function (e) {
+//     e.preventDefault();
+//     $('#refundAllOrderId').val($(this).data('order-id'));
+//     $('#refundAllAmount').val($(this).data('amount'));
+//     $('#refundAllModal').modal('show');
+
+
+// });
 $(document).on('click', '.refund-all-btn', function (e) {
     e.preventDefault();
-    $('#refundAllOrderId').val($(this).data('order-id'));
-    $('#refundAllAmount').val($(this).data('amount'));
-    $('#refundAllModal').modal('show');
+
+    const paymentId = $(this).data('payment-id');
+    const maxAmount = parseFloat($(this).data('amount'));
+
+    $('#refundPaymentId').val(paymentId);
+
+    $('#refundAmount')
+        .val(maxAmount)          // default full refund
+        .attr('max', maxAmount); // ⬅️ limit max refund
+
+    $('#refundModal').modal('show');
 });
+
 
 document.getElementById('refundAllForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -2531,11 +2949,305 @@ document.getElementById('refundAllForm').addEventListener('submit', async functi
         
     }
 });
+</script>
+
+<script>
+$(document).on('click', '.btn-delete-order', function () {
+    if (!confirm('Are you sure?')) {
+        return false;
+    }
+
+    let url = $(this).data('url');
+    let row = $(this).closest('tr'); // optional: remove row after delete
+
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: {
+            _method: 'DELETE',
+            _token: '{{ csrf_token() }}'
+        },
+        success: function (response) {
+            // remove row from table
+            row.fadeOut(300, function () {
+                $(this).remove();
+            });
+
+            alert(response.message ?? 'Order deleted successfully');
+        },
+        error: function (xhr) {
+            alert('Something went wrong. Please try again.');
+        }
+    });
+});
+</script>
+
+<script>
+    $(document).on('click', '.view-email-btn', function () {
+
+    let row = $(this).closest('td');
+
+    let to      = row.find('.email-to').val();
+    let cc      = row.find('.email-cc').val();
+    let bcc     = row.find('.email-bcc').val();
+    let subject = row.find('.email-subject').val();
+    let body    = row.find('.email-body').val();
+
+    $('#preview_to').text(to || '-');
+    $('#preview_cc').text(cc || '-');
+    $('#preview_bcc').text(bcc || '-');
+    $('#preview_subject').text(subject || '-');
+
+    // Render HTML body safely
+    $('#preview_body').html(body);
+
+    $('#emailPreviewModal').modal('show');
+});
+
+
+</script>
+<script>
+
+const removeCardUrl = "{{ route('admin.orders.remove-card', ':orderId') }}";
+function removeCard(orderId) {
+    if (!confirm('Are you sure you want to remove this card?')) return;
+
+    fetch(removeCardUrl.replace(':orderId', orderId), {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(res => {
+        alert(res.message);
+        location.reload();
+    })
+    .catch(() => alert('Something went wrong'));
+}
+</script>
+<script>
+/* ================= STRIPE INIT (ONCE) ================= */
+
+const stripe = Stripe("{{ env('STRIPE_KEY') }}");
+const elements = stripe.elements();
+
+let cardElement = elements.create('card');
+let cardMounted = false;
+
+/* ================= SHOW / HIDE CARD ================= */
+
+document.getElementById('add_ccnow').addEventListener('change', function () {
+    const wrapper = document.getElementById('card-element-wrapper');
+
+    if (this.checked) {
+        wrapper.classList.remove('hidden');
+
+        if (!cardMounted) {
+            cardElement.mount('#card-element');
+            cardMounted = true;
+        }
+    } else {
+        wrapper.classList.add('hidden');
+        // ❌ NEVER unmount Stripe element
+    }
+});
+
+/* ================= BUTTON HANDLER ================= */
+
+document.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', function () {
+        if (this.dataset.action === 'add-card') {
+            addCardOnly();
+        }
+    });
+});
+
+/* ================= ADD CARD ONLY ================= */
+
+async function addCardOnly() {
+
+    if (!cardMounted) {
+        alert('Please enter card details first');
+        return;
+    }
+
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement
+    });
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    fetch("{{ route('admin.orders.add-card', $order->id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            payment_method: paymentMethod.id
+        })
+    })
+    .then(res => res.json())
+    .then(res => {
+        alert(res.message);
+        location.reload();
+    })
+    .catch(() => alert('Something went wrong'));
+}
+</script>
+
+<script>
+$(document).on('click', '.capture-btn', function () {
+
+    const orderId = $(this).data('order-id');
+    const amount  = $(this).data('uncapture-amount')
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: 'Are you sure you want to capture this payment?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, capture it',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            url: "{{ route('admin.orders.captureInitialPayment', '__ORDER_ID__') }}"
+                    .replace('__ORDER_ID__', orderId),
+            type: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                amount: amount
+            },
+            beforeSend: function () {
+                Swal.fire({
+                    title: 'Processing...',
+                    text: 'Capturing payment',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function (response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: response.message ?? 'Payment has been captured successfully'
+                }).then(() => {
+                    location.reload();
+                });
+            },
+            error: function (xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: xhr.responseJSON?.message ?? 'Payment capture failed'
+                });
+            }
+        });
+
+    });
+});
+</script>
+
+<script>
+$(document).on('click', '.cancel-btn', function () {
+
+    const orderId = $(this).data('order-id');
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: 'Are you sure you want to cancel this payment?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, cancel it',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+            url: "{{ route('admin.orders.cancelInitialPayment', '__ORDER_ID__') }}"
+                    .replace('__ORDER_ID__', orderId),
+            type: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            beforeSend: function () {
+                Swal.fire({
+                    title: 'Processing...',
+                    text: 'cancelling payment',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            },
+            success: function (response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: response.message ?? 'Payment has been canceled successfully'
+                }).then(() => {
+                    location.reload();
+                });
+            },
+            error: function (xhr) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: xhr.responseJSON?.message ?? 'Payment canceled failed'
+                });
+            }
+        });
+
+    });
+});
+</script>
+<script>
+
+let maxRefundAmount = 0;
+
+$(document).on('click', '.open-payment-refund', function () {
+
+    let paymentId = $(this).data('payment-id');
+    maxRefundAmount = parseFloat($(this).data('amount'));
+
+    $('#refundPaymentId').val(paymentId);
+    $('#refundAmount').val(maxRefundAmount);
+    $('#refundAmount').attr('max', maxRefundAmount);
+
+    $('#maxRefundText').text(maxRefundAmount.toFixed(2));
+
+    $('#paymentRefundModal').modal('show');
+});
+
+// ✅ Enforce max while typing
+$(document).on('input', '#refundAmount', function () {
+    let value = parseFloat($(this).val());
+
+    if (value > maxRefundAmount) {
+        $(this).val(maxRefundAmount);
+    }
+});
+
+
 
 
 
 
 </script>
+
+
 
 
 @endsection

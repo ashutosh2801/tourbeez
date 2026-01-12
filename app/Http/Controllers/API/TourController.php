@@ -39,6 +39,7 @@ class TourController extends Controller
                 'categories:id',
                 'location:id,city_id,state_id,country_id',
             ])
+            ->onlyRoot()
             ->where('status', 1)
             ->whereHas('schedules', function ($sq) {
                 $sq->whereDate('until_date', '>=', now()->toDateString());
@@ -195,9 +196,22 @@ class TourController extends Controller
                 ->first();
         });
 
+
         if (!$tour) {
             return response()->json(['status' => false, 'message' => 'Tour not found'], 404);
         }
+
+         if ($tour->parent_id) {
+
+            return response()->json([
+                'status' => true,
+                'sub_tour' => true,
+                'parent_data' => $tour->parent,
+                'parent_url' => "https://tourbeez.com/tour/" . $tour->parent?->slug,
+                
+            ]);
+        }
+
 
         $galleries = [];
         foreach ($tour->galleries as $item) {
@@ -351,8 +365,9 @@ class TourController extends Controller
         ]);
     }
 
-
-
+    /**
+     * Fetch booking related info for a tour.
+     */
     public function fetch_booking(Request $request, $slug)
     {
         // Remove query logging to reduce overhead in production
@@ -456,7 +471,6 @@ class TourController extends Controller
         ]);
     }
 
-
     private function getDisabledTourDates_fromdb(int $tourId): array
     {
         // ✅ Load the precomputed meta row for this tour
@@ -516,8 +530,6 @@ class TourController extends Controller
     /**
      * Fetch booking related info for a tour.
      */
-
-
     public function fetch_sub_tours(Request $request, $id, $date)
     {
         $subTours = Tour::select([
@@ -625,10 +637,201 @@ class TourController extends Controller
     /** 
      * Search home page tour  
      */
+
     public function search(Request $request) 
+{
+    $search = $request->input('q', '');
+    $date   = $request->input('date', '');
+
+    // Build cache key
+    $cacheKey = 'search_tours_' . md5($search . '_' . $date);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cities (via tour_locations)
+    |--------------------------------------------------------------------------
+    */
+    $cities = DB::table('tour_locations as tl')
+        ->join('tours as t', 't.id', '=', 'tl.tour_id')
+        ->join('cities as c', 'c.id', '=', 'tl.city_id')
+        ->join('states as s', 's.id', '=', 'c.state_id')
+        ->join('countries as cc', 'cc.id', '=', 's.country_id')
+        ->join('uploads as u', 'u.id', '=', 'c.upload_id')
+        ->select(
+            'c.id',
+            'c.name',
+            's.id as state_id',
+            's.name as state_name',
+            'cc.id as country_id',
+            'cc.name as country_name',
+            'u.file_name as image'
+        )
+        ->where('c.upload_id', '>=', 1)
+        ->whereExists(function ($query) {
+            $query->select(DB::raw(1))
+                ->from('tour_schedules as ts')
+                ->whereColumn('ts.tour_id', 't.id')
+                ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+        })
+        ->when($search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('c.name', 'LIKE', $search . '%')
+                  ->orWhere('s.name', 'LIKE', $search . '%')
+                  ->orWhere('cc.name', 'LIKE', $search . '%');
+            });
+        })
+        ->groupBy(
+            'c.id',
+            'c.name',
+            's.id',
+            's.name',
+            'cc.id',
+            'cc.name',
+            'u.file_name'
+        )
+        ->orderBy('c.name', 'asc')
+        ->limit(2)
+        ->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Categories
+    |--------------------------------------------------------------------------
+    */
+    $categories = Category::orderBy('name', 'asc')
+        ->when($search, function ($query, $search) {
+            $query->where('name', 'LIKE', $search . '%');
+        })
+        ->limit(3)
+        ->get();
+
+    $total_cities     = $cities->count();
+    $total_categories = $categories->count();
+    $total_tours      = 8 - ($total_cities + $total_categories);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tours
+    |--------------------------------------------------------------------------
+    */
+    $tours = Cache::remember($cacheKey, now()->addMinutes(20), function () use ($search, $total_tours) {
+        return Tour::with(['location' => function ($query) {
+                $query->select('id', 'tour_id', 'address');
+            }])
+            ->onlyRoot()
+            ->select('id', 'title', 'slug', 'unique_code', 'price')
+            ->where('status', 1)
+            ->when($search, function ($query, $search) {
+                $query->where('title', 'LIKE', '%' . $search . '%');
+            })
+            ->orderBy('title', 'asc')
+            ->limit(max(0, $total_tours))
+            ->get();
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Build Response Stack (City + State + Country)
+    |--------------------------------------------------------------------------
+    */
+    $data         = [];
+    $stateStack   = [];
+    $countryStack = [];
+
+    if ($total_cities > 0) {
+        foreach ($cities as $city) {
+
+            // City
+            $data[] = [
+                'icon'    => 'city',
+                'title'   => $this->highlightMatch($city->name, $search),
+                'slug'    => '/' . Str::slug($city->name) . '/' . $city->id . '/c1',
+                'address' => ucfirst($city->state_name) . ', ' . ucfirst($city->country_name),
+            ];
+
+            // State (unique)
+            if (!isset($stateStack[$city->state_id])) {
+                $stateStack[$city->state_id] = [
+                    'icon'    => 'city',
+                    'title'   => $this->highlightMatch($city->state_name, $search),
+                    'slug'    => '/' . Str::slug($city->state_name) . '/' . $city->state_id . '/s1',
+                    'address' => ucfirst($city->country_name),
+                ];
+            }
+
+            // Country (unique)
+            if (!isset($countryStack[$city->country_id])) {
+                $countryStack[$city->country_id] = [
+                    'icon'    => 'city',
+                    'title'   => $this->highlightMatch($city->country_name, $search),
+                    'slug'    => '/' . Str::slug($city->country_name) . '/' . $city->country_id . '/c2',
+                    'address' => '',
+                ];
+            }
+        }
+    }
+
+    // Merge: City → State → Country
+    $data = array_merge(
+        $data,
+        array_values($stateStack),
+        array_values($countryStack)
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Categories
+    |--------------------------------------------------------------------------
+    */
+    if ($total_categories > 0) {
+        foreach ($categories as $category) {
+            $data[] = [
+                'icon'    => 'category',
+                'title'   => $this->highlightMatch($category->name, $search),
+                'slug'    => '/' . $category->slug . '/' . $category->id . '/c3',
+                'address' => '',
+            ];
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tours
+    |--------------------------------------------------------------------------
+    */
+    if ($tours->count() > 0) {
+        foreach ($tours as $tour) {
+            $image_id = $tour->main_image->id ?? 0;
+            $image    = uploaded_asset($image_id, 'thumb');
+
+            $data[] = [
+                'icon'    => $image,
+                'title'   => $this->highlightMatch($tour->title, $search),
+                'slug'    => '/tour/' . $tour->slug,
+                'address' => $tour->location?->address,
+            ];
+        }
+    }
+
+    if (empty($data)) {
+        return response()->json([
+            'status'  => false,
+            'data'    => [],
+            'message' => 'No records found!',
+        ]);
+    }
+
+    return response()->json([
+        'status' => true,
+        'data'   => $data,
+    ]);
+}
+
+    public function search32432(Request $request) 
     {
         
         $search = $request->input('q', '');
+
         $date = $request->input('date', '');
 
         // Build cache key
@@ -662,7 +865,9 @@ class TourController extends Controller
                     })
                     ->when($search, function ($query, $search) {
                         $query->where(function ($q) use ($search) {
-                            $q->where('c.name', 'LIKE', '' . $search . '%');
+                            $q->where('c.name', 'LIKE', $search . '%')
+                              ->orWhere('s.name', 'LIKE', $search . '%')
+                              ->orWhere('cc.name', 'LIKE', $search . '%');
                         });
                     })
                     ->limit(2)
@@ -1997,9 +2202,10 @@ public function single(Request $request)
                                     id="tour_startdate"
                                     name="tour_startdate[]"
                                     placeholder="Select Date" 
+                                    data-format="ddd MMM DD, YYYY"
                                     data-single="true" 
                                     data-show-dropdown="true" 
-                                    value="'.$tour_start_date.'">
+                                    value="'.date('D M d, Y',strtotime($tour_start_date)).'">
 
                                 <div class="input-group-append">
                                     <span class="input-group-text"><i class="fas fa-calendar"></i></span>

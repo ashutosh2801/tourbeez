@@ -278,7 +278,6 @@
         </div>
     </div>
 
-    {{-- =============== TOGGLE SCRIPT =============== --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const roleSelect = document.getElementById('role');
