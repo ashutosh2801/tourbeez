@@ -50,14 +50,21 @@
 
 <x-admin>
     @section('title', 'Edit User & Supplier Info')
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title">Edit User & Supplier Info</h3>
-            <a href="{{ route('admin.user.index') }}" class="btn btn-sm btn-dark">Back</a>
+    <div class="card card-primary bg-white border rounded-lg-custom">
+        <div class="card-header edit-supplier-head">
+            <div class="row">
+                <div class="col-md-8 col-6">
+                    <h3 class="card-title">Edit User & Supplier Info</h3>
+                </div>
+                <div class="col-md-4 col-6">
+                    <div class="card-tools">
+                        <a href="{{ route('admin.supplier.index') }}" class="btn btn-sm btn-back">Back</a>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div class="card-body">
-            <form action="{{ route('admin.user.update', $user) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('admin.user.update', $user) }}" method="POST" enctype="multipart/form-data">
+            <div class="card-body edit-supplier-body">
                 @method('PUT')
                 @csrf
                 <input type="hidden" name="id" value="{{ $user->id }}">
@@ -118,14 +125,12 @@
 
                 </div>
 
-
-                <hr>
-
                 {{-- ===== SUPPLIER INFO ===== --}}
                 @php
                     $supplier = $user->supplier ?? null;
                 @endphp
                 @if($supplier && $user->role == 'Supplier')
+                    <hr>
                     <h4 class="mt-4 mb-3">Supplier Information</h4>
                     <div class="row">
                         <div class="col-lg-6">
@@ -273,10 +278,11 @@
                         </div>
                     </div>
                 @endif
-                <div class="mt-4 text-right">
-                    <button class="btn btn-primary" type="submit">Save</button>
-                </div>
-            </form>
-        </div>
+            </div>
+
+            <div class="card-footer bg-white justify-flex-end">
+                <button class="btn btn-success m-0" type="submit"><i class="fas fa-save"></i> Save</button>
+            </div>
+        </form>
     </div>
 </x-admin>

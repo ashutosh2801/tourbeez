@@ -1,11 +1,21 @@
 <x-admin>
     @section('title', 'Users')
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">User Table</h3>
-            <div class="card-tools"><a href="{{ route('admin.user.create') }}" class="btn btn-sm btn-primary">Add</a></div>
+    <div class="card-primary mb-3">
+        <div class="card-header suppliers-head">
+            <div class="row">
+                <div class="col-md-8 col-6">
+                    <h3 class="card-title">User Table</h3>
+                </div>
+                <div class="col-md-4 col-6">
+                    <div class="card-tools">
+                        <a href="{{ route('admin.user.create') }}" class="btn btn-sm btn-success"> + Add Users</a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
+    </div>
+    <div class="card-primary bg-white border rounded-lg-custom customer-edit-body">
+        <div class="card-body p-0">
             <table class="table table-striped" id="userTable">
                 <thead>
                     <tr>
@@ -27,15 +37,14 @@
                             <td>{{ $user->role }}</td>
                             <td>{{ $user->created_at }}</td>
                             <td>
-                                <a href="{{ route('admin.user.edit', encrypt($user->id)) }}"
-                                    class="btn btn-sm btn-primary">Edit</a>
+                                <a href="{{ route('admin.user.edit', encrypt($user->id)) }}" class="btn btn-sm btn-edit"><i class="far fa-edit"></i></a>
                             </td>
                             <td>
                                 <form action="{{ route('admin.user.destroy', encrypt($user->id)) }}" method="POST"
                                     onsubmit="return confirm('Are sure want to delete?')">
                                     @method('DELETE')
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    <button type="submit" class="btn btn-sm btn-danger confirm-delete"><i class="fas fa-trash-alt"></i></button>
                                 </form>
                             </td>
                         </tr>

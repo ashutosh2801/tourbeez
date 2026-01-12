@@ -7,8 +7,9 @@
 <div class="card-primary mb-3">
     <form method="GET" action="{{ route('admin.orders.manifest') }}">
         <div class="card-header order-manifest-head">
-            <div class="d-flex justify-content-between align-items-center w-100">
+            <div class="d-flex justify-content-between align-items-center w-100 mb-manifest">
                 <h3 class="card-title text-white">Session Manifest</h3>
+
                 <div class="d-flex align-items-center gap-1">
                     <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center left-btn" id="prev-date">
                         <i class="bi bi-chevron-left"></i>

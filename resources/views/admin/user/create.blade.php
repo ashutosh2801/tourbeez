@@ -49,14 +49,19 @@
 </style>
 <x-admin>
     @section('title', 'Create User')
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Create User</h3>
-            <div class="card-tools">
-                <a href="{{ route('admin.user.index') }}" class="btn btn-sm btn-dark">Back</a>
+    <div class="card card-primary bg-white border rounded-lg-custom">
+        <div class="card-header create-supplier-head">
+            <div class="row">
+                <div class="col-md-8 col-6">
+                    <h3 class="card-title">Create User</h3>
+                </div>
+                <div class="col-md-4 col-6">
+                    <div class="card-tools">
+                        <a href="{{ route('admin.supplier.index') }}" class="btn btn-sm btn-back">Back</a>
+                    </div>
+                </div>
             </div>
         </div>
-
         <div class="card-body">
             <form action="{{ route('admin.user.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -263,9 +268,9 @@
                     </div>
 
                     {{-- ================= SUBMIT BUTTON ================= --}}
-                    <div class="col-lg-12 mt-4">
+                    <div class="col-lg-12">
                         <div class="float-right">
-                            <button class="btn btn-primary" type="submit">Save</button>
+                            <button class="btn btn-success m-0" type="submit"><i class="fas fa-save"></i> Save</button>
                         </div>
                     </div>
                 </div>

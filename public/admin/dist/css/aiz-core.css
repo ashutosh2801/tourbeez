@@ -4181,6 +4181,9 @@ input[type="number"] {
 .card-bordered {
     border: 1px solid #ebedf2;
 }
+.justify-flex-end {
+    justify-content: flex-end !important;
+}
 .aiz-p-hov-icon a {
     display: block;
     height: 32px;
@@ -8152,8 +8155,8 @@ a.dropdown-footer:hover {
 }
 
 .tour-table tbody .confirm-delete {
-    padding: 10px 15px;
-    font-size: 15px;
+    padding: 8px 13px;
+    font-size: 13px;
 }
 
 .tour-table tbody .confirm-clone {
@@ -9199,8 +9202,8 @@ table.dataTable {
 }
 
 .category-main-body .confirm-delete {
-    padding: 10px 15px;
-    font-size: 15px;
+    padding: 8px 13px;
+    font-size: 13px;
 }
 
 .edit-cat-header {
@@ -9271,8 +9274,8 @@ table.dataTable {
 }
 
 .tour-type-body .confirm-delete {
-    padding: 10px 15px;
-    font-size: 15px;
+    padding: 8px 13px;
+    font-size: 13px;
 }
 
 .countries-head,
@@ -9380,4 +9383,73 @@ table.dataTable {
     border-left: 1px solid #c0c0c0;
     border-right: 1px solid #c0c0c0;
     color: #000;
+}
+
+@media (max-width: 767px) {
+
+    .order-manifest-head .mb-manifest {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+}
+
+.customer-head,
+.suppliers-head,
+.roles-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.customer-head .row,
+.suppliers-head .row,
+.create-supplier-head .row,
+.edit-supplier-head .row,
+.roles-head .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.customer-head .card-tools,
+.suppliers-head .card-tools,
+.create-supplier-head .card-tools,
+.edit-supplier-head .card-tools,
+.roles-head .card-tools {
+    float: right;
+}
+
+.customer-body .btn-edit {
+    font-size: 17px;
+}
+
+.customer-body .confirm-delete {
+    padding: 8px 13px;
+    font-size: 13px;
+}
+
+.customer-edit-head .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.customer-edit-head .card-tools {
+    float: right;
+}
+
+.customer-edit-body .form-control,
+.edit-supplier-body .form-control {
+    margin-bottom: 15px;
+}
+
+.customer-edit-body .btn-edit {
+    font-size: 17px;
+}
+
+.customer-edit-body .confirm-delete {
+    padding: 8px 13px;
+    font-size: 13px;
 }
