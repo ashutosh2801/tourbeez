@@ -8082,6 +8082,11 @@ a.dropdown-footer:hover {
     font-size: 14px;
 }
 
+.confirm-delete {
+    padding: 10px 15px;
+    font-size: 15px;
+}
+
 .table thead {
     background: #edf3ff;
 }
@@ -8155,8 +8160,8 @@ a.dropdown-footer:hover {
 }
 
 .tour-table tbody .confirm-delete {
-    padding: 8px 13px;
-    font-size: 13px;
+    padding: 10px 15px;
+    font-size: 15px;
 }
 
 .tour-table tbody .confirm-clone {
@@ -9452,4 +9457,8 @@ table.dataTable {
 .customer-edit-body .confirm-delete {
     padding: 8px 13px;
     font-size: 13px;
+}
+
+.tour-type-body table.dataTable {
+    width: 100% !important;
 }

@@ -75,7 +75,7 @@
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.promos.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.promos.index') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-cannabis"></i>
+                        <i class="nav-icon fas fa-atom"></i>
                         <p>{{  translate('Promo Code') }}
                             <span class="badge badge-warning right">{{ $TourTypeCount }}</span>
                         </p>
@@ -88,7 +88,7 @@
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.vouchers.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.vouchers.index') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-cannabis"></i>
+                        <i class="nav-icon fab fa-codepen"></i>
                         <p>{{  translate('Vouchers Code') }}
                             <span class="badge badge-warning right">{{ $TourTypeCount }}</span>
                         </p>
