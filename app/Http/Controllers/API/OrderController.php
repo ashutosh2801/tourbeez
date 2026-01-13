@@ -234,7 +234,9 @@ class OrderController extends Controller
          
         $tour_fees = $order->order_tour->tour_fees ? json_decode($order->order_tour->tour_fees) : [];
         $tourFees = [];
-        foreach($tour_fees as $tf) {
+
+        if($tour_fees){
+            foreach($tour_fees as $tf) {
             $tourFees[] = [
                 "id"    => $tf->tour_taxes_id,
                 "label" => $tf->label,
@@ -242,6 +244,8 @@ class OrderController extends Controller
                 "value" => $tf->value,
             ];
         }
+        }
+        
 
         $tourPickups = [];
         if(!empty($order->tour->pickups) && isset($order->tour->pickups[0]) && $order->tour->pickups[0]?->name === 'No Pickup') {
@@ -267,12 +271,23 @@ class OrderController extends Controller
 
         $customer = $order->customer;
 
-        $image = uploaded_asset($order->tour->main_image->id ?? 0, 'medium');        
+        $image = uploaded_asset($order->tour->main_image->id ?? 0, 'medium');    
+        $paidAmount = $order->payments()
+            ->where('status', 'succeeded')
+            ->sum('amount');
+
+        $totalAmount = $order->total_amount ?? 0;
+
+        $balanceAmount = max($totalAmount - $paidAmount, 0);    
 
         $data = [
             "order_number"  => $order->order_number,
             "currency"      => $order->currency,
-            "total_amount"  => $order->total_amount,
+            'payment_status'=> $paidAmount > 0 ? 'paid' : 'unpaid',
+            "total_amount"  => $paidAmount > 0 ? $balanceAmount : $totalAmount,
+            "balance_amount"  => $balanceAmount,
+            "paid_amount"   => $paidAmount,
+            'payment_by'    => 'customer',
             "orderId"       => $order->id,
             "tourId"        => $order->tour_id,
             "tourTitle"     => $order->tour?->title,
@@ -649,6 +664,10 @@ class OrderController extends Controller
             // \Log::info(($adv_deposite == 'deposit'));
 
             // Final update to main order
+
+            $previousOrderTotalAmount = $order->total_amount;
+
+            $order_actions_notes = NULL;
             $order->sub_tour_id            = $request->sub_tour_id;
             $order->action_name        = $request->action_name;
             $order->number_of_guests   = $quantity;
@@ -675,6 +694,8 @@ class OrderController extends Controller
 
 
             if ($adv_deposite == "deposit") {
+                \Log::warning('deposit');
+
                 $depositRule = TourSpecialDeposit::where('use_deposit', 1)->where('tour_id', $tour->id)->first();
 
                 Log::info($depositRule);
@@ -837,26 +858,8 @@ class OrderController extends Controller
                             $order->card_exp_year = $cardDetails['exp_year'];
                         }
 
-
-                        // OrderPayment::create([
-                        //     'order_id'          => $order->id,
-                        //     'payment_intent_id' => $pi->id,
-                        //     'transaction_id'    => null, // no charge yet until capture
-                        //     'payment_method'    => 'card',
-                        //     'card_brand'        => $paymentMethod->card->brand ?? null,
-                        //     'card_last4'        => $paymentMethod->card->last4 ?? null,
-                        //     'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
-                        //     'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
-                        //     'amount'            => ($adv_deposite == 'deposit')
-                        //                             ? $chargeAmount
-                        //                             : $order->total_amount,
-                        //     'currency'          => $order->currency,
-                        //     'status'            => 'pending', // manual capture pending
-                        //     'action'            => $adv_deposite,
-                        //     'response_payload'  => json_encode($pi),
-                        // ]);
                     }
-
+                    \Log::warning('uncaptured3423432');
                     OrderPayment::create([
                             'order_id'          => $order->id,
                             'payment_intent_id' => $pi->id,
@@ -891,7 +894,7 @@ class OrderController extends Controller
 
 
                     $retrievedIntent = \Stripe\PaymentIntent::retrieve($si->id);
-                    
+                    \Log::warning('uncaptured34234323432432');
                     $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
                     OrderPayment::create([
                             'order_id'          => $order->id,
@@ -913,7 +916,7 @@ class OrderController extends Controller
 
                 }
             }else if($adv_deposite == "full") {
-
+                \Log::warning('full');
 
                 $pi = \Stripe\PaymentIntent::create([
                         'customer'  => $stripeCustomer->id,
@@ -969,7 +972,70 @@ class OrderController extends Controller
                 } catch (\Exception $cardError) {
                     \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
                 }
+            }else if ($adv_deposite === "partial") {
+                \Log::warning('partial');
+                $paidAmount = $order->payments()
+                    ->where('status', 'succeeded')
+                    ->sum('amount');
+
+                \Log::warning($order);
+                
+
+                $order->total_amount = $previousOrderTotalAmount;
+                $totalAmount  = $previousOrderTotalAmount ?? 0;
+                $chargeAmount = max(($totalAmount - $paidAmount), 0);
+                \Log::warning("$chargeAmount");
+                if ($chargeAmount <= 0) {
+                    throw new \Exception('No remaining amount to charge.');
+                }
+
+                
+                $pi = \Stripe\PaymentIntent::create([
+                    'customer' => $stripeCustomer->id,
+                    'amount'   => intval(round($chargeAmount * 100)),
+                    'currency' => $order->currency,
+                    'automatic_payment_methods' => ['enabled' => true],
+                    'receipt_email' => $data['email'],
+                    'description' => $tour->title . ' (Remaining Balance)',
+                    'statement_descriptor_suffix' => $order->order_number,
+                    'metadata' => $metaData,
+                ]);
+
+                // 3️⃣ Save PI details on order
+                $order->payment_intent_client_secret = $pi->client_secret;
+                $order->payment_intent_id = $pi->id;
+
+                // 4️⃣ Retrieve payment method details
+                // $paymentMethod = \Stripe\PaymentMethod::retrieve($pi->payment_method);
+
+                // if ($paymentMethod->type === 'card') {
+                //     $order->card_brand     = $paymentMethod->card->brand ?? null;
+                //     $order->card_last4     = $paymentMethod->card->last4 ?? null;
+                //     $order->card_exp_month = $paymentMethod->card->exp_month ?? null;
+                //     $order->card_exp_year  = $paymentMethod->card->exp_year ?? null;
+                // }
+
+                // $pi = \Stripe\PaymentIntent::retrieve($event->data->object->id);
+
+                // $paymentMethod = \Stripe\PaymentMethod::retrieve($pi->payment_method);
+
+                $order->save();
+
+                // 5️⃣ Store payment record
+                OrderPayment::create([
+                    'order_id'          => $order->id,
+                    'payment_intent_id' => $pi->id,
+                    'transaction_id'    => $pi->latest_charge ?? null,
+                    'amount'            => $chargeAmount,
+                    'currency'          => $order->currency,
+                    'status'            => 'succeeded', // succeeded / requires_action / processing
+                    'action'            => 'partial',
+                    'response_payload'  => json_encode($pi),
+                ]);
+
+                $order_actions_notes = $customer->name." paid the remaining amount {$chargeAmount}";
             }
+
 
 
 
@@ -992,7 +1058,7 @@ class OrderController extends Controller
             $order_actions = [
                     'order_id'         => $order->id,
                     'performed_by'     => $customer->id,
-                    'notes'            => $customer->name." placed a new order {$order->order_number}",
+                    'notes'            => $order_actions_notes ?? $customer->name." placed a new order {$order->order_number}",
                     'created_at'       => now(),
                     'updated_at'       => now()
                 ];
