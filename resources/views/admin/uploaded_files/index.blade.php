@@ -1,23 +1,25 @@
 <x-admin>
 @section('title','All uploaded files')
-<div class="aiz-titlebar text-left mt-2 mb-3">
-	<div class="row align-items-center">
-		<div class="col-md-6">
-			<h1 class="h3">{{translate('All uploaded files')}}</h1>
-		</div>
-		<div class="col-md-6 text-md-right">
-			<a href="{{ route('admin.uploaded-files.create') }}" class="btn btn-primary">
-				<span>{{translate('Upload New File')}}</span>
-			</a>
+<div class="card-primary mb-3">
+	<div class="card-header uploaded-file-head">
+		<div class="row">
+			<div class="col-md-8 col-6">
+				<h3 class="card-title text-white">{{translate('All uploaded files')}}</h3>
+			</div>
+			<div class="col-md-4 col-6">
+				<div class="card-tools">
+					<a href="{{ route('admin.uploaded-files.create') }}" class="btn btn-sm btn-success"> + {{translate('Upload New File')}}</a>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
 
-<div class="card">
+<div class="card card-primary bg-white border rounded-lg-custom media-body">
     <form id="sort_uploads" action="">
         <div class="card-header row gutters-5">
             <div class="col-md-3">
-                <h5 class="mb-0 h6">{{translate('All files')}}</h5>
+                <h5 class="mb-0">{{translate('All files')}}</h5>
             </div>
             <div class="col-md-3 ml-auto mr-0">
                 <select class="form-control form-control-xs aiz-selectpicker" name="sort" onchange="sort_uploads()">
@@ -30,8 +32,8 @@
             <div class="col-md-3">
                 <input type="text" class="form-control form-control-xs" name="search" placeholder="{{ translate('Search your files') }}" value="{{ $search }}">
             </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">{{ translate('Search') }}</button>
+            <div class="col-auto search-box">
+                <button type="submit" class="btn btn-search"> <i class="fas fa-search"></i> {{ translate('Search') }}</button>
             </div>
         </div>
     </form>

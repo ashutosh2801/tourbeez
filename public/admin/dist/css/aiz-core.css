@@ -9256,13 +9256,15 @@ table.dataTable {
 }
 
 .tour-type-head,
-.edit-tourType-body {
+.edit-tourType-body,
+.uploaded-file-head {
     border-radius: 10px;
     background: #01228b !important;
 }
 
 .tour-type-head .row,
-.edit-tourType-body .row {
+.edit-tourType-body .row,
+.uploaded-file-head .row {
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -9270,7 +9272,8 @@ table.dataTable {
 }
 
 .tour-type-head .card-tools,
-.edit-tourType-body .card-tools {
+.edit-tourType-body .card-tools,
+.uploaded-file-head .card-tools {
     float: right;
 }
 
@@ -9401,7 +9404,8 @@ table.dataTable {
 
 .customer-head,
 .suppliers-head,
-.roles-head {
+.roles-head,
+.permission-head {
     border-radius: 10px;
     background: #01228b !important;
 }
@@ -9410,7 +9414,8 @@ table.dataTable {
 .suppliers-head .row,
 .create-supplier-head .row,
 .edit-supplier-head .row,
-.roles-head .row {
+.roles-head .row,
+.permission-head .row {
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -9421,7 +9426,8 @@ table.dataTable {
 .suppliers-head .card-tools,
 .create-supplier-head .card-tools,
 .edit-supplier-head .card-tools,
-.roles-head .card-tools {
+.roles-head .card-tools,
+.permission-head .row {
     float: right;
 }
 
@@ -9461,4 +9467,18 @@ table.dataTable {
 
 .tour-type-body table.dataTable {
     width: 100% !important;
+}
+
+.media-body .card-header .bootstrap-select.form-control {
+    border: 1px solid #aeb0b4;
+}
+@media (max-width: 767px) {
+
+    .media-body .card-header .form-control {
+        margin: 5px 0 10px 0;
+    }
+
+    .media-body .card-header .search-box {
+        width: 100%;
+    }
 }
