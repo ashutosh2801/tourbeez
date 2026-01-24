@@ -9560,6 +9560,23 @@ table.dataTable {
     background: #01228b !important;
 }
 
+.internal-order-body .balance-bar {
+    position: sticky;
+    top: 0;
+    background: #f8f9fc;
+    border-radius: 10px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05);
+    z-index: 50;
+    margin-bottom: 1rem;
+    padding: 16px;
+}
+
+.internal-order-body #totalDue {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1cc88a;
+}
+
 .order-heads {
     background-color: #343a41 !important;
     color: #FFF;
@@ -9568,4 +9585,55 @@ table.dataTable {
 .order-heads .btn {
     font-size: 16px;
     font-weight: bold;
+}
+
+.cus-info-head {
+    border-bottom: 1px solid #e6e6e6;
+    font-size: 18px;
+    font-weight: bold;
+    color: #000;
+    padding-bottom: 5px;
+    margin: 10px 0 20px;
+}
+
+.internal-order-body .accordion>.card {
+    overflow: visible;
+}
+
+.internal-order-body #tourContainer>div>div {
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 10px 0 0 !important;
+}
+
+.internal-order-body .card-total .form-control {
+    width: auto;
+    display: inline-block;
+}
+
+.internal-order-body .paymentRow .addRow,
+.internal-order-body .paymentRow .removeRow {
+    font-size: 18px;
+    padding: 5px 13px;
+}
+
+@media (max-width: 767px) {
+
+    .internal-order-body .balance-bar {
+        display: block !important;
+        text-align: center;
+    }
+
+    .internal-order-body .tour-detail {
+        text-align: center;
+    }
+
+    .internal-order-body .paymentRow {
+        gap: 10px;
+    }
+
+    .internal-order-body .card-footer a.btn {
+        width: 100%;
+    }
+
 }
