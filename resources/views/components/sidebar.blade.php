@@ -269,39 +269,39 @@
             <ul class="aiz-side-nav-list level-2">
                 @can('general_settings')
                 <li class="aiz-side-nav-item">
-                    <a href="{{ route('admin.general_settings') }}" class="aiz-side-nav-link">
-                        <i class="nav-icon fas fa-cog"></i>
+                    <a href="{{ route('admin.general_settings') }}" class="aiz-side-nav-link nav-link">
+                        <i class="nav-icon fas fa-sliders-h"></i>
                         <span class="aiz-side-nav-text">{{ translate('General Settings') }}</span>
                     </a>
                 </li>
                 @endcan   
                 @can('general_settings')
                 <li class="aiz-side-nav-item">
-                    <a href="{{ route('admin.payment_method_settings') }}" class="aiz-side-nav-link">
-                        <i class="nav-icon fas fa-cog"></i>
+                    <a href="{{ route('admin.payment_method_settings') }}" class="aiz-side-nav-link nav-link">
+                        <i class="nav-icon fas fa-money-check"></i>
                         <span class="aiz-side-nav-text">{{ translate('Payment Settings') }}</span>
                     </a>
                 </li>
                 @endcan 
                 @can('general_settings')
                 <li class="aiz-side-nav-item">
-                    <a href="{{ route('admin.third_party_settings') }}" class="aiz-side-nav-link">
-                        <i class="nav-icon fas fa-cog"></i>
+                    <a href="{{ route('admin.third_party_settings') }}" class="aiz-side-nav-link nav-link">
+                        <i class="nav-icon fas fa-toolbox"></i>
                         <span class="aiz-side-nav-text">{{ translate('Third Party Settings') }}</span>
                     </a>
                 </li>
                 @endcan
                 @can('smtp_settings')
                 <li class="aiz-side-nav-item">
-                    <a href="{{ route('admin.email_settings') }}" class="aiz-side-nav-link">
-                        <i class="nav-icon fas fa-envelope-open-text"></i>
+                    <a href="{{ route('admin.email_settings') }}" class="aiz-side-nav-link nav-link">
+                        <i class="nav-icon fas fa-inbox"></i>
                         <span class="aiz-side-nav-text">{{ translate('Mail Settings') }}</span>
                     </a>
                 </li>
                 @endcan   
                 @can('email_templates')
                 <li class="aiz-side-nav-item">
-                    <a href="{{ route('admin.email-templates.index') }}" class="aiz-side-nav-link">
+                    <a href="{{ route('admin.email-templates.index') }}" class="aiz-side-nav-link nav-link">
                         <i class="nav-icon fas fa-envelope-open-text"></i>
                         <span class="aiz-side-nav-text">{{ translate('Email Templates') }}</span>
                     </a>
@@ -311,7 +311,7 @@
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.taxes.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.taxes.index') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-list"></i>
+                        <i class="nav-icon fas fa-file-invoice-dollar"></i>
                         <p>{{  translate('Taxes and Fees') }}
                             <span class="badge badge-warning right">{{ $TaxesCount }}</span>
                         </p>
@@ -322,7 +322,7 @@
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.banner.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.banner.index') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-list"></i>
+                        <i class="nav-icon fas fa-image"></i>
                         <p>{{  translate('Banner') }}
                             <!-- <span class="badge badge-warning right">{{ $TaxesCount }}</span> -->
                         </p>

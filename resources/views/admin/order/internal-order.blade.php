@@ -1,7 +1,27 @@
 <x-admin>
 @section('title', 'Internal Orders Create')
 
-<div class="card">
+<style>
+
+/* Balance bar */
+.balance-bar {
+    position: sticky;
+    top: 0;
+    background: #f8f9fc;
+    border-radius: 10px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05);
+    z-index: 50;
+    margin-bottom: 1rem;
+    padding: 16px;
+}
+
+#totalDue {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1cc88a;
+}
+
+</style>
 
     @if ($errors->any())
     <div class="alert alert-danger mb-4 p-3 rounded">
@@ -14,24 +34,28 @@
     @endif
 
     <!-- ================= Header ================= -->
-    <div class="card-header d-flex justify-content-between align-items-center bg-secondary p-3 mb-3 rounded">
-        <div class="form-group">
-            <h4 class="m-0">New Order</h4>
-            <small>Created by {{ auth()->user()->name }}</small>
+     <div class="card-primary mb-3">
+        <div class="card-header internal-order-head">
+            <div class="row">
+                <div class="col-12">
+                    <h3 class="card-title text-white w-full">New Order</h3>
+                    <small>Created by {{ auth()->user()->name }}</small>
+                </div>
+            </div>
         </div>
     </div>
 
-    <form id="orderForm" class="p-2" action="{{ route('admin.orders.store') }}" method="POST">
+    <form id="orderForm" action="{{ route('admin.orders.store') }}" method="POST">
         @csrf        
 
         <!-- ================= Balance + Status ================= -->
-        <div class="d-flex justify-content-between align-items-center p-3 mb-3 rounded z-10">
+        <div class="d-flex justify-content-between align-items-center rounded balance-bar">
             <div>
-                <strong id="totalDue">$0.00</strong><br>
+                <strong id="totalDue">$0.00</strong>
                 <small>Balance</small>
             </div>
-            <div>
-                <select name="order_status" class="form-control">
+            <div class="d-flex">
+                <select name="order_status" class="form-control mr-2">
                     <option value="0">New</option> 
                     <option value="4">Pending Customer</option>
                     <option value="3">Pending Supplier</option>
@@ -40,16 +64,16 @@
                     <option value="6">Cancelled</option>
                     <option value="7">Abandoned Cart</option>
                 </select>
+                <button type="submit" class="btn btn-success w-full">+ Create Order</button>
             </div>
-            <button type="submit" class="btn btn-primary">Create Order</button>
         </div>
-
+        
         <div class="accordion" id="accordionExample">           
             <div class="card" style="overflow: visible;">
                 <div class="card">
-                    <div class="card-header bg-secondary py-0 z-10" id="headingOne">
+                    <div class="card-header order-heads py-0 z-10" id="headingOne">
                         <h2 class="my-0 py-0">
-                            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                            <button type="button" class="btn btn-link collapsed py-0 px-0 text-white" 
                                 data-toggle="collapse" data-target="#collapseOne">
                                 <i class="fa fa-angle-right"></i> Customer Details
                             </button>                                  
@@ -367,7 +391,6 @@
             </div>
         </div>
     </form>
-</div>
 <div id="globalLoader" 
      style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
             background:rgba(255,255,255,0.6); z-index:99999;">

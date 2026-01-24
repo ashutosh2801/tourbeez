@@ -18,131 +18,138 @@
     </style>
     <div class="row">
         <div class="col-lg-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0 h6">{{translate('Email Templates')}}</h5>
-                </div>
-                <div class="card-body">
+            <div class="card-primary mb-3">
+                <div class="card-header email-templates-head">
                     <div class="row">
-                        <div class="col-3">
-                            <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-
+                        <div class="col-12">
+                            <h3 class="card-title text-white">{{translate('Email Templates')}}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card card-primary bg-white border rounded-lg-custom">
+                <div class="card-body p-0">
+                    <div class="row">
+                        <div class="col-3 pr-0">
+                            <div class="nav flex-column nav-pills email-template-sidebar" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                                 @foreach ($email_templates as $key => $email_template)
-                                    <a title="{{ $email_template->description }}" class="nav-link @if($email_template->id == 1) active @endif" id="v-pills-tab-2" data-toggle="pill" href="#v-pills-{{ $email_template->id }}" role="tab" aria-controls="v-pills-profile" aria-selected="false">{{ translate(ucwords(str_replace('_', ' ', $email_template->identifier)))  }}</a>
+                                    <a title="{{ $email_template->description }}" class="nav-link @if($email_template->id == 1) active @endif" id="v-pills-tab-2" data-toggle="pill" href="#v-pills-{{ $email_template->id }}" role="tab" aria-controls="v-pills-profile" aria-selected="false"><i class="fas fa-caret-right"></i> {{ translate(ucwords(str_replace('_', ' ', $email_template->identifier)))  }}</a>
                                 @endforeach
                             </div>
                         </div>
-                        <div class="col-9">
-                            <div class="tab-content" id="v-pills-tabContent">
+                        <div class="col-9 pl-0">
+                            <div class="email-template-body">
+                                <div class="tab-content" id="v-pills-tabContent">
 
-                                @if ($errors->any())
-                                    <div class="alert alert-danger">
-                                        <ul class="list-unstyled">
-                                            @foreach ($errors->all() as $error)
-                                                <li>{{ $error }}</li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
-                                @endif
+                                    @if ($errors->any())
+                                        <div class="alert alert-danger">
+                                            <ul class="list-unstyled">
+                                                @foreach ($errors->all() as $error)
+                                                    <li>{{ $error }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @endif
 
 
-                                @foreach ($email_templates as $key => $email_template)
-                                    <div class="tab-pane fade show @if($email_template->id == 1) active @endif" id="v-pills-{{ $email_template->id }}" role="tabpanel" aria-labelledby="v-pills-tab-1">
-                                        <form action="{{ route('admin.email-templates.update') }}" method="POST">
-                                            @csrf
-                                            <input type="hidden" name="identifier" value="{{ $email_template->identifier }}">
-                                            @if($email_template->identifier != 'password_reset_email0000')
+                                    @foreach ($email_templates as $key => $email_template)
+                                        <div class="tab-pane fade show @if($email_template->id == 1) active @endif" id="v-pills-{{ $email_template->id }}" role="tabpanel" aria-labelledby="v-pills-tab-1">
+                                            <form action="{{ route('admin.email-templates.update') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="identifier" value="{{ $email_template->identifier }}">
+                                                @if($email_template->identifier != 'password_reset_email0000')
 
-                                                <div class="form-group">
-                                                    <h2 class="heading" style="font-size:21px; margin: 0 0 35px; font-weight:700">{{ $email_template->description }}</h2>
+                                                    <div class="form-group">
+                                                        <h2 class="heading" style="font-size:21px; margin: 0 0 35px; font-weight:700; display: inline-block;">{{ $email_template->description }}</h2>
+                                                    </div>
+
+                                                    <div class="form-group row">
+                                                        <div class="col-md-2">
+                                                            <label class="col-from-label">{{translate('Activation')}}</label>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="aiz-switch aiz-switch-success mb-0">
+                                                                <input value="1" name="status" type="checkbox" 
+                                                                @if ($email_template->status == 1)
+                                                                    checked
+                                                                @endif>
+                                                                <span class="slider round"></span>
+                                                            </label>
+                                                        </div>
+                                                        
+                                                        <div class="col-md-5">
+
+                                                            <button type="button"
+                                                            class="btn btn-sm btn-primary popover-btn"
+                                                            data-toggle="popover"
+                                                            title="{{ $email_template->subject }}"
+                                                            data-html="true"
+                                                            data-placement="left"
+                                                            data-content="{{ $email_template->parameters }}">Use variables from here</button> 
+                                                            <a class="btn btn-sm btn-danger email-preview" data-href="{{ route('admin.email-templates.preview', $email_template->identifier) }}">{{translate('Preview')}}</a>
+
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                                <div class="form-group row">
+                                                    <label class="col-md-12 col-form-label">{{translate('Subject')}}</label>
+                                                    <div class="col-md-12">
+                                                        <input type="text" name="subject" value="{{ $email_template->subject }}" class="form-control" placeholder="{{translate('Subject')}}" required>
+                                                        @error('subject')
+                                                            <small class="form-text text-danger">{{ $message }}</small>
+                                                        @enderror
+                                                    </div>
                                                 </div>
+
+                                                {{-- <div class="form-group row">
+                                                    <label class="col-md-12 col-form-label">{{translate('Email Header')}}</label>
+                                                    <div class="col-md-12">
+                                                        <textarea name="header" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ $email_template->header ? $email_template->header : get_setting('default_email_header') }}</textarea>
+                                                        @error('header')
+                                                            <small class="form-text text-danger">{{ $message }}</small>
+                                                        @enderror
+                                                    </div>
+                                                </div> --}}
 
                                                 <div class="form-group row">
-                                                    <div class="col-md-2">
-                                                        <label class="col-from-label">{{translate('Activation')}}</label>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="aiz-switch aiz-switch-success mb-0">
-                                                            <input value="1" name="status" type="checkbox" 
-                                                            @if ($email_template->status == 1)
-                                                                checked
-                                                            @endif>
-                                                            <span class="slider round"></span>
-                                                        </label>
-                                                    </div>
-                                                    
-                                                    <div class="col-md-5">
-
-                                                        <button type="button"
-                                                        class="btn btn-sm btn-primary popover-btn"
-                                                        data-toggle="popover"
-                                                        title="{{ $email_template->subject }}"
-                                                        data-html="true"
-                                                        data-placement="left"
-                                                        data-content="{{ $email_template->parameters }}">Use variables from here</button> 
-                                                        <a class="btn btn-sm btn-danger email-preview" data-href="{{ route('admin.email-templates.preview', $email_template->identifier) }}">{{translate('Preview')}}</a>
-
+                                                    <label class="col-md-12 col-form-label">{{translate('Email Body')}}</label>
+                                                    <div class="col-md-12">
+                                                        <textarea name="body" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="500" required>{{ $email_template->body }}</textarea>
+                                                        @error('body')
+                                                            <small class="form-text text-danger">{{ $message }}</small>
+                                                        @enderror
                                                     </div>
                                                 </div>
-                                            @endif
-                                            <div class="form-group row">
-                                                <label class="col-md-12 col-form-label">{{translate('Subject')}}</label>
-                                                <div class="col-md-12">
-                                                    <input type="text" name="subject" value="{{ $email_template->subject }}" class="form-control" placeholder="{{translate('Subject')}}" required>
-                                                    @error('subject')
-                                                        <small class="form-text text-danger">{{ $message }}</small>
-                                                    @enderror
-                                                </div>
-                                            </div>
 
-                                            {{-- <div class="form-group row">
-                                                <label class="col-md-12 col-form-label">{{translate('Email Header')}}</label>
-                                                <div class="col-md-12">
-                                                    <textarea name="header" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ $email_template->header ? $email_template->header : get_setting('default_email_header') }}</textarea>
-                                                    @error('header')
-                                                        <small class="form-text text-danger">{{ $message }}</small>
-                                                    @enderror
-                                                </div>
-                                            </div> --}}
+                                                {{-- <div class="form-group row">
+                                                    <label class="col-form-label">{{translate('Email Footer')}}</label>
+                                                    <div class="col-md-12 col-form-label">
+                                                        <textarea name="footer" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ $email_template->footer ? $email_template->footer : get_setting('default_email_footer') }}</textarea>
+                                                        @error('footer')
+                                                            <small class="form-text text-danger">{{ $message }}</small>
+                                                        @enderror
+                                                    </div>
+                                                </div> --}}
 
-                                            <div class="form-group row">
-                                                <label class="col-md-12 col-form-label">{{translate('Email Body')}}</label>
-                                                <div class="col-md-12">
-                                                    <textarea name="body" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="500" required>{{ $email_template->body }}</textarea>
-                                                    @error('body')
-                                                        <small class="form-text text-danger">{{ $message }}</small>
-                                                    @enderror
+                                                <div class="form-group row">
+                                                    <label class="col-md-12 col-form-label">{{translate('Email Parameters')}}</label>
+                                                    <div class="col-md-12">
+                                                        <textarea name="parameters" class="form-control  aiz-text-editor" 
+                                                        data-buttons='[["font", ["bold", "underline", "italic"]],["para", ["ul", "ol"]],["view", ["fullscreen",  "codeview"]]]'
+                                                        placeholder="Type.." rows="8" required>{{ $email_template->parameters }}</textarea>
+                                                        @error('parameters')
+                                                            <small class="form-text text-danger">{{ $message }}</small>
+                                                        @enderror
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            {{-- <div class="form-group row">
-                                                <label class="col-form-label">{{translate('Email Footer')}}</label>
-                                                <div class="col-md-12 col-form-label">
-                                                    <textarea name="footer" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ $email_template->footer ? $email_template->footer : get_setting('default_email_footer') }}</textarea>
-                                                    @error('footer')
-                                                        <small class="form-text text-danger">{{ $message }}</small>
-                                                    @enderror
+                                                <div class="form-group mb-0 text-right">
+                                                    <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Update Settings')}}</button>
                                                 </div>
-                                            </div> --}}
-
-                                            <div class="form-group row">
-                                                <label class="col-md-12 col-form-label">{{translate('Email Parameters')}}</label>
-                                                <div class="col-md-12">
-                                                    <textarea name="parameters" class="form-control  aiz-text-editor" 
-                                                    data-buttons='[["font", ["bold", "underline", "italic"]],["para", ["ul", "ol"]],["view", ["fullscreen",  "codeview"]]]'
-                                                    placeholder="Type.." rows="8" required>{{ $email_template->parameters }}</textarea>
-                                                    @error('parameters')
-                                                        <small class="form-text text-danger">{{ $message }}</small>
-                                                    @enderror
-                                                </div>
-                                            </div>
-
-                                            <div class="form-group mb-3 text-right">
-                                                <button type="submit" class="btn btn-primary">{{translate('Update Settings')}}</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                @endforeach
+                                            </form>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     </div>

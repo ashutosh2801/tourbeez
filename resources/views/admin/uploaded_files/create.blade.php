@@ -1,23 +1,24 @@
 <x-admin>
 @section('title','Upload New File')
-<div class="aiz-titlebar text-left mt-2 mb-3">
-	<div class="row align-items-center">
-		<div class="col-md-6">
-			<h1 class="h3">{{translate('Upload New File')}}</h1>
-		</div>
-		<div class="col-md-6 text-md-right">
-			<a href="{{ route('admin.uploaded-files.index') }}" class="btn btn-link text-reset">
-				<i class="las la-angle-left"></i>
-				<span>{{translate('Back to uploaded files')}}</span>
-			</a>
+
+<div class="card-primary mb-3">
+	<div class="card-header uploaded-file-head">
+		<div class="row">
+			<div class="col-md-8 col-12">
+				<h3 class="card-title text-white">{{translate('Upload New File')}}</h3>
+			</div>
+			<div class="col-md-4 col-12">
+				<div class="card-tools">
+					<a href="{{ route('admin.uploaded-files.index') }}" class="btn btn-sm btn-secondary"> 
+						<i class="las la-angle-left"></i> {{translate('Back to uploaded files')}}
+					</a>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
 <div class="card">
-    <div class="card-header">
-        <h5 class="mb-0 h6">{{translate('Drag & drop your files')}}</h5>
-    </div>
-    <div class="card-body">
+    <div class="card-primary bg-white border rounded-lg-custom">
     	<div id="aiz-upload-files" class="h-420px" style="min-height: 65vh">
 
     	</div>

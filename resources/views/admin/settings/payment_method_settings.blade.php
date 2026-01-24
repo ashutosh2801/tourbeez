@@ -4,8 +4,8 @@
     @endsection
     <div class="row">
 
-        <div class="col-lg-6 mx-auto">
-            <div class="card card-primary">
+        <div class="col-lg-6 mx-auto d-flex">
+            <div class="card card-primary w-full bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h1 class="mb-0 h6">{{ __('Online Booking Fee') }}</h1>
                 </div>
@@ -78,8 +78,8 @@
                         
                        
                        
-                        <div style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;">
-                            <button type="submit" class="btn btn-sm btn-primary">{{ __('Save') }}</button>
+                        <div style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;text-align: right;">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{ __('Save') }}</button>
                         </div>
                     </form>
                 </div>
@@ -87,8 +87,8 @@
         </div>
 
         {{-- Special Deposit --}}
-        <div class="col-lg-6 mx-auto">
-            <div class="card card-primary">
+        <div class="col-lg-6 mx-auto d-flex">
+            <div class="card card-primary w-full bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h1 class="mb-0 h6">{{ __('Deposit Rules') }}</h1>
                 </div>
@@ -112,7 +112,7 @@
                         {{-- Deposit Type --}}
                         <div id="deposit_options" class="{{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? '' : 'd-none' }}">
                             <div class="form-row">
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-8">
                                     <select class="form-control" name="tour[charge]" id="tour_charge">
                                         <option value="FULL" {{ old('tour.charge', $specialDeposit?->charge) == 'FULL' ? 'selected' : '' }}>Full amount</option>
                                         <option value="DEPOSIT_PERCENT" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_PERCENT' ? 'selected' : '' }}>Deposit (% of order total amount)</option>
@@ -121,7 +121,7 @@
                                         <option value="NONE" {{ old('tour.charge', $specialDeposit?->charge) == 'NONE' ? 'selected' : '' }}>No charge</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3" id="deposit_amount">
+                                <div class="col-md-3 col-4" id="deposit_amount">
                                     <input type="number" name="tour[deposit_amount]" class="form-control"
                                         placeholder="Deposit"
                                         value="{{ old('tour.deposit_amount', $specialDeposit?->deposit_amount) }}">
@@ -171,22 +171,21 @@
                             <span>days before tour date</span>
                         </div>
                         </div>
-                        <div style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;">
-                            <button type="submit" class="btn btn-sm btn-primary">{{ __('Save') }}</button>
+                        <div style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;text-align: right;">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{ __('Save') }}</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-
         {{-- End Special Deposit --}}
 
 
         <!-- Paypal -->
-        <div class="col-md-6">
-            <div class="card card-primary">
+        <div class="col-lg-6 col-12 d-flex">
+            <div class="card card-primary w-full bg-white border rounded-lg-custom">
                 <div class="card-header">
-                    <h5 class="mb-0 h6 ">{{ translate('Paypal Credential') }}</h5>
+                    <h5 class="mb-0 h6">{{ translate('Paypal Credential') }}</h5>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('admin.payment_method.update') }}" method="POST">
@@ -240,8 +239,8 @@
                                 </label>
                             </div>
                         </div>
-                        <div class="form-group mb-0 text-left">
-                            <button type="submit" class="btn btn-sm btn-primary">{{ translate('Save') }}</button>
+                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;text-align: right;">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{ translate('Save') }}</button>
                         </div>
                     </form>
                 </div>
@@ -249,8 +248,8 @@
         </div>
 
         <!-- Stripe -->
-        <div class="col-md-6">
-            <div class="card card-primary">
+        <div class="col-lg-6 col-12 d-flex">
+            <div class="card card-primary w-full bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h5 class="mb-0 h6 ">{{ translate('Stripe Credential') }}</h5>
                 </div>
@@ -300,8 +299,8 @@
                                     placeholder="{{ translate('STRIPE SECRET') }}">
                             </div>
                         </div>
-                        <div class="form-group mb-0 text-left">
-                            <button type="submit" class="btn btn-sm btn-primary">{{ translate('Save') }}</button>
+                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;text-align: right;">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{ translate('Save') }}</button>
                         </div>
                     </form>
                 </div>

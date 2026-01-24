@@ -653,6 +653,7 @@ fixed-bottom 1030*/
 .w-400px,.size-400px { width: 400px; }
 .w-410px,.size-410px { width: 410px; }
 .w-420px,.size-420px { width: 420px; }
+.w-full {width: 100%;}
 
 .h-5px,.size-5px { height: 5px; }
 .h-10px,.size-10px { height: 10px; }
@@ -9472,6 +9473,7 @@ table.dataTable {
 .media-body .card-header .bootstrap-select.form-control {
     border: 1px solid #aeb0b4;
 }
+
 @media (max-width: 767px) {
 
     .media-body .card-header .form-control {
@@ -9481,4 +9483,89 @@ table.dataTable {
     .media-body .card-header .search-box {
         width: 100%;
     }
+
+    .uploaded-file-head .card-tools {
+        float: left;
+        margin-top: 5px;
+    }
+}
+
+.setting-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.email-settings .btn-test-email {
+    background: #01228b;
+    border-color: #01228b;
+    color: #FFF;
+    width: 100%;
+}
+
+.email-settings .bootstrap-select.form-control {
+    border: 1px solid #aeb0b4;
+}
+
+@media (max-width: 767px) {
+
+    .email-settings .btn-test-email {
+        margin-top: 10px;
+    }
+
+}
+
+.email-templates-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.email-template-body {
+    border-left: 1px solid #ebedf2;
+    padding: 15px;
+}
+
+.email-template-body .email-preview {
+    background-color: #01228b;
+    color: #FFF;
+    border-color: #01228b;
+}
+
+.nav-pills.email-template-sidebar .nav-link {
+    border-radius: 0;
+}
+
+.nav-pills.email-template-sidebar .nav-link.active {
+    color: #000;
+}
+
+.nav-pills.email-template-sidebar .nav-link i {
+    margin-right: 3px;
+}
+
+.taxes-fee-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.taxes-fee-head .card-tools {
+    float: right;
+}
+
+.taxes-fee-body .bootstrap-select .dropdown-toggle {
+    border: 1px solid #aeb0b4;
+}
+
+.internal-order-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.order-heads {
+    background-color: #343a41 !important;
+    color: #FFF;
+}
+
+.order-heads .btn {
+    font-size: 16px;
+    font-weight: bold;
 }

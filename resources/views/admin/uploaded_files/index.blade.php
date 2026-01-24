@@ -3,10 +3,10 @@
 <div class="card-primary mb-3">
 	<div class="card-header uploaded-file-head">
 		<div class="row">
-			<div class="col-md-8 col-6">
+			<div class="col-md-8 col-12">
 				<h3 class="card-title text-white">{{translate('All uploaded files')}}</h3>
 			</div>
-			<div class="col-md-4 col-6">
+			<div class="col-md-4 col-12">
 				<div class="card-tools">
 					<a href="{{ route('admin.uploaded-files.create') }}" class="btn btn-sm btn-success"> + {{translate('Upload New File')}}</a>
 				</div>

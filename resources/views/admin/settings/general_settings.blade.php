@@ -2,9 +2,10 @@
     @section('title')
         {{ 'General Settings' }}
     @endsection
+
     <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card card-primary">
+        <div class="col-lg-12">
+            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                 <div class="card-header">
                     <h1 class="mb-0 h6">{{ __('General Settings') }}</h1>
                 </div>
@@ -92,16 +93,17 @@
                         </div>
                        
                         <div class="text-right">
-                            <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
+                            <button type="submit" class="btn btn-success">{{ __('Update') }}</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
     <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card card-primary">
+        <div class="col-lg-12">
+            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                 <div class="card-header">
                     <h1 class="mb-0 h6">{{ __('Activation') }}</h1>
                 </div>
@@ -110,9 +112,7 @@
                         <label class="col-sm-8 col-from-label">{{ __('HTTPS Activation') }}</label>
                         <div class="col-sm-4">
                             <label class="aiz-switch aiz-switch-success mb-0">
-                                <input type="checkbox" onchange="updateSettings(this, 'FORCE_HTTPS')" <?php if (env('FORCE_HTTPS') == 'On') {
-    echo 'checked';
-} ?>>
+                                <input type="checkbox" onchange="updateSettings(this, 'FORCE_HTTPS')" <?php if (env('FORCE_HTTPS') == 'On') {echo 'checked';} ?>>
                                 <span class="slider round"></span>
                             </label>
                         </div>
@@ -152,18 +152,16 @@
                     </div>
 
                     <div class="text-right">
-                            <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
-                        </div>
-                    
-                    
+                        <button type="submit" class="btn btn-success">{{ __('Update') }}</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card card-primary">
+        <div class="col-lg-12">
+            <div class="card-primary bg-white border rounded-lg-custom mb-3">
                 <div class="card-header">
                     <h5 class="mb-0 h6">{{__('Default Email')}}</h5>
                 </div>
@@ -193,7 +191,7 @@
                         </div>
 
                         <div class="text-right">
-                            <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
+                            <button type="submit" class="btn btn-success">{{ __('Update') }}</button>
                         </div>
                     </form>
                 </div>
