@@ -43,8 +43,8 @@ Route::get('/sitemaps/destinations.xml', [SitemapController::class, 'destination
 Route::get('/sitemaps/sitemap.xml', [SitemapController::class, 'index']);
 Route::get('/sitemaps/tours.xml', [SitemapController::class, 'tours']);
 
-Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
-Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
+// Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
+// Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
 
 
 

@@ -874,7 +874,8 @@ class OrderController extends Controller
             'trip_completed',
             'payment_receipt',
             'order_pending',
-            'payment_request'
+            'payment_request',
+            'follow_up'
         ])->get();
         $sms_templates = SmsTemplate::get();
         $customers = User::where('user_type', 'member')->get();

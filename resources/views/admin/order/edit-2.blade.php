@@ -1769,7 +1769,7 @@ document.addEventListener("click", function(e) {
             }
         });
         $.ajax({
-            url: '{{ route('admin.tour.single') }}',
+            url: '{{ route('tour.single') }}',
             type: 'POST',
             data: {
                 id: tour_id,
@@ -2715,7 +2715,7 @@ $(document).ready(function () {
 function refreshCalendarAndSession23432(tourId, count, order_id) {
 
     $.ajax({
-        url: "{{ route('admin.tour.calendar') }}",
+        url: "{{ route('tour.calendar') }}",
         type: "POST",
         data: {
             id: tourId,
@@ -2769,7 +2769,7 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 
     // showLoader("Loading… Please wait");
     $.ajax({
-        url: "{{ route('admin.tour.calendar') }}",
+        url: "{{ route('tour.calendar') }}",
         type: "POST",
         data: {
             id: tourId,
@@ -3050,30 +3050,21 @@ let cardMounted = false;
 
 /* ================= SHOW / HIDE CARD ================= */
 
-$(document).ready(function () {
+document.getElementById('add_ccnow').addEventListener('change', function () {
+    const wrapper = document.getElementById('card-element-wrapper');
 
-    $(document).on("change", "#add_ccnow", function () {
-        const wrapper = $("#card-element-wrapper");
+    if (this.checked) {
+        wrapper.classList.remove('hidden');
 
-        if (this.checked) {
-            wrapper.removeClass("hidden").show();
-
-            if (!cardMounted) {
-                cardElement.mount('#card-element');
-                cardMounted = true;
-            }
-        } else {
-            wrapper.addClass("hidden").hide();
-            // never unmount Stripe element
+        if (!cardMounted) {
+            cardElement.mount('#card-element');
+            cardMounted = true;
         }
-    });
-
-    $(document).on("change", "#charge_ccnow", function () {
-        $("#charge_ccnow_amount").toggle(this.checked);
-    });
-
+    } else {
+        wrapper.classList.add('hidden');
+        // ❌ NEVER unmount Stripe element
+    }
 });
-
 
 /* ================= BUTTON HANDLER ================= */
 

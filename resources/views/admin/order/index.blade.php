@@ -166,7 +166,10 @@
                                 <td>
                                     <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}" class="alink" target="_blank">
                                         {{ $order->customer?->name }}
-                                    </a><br>
+                                    </a>
+
+                                    
+                                    <br>
                                     {{ $order->customer?->phone }}
                                 </td>
                                 <td>{{ $order->currency }} {{ price_format($order->total_amount) }}</td>
