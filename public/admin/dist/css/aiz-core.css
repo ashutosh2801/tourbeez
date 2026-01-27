@@ -8992,17 +8992,17 @@ a.dropdown-footer:hover {
         border-radius: 10px 10px 0 0;
     }
 
-    .basic-detail #videosContainer .input-group-prepend {
+    #videosContainer .input-group-prepend {
         width: 100%;
         display: block;
     }
 
-    .basic-detail #videosContainer input {
+    #videosContainer input {
         width: 100%;
         margin: 10px 0;
     }
 
-    .basic-detail #videosContainer .btn-preview {
+    #videosContainer .btn-preview {
         width: 85%;
         border-radius: 8px;
     }
@@ -9636,4 +9636,62 @@ table.dataTable {
         width: 100%;
     }
 
+}
+
+.addon-edit-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.addon-edit-head .card-tools {
+    float: right;
+}
+
+.addon-edit-body .card-footer {
+    background: #FFF;
+    border-top: 1px solid #e2e5ec;
+    border-radius: 0 0 15px 15px;
+}
+
+@media (max-width: 767px) {
+
+    .addon-edit-body .price-input {
+        margin-bottom: 15px;
+    }
+
+}
+
+#markReviewModal .modal-header {
+    background-color: #eee;
+}
+
+#markReviewModal .modal-header .modal-title {
+    font-weight: bold;
+}
+
+.create-tour-body .bootstrap-select.form-control {
+    border: 1px solid #aeb0b4;
+}
+
+.create-tour-body .card-footer {
+    background: #FFF;
+    border-top: 1px solid #e2e5ec;
+    border-radius: 0 0 15px 15px;
+    text-align: right;
+}
+
+.create-tour-body .product-pricing {
+    display: flex;
+    gap: 15px;
+}
+
+@media (max-width: 767px) {
+
+    .create-tour-body .form-control {
+        max-width: 100% !important;
+    }
+
+    .create-tour-body .card-footer a.btn {
+        width: 100%;
+    }
 }

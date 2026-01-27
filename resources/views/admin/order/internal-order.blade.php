@@ -167,7 +167,7 @@
                             </table>
                             <div id="tour_details_0"></div>
                             <div id="tourContainer"></div>
-                            <button type="button" onclick="addTour()" class="btn btn-sm btn-success px-5 mt-3">+ Add Tour</button>
+                            <button type="button" onclick="addTour()" class="btn btn-md btn-success px-5 mt-3">+ Add Tour</button>
                         </div>
                     </div>
                 </div>
