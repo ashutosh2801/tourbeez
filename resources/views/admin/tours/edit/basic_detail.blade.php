@@ -80,7 +80,7 @@
             @csrf
             <div class="card-body">
                 <div class="row">
-                    <div class="col-lg-7">
+                    <div class="col-xl-7">
                         <div class="form-group">
                             <label for="title" class="form-label">Title *</label>
                             <input type="text" name="title" id="title" value="{{ old('title') ? : $data->title }}"
@@ -92,7 +92,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-3">
+                    <div class="col-xl-3">
                         <div class="form-group">
                             <label for="unique_code" class="form-label">Unique code *</label>
                             <input type="text" name="unique_code" id="unique_code" value="{{ old('unique_code') ? old('unique_code') : $data->unique_code }}"
@@ -105,7 +105,7 @@
                         
                     </div>
 
-                    <div class="col-lg-2">
+                    <div class="col-xl-2">
                         <div class="form-group">
                             <label for="order_email" class="form-label d-block no-wrap" style="font-size: 14px;">Email Confirmation</label>
 
@@ -127,7 +127,7 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="col-lg-7">
+                    <div class="col-xl-7">
                         <div class="form-group">
                             <label for="slug" class="form-label">Slug *</label>
                             <input type="text" name="slug" id="slug" value="{{ old('slug') ? : $data->slug }}"
@@ -139,7 +139,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group" id="product_pricing">
                             <label for="category" class="form-label">Product pricing *</label>
                             
@@ -169,24 +169,24 @@
                             value="{{ old("PriceOption.$index.id", $option['id']) }}" class="form-control" />
 
                                 @if($index == 0)
-                                <div class="col-lg-2">
+                                <div class="col-xl-2">
                                     <select name="price_type" id="pricing" class="form-control">
                                         <option @if(old('price_type')=='PER_PERSON' || $data->price_type=="PER_PERSON" || old('price_type')=='') selected @endif value="PER_PERSON">By Person</option>
                                         <option @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") selected @endif value="FIXED">By Fixed</option>
                                     </select>                                                
                                 </div>
                                 @else
-                                <div class="col-lg-2"></div>
+                                <div class="col-xl-2"></div>
                                 @endif
 
-                                <div class="col-lg-2">
+                                <div class="col-xl-2">
                                     <input type="text" placeholder="Adults" name="PriceOption[{{ $index }}][label]" id="PriceOption_name" 
                                     value="{{ old("PriceOption.$index.label", $option['label']) }}" class="form-control" >
                                     @error("PriceOption.$index.label")
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                <div class="col-lg-2">
+                                <div class="col-xl-2">
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">$</span>
@@ -200,7 +200,7 @@
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror                                              
                                 </div>
-                                <div class="col-lg-5 ">
+                                <div class="col-xl-5 ">
                                     <div class="input-group quantity_used @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") hidden @endif">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">Quantity used</span>
@@ -231,7 +231,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-xl-6">
                         <div class="form-group">
                             <label for="title" class="form-label">Advertised price *</label>
                             <div class="input-group">
@@ -247,7 +247,7 @@
                         </div>
 
                     </div>
-                    <div class="col-lg-3">
+                    <div class="col-xl-3">
                         <div class="form-group">
                             <label for="title" class="form-label">Offer Ends In</label>
                             <div class="input-group">
@@ -265,11 +265,11 @@
                     </div>
                     
 
-                    <div class="col-lg-6">
+                    <div class="col-xl-6">
                         <div class="form-group">
                             <label for="category" class="form-label">Quantity</label>
                             <div class="row">
-                                <div class="col-lg-3">
+                                <div class="col-lg-6">
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">Min</span>
@@ -277,7 +277,7 @@
                                         <input type="number" placeholder="Min" name="quantity_min" id="quantity_min" value="{{ old('quantity_min') ?? $data->detail?->quantity_min }}" class="form-control" >
                                     </div>                                                
                                 </div>
-                                <div class="col-lg-4">
+                                <div class="col-lg-6">
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">Max</span>
@@ -290,7 +290,7 @@
                     </div>
                     
 
-                    <div class="col-lg-6">
+                    <div class="col-xl-6">
                         <div class="form-group">
                             <label for="coupon_type" class="form-label">Discount Type & Value</label>
                             <div class="row">
@@ -325,9 +325,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-6">
+                    <div class="col-xl-6">
                     </div>
-                    <div class="col-lg-6">
+                    <div class="col-xl-6">
                         <div class="form-group">
                             <label for="offerd_price" class="form-label">Offered Price</label>
                             <div class="row">
@@ -351,7 +351,7 @@
                     </div>
 
                                                     
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="category" class="form-label">Category *</label>
                             <select name="category[]" id="category" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
@@ -365,7 +365,7 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="tour_type" class="form-label">Tour Types *</label>
                             <select name="tour_type[]" id="tour_type" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
@@ -421,7 +421,7 @@
                     </div>
                     */ ?>
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="description" class="form-label">Brief description *</label>
                             <textarea name="description" id="description" rows="3" class="form-control aiz-text-editor">{{ old('description') ?: $data->detail?->description }}</textarea>
@@ -432,7 +432,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="long_description" class="form-label">Long description *</label>
                             <textarea name="long_description" id="long_description" class="form-control aiz-text-editor" >{{ old('long_description') ?: $data->detail?->long_description }}</textarea>
@@ -441,7 +441,7 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="other_description" class="form-label">Other description</label>
                             <textarea name="other_description" id="other_description" class="form-control aiz-text-editor" >{{ old('other_description') ?: $data->detail?->other_description }}</textarea>
@@ -466,7 +466,7 @@
                     </div> -->
 
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group mb-5">
                             <label for="videos" class="form-label">Videos</label>
                             <div id="videosContainer">
@@ -500,7 +500,7 @@
                     </div>
 
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group mb-4">
                             <label for="IsPurchasedAsAGift" class="form-label"><input type="checkbox" name="IsPurchasedAsAGift" id="IsPurchasedAsAGift" {{ old('IsPurchasedAsAGift') || $data->detail?->IsPurchasedAsAGift ? 'checked' : '' }} /> Can be purchased as a gift</label>
                             <div class="row {{ old('IsPurchasedAsAGift') || $data->detail?->IsPurchasedAsAGift ?? 'hidden' }}" id="IsPurchasedAsAGift_show">
@@ -536,7 +536,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="IsTermsAndConditions" class="form-label"><input type="checkbox" name="IsTerms" id="IsTermsAndConditions" {{ old('IsTerms') || $data->detail?->IsTerms ? 'checked' : '' }} value="1" /> Add product-specific terms and conditions</label>
                             <div id="terms_and_conditions_wra" {{ old('terms_and_conditions') || $data->detail?->terms_and_conditions ?  'class="hidden"' :'' }} style=" overflow: hidden;">
@@ -545,7 +545,7 @@
                         </div>
                     </div> 
 
-                    <div class="col-lg-6">
+                    <div class="col-xl-6">
                         <div class="form-group">
                             <label class="form-label">{{translate('Featured Image')}}</label>
                             <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
@@ -831,7 +831,7 @@ function addVideos() {
                 <span class="input-group-text">https://www.youtube.com/watch?v=</span>
             </div>
             <input type="text" name="videos[]" class="form-control">
-            <button type="button" class="btn btn-sm btn-primary mr-2" onclick="previewVideo('')">Preview</button>
+            <button type="button" class="btn btn-sm btn-primary btn-preview mr-2" onclick="previewVideo('')">Preview</button>
             <button type="button" class="btn btn-sm btn-danger" onclick="removeVideo(this)"><i class="fa fa-minus"></i></button>
         </div>`;
     document.getElementById('videosContainer').insertAdjacentHTML('beforeend', html);

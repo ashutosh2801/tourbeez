@@ -62,7 +62,7 @@
             <div class="card-primary bg-white border rounded-lg-custom">
                 <div class="card-body p-0">
                     <div class="row">
-                        <div class="col-2 pr-0 desktop-menu">
+                        <div class="col-xl-2 col-lg-3 pr-0 desktop-menu">
                             <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                                 <a class="nav-link active" href="{{ route('admin.tour.edit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Basic Details')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" ><i class="fas fa-caret-right"></i> {{translate('Extra')}}</a>
@@ -99,7 +99,7 @@
                                 <a class="nav-link" id="v-pills-tab-13" data-toggle="pill" href="#meta_information" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('SEO')}}</a>                               
                             </div> -->
                         </div>
-                        <div class="col-md-10 col-12 pl-0">
+                        <div class="col-xl-10 col-lg-9 col-12 pl-0">
                             <div class="tab-content" id="v-pills-tabContent">
                                 <div class="tab-pane fade show active" id="basic_information" role="tabpanel" aria-labelledby="v-pills-tab-1">
                                     <div class="card basic-detail">

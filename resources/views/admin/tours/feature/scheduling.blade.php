@@ -51,7 +51,7 @@
             <div class="card-primary bg-white border rounded-lg-custom">
                 <div class="card-body p-0">
                     <div class="row">
-                        <div class="col-2 pr-0 desktop-menu">
+                        <div class="col-xl-2 col-lg-3 pr-0 desktop-menu">
                             <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 
                                 @if($data->parent_id)
@@ -82,7 +82,7 @@
                                 @endif                              
                             </div>
                         </div>
-                        <div class="col-md-10 col-12 pl-0">
+                        <div class="col-xl-10 col-lg-9 col-12 pl-0">
                             <div class="tab-content" id="v-pills-tabContent">
                                 <div class="tab-pane fade" id="basic_information" role="tabpanel" aria-labelledby="v-pills-tab-1">
                                     <div class="card">

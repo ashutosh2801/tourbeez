@@ -380,10 +380,10 @@
 
                 <div class="row mb-4">
                     <label class="form-label col-lg-2">Minimum notice *</label>
-                    <div class="col-lg-3">
+                    <div class="col-lg-5">
                         <input type="text" name="schedules[__INDEX__][minimum_notice_num]" id="minimum_notice_num___INDEX__" class="form-control" placeholder="Before session start time">
                     </div>
-                    <div class="col-lg-3">
+                    <div class="col-lg-5">
                         <select class="form-control minimum_notice_unit" name="schedules[__INDEX__][minimum_notice_unit]" id="minimum_notice_unit___INDEX__">
                             <option value="MINUTES">Minutes</option>
                             <option value="HOURS">Hours</option>
@@ -393,10 +393,10 @@
 
                 <div class="row mb-4">
                     <label class="form-label col-lg-2">Estimated duration *</label>
-                    <div class="col-lg-3">
+                    <div class="col-lg-5">
                         <input type="text" name="schedules[__INDEX__][estimated_duration_num]" id="estimated_duration_num___INDEX__" class="form-control" placeholder="Session time">
                     </div>
-                    <div class="col-lg-3">
+                    <div class="col-lg-5">
                         <select class="form-control estimated_duration_unit" name="schedules[__INDEX__][estimated_duration_unit]" id="estimated_duration_unit___INDEX__">
                             <option value="MINUTES">Minutes</option>
                             <option value="HOURS">Hours</option>
@@ -405,10 +405,10 @@
                     </div>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <div class="row">
                         <label class="form-label col-lg-2">Next available session *</label>
-                        <div class="col-lg-4">
+                        <div class="col-lg-5">
                             <div class="input-group">
                                 <div class="input-group-prepend" >
                                     <span class="input-group-text" style="width:70px;">Form</span>
@@ -419,7 +419,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 not-all-date">
+                        <div class="col-lg-5 not-all-date">
                             <div class="input-group">
                                 <input type="text" name="schedules[__INDEX__][session_start_time]" id="session_start_time___INDEX__" class="form-control aiz-time-picker" placeholder="Time">
                                 <div class="input-group-prepend">
@@ -430,7 +430,7 @@
                     </div>
                     <div class="row mb-4">
                         <label class="form-label col-lg-2"></label>
-                        <div class="col-lg-4">
+                        <div class="col-lg-5">
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text" style="width:70px;">To</span>
@@ -441,7 +441,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 not-all-date">
+                        <div class="col-lg-5 not-all-date">
                             <div class="input-group">
                                 <input type="text" name="schedules[__INDEX__][session_end_time]" id="session_end_time___INDEX__" class="form-control aiz-time-picker" placeholder="Time">
                                 <div class="input-group-prepend">
@@ -450,7 +450,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="row mb-5">
+                    <div class="row">
                         <label class="form-label col-lg-2"></label>
                         <div class="col-lg-6">
                             <label><input type="checkbox" class="sesion_all_day" name="schedules[__INDEX__][sesion_all_day]" id="sesion_all_day___INDEX__" value="1" style="width:17px;height:17px"> All day</label>
@@ -458,7 +458,7 @@
                     </div>
                 </div>
 
-                <div class="row mb-5">
+                <div class="row">
                     <label class="form-label col-lg-2">Repeat *</label>
                     <div class="col-lg-3">
                         <select class="form-control repeat_period" name="schedules[__INDEX__][repeat_period]" id="repeat_period___INDEX__">
@@ -506,13 +506,13 @@
                 @endphp
 
                 @foreach ($days as $day)
-                <div class="row mb-3 d-none not-repeat-period not-repeat-period2">
+                <div class="row mt-4 d-none not-repeat-period not-repeat-period2">
                     <input type="hidden" name="schedules[__INDEX__][Repeat][{{ $i }}][day]" value="{{ $day }}" />
                     <label class="form-label col-lg-2">{{ $day }}</label>
                     <div class="col-lg-1">
                         <input type="checkbox" name="schedules[__INDEX__][Repeat][{{ $i }}][num]" id="Repeat___INDEX___{{ $i }}_num" style="width:17px;height:17px">
                     </div>
-                    <div class="col-lg-3 not-repeat-weekly">
+                    <div class="col-lg-5 not-repeat-weekly">
                         <div class="input-group">
                             <div class="input-group-prepend">
                                 <span class="input-group-text">From</span>
@@ -523,7 +523,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-3 not-repeat-weekly">
+                    <div class="col-lg-4 not-repeat-weekly">
                         <div class="input-group">
                             <div class="input-group-prepend">
                                 <span class="input-group-text">To</span>
