@@ -332,4 +332,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
 
 
+    Route::get('/admin/orders/sample-excel', [OrderController::class, 'sampleExcel'])
+    ->name('orders.sample-excel');
+
+    Route::post('/admin/orders/import-orders', [OrderController::class, 'importOrders'])
+    ->name('orders.import');
+
+
 });

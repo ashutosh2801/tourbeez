@@ -72,6 +72,7 @@
                                 <option value="this_year" {{ request('tour_date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
                             </select>
                         </div>
+                        
                         <div class="col-md-2 col-6">
                             <button type="submit" class="btn btn-search"> <i class="fas fa-search"></i> Search</button>
                         </div>
@@ -109,6 +110,10 @@
                         <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure to delete selected orders?')">
                             <i class="fas fa-trash-alt"></i> Delete Selected
                         </button>
+                            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#importOrderModal">
+                                <i class="fas fa-file-import"></i> Import Order
+                            </button>
+                        
                     </div>
                 </div>
             </div>
@@ -196,6 +201,36 @@
             </div>
         </form>
     </div>
+    <div id="importOrderModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title h6">{{ translate('Import Order') }}</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+            </div>
+
+            <form method="POST" action="{{ route('admin.orders.import') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body">
+                    
+                    <p>Upload a Excel file with columns</p>
+
+                    <div class="form-group">
+                        <label for="file">Select File</label>
+                        <input type="file" name="file" id="file" class="form-control" required accept=".csv,.xlsx,.xls">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" id="downloadSample">
+                        <i class="fas fa-file-excel"></i> Download Sample Excel
+                    </button>
+                    <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                    <button type="submit" class="btn btn-success">{{ translate('Import') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
     @section('js')
         <script>
@@ -204,5 +239,10 @@
                 checkboxes.forEach(checkbox => checkbox.checked = this.checked);
             });
         </script>
+        <script>
+            document.getElementById('downloadSample').addEventListener('click', function () {
+                window.location.href = "{{ route('admin.orders.sample-excel') }}";
+            });
+            </script>
     @endsection
 </x-admin>

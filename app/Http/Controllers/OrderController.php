@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ManifestExport;
+use App\Imports\OrderImport;
 use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
@@ -16,23 +17,24 @@ use App\Models\OrderTour;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
 use App\Models\TourPricing;
-use App\Models\User;
-use App\Services\TwilioService;
-use App\Notifications\NewOrderNotification;
 use App\Models\TourSpecialDeposit;
+use App\Models\User;
+use App\Notifications\NewOrderNotification;
+use App\Services\TwilioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
 use Stripe\Stripe;
 use Validator;
+use Maatwebsite\Excel\Concerns\FromArray;
 
 
 class OrderController extends Controller
@@ -3748,6 +3750,51 @@ class OrderController extends Controller
             'message' => 'Card added successfully to this customer'
         ]);
     }
+
+
+
+    public function importOrders(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        Excel::import(new OrderImport, $request->file('file'));
+
+        return back()->with('success', 'Orders imported successfully');
+    }
+
+
+    public function sampleExcel()
+    {
+        $data = [[
+            'Date',
+            'Check-in',
+            'Redzy Order ID',
+            'Order Number',
+            'Customer Full Name',
+            'Customer Phone',
+            'Product name',
+            'Quantities',
+            'Extras',
+            'Order Balance',
+            'Order Total Amount',
+            'Order Total Paid',
+            'Pick-up Time',
+            'Pick-up Location',
+            'Order Special Requirements',
+            'Order internal notes',
+            'Agent Code',
+            'Pickup address',
+            'Agent Notes'
+        ]];
+
+        return Excel::download(new class($data) implements FromArray {
+            public function __construct(private array $data) {}
+            public function array(): array { return $this->data; }
+        }, 'order_import_sample.xlsx');
+    }
+
 
     
 
