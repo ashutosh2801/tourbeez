@@ -60,6 +60,8 @@ class Order extends Model
         'is_abandon_mail_sent',
         'action_name',
         'adv_deposite',
+        'payment_method_id',
+        'internal_notes'
     ];
 
     public function tour_detail($id, $label='all') {
