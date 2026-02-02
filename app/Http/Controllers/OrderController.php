@@ -874,7 +874,8 @@ class OrderController extends Controller
             'trip_completed',
             'payment_receipt',
             'order_pending',
-            'payment_request'
+            'payment_request',
+            'follow_up'
         ])->get();
         $sms_templates = SmsTemplate::get();
         $customers = User::where('user_type', 'member')->get();
@@ -2476,7 +2477,7 @@ class OrderController extends Controller
                 // 'status' => $newStatus,
                 'refund_id' => $refund->id ?? null,
                 'refunded_at' => now(),
-                'refund_amount' => $payment->amount - $newRefundTotal, // cumulative refund
+                'refund_amount' => $newRefundTotal, // cumulative refund
                 'refund_reason' => $request->reason,
             ]);
 
@@ -3178,44 +3179,41 @@ class OrderController extends Controller
      {
         $order = Order::findOrFail($orderId);
 
-
-
         $cancel = self::cancelUncapturedAmount($order->id);
 
-                $response = $cancel->getData();
+        $response = $cancel->getData();
 
-                if ($response->success) {
+        if ($response->success) {
 
-                    // Update to payment_status = 0 (payment cancelled)
-                    $order->payment_status = 7;
-                    $order->booked_amount = 0;
-                    $order->save();
+            // Update to payment_status = 0 (payment cancelled)
+            $order->payment_status = 7;
+            $order->booked_amount = 0;
+            $order->save();
 
-                    $order_actions = [
-                        [
-                            'order_id'         => $order->id,
-                            'performed_by'     => Auth::id(),
-                            'notes'            => "Uncaptured Payment is Cancelled",
-                            'created_at'       => now(),
-                            'updated_at'       => now()
-                        ]
-                    ];
-                    OrderActions::insert($order_actions);
+            $order_actions = [
+                [
+                    'order_id'         => $order->id,
+                    'performed_by'     => Auth::id(),
+                    'notes'            => "Uncaptured Payment is Cancelled",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ]
+            ];
+            OrderActions::insert($order_actions);
 
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Payment authorization cancelled successfully.'
-                    ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment authorization cancelled successfully.'
+            ]);
 
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => $response->message
-                    ]);
-                }
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => $response->message
+            ]);
+        }
 
-
-        } 
+    } 
 
     public function confirmPayment($orderId, $action_name = 'full', $amount)
 {
@@ -3500,18 +3498,26 @@ class OrderController extends Controller
             $order->balance_amount = $order->total_amount;
             $order->save();
 
+
+
+
+            $orderPayment = OrderPayment::where('payment_intent_id', $paymentIntent->id)->first();
+            $orderPayment->status = 'pending';
+            $orderPayment->save();
+
+
             // Log the cancellation
-            OrderPayment::create([
-                'order_id'          => $order->id,
-                'payment_intent_id' => $intentId,
-                'transaction_id'    => $intentId,
-                'payment_method'    => 'card',
-                'status'            => 'canceled',
-                'amount'            => 0,
-                'currency'          => $order->currency,
-                'action'            => 'cancel_uncaptured',
-                'response_payload'  => json_encode($canceledIntent),
-            ]);
+            // OrderPayment::create([
+            //     'order_id'          => $order->id,
+            //     'payment_intent_id' => $intentId,
+            //     'transaction_id'    => $intentId,
+            //     'payment_method'    => 'card',
+            //     'status'            => 'canceled',
+            //     'amount'            => 0,
+            //     'currency'          => $order->currency,
+            //     'action'            => 'cancel_uncaptured',
+            //     'response_payload'  => json_encode($canceledIntent),
+            // ]);
 
             DB::commit();
 
@@ -3747,6 +3753,51 @@ class OrderController extends Controller
             'message' => 'Card added successfully to this customer'
         ]);
     }
+
+
+
+    public function importOrders(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        Excel::import(new OrderImport, $request->file('file'));
+
+        return back()->with('success', 'Orders imported successfully');
+    }
+
+
+    public function sampleExcel()
+    {
+        $data = [[
+            'Date',
+            'Check-in',
+            'Redzy Order ID',
+            'Order Number',
+            'Customer Full Name',
+            'Customer Phone',
+            'Product name',
+            'Quantities',
+            'Extras',
+            'Order Balance',
+            'Order Total Amount',
+            'Order Total Paid',
+            'Pick-up Time',
+            'Pick-up Location',
+            'Order Special Requirements',
+            'Order internal notes',
+            'Agent Code',
+            'Pickup address',
+            'Agent Notes'
+        ]];
+
+        return Excel::download(new class($data) implements FromArray {
+            public function __construct(private array $data) {}
+            public function array(): array { return $this->data; }
+        }, 'order_import_sample.xlsx');
+    }
+
 
     
 

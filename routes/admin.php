@@ -328,5 +328,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('promos', PromoController::class);
     Route::resource('vouchers', VoucherController::class);
     Route::post('/apply-promo', [PromoController::class, 'apply'])->name('promo.apply');
+    Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
+    Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
+
+
+    Route::get('/admin/orders/sample-excel', [OrderController::class, 'sampleExcel'])
+    ->name('orders.sample-excel');
+
+    Route::post('/admin/orders/import-orders', [OrderController::class, 'importOrders'])
+    ->name('orders.import');
+
 
 });

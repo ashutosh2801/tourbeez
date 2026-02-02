@@ -41,9 +41,9 @@ class TourController extends Controller
             ])
             ->onlyRoot()
             ->where('status', 1)
-            // ->whereHas('schedules', function ($sq) {
-            //     $sq->whereDate('until_date', '>=', now()->toDateString());
-            // })
+            ->whereHas('schedules', function ($sq) {
+                $sq->whereDate('until_date', '>=', now()->toDateString());
+            })
             ->whereNull('deleted_at');
         // Filters
         $query->when($request->title, fn($q, $title) => $q->where('title', 'like', "%$title%"))
@@ -70,7 +70,7 @@ class TourController extends Controller
                     };
                 });
             }
-        }        
+        }
 
         if ($request->min_price && $request->max_price) {
             $query->whereBetween('price', [(float)$request->min_price, (float)$request->max_price]);
@@ -79,6 +79,23 @@ class TourController extends Controller
         } elseif ($request->max_price) {
             $query->where('price', '<=', (float)$request->max_price);
         }
+
+        // Sorting
+        // match($request->input('order_by')) {
+        //     'lowtohigh' => $query->orderBy('price', 'ASC'),
+        //     'hightolow' => $query->orderBy('price', 'DESC'),
+        //     default     => $query->orderBy('sort_order', 'ASC'),
+        // };
+        // match ($request->input('order_by')) {
+        //     'lowtohigh' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
+        //                         ->orderBy('price', 'ASC'),
+
+        //     'hightolow' => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC')
+        //                         ->orderBy('price', 'DESC'),
+
+        //     default     => $query->orderByRaw('CASE WHEN sort_order > 0 THEN 0 ELSE 1 END, sort_order ASC'),
+        // };
+
 
         $orderBy = strtolower($request->input('order_by', ''));
 
@@ -95,6 +112,7 @@ class TourController extends Controller
                   ->orderBy('sort_order', 'ASC'); // Only sort_order for default
         }
 
+
         // Cache paginated
         $page = $request->get('page', 1);
         $cacheKey = 'tour_list_' . md5(json_encode($request->all()) . '_page_' . $page);
@@ -102,6 +120,9 @@ class TourController extends Controller
         // dd(getFullSql($query));
 
         $paginated = Cache::tags(['tours'])->remember($cacheKey, 86400, fn() => $query->paginate(12));
+        // $paginated = Cache::remember($cacheKey, 86400, function () use ($query) {
+        //     return $query->paginate(12);
+        // });
 
         // Transform response
         $items = $paginated->map(fn($d) => [
