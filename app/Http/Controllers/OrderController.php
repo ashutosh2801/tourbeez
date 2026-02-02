@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
+use Stripe\Cancel;
 use Stripe\Stripe;
 use Validator;
 
@@ -874,7 +875,8 @@ class OrderController extends Controller
             'trip_completed',
             'payment_receipt',
             'order_pending',
-            'payment_request'
+            'payment_request',
+            'follow_up'
         ])->get();
         $sms_templates = SmsTemplate::get();
         $customers = User::where('user_type', 'member')->get();
@@ -1495,51 +1497,68 @@ class OrderController extends Controller
                   </h3>';
                             }
 
+            $totalAmount = $order->total_amount ? price_format_with_currency($order->total_amount, $order->currency) : 0;
+
+            $totalPaid = $order->payments()->exists() ? price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount'), $order->currency) : 0;
+
+            $balanceAmount = ($order->payment_status === 3) ? price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) : price_format_with_currency($order->balance_amount, $order->currency);
+            // dd(23432);
+
             $TOUR_PAYMENT_HISTORY = '
-                    <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
-                        <tbody>
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
-                                    <h3 style="font-size:19px"><strong>Payment History</strong></h3>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-            
-                    <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
-                        <tbody>
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
-                                </td>
+            <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px; margin-left:0px">
+                <tbody>
+                    <tr>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
+                            <h3 style="font-size:19px; "><strong>Payment Summary</strong></h3>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
-                                </td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
-                                </td>
-                            </tr>
+            <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="left" class="table" style="border-width:0 30px 30px; border-color:#fff; border-style:solid; background-color:#fff">
+                <tbody>
 
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . date('M d, Y', strtotime($order->created_at)) . '</td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: right;padding: 5px 0px;" valign="top"><strong>' . price_format_with_currency($order->total_amount, $order->currency) . '</strong></td>
-                            </tr>
+                    <tr>
+                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                            <small style="font-size:14px; text-transform:uppercase;">Total Amount</small>
+                        </td>
+                        <td style="text-align:right; border-top:1pt solid #000;">
+                            <strong>' . $totalAmount . '</strong>
+                        </td>
+                    </tr>
 
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000;">
-                                &nbsp;
-                                </td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;  border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-                                </td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                    <h3 style="color: #000;font-size:19px"><strong>' . price_format_with_currency($order->total_amount, $order->currency) . '</strong></h3>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>';
+                    <tr style="color:green;">
+                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                            <small style="font-size:14px; text-transform:uppercase;">Total Paid</small>
+                        </td>
+                        <td style="text-align:right; border-top:1pt solid #000;">
+                            <strong>' . $totalPaid . '</strong>
+                        </td>
+                    </tr>
+
+                    <tr style="color:red;">
+                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                            <small style="font-size:14px; text-transform:uppercase;">Balance</small>
+                        </td>
+                        <td style="text-align:right; border-top:1pt solid #000;">
+                            <strong>' . $balanceAmount . '</strong>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; padding:5px 0;">
+                            <small style="font-size:14px; text-transform:uppercase;">Grand Total</small>
+                        </td>
+                        <td style="text-align:right; border-top:2pt solid #000;">
+                            <h3 style="margin:0; font-size:19px;">
+                                <strong>' . $totalAmount . '</strong>
+                            </h3>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>';
+
 
 
             $TOUR_ITEM_SUMMARY = '';
@@ -1706,7 +1725,7 @@ class OrderController extends Controller
                 "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($orderTour->tour_date)),
                 "[[ORDER_TOUR_TIME]]"       => $orderTour->tour_time,
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
-                "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
+                "[[ORDER_BALANCE]]"         => ($order->payment_status === 3) ? price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) : price_format_with_currency($order->balance_amount, $order->currency),
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
                 "[[YEAR]]"                 => date('Y'),
@@ -2269,7 +2288,7 @@ class OrderController extends Controller
                 $paymentMethodId = $paymentIntent->payment_method;
             }          
 
-
+            // dd($paymentMethodId);
             if (!$paymentMethodId) {
                 throw new \Exception("No payment method found on previous PaymentIntent.");
             }
@@ -2456,7 +2475,7 @@ class OrderController extends Controller
 
             // Update payment
             $payment->update([
-                'status' => $newStatus,
+                // 'status' => $newStatus,
                 'refund_id' => $refund->id ?? null,
                 'refunded_at' => now(),
                 'refund_amount' => $payment->amount - $newRefundTotal, // cumulative refund
@@ -3161,44 +3180,41 @@ class OrderController extends Controller
      {
         $order = Order::findOrFail($orderId);
 
-
-
         $cancel = self::cancelUncapturedAmount($order->id);
 
-                $response = $cancel->getData();
+        $response = $cancel->getData();
 
-                if ($response->success) {
+        if ($response->success) {
 
-                    // Update to payment_status = 0 (payment cancelled)
-                    $order->payment_status = 7;
-                    $order->booked_amount = 0;
-                    $order->save();
+            // Update to payment_status = 0 (payment cancelled)
+            $order->payment_status = 7;
+            $order->booked_amount = 0;
+            $order->save();
 
-                    $order_actions = [
-                        [
-                            'order_id'         => $order->id,
-                            'performed_by'     => Auth::id(),
-                            'notes'            => "Uncaptured Payment is Cancelled",
-                            'created_at'       => now(),
-                            'updated_at'       => now()
-                        ]
-                    ];
-                    OrderActions::insert($order_actions);
+            $order_actions = [
+                [
+                    'order_id'         => $order->id,
+                    'performed_by'     => Auth::id(),
+                    'notes'            => "Uncaptured Payment is Cancelled",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ]
+            ];
+            OrderActions::insert($order_actions);
 
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Payment authorization cancelled successfully.'
-                    ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment authorization cancelled successfully.'
+            ]);
 
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => $response->message
-                    ]);
-                }
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => $response->message
+            ]);
+        }
 
-
-        } 
+    } 
 
     public function confirmPayment($orderId, $action_name = 'full', $amount)
 {
@@ -3720,7 +3736,7 @@ class OrderController extends Controller
         $order_actions = [
                 'order_id'         => $order->id,
                 'performed_by'     => Auth::id(),
-                'notes'            => "Credit card ({{ $paymentMethod->card->last4 }})   ({{ $paymentMethod->card->brand }}) added successfully has been processed by " . Auth::user()->name,
+                'notes'            => "Credit card added successfully has been processed by " . Auth::user()->name,
                 'created_at'       => now(),
                 'updated_at'       => now()
             ];

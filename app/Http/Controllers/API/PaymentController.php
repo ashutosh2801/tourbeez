@@ -268,30 +268,53 @@ class PaymentController extends Controller
                         // if ($paymentMethod->type === 'card') {
 
 
-                            OrderPayment::updateOrCreate(
-                            // ✅ Unique condition
-                            [
-                                'payment_intent_id' => $booking->payment_intent_id,
-                            ],
-                            // ✅ Data to update or insert
-                            [
-                                'order_id'          => $booking->id,
-                                'payment_intent_id' => $booking->payment_intent_id,
-                                'transaction_id'    => null, // no charge yet until capture
-                                'payment_type'      => strtoupper($paymentMethod->type),
-                                'payment_method'    => $paymentMethod->type,
-                                'card_brand'        => $paymentMethod->card->brand ?? null,
-                                'card_last4'        => $paymentMethod->card->last4 ?? null,
-                                'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
-                                'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
-                                'amount'            => $booking->booked_amount,
-                                'currency'          => $booking->currency,
-                                'status'            => 'uncaptured', // manual capture pending
-                                'action'            => $action_name,
-                                'response_payload'  => null,
-                                'collection_date'   => now(),
-                            ]
-                        );
+                        //     OrderPayment::updateOrCreate(
+                        //     // ✅ Unique condition
+                        //     [
+                        //         'payment_intent_id' => $booking->payment_intent_id,
+                        //     ],
+                        //     // ✅ Data to update or insert
+                        //     [
+                        //         'order_id'          => $booking->id,
+                        //         'payment_intent_id' => $booking->payment_intent_id,
+                        //         'transaction_id'    => null, // no charge yet until capture
+                        //         'payment_type'      => strtoupper($paymentMethod->type),
+                        //         'payment_method'    => $paymentMethod->type,
+                        //         'card_brand'        => $paymentMethod->card->brand ?? null,
+                        //         'card_last4'        => $paymentMethod->card->last4 ?? null,
+                        //         'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                        //         'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                        //         'amount'            => $booking->booked_amount,
+                        //         'currency'          => $booking->currency,
+                        //         'status'            => 'uncaptured', // manual capture pending
+                        //         'action'            => $action_name,
+                        //         'response_payload'  => null,
+                        //         'collection_date'   => now(),
+                        //     ]
+                        // );
+
+                        OrderPayment::updateOrCreate(
+                        [
+                            'payment_intent_id' => $paymentIntent->id,
+                        ],
+                        [
+                            'order_id'          => $booking->id,
+                            'payment_intent_id' => $paymentIntent->id,
+                            'transaction_id'    => $paymentIntent->latest_charge ?? null,
+                            'payment_type'      => strtoupper($paymentMethod->type),
+                            'payment_method'    => $paymentMethod->type,
+                            'card_brand'        => $paymentMethod->card->brand ?? null,
+                            'card_last4'        => $paymentMethod->card->last4 ?? null,
+                            'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                            'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                            'amount'            => ($paymentIntent->amount / 100), // convert from cents
+                            'currency'          => $paymentIntent->currency,
+                            'status'            => $paymentIntent->status === 'requires_capture' ? 'uncaptured' : $paymentIntent->status,
+                            'action'            => $action_name,
+                            'response_payload'  => json_encode($paymentIntent),
+                            'collection_date'   => now(),
+                        ]
+                    );
 
                             // Update OrderPayment (preferred)
                             // OrderPayment::create([
