@@ -123,10 +123,12 @@
     			</div>
     		@endforeach
     	</div>
-		<div class="aiz-pagination mt-3">
+    </div>
+	<div class="card-footer">
+		<div class="aiz-pagination">
 			{{ $all_uploads->appends(request()->input())->links() }}
 		</div>
-    </div>
+	</div>
 </div>
 
 <div id="delete-modal" class="modal fade">

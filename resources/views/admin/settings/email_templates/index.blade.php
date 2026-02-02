@@ -27,17 +27,31 @@
                     </div>
                 </div>
             </div>
+            <!-- mobile menu start -->
+            <div class="dropdown tour-mb-dropdown">
+                <div class="form-control" data-toggle="dropdown" href="#" aria-expanded="false">
+                    - Select Menu -
+                </div>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right profile-dropdown">
+                    <div class="nav flex-column nav-pills email-template-sidebar" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                        @foreach ($email_templates as $key => $email_template)
+                            <a title="{{ $email_template->description }}" class="nav-link @if($email_template->id == 1) active @endif" id="v-pills-tab-2" data-toggle="pill" href="#v-pills-{{ $email_template->id }}" role="tab" aria-controls="v-pills-profile" aria-selected="false"><i class="fas fa-caret-right"></i> {{ translate(ucwords(str_replace('_', ' ', $email_template->identifier)))  }}</a>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            <!-- mobile menu end -->
             <div class="card card-primary bg-white border rounded-lg-custom">
                 <div class="card-body p-0">
                     <div class="row">
-                        <div class="col-3 pr-0">
+                        <div class="col-xl-3 col-lg-3 pr-0 desktop-menu">
                             <div class="nav flex-column nav-pills email-template-sidebar" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                                 @foreach ($email_templates as $key => $email_template)
                                     <a title="{{ $email_template->description }}" class="nav-link @if($email_template->id == 1) active @endif" id="v-pills-tab-2" data-toggle="pill" href="#v-pills-{{ $email_template->id }}" role="tab" aria-controls="v-pills-profile" aria-selected="false"><i class="fas fa-caret-right"></i> {{ translate(ucwords(str_replace('_', ' ', $email_template->identifier)))  }}</a>
                                 @endforeach
                             </div>
                         </div>
-                        <div class="col-9 pl-0">
+                        <div class="col-xl-9 col-lg-9 col-12 pl-0">
                             <div class="email-template-body">
                                 <div class="tab-content" id="v-pills-tabContent">
 

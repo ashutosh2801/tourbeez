@@ -161,6 +161,11 @@
                                         @include('admin.tours.edit.message')
                                     </div>
                                 </div>
+                                <div class="tab-pane fade" id="booking" role="tabpanel" aria-labelledby="v-pills-messages-tab-12">
+                                    <div class="card">
+                                        @include('admin.tours.edit.booking')
+                                    </div>
+                                </div>
                                 <div class="tab-pane fade" id="meta_information" role="tabpanel" aria-labelledby="v-pills-messages-tab-13">
                                     <div class="card">
                                         @include('admin.tours.edit.meta_information')
