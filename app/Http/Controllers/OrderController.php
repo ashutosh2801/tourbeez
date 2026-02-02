@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
+use Stripe\Cancel;
 use Stripe\Stripe;
 use Validator;
 

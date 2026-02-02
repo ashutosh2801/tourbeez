@@ -64,16 +64,16 @@
                                                 <label for="pickup_time">Pickup time</label>
                                                 <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="PickupLocations[{{ $index }}][time]">
                                                     <option value="">Select one</option>
-                                                    @for ($hour = 0; $hour <= 12; $hour++)
+                                                    @for ($hour = 1; $hour <= 12; $hour++)
+    @for ($minute = 0; $minute < 60; $minute++)
+        @foreach (['AM', 'PM'] as $period)
+            <option value="{{ sprintf('%02d:%02d %s', $hour, $minute, $period) }}">
+                {{ sprintf('%02d:%02d %s', $hour, $minute, $period) }}
+            </option>
+        @endforeach
+    @endfor
+@endfor
 
-                                                        @foreach ([0, 15, 30, 45] as $minute)
-                                                        @php
-                                                            $time = \Carbon\Carbon::createFromTime($hour == 12 ? 12 : $hour, $minute);
-                                                            $formatted = $time->format('h:i A'); // 'h' = 12-hour with leading zero
-                                                        @endphp
-                                                        <option value="{{ $formatted }}">{{ $formatted }}</option>
-                                                        @endforeach
-                                                    @endfor
                                                 </select>
                                                 @error('pickup_time')
                                                     <small class="form-text text-danger">{{ $message }}</small>

@@ -163,7 +163,6 @@
 $statuses = config('constants.order_statuses');
 $expectEmails = ['order_pending', 'payment_receipt'];
 
-
 @endphp
 
     <form id="orderForm" action="{{ route('admin.orders.update',$order->id) }}" method="POST">
@@ -171,7 +170,6 @@ $expectEmails = ['order_pending', 'payment_receipt'];
     @csrf
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
     <input type="hidden" name="order_number" id="order_number" value="{{ $order->order_number }}" /> 
-
 
     <div class="card card-primary rounded-lg-custom border order-edit-head1">
         <div class="card-header">
@@ -1810,7 +1808,7 @@ document.addEventListener("click", function(e) {
 </script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
 
     // ✅ Function to update status UI
     function updateStatusUI(radio) {

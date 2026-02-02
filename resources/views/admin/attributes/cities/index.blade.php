@@ -11,6 +11,9 @@
                 <div class="col-md-4">
                     <form class="" id="sort_cities" action="" method="GET">
                         <div class="input-group input-group-sm">
+                            <input type="checkbox" class="form-control" onchange="retrun sort_cities()" id="has_image" name="has_image" @isset($sort_search) value="1"> Has image?
+                        </div>
+                        <div class="input-group input-group-sm">
                             <input type="text" class="form-control" id="search" name="search"@isset($sort_search) value="{{ $sort_search }}" @endisset placeholder="{{ translate('Type name & Enter') }}">
                         </div>
                     </form>
