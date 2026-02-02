@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ManifestExport;
-use App\Imports\OrderImport;
 use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
@@ -17,24 +16,23 @@ use App\Models\OrderTour;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
 use App\Models\TourPricing;
-use App\Models\TourSpecialDeposit;
 use App\Models\User;
-use App\Notifications\NewOrderNotification;
 use App\Services\TwilioService;
+use App\Notifications\NewOrderNotification;
+use App\Models\TourSpecialDeposit;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
 use Stripe\Stripe;
 use Validator;
-use Maatwebsite\Excel\Concerns\FromArray;
 
 
 class OrderController extends Controller
@@ -2479,7 +2477,7 @@ class OrderController extends Controller
                 // 'status' => $newStatus,
                 'refund_id' => $refund->id ?? null,
                 'refunded_at' => now(),
-                'refund_amount' => $payment->amount - $newRefundTotal, // cumulative refund
+                'refund_amount' => $newRefundTotal, // cumulative refund
                 'refund_reason' => $request->reason,
             ]);
 
@@ -3181,44 +3179,41 @@ class OrderController extends Controller
      {
         $order = Order::findOrFail($orderId);
 
-
-
         $cancel = self::cancelUncapturedAmount($order->id);
 
-                $response = $cancel->getData();
+        $response = $cancel->getData();
 
-                if ($response->success) {
+        if ($response->success) {
 
-                    // Update to payment_status = 0 (payment cancelled)
-                    $order->payment_status = 7;
-                    $order->booked_amount = 0;
-                    $order->save();
+            // Update to payment_status = 0 (payment cancelled)
+            $order->payment_status = 7;
+            $order->booked_amount = 0;
+            $order->save();
 
-                    $order_actions = [
-                        [
-                            'order_id'         => $order->id,
-                            'performed_by'     => Auth::id(),
-                            'notes'            => "Uncaptured Payment is Cancelled",
-                            'created_at'       => now(),
-                            'updated_at'       => now()
-                        ]
-                    ];
-                    OrderActions::insert($order_actions);
+            $order_actions = [
+                [
+                    'order_id'         => $order->id,
+                    'performed_by'     => Auth::id(),
+                    'notes'            => "Uncaptured Payment is Cancelled",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ]
+            ];
+            OrderActions::insert($order_actions);
 
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Payment authorization cancelled successfully.'
-                    ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment authorization cancelled successfully.'
+            ]);
 
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => $response->message
-                    ]);
-                }
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => $response->message
+            ]);
+        }
 
-
-        } 
+    } 
 
     public function confirmPayment($orderId, $action_name = 'full', $amount)
 {
@@ -3503,18 +3498,26 @@ class OrderController extends Controller
             $order->balance_amount = $order->total_amount;
             $order->save();
 
+
+
+
+            $orderPayment = OrderPayment::where('payment_intent_id', $paymentIntent->id)->first();
+            $orderPayment->status = 'pending';
+            $orderPayment->save();
+
+
             // Log the cancellation
-            OrderPayment::create([
-                'order_id'          => $order->id,
-                'payment_intent_id' => $intentId,
-                'transaction_id'    => $intentId,
-                'payment_method'    => 'card',
-                'status'            => 'canceled',
-                'amount'            => 0,
-                'currency'          => $order->currency,
-                'action'            => 'cancel_uncaptured',
-                'response_payload'  => json_encode($canceledIntent),
-            ]);
+            // OrderPayment::create([
+            //     'order_id'          => $order->id,
+            //     'payment_intent_id' => $intentId,
+            //     'transaction_id'    => $intentId,
+            //     'payment_method'    => 'card',
+            //     'status'            => 'canceled',
+            //     'amount'            => 0,
+            //     'currency'          => $order->currency,
+            //     'action'            => 'cancel_uncaptured',
+            //     'response_payload'  => json_encode($canceledIntent),
+            // ]);
 
             DB::commit();
 

@@ -180,8 +180,6 @@ class CommonController extends Controller
         return response()->json(['status' => true, 'popular_cities' => $cities], 200);
     }
 
-
-
     public function popular_destinations(Request $request)
     {
         $limit = $request->input('limit', 15); 
@@ -253,7 +251,7 @@ class CommonController extends Controller
 
     public function single_city(Request $request, $id)
     {
-        $type = $request->input('type', 'city'); // Default to 'city' if not provided
+        $type = $request->input('type', 'c1'); // Default to 'city' if not provided
 
         $cacheKey = 'single_city_' . $id . '_' . $type;
         $d = Cache::remember($cacheKey, 86400, function() use ($id, $type) {
@@ -272,58 +270,53 @@ class CommonController extends Controller
         $meta_description = 'Discover tour in '.ucfirst( $d->name ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.';
 
         $data = [];
-        // Prepare the response data based on the  city type
-        if ($type == 'c1') {
-                $data['city'] = [
-                    'id'    => $d->id,
-                    'name'  => ucfirst( $d->name ),
-                    'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
-                    'image' => uploaded_asset( $d->upload_id ),
-                    'meta_title'      => $meta_title,
-                    'meta_description'=> $meta_description,
-                ];
-        }
+        $data['result'] = null;
 
-        // Prepare the response data based on the  city and state type
-        if ( $type == 's1' ) {
-            if($d->state){
-                $data['state'] = [
-                    'id'    => $d->state->id,
-                    'name'  => 'Things to do in '.ucfirst( $d->state->name ),
-                    'url'   => '/'.Str::slug( $d->state->name ).'/'.$d->state->id.'/s1',
-                    'image' => $d->state->upload_id ? uploaded_asset( $d->state->upload_id ) : '',
-                    'meta_title'      => $meta_title,
-                    'meta_description'=> $meta_description,
-                ];
+        if (!empty($d->id)) {
+
+            $baseName = ucfirst($d->name);
+            $slug     = Str::slug($d->name);
+            $image    = $d->upload_id ? uploaded_asset($d->upload_id) : '';
+
+            switch ($type) {
+
+                case 'c1': // City
+                    $name = $baseName;
+                    $url  = "/{$slug}/{$d->id}/c1";
+                    break;
+
+                case 's1': // State
+                    $name = "Things to do in {$baseName}";
+                    $url  = "/{$slug}/{$d->id}/s1";
+                    break;
+
+                case 'c2': // Country
+                    $name = "Things to do in {$baseName}";
+                    $url  = "/{$slug}/{$d->id}/c2";
+                    break;
+
+                case 'c3': // Category
+                    $name = "Things to do in {$baseName}";
+                    $url  = "/{$slug}/{$d->id}/c3";
+                    $image = ''; // category has no image
+                    break;
+
+                default:
+                    return response()->json(['error' => 'Invalid type'], 400);
             }
-            
-        }
 
-        // Prepare the response data based on the  city, state and country type
-        if ( $type == 'c2' ) {
-            if($d->state && $d->state->country){
-                $data['country'] = [
-                    'id'    => $d->state->country->id,
-                    'name'  => 'Things to do in '.ucfirst( $d->state->country->name ),
-                    'url'   => '/'.Str::slug( $d->state->country->name ).'/'.$d->state->country->id.'/c2',
-                    'image' => $d->state?->country?->upload_id ? uploaded_asset( $d->state->country->upload_id ) : '',
-                    'meta_title'      => $meta_title,
-                    'meta_description'=> $meta_description,
-                ];
-            }
-            
-        }
-
-        if ( $type == 'c3' ) {
-            $data['country'] = [
-                'id'    => $d->id,
-                'name'  => 'Things to do in '.ucfirst( $d->name ),
-                'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c3',
-                // 'image' => $d->upload_id ? uploaded_asset( $d->upload_id ) : '',
-                'meta_title'      => $meta_title,
-                'meta_description'=> $meta_description,
+            $data['result'] = [
+                'id'               => $d->id,
+                'name'             => $name,
+                'url'              => $url,
+                'image'            => $image,
+                'meta_title'       => $meta_title,
+                'meta_description' => $meta_description,
             ];
         }
+
+        // return response()->json(['type' => $type, 'data' => $data], 200);
+
 
         return response()->json(['status' => true, 'data' => $data], 200);
     }
