@@ -3,8 +3,8 @@
         {{ 'Third Party Settings' }}
     @endsection
     <div class="row">
-        <div class="col-md-6">
-            <div class="card card-primary">
+        <div class="col-lg-6 col-12 d-flex">
+            <div class="card card-primary w-full bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h3 class="mb-0 h6">{{translate('Google Tag Manager')}}</h3>
                 </div>
@@ -21,15 +21,15 @@
                                 placeholder="{{ translate('Google Tag Manager') }}" required>{{ get_setting('google_tag_manager') }}</textarea>
                             </div>
                         </div>
-                        <div class="form-group mb-0 text-right">
-                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
+                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;text-align: right;">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Save')}}</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card card-primary">
+        <div class="col-lg-6 col-12 d-flex">
+            <div class="card card-primary w-full bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h3 class="mb-0 h6">{{translate('Google Analytics Settings')}}</h3>
                 </div>
@@ -59,15 +59,15 @@
                                 <input type="text" class="form-control" name="GOOGLE_ANALYTICS_TRACKING_ID" value="{{  env('GOOGLE_ANALYTICS_TRACKING_ID') }}" placeholder="{{ translate('Tracking ID') }}" required>
                             </div>
                         </div>
-                        <div class="form-group mb-0 text-right">
-                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
+                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;text-align: right;">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Save')}}</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card card-primary">
+        <div class="col-lg-6 col-12 d-flex">
+            <div class="card card-primary w-full bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h3 class="mb-0 h6">{{translate('Google reCAPTCHA Setting')}}</h3>
                 </div>
@@ -106,15 +106,15 @@
                                 <input type="text" class="form-control" name="CAPTCHA_SECRET_KEY" value="{{  env('CAPTCHA_SECRET_KEY') }}" placeholder="{{ translate('Site SECRET KEY') }}" required>
                             </div>
                         </div>
-                        <div class="form-group mb-0 text-right">
-                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
+                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px;padding-top:15px;text-align: right;">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Save')}}</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card card-primary">
+        <div class="col-lg-6 col-12 d-flex">
+            <div class="card card-primary w-full bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h3 class="mb-0 h6">{{translate('AWS S3 Setting')}}</h3>
                 </div>
@@ -171,15 +171,15 @@
                                 <input type="text" class="form-control" name="AWS_BUCKET" value="{{  env('AWS_BUCKET') }}" placeholder="{{ translate('Site SECRET KEY') }}" required>
                             </div>
                         </div>
-                        <div class="form-group mb-0 text-right">
-                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
+                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px; padding-top:15px; text-align: right;">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Save')}}</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card card-primary">
+        <div class="col-lg-6 col-12 d-flex">
+            <div class="card card-primary w-full bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h3 class="mb-0 h6">{{translate('Twilio Setting')}}</h3>
                 </div>
@@ -227,15 +227,15 @@
                                 <input type="text" class="form-control" name="TWILIO_FROM" value="{{  env('TWILIO_FROM') }}" placeholder="{{ translate('TWILIO_FROM') }}" required>
                             </div>
                         </div>
-                        <div class="form-group mb-0 text-right">
-                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
+                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px; padding-top:15px; text-align: right;">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Save')}}</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card card-primary">
+        <div class="col-lg-6 col-12 d-flex">
+            <div class="card card-primary w-full bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h3 class="mb-0 h6">{{translate('Twilio Test')}}</h3>
                 </div>
@@ -259,8 +259,8 @@
                                 <input type="text" class="form-control" name="message" value="Hi, How are you?" placeholder="Message here..." required>
                             </div>
                         </div>
-                        <div class="form-group mb-0 text-right">
-                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Send')}}</button>
+                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px; padding-top:15px; text-align: right;">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Send')}}</button>
                         </div>
                     </form>
                 </div>
@@ -269,14 +269,14 @@
 
         <!-- Facebook Chat Setting -->
         <div class="col-md-12">
-            <div class="card card-primary">
+            <div class="card card-primary bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h6 class="fw-600 mb-0">{{ translate('Facebook Chat') }}</h6>
                 </div>
                 <div class="card-body">
                     <div class="row gutters-10">
-                        <div class="col-lg-6">
-                            <div class="card shadow-none bg-light">
+                        <div class="col-lg-6 d-flex">
+                            <div class="card shadow-none bg-light w-full">
                                 <div class="card-header">
                                     <h5 class="mb-0 h6">{{translate('Facebook Chat Setting')}}</h5>
                                 </div>
@@ -307,15 +307,15 @@
                                                 <input type="text" class="form-control" name="FACEBOOK_PAGE_ID" value="{{  env('FACEBOOK_PAGE_ID') }}" placeholder="{{ translate('Facebook Page ID') }}" required>
                                             </div>
                                         </div>
-                                        <div class="form-group mb-0 text-right">
-                                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
+                                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px; padding-top:15px; text-align: right;">
+                                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Save')}}</button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-6">
-                            <div class="card shadow-none bg-light">
+                        <div class="col-lg-6 d-flex">
+                            <div class="card shadow-none bg-light w-full">
                                 <div class="card-header">
                                     <h5 class="mb-0 h6">{{ translate('Please be carefull when you are configuring Facebook chat. For incorrect configuration you will not get messenger icon on your user-end site.') }}</h5>
                                 </div>
@@ -338,14 +338,14 @@
 
         {{-- Facebook Pixel Setting--}}
         <div class="col-md-12">
-            <div class="card card-primary">
+            <div class="card card-primary bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h6 class="fw-600 mb-0">{{ translate('Facebook Pixel') }}</h6>
                 </div>
                 <div class="card-body">
                     <div class="row gutters-10">
-                        <div class="col-lg-6">
-                            <div class="card shadow-none bg-light">
+                        <div class="col-lg-6 d-flex">
+                            <div class="card shadow-none bg-light w-full">
                                 <div class="card-header">
                                     <h5 class="mb-0 h6">{{ translate('Facebook Pixel Setting') }}</h5>
                                 </div>
@@ -375,15 +375,15 @@
                                                 <input type="text" class="form-control" name="FACEBOOK_PIXEL_ID" value="{{  env('FACEBOOK_PIXEL_ID') }}" placeholder="{{ translate('Facebook Pixel ID') }}" required>
                                             </div>
                                         </div>
-                                        <div class="form-group mb-0 text-right">
-                                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
+                                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px; padding-top:15px; text-align: right;">
+                                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Send')}}</button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-6">
-                            <div class="card shadow-none bg-light">
+                        <div class="col-lg-6 d-flex">
+                            <div class="card shadow-none bg-light w-full">
                                 <div class="card-header">
                                     <h5 class="mb-0 h6">{{ translate('Please be carefull when you are configuring Facebook pixel.') }}</h5>
                                 </div>
@@ -403,14 +403,14 @@
 
         {{-- Facebook Comment Setting--}}
         <div class="col-md-12">
-            <div class="card card-primary">
+            <div class="card card-primary bg-white border rounded-lg-custom">
                 <div class="card-header">
                     <h6 class="fw-600 mb-0">{{ translate('Facebook Comment') }}</h6>
                 </div>
                 <div class="card-body">
                     <div class="row gutters-10">
-                        <div class="col-lg-6">
-                            <div class="card shadow-none bg-light">
+                        <div class="col-lg-6 d-flex">
+                            <div class="card shadow-none bg-light w-full">
                                 <div class="card-header">
                                     <h5 class="mb-0 h6">{{ translate('Facebook Comment Setting') }}</h5>
                                 </div>
@@ -440,15 +440,15 @@
                                                 <input type="text" class="form-control" name="FACEBOOK_APP_ID" value="{{  env('FACEBOOK_APP_ID') }}" placeholder="{{ translate('Facebook App ID') }}" required>
                                             </div>
                                         </div>
-                                        <div class="form-group mb-0 text-right">
-                                            <button type="submit" class="btn btn-sm btn-primary">{{translate('Save')}}</button>
+                                        <div class="form-group" style="display:block; border-top:1px solid #ddd; margin-top:15px; padding-top:15px; text-align: right;">
+                                            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> {{translate('Send')}}</button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-6">
-                            <div class="card shadow-none bg-light">
+                        <div class="col-lg-6 d-flex">
+                            <div class="card shadow-none bg-light w-full">
                             <div class="card-header">
                                 <h5 class="mb-0 h6">{{ translate('Please be carefull when you are configuring Facebook Comment. For incorrect configuration you will not get comment section on your user-end site.') }}</h5>
                             </div>

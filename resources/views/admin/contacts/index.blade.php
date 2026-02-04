@@ -1,10 +1,16 @@
 <x-admin>
     @section('title', 'Contacts')
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Contacts</h3>
+    <div class="card-primary mb-3">
+        <div class="card-header banner-head">
+            <div class="row">
+                <div class="col-md-12 col-12">
+                    <h5 class="card-title">Contacts</h5>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
+    </div>
+    <div class="card-primary bg-white border rounded-lg-custom contacts-main-body">
+        <div class="card-body p-0">
             <table class="table table-striped" id="contactTable">
                 <thead>
                     <tr>
@@ -15,7 +21,6 @@
                         <th>Message</th>
                         <th>Date</th>
                         <th>Action</th>
-                        <th></th>
                     </tr>
                 </thead>
                 <tbody>

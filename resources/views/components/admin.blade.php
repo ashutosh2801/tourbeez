@@ -54,7 +54,7 @@
     </script>
 </head>
 
-<body class="hold-transition sidebar-mini sidebar-collapse layout-fixed {{ Auth::user()->mode }}-mode">
+<body class="hold-transition sidebar-mini layout-fixed {{ Auth::user()->mode }}-mode">
 
     <div class="wrapper">
         <!-- Navbar -->

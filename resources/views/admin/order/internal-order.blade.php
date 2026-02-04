@@ -1,7 +1,12 @@
 <x-admin>
 @section('title', 'Internal Orders Create')
 
-<div class="card">
+<style>
+
+/* Balance bar */
+
+
+</style>
 
     @if ($errors->any())
     <div class="alert alert-danger mb-4 p-3 rounded">
@@ -13,53 +18,55 @@
     </div>
     @endif
 
-    <!-- ================= Header ================= -->
-    <div class="card-header d-flex justify-content-between align-items-center bg-secondary p-3 mb-3 rounded">
-        <div class="form-group">
-            <h4 class="m-0">New Order</h4>
-            <small>Created by {{ auth()->user()->name }}</small>
-        </div>
-    </div>
 
-    <form id="orderForm" class="p-2" action="{{ route('admin.orders.store') }}" method="POST">
-        @csrf        
-
-        <!-- ================= Balance + Status ================= -->
-        <div class="d-flex justify-content-between align-items-center p-3 mb-3 rounded z-10">
-            <div>
-                <strong id="totalDue">0.00</strong><br>
-                <small>Balance</small>
+    <div class="internal-order-body">
+        <!-- ================= Header ================= -->
+        <div class="card-primary mb-3">
+            <div class="card-header internal-order-head">
+                <div class="row">
+                    <div class="col-12">
+                        <h3 class="card-title text-white w-full">New Order</h3>
+                        <small>Created by {{ auth()->user()->name }}</small>
+                    </div>
+                </div>
             </div>
-            <div>
+        </div>
+
+        <form id="orderForm" action="{{ route('admin.orders.store') }}" method="POST">
+            @csrf        
+
+            <!-- ================= Balance + Status ================= -->
+            <div class="d-flex justify-content-between align-items-center rounded-lg-custom balance-bar border">
+                <div>
+                    <strong id="totalDue">0.00</strong>
+                    <small>Balance</small>
+                </div>
                 
+                <div class="d-flex">
+                    <select name="currency" class="form-control mr-2">
+                        @foreach(config('constants.currencies') as $code => $country)
+                            <option value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
+                        @endforeach
 
-                <select name="currency" class="form-control">
-                    @foreach(config('constants.currencies') as $code => $country)
-                        <option value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
-                    @endforeach
-
-                </select>
+                    </select>
+                    <select name="order_status" class="form-control mr-2">
+                        <option value="0">New</option> 
+                        <option value="4">Pending Customer</option>
+                        <option value="3">Pending Supplier</option>
+                        <option value="5" selected>Confirmed</option>
+                        <option value="2">On Hold</option>
+                        <option value="6">Cancelled</option>
+                        <option value="7">Abandoned Cart</option>
+                    </select>
+                    <button type="submit" class="btn btn-success w-full">+ Create Order</button>
+                </div>
             </div>
-            <div>
-                <select name="order_status" class="form-control">
-                    <option value="0">New</option> 
-                    <option value="4">Pending Customer</option>
-                    <option value="3">Pending Supplier</option>
-                    <option value="5" selected>Confirmed</option>
-                    <option value="2">On Hold</option>
-                    <option value="6">Cancelled</option>
-                    <option value="7">Abandoned Cart</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary">Create Order</button>
-        </div>
-
-        <div class="accordion" id="accordionExample">           
-            <div class="card" style="overflow: visible;">
-                <div class="card">
-                    <div class="card-header bg-secondary py-0 z-10" id="headingOne">
+            
+            <div class="accordion" id="accordionExample">         
+                <div class="card card-primary rounded-lg-custom border">
+                    <div class="card-header order-heads py-0 z-10" id="headingOne">
                         <h2 class="my-0 py-0">
-                            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                            <button type="button" class="btn btn-link collapsed py-0 px-0 text-white" 
                                 data-toggle="collapse" data-target="#collapseOne">
                                 <i class="fa fa-angle-right"></i> Customer Details
                             </button>                                  
@@ -78,20 +85,18 @@
                                             <option value="{{ $customer->id }}">{{ ucwords($customer->name) }} - {{ $customer->email }} - {{ $customer->phone ?? 'NA' }}</option>
                                         @endforeach
                                     </select>
-                                </div>
-
-                                <div class="form-group col-md-2 text-center font-thin text-lg">  OR</div>
-
-                                <div class="text-center my-3 col-md-5 ">
-                                    <button type="button" id="addNewCustomerBtn" class="btn btn-md btn-primary">
-                                        <i class="fa fa-user-plus"></i> Add New Customer
-                                    </button>
-                                </div>
+                                    <div class="form-group text-center font-thin text-md mt-3">  OR</div>
+                                    <div class="text-center">
+                                        <button type="button" id="addNewCustomerBtn" class="btn btn-md btn-success">
+                                            <i class="fa fa-user-plus mr-1"></i> Add New Customer
+                                        </button>
+                                    </div>
+                                </div>                            
                             </div>
 
                             {{-- New Customer Fields (hidden by default) --}}
                             <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
-                                <h5 class="mb-3">New Customer Information</h5>
+                                <h5 class="cus-info-head">New Customer Information</h5>
 
                                 <div class="form-row">
                                     <div class="form-group col-lg-3 col-md-6">
@@ -142,10 +147,10 @@
                 </div>
 
                 <!-- ================= Tour Details ================= -->
-                <div class="card">
-                    <div class="card-header bg-secondary py-0" id="headingTwo">
+                <div class="card card-primary rounded-lg-custom border tour-detail">
+                    <div class="card-header order-heads py-0" id="headingTwo">
                         <h2 class="my-0 py-0">
-                            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                            <button type="button" class="btn btn-link collapsed py-0 px-0 text-white" 
                                 data-toggle="collapse" data-target="#collapseTwo">
                                 <i class="fa fa-angle-right"></i> Tour Details
                             </button>
@@ -153,35 +158,33 @@
                     </div>
                     <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
                         <div class="card-body">
-                            <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px">
-                                <table class="table">
-                                    <tr>
-                                        <td style="border: none; padding: 0;">
-                                            <select 
-                                                onchange="loadTourDetails(this.value, 0)"
-                                                name="tour_id0" 
-                                                class="form-control col-6 aiz-selectpicker border" data-live-search="true">
-                                                <option value="">Select Tour</option>
-                                                @foreach($tours as $tour)
-                                                    <option value="{{ $tour->id }}">{{ $tour->title }}</option>
-                                                @endforeach
-                                            </select>
-                                        </td>
-                                    </tr>
-                                </table>
-                                <div id="tour_details_0"></div>
-                            </div>
+                            <table class="table">
+                                <tr>
+                                    <td style="border: none; padding: 0;">
+                                        <select 
+                                            onchange="loadTourDetails(this.value, 0)"
+                                            name="tour_id0" 
+                                            class="form-control col-12 col-md-6 aiz-selectpicker border" data-live-search="true">
+                                            <option value="">Select Tour</option>
+                                            @foreach($tours as $tour)
+                                                <option value="{{ $tour->id }}">{{ $tour->title }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div id="tour_details_0"></div>
                             <div id="tourContainer"></div>
-                            <button type="button" onclick="addTour()" class="btn btn-sm btn-info px-5">+ Add Tour</button>
+                            <button type="button" onclick="addTour()" class="btn btn-md btn-success px-5 mt-3">+ Add Tour</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- ================= Additional Information ================= -->
-                <div class="card">
-                    <div class="card-header bg-secondary py-0" id="headingFour">
+                <div class="card card-primary rounded-lg-custom border">
+                    <div class="card-header order-heads py-0" id="headingFour">
                         <h2 class="my-0 py-0">
-                            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                            <button type="button" class="btn btn-link collapsed py-0 px-0 text-white"
                                 data-toggle="collapse" data-target="#collapseFour">
                                 <i class="fa fa-angle-right"></i> Additional Information
                             </button>
@@ -189,11 +192,11 @@
                     </div>
                     <div id="collapseFour" class="collapse show" aria-labelledby="headingFour" data-parent="#accordionExample">
                         <div class="card-body row">
-                            <div class="col-6">
+                            <div class="col-12 col-md-6">
                                 <textarea class="form-control" name="additional_info" rows="2" placeholder="Add Special Requirements"></textarea>
                                 <p style="color:#777;font-size:14px">Special Requirements visible by everybody</p>
                             </div>
-                            <div class="col-6">
+                            <div class="col-12 col-md-6">
                                 <textarea class="form-control" name="internal_notes" rows="2" placeholder="Add  Internal Notes"></textarea>
                                 <p style="color:#777;font-size:14px">Internal Notes only visible by supplier</p>
                             </div>
@@ -202,10 +205,10 @@
                 </div>
 
                 <!-- ================= Customer Payment ================= -->
-                <div class="card">
-                    <div class="card-header bg-secondary py-0" id="headingThree">
+                <div class="card card-primary rounded-lg-custom border">
+                    <div class="card-header order-heads py-0" id="headingThree">
                         <h2 class="my-0 py-0">
-                            <button type="button" class="btn btn-link collapsed fs-21 py-0 px-0" 
+                            <button type="button" class="btn btn-link collapsed py-0 px-0 text-white" 
                                 data-toggle="collapse" data-target="#collapseThree">
                                 <i class="fa fa-angle-right"></i> Customer Payment
                             </button>                     
@@ -214,14 +217,14 @@
 
                     <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
 
-                        <div class="card-total bg-light p-3 mb-3 ">
-                            Total: <span id="totalPayment">0.00</span>
-                            <input type="text" id="total_amount" readonly placeholder="0.00">
+                        <div class="card-total p-3 mb-3" style="background: #edf3ff;">
+                            Total: <b id="totalPayment">0.00</b>
+                            <input type="text" id="total_amount" class="form-control" readonly placeholder="0.00">
+
                         </div>
-                        <div class="card-body">
+                        <div class="card-body pt-0">
 
-
-                            <div class="p-2 mb-2 bglight">
+                            <div>
                                 <div class="mb-2"><label><input type="checkbox" value="1" name="add_ccnow" id="add_ccnow" > Add a credit card to this order</label></div>
 
                                 <div id="card-element-wrapper" class="hidden">
@@ -244,11 +247,11 @@
                                 </div>
                             </div>
 
-                            <div class="bg-light p-2">                                   
+                            <div class="border rounded p-3 bg-light">                                   
 
                                 <div id="paymentTemplate">
                                     <div class="row paymentRow my-2 border-b-1 border-blue-300">
-                                        <div class="col-2">
+                                        <div class="col-12 col-md-2">
                                             <select class="form-control" name="paymentType[]">
                                                 <option value="">Payment type...</option>
                                                 <option value="CASH">Cash</option>
@@ -266,11 +269,11 @@
                                             </select>
                                         </div>
 
-                                        <div class="col-3">
+                                        <div class="col-12 col-md-3">
                                             <input class="form-control" name="transactionId[]" placeholder="Ref. number" autocomplete="off" />
                                         </div>
 
-                                        <div class="col-s">
+                                        <div class="col-12 col-md-3">
                                             <div class="input-group">
                                                 <input type="text" class="aiz-date-range form-control"
                                                     name="collection_date[]" data-format="ddd MMM DD, YYYY" data-single="true" autocomplete="off" placeholder="Date">
@@ -280,7 +283,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="col-2">
+                                        <div class="col-12 col-md-2">
                                             <div class="input-group">
                                                 <div class="input-group-append">
                                                     <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
@@ -289,7 +292,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="col-2 text-right">
+                                        <div class="col-12 col-md-2 text-right">
                                             <button type="button" class="btn btn-success btn-sm addRow">+</button>
                                             <button type="button" class="btn btn-danger btn-sm removeRow">-</button>
                                         </div>
@@ -370,31 +373,31 @@
                 </div> 
 
                 <!-- ================= Form Actions ================= -->
-                <div class="card-footer" style="display:block">
-                    <button style="padding:0.6rem 2rem" type="submit" id="createOrderBtn" class="btn btn-primary">Create Order</button>
-                    <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                <div class="card card-primary card-footer rounded-lg-custom border" style="display:block">
+                    <button style="padding:0.6rem 2rem" type="submit" id="createOrderBtn" class="btn btn-success">+ Create Order</button>
+                    <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+
+        <div id="globalLoader" 
+            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+                    background:rgba(255,255,255,0.6); z-index:99999;">
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+                        text-align:center; font-size:18px;">
+
+                <div class="loader-spinner" 
+                    style="width:40px; height:40px; border:4px solid #ccc; 
+                            border-top-color:#3498db; border-radius:50%;
+                            animation: spin 0.8s linear infinite; margin:auto;">
+                </div>
+
+                <div style="margin-top:10px; font-weight:bold; color:#333;">
+                    Processing...
                 </div>
             </div>
         </div>
-    </form>
-</div>
-<div id="globalLoader" 
-     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-            background:rgba(255,255,255,0.6); z-index:99999;">
-    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
-                text-align:center; font-size:18px;">
-
-        <div class="loader-spinner" 
-             style="width:40px; height:40px; border:4px solid #ccc; 
-                    border-top-color:#3498db; border-radius:50%;
-                    animation: spin 0.8s linear infinite; margin:auto;">
-        </div>
-
-        <div style="margin-top:10px; font-weight:bold; color:#333;">
-            Processing...
-        </div>
     </div>
-</div>
 @section('js')
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>

@@ -1,18 +1,6 @@
     @section('css')
      <style>
-     .cardbox {
-        background: #f6f6f6;
-        border-radius: 2px;
-        display: inline-block;
-        height: 93px;
-        margin: 1rem;
-        position: relative;
-        width: 181%;
-        }
-        .focus{
-                margin-top: 30px;
-                margin-left: 11px;
-        }
+     
     </style>
     @endsection
 <div class="card">
@@ -58,31 +46,34 @@
                         </div>
                     </div>
                 
-                    <form  action="{{ route('admin.tour.addfocus', $data->id) }}" method="POST" enctype="multipart/form-data" autocomplete="off">
-                        @csrf
-                        <div class="cardbox">
-                            <div class="row col-md-12 focus">
-                                <div class="form-group col-md-2">
-                                    <label class="control-label">Focus Keyword</label> 
-                                </div>
-                                <div class="form-group col-md-8">
-                                    <div>
-                                        <input type="hidden" name="id" value="{{ $data->id }}">
-                                        <input type="text" class="form-control icon" name="focus_keyword" 
-                                        id="focus_keyword"  autocomplete="off" value="{{ !empty($data->detail->focus_keyword) ? $data->detail->focus_keyword : $data->title }}">
-                                    </div>
-                                </div> 
-                            
-                                <div class="form-group col-md-2"> 
-                                    <button type="submit" name="submit" class="btn btn-success btn-flat btn-pri">Submit</button>
-                                </div>     
-                            </div>
-                        </div>
-                    </form>
                     <div class="col-md-12">
-                        <div class="mb-3">
-                            <h5 class="text-success">✅ Passed Checks</h5>
-                            <ul style="list-style: none; padding:0">
+                        <form  action="{{ route('admin.tour.addfocus', $data->id) }}" method="POST" enctype="multipart/form-data" autocomplete="off">
+                            @csrf
+                            <div class="cardbox">
+                                <div class="row">
+                                    <div class="form-group col-xl-2 col-lg-3 col-md-2">
+                                        <label class="control-label">Focus Keyword</label> 
+                                    </div>
+                                    <div class="form-group col-xl-8 col-lg-6 col-md-8">
+                                        <div>
+                                            <input type="hidden" name="id" value="{{ $data->id }}">
+                                            <input type="text" class="form-control icon" name="focus_keyword" 
+                                            id="focus_keyword"  autocomplete="off" value="{{ !empty($data->detail->focus_keyword) ? $data->detail->focus_keyword : $data->title }}">
+                                        </div>
+                                    </div> 
+                                
+                                    <div class="form-group col-xl-2 col-lg-3 col-md-2"> 
+                                        <button type="submit" name="submit" class="btn btn-success btn-flat btn-pri">Submit</button>
+                                    </div>     
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="seo-result">
+                            <h5 class="sub-head text-success">Passed Checks</h5>
+                            <ul>
                                 @forelse ($result['passed'] as $item)
                                     <li>{{ $item }}</li>
                                 @empty
@@ -91,9 +82,9 @@
                             </ul>
                         </div>
 
-                        <div class="mb-3">
-                            <h5 class="text-warning">⚠️ Warnings</h5>
-                            <ul style="list-style: none; padding:0">
+                        <div class="seo-result">
+                            <h5 class="sub-head text-warning">Warnings</h5>
+                            <ul>
                                 @forelse ($result['warning'] as $item)
                                     <li>{{ $item }}</li>
                                 @empty
@@ -102,9 +93,9 @@
                             </ul>
                         </div>
 
-                        <div class="mb-3">
-                            <h5 class="text-danger">❌ Failed Checks</h5>
-                            <ul style="list-style: none; padding:0">
+                        <div class="seo-result">
+                            <h5 class="sub-head text-danger">Failed Checks</h5>
+                            <ul>
                                 @forelse ($result['failed'] as $item)
                                     <li>{{ $item }}</li>
                                 @empty

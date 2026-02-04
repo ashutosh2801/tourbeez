@@ -6,7 +6,7 @@
         <div class="card-primary mb-3">
             <div class="card-header states-head">
                 <div class="row">
-                    <div class="col-md-8">
+                    <div class="col-md-8 col-6">
                         <h3 class="card-title">{{ translate('All States') }}</h3>
                     </div>
                     <div class="col-md-4 col-6">
@@ -105,10 +105,10 @@
         <div class="card-primary">
             <div class="card-header">
                 <div class="row">
-                    <div class="col-md-8">
+                    <div class="col-md-8 col-9">
                         <h6 class="m-0">{{translate('Add New State')}}</h6>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4 col-3">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>

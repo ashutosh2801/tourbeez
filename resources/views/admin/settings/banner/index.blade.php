@@ -1,13 +1,22 @@
 <x-admin>
     @section('title','Banners')
-    <div class="card card-primary">
-        <div class="card-header">
-            <h3 class="card-title">Banners</h3>
-            <div class="card-tools">
-                <a href="{{ route('admin.banners.create') }}" class="btn btn-sm btn-info">Create New</a>
+    <div class="card-primary mb-3">
+        <div class="card-header banner-head">
+            <div class="row">
+                <div class="col-md-8 col-6">
+                    <h5 class="card-title">Banners</h5>
+                </div>
+                <div class="col-md-4 col-6">
+                    <div class="card-tools">
+                        <a href="{{ route('admin.banners.create') }}" class="btn btn-sm btn-success">+ Create New</a>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="card-body">
+    </div>
+
+    <div class="card-primary bg-white border rounded-lg-custom banner-main-body">
+        <div class="card-body p-0">
             <table class="table table-striped" id="bannersTable">
                 <thead>
                     <tr>
@@ -22,7 +31,7 @@
                 <tbody>
                     @foreach ($data as $item)
                         <tr>
-                            <td>{{ $item->location_id ?? '-' }}</td>
+                            <td><span class="btn-name">{{ $item->location_id ?? '-' }}</span></td>
                             <td>
                                 <a href="{{ route('admin.banners.edit', encrypt($item->id)) }}" class="text-info text-sm">
                                     {{ $item->heading }}
@@ -31,12 +40,12 @@
                             <td>{{ $item->sub_heading }}</td>
                             
                             <td width="140">
-                                <a href="{{ route('admin.banners.edit', encrypt($item->id)) }}" class="text-info text-sm btn btn-sm btn-danger ">
-                                    {{ translate('Edit') }}
+                                <a href="{{ route('admin.banners.edit', encrypt($item->id)) }}" class="btn btn-sm btn-edit">
+                                    <i class="far fa-edit"></i>
                                 </a>
                                 <a class="btn btn-sm btn-danger confirm-delete" 
                                    data-href="{{ route('admin.banners.destroy', encrypt($item->id)) }}">
-                                   {{ translate('Delete') }}
+                                   <i class="fas fa-trash-alt"></i>
                                 </a>
                             </td>                            
                         </tr>

@@ -653,6 +653,7 @@ fixed-bottom 1030*/
 .w-400px,.size-400px { width: 400px; }
 .w-410px,.size-410px { width: 410px; }
 .w-420px,.size-420px { width: 420px; }
+.w-full {width: 100%;}
 
 .h-5px,.size-5px { height: 5px; }
 .h-10px,.size-10px { height: 10px; }
@@ -4180,6 +4181,9 @@ input[type="number"] {
 }
 .card-bordered {
     border: 1px solid #ebedf2;
+}
+.justify-flex-end {
+    justify-content: flex-end !important;
 }
 .aiz-p-hov-icon a {
     display: block;
@@ -7710,6 +7714,10 @@ a.dropdown-footer:hover {
     border-left: 1px solid #dee2e6 !important;
 }
 
+.b-radius-0 {
+    border-radius: 0 !important;
+}
+
 .total-record {
     margin: 0;
     border-radius: 0 0 10px 10px !important;
@@ -8003,7 +8011,7 @@ a.dropdown-footer:hover {
     overflow-x: visible;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1024px) {
     .table-viewport {
         overflow-x: scroll;
     }
@@ -8073,6 +8081,11 @@ a.dropdown-footer:hover {
 
 .btn-clear {
     font-size: 14px;
+}
+
+.confirm-delete {
+    padding: 10px 15px;
+    font-size: 15px;
 }
 
 .table thead {
@@ -8950,16 +8963,55 @@ a.dropdown-footer:hover {
     border-radius: 0;
 }
 
+.SeoScore-body .cardbox {
+    background: #f6f6f6;
+    border: 1px solid #eee;
+    border-radius: 5px;
+    margin: 1rem 0;
+    position: relative;
+    width: 100%;
+    padding: 10px;
+}
+
+.SeoScore-body .cardbox .form-group {
+    margin: 0;
+}
+
+.SeoScore-body .cardbox .btn-pri {
+    width: 100%;
+}
+
+.SeoScore-body .seo-result {
+    margin-bottom: 1rem;
+    width: 100%;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+
+.SeoScore-body .seo-result .sub-head {
+    background-color: #f6f6f6;
+    padding: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.SeoScore-body .seo-result ul {
+    list-style: none;
+    padding: 10px 0;
+    margin: 0;
+}
+
+.SeoScore-body .seo-result ul li {
+    padding: 5px 10px;
+}
+
 @media (max-width: 767px) {
 
     .tour-edit-head .card-tools {
         float: left;
         margin-top: 10px;
-    }
-
-    .desktop-menu {
-        display: none;
-    }
+    }    
 
     .card-footer .btn-success {
         width: 100%;
@@ -8971,31 +9023,19 @@ a.dropdown-footer:hover {
         justify-content: space-between;
     }
 
-    .basic-detail .card-header {
-        border-radius: 10px 10px 0 0;
-    }
-
-    .extra-body .card-header {
-        border-radius: 10px 10px 0 0;
-    }
-
-    .basic-detail #videosContainer .input-group-prepend {
+    #videosContainer .input-group-prepend {
         width: 100%;
         display: block;
     }
 
-    .basic-detail #videosContainer input {
+    #videosContainer input {
         width: 100%;
         margin: 10px 0;
     }
 
-    .basic-detail #videosContainer .btn-preview {
+    #videosContainer .btn-preview {
         width: 85%;
         border-radius: 8px;
-    }
-
-    .basic-detail input, .basic-detail .input-group, .basic-detail select {
-        margin-bottom: 15px;
     }
 
     .profile-name {
@@ -9005,14 +9045,6 @@ a.dropdown-footer:hover {
     .schedule-body .card-header .card-tools {
         text-align: left;
         margin-top: 10px;
-    }
-
-    .schedule-body .schedule-card .input-group {
-        margin-bottom: 15px;
-    }
-
-    .schedule-body .schedule-card select {
-        margin-top: 15px;
     }
 
     .extra-body .card-header .card-tools {
@@ -9025,6 +9057,45 @@ a.dropdown-footer:hover {
         margin-top: 10px;
     }
 
+    .SeoScore-body .cardbox {
+        background: #f6f6f6;
+        border-radius: 2px;
+        display: inline-block;
+        height: auto;
+        margin: 1rem 0;
+        position: relative;
+        width: 100%;
+    }
+
+    .SeoScore-body .cardbox .focus {
+        margin-left: 0;
+    }
+
+    .SeoScore-body .cardbox .form-group {
+        margin-bottom: 0;
+    }
+
+    .SeoScore-body .cardbox .form-control {
+        margin-bottom: 10px;
+    }
+}
+
+@media (min-width: 992px) {
+
+    .tour-mb-dropdown {
+        display: none;
+    }
+
+}
+
+@media (max-width: 992px) {
+
+    .desktop-menu {
+        display: none;
+    }
+
+    .basic-detail .card-header,
+    .extra-body .card-header,
     .itinerary-body .card-header,
     .faq-body .card-header,
     .inclusions-body .card-header,
@@ -9041,9 +9112,26 @@ a.dropdown-footer:hover {
     .PaymentRequest-body .PaymentRequest-nav,
     .seo-body .seo-nav,
     .SeoScore-body .SeoScore-nav,
-    .deposit-body .card-header {
+    .deposit-body .card-header,
+    .review-body .card-header {
         border-radius: 10px 10px 0 0;
     }
+
+    .basic-detail input, .basic-detail .input-group, .basic-detail select {
+        margin-bottom: 15px;
+    }
+
+    .schedule-body .schedule-card .input-group {
+        margin-bottom: 15px;
+    }
+
+    .schedule-body .schedule-card select {
+        margin-top: 15px;
+    }
+
+}
+
+@media (max-width: 992px) and (min-width: 767px) {
 
     .SeoScore-body .cardbox {
         background: #f6f6f6;
@@ -9058,14 +9146,36 @@ a.dropdown-footer:hover {
     .SeoScore-body .cardbox .focus {
         margin-left: 0;
     }
-}
 
-@media (min-width: 767px) {
-
-    .tour-mb-dropdown {
-        display: none;
+    .btn-search {
+        padding: 9px 10px;
     }
 
+}
+
+@media (max-width: 1200px) and (min-width: 1024px) {
+
+    .basic-detail input, .basic-detail .input-group, .basic-detail select {
+        margin-bottom: 15px;
+    }
+
+    .message-body .message-nav .nav-link,
+    .reminder-body .reminder-nav .nav-link,
+    .followup-body .followup-nav .nav-link,
+    .PaymentRequest-body .PaymentRequest-nav .nav-link {
+        padding: 13px 20px;
+    }
+
+    .btn-search {
+        padding: 9px 10px;
+    }
+
+}
+
+#recommended-sections .recommended-item,
+#badges-sections .badges-item,
+#banners-sections .banners-item {
+    background: #f5f5f5;
 }
 
 .logo-expanded { display: block; }
@@ -9127,12 +9237,26 @@ table.dataTable {
     float: right;
 }
 
-@media (max-width: 767px) {
+.card-primary .card-header.create-category-header,
+.card-primary .card-header.create-tourType-header {
+    border-radius: 10px;
+    background: #01228b;
+}
 
-    .create-extra-header .card-tools {
-        float: left;
-        margin-top: 10px;
-    }
+.create-category-header .row,
+.create-tourType-header .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.create-category-header .card-tools,
+.create-tourType-header .card-tools {
+    float: right;
+}
+
+@media (max-width: 767px) {
 
     div.dataTables_wrapper div.dataTables_length, 
     div.dataTables_wrapper div.dataTables_filter, 
@@ -9181,8 +9305,8 @@ table.dataTable {
 }
 
 .category-main-body .confirm-delete {
-    padding: 10px 15px;
-    font-size: 15px;
+    padding: 8px 13px;
+    font-size: 13px;
 }
 
 .edit-cat-header {
@@ -9229,19 +9353,25 @@ table.dataTable {
 
 }
 
-.tour-type-head {
+.tour-type-head,
+.edit-tourType-body,
+.uploaded-file-head {
     border-radius: 10px;
     background: #01228b !important;
 }
 
-.tour-type-head .row{
+.tour-type-head .row,
+.edit-tourType-body .row,
+.uploaded-file-head .row {
     display: flex;
     justify-content: space-between;
     width: 100%;
     align-items: center;
 }
 
-.tour-type-head .card-tools {
+.tour-type-head .card-tools,
+.edit-tourType-body .card-tools,
+.uploaded-file-head .card-tools {
     float: right;
 }
 
@@ -9250,23 +9380,31 @@ table.dataTable {
 }
 
 .tour-type-body .confirm-delete {
-    padding: 10px 15px;
-    font-size: 15px;
+    padding: 8px 13px;
+    font-size: 13px;
 }
 
 .countries-head,
-.states-head {
+.states-head,
+.city-head,
+.edit-state-head,
+.edit-city-head {
     border-radius: 10px;
     background: #01228b !important;
 }
 
 .countries-head .card-tools,
-.states-head .card-tools {
+.states-head .card-tools,
+.city-head .card-tools,
+.edit-state-head .card-tools,
+.edit-city-head .card-tools {
     float: right;
 }
 
 .countries-head .row,
-.states-head .row {
+.states-head .row,
+.city-head .row,
+.edit-state-head .row {
     display: flex;
     justify-content: space-between;
     width: 100%;
@@ -9274,12 +9412,14 @@ table.dataTable {
 }
 
 .countries-body .search-section,
-.states-body .search-section {
+.states-body .search-section,
+.city-body .search-section {
     padding: 15px;
 }
 
 .countries-body .search-section input,
-.states-body .search-section input {
+.states-body .search-section input,
+.city-body .search-section input {
     height: auto;
     padding: 10px;
     border-radius: 10px;
@@ -9288,7 +9428,8 @@ table.dataTable {
 }
 
 .countries-body .aiz-pagination,
-.states-body .aiz-pagination {
+.states-body .aiz-pagination,
+.city-body .aiz-pagination {
     border-top: 1px solid #eceff7;
     padding: 20px 10px;
 }
@@ -9299,6 +9440,441 @@ table.dataTable {
     font-weight: 400;
 }
 
-.add-modal .bootstrap-select .btn {
+.add-modal .bootstrap-select .btn,
+.edit-state-body .bootstrap-select .btn,
+.edit-city-body .bootstrap-select .btn {
     border: 1px solid #aeb0b4 !important;
+}
+
+@media (max-width: 767px) {
+
+    .countries-body .search-section input,
+    .states-body .search-section input,
+    .city-body .search-section input {
+        max-width: 100%;
+    }
+
+}
+
+.order-manifest-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.order-manifest-head .left-btn {
+    height: 32px;
+    width: 32px;
+    background: #FFF;
+    border: 1px solid #FFF;
+    border-radius: 4px 0 0 4px;
+}
+
+.order-manifest-head .right-btn {
+    height: 32px;
+    width: 32px;
+    background: #FFF;
+    border: 1px solid #FFF;
+    border-radius: 0 4px 4px 0;
+}
+
+.order-manifest-head .left-btn:hover,
+.order-manifest-head .right-btn:hover {
+    color: #000;
+}
+
+.order-manifest-head .filterDate {
+    height: 32px;
+    border: 0;
+    border-radius: 0;
+    border-left: 1px solid #c0c0c0;
+    border-right: 1px solid #c0c0c0;
+    color: #000;
+}
+
+@media (max-width: 767px) {
+
+    .order-manifest-head .mb-manifest {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+}
+
+.customer-head,
+.suppliers-head,
+.roles-head,
+.permission-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.customer-head .row,
+.suppliers-head .row,
+.create-supplier-head .row,
+.edit-supplier-head .row,
+.roles-head .row,
+.permission-head .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.customer-head .card-tools,
+.suppliers-head .card-tools,
+.create-supplier-head .card-tools,
+.edit-supplier-head .card-tools,
+.roles-head .card-tools,
+.permission-head .row {
+    float: right;
+}
+
+.customer-body .btn-edit {
+    font-size: 17px;
+}
+
+.customer-body .confirm-delete {
+    padding: 8px 13px;
+    font-size: 13px;
+}
+
+.customer-edit-head .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.customer-edit-head .card-tools {
+    float: right;
+}
+
+.customer-edit-body .form-control,
+.edit-supplier-body .form-control {
+    margin-bottom: 15px;
+}
+
+.customer-edit-body .btn-edit {
+    font-size: 17px;
+}
+
+.customer-edit-body .confirm-delete {
+    padding: 8px 13px;
+    font-size: 13px;
+}
+
+.tour-type-body table.dataTable {
+    width: 100% !important;
+}
+
+.media-body .card-header .bootstrap-select.form-control {
+    border: 1px solid #aeb0b4;
+}
+
+@media (max-width: 767px) {
+
+    .media-body .card-header .form-control {
+        margin: 5px 0 10px 0;
+    }
+
+    .media-body .card-header .search-box {
+        width: 100%;
+    }
+
+    .uploaded-file-head .card-tools {
+        float: left;
+        margin-top: 5px;
+    }
+}
+
+.setting-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.email-settings .btn-test-email {
+    background: #01228b;
+    border-color: #01228b;
+    color: #FFF;
+    width: 100%;
+}
+
+.email-settings .bootstrap-select.form-control {
+    border: 1px solid #aeb0b4;
+}
+
+@media (max-width: 767px) {
+
+    .email-settings .btn-test-email {
+        margin-top: 10px;
+    }
+
+}
+
+.email-templates-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.email-template-body {
+    border-left: 1px solid #ebedf2;
+    padding: 15px;
+}
+
+.email-template-body .email-preview {
+    background-color: #01228b;
+    color: #FFF;
+    border-color: #01228b;
+}
+
+.nav-pills.email-template-sidebar .nav-link {
+    border-radius: 0;
+}
+
+.nav-pills.email-template-sidebar .nav-link.active {
+    color: #000;
+}
+
+.nav-pills.email-template-sidebar .nav-link i {
+    margin-right: 3px;
+}
+
+.taxes-fee-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.taxes-fee-head .card-tools {
+    float: right;
+}
+
+.taxes-fee-body .bootstrap-select .dropdown-toggle {
+    border: 1px solid #aeb0b4;
+}
+
+.internal-order-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.internal-order-body .balance-bar {
+    position: sticky;
+    top: 0;
+    background: #f8f9fc;
+    border-radius: 10px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.05);
+    z-index: 50;
+    margin-bottom: 1rem;
+    padding: 16px;
+}
+
+.internal-order-body #totalDue {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1cc88a;
+}
+
+.order-heads {
+    background-color: #343a41 !important;
+    color: #FFF;
+}
+
+.order-heads .btn {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.cus-info-head {
+    border-bottom: 1px solid #e6e6e6;
+    font-size: 18px;
+    font-weight: bold;
+    color: #000;
+    padding-bottom: 5px;
+    margin: 10px 0 20px;
+}
+
+.internal-order-body .accordion>.card {
+    overflow: visible;
+}
+
+.internal-order-body #tourContainer>div>div {
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 10px 0 0 !important;
+}
+
+.internal-order-body .card-total .form-control {
+    width: auto;
+    display: inline-block;
+}
+
+.internal-order-body .paymentRow .addRow,
+.internal-order-body .paymentRow .removeRow {
+    font-size: 18px;
+    padding: 5px 13px;
+}
+
+@media (max-width: 767px) {
+
+    .internal-order-body .balance-bar {
+        display: block !important;
+        text-align: center;
+    }
+
+    .internal-order-body .tour-detail {
+        text-align: center;
+    }
+
+    .internal-order-body .paymentRow {
+        gap: 10px;
+    }
+
+    .internal-order-body .card-footer a.btn {
+        width: 100%;
+    }
+
+}
+
+.addon-edit-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.addon-edit-head .card-tools {
+    float: right;
+}
+
+.addon-edit-body .card-footer {
+    background: #FFF;
+    border-top: 1px solid #e2e5ec;
+    border-radius: 0 0 15px 15px;
+}
+
+@media (max-width: 767px) {
+
+    .addon-edit-body .price-input {
+        margin-bottom: 15px;
+    }
+
+}
+
+#markReviewModal .modal-header {
+    background-color: #eee;
+}
+
+#markReviewModal .modal-header .modal-title {
+    font-weight: bold;
+}
+
+.create-tour-body .bootstrap-select.form-control {
+    border: 1px solid #aeb0b4;
+}
+
+.create-tour-body .card-footer {
+    background: #FFF;
+    border-top: 1px solid #e2e5ec;
+    border-radius: 0 0 15px 15px;
+    text-align: right;
+}
+
+.create-tour-body .product-pricing {
+    display: flex;
+    gap: 15px;
+}
+
+@media (max-width: 767px) {
+
+    .create-tour-body .form-control {
+        max-width: 100% !important;
+    }
+
+    .create-tour-body .card-footer a.btn {
+        width: 100%;
+    }
+}
+
+.banner-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.banner-head .card-tools {
+    float: right;
+}
+
+.banner-head .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.banner-main-body .btn-name {
+    width: 80%;
+    display: block;
+    text-align: center;
+    background: #efefef;
+    color: #000000;
+    border-radius: 50px;
+    padding: 6px 5px;
+    border: 1px solid #dddddd;
+}
+
+.banner-main-body .btn-edit {
+    font-size: 17px;
+    margin-right: 10px;
+}
+
+.banner-main-body .confirm-delete {
+    padding: 8px 13px;
+    font-size: 13px;
+}
+
+.banner-main-body .card-footer {
+    border-top: 1px solid #00000020;
+    background: transparent;
+}
+
+@media (max-width: 767px) {
+
+    .banner-main-body .btn-name {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        padding: 0;
+    }
+
+}
+
+.contacts-main-body table.dataTable {
+    margin: 0 !important;
+    border: 0;
+    border-bottom: 1px solid #dee2e6;
+    width: 100% !important;
+}
+
+.sub-tours {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.sub-tours .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.create-sub-tours .card-footer {
+    border-top: 1px solid #ebedf2;
+    background: #FFF;
+    border-radius: 0 0 10px 10px;
+}
+
+@media (max-width: 767px) {
+
+    .sub-tours .btn-back {
+        margin-top: 10px;
+    }
+
 }

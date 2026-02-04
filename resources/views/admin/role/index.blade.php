@@ -1,13 +1,21 @@
 <x-admin>
     @section('title','Roles')
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">Roles</h3>
-            <div class="card-tools">
-                <a href="{{ route('admin.role.create') }}" class="btn btn-sm btn-primary">Add</a>
+    <div class="card-primary mb-3">
+        <div class="card-header roles-head">
+            <div class="row">
+                <div class="col-md-8 col-6">
+                    <h3 class="card-title">Roles</h3>
+                </div>
+                <div class="col-md-4 col-6">
+                    <div class="card-tools">
+                        <a href="{{ route('admin.role.create') }}" class="btn btn-sm btn-success"> + Add Roles</a>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="card-body">
+    </div>
+    <div class="card-primary bg-white border rounded-lg-custom customer-edit-body">
+        <div class="card-body p-0">
             <table class="table table-striped" id="roleTable">
                 <thead>
                     <tr>
@@ -23,17 +31,14 @@
                             <td>{{ $role->name }}</td>
                             <td>{{ $role->created_at }}</td>
                             <td>
-                                <a href="{{ route('admin.role.edit',encrypt($role->id)) }}" class="btn btn-sm btn-secondary">
-                                    <i class="far fa-edit"></i>
+                                <a href="{{ route('admin.role.edit',encrypt($role->id)) }}" class="btn btn-sm btn-edit"><i class="far fa-edit"></i>
                                 </a>
                             </td>
                             <td>
                                 <form action="{{ route('admin.role.destroy',encrypt($role->id)) }}" method="POST" onclick="confirm('Are you sure')">
                                     @method('DELETE')
                                     @csrf
-                                    <button type="submit" class="btn btn-danger">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                                    <button type="submit" class="btn btn-danger confirm-delete"><i class="fas fa-trash-alt"></i></button>
                             </form>
                             </td>
                         </tr>
