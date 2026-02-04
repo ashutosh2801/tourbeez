@@ -9852,3 +9852,29 @@ table.dataTable {
     border-bottom: 1px solid #dee2e6;
     width: 100% !important;
 }
+
+.sub-tours {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.sub-tours .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.create-sub-tours .card-footer {
+    border-top: 1px solid #ebedf2;
+    background: #FFF;
+    border-radius: 0 0 10px 10px;
+}
+
+@media (max-width: 767px) {
+
+    .sub-tours .btn-back {
+        margin-top: 10px;
+    }
+
+}
