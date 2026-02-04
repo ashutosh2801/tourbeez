@@ -12,7 +12,7 @@
     {{-- Open Graph Meta --}}
     <meta property="og:title" content="{{ $title ?? '' }}">
     <meta property="og:description" content="{{ $description ?? '' }}">
-    <meta property="og:image" content="{{ $image ?? asset('public/512x512.jpg') }}">
+    <meta property="og:image" content="{{ $image ?? asset('public/tourbeez-logo.jpg') }}">
     <meta property="og:url" content="{{ $url ?? url()->current() }}">
     <meta property="og:type" content="website">
 
@@ -20,190 +20,173 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $title ?? '' }}">
     <meta name="twitter:description" content="{{ $description ?? '' }}">
-    <meta name="twitter:image" content="{{ $image ?? asset('public/512x512.jpg') }}">
+    <meta name="twitter:image" content="{{ $image ?? asset('public/tourbeez-logo.jpg') }}">
 
     <link rel="canonical" href="{{ $url ?? url()->current() }}">
+    <link href="{{ asset('share/css/index.css') }}" rel="stylesheet" />
+
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Heroicons -->
+    <script src="https://unpkg.com/@heroicons/react@2.1.5/24/solid/index.js"></script>
+
+    <!-- Swiper -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <script>
+(function(w,d,s,l,i){
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    console.log("GTM disabled on localhost");
+    return;
+  }
+
+  w[l]=w[l]||[];
+  w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
+  var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),
+      dl=l!='dataLayer'?'&l='+l:'';
+  j.async=true;
+  j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+  f.parentNode.insertBefore(j,f);
+
+})(window,document,'script','dataLayer','GTM-M8WSBSM4');
+</script>
+
+<!-- TrustBox script -->
+<script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js" async></script>
+<!-- End TrustBox script -->
+
 </head>
-<body>
-@if(isset($page) && ($page === 'home'))
-    <!-- Home Page -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "TourBeez",
-        "url": "{{ url()->current() }}",
-        "potentialAction": {
-            "@type": "SearchAction",
-            "target": "{{ url('/search?query={search_term_string}') }}",
-            "query-input": "required name=search_term_string"
-        }
-    }
-    </script>
-    <h1>{{ $title ?? 'TourBeez - Going Beeyond' }}</h1>
-    <p>{{ $description ?? 'Discover and book amazing travel experiences with TourBeez. Plan your next adventure with ease and confidence.' }}</p>
+<body class="relative">
+@extends('share.layout.navbar')
 
-    <h2 className="text-2xl font-bold text-black tour-font">Popular tours</h2>
-    <script type="application/ld+json">
+<!-- Local Business Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "TourBeez, Inc.",
+  "url": "https://tourbeez.com/",
+  "image": "https://tourbeez.s3.amazonaws.com/uploads/all/dubai-dinner-cruise-or-sunset-with-open-bar-and-live-music55.jpg",
+  "description": "Book curated travel experiences, tours and tickets worldwide with flexible booking, free cancellation and reserve now pay later options. Start planning today.",
+  "priceRange": "$",
+  "telephone": "+1-877-888-2339",
+  "email": "info@tourbeez.com",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "1 Dundas Street West, Suite 2500",
+    "addressLocality": "Toronto",
+    "addressRegion": "Ontario",
+    "postalCode": "M5G 1Z3",
+    "addressCountry": "CA"
+  },
+  "openingHoursSpecification": [
     {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Monday",
+      "opens": "09:00",
+      "closes": "17:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Tuesday",
+      "opens": "09:00",
+      "closes": "17:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Wednesday",
+      "opens": "09:00",
+      "closes": "17:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Thursday",
+      "opens": "09:00",
+      "closes": "17:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Friday",
+      "opens": "09:00",
+      "closes": "17:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Saturday",
+      "opens": "09:00",
+      "closes": "17:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Sunday",
+      "opens": "00:00",
+      "closes": "00:00"
+    }
+  ],
+  "sameAs": [
+    "https://www.facebook.com/TourBeez/",
+    "https://www.instagram.com/tourbeez/",
+    "https://x.com/TourBeez",
+    "https://ca.pinterest.com/tourbeez/",
+    "https://www.youtube.com/@TourBeez",
+    "https://www.tiktok.com/notfound",
+    "https://www.threads.com/@tourbeez"
+  ]
+}
+</script>
+<!-- End Local Business Structured Data -->
+
+<!-- Logo Structured Data -->
+<script type="application/ld+json">
+{
     "@context": "https://schema.org",
-    "@type": "ItemList",
-    "name": "Popular Tours",
-    "description": "List of amazing travel experiences with TourBeez",
-    "url": "{{ url()->current() }}",
-    "numberOfItems": {{ count($tours ?? []) }},
-    "itemListElement": [
-        @foreach($tours as $index => $item)
+    "@type": "Organization",
+    "name": "TourBeez, Inc.",
+    "url": "https://tourbeez.com/",
+    "logo": "https://tourbeez.com/public/assets/logo-DYnsi7vK.jpg",
+    "description": "Book curated travel experiences, tours and tickets worldwide with flexible booking, free cancellation and reserve now pay later options. Start planning today.",
+    "contactPoint": [
         {
-        "@type": "ListItem",
-        "position": {{ $index + 1 }},
-        "url": "https://tourbeez.com{{ $item['url'] }}",
-        "item": {
-            "@type": "TouristTrip",
-            "name": "{{ $item['name'] ?? "" }}",
-            "image": "{{ $item['image'] }}",
-            "offers": {
-                "@type": "Offer",
-                "price": "{{ $item['price'] ?? 0 }}",
-                "priceCurrency": "USD",
-                "url": "https://tourbeez.com{{ $item['url'] }}",
-                "availability": "https://schema.org/InStock"
-            }
+            "@type": "ContactPoint",
+            "telephone": "+1-(877)-888-2339",
+            "contactType": "Customer Service",
+            "areaServed": "CA",
+            "availableLanguage": ["en"]
         }
-        }@if(!$loop->last),@endif
-        @endforeach
+    ],
+    "sameAs": [
+        "https://www.facebook.com/TourBeez/",
+        "https://www.instagram.com/tourbeez/",
+        "https://x.com/TourBeez",
+        "https://ca.pinterest.com/tourbeez/",
+        "https://www.youtube.com/@TourBeez",
+        "https://www.tiktok.com/notfound",
+        "https://www.threads.com/@tourbeez"
     ]
-    }
-    </script>
+}
+</script>
+<!-- End Logo Structured Data -->
+<main>
 
-    <ul>
-    @foreach($tours as $index => $item)  
-        <li class="bg-white rounded-lg relative">
-            <a href="{{ $item['url'] }}" 
-                @if(!empty($external) && $external) target="_blank" @endif 
-                title="{{ $item['name'] }}">
-                <img 
-                    src="{{ $item['image'] }}"
-                    alt="{{ $item['name'] }}"
-                    class="w-full h-40 md:h-40 lg:h-50 object-cover rounded-xl"
-                    loading="lazy"
-                />
-            </a>       
-
-            <div class="flex flex-wrap py-4 text-left">          
-
-            <a href="{{ $item['url'] }}" 
-                @if(!empty($external) && $external) target="_blank" @endif 
-                title="{{ $item['name'] }}">
-                <b class="text-sm font-semibold text-black h-10 mb-2 line-clamp-2">
-                {{ $item['name'] }}
-                </b>
-
-                @if(!empty($item['price']))
-                <p class="text-semibold text-black mt-4 text-sm lg:text-base">
-                    from 
-                    <b class="font-3xl">
-                    {{-- Example: Include a price component --}}
-                    Price: USD {{ $item['price'] }}
-                    </b>
-                </p>
-                @endif
-
-                @if(!empty($item['date']))
-                <p class="text-semibold text-black mt-4">{{ $item['date'] }}</p>
-                @endif
-                
-            </a>
-            </div>
-        </li>
-    @endforeach
-    </ul>
-
-    <h2 className="text-2xl font-bold text-black tour-font">Top destinations</h2>
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "ItemList",
-        "name": "Popular Cities to Visit",
-        "description": "Explore top travel destinations and tourist cities with amazing attractions, tours, and experiences.",
-        "url": "{{ url()->current() }}",
-        "numberOfItems": {{ count($cities ?? []) }},
-        "itemListOrder": "https://schema.org/ItemListOrderAscending",
-        "itemListElement": [
-            @foreach($cities as $index => $item)
-            {
-                "@type": "City",
-                "name": "{{ $item['name'] }}",
-                "description": "{{ $item['description'] ?? 'Explore the beautiful city of ' . $item['name'] . ' with its rich culture, attractions, and experiences.' }}",
-                "url": "{{ $item['url'] }}",
-                "image": "{{ $item['image'] }}"
-                           
-            }@if(!$loop->last),@endif
-            @endforeach
-        ]
-    }
-    </script>
-    <ul>
-        @foreach($cities as $city)
-            <li>
-                <a href="{{ $city['url'] }}" title="{{ $city['name'] }}">
-                    <h2>{{ $city['name'] }}</h2>
-                    <img src="{{ $city['image'] }}" alt="{{ $city['name'] }}" loading="lazy" />
-                </a>
-            </li>
-        @endforeach
-    </ul>
-
-    <h2 className="text-2xl font-bold text-black tour-font">Trending now</h2>
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "Blog",
-        "name": "Travel & Technology Insights",
-        "description": "Explore expert-written blogs about travel tips, destination guides, and technology trends for developers.",
-        "url": "https://tourbeez.com/blog",
-        "publisher": {
-            "@type": "Organization",
-            "name": "TourBeez",
-            "logo": {
-            "@type": "ImageObject",
-            "url": "https://tourbeez.com/public/public/512x512.jpg"
-            }
-        },
-        "blogPost": [
-            @foreach($blogs as $blog)
-            {
-                "@type": "BlogPosting",
-                "headline": "{{ $blog['title'] }}",
-                "description": "{{ $blog['title'] }}",
-                "url": "{{ $blog['url'] }}",
-                "image": "{{ $blog['image'] }}",
-                "datePublished": "{{ $blog['date'] }}",
-                "dateModified": "{{ $blog['date'] }}",
-                "author": {
-                    "@type": "Person",
-                    "name": "TourBeez Team"
-                }
-            }@if(!$loop->last),@endif
-            @endforeach
-        ]
-    }
-    </script>
-    <ul>
-        @foreach($blogs as $blog)
-            <li>
-                <a href="{{ $blog['url'] }}" title="{{ $blog['title'] }}">
-                    <h2>{{ $blog['title'] }}</h2>
-                    <img src="{{ $blog['image'] }}" alt="{{ $blog['title'] }}" loading="lazy" />
-                    <p>{{ $blog['date'] }}</p>
-                </a>
-            </li>
-        @endforeach
-    </ul>
+@if (!empty($file))
+    @include("share.page.$file")
 @else
-    <!-- Other Pages -->
-    <h1>{{ $title ?? 'TourBeez - Going Beeyond' }}</h1>
-    <p>{{ $description ?? '' }}</p>
+    <div id="destinations">
+        <div class="container mx-auto px-2">
+            <h1>{{ $title }}</h1>
+            <p>{{ $description }}</p>
+        </div>
+    </div>
 @endif
+    
+</main>
+
+@extends('share.layout.footer')
 </body>
 </html>
