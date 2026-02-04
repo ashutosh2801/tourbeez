@@ -36,7 +36,7 @@ class CityController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request)
+    public function index32342(Request $request)
     {
         $sort_search   = null;
         $cities        = City::orderBy('id','asc');
@@ -51,6 +51,44 @@ class CityController extends Controller
         return view('admin.attributes.cities.index', compact('cities','state','countries','sort_search'));
 
     }
+    public function index(Request $request)
+    {
+        $sort_search = $request->search;
+
+        $cities = City::query()
+            ->when($sort_search, function ($q) use ($sort_search) {
+                $q->where('name', 'like', '%' . $sort_search . '%');
+            })
+
+            // Cities with image
+            ->when($request->has_image, function ($q) {
+                $q->whereNotNull('upload_id');
+            })
+
+            // Cities having tours
+            ->when($request->has_tour, function ($q) {
+                $q->whereHas('tours');
+            })
+
+            // Has latitude & longitude
+            ->when($request->has_latlong, function ($q) {
+                $q->whereNotNull('latitude')
+                  ->whereNotNull('longitude');
+            })
+
+            ->orderBy('id', 'asc')
+            ->paginate(10)
+            ->appends($request->query());
+
+        $states    = State::all();
+        $countries = Country::where('status', 1)->get();
+
+        return view(
+            'admin.attributes.cities.index',
+            compact('cities', 'states', 'countries', 'sort_search')
+        );
+    }
+
 
     /**
      * Show the form for creating a new resource.
@@ -82,6 +120,8 @@ class CityController extends Controller
         $city->name        = $request->name;
         $city->state_id    = $request->state_id;
         $city->upload_id   = $request->upload_id;
+        $city->latitude    = $request->latitude;
+        $city->longitude   = $request->longitude;
         if($city->save())
         {
             return redirect()->route('admin.cities.index')->with('error', 'New City has been added successfully');
@@ -136,6 +176,8 @@ class CityController extends Controller
         $city->name        = $request->name;
         $city->state_id    = $request->state_id;
         $city->upload_id   = $request->upload_id;
+        $city->latitude    = $request->latitude;
+        $city->longitude   = $request->longitude;
         if($city->save())
         {
             return redirect()->route('admin.cities.edit', encrypt($city->id))->with('success', translate('City info has been updated successfully'));

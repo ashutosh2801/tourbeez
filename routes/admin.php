@@ -54,6 +54,19 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('/suplier_update', [ProfileController::class, 'suplierUpdate'])->name('profile.suplier_update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/convert-currency', [CurrencyController::class, 'convert'])->name('currency.convert');
+    
+    Route::post('/set-currency', function (\Illuminate\Http\Request $request) {
+
+        $currency = $request->currency;
+
+        if (empty($currency)) {
+            session()->forget('currency'); // back to default
+        } else {
+            session(['currency' => strtoupper($currency)]);
+        }
+
+        return response()->noContent();
+    })->name('set.currency');
 
     Route::resource('/user',UserController::class);
     Route::get('/user_supplier',[SupplierController::class, 'index'])->name('supplier.index');
