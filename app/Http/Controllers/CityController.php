@@ -36,21 +36,7 @@ class CityController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index32342(Request $request)
-    {
-        $sort_search   = null;
-        $cities        = City::orderBy('id','asc');
-        $state         = State::get();
-        $countries     = Country::where('status',1)->get();
 
-        if ($request->has('search')){
-            $sort_search  = $request->search;
-            $cities       = $cities->where('name', 'like', '%'.$sort_search.'%');
-        }
-        $cities = $cities->paginate(10);
-        return view('admin.attributes.cities.index', compact('cities','state','countries','sort_search'));
-
-    }
     public function index(Request $request)
     {
         $sort_search = $request->search;
