@@ -529,14 +529,14 @@ class OrderController extends Controller
 
         
         
-        try {
+        // try {
 
-            if(isset($data['pickup_id']) && $data['pickup_id']){
+            $data = $request->input('formData');
+            if(isset($data['pickup_id']) && $data['pickup_id']) {
                 $data['pickup_id'] = 0;
             }
             // Save or update customer
             $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
-            $data = $request->input('formData');
             $adv_deposite = $data['adv_deposite'];
 
             $customer->order_id     = $order->id;
@@ -704,9 +704,7 @@ class OrderController extends Controller
                     $depositRule = TourSpecialDeposit::where('type', 'global')->first();
 
                 }
-                $chargeAmount = 0;
-                
-
+                $chargeAmount = 0;              
 
                 if ($depositRule && $depositRule->use_deposit) {
                     switch ($depositRule->charge) {
@@ -743,143 +741,137 @@ class OrderController extends Controller
                     $chargeAmount = $order->total_amount;
                 }
 
-
-
-                
-
-
                 if ($request->filled('promo_code')) {
 
-                switch ($promo->value_type) {
+                    switch ($promo->value_type) {
 
-                    /* ================= FIXED ================= */
+                        /* ================= FIXED ================= */
 
-                    case 'VALUE':
-                        $discountAmount = min($promo->voucher_value, $item_total);
-                        break;
+                        case 'VALUE':
+                            $discountAmount = min($promo->voucher_value, $item_total);
+                            break;
 
-                    case 'VALUE_LIMITPRODUCT':
-                        foreach ($pricing as $item) {
-                            if ($item['tour_pricing_id'] == $promo->product_id) {
-                                $discountAmount = min(
-                                    $promo->voucher_value,
-                                    $item['total_price']
-                                );
-                                break;
+                        case 'VALUE_LIMITPRODUCT':
+                            foreach ($pricing as $item) {
+                                if ($item['tour_pricing_id'] == $promo->product_id) {
+                                    $discountAmount = min(
+                                        $promo->voucher_value,
+                                        $item['total_price']
+                                    );
+                                    break;
+                                }
                             }
-                        }
-                        break;
+                            break;
 
-                    case 'VALUE_LIMITCATEGORY':
-                        foreach ($pricing as $item) {
-                            $product = TourPricing::find($item['tour_pricing_id']);
-                            if ($product && $product->category_id == $promo->category_id) {
-                                $discountAmount = min(
-                                    $promo->voucher_value,
-                                    $item['total_price']
-                                );
+                        case 'VALUE_LIMITCATEGORY':
+                            foreach ($pricing as $item) {
+                                $product = TourPricing::find($item['tour_pricing_id']);
+                                if ($product && $product->category_id == $promo->category_id) {
+                                    $discountAmount = min(
+                                        $promo->voucher_value,
+                                        $item['total_price']
+                                    );
+                                }
                             }
-                        }
-                        break;
+                            break;
 
-                    /* ================= PERCENT ================= */
+                        /* ================= PERCENT ================= */
 
-                    case 'PERCENT':
-                        $discountAmount = ($item_total * $promo->value_percent) / 100;
-                        break;
+                        case 'PERCENT':
+                            $discountAmount = ($item_total * $promo->value_percent) / 100;
+                            break;
 
-                    case 'PERCENT_LIMITPRODUCT':
-                        foreach ($pricing as $item) {
-                            if ($item['tour_pricing_id'] == $promo->product_id) {
-                                $discountAmount = ($item['total_price'] * $promo->value_percent) / 100;
-                                break;
+                        case 'PERCENT_LIMITPRODUCT':
+                            foreach ($pricing as $item) {
+                                if ($item['tour_pricing_id'] == $promo->product_id) {
+                                    $discountAmount = ($item['total_price'] * $promo->value_percent) / 100;
+                                    break;
+                                }
                             }
-                        }
-                        break;
+                            break;
 
-                    case 'PERCENT_LIMITCATEGORY':
-                        foreach ($pricing as $item) {
-                            $product = TourPricing::find($item['tour_pricing_id']);
-                            if ($product && $product->category_id == $promo->category_id) {
-                                $discountAmount += ($item['total_price'] * $promo->value_percent) / 100;
+                        case 'PERCENT_LIMITCATEGORY':
+                            foreach ($pricing as $item) {
+                                $product = TourPricing::find($item['tour_pricing_id']);
+                                if ($product && $product->category_id == $promo->category_id) {
+                                    $discountAmount += ($item['total_price'] * $promo->value_percent) / 100;
+                                }
                             }
-                        }
-                        break;
+                            break;
+                    }
+
+                    // Safety
+                    $discountAmount = round(min($discountAmount, $item_total), 2);
+
+                    $chargeAmount = $chargeAmount - $discountAmount;
                 }
 
-                // Safety
-                $discountAmount = round(min($discountAmount, $item_total), 2);
-
-                $chargeAmount = $chargeAmount - $discountAmount;
-            }
-
                 // ✅ Update amounts in order
-                $order->total_amount   = $order->total_amount; // full tour price (unchanged)
+                //$order->total_amount   = $order->total_amount; // full tour price (unchanged)
                 $order->booked_amount  = $chargeAmount;        // what’s being charged now
                 $order->balance_amount = $order->total_amount - $order->booked_amount;
 
                 // dd($chargeAmount);
                 if ($chargeAmount > 0) {
-
                     
                     $pi = \Stripe\PaymentIntent::create([
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($chargeAmount * 100)),
                         'currency' => $order->currency,
-                        'automatic_payment_methods' => ['enabled' => true],
                         'receipt_email' => $data['email'],
-                        'capture_method' => 'manual',
                         'description' => $tour->title,
                         'statement_descriptor_suffix' =>  $order->order_number,
                         'metadata'  => $metaData,
+                        'capture_method' => 'manual',
+                        'automatic_payment_methods' => ['enabled' => true],
                         'setup_future_usage'=> 'off_session',
                     ]);
 
                     $order->payment_intent_client_secret = $pi->client_secret;
                     $order->payment_intent_id = $pi->id;
                     // Retrieve card details from payment method if available
-                try {
-                    $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
-                    if (!empty($retrievedIntent->payment_method)) {
-                        $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
-                        // return $paymentMethod;
-                        if ($paymentMethod->type === 'card') {
-                            $cardDetails = [
-                                'brand'     => $paymentMethod->card->brand ?? null,
-                                'last4'     => $paymentMethod->card->last4 ?? null,
-                                'exp_month' => $paymentMethod->card->exp_month ?? null,
-                                'exp_year'  => $paymentMethod->card->exp_year ?? null,
-                            ];
+                    try {
+                        $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
+                        if (!empty($retrievedIntent->payment_method)) {
+                            $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                            // return $paymentMethod;
+                            if ($paymentMethod->type === 'card') {
+                                $cardDetails = [
+                                    'brand'     => $paymentMethod->card->brand ?? null,
+                                    'last4'     => $paymentMethod->card->last4 ?? null,
+                                    'exp_month' => $paymentMethod->card->exp_month ?? null,
+                                    'exp_year'  => $paymentMethod->card->exp_year ?? null,
+                                ];
 
-                            // Optional: store in Order table (if fields exist)
-                            $order->card_brand = $cardDetails['brand'];
-                            $order->card_last4 = $cardDetails['last4'];
-                            $order->card_exp_month = $cardDetails['exp_month'];
-                            $order->card_exp_year = $cardDetails['exp_year'];
+                                // Optional: store in Order table (if fields exist)
+                                $order->card_brand = $cardDetails['brand'];
+                                $order->card_last4 = $cardDetails['last4'];
+                                $order->card_exp_month = $cardDetails['exp_month'];
+                                $order->card_exp_year = $cardDetails['exp_year'];
+                            }
+
                         }
-
+                        \Log::warning('uncaptured3423432');
+                        OrderPayment::create([
+                                'order_id'          => $order->id,
+                                'payment_intent_id' => $pi->id,
+                                'transaction_id'    => null, // no charge yet until capture
+                                'payment_method'    => $paymentMethod->type,
+                                'card_brand'        => $paymentMethod->card->brand ?? null,
+                                'card_last4'        => $paymentMethod->card->last4 ?? null,
+                                'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                                'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                                'amount'            => ($adv_deposite == 'deposit')
+                                                        ? $chargeAmount
+                                                        : $order->total_amount,
+                                'currency'          => $order->currency,
+                                'status'            => 'uncaptured', // manual capture pending
+                                'action'            => $adv_deposite,
+                                'response_payload'  => json_encode($pi),
+                            ]);
+                    } catch (\Exception $cardError) {
+                        \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
                     }
-                    \Log::warning('uncaptured3423432');
-                    OrderPayment::create([
-                            'order_id'          => $order->id,
-                            'payment_intent_id' => $pi->id,
-                            'transaction_id'    => null, // no charge yet until capture
-                            'payment_method'    => $paymentMethod->type,
-                            'card_brand'        => $paymentMethod->card->brand ?? null,
-                            'card_last4'        => $paymentMethod->card->last4 ?? null,
-                            'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
-                            'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
-                            'amount'            => ($adv_deposite == 'deposit')
-                                                    ? $chargeAmount
-                                                    : $order->total_amount,
-                            'currency'          => $order->currency,
-                            'status'            => 'uncaptured', // manual capture pending
-                            'action'            => $adv_deposite,
-                            'response_payload'  => json_encode($pi),
-                        ]);
-                } catch (\Exception $cardError) {
-                    \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
-                }
 
                 } else {
                     // No charge needed
@@ -918,26 +910,48 @@ class OrderController extends Controller
             }else if($adv_deposite == "full") {
                 \Log::warning('full');
 
-                $pi = \Stripe\PaymentIntent::create([
+                // $pi = \Stripe\PaymentIntent::create([
+                //         'customer'  => $stripeCustomer->id,
+                //         'amount' => intval(round($order->total_amount * 100)),
+                //         'currency' => $order->currency,
+                //         'receipt_email' => $data['email'],
+                //         'description' => $tour->title,
+                //         'statement_descriptor_suffix' =>  $order->order_number,
+                //         'metadata'  => $metaData,
+                //         'capture_method' => 'manual',
+                //         'automatic_payment_methods' => ['enabled' => true],
+                //         'setup_future_usage'=> 'off_session',
+                //     ]);
+
+
+                // ✅ Fetch and store card details (if available)
+                try {
+                    $pi = \Stripe\PaymentIntent::create([
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($order->total_amount * 100)),
                         'currency' => $order->currency,
-                        'automatic_payment_methods' => ['enabled' => true],
                         'receipt_email' => $data['email'],
-                        'capture_method' => 'manual',
                         'description' => $tour->title,
-                        // 'statement_descriptor' => 'TOURBEEZ',
                         'statement_descriptor_suffix' =>  $order->order_number,
                         'metadata'  => $metaData,
+
+                        'automatic_payment_methods' => ['enabled' => true],
+                        'capture_method' => 'manual',
                         'setup_future_usage'=> 'off_session',
                     ]);
-                $order->payment_intent_client_secret = $pi->client_secret;
-                $order->payment_intent_id = $pi->id;
+                    $order->payment_intent_client_secret = $pi->client_secret;
+                    $order->payment_intent_id = $pi->id;
 
-                $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
-                    
-                $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
-                OrderPayment::create([
+                    $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
+                        
+                    $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                    if ($paymentMethod->type === 'card') {
+                        $order->card_brand = $paymentMethod->card->brand ?? null;
+                        $order->card_last4 = $paymentMethod->card->last4 ?? null;
+                        $order->card_exp_month = $paymentMethod->card->exp_month ?? null;
+                        $order->card_exp_year = $paymentMethod->card->exp_year ?? null;
+                    }
+                    OrderPayment::create([
                             'order_id'          => $order->id,
                             'payment_intent_id' => $pi->id,
                             'transaction_id'    => null, // no charge yet until capture
@@ -946,29 +960,13 @@ class OrderController extends Controller
                             'card_last4'        => $paymentMethod->card->last4 ?? null,
                             'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
                             'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
-                            'amount'            => ($adv_deposite == 'deposit')
-                                                    ? $chargeAmount
-                                                    : $order->total_amount,
+                            'amount'            => $order->total_amount,
                             'currency'          => $order->currency,
                             'status'            => 'pending', // manual capture pending
                             'action'            => $adv_deposite,
                             'response_payload'  => json_encode($pi),
                         ]);
-
-
-                // ✅ Fetch and store card details (if available)
-                try {
-                    $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
-                    if (!empty($retrievedIntent->payment_method)) {
-                        $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
-
-                        if ($paymentMethod->type === 'card') {
-                            $order->card_brand = $paymentMethod->card->brand ?? null;
-                            $order->card_last4 = $paymentMethod->card->last4 ?? null;
-                            $order->card_exp_month = $paymentMethod->card->exp_month ?? null;
-                            $order->card_exp_year = $paymentMethod->card->exp_year ?? null;
-                        }
-                    }
+                    
                 } catch (\Exception $cardError) {
                     \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
                 }
@@ -994,11 +992,13 @@ class OrderController extends Controller
                     'customer' => $stripeCustomer->id,
                     'amount'   => intval(round($chargeAmount * 100)),
                     'currency' => $order->currency,
-                    'automatic_payment_methods' => ['enabled' => true],
                     'receipt_email' => $data['email'],
                     'description' => $tour->title . ' (Remaining Balance)',
                     'statement_descriptor_suffix' => $order->order_number,
                     'metadata' => $metaData,
+                    'automatic_payment_methods' => ['enabled' => true],
+                    'capture_method' => 'manual',
+                    'setup_future_usage'=> 'off_session',
                 ]);
 
                 // 3️⃣ Save PI details on order
@@ -1006,30 +1006,41 @@ class OrderController extends Controller
                 $order->payment_intent_id = $pi->id;
 
                 // 4️⃣ Retrieve payment method details
-                // $paymentMethod = \Stripe\PaymentMethod::retrieve($pi->payment_method);
-
-                // if ($paymentMethod->type === 'card') {
-                //     $order->card_brand     = $paymentMethod->card->brand ?? null;
-                //     $order->card_last4     = $paymentMethod->card->last4 ?? null;
-                //     $order->card_exp_month = $paymentMethod->card->exp_month ?? null;
-                //     $order->card_exp_year  = $paymentMethod->card->exp_year ?? null;
-                // }
-
-                // $pi = \Stripe\PaymentIntent::retrieve($event->data->object->id);
-
-                // $paymentMethod = \Stripe\PaymentMethod::retrieve($pi->payment_method);
-
-                $order->save();
+                $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
+                        
+                $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                if ($paymentMethod->type === 'card') {
+                    $order->card_brand = $paymentMethod->card->brand ?? null;
+                    $order->card_last4 = $paymentMethod->card->last4 ?? null;
+                    $order->card_exp_month = $paymentMethod->card->exp_month ?? null;
+                    $order->card_exp_year = $paymentMethod->card->exp_year ?? null;
+                }                
 
                 // 5️⃣ Store payment record
+                // OrderPayment::create([
+                //     'order_id'          => $order->id,
+                //     'payment_intent_id' => $pi->id,
+                //     'transaction_id'    => $pi->latest_charge ?? null,
+                //     'amount'            => $chargeAmount,
+                //     'currency'          => $order->currency,
+                //     'status'            => 'succeeded', // succeeded / requires_action / processing
+                //     'action'            => 'partial',
+                //     'response_payload'  => json_encode($pi),
+                // ]);
+
                 OrderPayment::create([
                     'order_id'          => $order->id,
                     'payment_intent_id' => $pi->id,
-                    'transaction_id'    => $pi->latest_charge ?? null,
-                    'amount'            => $chargeAmount,
+                    'transaction_id'    => null, // no charge yet until capture
+                    'payment_method'    => 'card',
+                    'card_brand'        => $paymentMethod->card->brand ?? null,
+                    'card_last4'        => $paymentMethod->card->last4 ?? null,
+                    'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
+                    'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                    'amount'            => $order->total_amount,
                     'currency'          => $order->currency,
-                    'status'            => 'succeeded', // succeeded / requires_action / processing
-                    'action'            => 'partial',
+                    'status'            => 'pending', // manual capture pending
+                    'action'            => $adv_deposite,
                     'response_payload'  => json_encode($pi),
                 ]);
 
@@ -1073,14 +1084,14 @@ class OrderController extends Controller
                 'payment_intent_id' => $order->payment_intent_id,
                 'payment_intent_client_secret' => $order->payment_intent_client_secret,
             ], 200);
-        } catch (\Exception $e) {
-            Log::error('Cart Update Error: ' . $e->getMessage());
+        // } catch (\Exception $e) {
+        //     Log::error('Cart Update Error: ' . $e->getMessage());
 
-            return response()->json([
-                'status' => false,
-                'message' => 'Something went wrong: ' . $e->getMessage(),
-            ], 500);
-        }
+        //     return response()->json([
+        //         'status' => false,
+        //         'message' => 'Something went wrong: ' . $e->getMessage(),
+        //     ], 500);
+        // }
     }
 
 

@@ -21,7 +21,6 @@ use Illuminate\Support\Str;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
 // Auth routes
 // require __DIR__.'/auth.php';
 require('auth.php');
@@ -30,21 +29,22 @@ require('auth.php');
 require('admin.php');
 
 Route::get('/export', [ExportController::class, 'index']);
+Route::get('/seotest', [SitemapController::class, 'home']);
 
 Route::get('/{any}', function () {
     return file_get_contents(public_path('index.html'));
 })->where('any', '.*');
 
 
-
+Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
 
 Route::get('/sitemaps/categories.xml', [SitemapController::class, 'categories']);
 Route::get('/sitemaps/destinations.xml', [SitemapController::class, 'destinations']);
 Route::get('/sitemaps/sitemap.xml', [SitemapController::class, 'index']);
 Route::get('/sitemaps/tours.xml', [SitemapController::class, 'tours']);
 
-Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
-Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
+// Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
+// Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
 
 
 

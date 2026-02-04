@@ -163,7 +163,6 @@
 $statuses = config('constants.order_statuses');
 $expectEmails = ['order_pending', 'payment_receipt'];
 
-
 @endphp
 
     <form id="orderForm" action="{{ route('admin.orders.update',$order->id) }}" method="POST">
@@ -171,7 +170,6 @@ $expectEmails = ['order_pending', 'payment_receipt'];
     @csrf
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
     <input type="hidden" name="order_number" id="order_number" value="{{ $order->order_number }}" /> 
-
 
     <div class="card card-primary rounded-lg-custom border order-edit-head1">
         <div class="card-header">
@@ -686,13 +684,13 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                             @endforeach
 
                             <div class="card-total bg-light p-3 mb-3 row align-items-end">
-                                <div id="totalPayment1" class="col-md-6 text-start">
-                                    Paid: {{ price_format_with_currency((float)$order->payments->where('status','succeeded')->sum('amount'), $order->currency) }}
+                                <div id="totalPayment1" class="col-md-6 text-start text-success">
+                                    Paid:
+
+                                    {{price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency)}}
                                 </div>
 
-                                <div id="refundtotal" class="col-md-6 text-end " style="color:red;">
-                                    Refunded: {{ price_format_with_currency((float)$order->payments->whereIn('status',['refunded','partial_refunded'])->sum('amount'), $order->currency) }}
-                                </div>
+                                
                             </div>
                             <div class="card-body">
 
@@ -1769,7 +1767,7 @@ document.addEventListener("click", function(e) {
             }
         });
         $.ajax({
-            url: '{{ route('tour.single') }}',
+            url: '{{ route('admin.tour.single') }}',
             type: 'POST',
             data: {
                 id: tour_id,
@@ -1810,7 +1808,7 @@ document.addEventListener("click", function(e) {
 </script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
 
     // ✅ Function to update status UI
     function updateStatusUI(radio) {
@@ -2126,6 +2124,7 @@ $(document).ready(function(){
                 
                 toastr.success("Mail sent successfully")
                 $('.modal').modal('hide');
+                location.reload();
             },
             error: function(xhr, status, error) {
                 console.error('Error:', error);
@@ -2714,7 +2713,7 @@ $(document).ready(function () {
 function refreshCalendarAndSession23432(tourId, count, order_id) {
 
     $.ajax({
-        url: "{{ route('tour.calendar') }}",
+        url: "{{ route('admin.tour.calendar') }}",
         type: "POST",
         data: {
             id: tourId,
@@ -2768,7 +2767,7 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 
     // showLoader("Loading… Please wait");
     $.ajax({
-        url: "{{ route('tour.calendar') }}",
+        url: "{{ route('admin.tour.calendar') }}",
         type: "POST",
         data: {
             id: tourId,
@@ -3049,21 +3048,30 @@ let cardMounted = false;
 
 /* ================= SHOW / HIDE CARD ================= */
 
-document.getElementById('add_ccnow').addEventListener('change', function () {
-    const wrapper = document.getElementById('card-element-wrapper');
+$(document).ready(function () {
 
-    if (this.checked) {
-        wrapper.classList.remove('hidden');
+    $(document).on("change", "#add_ccnow", function () {
+        const wrapper = $("#card-element-wrapper");
 
-        if (!cardMounted) {
-            cardElement.mount('#card-element');
-            cardMounted = true;
+        if (this.checked) {
+            wrapper.removeClass("hidden").show();
+
+            if (!cardMounted) {
+                cardElement.mount('#card-element');
+                cardMounted = true;
+            }
+        } else {
+            wrapper.addClass("hidden").hide();
+            // never unmount Stripe element
         }
-    } else {
-        wrapper.classList.add('hidden');
-        // ❌ NEVER unmount Stripe element
-    }
+    });
+
+    $(document).on("change", "#charge_ccnow", function () {
+        $("#charge_ccnow_amount").toggle(this.checked);
+    });
+
 });
+
 
 /* ================= BUTTON HANDLER ================= */
 

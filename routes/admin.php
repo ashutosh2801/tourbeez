@@ -54,6 +54,19 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('/suplier_update', [ProfileController::class, 'suplierUpdate'])->name('profile.suplier_update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/convert-currency', [CurrencyController::class, 'convert'])->name('currency.convert');
+    
+    Route::post('/set-currency', function (\Illuminate\Http\Request $request) {
+
+        $currency = $request->currency;
+
+        if (empty($currency)) {
+            session()->forget('currency'); // back to default
+        } else {
+            session(['currency' => strtoupper($currency)]);
+        }
+
+        return response()->noContent();
+    })->name('set.currency');
 
     Route::resource('/user',UserController::class);
     Route::get('/user_supplier',[SupplierController::class, 'index'])->name('supplier.index');
@@ -328,5 +341,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('promos', PromoController::class);
     Route::resource('vouchers', VoucherController::class);
     Route::post('/apply-promo', [PromoController::class, 'apply'])->name('promo.apply');
+    Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
+    Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
+
+
+    Route::get('/admin/orders/sample-excel', [OrderController::class, 'sampleExcel'])
+    ->name('orders.sample-excel');
+
+    Route::post('/admin/orders/import-orders', [OrderController::class, 'importOrders'])
+    ->name('orders.import');
+
 
 });

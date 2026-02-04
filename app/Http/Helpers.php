@@ -34,40 +34,8 @@ if(!function_exists('getFullSql')) {
     }
 }
 
-if (!function_exists('countThingsToDo')) {
-    function countThingsToDo($id, $type)
-    {
-        $cacheKey = "things_to_do_count:{$type}:{$id}";
-
-        return Cache::remember($cacheKey, 86400, function () use ($id, $type) {
-
-            $query = Tour::where('status', 1)
-                ->whereNull('deleted_at');
-
-            if ($id) {
-                if ($type === 'c3') {
-                    $query->whereHas('categories', fn ($q) =>
-                        $q->where('categories.id', $id)
-                    );
-                } else {
-                    $query->whereHas('location', function ($q) use ($id, $type) {
-                        match ($type) {
-                            'c1' => $q->where('city_id', $id),
-                            's1' => $q->where('state_id', $id),
-                            'c2' => $q->where('country_id', $id),
-                            default => null,
-                        };
-                    });
-                }
-            }
-
-            return $query->count();
-        }) ?? 0;
-    }
-}
-
-if(!function_exists('countThingsToDo3242')) {
-    function countThingsToDo32423($id, $type) {
+if(!function_exists('countThingsToDo')) {
+    function countThingsToDo($id, $type) {
         $query = Tour::select(['id'])
             ->with([
                 'categories:id',
@@ -164,8 +132,14 @@ if (!function_exists('price_format_with_currency')) {
         // ];
 
         //$symbol = $symbols[$currency] ?? $currency;
+        
+        $from = $currency;
 
-        return $currency . " " . number_format($amount, 2);
+        $currency = app('currency') ?: $currency;
+        
+        $converted = currencyConvert($amount, $from, $currency);
+
+        return $currency . " " . number_format($converted, 2);
     }
 }
 
@@ -1313,8 +1287,12 @@ if (!function_exists('emailAlreadySent')) {
     }
 }
 if (!function_exists('currencyConvert')) {
-function currencyConvert(float $amount, string $from, string $to = 'USD')
+function currencyConvert(?float $amount, string $from, string $to = 'USD')
     {
+
+        if ($amount === null) {
+            return 0.0;
+        }
         // Always uppercase currency codes
         $from = strtoupper($from);
         $to   = strtoupper($to);

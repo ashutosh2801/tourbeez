@@ -32,6 +32,7 @@
                                 <!-- <a href="{{ route('admin.customers.edit', encrypt($user->id)) }}"
                                     class="btn btn-sm btn-primary">Edit</a> -->
                                     <a href="{{ route('admin.customers.edit.source', ['id' => encrypt($user->id),'source' => $user->source]) }}" class="btn btn-sm btn-edit"><i class="far fa-edit"></i></a>
+
                             </td>
                             <td>
                                 <form action="{{ route('admin.customers.destroy', encrypt($user->id)) }}" method="POST"

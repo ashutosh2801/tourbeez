@@ -18,6 +18,7 @@
     </div>
     @endif
 
+
     <div class="internal-order-body">
         <!-- ================= Header ================= -->
         <div class="card-primary mb-3">
@@ -37,10 +38,17 @@
             <!-- ================= Balance + Status ================= -->
             <div class="d-flex justify-content-between align-items-center rounded-lg-custom balance-bar border">
                 <div>
-                    <strong id="totalDue">$0.00</strong>
+                    <strong id="totalDue">0.00</strong>
                     <small>Balance</small>
                 </div>
+                
                 <div class="d-flex">
+                    <select name="currency" class="form-control mr-2">
+                        @foreach(config('constants.currencies') as $code => $country)
+                            <option value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
+                        @endforeach
+
+                    </select>
                     <select name="order_status" class="form-control mr-2">
                         <option value="0">New</option> 
                         <option value="4">Pending Customer</option>
@@ -210,8 +218,9 @@
                     <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
 
                         <div class="card-total p-3 mb-3" style="background: #edf3ff;">
-                            Total: <b id="totalPayment">$0.00</b>
+                            Total: <b id="totalPayment">0.00</b>
                             <input type="text" id="total_amount" class="form-control" readonly placeholder="0.00">
+
                         </div>
                         <div class="card-body pt-0">
 
@@ -469,7 +478,7 @@ function loadTourDetails(tourId, count) {
     showLoader("Loading… Please wait");
 
     $.ajax({
-        url: '{{ route("tour.single") }}',
+        url: '{{ route("admin.tour.single") }}',
         type: 'POST',
         data: { id: tourId, tourCount: count, _token: '{{ csrf_token() }}' },
 
@@ -695,7 +704,7 @@ function calculateTotal() {
     });
 
     $('#total_amount').val(sum.toFixed(2));
-    $('#totalDue').text('$'+sum.toFixed(2));    
+    $('#totalDue').text(sum.toFixed(2));    
 }
 
     document.querySelectorAll("input[name='payment_type']").forEach(el => {
@@ -1116,7 +1125,7 @@ function calculateRowTotal(row) {
             maximumFractionDigits: 2
         }).format(tax);
 
-        taxRow.querySelector('.tax-amount').textContent = '$'+formattedTax;
+        taxRow.querySelector('.tax-amount').textContent = formattedTax;
 
         subtotal += tax;
     });
@@ -1126,14 +1135,14 @@ function calculateRowTotal(row) {
     // -----------------------------------------
     const withouttaxBox = row.querySelector('.withouttax-box');
     if (withouttaxBox) {
-        withouttaxBox.textContent = '$'+withouttax.toFixed(2);
+        withouttaxBox.textContent = withouttax.toFixed(2);
     }
     const subtotalBox = row.querySelector('.subtotal-box');
     if (subtotalBox) {
-        document.getElementById("totalDue").innerText = '$'+subtotal.toFixed(2);
-        document.getElementById("totalPayment").innerText = '$'+subtotal.toFixed(2);
+        document.getElementById("totalDue").innerText = subtotal.toFixed(2);
+        document.getElementById("totalPayment").innerText = subtotal.toFixed(2);
         document.getElementById("addPaymentAmount").value = subtotal.toFixed(2);
-        subtotalBox.textContent = '$'+subtotal.toFixed(2);
+        subtotalBox.textContent = subtotal.toFixed(2);
     }
 }
 

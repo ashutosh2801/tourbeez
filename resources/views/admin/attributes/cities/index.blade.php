@@ -21,11 +21,46 @@
         </div>
         <div class="card-primary bg-white border rounded-lg-custom city-body">
             <div class="search-section">
-                <form class="" id="sort_countries" action="" method="GET">
-                    <div class="input-group input-group-sm">
-                        <input type="text" class="form-control" id="search" name="search"@isset($sort_search) value="{{ $sort_search }}" @endisset placeholder="{{ translate('Type name & Enter') }}">
-                    </div>
-                </form>
+                
+
+                    <form id="sort_cities" action="" method="GET">
+                        <div class="input-group mb-2">
+
+                            <input type="text"
+                                   class="form-control "
+                                   name="search"
+                                   value="{{ $sort_search ?? '' }}"
+                                   placeholder="{{ translate('Search city') }}">
+
+                            <select name="has_image" class="form-control col-2 ml-1">
+                                <option value="">{{ translate('Image') }}</option>
+                                <option value="1" {{ request('has_image') == '1' ? 'selected' : '' }}>
+                                    {{ translate('Has Image') }}
+                                </option>
+                            </select>
+
+                            <select name="has_tour" class="form-control col-2 ml-1">
+                                <option value="">{{ translate('Tour') }}</option>
+                                <option value="1" {{ request('has_tour') == '1' ? 'selected' : '' }}>
+                                    {{ translate('Has Tour') }}
+                                </option>
+                            </select>
+                            <select name="has_latlong" class="form-control col-2 ml-1">
+                                <option value="">{{ translate('Lat/Long') }}</option>
+                                <option value="1" {{ request('has_latlong') == '1' ? 'selected' : '' }}>
+                                    {{ translate('Has Lat/Long') }}
+                                </option>
+                            </select>
+
+                            <div class="input-group-append">
+                                <button class="btn btn-primary ml-1" type="submit">
+                                    {{ translate('Search') }}
+                                </button>
+                            </div>
+
+                        </div>
+                    </form>
+
             </div>
             <div class="card-body p-0">
                 <table class="table aiz-table mb-0">
@@ -161,13 +196,40 @@
                         @enderror
                     </div>
 
-                    <div class="form-group mb-3">
-                        <label for="name">{{translate('City Name')}}</label>
-                        <input type="text" id="name" name="name" placeholder="{{ translate('City Name') }}"
-                               class="form-control" required>
-                       @error('name')
-                           <small class="form-text text-danger">{{ $message }}</small>
-                       @enderror
+                    
+
+                    <div class="row d-flex justify-content-between align-items-center">
+                        <div class="form-group mb-3 col-md-10">
+                            <label for="name">{{translate('City Name')}}</label>
+                            <input type="text" id="name" name="name" placeholder="{{ translate('City Name') }}"
+                                   class="form-control" required>
+                           @error('name')
+                               <small class="form-text text-danger">{{ $message }}</small>
+                           @enderror
+                        </div>
+                        <div class="col-md-2 mt-2">
+                            <button type="button"
+                                    id="fetch-latlong-btn"
+                                    class="btn btn-outline-primary btn-sm w-100" data-toggle="tooltip"
+                                    data-placement="top"
+                                    title="Fetch latitude and longitude">
+                               Lat/Lng Fetch
+                            </button>
+
+                        </div>
+                    </div>
+                    <div class="row d-flex justify-content-between">
+                        <div class="form-group mb-3 col-md-6">
+                            <label>{{ translate('Latitude') }}</label>
+                            <input type="text" id="latitude" name="latitude" class="form-control"
+                                   value="">
+                        </div>
+
+                        <div class="form-group mb-3 col-md-6">
+                            <label>{{ translate('Longitude') }}</label>
+                            <input type="text" id="longitude" name="longitude" class="form-control"
+                                   value="">
+                        </div>
                     </div>
 
                     <div class="form-group mb-3">
@@ -227,6 +289,52 @@
         get_state_by_country();
     });
 
+
+</script>
+    <script>
+    function fetchLatLongFromGoogle() {
+        let country = $('#country_id option:selected').text();
+        let state   = $('#state_id option:selected').text();
+        let city    = $('#name').val();
+
+        if (!city || !state || !country) {
+            return;
+        }
+
+        let address = `${city}, ${state}, ${country}`;
+
+        let geocoder = new google.maps.Geocoder();
+
+        geocoder.geocode({ address: address }, function (results, status) {
+            if (status === 'OK') {
+                let location = results[0].geometry.location;
+                $('#latitude').val(location.lat());
+                $('#longitude').val(location.lng());
+            } else {
+                console.warn('Geocoding failed:', status);
+            }
+        });
+    }
+
+    // Trigger when city name loses focus
+    $('#name').on('blur', function () {
+        fetchLatLongFromGoogle();
+    });
+
+    // Trigger when state changes
+    $('#state_id').on('change', function () {
+        fetchLatLongFromGoogle();
+    });
+
+    $('#fetch-latlong-btn').on('click', function () {
+        fetchLatLongFromGoogle();
+    });
+
+</script>
+<script>
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
 </script>
 @endsection
 </x-admin>
