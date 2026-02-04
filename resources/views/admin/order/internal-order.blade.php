@@ -27,8 +27,18 @@
         <!-- ================= Balance + Status ================= -->
         <div class="d-flex justify-content-between align-items-center p-3 mb-3 rounded z-10">
             <div>
-                <strong id="totalDue">$0.00</strong><br>
+                <strong id="totalDue">0.00</strong><br>
                 <small>Balance</small>
+            </div>
+            <div>
+                
+
+                <select name="currency" class="form-control">
+                    @foreach(config('constants.currencies') as $code => $country)
+                        <option value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
+                    @endforeach
+
+                </select>
             </div>
             <div>
                 <select name="order_status" class="form-control">
@@ -205,7 +215,7 @@
                     <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
 
                         <div class="card-total bg-light p-3 mb-3 ">
-                            Total: <span id="totalPayment">$0.00</span>
+                            Total: <span id="totalPayment">0.00</span>
                             <input type="text" id="total_amount" readonly placeholder="0.00">
                         </div>
                         <div class="card-body">
@@ -465,7 +475,7 @@ function loadTourDetails(tourId, count) {
     showLoader("Loading… Please wait");
 
     $.ajax({
-        url: '{{ route("tour.single") }}',
+        url: '{{ route("admin.tour.single") }}',
         type: 'POST',
         data: { id: tourId, tourCount: count, _token: '{{ csrf_token() }}' },
 
@@ -691,7 +701,7 @@ function calculateTotal() {
     });
 
     $('#total_amount').val(sum.toFixed(2));
-    $('#totalDue').text('$'+sum.toFixed(2));    
+    $('#totalDue').text(sum.toFixed(2));    
 }
 
     document.querySelectorAll("input[name='payment_type']").forEach(el => {
@@ -1112,7 +1122,7 @@ function calculateRowTotal(row) {
             maximumFractionDigits: 2
         }).format(tax);
 
-        taxRow.querySelector('.tax-amount').textContent = '$'+formattedTax;
+        taxRow.querySelector('.tax-amount').textContent = formattedTax;
 
         subtotal += tax;
     });
@@ -1122,14 +1132,14 @@ function calculateRowTotal(row) {
     // -----------------------------------------
     const withouttaxBox = row.querySelector('.withouttax-box');
     if (withouttaxBox) {
-        withouttaxBox.textContent = '$'+withouttax.toFixed(2);
+        withouttaxBox.textContent = withouttax.toFixed(2);
     }
     const subtotalBox = row.querySelector('.subtotal-box');
     if (subtotalBox) {
-        document.getElementById("totalDue").innerText = '$'+subtotal.toFixed(2);
-        document.getElementById("totalPayment").innerText = '$'+subtotal.toFixed(2);
+        document.getElementById("totalDue").innerText = subtotal.toFixed(2);
+        document.getElementById("totalPayment").innerText = subtotal.toFixed(2);
         document.getElementById("addPaymentAmount").value = subtotal.toFixed(2);
-        subtotalBox.textContent = '$'+subtotal.toFixed(2);
+        subtotalBox.textContent = subtotal.toFixed(2);
     }
 }
 

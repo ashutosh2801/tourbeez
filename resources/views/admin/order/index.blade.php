@@ -177,7 +177,7 @@
                                     <br>
                                     {{ $order->customer?->phone }}
                                 </td>
-                                <td>{{ $order->currency }} {{ price_format($order->total_amount) }}</td>
+                                <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                 <td>
                                     @if($order->payment_method)
                                         {{ ucwords($order->payment_method) }}

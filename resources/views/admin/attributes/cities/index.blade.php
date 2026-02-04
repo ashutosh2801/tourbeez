@@ -8,16 +8,46 @@
                 <div class="col text-center text-md-left">
                     <h5 class="mb-md-0 h6">{{ translate('All Cities') }}</h5>
                 </div>
-                <div class="col-md-4">
-                    <form class="" id="sort_cities" action="" method="GET">
-                        <div class="input-group input-group-sm">
-                            <input type="checkbox" class="form-control" onchange="retrun sort_cities()" id="has_image" name="has_image" @isset($sort_search) value="1"> Has image?
-                        </div>
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control" id="search" name="search"@isset($sort_search) value="{{ $sort_search }}" @endisset placeholder="{{ translate('Type name & Enter') }}">
+                <div class="col-md-9">
+                    <form id="sort_cities" action="" method="GET">
+                        <div class="input-group input-group-sm mb-2">
+
+                            <input type="text"
+                                   class="form-control "
+                                   name="search"
+                                   value="{{ $sort_search ?? '' }}"
+                                   placeholder="{{ translate('Search city') }}">
+
+                            <select name="has_image" class="form-control col-2">
+                                <option value="">{{ translate('Image') }}</option>
+                                <option value="1" {{ request('has_image') == '1' ? 'selected' : '' }}>
+                                    {{ translate('Has Image') }}
+                                </option>
+                            </select>
+
+                            <select name="has_tour" class="form-control col-2">
+                                <option value="">{{ translate('Tour') }}</option>
+                                <option value="1" {{ request('has_tour') == '1' ? 'selected' : '' }}>
+                                    {{ translate('Has Tour') }}
+                                </option>
+                            </select>
+                            <select name="has_latlong" class="form-control col-2">
+                                <option value="">{{ translate('Lat/Long') }}</option>
+                                <option value="1" {{ request('has_latlong') == '1' ? 'selected' : '' }}>
+                                    {{ translate('Has Lat/Long') }}
+                                </option>
+                            </select>
+
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit">
+                                    {{ translate('Search') }}
+                                </button>
+                            </div>
+
                         </div>
                     </form>
                 </div>
+
             </div>
             <div class="card-body">
                 <table class="table aiz-table mb-0">
@@ -36,7 +66,16 @@
                             <tr>
                                 <td>{{ ($key+1) + ($cities->currentPage() - 1)*$cities->perPage() }}</td>
                                 <td><img class="img-md" src="{{ uploaded_asset($city->upload_id) }}" height="45px" alt="{{translate('photo')}}" /></td>
-                                <td>{{ucwords($city->name)}}</td>
+                                <td>{{ucwords($city->name)}} 
+                                    @if($city->latitude && $city->longitude)
+                                    <br>
+                                    <span class="small text-muted">
+                                       Lat : {{ number_format($city->latitude, 6) }} <br>
+                                       Long : {{ number_format($city->longitude, 6) }}
+                                   </span>
+
+                                   @endif
+                                </td>
                                 <td>{{ucwords($city->state->name)}}</td>
                                 <td>{{ucwords($city->state->country->name)}}</td>
                                 <td class="text-right">
@@ -82,14 +121,38 @@
                             <small class="form-text text-danger">{{ $message }}</small>
                         @enderror
                     </div>
+                    <div class="row d-flex justify-content-between align-items-center">
+                        <div class="form-group mb-3 col-md-10">
+                            <label for="name">{{translate('City Name')}}</label>
+                            <input type="text" id="name" name="name" placeholder="{{ translate('City Name') }}"
+                                   class="form-control" required>
+                           @error('name')
+                               <small class="form-text text-danger">{{ $message }}</small>
+                           @enderror
+                        </div>
+                        <div class="col-md-2 mt-2">
+                            <button type="button"
+                                    id="fetch-latlong-btn"
+                                    class="btn btn-outline-primary btn-sm w-100" data-toggle="tooltip"
+                                    data-placement="top"
+                                    title="Fetch latitude and longitude">
+                               Lat/Lng Fetch
+                            </button>
 
-                    <div class="form-group mb-3">
-                        <label for="name">{{translate('City Name')}}</label>
-                        <input type="text" id="name" name="name" placeholder="{{ translate('City Name') }}"
-                               class="form-control" required>
-                       @error('name')
-                           <small class="form-text text-danger">{{ $message }}</small>
-                       @enderror
+                        </div>
+                    </div>
+                    <div class="row d-flex justify-content-between">
+                        <div class="form-group mb-3 col-md-6">
+                            <label>{{ translate('Latitude') }}</label>
+                            <input type="text" id="latitude" name="latitude" class="form-control"
+                                   value="">
+                        </div>
+
+                        <div class="form-group mb-3 col-md-6">
+                            <label>{{ translate('Longitude') }}</label>
+                            <input type="text" id="longitude" name="longitude" class="form-control"
+                                   value="">
+                        </div>
                     </div>
 
                     <div class="form-group mb-3">
@@ -147,6 +210,51 @@
         get_state_by_country();
     });
 
+</script>
+    <script>
+    function fetchLatLongFromGoogle() {
+        let country = $('#country_id option:selected').text();
+        let state   = $('#state_id option:selected').text();
+        let city    = $('#name').val();
+
+        if (!city || !state || !country) {
+            return;
+        }
+
+        let address = `${city}, ${state}, ${country}`;
+
+        let geocoder = new google.maps.Geocoder();
+
+        geocoder.geocode({ address: address }, function (results, status) {
+            if (status === 'OK') {
+                let location = results[0].geometry.location;
+                $('#latitude').val(location.lat());
+                $('#longitude').val(location.lng());
+            } else {
+                console.warn('Geocoding failed:', status);
+            }
+        });
+    }
+
+    // Trigger when city name loses focus
+    $('#name').on('blur', function () {
+        fetchLatLongFromGoogle();
+    });
+
+    // Trigger when state changes
+    $('#state_id').on('change', function () {
+        fetchLatLongFromGoogle();
+    });
+
+    $('#fetch-latlong-btn').on('click', function () {
+        fetchLatLongFromGoogle();
+    });
+
+</script>
+<script>
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
 </script>
 @endsection
 </x-admin>

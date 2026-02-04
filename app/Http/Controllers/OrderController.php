@@ -202,6 +202,7 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
+        
         $request->merge([
             'customer_id' => $request->customer_id ?: null
         ]);    

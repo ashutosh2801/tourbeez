@@ -20,6 +20,11 @@ class IsAdmin
                 Auth::user()->user_type === 'staff' || 
                 Auth::user()->user_type === 'tour listing associate') || 
                 Auth::user()->user_type === 'Member') {
+
+             app()->instance(
+                'currency',
+                session('currency', "")
+            );
             return $next($request);
         }
         auth()->logout();

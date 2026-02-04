@@ -32,6 +32,40 @@
         <i class="fas fa-calculator fa-lg"></i>
       </button>
     </li>
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle nav-currency"
+           href="#"
+           id="currencyDropdown"
+           role="button"
+           data-toggle="dropdown"
+           aria-haspopup="true"
+           aria-expanded="false"
+           title="Change Currency">
+            {{ session('currency', 'Default (Currency)') }}
+        </a>
+
+        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="currencyDropdown">
+
+            {{-- Default / Auto --}}
+            <a href="#"
+               class="dropdown-item currency-option {{ !session()->has('currency') ? 'active' : '' }}"
+               data-currency="">
+                Default (Currency)
+            </a>
+
+            <div class="dropdown-divider"></div>
+
+            @foreach(config('constants.currencies') as $code => $country)
+                <a href="#"
+                   class="dropdown-item currency-option {{ session('currency') === $code ? 'active' : '' }}"
+                   data-currency="{{ $code }}">
+                    {{ $code }} - {{ $country }}
+                </a>
+            @endforeach
+        </div>
+
+    </li>
+
 
     <li class="nav-item dropdown">
         <a class="nav-link nav-notify" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
@@ -386,3 +420,28 @@ document.addEventListener('DOMContentLoaded', function () {
         currencySelect.addEventListener('change', convertToUSD);
     });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('.currency-option').forEach(item => {
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            const currency = this.dataset.currency;
+
+            fetch('{{ route('admin.set.currency') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ currency })
+            }).then(() => {
+                location.reload(); // refresh prices
+            });
+        });
+    });
+
+});
+</script>
+
