@@ -4,8 +4,6 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Addon;
-use App\Models\Category;
-use App\Models\City;
 use App\Models\Order;
 use App\Models\OrderActions;
 use App\Models\OrderCustomer;
@@ -23,10 +21,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Stripe\Customer;
 use Stripe\Stripe;
-use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
@@ -1795,15 +1791,15 @@ function normalizeTime(string $time): string
         // --- Default (DAILY, WEEKLY, MONTHLY, YEARLY) ---
         $next = $scheduleStartDate->copy();
 
-        while ($next <= $carbonDate) {
-            switch ($repeatType) {
-                case 'DAILY':   $next->addDays($interval); break;
-                case 'WEEKLY':  $next->addDays(1); break;
-                case 'MONTHLY': $next->addMonths($interval); break;
-                case 'YEARLY':  $next->addYears($interval); break;
-                default: return [];
-            }
-        }
+        // while ($next <= $carbonDate) {
+        //     switch ($repeatType) {
+        //         case 'DAILY':   $next->addDays($interval); break;
+        //         case 'WEEKLY':  $next->addDays(1); break;
+        //         case 'MONTHLY': $next->addMonths($interval); break;
+        //         case 'YEARLY':  $next->addYears($interval); break;
+        //         default: return [];
+        //     }
+        // }
 
         while ($next <= $scheduleEndDate && count($nextDates) < $limit) {
             if ($repeatType === 'WEEKLY') {

@@ -533,7 +533,7 @@ class TourController extends Controller
 
         // 👇 Reuse OrderController@getSessionTimes
         $orderController = app(\App\Http\Controllers\API\OrderController::class);
-
+        
         $subTours->map(function ($tour) use ($date, $orderController) {
 
             $req = new \Illuminate\Http\Request([
