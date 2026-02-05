@@ -252,6 +252,21 @@ class TourController extends Controller
             }
         }
 
+        if ($request->filled('has_sub_tour')) {
+
+            if ($request->has_sub_tour === 'yes') {
+
+                // Tours that HAVE at least one sub tour
+                $query->whereHas('subTours');
+
+            } elseif ($request->has_sub_tour === 'no') {
+                
+                // Tours that have NO sub tours
+                $query->whereDoesntHave('subTours');
+
+            }
+        }
+
 
 
         $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');

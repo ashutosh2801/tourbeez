@@ -84,15 +84,7 @@
                                 <option value="expired" {{ request('schedule_expiry') == 'expired' ? 'selected' : '' }}>Expired</option>
                             </select>
                         </div>
-                        <div class="col-md-2 col-6">
-                            <select name="per_page" class="form-control">
-                                @foreach (['All',10, 25, 50, 100] as $number)
-                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                                        {{ $number }} per page
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        
                         <div class="col-md-2 col-6">
                             <select name="last_updated" class="form-control">
                                 <option value="">Last updated</option>
@@ -102,6 +94,26 @@
                                 <option value="this_week" {{ request('last_updated') == 'this_week' ? 'selected' : '' }}>This Week</option>
                                 <option value="upcoming_15" {{ request('last_updated') == 'upcoming_15' ? 'selected' : '' }}>Upcoming 15 Days</option>
                                 <option value="expired" {{ request('last_updated') == 'expired' ? 'selected' : '' }}>Expired</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2 col-6">
+                            <select name="has_sub_tour" class="form-control">
+                                <option value="">Has Sub Tour</option>
+                                @foreach (['Yes','No'] as $hasSubTour)
+                                    <option value="{{ strtolower($hasSubTour) }}" {{ request('has_sub_tour') == strtolower($hasSubTour) ? 'selected' : '' }}>
+                                        {{ str_replace('_', ' ', $hasSubTour) }} 
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <select name="per_page" class="form-control">
+                                @foreach (['All',10, 25, 50, 100] as $number)
+                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                        {{ $number }} per page
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-2 col-12">
