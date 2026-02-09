@@ -110,6 +110,7 @@
                                     $priceOptions = [ ['id'=>'', 'label' => '', 'price' => '', 'qty_used' => 1] ];
                                     $count = 1;
                                 }
+                                $parentPriceLabels = $parentTour && $parentTour->pricings ? $parentTour->pricings->pluck('label')->unique()->values() : collect();
                             @endphp
                             @foreach ($priceOptions as $index => $option)   
                             
@@ -132,8 +133,18 @@
                                 @endif
 
                                 <div class="col-lg-2">
-                                    <input type="text" placeholder="Adults" name="PriceOption[{{ $index }}][label]" id="PriceOption_name" 
-                                    value="{{ old("PriceOption.$index.label", $option['label']) }}" class="form-control" >
+                                    <select name="PriceOption[{{ $index }}][label]"
+                                            class="form-control price-label-select">
+                                        <option value="">Select label</option>
+
+                                        @foreach ($parentPriceLabels as $label)
+                                            <option value="{{ $label }}"
+                                                {{ old("PriceOption.$index.label", $option['label']) == $label ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+
                                     @error("PriceOption.$index.label")
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror
@@ -396,6 +407,15 @@
 
 @section('js')
 @parent
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const MAX_PRICE_OPTIONS = {{ $parentTour->pricings->pluck('label')->unique()->count() }};
+</script>
+<script>
+function getCurrentPriceOptionCount() {
+    return document.querySelectorAll('.price-label-select').length;
+}
+</script>
 <script>
 // Get Countries and States
 function get_states_by_country() {
@@ -530,6 +550,16 @@ function generateQuantityOptions() {
 }
 
 function addPriceOption() {
+
+    if (getCurrentPriceOptionCount() >= MAX_PRICE_OPTIONS) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Pricing limit reached',
+            text: 'Please create a new pricing list in the parent tour.',
+            confirmButtonColor: '#28a745',
+        });
+        return;
+    }
     const container = document.getElementById('priceOptionsContainer');
 
     const newRow = document.createElement('div');
@@ -539,7 +569,13 @@ function addPriceOption() {
     newRow.innerHTML = `
         <div class="col-lg-2"></div>
         <div class="col-lg-2">
-            <input type="text" placeholder="Label" name="PriceOption[${priceOptionCount}][label]" id="PriceOption_${priceOptionCount}_label" class="form-control">
+            <select name="PriceOption[${priceOptionCount}][label]"
+                    class="form-control price-label-select" id="PriceOption_${priceOptionCount}_label">
+                <option value="">Select label</option>
+                @foreach ($parentPriceLabels as $label)
+                    <option value="{{ $label }}">{{ $label }}</option>
+                @endforeach
+            </select>
         </div>
         <div class="col-lg-2">
             <div class="input-group">
@@ -566,6 +602,8 @@ function addPriceOption() {
 
     container.appendChild(newRow);
     priceOptionCount++;
+
+    syncLabelOptions();
 }
 
 function removePriceOption(id) {
@@ -626,4 +664,54 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+
+<script>
+function getSelectedLabels() {
+    const labels = new Set();
+
+    document.querySelectorAll('.price-label-select').forEach(select => {
+        if (select.value) {
+            labels.add(select.value);
+        }
+    });
+
+    return labels;
+}
+
+function syncLabelOptions() {
+    const selectedLabels = getSelectedLabels();
+
+    document.querySelectorAll('.price-label-select').forEach(select => {
+        const currentValue = select.value;
+
+        Array.from(select.options).forEach(option => {
+            if (option.value === '') return;
+
+            // Disable if selected elsewhere
+            option.disabled =
+                option.value !== currentValue &&
+                selectedLabels.has(option.value);
+        });
+    });
+}
+
+// 🔒 Lock instantly on focus (before change)
+document.addEventListener('focusin', function (e) {
+    if (e.target.classList.contains('price-label-select')) {
+        syncLabelOptions();
+    }
+});
+
+// 🔄 Sync after change
+document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('price-label-select')) {
+        syncLabelOptions();
+    }
+});
+
+// 🧠 Initial load
+document.addEventListener('DOMContentLoaded', syncLabelOptions);
+</script>
+
+
 @endsection

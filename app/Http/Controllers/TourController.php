@@ -12,6 +12,7 @@ use App\Models\Feature;
 use App\Models\Inclusion;
 use App\Models\Itinerary;
 use App\Models\Optional;
+use App\Models\PartnerTour;
 use App\Models\Pickup;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\TaxesFee;
@@ -367,7 +368,9 @@ class TourController extends Controller
     public function createSubTour($id)
     {
         $data  = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.sub-tour.create', compact('data'));
+
+        $parentTour = $data->load('pricings');
+        return view('admin.tours.sub-tour.create', compact('data', 'parentTour'));
     }
 
     public function editSubTour($id)
@@ -379,9 +382,9 @@ class TourController extends Controller
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        $parentTour = $data->parent->load('pricings');
         // return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule', 'metaData'));
-
-        return view('admin.tours.sub-tour.edit.index', compact('data', 'detail', 'schedule', 'metaData'));
+        return view('admin.tours.sub-tour.edit.index', compact('data', 'detail', 'schedule', 'metaData', 'parentTour'));
     }
 
 
@@ -985,6 +988,13 @@ $pickupHtml .= '</div>';
         return view('admin.tours.feature.booking', compact( 'data', 'detail'));
     }
 
+    public function editPartner($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        return view('admin.tours.feature.partner', compact( 'data', 'detail'));
+    }
+
     public function editSeo($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
@@ -1431,6 +1441,28 @@ $pickupHtml .= '</div>';
         return back()->withInput()->withErrors($request->all())->with('error','Something went wrong!');
     }
 
+    public function partner_update(Request $request, $id)
+    {
+        // $tour  = Tour::findOrFail($id);
+        // echo '<pre>'; print_r($request->all()); exit;
+                    
+        for ($i = 0; $i < count($request->partner_id); $i++) {
+            PartnerTour::updateOrCreate(
+                [
+                    'partner_id'    => $request->partner_id[$i],
+                    'link'          => $request->link[$i],
+                ],
+                [
+                    'tour_id'       => $request->tour_id,
+                    'partner_id'    => $request->partner_id[$i],
+                    'title'         => $request->title[$i],
+                    'link'          => $request->link[$i],
+                ]
+            );
+        }
+        return back()->withInput()->with('success','Partner link saved successfully.');
+
+    }
 
     public function pickup_update(Request $request, $id) {
         $tour = Tour::findOrFail($id);

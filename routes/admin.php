@@ -135,6 +135,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/gallery', [TourController::class, 'editGallery'])->name('tour.edit.gallery');
     Route::get('/tour/{id}/edit/seo', [TourController::class, 'editSeo'])->name('tour.edit.seo');
     Route::get('/tour/{id}/edit/booking', [TourController::class, 'editBooking'])->name('tour.edit.booking');
+    Route::get('/tour/{id}/edit/partner', [TourController::class, 'editPartner'])->name('tour.edit.partner');
     Route::get('/tour/{id}/edit/info_seo', [TourController::class, 'editinfoSeo'])->name('tour.edit.infoseo');
     Route::get('/tour/{id}/edit/seoscore', [TourController::class, 'editSeoScore'])->name('tour.edit.seoscore');
     Route::get('/tour/{id}/edit/notification', [TourController::class, 'editNotification'])->name('tour.edit.message.notification');
@@ -174,6 +175,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('/tour/pickup_update/{id}', [TourController::class, 'pickup_update'])->name('tour.pickup_update');
     Route::put('/tour/seo_update/{id}', [TourController::class, 'seo_update'])->name('tour.seo_update');
     Route::post('/tour/booking_update/{id}', [TourController::class, 'booking_update'])->name('tour.booking_update');
+    Route::post('/tour/partner_update/{id}', [TourController::class, 'partner_update'])->name('tour.partner_update');
     Route::put('/tour/schedule_update/{id}', [TourController::class, 'schedule_update'])->name('tour.schedule_update');
     Route::put('/tour/itinerary_update/{id}', [TourController::class, 'itinerary_update'])->name('tour.itinerary_update');
     Route::put('/tour/faq_update/{id}', [TourController::class, 'faq_update'])->name('tour.faq_update');
@@ -341,6 +343,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('promos', PromoController::class);
     Route::resource('vouchers', VoucherController::class);
     Route::post('/apply-promo', [PromoController::class, 'apply'])->name('promo.apply');
+
     Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
     Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
 
@@ -350,6 +353,5 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::post('/admin/orders/import-orders', [OrderController::class, 'importOrders'])
     ->name('orders.import');
-
 
 });

@@ -108,6 +108,7 @@
                                     @php
                                         $priceOptions = old('PriceOption', [ ['label' => '', 'price' => '', 'qty_used' => 1] ]);
                                         $count = count($priceOptions);
+                                        $parentPriceLabels = $parentTour->pricings->pluck('label')->unique()->values();
                                     @endphp
                                     @foreach ($priceOptions as $index => $option)   
                                     
@@ -124,13 +125,18 @@
                                         @else
                                         <div class="col-lg-2"></div>
                                         @endif
-
                                         <div class="col-lg-2">
-                                            <input type="text" placeholder="Adults" name="PriceOption[{{ $index }}][label]" id="PriceOption_name" 
-                                            value="{{ old("PriceOption.$index.label", $option['label']) }}" class="form-control" >
-                                            @error("PriceOption.$index.label")
-                                                <div class="text-danger">{{ $message }}</div>
-                                            @enderror
+                                            <select name="PriceOption[{{ $index }}][label]"
+                                                    class="form-control price-label-select">
+                                                <option value="">Select label</option>
+
+                                                @foreach ($parentPriceLabels as $label)
+                                                    <option value="{{ $label }}"
+                                                        {{ old("PriceOption.$index.label") == $label ? 'selected' : '' }}>
+                                                        {{ $label }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
                                         </div>
                                         <div class="col-lg-2">
                                             <div class="input-group">
@@ -327,6 +333,16 @@
         </div>
     </div>
 @section('js')
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const MAX_PRICE_OPTIONS = {{ $parentTour->pricings->pluck('label')->unique()->count() }};
+</script>
+<script>
+function getCurrentPriceOptionCount() {
+    return document.querySelectorAll('.price-label-select').length;
+}
+</script>
 <script>
 // Get Countries and States
 function get_states_by_country() {
@@ -461,6 +477,15 @@ function generateQuantityOptions() {
 }
 
 function addPriceOption() {
+    if (getCurrentPriceOptionCount() >= MAX_PRICE_OPTIONS) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Pricing limit reached',
+            text: 'Please create a new pricing list in the parent tour.',
+            confirmButtonColor: '#28a745',
+        });
+        return;
+    }
     const container = document.getElementById('priceOptionsContainer');
 
     const newRow = document.createElement('div');
@@ -470,7 +495,13 @@ function addPriceOption() {
     newRow.innerHTML = `
         <div class="col-lg-2"></div>
         <div class="col-lg-2">
-            <input type="text" placeholder="Label" name="PriceOption[${priceOptionCount}][label]" id="PriceOption_${priceOptionCount}_label" class="form-control">
+            <select name="PriceOption[${priceOptionCount}][label]"
+                    class="form-control price-label-select" id="PriceOption_${priceOptionCount}_label">
+                <option value="">Select label</option>
+                @foreach ($parentPriceLabels as $label)
+                    <option value="{{ $label }}">{{ $label }}</option>
+                @endforeach
+            </select>
         </div>
         <div class="col-lg-2">
             <div class="input-group">
@@ -497,6 +528,7 @@ function addPriceOption() {
 
     container.appendChild(newRow);
     priceOptionCount++;
+    syncLabelOptions();
 }
 
 function removePriceOption(id) {
@@ -557,5 +589,53 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+
+<script>
+function getSelectedLabels() {
+    const set = new Set();
+
+    document.querySelectorAll('.price-label-select').forEach(select => {
+        if (select.value) {
+            set.add(select.value);
+        }
+    });
+
+    return set;
+}
+
+function syncLabelOptions() {
+    const selected = getSelectedLabels();
+
+    document.querySelectorAll('.price-label-select').forEach(select => {
+        const current = select.value;
+
+        Array.from(select.options).forEach(option => {
+            if (!option.value) return;
+
+            option.disabled =
+                option.value !== current &&
+                selected.has(option.value);
+        });
+    });
+}
+
+// 🔒 lock BEFORE user clicks
+document.addEventListener('focusin', function (e) {
+    if (e.target.classList.contains('price-label-select')) {
+        syncLabelOptions();
+    }
+});
+
+// 🔄 lock AFTER change
+document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('price-label-select')) {
+        syncLabelOptions();
+    }
+});
+
+// initial load
+document.addEventListener('DOMContentLoaded', syncLabelOptions);
+</script>
+
 @endsection
 </x-admin>

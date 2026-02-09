@@ -34,6 +34,7 @@ use Stripe\Refund;
 use Stripe\Cancel;
 use Stripe\Stripe;
 use Validator;
+use Maatwebsite\Excel\Concerns\FromArray;
 
 
 class OrderController extends Controller
