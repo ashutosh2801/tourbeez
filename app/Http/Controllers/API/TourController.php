@@ -4,9 +4,9 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
-use App\Models\City;
-use App\Models\Order;
 use App\Models\OrderTour;
+use App\Models\Partner;
+use App\Models\PartnerTour;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\Tour;
 use App\Models\TourReview;
@@ -175,7 +175,6 @@ class TourController extends Controller
                 ->first();
         });
 
-
         if (!$tour) {
             return response()->json(['status' => false, 'message' => 'Tour not found'], 404);
         }
@@ -233,13 +232,13 @@ class TourController extends Controller
         if($tour->location) {
             $location = $tour->location;
             if($location->country) {
-                $breadcrumbs[] = ['url' => '/'.Str::slug($location->country->name).'/'.$location->country->id.'/c2', 'label' => 'Things To Do in '.$location->country->name];
+                $breadcrumbs[] = ['url' => '/things-to-do-in-'.Str::slug($location->country->name).'/'.$location->country->id.'-c2', 'label' => 'Things To Do in '.$location->country->name];
             }
             if($location->state) {
-                $breadcrumbs[] = ['url' => '/'.Str::slug($location->state->name).'/'.$location->state->id.'/s1', 'label' => 'Things To Do in '.$location->state->name];
+                $breadcrumbs[] = ['url' => '/things-to-do-in-'.Str::slug($location->state->name).'/'.$location->state->id.'-s1', 'label' => 'Things To Do in '.$location->state->name];
             }
             if($location->city) {
-                $breadcrumbs[] = ['url' => '/'.Str::slug($location->city->name).'/'.$location->city->id.'/c1', 'label' => 'Things To Do in '.$location->city->name];
+                $breadcrumbs[] = ['url' => '/things-to-do-in-'.Str::slug($location->city->name).'/'.$location->city->id.'-c1', 'label' => 'Things To Do in '.$location->city->name];
             }
         }
         $breadcrumbs[] = [
@@ -291,15 +290,19 @@ class TourController extends Controller
         }
 
         if ($tour) {
-            // 💡 You can now format or transform fields as needed
-            // return $this->getNextAvailableDate($tour->id);
-            // return $this->getDisabledTourDates($tour->id);
-            // return $this->getDisabledTourDates($tour->id);
+
+            $title = $tour->title;
+            if($request->company) {
+                $partner = Partner::where('slug', $request->company)->first();
+                $title = PartnerTour::where('partner_id', $partner->id)->where('tour_id', $tour->id)->first()?->title ?? $tour->title;
+            }
+
             $formattedTour = [
                 'id'            => $tour->id,
-                'title'         => $tour->title,
+                'title'         => $title,
                 'price'         => format_price($tour->price), // formatted price
                 'original_price'=> $original_price, // without formatted price
+                //'partner'       => $partner,
                 'price_type'    => $tour->price_type,
                 'unique_code'   => $tour->unique_code,
                 'slug'          => $tour->slug,
@@ -436,12 +439,6 @@ class TourController extends Controller
             'disabled_tour_dates'  => $disabled_dates,
             'have_sub_tour'        => $tour->subTours()->exists(),
         ];
-        
-        // $readmePath = base_path('WELCOME.md');
-
-        // return view('welcome', [
-        //     'readmeContent' => \Illuminate\Support\Str::markdown(file_get_contents($readmePath)),
-        // ]);
 
         // Remove misplaced view return and return JSON
         return response()->json([
@@ -533,7 +530,7 @@ class TourController extends Controller
 
         // 👇 Reuse OrderController@getSessionTimes
         $orderController = app(\App\Http\Controllers\API\OrderController::class);
-        
+
         $subTours->map(function ($tour) use ($date, $orderController) {
 
             $req = new \Illuminate\Http\Request([
@@ -618,193 +615,193 @@ class TourController extends Controller
      */
 
     public function search(Request $request) 
-{
-    $search = $request->input('q', '');
-    $date   = $request->input('date', '');
+    {
+        $search = $request->input('q', '');
+        $date   = $request->input('date', '');
 
-    // Build cache key
-    $cacheKey = 'search_tours_' . md5($search . '_' . $date);
+        // Build cache key
+        $cacheKey = 'search_tours_' . md5($search . '_' . $date);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Cities (via tour_locations)
-    |--------------------------------------------------------------------------
-    */
-    $cities = DB::table('tour_locations as tl')
-        ->join('tours as t', 't.id', '=', 'tl.tour_id')
-        ->join('cities as c', 'c.id', '=', 'tl.city_id')
-        ->join('states as s', 's.id', '=', 'c.state_id')
-        ->join('countries as cc', 'cc.id', '=', 's.country_id')
-        ->join('uploads as u', 'u.id', '=', 'c.upload_id')
-        ->select(
-            'c.id',
-            'c.name',
-            's.id as state_id',
-            's.name as state_name',
-            'cc.id as country_id',
-            'cc.name as country_name',
-            'u.file_name as image'
-        )
-        ->where('c.upload_id', '>=', 1)
-        ->whereExists(function ($query) {
-            $query->select(DB::raw(1))
-                ->from('tour_schedules as ts')
-                ->whereColumn('ts.tour_id', 't.id')
-                ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
-        })
-        ->when($search, function ($query, $search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('c.name', 'LIKE', $search . '%')
-                  ->orWhere('s.name', 'LIKE', $search . '%')
-                  ->orWhere('cc.name', 'LIKE', $search . '%');
-            });
-        })
-        ->groupBy(
-            'c.id',
-            'c.name',
-            's.id',
-            's.name',
-            'cc.id',
-            'cc.name',
-            'u.file_name'
-        )
-        ->orderBy('c.name', 'asc')
-        ->limit(2)
-        ->get();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Categories
-    |--------------------------------------------------------------------------
-    */
-    $categories = Category::orderBy('name', 'asc')
-        ->when($search, function ($query, $search) {
-            $query->where('name', 'LIKE', $search . '%');
-        })
-        ->limit(3)
-        ->get();
-
-    $total_cities     = $cities->count();
-    $total_categories = $categories->count();
-    $total_tours      = 8 - ($total_cities + $total_categories);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Tours
-    |--------------------------------------------------------------------------
-    */
-    $tours = Cache::remember($cacheKey, now()->addMinutes(20), function () use ($search, $total_tours) {
-        return Tour::with(['location' => function ($query) {
-                $query->select('id', 'tour_id', 'address');
-            }])
-            ->onlyRoot()
-            ->select('id', 'title', 'slug', 'unique_code', 'price')
-            ->where('status', 1)
-            ->when($search, function ($query, $search) {
-                $query->where('title', 'LIKE', '%' . $search . '%');
+        /*
+        |--------------------------------------------------------------------------
+        | Cities (via tour_locations)
+        |--------------------------------------------------------------------------
+        */
+        $cities = DB::table('tour_locations as tl')
+            ->join('tours as t', 't.id', '=', 'tl.tour_id')
+            ->join('cities as c', 'c.id', '=', 'tl.city_id')
+            ->join('states as s', 's.id', '=', 'c.state_id')
+            ->join('countries as cc', 'cc.id', '=', 's.country_id')
+            ->join('uploads as u', 'u.id', '=', 'c.upload_id')
+            ->select(
+                'c.id',
+                'c.name',
+                's.id as state_id',
+                's.name as state_name',
+                'cc.id as country_id',
+                'cc.name as country_name',
+                'u.file_name as image'
+            )
+            ->where('c.upload_id', '>=', 1)
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('tour_schedules as ts')
+                    ->whereColumn('ts.tour_id', 't.id')
+                    ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
             })
-            ->orderBy('title', 'asc')
-            ->limit(max(0, $total_tours))
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('c.name', 'LIKE', $search . '%')
+                    ->orWhere('s.name', 'LIKE', $search . '%')
+                    ->orWhere('cc.name', 'LIKE', $search . '%');
+                });
+            })
+            ->groupBy(
+                'c.id',
+                'c.name',
+                's.id',
+                's.name',
+                'cc.id',
+                'cc.name',
+                'u.file_name'
+            )
+            ->orderBy('c.name', 'asc')
+            ->limit(2)
             ->get();
-    });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Build Response Stack (City + State + Country)
-    |--------------------------------------------------------------------------
-    */
-    $data         = [];
-    $stateStack   = [];
-    $countryStack = [];
+        /*
+        |--------------------------------------------------------------------------
+        | Categories
+        |--------------------------------------------------------------------------
+        */
+        $categories = Category::orderBy('name', 'asc')
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'LIKE', $search . '%');
+            })
+            ->limit(3)
+            ->get();
 
-    if ($total_cities > 0) {
-        foreach ($cities as $city) {
+        $total_cities     = $cities->count();
+        $total_categories = $categories->count();
+        $total_tours      = 8 - ($total_cities + $total_categories);
 
-            // City
-            $data[] = [
-                'icon'    => 'city',
-                'title'   => $this->highlightMatch($city->name, $search),
-                'slug'    => '/' . Str::slug($city->name) . '/' . $city->id . '/c1',
-                'address' => ucfirst($city->state_name) . ', ' . ucfirst($city->country_name),
-            ];
+        /*
+        |--------------------------------------------------------------------------
+        | Tours
+        |--------------------------------------------------------------------------
+        */
+        $tours = Cache::remember($cacheKey, now()->addMinutes(20), function () use ($search, $total_tours) {
+            return Tour::with(['location' => function ($query) {
+                    $query->select('id', 'tour_id', 'address');
+                }])
+                ->onlyRoot()
+                ->select('id', 'title', 'slug', 'unique_code', 'price')
+                ->where('status', 1)
+                ->when($search, function ($query, $search) {
+                    $query->where('title', 'LIKE', '%' . $search . '%');
+                })
+                ->orderBy('title', 'asc')
+                ->limit(max(0, $total_tours))
+                ->get();
+        });
 
-            // State (unique)
-            if (!isset($stateStack[$city->state_id])) {
-                $stateStack[$city->state_id] = [
+        /*
+        |--------------------------------------------------------------------------
+        | Build Response Stack (City + State + Country)
+        |--------------------------------------------------------------------------
+        */
+        $data         = [];
+        $stateStack   = [];
+        $countryStack = [];
+
+        if ($total_cities > 0) {
+            foreach ($cities as $city) {
+
+                // City
+                $data[] = [
                     'icon'    => 'city',
-                    'title'   => $this->highlightMatch($city->state_name, $search),
-                    'slug'    => '/' . Str::slug($city->state_name) . '/' . $city->state_id . '/s1',
-                    'address' => ucfirst($city->country_name),
+                    'title'   => $this->highlightMatch($city->name, $search),
+                    'slug'    => '/things-to-do-in-' . Str::slug($city->name) . '/' . $city->id . '-c1',
+                    'address' => ucfirst($city->state_name) . ', ' . ucfirst($city->country_name),
                 ];
-            }
 
-            // Country (unique)
-            if (!isset($countryStack[$city->country_id])) {
-                $countryStack[$city->country_id] = [
-                    'icon'    => 'city',
-                    'title'   => $this->highlightMatch($city->country_name, $search),
-                    'slug'    => '/' . Str::slug($city->country_name) . '/' . $city->country_id . '/c2',
+                // State (unique)
+                if (!isset($stateStack[$city->state_id])) {
+                    $stateStack[$city->state_id] = [
+                        'icon'    => 'city',
+                        'title'   => $this->highlightMatch($city->state_name, $search),
+                        'slug'    => '/things-to-do-in-' . Str::slug($city->state_name) . '/' . $city->state_id . '-s1',
+                        'address' => ucfirst($city->country_name),
+                    ];
+                }
+
+                // Country (unique)
+                if (!isset($countryStack[$city->country_id])) {
+                    $countryStack[$city->country_id] = [
+                        'icon'    => 'city',
+                        'title'   => $this->highlightMatch($city->country_name, $search),
+                        'slug'    => '/things-to-do-in-' . Str::slug($city->country_name) . '/' . $city->country_id . '-c2',
+                        'address' => '',
+                    ];
+                }
+            }
+        }
+
+        // Merge: City → State → Country
+        $data = array_merge(
+            $data,
+            array_values($stateStack),
+            array_values($countryStack)
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Categories
+        |--------------------------------------------------------------------------
+        */
+        if ($total_categories > 0) {
+            foreach ($categories as $category) {
+                $data[] = [
+                    'icon'    => 'category',
+                    'title'   => $this->highlightMatch($category->name, $search),
+                    'slug'    => '/things-to-do-in-' . $category->slug . '/' . $category->id . '-c3',
                     'address' => '',
                 ];
             }
         }
-    }
 
-    // Merge: City → State → Country
-    $data = array_merge(
-        $data,
-        array_values($stateStack),
-        array_values($countryStack)
-    );
+        /*
+        |--------------------------------------------------------------------------
+        | Tours
+        |--------------------------------------------------------------------------
+        */
+        if ($tours->count() > 0) {
+            foreach ($tours as $tour) {
+                $image_id = $tour->main_image->id ?? 0;
+                $image    = uploaded_asset($image_id, 'thumb');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Categories
-    |--------------------------------------------------------------------------
-    */
-    if ($total_categories > 0) {
-        foreach ($categories as $category) {
-            $data[] = [
-                'icon'    => 'category',
-                'title'   => $this->highlightMatch($category->name, $search),
-                'slug'    => '/' . $category->slug . '/' . $category->id . '/c3',
-                'address' => '',
-            ];
+                $data[] = [
+                    'icon'    => $image,
+                    'title'   => $this->highlightMatch($tour->title, $search),
+                    'slug'    => '/tour/' . $tour->slug,
+                    'address' => $tour->location?->address,
+                ];
+            }
         }
-    }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tours
-    |--------------------------------------------------------------------------
-    */
-    if ($tours->count() > 0) {
-        foreach ($tours as $tour) {
-            $image_id = $tour->main_image->id ?? 0;
-            $image    = uploaded_asset($image_id, 'thumb');
-
-            $data[] = [
-                'icon'    => $image,
-                'title'   => $this->highlightMatch($tour->title, $search),
-                'slug'    => '/tour/' . $tour->slug,
-                'address' => $tour->location?->address,
-            ];
+        if (empty($data)) {
+            return response()->json([
+                'status'  => false,
+                'data'    => [],
+                'message' => 'No records found!',
+            ]);
         }
-    }
 
-    if (empty($data)) {
         return response()->json([
-            'status'  => false,
-            'data'    => [],
-            'message' => 'No records found!',
+            'status' => true,
+            'data'   => $data,
         ]);
     }
-
-    return response()->json([
-        'status' => true,
-        'data'   => $data,
-    ]);
-}
 
     public function search32432(Request $request) 
     {
@@ -887,13 +884,12 @@ class TourController extends Controller
         $data = [];
         if($total_cities>0) {
             foreach($cities as $city) {
-                //$data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state?->name).', '.ucfirst($city->state?->country?->name)];
-                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/'.Str::slug($city->name).'/'.$city->id.'/c1', 'address' => ucfirst($city->state_name).', '.ucfirst($city->country_name)];
+                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/things-to-do-in-'.Str::slug($city->name).'/'.$city->id.'-c1', 'address' => ucfirst($city->state_name).', '.ucfirst($city->country_name)];
             }
         }
         if($total_categories>0) {
             foreach($categories as $category) {
-                $data[] = ['icon'=>'category', 'title' => $this->highlightMatch($category->name, $search), 'slug' => '/'.$category->slug.'/'.$category->id.'/c3', 'address' => ''];
+                $data[] = ['icon'=>'category', 'title' => $this->highlightMatch($category->name, $search), 'slug' => '/things-to-do-in-'.$category->slug.'/'.$category->id.'-c3', 'address' => ''];
             }
         }
         if($tours->count()>0) {
