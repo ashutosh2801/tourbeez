@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ManifestExport;
+use App\Imports\OrderImport;
 use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
@@ -16,25 +17,25 @@ use App\Models\OrderTour;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
 use App\Models\TourPricing;
-use App\Models\User;
-use App\Services\TwilioService;
-use App\Notifications\NewOrderNotification;
 use App\Models\TourSpecialDeposit;
+use App\Models\User;
+use App\Notifications\NewOrderNotification;
+use App\Services\TwilioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Facades\Excel;
+use Stripe\Cancel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
-use Stripe\Cancel;
 use Stripe\Stripe;
 use Validator;
-use Maatwebsite\Excel\Concerns\FromArray;
 
 
 class OrderController extends Controller
@@ -203,7 +204,6 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-        
         $request->merge([
             'customer_id' => $request->customer_id ?: null
         ]);    
@@ -3762,43 +3762,59 @@ class OrderController extends Controller
     public function importOrders(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv'
+            'file' => 'required|file|mimes:xlsx,csv'
         ]);
 
-        Excel::import(new OrderImport, $request->file('file'));
+        $import = new OrderImport();
 
-        return back()->with('success', 'Orders imported successfully');
+        Excel::import($import, $request->file('file'));
+
+        return back()->with('importResult', [
+            'total'    => $import->total,
+            'imported' => $import->imported,
+            'skipped'  => $import->skipped,
+            'failed'   => $import->failed,
+            'errors'   => $import->failReasons,
+        ]);
     }
 
 
-    public function sampleExcel()
+   public function sampleExcel()
     {
-        $data = [[
-            'Date',
-            'Check-in',
-            'Redzy Order ID',
-            'Order Number',
-            'Customer Full Name',
-            'Customer Phone',
-            'Product name',
-            'Quantities',
-            'Extras',
-            'Order Balance',
-            'Order Total Amount',
-            'Order Total Paid',
-            'Pick-up Time',
-            'Pick-up Location',
-            'Order Special Requirements',
-            'Order internal notes',
-            'Agent Code',
-            'Pickup address',
-            'Agent Notes'
-        ]];
+        $data = [
+            [
+                'order_number',
+                'order_status',
+                'payment_status',
+                'order_source',
+                'agent_name',
+                'order_created_at',
+                'order_fulfilment_at',
+                'order_total_amount',
+                'total_payment',
+                'order_balance',
+                'num_participant',
+                'product_price',
+                'tax_amount',
+                'booking_fee',
+                'extra_amount',
+                'voucher_code',
+                'product_name',
+                'customer_first_last_name',
+                'order_internal_notes',
+                'payment_gateway_type',
+                'order_agent_reference',
+            ]
+            
+        ];
 
-        return Excel::download(new class($data) implements FromArray {
-            public function __construct(private array $data) {}
-            public function array(): array { return $this->data; }
-        }, 'order_import_sample.xlsx');
+        return Excel::download(
+            new class($data) implements FromArray {
+                public function __construct(private array $data) {}
+                public function array(): array { return $this->data; }
+            },
+            'order_import_sample.xlsx'
+        );
     }
 
 

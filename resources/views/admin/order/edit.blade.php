@@ -374,6 +374,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                     </div>
                 </div>
             </div>
+
             
             <div class="bs-example">
                 <div class="accordion" id="accordionExample">

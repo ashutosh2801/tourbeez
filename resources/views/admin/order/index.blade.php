@@ -117,6 +117,31 @@
                     </div>
                 </div>
             </div>
+
+            @if(session()->has('importResult'))
+                @php
+
+                    $r = session('importResult')
+
+                @endphp
+
+                <div class="bg-gray-100 p-4 rounded mb-4 text-sm">
+                    <p>
+                        <strong>Total:</strong> {{ $r['total'] }},
+                        <span class="text-green-700"><strong>Imported:</strong> {{ $r['imported'] }}</span>,
+                        <span class="text-yellow-700"><strong>Skipped:</strong> {{ $r['skipped'] }}</span>,
+                        <span class="text-red-700"><strong>Failed:</strong> {{ $r['failed'] }}</span>
+                    </p>
+
+                    @if(!empty($r['errors']))
+                        <ul class="mt-2 text-red-700 list-disc pl-5">
+                            @foreach($r['errors'] as $e)
+                                <li>Row {{ $e['row'] }} – {{ $e['reason'] }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            @endif
             
             <div class="card-body p-0 order-table table-responsive">
                 <table class="table table-striped" id="OrderTable">

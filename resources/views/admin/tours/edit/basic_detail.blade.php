@@ -138,6 +138,17 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="col-xl-5">
+                        <div class="form-group">
+                            <label for="slug" class="form-label">Currency *</label>
+                            <select name="currency" class="form-control mr-2">
+                                @foreach(config('constants.currencies') as $code => $country)
+                                    <option value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
+                                @endforeach
+
+                            </select>
+                        </div>
+                    </div>
 
                     <div class="col-xl-12">
                         <div class="form-group" id="product_pricing">
@@ -233,6 +244,65 @@
 
                     <div class="col-xl-6">
                         <div class="form-group">
+                            <label for="offerd_price" class="form-label">Original Price</label>
+                            <!-- <div class="row"> -->
+
+                                <!-- Coupon Value -->
+                                <!-- <div class="col-lg-6"> -->
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="">$</span>
+                                        </div>
+                                        <input type="text" 
+                                               placeholder="Value" 
+                                               name="" 
+                                               id="offerd_price" 
+                                               value="" 
+                                               class="form-control">
+                                    </div>
+                                <!-- </div> -->
+                            <!-- </div> -->
+                        </div>
+                    </div>
+                    <div class="col-xl-6">
+                        <div class="form-group">
+                            <label for="coupon_type" class="form-label">Discount Type & Value</label>
+                            <div class="row">
+                                <!-- Coupon Type -->
+                                <div class="col-lg-6">
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="basic-addon1">Type</span>
+                                        </div>
+                                        <select name="coupon_type" id="coupon_type" class="form-control">
+                                            <option value="">{{ translate('No Coupon') }}</option>
+                                            <option value="percentage" {{ $data?->coupon_type == 'percentage' ? 'selected' : ''}}>{{ translate('Percentage') }}</option>
+                                            <option value="fixed" {{ $data?->coupon_type == 'fixed' ? 'selected' : ''}}>{{ translate('Fixed Amount') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Coupon Value -->
+                                <div class="col-lg-6">
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="basic-addon1">Value</span>
+                                        </div>
+                                        <input type="number" 
+                                               placeholder="Value" 
+                                               name="coupon_value" 
+                                               id="coupon_value" 
+                                               value="{{ old('coupon_value') ?? $data?->coupon_value }}" 
+                                               class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="col-xl-6">
+                        <div class="form-group">
                             <label for="title" class="form-label">Advertised price *</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
@@ -290,11 +360,11 @@
                     </div>
                     
 
-                    <div class="col-xl-6">
+                    <!-- <div class="col-xl-6">
                         <div class="form-group">
                             <label for="coupon_type" class="form-label">Discount Type & Value</label>
                             <div class="row">
-                                <!-- Coupon Type -->
+                                 
                                 <div class="col-lg-6">
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
@@ -308,7 +378,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Coupon Value -->
+                               
                                 <div class="col-lg-6">
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
@@ -324,15 +394,15 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> -->
                     <div class="col-xl-6">
                     </div>
-                    <div class="col-xl-6">
+                    <!-- <div class="col-xl-6">
                         <div class="form-group">
                             <label for="offerd_price" class="form-label">Offered Price</label>
                             <div class="row">
 
-                                <!-- Coupon Value -->
+                                
                                 <div class="col-lg-6">
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
@@ -348,7 +418,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> -->
 
                                                     
                     <div class="col-xl-12">
@@ -861,53 +931,96 @@ function stopPreview() {
 </script>
 
 <script>
-    function calculateOfferedPrice() {
-        let finalPrice = parseFloat($('#advertised_price').val()) || 0;
-        let couponType = $('#coupon_type').val();
-        let couponValue = parseFloat($('#coupon_value').val()) || 0;
+let isUpdating = false;
 
-        let offeredPrice = finalPrice;
+function getFirstPriceOption() {
+    return document.querySelector('.price-option-input');
+}
 
-        if (couponType === 'percentage') {
-            let pct = couponValue / 100;
+// Advertised → Offered
+function advertisedToOffered() {
+    if (isUpdating) return;
 
-            // avoid divide by zero
-            if (pct >= 1) pct = 0.99;
+    let advertised = parseFloat($('#advertised_price').val()) || 0;
+    let couponType = $('#coupon_type').val();
+    let couponValue = parseFloat($('#coupon_value').val()) || 0;
 
-            offeredPrice = finalPrice / (1 - pct);
-        } 
-        else if (couponType === 'fixed') {
-            offeredPrice = finalPrice + couponValue;
-        }
+    let offered = advertised;
 
-        $('#offerd_price').val(offeredPrice.toFixed(2));
+    if (couponType === 'percentage') {
+        let pct = couponValue / 100;
+        if (pct >= 1) pct = 0.99;
+        offered = advertised / (1 - pct);
+    } else if (couponType === 'fixed') {
+        offered = advertised + couponValue;
     }
 
-    $('#advertised_price, #coupon_type, #coupon_value').on('input change', function () {
-        calculateOfferedPrice();
-    });
+    isUpdating = true;
+    $('#offerd_price').val(offered.toFixed(2));
 
-    calculateOfferedPrice();
-</script>
+    const firstOption = getFirstPriceOption();
+    if (firstOption) firstOption.value = advertised.toFixed(2);
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
+    isUpdating = false;
+}
 
-    const advertisedPriceInput = document.getElementById('advertised_price');
-    const firstPriceOption = document.querySelector('.price-option-input'); // 👈 FIRST ONLY
+// Offered → Advertised
+function offeredToAdvertised() {
+    if (isUpdating) return;
 
-    if (firstPriceOption) {
-        firstPriceOption.addEventListener('input', function () {
-            const value = this.value.trim();
+    let offered = parseFloat($('#offerd_price').val()) || 0;
+    let couponType = $('#coupon_type').val();
+    let couponValue = parseFloat($('#coupon_value').val()) || 0;
 
-            if (value !== '') {
-                advertisedPriceInput.value = value;
-            }
-        });
+    let advertised = offered;
+
+    if (couponType === 'percentage') {
+        let pct = couponValue / 100;
+        if (pct >= 1) pct = 0.99;
+        advertised = offered * (1 - pct);
+    } else if (couponType === 'fixed') {
+        advertised = offered - couponValue;
     }
 
+    if (advertised < 0) advertised = 0;
+
+    isUpdating = true;
+    $('#advertised_price').val(advertised.toFixed(2));
+
+    const firstOption = getFirstPriceOption();
+    if (firstOption) firstOption.value = advertised.toFixed(2);
+
+    isUpdating = false;
+}
+
+// EVENTS
+
+// Advertised is base
+$('#advertised_price').on('input', advertisedToOffered);
+
+// ONLY first price-option-input affects calculation
+document.addEventListener('input', function (e) {
+    const firstOption = getFirstPriceOption();
+    if (!firstOption || e.target !== firstOption || isUpdating) return;
+
+    isUpdating = true;
+    $('#advertised_price').val(firstOption.value);
+    isUpdating = false;
+
+    advertisedToOffered();
 });
+
+// Offered is base
+$('#offerd_price').on('input', offeredToAdvertised);
+
+// Coupon change → Offered is base
+$('#coupon_type, #coupon_value').on('input change', offeredToAdvertised);
+
+// Initial sync
+advertisedToOffered();
 </script>
+
+
 
 
 
