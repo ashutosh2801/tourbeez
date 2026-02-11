@@ -118,7 +118,7 @@ if(!function_exists('price_format')) {
 
 
 if (!function_exists('price_format_with_currency')) {
-    function price_format_with_currency($amount, $currency = 'USD')
+    function price_format_with_currency($amount, $currency = 'USD', $tourCurrency=NULL)
     {
         // // Define currency symbols (add more as needed)
         // $symbols = [
@@ -136,6 +136,10 @@ if (!function_exists('price_format_with_currency')) {
         $from = $currency;
 
         $currency = app('currency') ?: $currency;
+
+        if($tourCurrency){
+           $currency = $tourCurrency;
+        }
         
         $converted = currencyConvert($amount, $from, $currency);
 
@@ -1287,17 +1291,15 @@ if (!function_exists('emailAlreadySent')) {
     }
 }
 if (!function_exists('currencyConvert')) {
-function currencyConvert(?float $amount, string $from, string $to = 'USD')
+    function currencyConvert(?float $amount, string $from, string $to = 'USD')
     {
-
         if ($amount === null) {
             return 0.0;
         }
-        // Always uppercase currency codes
+
         $from = strtoupper($from);
         $to   = strtoupper($to);
 
-        // Fetch conversion rates (cached for 12 hours)
         $rates = Cache::remember('conversion_rates', 43200, function () {
             $response = Http::get('https://tourbeez.com/public/data/conversion_rates.json');
             if ($response->ok()) {
@@ -1307,23 +1309,24 @@ function currencyConvert(?float $amount, string $from, string $to = 'USD')
         });
 
         if (empty($rates)) {
-            return $amount; // fallback: return same amount if API fails
+            return $amount;
         }
 
-        // All rates are based on CAD
         $rateFrom = $rates[$from] ?? null;
         $rateTo   = $rates[$to] ?? null;
 
         if (!$rateFrom || !$rateTo) {
-            return $amount; // fallback: unknown currency
+            return $amount;
         }
+        // dd($rateFrom, $rateTo, $amount);
+        // ✅ USD-based conversion (MATCHES FRONTEND)
+        $converted = ($amount / $rateFrom) * $rateTo;
 
-        // Convert from -> CAD -> to
-        $amountInCad = $amount / $rateFrom;
-        $converted   = $amountInCad * $rateTo;
 
-        // Round to 2 decimals
-        return round($converted, 2);
+        return (float) number_format($converted, 6, '.', '');
+
+        // return round($converted, 2);
     }
 }
+
 ?>

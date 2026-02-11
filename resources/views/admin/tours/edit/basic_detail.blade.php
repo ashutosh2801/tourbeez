@@ -143,7 +143,7 @@
                             <label for="slug" class="form-label">Currency *</label>
                             <select name="currency" class="form-control mr-2">
                                 @foreach(config('constants.currencies') as $code => $country)
-                                    <option value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
+                                    <option value="{{ $code }}" {{ $code == $data->currency ? 'selected' : '' }}>{{ $code }} - {{ $country }}</option> 
                                 @endforeach
 
                             </select>
@@ -200,7 +200,7 @@
                                 <div class="col-xl-2">
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text" id="basic-addon1">$</span>
+                                            <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
                                         </div>
                                         <input type="text" placeholder="99.50" name="PriceOption[{{ $index }}][price]" id="PriceOption_price" 
                                         value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control price-option-input" >
@@ -251,7 +251,7 @@
                                 <!-- <div class="col-lg-6"> -->
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text" id="">$</span>
+                                            <span class="input-group-text currency-symbol" id="">$</span>
                                         </div>
                                         <input type="text" 
                                                placeholder="Value" 
@@ -306,7 +306,7 @@
                             <label for="title" class="form-label">Advertised price *</label>
                             <div class="input-group">
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon1">$</span>
+                                    <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
                                 </div>
                                 <input type="text" class="form-control" placeholder="99.50" name="advertised_price" id="advertised_price" value="{{ old('advertised_price') ?: $data->price }}">
                             </div>
@@ -682,6 +682,10 @@
 
 @section('js')
 @parent
+
+<script>
+    window.currencySymbols = @json(config('constants.currency_symbols'));
+</script>
 <script>
 // Get Countries and States
 function get_states_by_country() {
@@ -830,7 +834,7 @@ function addPriceOption() {
         <div class="col-lg-2">
             <div class="input-group">
                 <div class="input-group-prepend">
-                    <span class="input-group-text">$</span>
+                    <span class="input-group-text currency-symbol">$</span>
                 </div>
                 <input type="text" placeholder="Price" name="PriceOption[${priceOptionCount}][price]" id="PriceOption_${priceOptionCount}_price" class="form-control">
             </div>
@@ -851,6 +855,7 @@ function addPriceOption() {
         </div>`;
 
     container.appendChild(newRow);
+    updateCurrencySymbol();
     priceOptionCount++;
 }
 
@@ -1018,6 +1023,23 @@ $('#coupon_type, #coupon_value').on('input change', offeredToAdvertised);
 
 // Initial sync
 advertisedToOffered();
+</script>
+
+<script>
+function updateCurrencySymbol() {
+    let currency = $('select[name="currency"]').val();
+    let symbol = currencySymbols[currency] ?? currency;
+
+    $('.currency-symbol').text(symbol);
+}
+
+// On page load
+updateCurrencySymbol();
+
+// On currency change
+$('select[name="currency"]').on('change', function () {
+    updateCurrencySymbol();
+});
 </script>
 
 

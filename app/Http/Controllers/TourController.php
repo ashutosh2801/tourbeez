@@ -574,6 +574,7 @@ class TourController extends Controller
         $tour->country    = $request->country;
         $tour->state      = $request->state;
         $tour->city       = $request->city;
+        $tour->currency       = $request->currency;
         $tour->order_email       = $request->order_email;
 
         if($tour->save()) {
@@ -1206,8 +1207,7 @@ $pickupHtml .= '</div>';
 
     public function basic_detail_update(Request $request, $id)
     {
-
-        
+                
         $request->validate([
             'title'                 => 'required|max:255',
             'description'           => 'required',
@@ -1259,6 +1259,7 @@ $pickupHtml .= '</div>';
         $tour->offer_ends_in = $request->offer_ends_in;
         $tour->coupon_type = $request->coupon_type;
         $tour->coupon_value = $request->coupon_value;
+        $tour->currency       = $request->currency;
         
         // $tour->country    = $request->country;
         // $tour->state      = $request->state;

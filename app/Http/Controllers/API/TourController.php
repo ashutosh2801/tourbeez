@@ -209,7 +209,9 @@ class TourController extends Controller
             $image      = uploaded_asset($addon->image);
             $medium_url = str_replace($item->file_name, $item->medium_name, $image);
             $thumb_url  = str_replace($item->file_name, $item->thumb_name, $image);
-
+            if (!empty($tour->currency)) {
+                $addon->price = currencyConvert($addon->price, $tour->currency, 'USD');
+            }
             $addons[] = [
                 'id'            => $addon->id,
                 'name'          => $addon->name,
@@ -289,6 +291,12 @@ class TourController extends Controller
             }
         }
 
+        if (!empty($tour->currency)) {
+            $tour->price        = currencyConvert($tour->price, $tour->currency, 'USD');
+            $original_price     = currencyConvert($original_price, $tour->currency, 'USD');
+            $discounted_price   = currencyConvert($discounted_price, $tour->currency, 'USD');
+        }
+
         if ($tour) {
 
             $title = $tour->title;
@@ -301,6 +309,7 @@ class TourController extends Controller
                 'id'            => $tour->id,
                 'title'         => $title,
                 'price'         => format_price($tour->price), // formatted price
+                'currency'         => $tour->currency ?? 'USD', // formatted price
                 'original_price'=> $original_price, // without formatted price
                 //'partner'       => $partner,
                 'price_type'    => $tour->price_type,
@@ -361,7 +370,7 @@ class TourController extends Controller
         // $tour = Cache::remember($cacheKey, 86400, function () use ($slug) {
             $tour =  Tour::select([
                     'id', 'title', 'slug', 'price', 'price_type',
-                    'coupon_value', 'coupon_type'
+                    'coupon_value', 'coupon_type', 'currency'
                 ])
                 ->where('slug', $slug)
                 ->where('status', 1)
@@ -380,7 +389,7 @@ class TourController extends Controller
                 ])
                 ->first();
         // });
-
+        
         if (!$tour) {
             return response()->json(['status' => false, 'message' => 'Tour not found'], 404);
         }
@@ -423,6 +432,11 @@ class TourController extends Controller
             }
         }
 
+        if (!empty($tour->currency)) {
+            $original_price   = currencyConvert($original_price, $tour->currency, 'USD');
+            $discounted_price = currencyConvert($discounted_price, $tour->currency, 'USD');
+        }
+
         // Prepare response data (unchanged)
         $data = [
             'id'                   => $tour->id,
@@ -430,6 +444,7 @@ class TourController extends Controller
             'slug'                 => $tour->slug,
             'price_type'           => $tour->price_type,
             'pricings'             => $tour->pricings,
+            'currency'             => $tour->currency ?? 'USD',
             'detail'               => $tour->detail,
             'original_price'       => $original_price,
             'discount'             => $tour->coupon_value,
@@ -446,6 +461,11 @@ class TourController extends Controller
             'data'   => $data
         ]);
     }
+
+
+
+
+
 
     private function getDisabledTourDates_fromdb(int $tourId): array
     {

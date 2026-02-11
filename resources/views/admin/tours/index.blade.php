@@ -199,8 +199,10 @@
 
                                     <div class="text-sm mt-2"> {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-success text-hover" target="_blank">{{translate('View Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-success text-hover" target="_blank">{{ $tour->subTours()->exists() ? translate('View Sub Tours') : translate('Create Sub Tours')}}</a></div>
                                     <div class="text-sm text-gray-500 mt-2"><i style="font-size:11px"><b>By:</b> {{ $tour->user->name }} </i> <i style="font-size:13px"><b>at:</b> {{ $tour->updated_at }}</i></div>
-                                </td>    
-                                <td>{{ price_format_with_currency($tour->price) }}</td>
+                                </td>  
+
+                                
+                                <td>{{ price_format_with_currency($tour->price, $tour->currency) }}</td>
                                 <td>{{ $tour->unique_code }}</td>
                                 <td class="text-center">{{ $tour->trustpilot_review ? 'Yes' : 'No' }}</td>
                                 <td>{{ $tour->category_names ?: 'No categories' }}</td>
