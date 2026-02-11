@@ -448,6 +448,7 @@ class TourController extends Controller
         $tour->price      = $request->advertised_price;
         $tour->price_type = $request->price_type;
         $tour->order_email= $request->order_email;
+        $tour->currency   = $request->currency;
 
         if($tour->save()) {
             
@@ -1207,7 +1208,7 @@ $pickupHtml .= '</div>';
 
     public function basic_detail_update(Request $request, $id)
     {
-                
+
         $request->validate([
             'title'                 => 'required|max:255',
             'description'           => 'required',

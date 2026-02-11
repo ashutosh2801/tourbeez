@@ -100,6 +100,19 @@
                                     @enderror
                                 </div>
                             </div>
+                            <div class="col-lg-5">
+                                <!-- <div class="col-xl-5"> -->
+                                    <div class="form-group">
+                                        <label for="slug" class="form-label">Currency *</label>
+                                        <select name="currency" class="form-control mr-2" readonly>
+                                            @foreach(config('constants.currencies') as $code => $country)
+                                                <option value="{{ $code }}" {{ $code == $data->currency ? 'selected' : '' }}>{{ $code }} - {{ $country }}</option> 
+                                            @endforeach
+
+                                        </select>
+                                    </div>
+                                <!-- </div> -->
+                            </div>
                             
                             <div class="col-xl-12">
                                 <div class="form-group" id="product_pricing">
@@ -141,7 +154,7 @@
                                         <div class="col-lg-2">
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
-                                                    <span class="input-group-text" id="basic-addon1">$</span>
+                                                    <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
                                                 </div>
                                                 <input type="text" placeholder="99.50" name="PriceOption[{{ $index }}][price]" id="PriceOption_price" 
                                                 value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control price-option-input" >
@@ -185,7 +198,7 @@
                                     <label for="title" class="form-label">Advertised price *</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text" id="basic-addon1">$</span>
+                                            <span class="input-group-text" id="basic-addon1 currency-symbol">$</span>
                                         </div>
                                         <input type="text" class="form-control" placeholder="99.50" name="advertised_price" id="advertised_price" value="{{ old('advertised_price') }}" style="max-width: 200px;">
                                     </div>
@@ -335,6 +348,9 @@
 @section('js')
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    window.currencySymbols = @json(config('constants.currency_symbols'));
+</script>
 <script>
     const MAX_PRICE_OPTIONS = {{ $parentTour->pricings->pluck('label')->unique()->count() }};
 </script>
@@ -506,7 +522,7 @@ function addPriceOption() {
         <div class="col-lg-2">
             <div class="input-group">
                 <div class="input-group-prepend">
-                    <span class="input-group-text">$</span>
+                    <span class="input-group-text currency-symbol">$</span>
                 </div>
                 <input type="text" placeholder="Price" name="PriceOption[${priceOptionCount}][price]" id="PriceOption_${priceOptionCount}_price" class="form-control">
             </div>
@@ -529,6 +545,7 @@ function addPriceOption() {
     container.appendChild(newRow);
     priceOptionCount++;
     syncLabelOptions();
+    updateCurrencySymbol();
 }
 
 function removePriceOption(id) {
@@ -635,6 +652,24 @@ document.addEventListener('change', function (e) {
 
 // initial load
 document.addEventListener('DOMContentLoaded', syncLabelOptions);
+</script>
+
+<script>
+function updateCurrencySymbol() {
+    let currency = $('select[name="currency"]').val();
+    let symbol = currencySymbols[currency] ?? currency;
+
+    $('.currency-symbol').text(symbol);
+}
+
+// On page load
+updateCurrencySymbol();
+
+// On currency change
+$('select[name="currency"]').on('change', function () {
+    
+    updateCurrencySymbol();
+});
 </script>
 
 @endsection
