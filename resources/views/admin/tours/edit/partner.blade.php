@@ -25,6 +25,13 @@
                             <div style="background:#f5f5f5;border-radius:10px;border:1px solid #ccc;padding:10px;margin-bottom:20px">
                                 <input id="{{ $partner->slug }}" type="hidden" name="partner_id[]" value="{{ $partner->id }}" /> 
                                 <h2 style="font-size:25px;padding:0; margin:0 0 15px">{{ $partner->name }}</h2>
+                                <div class="col-lg-12  mb-2">
+                                    @if($partner->upload_id)
+                                        <img src="{{ uploaded_asset($partner->upload_id) }}" height="45">
+                                    @elseif($partner->logo_url)
+                                        <img src="{{ $partner->logo_url }}" height="45">
+                                    @endif
+                                </div>
 
                                 <div class="col-lg-12">
                                     <div class="form-group">
@@ -38,6 +45,8 @@
                                         @enderror
                                     </div>
                                 </div>
+
+                                
 
                                 <div class="col-lg-12">
                                     <div class="form-group">

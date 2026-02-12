@@ -21,6 +21,7 @@ use App\Http\Controllers\InclusionController;
 use App\Http\Controllers\ItineraryController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PickupController;
 use App\Http\Controllers\ProductController;
@@ -353,5 +354,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::post('/admin/orders/import-orders', [OrderController::class, 'importOrders'])
     ->name('orders.import');
+
+     Route::resource('partners', PartnerController::class);
 
 });
