@@ -137,6 +137,17 @@
                     </ul>
                 </li>
                 @endcan
+                @can('show_categories') 
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.vouchers.index') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.vouchers.index') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-handshake"></i>
+                        <p>{{  translate('Partners') }}
+                            <span class="badge badge-warning right">{{ $TourTypeCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                @endcan
             </ul>
         </li>
         @endcan
