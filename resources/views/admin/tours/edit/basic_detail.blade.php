@@ -360,65 +360,10 @@
                     </div>
                     
 
-                    <!-- <div class="col-xl-6">
-                        <div class="form-group">
-                            <label for="coupon_type" class="form-label">Discount Type & Value</label>
-                            <div class="row">
-                                 
-                                <div class="col-lg-6">
-                                    <div class="input-group mb-3">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text" id="basic-addon1">Type</span>
-                                        </div>
-                                        <select name="coupon_type" id="coupon_type" class="form-control">
-                                            <option value="">{{ translate('No Coupon') }}</option>
-                                            <option value="percentage" {{ $data?->coupon_type == 'percentage' ? 'selected' : ''}}>{{ translate('Percentage') }}</option>
-                                            <option value="fixed" {{ $data?->coupon_type == 'fixed' ? 'selected' : ''}}>{{ translate('Fixed Amount') }}</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                               
-                                <div class="col-lg-6">
-                                    <div class="input-group mb-3">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text" id="basic-addon1">Value</span>
-                                        </div>
-                                        <input type="number" 
-                                               placeholder="Value" 
-                                               name="coupon_value" 
-                                               id="coupon_value" 
-                                               value="{{ old('coupon_value') ?? $data?->coupon_value }}" 
-                                               class="form-control">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
+                    
                     <div class="col-xl-6">
                     </div>
-                    <!-- <div class="col-xl-6">
-                        <div class="form-group">
-                            <label for="offerd_price" class="form-label">Offered Price</label>
-                            <div class="row">
-
-                                
-                                <div class="col-lg-6">
-                                    <div class="input-group mb-3">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text" id="">$</span>
-                                        </div>
-                                        <input type="number" 
-                                               placeholder="Value" 
-                                               name="" 
-                                               id="offerd_price" 
-                                               value="" 
-                                               class="form-control">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
+                    
 
                                                     
                     <div class="col-xl-12">
@@ -521,19 +466,6 @@
                         </div>
                     </div>
 
-                    <!-- <div class="col-lg-12">
-                        <div class="form-group mb-5">
-                            <label for="videos" class="form-label">Videos</label>
-                            <div class="input-group mb-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text">https://www.youtube.com/watch?v=</span>
-                                </div>
-                                <input type="text" placeholder="" name="videos[]" id="videos" value="{{ old('videos[]') }}" class="form-control mr-2" >
-                                <button type="button" class="btn btn-sm btn-success " onclick="addVideos()"><i class="fa fa-plus"></i></button>
-                            </div>
-                            <div id="videosContainer"></div>
-                        </div>
-                    </div> -->
 
 
                     <div class="col-xl-12">
