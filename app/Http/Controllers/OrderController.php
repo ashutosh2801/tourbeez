@@ -1096,7 +1096,7 @@ class OrderController extends Controller
                             'payment_type'   => $type,
                             'transaction_id' => $transactionId,
                             'collection_date'=> Carbon::parse($collection_date)->format('Y-m-d'),
-                            'currency'       => 'USD',
+                            'currency'       => $order->currency,
                             'amount'         => $amount,
                             'collection_type'=> 'Outside',
                             'status'         => 'successful',
@@ -2279,6 +2279,10 @@ class OrderController extends Controller
             if(str_contains( $order->payment_method_id, 'pm_')){
                 $paymentMethodId = $order->payment_method_id;
 
+            }elseif(str_contains( $order->payment_intent_id, 'pm_')){
+
+                $paymentMethodId   = $order->payment_intent_id;
+
             } else {
 
                 if (!$customerId || !$intentId) {
@@ -2286,11 +2290,14 @@ class OrderController extends Controller
                 }
 
                 // Retrieve previous PaymentIntent
+
                 $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+
+               
                 $paymentMethodId = $paymentIntent->payment_method;
             }          
 
-            // dd($paymentMethodId);
+            
             if (!$paymentMethodId) {
                 throw new \Exception("No payment method found on previous PaymentIntent.");
             }
@@ -3740,7 +3747,7 @@ class OrderController extends Controller
             'card_last4'     => $paymentMethod->card->last4,
             'card_brand'     => $paymentMethod->card->brand,
             'amount'         => 0,
-            'currency'       => 'USD',
+            'currency'       => $order->currency,
             'collection_type'=> 'Inside'
         ]);
         $order_actions = [
