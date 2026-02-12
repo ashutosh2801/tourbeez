@@ -119,7 +119,7 @@
     </div>
     <!-- ./wrapper -->
     <footer class="main-footer">
-        <p class="m-0">Copyright © {{ date('Y') }} TourBeez. All rights reserved.</p>
+        <p class="m-0">© {{ date('Y') }} TourBeez. All rights reserved.</p>
     </footer>
     <!-- ./wrapper -->
 

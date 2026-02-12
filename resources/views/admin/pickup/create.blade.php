@@ -65,14 +65,14 @@
                                                 <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="PickupLocations[{{ $index }}][time]">
                                                     <option value="">Select one</option>
                                                     @for ($hour = 1; $hour <= 12; $hour++)
-    @for ($minute = 0; $minute < 60; $minute++)
-        @foreach (['AM', 'PM'] as $period)
-            <option value="{{ sprintf('%02d:%02d %s', $hour, $minute, $period) }}">
-                {{ sprintf('%02d:%02d %s', $hour, $minute, $period) }}
-            </option>
-        @endforeach
-    @endfor
-@endfor
+                                                        @for ($minute = 0; $minute < 60; $minute++)
+                                                            @foreach (['AM', 'PM'] as $period)
+                                                                <option value="{{ sprintf('%02d:%02d %s', $hour, $minute, $period) }}">
+                                                                    {{ sprintf('%02d:%02d %s', $hour, $minute, $period) }}
+                                                                </option>
+                                                            @endforeach
+                                                        @endfor
+                                                    @endfor
 
                                                 </select>
                                                 @error('pickup_time')
@@ -92,14 +92,14 @@
                                 </div>                               
                             @endforeach 
                         </div>
-                        <div class="form-group">
-                            <div class="row">
-                                <div class="col-md-6 col-12">
-                                    <button type="button" onclick="addPickupLocation()" class="btn btn-success"> + Add pickup location</button>
-                                </div>
-                                <div class="col-md-6 col-12">
-                                    <button type="submit" class="btn btn-success float-right"> <i class="fas fa-save"></i>  Save pickup location</button>
-                                </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="row">
+                            <div class="col-md-6 col-12">
+                                <button type="button" onclick="addPickupLocation()" class="btn add-btn-pickup"> + Add pickup location</button>
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <button type="submit" class="btn btn-success float-right"> <i class="fas fa-save"></i>  Save pickup location</button>
                             </div>
                         </div>
                     </div>

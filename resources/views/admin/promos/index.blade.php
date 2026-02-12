@@ -5,10 +5,10 @@
     <div class="extra-header card card-primary">
         <div class="card-header">
             <div class="row">
-                <div class="col-md-8">
+                <div class="col-md-8 col-6">
                     <h3 class="card-title">Promo Codes</h3>
                 </div>
-                <div class="col-md-4 text-right">
+                <div class="col-md-4 col-6 text-right">
                     <a href="{{ route('admin.promos.create') }}" class="btn btn-sm btn-success"> + Create New</a>
                 </div>
             </div>            
@@ -18,69 +18,68 @@
     <!-- BODY -->
     <div class="extra-addon-body">
         <div class="card card-primary bg-white border rounded-lg-custom">
-            <div class="card-body p-3">
 
                 <!-- SEARCH BOX -->
-                <div class="mb-3">
+                <div class="card-body">
                     <input type="text" id="promoSearch" class="form-control" placeholder="Search code...">
                 </div>
 
                 <!-- TABLE -->
-                <table class="table table-striped" id="promoTable">
-                    <thead>
-                        <tr>
-                            <th>Code</th>
-                            <th>Status</th>
-                            <th>Value</th>
-                            <th>Redemptions</th>
-                            <th>Validity Date</th>
-                            <th>Travel Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($promos as $promo)
+                <div class="table-responsive">
+                    <table class="table table-striped" id="promoTable">
+                        <thead>
                             <tr>
-                                <td>{{ $promo->code }}</td>
-                                <td>{{ $promo->status }}</td>
-                                <td>
-                                    @if(str_contains($promo->value_type, 'VALUE'))
-                                        ${{ $promo->voucher_value }}
-                                    @elseif(str_contains($promo->value_type, 'PERCENT'))
-                                        {{ $promo->value_percent }}%
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($promo->redemption_limit == 'UNLIMITED')
-                                        Unlimited
-                                    @else
-                                        {{ $promo->max_uses }}
-                                    @endif
-                                </td>
-                                <td>
-                                    {{ $promo->issue_date }} - {{ $promo->expiry_date }}
-                                </td>
-                                <td>
-                                    @if($promo->travel_from_date && $promo->travel_to_date)
-                                        {{ $promo->travel_from_date }} - {{ $promo->travel_to_date }}
-                                    @else
-                                        N/A
-                                    @endif
-                                </td>
-                                <td>
-                                    <a href="{{ route('admin.promos.edit', $promo->id) }}" class="btn btn-sm btn-primary">Edit</a>
-                                    <form action="{{ route('admin.promos.destroy', $promo->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger btn-delete"><i class="fas fa-trash-alt"></i></button>
-                                    </form>
-                                </td>
+                                <th>Code</th>
+                                <th>Status</th>
+                                <th>Value</th>
+                                <th>Redemptions</th>
+                                <th>Validity Date</th>
+                                <th>Travel Date</th>
+                                <th>Action</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-
-            </div>
+                        </thead>
+                        <tbody>
+                            @foreach ($promos as $promo)
+                                <tr>
+                                    <td>{{ $promo->code }}</td>
+                                    <td>{{ $promo->status }}</td>
+                                    <td>
+                                        @if(str_contains($promo->value_type, 'VALUE'))
+                                            ${{ $promo->voucher_value }}
+                                        @elseif(str_contains($promo->value_type, 'PERCENT'))
+                                            {{ $promo->value_percent }}%
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($promo->redemption_limit == 'UNLIMITED')
+                                            Unlimited
+                                        @else
+                                            {{ $promo->max_uses }}
+                                        @endif
+                                    </td>
+                                    <td>
+                                        {{ $promo->issue_date }} - {{ $promo->expiry_date }}
+                                    </td>
+                                    <td>
+                                        @if($promo->travel_from_date && $promo->travel_to_date)
+                                            {{ $promo->travel_from_date }} - {{ $promo->travel_to_date }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('admin.promos.edit', $promo->id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                        <form action="{{ route('admin.promos.destroy', $promo->id) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger btn-delete"><i class="fas fa-trash-alt"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
         </div>
     </div>
 
