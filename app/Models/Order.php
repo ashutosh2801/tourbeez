@@ -187,7 +187,7 @@ class Order extends Model
     {
         return $this->hasOne(OrderPayment::class)
                     ->where('collection_type', 'Inside')
-                    ->where('amount', '>', 0);
+                    ->where('amount', '>=', 0);
     }
 
 }

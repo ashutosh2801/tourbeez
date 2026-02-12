@@ -674,6 +674,7 @@ class TourController extends Controller
     public function single(Request $request)
     {
         $data  = Tour::find($request->id);
+
         $str = '';
         $subtotal = 0;
         if($data) {

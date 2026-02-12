@@ -209,9 +209,9 @@ class TourController extends Controller
             $image      = uploaded_asset($addon->image);
             $medium_url = str_replace($item->file_name, $item->medium_name, $image);
             $thumb_url  = str_replace($item->file_name, $item->thumb_name, $image);
-            if (!empty($tour->currency)) {
-                $addon->price = currencyConvert($addon->price, $tour->currency, 'USD');
-            }
+            // if (!empty($tour->currency)) {
+            //     $addon->price = currencyConvert($addon->price, $tour->currency, 'USD');
+            // }
             $addons[] = [
                 'id'            => $addon->id,
                 'name'          => $addon->name,
@@ -2089,9 +2089,12 @@ class TourController extends Controller
 
 public function single(Request $request)
 {
+
     $data  = Tour::find($request->id);
     $str = '';
     $subtotal = 0;
+    $orderCurrency = $request->order_currency ?? 'USD';
+
 
     if($data) {
 
@@ -2246,7 +2249,9 @@ public function single(Request $request)
                                     foreach($data->pricings as $pricing) {
                                         $num = ($i == 0) ? 1 : 0;
                                         if($i == 0) {
-                                            $subtotal += ($num * $pricing->price);
+
+                                            $convertedPricingPrice = currencyConvert($pricing->price, $data->currency, $orderCurrency);
+                                            $subtotal += ($num * $convertedPricingPrice);
                                         }
 
                                         $minQuantity = 0;
@@ -2260,15 +2265,16 @@ public function single(Request $request)
                                             <td width="60">
                                                 <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
                                                 <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl" min="'.$minQuantity.'" max="'.$maxQuantity.'" >
-                                                <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$pricing->price.'" /> 
+                                                <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$convertedPricingPrice.'" /> 
                                                 <input type="hidden" name="tour_pricing_type_'.$_tourId.'[]" value="'.$data->price_type.'" /> 
                                                 <input type="hidden" name="tour_pricing_min_'.$_tourId.'[]" value="'.$pricing->quantity_used.'">
                                                 
                                             </td>
-                                            <td>'.$pricing->label.' ('. price_format($pricing->price) .')</td>
+                                            <td>'.$pricing->label.' ('. price_format_with_currency($pricing->price, $data->currency, $orderCurrency) .')</td>
                                         </tr>';
                                     }
                                 }
+                                
 
                             $str .= '</table>
                         </td>
@@ -2283,14 +2289,15 @@ public function single(Request $request)
 
                                 if ($data->addons) {
                                     foreach($data->addons as $extra) {
-                                        $price = $extra->price;                                        
+                                        // $price = $extra->price;
+                                        $price = currencyConvert($extra->price, $data->currency, $orderCurrency);                                        
                                         $str.= '<tr>
                                             <td width="60">
                                                 <input type="hidden" name="tour_extra_id_'.$_tourId.'[]" value="'. $extra->id .'" />  
                                                 <input type="number" name="tour_extra_qty_'.$_tourId.'[]" value="0" style="width:60px" min="0" class="form-contorl text-center">
                                                 <input type="hidden" name="tour_extra_price_'.$_tourId.'[]" value="'.$price.'" /> 
                                             </td>
-                                            <td>'.$extra->name.' ('.price_format($extra->price).')</td>
+                                            <td>'.$extra->name.' ('.price_format_with_currency($extra->price, $data->currency, $orderCurrency).')</td>
                                         </tr>';
                                     }
                                 }
@@ -2308,26 +2315,46 @@ public function single(Request $request)
 
                 <tr>
                     <th>Sub Total</th>
-                    <th class="text-right withouttax-box">'. price_format($subtotal) .'</th>
+                    <th class="text-right withouttax-box">'. price_format_with_currency($subtotal, $data->currency, $orderCurrency) .'</th>
                 </tr>';
 
-                if($data->taxes_fees) {
-                    foreach ($data->taxes_fees as $item) {                    
-                        $tax = get_tax($subtotal, $item->fee_type, $item->tax_fee_value) ?? 0;
+                if ($data->taxes_fees) {
+                    foreach ($data->taxes_fees as $item) {
+
+                        // Step 1: Work completely in ORDER currency
+
+                        if ($item->fee_type === 'FIXED_PER_ORDER') {
+
+                            // Fixed fees are stored in tour currency
+                            $tax_fee_value = currencyConvert(
+                                $item->tax_fee_value,
+                                'USD',
+                                $orderCurrency
+                            );
+
+                        } else {
+
+                            // Percent stays same (percentage doesn't change by currency)
+                            $tax_fee_value = $item->tax_fee_value;
+                        }
+
+                        // Step 2: Calculate tax (subtotal must already be in order currency!)
+                        $tax = get_tax($subtotal, $item->fee_type, $tax_fee_value) ?? 0;
+
+                        // Step 3: Add directly (NO more conversion)
                         $subtotal += $tax;
 
-                        // $str .= '<tr>
-                        //     <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
-                        //     <td class="text-right">'. price_format($tax) .'</td>
-                        // </tr>';
                         $str .= '<tr class="tax-row" 
-                data-type="'.$item->fee_type.'" 
-                data-value="'.$item->tax_fee_value.'">
-                <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
-                <td class="text-right tax-amount">'. price_format($tax) .'</td>
-            </tr>';
+                                data-type="'.$item->fee_type.'" 
+                                data-value="'.$tax_fee_value.'">
+                                <td>'.$item->label.' ('. taxes_format($item->fee_type, $tax_fee_value) .')</td>
+                                <td class="text-right tax-amount">'. price_format($tax) .'</td>
+                            </tr>';
                     }
                 }
+
+
+
 
                 $str .= '
                     <tr>
