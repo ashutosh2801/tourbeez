@@ -96,7 +96,12 @@ class PartnerController extends Controller
 
     public function destroy($id)
     {
-        Partner::findOrFail($id)->delete();
-        return back()->with('success', 'Partner deleted successfully');
+        $partner = Partner::findOrFail($id);
+        $partner->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Partner deleted successfully'
+        ]);
     }
 }

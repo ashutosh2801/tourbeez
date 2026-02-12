@@ -49,12 +49,11 @@
                                        class="btn btn-circle btn-sm text-black text-lg">
                                         <i class="las la-edit"></i>
                                     </a>
-
-                                    <a href="javascript:void(0);"
-                                       data-href="{{route('admin.partners.destroy',$partner->id)}}"
-                                       class="btn btn-soft-danger btn-icon btn-circle btn-sm confirm-delete">
+                                    <button type="button"
+                                            class="btn btn-soft-danger btn-icon btn-circle btn-sm delete-partner"
+                                            data-id="{{ $partner->id }}">
                                         <i class="las la-trash"></i>
-                                    </a>
+                                    </button>
                                 </td>
                             </tr>
                         @endforeach
@@ -131,6 +130,55 @@
 </div>
 
 @section('js')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+$(document).on('click', '.delete-partner', function () {
+
+    let partnerId = $(this).data('id');
+    let url = "{{ route('admin.partners.destroy', ':id') }}";
+    url = url.replace(':id', partnerId);
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This partner will be soft deleted.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function (response) {
+                    Swal.fire(
+                        'Deleted!',
+                        response.message,
+                        'success'
+                    ).then(() => {
+                        location.reload();
+                    });
+                },
+                error: function () {
+                    Swal.fire(
+                        'Error!',
+                        'Something went wrong.',
+                        'error'
+                    );
+                }
+            });
+
+        }
+    });
+});
+</script>
+
 <script>
     $('#name').on('keyup', function () {
         let slug = $(this).val()
