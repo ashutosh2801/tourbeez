@@ -16,7 +16,7 @@
                     </div>
                 </div>
             </div>
-            <div class="card-primary bg-white border rounded-lg-custom">
+            <div class="card-primary bg-white border rounded-lg-custom tour-type-body">
                 <form class="needs-validation" novalidate action="{{ route('admin.tour_type.store') }}" method="POST">
                     @csrf
                     <div class="card-body">

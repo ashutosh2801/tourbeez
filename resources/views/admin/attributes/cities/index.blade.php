@@ -21,46 +21,42 @@
         </div>
         <div class="card-primary bg-white border rounded-lg-custom city-body">
             <div class="search-section">
-                
-
-                    <form id="sort_cities" action="" method="GET">
-                        <div class="input-group mb-2">
-
-                            <input type="text"
-                                   class="form-control "
-                                   name="search"
-                                   value="{{ $sort_search ?? '' }}"
-                                   placeholder="{{ translate('Search city') }}">
-
-                            <select name="has_image" class="form-control col-2 ml-1">
+                <form id="sort_cities" action="" method="GET">
+                    <div class="row">
+                        <div class="col-md-3 col-6">
+                            <input type="text" class="form-control" name="search" value="{{ $sort_search ?? '' }}" placeholder="{{ translate('Search city') }}">
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <select name="has_image" class="form-control">
                                 <option value="">{{ translate('Image') }}</option>
                                 <option value="1" {{ request('has_image') == '1' ? 'selected' : '' }}>
                                     {{ translate('Has Image') }}
                                 </option>
                             </select>
-
-                            <select name="has_tour" class="form-control col-2 ml-1">
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <select name="has_tour" class="form-control">
                                 <option value="">{{ translate('Tour') }}</option>
                                 <option value="1" {{ request('has_tour') == '1' ? 'selected' : '' }}>
                                     {{ translate('Has Tour') }}
                                 </option>
                             </select>
-                            <select name="has_latlong" class="form-control col-2 ml-1">
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <select name="has_latlong" class="form-control">
                                 <option value="">{{ translate('Lat/Long') }}</option>
                                 <option value="1" {{ request('has_latlong') == '1' ? 'selected' : '' }}>
                                     {{ translate('Has Lat/Long') }}
                                 </option>
                             </select>
-
-                            <div class="input-group-append">
-                                <button class="btn btn-primary ml-1" type="submit">
-                                    {{ translate('Search') }}
-                                </button>
-                            </div>
-
                         </div>
-                    </form>
-
+                        <div class="col-md-2 col-12">
+                            <button class="btn btn-search" type="submit">
+                               <i class="fas fa-search"></i> {{ translate('Search') }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
             <div class="card-body p-0">
                 <table class="table aiz-table mb-0">
@@ -195,27 +191,20 @@
                             <small class="form-text text-danger">{{ $message }}</small>
                         @enderror
                     </div>
-
-                    
-
-                    <div class="row d-flex justify-content-between align-items-center">
-                        <div class="form-group mb-3 col-md-10">
-                            <label for="name">{{translate('City Name')}}</label>
-                            <input type="text" id="name" name="name" placeholder="{{ translate('City Name') }}"
-                                   class="form-control" required>
-                           @error('name')
-                               <small class="form-text text-danger">{{ $message }}</small>
-                           @enderror
-                        </div>
-                        <div class="col-md-2 mt-2">
-                            <button type="button"
-                                    id="fetch-latlong-btn"
-                                    class="btn btn-outline-primary btn-sm w-100" data-toggle="tooltip"
-                                    data-placement="top"
-                                    title="Fetch latitude and longitude">
-                               Lat/Lng Fetch
-                            </button>
-
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label for="name">{{translate('City Name')}}</label>
+                            </div>
+                            <div class="col-md-9">
+                                <input type="text" id="name" name="name" placeholder="{{ translate('City Name') }}" class="form-control" required>
+                                @error('name')
+                                    <small class="form-text text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" id="fetch-latlong-btn" class="btn btn-fetch" data-toggle="tooltip" data-placement="top" title="Fetch latitude and longitude">Lat/Lng Fetch</button>
+                            </div>
                         </div>
                     </div>
                     <div class="row d-flex justify-content-between">

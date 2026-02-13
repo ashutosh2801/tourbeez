@@ -19,22 +19,32 @@
         }
     </style>
 
-    <div class="card">
-        <div class="card-header d-flex justify-content-between">
-            <h3 class="card-title">Create Voucher</h3>
-            <a href="{{ route('admin.vouchers.index') }}" class="btn btn-sm btn-dark">Back</a>
+    <!-- HEADER -->
+    <div class="voucher-list-header card-primary mb-3">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-md-8 col-6">
+                    <h3 class="card-title">Create Voucher</h3>
+                </div>
+                <div class="col-md-4 col-6 text-right">
+                    <a href="{{ route('admin.vouchers.index') }}" class="btn btn-sm btn-back">Back</a>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <div class="voucher-list-body card bg-white border rounded-lg-custom">
 
         <div class="card-body">
             @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <ul class="list-unstyled">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+                <div class="alert alert-danger">
+                    <ul class="list-unstyled">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <div class="row">
                 <!-- Form -->
                 <div class="col-md-9">
@@ -341,7 +351,7 @@
                                       data-help="Internal staff-only notes. Not shown to customer."></textarea>
                         </div>
 
-                        <button class="btn btn-primary btn-block">Save Voucher</button>
+                        <button class="btn btn-success"> <i class="fas fa-save"></i> Save Voucher</button>
                     </form>
                 </div>
 

@@ -135,10 +135,9 @@
                         <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure to delete selected orders?')">
                             <i class="fas fa-trash-alt"></i> Delete Selected
                         </button>
-                            <button type="button" class="btn btn-ImpOrder" data-toggle="modal" data-target="#importOrderModal">
-                                <i class="fas fa-file-import"></i> Import Order
-                            </button>
-                        
+                        <button type="button" class="btn btn-ImpOrder" data-toggle="modal" data-target="#importOrderModal">
+                            <i class="fas fa-file-import"></i> Import Order
+                        </button>
                     </div>
                 </div>
             </div>

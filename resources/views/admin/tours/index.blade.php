@@ -381,11 +381,15 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-success" id="downloadSample">
-                        <i class="fas fa-file-excel"></i> Download Sample Excel
-                    </button>
-                    <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
-                    <button type="submit" class="btn btn-success">{{ translate('Import') }}</button>
+                    <div class="m-0">
+                        <button type="button" class="btn btn-success" id="downloadSample">
+                            <i class="fas fa-file-excel"></i> Download Sample Excel
+                        </button>
+                    </div>
+                    <div class="m-0">
+                        <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                        <button type="submit" class="btn btn-ExpoImpo"> <i class="fas fa-file-import"></i>  {{ translate('Import') }}</button>
+                    </div>
                 </div>
             </form>
         </div>

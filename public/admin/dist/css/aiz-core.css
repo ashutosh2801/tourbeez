@@ -9221,6 +9221,16 @@ table.dataTable {
     font-size: 13px;
 }
 
+.extra-addon-body .card-footer {
+    background: #FFF;
+    border-top: 1px solid #ebedf2;
+    border-radius: 0 0 10px 10px;
+}
+
+.extra-addon-body .form-control {
+    border: 1px solid #aeb0b4;
+}
+
 .card-primary .card-header.create-extra-header {
     border-radius: 10px;
     background: #01228b;
@@ -9404,6 +9414,12 @@ table.dataTable {
     font-size: 13px;
 }
 
+.tour-type-body .card-footer {
+    background: #FFF;
+    border-top: 1px solid #ebedf2;
+    border-radius: 0 0 10px 10px;
+}
+
 .countries-head,
 .states-head,
 .city-head,
@@ -9438,8 +9454,7 @@ table.dataTable {
 }
 
 .countries-body .search-section input,
-.states-body .search-section input,
-.city-body .search-section input {
+.states-body .search-section input {
     height: auto;
     padding: 10px;
     border-radius: 10px;
@@ -9447,11 +9462,24 @@ table.dataTable {
     font-size: 14px;
 }
 
+.city-body .search-section .form-control {
+    border: 1px solid #ced4da;
+    margin-bottom: 15px;
+}
+
 .countries-body .aiz-pagination,
 .states-body .aiz-pagination,
 .city-body .aiz-pagination {
     border-top: 1px solid #eceff7;
     padding: 20px 10px;
+}
+
+.add-modal .card-body .btn-fetch  {
+    background-color: #1d8763;
+    border-color: #1d8763;
+    color: var(--white);
+    padding: 10px 0;
+    width: 100%;
 }
 
 .add-modal .close {
@@ -9472,6 +9500,15 @@ table.dataTable {
     .states-body .search-section input,
     .city-body .search-section input {
         max-width: 100%;
+    }
+
+    .add-modal .card-body {
+        overflow-y: scroll;
+        height: 600px;
+    }
+
+    .add-modal .card-body .btn-fetch {
+        margin-top: 15px;
     }
 
 }
@@ -10045,4 +10082,79 @@ table.dataTable {
         margin-right: 5px;
     }
 
+}
+
+.voucher-list-header .card-header {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.voucher-list-header .card-header .row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.voucher-list-header .card-header .card-tools {
+    text-align: right;
+}
+
+.voucher-list-body .btn-options .btn {
+    color: #FFF;
+    margin: 0px 8px 8px 0px;
+}
+
+.voucher-list-body .btn-options .btn i {
+    margin-right: 3px;
+}
+
+.voucher-list-body .btn-options .btn-export {
+    background-color: #a2a2a2;
+}
+
+.voucher-list-body .btn-options .btn-export:hover {
+    background-color: #505050;
+}
+
+.voucher-list-body .form-control {
+    border: 1px solid #aeb0b4;
+}
+
+@media (max-width: 767px) {
+
+    .voucher-list-body .btn-options .btn {
+        margin-bottom: 8px;
+        font-size: 12px;
+        width: 46%;
+        padding: 13px 0;
+        margin-right: 5px;
+    }
+
+    .voucher-list-body .help-panel {
+        margin-top: 30px;
+    }
+
+}
+
+#importPriceModal .modal-title {
+    font-weight: bold;
+}
+
+#importPriceModal .modal-footer {
+    display: flex;
+    justify-content: space-between;
+}
+
+#importPriceModal .modal-footer div {
+    margin: 0;
+}
+
+#importPriceModal .modal-footer .btn-ExpoImpo {
+    background-color: #a2a2a2;
+    color: #FFF;
+}
+
+#importPriceModal .modal-footer .btn-ExpoImpo:hover {
+    background-color: #505050;
 }
