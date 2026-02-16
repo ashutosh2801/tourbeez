@@ -61,7 +61,8 @@ class Order extends Model
         'action_name',
         'adv_deposite',
         'payment_method_id',
-        'internal_notes'
+        'internal_notes',
+        'redzy_order_id'
     ];
 
     public function tour_detail($id, $label='all') {
@@ -186,7 +187,7 @@ class Order extends Model
     {
         return $this->hasOne(OrderPayment::class)
                     ->where('collection_type', 'Inside')
-                    ->where('amount', '>', 0);
+                    ->where('amount', '>=', 0);
     }
 
 }

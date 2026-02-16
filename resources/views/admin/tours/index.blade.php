@@ -84,15 +84,7 @@
                                 <option value="expired" {{ request('schedule_expiry') == 'expired' ? 'selected' : '' }}>Expired</option>
                             </select>
                         </div>
-                        <div class="col-md-2 col-6">
-                            <select name="per_page" class="form-control">
-                                @foreach (['All',10, 25, 50, 100] as $number)
-                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                                        {{ $number }} per page
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        
                         <div class="col-md-2 col-6">
                             <select name="last_updated" class="form-control">
                                 <option value="">Last updated</option>
@@ -102,6 +94,26 @@
                                 <option value="this_week" {{ request('last_updated') == 'this_week' ? 'selected' : '' }}>This Week</option>
                                 <option value="upcoming_15" {{ request('last_updated') == 'upcoming_15' ? 'selected' : '' }}>Upcoming 15 Days</option>
                                 <option value="expired" {{ request('last_updated') == 'expired' ? 'selected' : '' }}>Expired</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2 col-6">
+                            <select name="has_sub_tour" class="form-control">
+                                <option value="">Has Sub Tour</option>
+                                @foreach (['Yes','No'] as $hasSubTour)
+                                    <option value="{{ strtolower($hasSubTour) }}" {{ request('has_sub_tour') == strtolower($hasSubTour) ? 'selected' : '' }}>
+                                        {{ str_replace('_', ' ', $hasSubTour) }} 
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <select name="per_page" class="form-control">
+                                @foreach (['All',10, 25, 50, 100] as $number)
+                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                        {{ $number }} per page
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-2 col-12">
@@ -187,8 +199,10 @@
 
                                     <div class="text-sm mt-2"> {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-success text-hover" target="_blank">{{translate('View Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-success text-hover" target="_blank">{{ $tour->subTours()->exists() ? translate('View Sub Tours') : translate('Create Sub Tours')}}</a></div>
                                     <div class="text-sm text-gray-500 mt-2"><i style="font-size:11px"><b>By:</b> {{ $tour->user->name }} </i> <i style="font-size:13px"><b>at:</b> {{ $tour->updated_at }}</i></div>
-                                </td>    
-                                <td>{{ price_format_with_currency($tour->price) }}</td>
+                                </td>  
+
+                                
+                                <td>{{ price_format_with_currency($tour->price, $tour->currency) }}</td>
                                 <td>{{ $tour->unique_code }}</td>
                                 <td class="text-center">{{ $tour->trustpilot_review ? 'Yes' : 'No' }}</td>
                                 <td>{{ $tour->category_names ?: 'No categories' }}</td>

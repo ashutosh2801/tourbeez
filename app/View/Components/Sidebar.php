@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\City;
 use App\Models\Collection;
 use App\Models\Country;
+use App\Models\Partner;
 use App\Models\Pickup;
 use App\Models\Product;
 use App\Models\State;
@@ -84,6 +85,9 @@ class Sidebar extends Component
         $excludedUsers = User::where('user_type', '!=', 'Member')
             ->where('role', '!=', 'Supplier')->where('role', '<>', 'Super Admin')
             ->count();
+
+        $partnerCount = Partner::count();
+        view()->share('partnerCount',$partnerCount);
 
         view()->share('excludedUsers', $excludedUsers);
 

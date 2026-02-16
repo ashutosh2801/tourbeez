@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ManifestExport;
+use App\Imports\OrderImport;
+use App\Imports\OrderMultiSheetImport;
+use App\Imports\OrdersImport;
 use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
@@ -16,22 +19,23 @@ use App\Models\OrderTour;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
 use App\Models\TourPricing;
-use App\Models\User;
-use App\Services\TwilioService;
-use App\Notifications\NewOrderNotification;
 use App\Models\TourSpecialDeposit;
+use App\Models\User;
+use App\Notifications\NewOrderNotification;
+use App\Services\TwilioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Concerns\FromArray;
+use Stripe\Cancel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
-use Stripe\Cancel;
 use Stripe\Stripe;
 use Validator;
 
@@ -202,7 +206,6 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-        
         $request->merge([
             'customer_id' => $request->customer_id ?: null
         ]);    
@@ -1095,7 +1098,7 @@ class OrderController extends Controller
                             'payment_type'   => $type,
                             'transaction_id' => $transactionId,
                             'collection_date'=> Carbon::parse($collection_date)->format('Y-m-d'),
-                            'currency'       => 'USD',
+                            'currency'       => $order->currency,
                             'amount'         => $amount,
                             'collection_type'=> 'Outside',
                             'status'         => 'successful',
@@ -2278,6 +2281,10 @@ class OrderController extends Controller
             if(str_contains( $order->payment_method_id, 'pm_')){
                 $paymentMethodId = $order->payment_method_id;
 
+            }elseif(str_contains( $order->payment_intent_id, 'pm_')){
+
+                $paymentMethodId   = $order->payment_intent_id;
+
             } else {
 
                 if (!$customerId || !$intentId) {
@@ -2285,11 +2292,14 @@ class OrderController extends Controller
                 }
 
                 // Retrieve previous PaymentIntent
+
                 $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+
+               
                 $paymentMethodId = $paymentIntent->payment_method;
             }          
 
-            // dd($paymentMethodId);
+            
             if (!$paymentMethodId) {
                 throw new \Exception("No payment method found on previous PaymentIntent.");
             }
@@ -3739,7 +3749,7 @@ class OrderController extends Controller
             'card_last4'     => $paymentMethod->card->last4,
             'card_brand'     => $paymentMethod->card->brand,
             'amount'         => 0,
-            'currency'       => 'USD',
+            'currency'       => $order->currency,
             'collection_type'=> 'Inside'
         ]);
         $order_actions = [
@@ -3764,41 +3774,91 @@ class OrderController extends Controller
             'file' => 'required|mimes:xlsx,xls,csv'
         ]);
 
-        Excel::import(new OrderImport, $request->file('file'));
+        try {
 
-        return back()->with('success', 'Orders imported successfully');
+            $import = new OrdersImport();
+            // dd( $request->file('file'));
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+            // $summary = $import->getSummary();
+
+            // dd(323432);
+
+
+            return back()->with('import_summary', []);
+
+        } catch (\Throwable $e) {
+
+            \Log::error('Multi sheet import crashed', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Import failed unexpectedly.');
+        }
     }
 
 
-    public function sampleExcel()
-    {
-        $data = [[
+
+
+
+
+public function sampleExcel()
+{
+    $data = [
+        [
             'Date',
             'Check-in',
-            'Redzy Order ID',
             'Order Number',
             'Customer Full Name',
             'Customer Phone',
             'Product name',
             'Quantities',
+            'Quantities Label',
+            'Quantities Price',
             'Extras',
+            'Extras Label',
+            'Extras Price',
             'Order Balance',
             'Order Total Amount',
             'Order Total Paid',
             'Pick-up Time',
             'Pick-up Location',
-            'Order Special Requirements',
-            'Order internal notes',
-            'Agent Code',
-            'Pickup address',
-            'Agent Notes'
-        ]];
+            'Order Status',
+        ],
+        // Optional sample row (remove if you want header only)
+        [
+            '2025-02-01',
+            '2025-02-10',
+            'ORD12345',
+            'John Doe',
+            '9876543210',
+            'Desert Safari',
+            '2',
+            'Adults',
+            '100',
+            '3',
+            'Boat Cruise Ride - Adult',
+            '50',
+            '50',
+            '500',
+            '450',
+            '10:00 AM',
+            'Dubai Mall',
+            'Confirmed',
+        ]
+    ];
 
-        return Excel::download(new class($data) implements FromArray {
+    return Excel::download(
+        new class($data) implements FromArray {
             public function __construct(private array $data) {}
-            public function array(): array { return $this->data; }
-        }, 'order_import_sample.xlsx');
-    }
+            public function array(): array { 
+                return $this->data; 
+            }
+        },
+        'order_import_sample.xlsx'
+    );
+}
+
 
 
     

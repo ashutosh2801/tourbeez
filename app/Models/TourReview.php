@@ -13,5 +13,6 @@ class TourReview extends Model
         'recommended' => 'array',
         'badges' => 'array',
         'banners' => 'array',
+        'tag' => 'array',
     ];
 }

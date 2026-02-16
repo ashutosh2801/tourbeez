@@ -187,7 +187,7 @@ $('#state_id').on('change', function() {
     get_cities_by_state();
 });
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_API_KEY') }}&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&libraries=places" async defer></script>
 <script>
     function initAutocompleteById() {
         const input = document.getElementById('autocomplete');
