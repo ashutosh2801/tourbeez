@@ -17,9 +17,9 @@ class CategoryController extends Controller
         $city_id = $request->input('city_id');
         if ($city_id) {
 
-              $categories = Category::whereHas('tours', function ($query) use ($city_id) {
-                    $query->where('city', $city_id);
-                })->orderBy('name','ASC')->get();
+            $categories = Category::whereHas('tours', function ($query) use ($city_id) {
+                $query->where('city', $city_id);
+            })->orderBy('name','ASC')->get();
 
             return response()->json([
                 'status' => true,

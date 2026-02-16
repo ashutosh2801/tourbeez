@@ -4,8 +4,6 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Addon;
-use App\Models\Category;
-use App\Models\City;
 use App\Models\Order;
 use App\Models\OrderActions;
 use App\Models\OrderCustomer;
@@ -23,10 +21,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Stripe\Customer;
 use Stripe\Stripe;
-use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
@@ -465,9 +461,9 @@ class OrderController extends Controller
         }
 
         return response()->json([
-                'status'    => false,
-                'message'   => 'Item not added in cart',
-            ], 401);
+            'status'    => false,
+            'message'   => 'Item not added in cart',
+        ], 401);
     }
 
     /**
@@ -526,10 +522,8 @@ class OrderController extends Controller
             $promo->used_by = $promo->used_by + 1;
             $promo->save();
         }
-
         
-        
-        // try {
+        try {
 
             $data = $request->input('formData');
             if(isset($data['pickup_id']) && $data['pickup_id']) {
@@ -632,7 +626,6 @@ class OrderController extends Controller
             $tourData = [
                 'tour_id'           => $request->tourId,
                 'tour_date'         => $validated['selectedDate'],
-                // 'tour_time'         => $validated['selectedTime'] ?? null,
                 'tour_pricing'      => json_encode($pricing ?? []),
                 'tour_extra'        => json_encode($extra ?? []),
                 'tour_fees'         => json_encode($fees ?? []),
@@ -667,13 +660,14 @@ class OrderController extends Controller
 
             $previousOrderTotalAmount = $order->total_amount;
 
-            $order_actions_notes = NULL;
-            $order->sub_tour_id            = $request->sub_tour_id;
+            $order_actions_notes       = NULL;
+            $order->sub_tour_id        = $request->sub_tour_id;
             $order->action_name        = $request->action_name;
             $order->number_of_guests   = $quantity;
             $order->total_amount       = $item_total ?? 0;
             $order->balance_amount     = ($adv_deposite == 'deposit') ? $item_total : 0;
             $order->adv_deposite       = $adv_deposite;
+            $order->source             = $request->source;
             $order->updated_at         = now();
             $order->save();
             // dd(242);
@@ -692,8 +686,7 @@ class OrderController extends Controller
                         'totalAmount'   => $order->total_amount
             ];
 
-
-            if ($adv_deposite == "deposit") {
+            if ($adv_deposite === "deposit") {
                 \Log::warning('deposit');
 
                 $depositRule = TourSpecialDeposit::where('use_deposit', 1)->where('tour_id', $tour->id)->first();
@@ -907,7 +900,7 @@ class OrderController extends Controller
                         ]);
 
                 }
-            }else if($adv_deposite == "full") {
+            } else if($adv_deposite === "full") {
                 \Log::warning('full');
 
                 // $pi = \Stripe\PaymentIntent::create([
@@ -970,7 +963,7 @@ class OrderController extends Controller
                 } catch (\Exception $cardError) {
                     \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
                 }
-            }else if ($adv_deposite === "partial") {
+            } else if ($adv_deposite === "partial") {
                 \Log::warning('partial');
                 $paidAmount = $order->payments()
                     ->where('status', 'succeeded')
@@ -1047,10 +1040,6 @@ class OrderController extends Controller
                 $order_actions_notes = $customer->name." paid the remaining amount {$chargeAmount}";
             }
 
-
-
-
-
             $booking_fee = $data['booking_fee'];
             if($booking_fee > 0 && get_setting('price_booking_fee')){
                $bookingFeeType = get_setting('tour_booking_fee_type'); 
@@ -1067,12 +1056,12 @@ class OrderController extends Controller
             $order->save();
 
             $order_actions = [
-                    'order_id'         => $order->id,
-                    'performed_by'     => $customer->id,
-                    'notes'            => $order_actions_notes ?? $customer->name." placed a new order {$order->order_number}",
-                    'created_at'       => now(),
-                    'updated_at'       => now()
-                ];
+                'order_id'         => $order->id,
+                'performed_by'     => $customer->id,
+                'notes'            => $order_actions_notes ?? $customer->name." placed a new order {$order->order_number}",
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
             OrderActions::insert($order_actions);           
 
             return response()->json([
@@ -1084,14 +1073,14 @@ class OrderController extends Controller
                 'payment_intent_id' => $order->payment_intent_id,
                 'payment_intent_client_secret' => $order->payment_intent_client_secret,
             ], 200);
-        // } catch (\Exception $e) {
-        //     Log::error('Cart Update Error: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Cart Update Error: ' . $e->getMessage());
 
-        //     return response()->json([
-        //         'status' => false,
-        //         'message' => 'Something went wrong: ' . $e->getMessage(),
-        //     ], 500);
-        // }
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
 

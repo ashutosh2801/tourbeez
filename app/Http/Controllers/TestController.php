@@ -17,9 +17,9 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 
 
-class SitemapController extends Controller
+class TestController extends Controller
 {
-    public function home(Request $request) 
+    public function seotest(Request $request) 
     {  
         $citySlug = 'toronto';
         $id       = '10519';
@@ -141,149 +141,17 @@ class SitemapController extends Controller
                                        
     }
 
-    // Main Sitemap Index
-    public function index()
-    {
-        $tourLimit = 50000;
-        $tourCount = Tour::where('status', 1)->count();
-        $tourPage  = (int) ceil($tourCount / $tourLimit);
+    public function formtest() {
+        $url = "https://tourbeez.com/toniagara/tour/best-value-niagara-falls-day-tour-from-toronto-pickups-from-toronto-mississauga";
 
-        $sitemap = SitemapIndex::create()
-            ->add(url('/sitemap/categories.xml'))
-            ->add(url('/sitemap/destinations.xml'))
-            ->add(url('/sitemap/pages.xml'));
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
-        for ($i = 1; $i <= $tourPage; $i++) {
-            $sitemap->add(url("/sitemap/tours-{$i}.xml"));
-        }
+        $response = curl_exec($ch);
+        curl_close($ch);
 
-        return $sitemap->toResponse(request());
-    }
-
-    // Categories Sitemap
-    public function categories()
-    {
-        $sitemap = Sitemap::create();
-
-        foreach (Category::all() as $category) {
-            $sitemap->add(
-                Url::create(url("https://tourbeez.com/things-to-do-in-{$category->slug}/{$category->id}-c3"))
-                    ->setLastModificationDate($category->updated_at)
-                    ->setChangeFrequency('weekly')
-                    ->setPriority(0.8)
-            );
-        }
-
-        return $sitemap->toResponse(request());
-    }
-
-    // Destinations Sitemap
-    public function destinations()
-    {
-        $sitemap = Sitemap::create();
-
-        $cities = DB::table('tour_locations as tl')
-                ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                ->select('c.id', 'c.name', 'c.updated_at')
-                ->groupBy('c.id', 'c.name') 
-                ->orderByRaw('c.name ASC') 
-                ->get();
-        foreach ($cities as $destination) {
-            $slug = Str::slug($destination->name);
-            $sitemap->add(
-                Url::create(url("https://tourbeez.com/things-to-do-in-{$slug}/{$destination->id}-c1"))
-                    ->setLastModificationDate(Carbon::parse($destination->updated_at))
-                    ->setChangeFrequency('weekly')
-                    ->setPriority(0.8)
-            );
-        }
-
-        $states = DB::table('tour_locations as tl')
-                ->join('states as s', 's.id', '=', 'tl.state_id')
-                ->select('s.id', 's.name', 's.updated_at')
-                ->groupBy('s.id', 's.name') 
-                ->orderByRaw('s.name ASC') 
-                ->get();
-        foreach ($states as $destination) {
-            $slug = Str::slug($destination->name);
-            $sitemap->add(
-                Url::create(url("https://tourbeez.com/things-to-do-in-{$slug}/{$destination->id}-s1"))
-                    ->setLastModificationDate(Carbon::parse($destination->updated_at))
-                    ->setChangeFrequency('weekly')
-                    ->setPriority(0.8)
-            );
-        }
-
-        $countries = DB::table('tour_locations as tl')
-                ->join('countries as c', 'c.id', '=', 'tl.country_id')
-                ->select('c.id', 'c.name', 'c.updated_at')
-                ->groupBy('c.id', 'c.name') 
-                ->orderByRaw('c.name ASC') 
-                ->get();
-        foreach ($countries as $destination) {
-            $slug = Str::slug($destination->name);
-            $sitemap->add(
-                Url::create(url("https://tourbeez.com/things-to-do-in-{$slug}/{$destination->id}-c2"))
-                    ->setLastModificationDate(Carbon::parse($destination->updated_at))
-                    ->setChangeFrequency('weekly')
-                    ->setPriority(0.8)
-            );
-        }
-
-        return $sitemap->toResponse(request());
-    }
-
-    // Pages Sitemap
-    public function pages() 
-    {
-        $pages = [
-            [ 'title' => 'Home', 'href' => '/' ],
-            [ 'title' => 'Destinations', 'href' => '/destinations' ],
-            [ 'title' => 'Tickets', 'href' => '/tickets' ],
-            [ 'title' => 'Our Story', 'href' => '/about-us' ],
-            // [ 'title' => 'Careers', 'href' => 'https://www.indeed.com/cmp/Tour-Beez-Inc' ],
-            [ 'title' => 'Blog', 'href' => '/blog' ],
-            [ 'title' => 'Wishlist', 'href' => '/wishlist' ],
-            [ 'title' => 'Suppliers', 'href' => '/supplier' ],
-            [ 'title' => 'Contact Us', 'href' => '/contact-us' ],
-            [ 'title' => 'Cancellation options', 'href' => '/cancellation-policy' ],
-            [ 'title' => 'Privacy Policy', 'href' => '/privacy-policy' ],
-            [ 'title' => 'Terms & Conditions', 'href' => '/terms-and-conditions' ],
-        ];
-
-        $sitemap = Sitemap::create();
-        $date = date('Y-m-d h:i:s');
-        foreach ($pages as $page) {
-            $sitemap->add(
-                Url::create(url($page['href']))
-                    ->setLastModificationDate(Carbon::parse($date))
-                    ->setChangeFrequency('weekly')
-                    ->setPriority(0.9)
-            );
-        }
-
-        return $sitemap->toResponse(request());
-    }
-
-    // Tours Sitemap    
-    public function tours()
-    {
-        $sitemap = Sitemap::create();
-        $limit   = 5000;
-        $page = 1;
-        $tours   = Tour::limit($limit)
-                    ->offset(($page - 1) * $limit)
-                    ->get();
-
-        foreach ($tours as $tour) {
-            $sitemap->add(
-                Url::create(url("https://tourbeez.com/tour/{$tour->slug}"))
-                    ->setLastModificationDate($tour->updated_at)
-                    ->setChangeFrequency('weekly')
-                    ->setPriority(0.9)
-            );
-        }
-
-        return $sitemap->toResponse(request());
+        echo $response;
     }
 }

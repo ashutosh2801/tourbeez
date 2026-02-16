@@ -247,7 +247,6 @@
 </div>
 
 <!-- Tour Coupon Modal -->
-<!-- Tour Coupon Modal -->
 <div id="tour-coupon-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
@@ -293,7 +292,7 @@
         </div>
     </div>
 </div>
-<!-- Enable/Disable Tour Modal -->
+
 <!-- Enable/Disable Tour Modal -->
 <div id="enable-disable-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">

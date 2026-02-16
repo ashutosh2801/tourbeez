@@ -61,6 +61,28 @@
 <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js" async></script>
 <!-- End TrustBox script -->
 
+@if ($city->name)
+<!-- GEO TAG -->
+<meta name="DC.title" content="Tickets, Tours and Curated Travel Experiences Worldwide | TourBeez" />
+<meta name="geo.region" content="{{ ucfirst($city->state->country->iso2) }}-{{ ucfirst($city->state->name) }}" />
+<meta name="geo.placename" content="{{ ucfirst($city->name) }}" />
+<meta name="geo.position" content="{{ isset($city->latitude) ? $city->latitude.';'.$city->longitude : '' }}" />
+<meta name="ICBM" content="{{ isset($city->latitude) ? $city->latitude.', '.$city->longitude : '' }}" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TravelAgency",
+  "name": "TourBeez",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "{{ ucfirst($city->name) }}",
+    "addressRegion": "{{ ucfirst($city->state->name) }}",
+    "addressCountry": "{{ ucfirst($city->state->country->iso2) }}"
+  }
+}
+</script>
+@endif
+
 </head>
 <body class="relative">
 @extends('share.layout.navbar')

@@ -385,6 +385,118 @@ class CrawlerResponse
                         'file' => 'login'
                     ]);
                 }
+                else if($path === 'sitemap') {
+                    $perPage = 500;
+                    $page = 1;
+                    $cities = [];
+                    $cacheKey = "destinations_page_{$page}";
+                    $cacheTtl = now()->addHours(12); // adjust if needed       
+                    $data = Cache::remember($cacheKey, $cacheTtl, function () use ($perPage) {
+
+                        $query = DB::table('tour_locations as tl')
+                            ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                            ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                            ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
+                            ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
+                            ->select(
+                                'c.id',
+                                'c.name',
+                                'c.upload_id',
+                                'tl.state_id',
+                                'tl.country_id',
+                                's.name as state_name',
+                                'co.name as country_name',
+                                DB::raw('(
+                                    SELECT COUNT(DISTINCT t2.id)
+                                    FROM tours t2
+                                    JOIN tour_locations tl2 ON tl2.tour_id = t2.id
+                                    WHERE tl2.city_id = c.id
+                                    AND t2.status = 1
+                                    AND t2.deleted_at IS NULL
+                                    AND EXISTS (
+                                        SELECT 1 FROM tour_schedules ts2
+                                        WHERE ts2.tour_id = t2.id
+                                            AND ts2.until_date >= CURDATE()
+                                    )
+                                ) as total_tours')
+                            )
+                            ->where('c.upload_id', '>=', 1)
+                            ->where('t.status', 1)
+                            ->whereNull('t.deleted_at')
+                            ->whereExists(function ($q) {
+                                $q->select(DB::raw(1))
+                                ->from('tour_schedules as ts')
+                                ->whereColumn('ts.tour_id', 't.id')
+                                ->whereDate('ts.until_date', '>=', now());
+                            })
+                            ->groupBy(
+                                'c.id','c.name','c.upload_id',
+                                'tl.state_id','tl.country_id',
+                                's.name','co.name'
+                            )
+                            ->orderBy('c.name', 'ASC');
+
+                        $paginated = $query->paginate($perPage);
+
+                        foreach ($paginated->items() as $d) {
+                            $cities[] = [
+                                'title' => ucfirst($d->name) . ', ' .
+                                        ucwords($d->state_name) . ', ' .
+                                        ucwords($d->country_name),
+                                'href'  => '/' . Str::slug($d->name) . '/' . $d->id . '/c1',
+                            ];
+                        }   
+
+                        return $cities;
+                    });
+
+                    $sitemapData = [
+                        [
+                            'title' => 'TourBeez',
+                            'children' => [
+                                ['title' => 'Home', 'href' => '/'],
+                                ['title' => 'Destinations', 'href' => '/destinations'],
+                                ['title' => 'Tickets', 'href' => '/tickets'],
+                            ],
+                        ],
+                        [
+                            'title' => 'Company',
+                            'children' => [
+                                ['title' => 'Our Story', 'href' => '/about'],
+                                [
+                                    'title' => 'Careers',
+                                    'href' => 'https://www.indeed.com/cmp/Tour-Beez-Inc',
+                                    'external' => true
+                                ],
+                                ['title' => 'Blog', 'href' => '/blog'],
+                                ['title' => 'Wishlist', 'href' => '/wishlist'],
+                                ['title' => 'Suppliers', 'href' => '/supplier'],
+                            ],
+                        ],
+                        [
+                            'title' => 'Support',
+                            'children' => [
+                                ['title' => 'Contact Us', 'href' => '/contact'],
+                                ['title' => 'Cancellation options', 'href' => '/cancellation-policy'],
+                                ['title' => 'Privacy Policy', 'href' => '/privacy-policy'],
+                                ['title' => 'Terms & Conditions', 'href' => '/terms-and-conditions'],
+                            ],
+                        ],
+                        [
+                            'title' => 'Things To Do In',
+                            'children' => $data,
+                        ],
+                    ];
+
+                    return response()->view('share.seo', [
+                        'title' => 'Sitemap | TourBeez',
+                        'description' => 'Sitemap',
+                        'keywords' => 'Sitemap',
+                        'image' => asset('public/images/login-banner.jpg'),
+                        'sitemapData' => $sitemapData,
+                        'file' => 'sitemap'
+                    ]);
+                }
                 else if ($path === 'supplier') {
                     return response()->view('share.seo', [
                         'title' => 'Partner with TourBeez, Supplier & Tour Provider Opportunities | TourBeez',
@@ -679,6 +791,7 @@ class CrawlerResponse
                             'image' => uploaded_asset( $d->upload_id ) ?? asset('public/tourbeez-logo.jpg'),
                             'url' => url()->current(),
                             'items' => $items,
+                            'city' => $d,
                             'file' => 'listing',
                             'heading' => "All $name Tours & Excursions in 2026"
                         ]); 
