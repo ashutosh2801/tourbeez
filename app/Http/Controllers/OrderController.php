@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Exports\ManifestExport;
 use App\Imports\OrderImport;
+use App\Imports\OrderMultiSheetImport;
+use App\Imports\OrdersImport;
 use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
@@ -29,8 +31,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Stripe\Cancel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
@@ -3769,60 +3771,94 @@ class OrderController extends Controller
     public function importOrders(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,csv'
+            'file' => 'required|mimes:xlsx,xls,csv'
         ]);
 
-        $import = new OrderImport();
+        try {
 
-        Excel::import($import, $request->file('file'));
+            $import = new OrdersImport();
+            // dd( $request->file('file'));
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
 
-        return back()->with('importResult', [
-            'total'    => $import->total,
-            'imported' => $import->imported,
-            'skipped'  => $import->skipped,
-            'failed'   => $import->failed,
-            'errors'   => $import->failReasons,
-        ]);
+            // $summary = $import->getSummary();
+
+            // dd(323432);
+
+
+            return back()->with('import_summary', []);
+
+        } catch (\Throwable $e) {
+
+            \Log::error('Multi sheet import crashed', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Import failed unexpectedly.');
+        }
     }
 
 
-   public function sampleExcel()
-    {
-        $data = [
-            [
-                'order_number',
-                'order_status',
-                'payment_status',
-                'order_source',
-                'agent_name',
-                'order_created_at',
-                'order_fulfilment_at',
-                'order_total_amount',
-                'total_payment',
-                'order_balance',
-                'num_participant',
-                'product_price',
-                'tax_amount',
-                'booking_fee',
-                'extra_amount',
-                'voucher_code',
-                'product_name',
-                'customer_first_last_name',
-                'order_internal_notes',
-                'payment_gateway_type',
-                'order_agent_reference',
-            ]
-            
-        ];
 
-        return Excel::download(
-            new class($data) implements FromArray {
-                public function __construct(private array $data) {}
-                public function array(): array { return $this->data; }
-            },
-            'order_import_sample.xlsx'
-        );
-    }
+
+
+
+public function sampleExcel()
+{
+    $data = [
+        [
+            'Date',
+            'Check-in',
+            'Order Number',
+            'Customer Full Name',
+            'Customer Phone',
+            'Product name',
+            'Quantities',
+            'Quantities Label',
+            'Quantities Price',
+            'Extras',
+            'Extras Label',
+            'Extras Price',
+            'Order Balance',
+            'Order Total Amount',
+            'Order Total Paid',
+            'Pick-up Time',
+            'Pick-up Location',
+            'Order Status',
+        ],
+        // Optional sample row (remove if you want header only)
+        [
+            '2025-02-01',
+            '2025-02-10',
+            'ORD12345',
+            'John Doe',
+            '9876543210',
+            'Desert Safari',
+            '2',
+            'Adults',
+            '100',
+            '3',
+            'Boat Cruise Ride - Adult',
+            '50',
+            '50',
+            '500',
+            '450',
+            '10:00 AM',
+            'Dubai Mall',
+            'Confirmed',
+        ]
+    ];
+
+    return Excel::download(
+        new class($data) implements FromArray {
+            public function __construct(private array $data) {}
+            public function array(): array { 
+                return $this->data; 
+            }
+        },
+        'order_import_sample.xlsx'
+    );
+}
+
 
 
     

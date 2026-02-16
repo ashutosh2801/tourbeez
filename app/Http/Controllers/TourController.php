@@ -2210,7 +2210,7 @@ $pickupHtml .= '</div>';
     }
 
 
-   
+       
     public function reviewUpdate(Request $request, $id)
     {
         $tour = Tour::findOrFail($id);
@@ -2233,21 +2233,53 @@ $pickupHtml .= '</div>';
             'review.banners' => 'array|nullable',
             'review.banners.*.heading' => 'nullable|string|max:255',
             'review.banners.*.text' => 'nullable|string',
+
+            // ✅ Tag
+            'review.tag.class' => 'nullable|string|max:50',
+            'review.tag.text' => 'nullable|string|max:255',
+            'review.tag.custom_text' => 'nullable|string|max:255',
         ]);
 
-        $data = $request->review;
+        $data = $request->review ?? [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Tag Processing (Single Tag Only)
+        |--------------------------------------------------------------------------
+        */
+
+        $tag = null;
+
+        if (!empty($data['tag'])) {
+
+            $tagText = $request->input('review.tag.text');
+
+                $data['tag'] = [
+                    'class' => $request->input('review.tag.class'),
+                    'text'  => $tagText,
+                ];
+
+                if ($tagText === 'Other') {
+                    $data['tag']['custom_text'] = $request->input('review.tag.custom_text');
+                }
+        }
 
         \DB::table('tour_reviews')->updateOrInsert(
             ['tour_id' => $tour->id],
             [
-                'use_review' => $data['use_review'] ?? 0,
+                'use_review'     => $data['use_review'] ?? 0,
                 'review_heading' => $data['review_heading'] ?? null,
-                'review_text' => $data['review_text'] ?? null,
-                'review_rating' => $data['review_rating'] ?? null,
-                'review_count' => $data['review_count'] ?? null,
+                'review_text'    => $data['review_text'] ?? null,
+                'review_rating'  => $data['review_rating'] ?? null,
+                'review_count'   => $data['review_count'] ?? null,
+
                 'recommended' => !empty($data['recommended']) ? json_encode($data['recommended']) : null,
-                'badges' => !empty($data['badges']) ? json_encode($data['badges']) : null,
-                'banners' => !empty($data['banners']) ? json_encode($data['banners']) : null,
+                'badges'      => !empty($data['badges']) ? json_encode($data['badges']) : null,
+                'banners'     => !empty($data['banners']) ? json_encode($data['banners']) : null,
+
+                // ✅ Store single tag as JSON
+                'tag' => !empty($data['tag']) ? json_encode($data['tag']) : null,
+
                 'updated_at' => now(),
                 'created_at' => now(),
             ]
@@ -2255,6 +2287,7 @@ $pickupHtml .= '</div>';
 
         return back()->with('success', 'Tour review updated successfully.');
     }
+
 
 
 

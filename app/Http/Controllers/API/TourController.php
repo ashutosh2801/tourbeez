@@ -1670,6 +1670,7 @@ class TourController extends Controller
         $recommended = $review->use_recommended ? json_decode($review->recommended, true) ?? [] : [];
         $badges      = $review->use_badge ? json_decode($review->badges, true) ?? [] : [];
         $banners     = $review->use_banner ? json_decode($review->banners, true) ?? [] : [];
+        $tag        = $review->tag ? json_decode($review->tag, true) ?? [] : [];
 
         // Build response respecting the flags
         $response = [
@@ -1689,6 +1690,8 @@ class TourController extends Controller
 
             // Multiple Banner items (array)
             'banners' => $banners,
+
+            'tag' => $tag,
         ];
 
         return response()->json($response);

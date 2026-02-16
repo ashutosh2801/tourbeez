@@ -142,6 +142,30 @@
                     @endif
                 </div>
             @endif
+
+            @if(session('import_summary'))
+                @php $summary = session('import_summary'); @endphp
+
+                <div class="alert alert-info">
+                    <strong>Total:</strong> {{ $summary['total'] }} |
+                    <strong>Imported:</strong> {{ $summary['imported'] }} |
+                    <strong>Skipped:</strong> {{ $summary['skipped'] }} |
+                    <strong>Failed:</strong> {{ $summary['failed'] }}
+                </div>
+
+                @if(!empty($summary['errors']))
+                    <div class="alert alert-danger">
+                        <ul>
+                            @foreach($summary['errors'] as $error)
+                                <li>
+                                    Row {{ $error['row'] }}:
+                                    {{ implode(', ', $error['errors']) }}
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+            @endif
             
             <div class="card-body p-0 order-table table-responsive">
                 <table class="table table-striped" id="OrderTable">
