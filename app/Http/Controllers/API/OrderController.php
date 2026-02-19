@@ -906,6 +906,9 @@ class OrderController extends Controller
             }else if($adv_deposite == "full") {
                 \Log::warning('full');
 
+                $order->booked_amount  = $order->total_amount;
+                $order->balance_amount = 0;
+
                 // $pi = \Stripe\PaymentIntent::create([
                 //         'customer'  => $stripeCustomer->id,
                 //         'amount' => intval(round($order->total_amount * 100)),

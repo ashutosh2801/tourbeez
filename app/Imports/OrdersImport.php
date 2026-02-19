@@ -72,7 +72,7 @@ class OrdersImport implements ToCollection, WithHeadingRow, WithEvents
                 $this->addFailure(['Tour not found: '.$row['product_name']]);
                 continue;
             }
-            dd($row);
+            
             try {
 
                 DB::transaction(function () use ($row, $tour) {

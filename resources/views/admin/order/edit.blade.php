@@ -185,6 +185,15 @@ $expectEmails = ['order_pending', 'payment_receipt'];
             </div>
         </div>
         <div class="card-body order-edit">
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <div>
                 <div class="row">
                     <div class="info-blog">
@@ -790,7 +799,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 <label>Amount</label>
                                                 <div class="input-group">
                                                     <div class="input-group-append">
-                                                        <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                                        <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
                                                     </div>    
                                                     <input type="text" class="form-control decimal" id="addPaymentAmount" name="charge_ccnow_amount" placeholder="0.00">                                            
                                                 </div>
@@ -926,7 +935,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             <div class="col-2">
                                                 <div class="input-group">
                                                     <div class="input-group-append">
-                                                        <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                                        <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
                                                     </div>
                                                     <input type="text" class="form-control" name="amount[]" placeholder="0.00" autocomplete="off">
                                                 </div>
@@ -3086,6 +3095,7 @@ document.querySelectorAll('[data-action]').forEach(btn => {
 
 /* ================= ADD CARD ONLY ================= */
 
+
 async function addCardOnly() {
 
     if (!cardMounted) {
@@ -3103,6 +3113,52 @@ async function addCardOnly() {
         return;
     }
 
+    const chargeNow = document.getElementById('charge_ccnow').checked;
+    const chargeAmount = document.getElementById('addPaymentAmount').value;
+
+    // If checkbox checked but no amount
+    if (chargeNow && (!chargeAmount || parseFloat(chargeAmount) <= 0)) {
+        alert('Please enter a valid amount to charge.');
+        return;
+    }
+
+    fetch("{{ route('admin.orders.add-card', $order->id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            payment_method: paymentMethod.id,
+            charge_ccnow: chargeNow ? 1 : 0,
+            charge_ccnow_amount: chargeNow ? chargeAmount : null
+        })
+    })
+    .then(res => res.json())
+    .then(res => {
+        alert(res.message);
+        location.reload();
+    })
+    .catch(() => alert('Something went wrong'));
+}
+
+async function addCardOnl42342() {
+
+    if (!cardMounted) {
+        alert('Please enter card details first');
+        return;
+    }
+
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement
+    });
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+    
     fetch("{{ route('admin.orders.add-card', $order->id) }}", {
         method: 'POST',
         headers: {
