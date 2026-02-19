@@ -8688,7 +8688,6 @@ a.dropdown-footer:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 0;
 }
 
 .schedule-body .card-header .card-tools {
@@ -9195,7 +9194,6 @@ a.dropdown-footer:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 0;
 }
 
 .extra-header .card-header .card-tools {
@@ -9504,7 +9502,7 @@ table.dataTable {
 
     .add-modal .card-body {
         overflow-y: scroll;
-        height: 600px;
+        max-height: 600px;
     }
 
     .add-modal .card-body .btn-fetch {
@@ -9641,6 +9639,12 @@ table.dataTable {
     .uploaded-file-head .card-tools {
         float: left;
         margin-top: 5px;
+    }
+
+    .edit-supplier-head .card-tools,
+    .create-supplier-head .card-tools {
+        float: left;
+        margin-top: 10px;
     }
 }
 
@@ -9981,7 +9985,7 @@ table.dataTable {
     .sub-nav-header {
         width: 100%;
         display: flex;
-        padding: 0 24px;
+        padding: 4px 24px;
         justify-content: space-between;
         align-items: center;
     }
@@ -10017,11 +10021,12 @@ table.dataTable {
     }
 
     .main-header  .navbar-toggler{
-        color: #000;
-        background: #f3f3f3;
-        font-size: 14px;
+        color: #1950cf;
+        background: #f6f6f6;
+        font-size: 15px;
         box-shadow: 0 0 15px #e5e9ec;
-        padding: 8px 15px;
+        padding: 10px;
+        border-radius: 50px;
     }
 
 }
@@ -10157,4 +10162,8 @@ table.dataTable {
 
 #importPriceModal .modal-footer .btn-ExpoImpo:hover {
     background-color: #505050;
+}
+
+.activity-log-body .aiz-pagination {
+    padding: 15px;
 }

@@ -53,10 +53,10 @@
     <div class="card card-primary bg-white border rounded-lg-custom">
         <div class="card-header edit-supplier-head">
             <div class="row">
-                <div class="col-md-8 col-6">
+                <div class="col-md-8 col-12">
                     <h3 class="card-title">Edit User & Supplier Info</h3>
                 </div>
-                <div class="col-md-4 col-6">
+                <div class="col-md-4 col-12">
                     <div class="card-tools">
                         <a href="{{ route('admin.supplier.index') }}" class="btn btn-sm btn-back">Back</a>
                     </div>

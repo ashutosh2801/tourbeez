@@ -10,7 +10,7 @@
                         <div class="col-md-8 col-6">
                             <h3 class="card-title">Create Promo</h3>
                         </div>
-                        <div class="col-md-4 col-12">
+                        <div class="col-md-4 col-6">
                             <div class="card-tools text-right">
                                 <a href="{{ route('admin.promos.index') }}" class="btn btn-sm btn-back">Back</a>
                             </div>

@@ -103,7 +103,7 @@
                                     <!-- Hidden field sends 0 when checkbox is unchecked -->
                                     <input type="hidden" name="order_email" value="0">
 
-                                    <!-- Toggle switch sends 1 if checked -->
+                                    <!-- Toggle switch sends 1 if checked -->..
                                     <label class="switch mt-2">
                                         <input type="checkbox"
                                                 name="order_email"

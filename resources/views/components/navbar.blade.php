@@ -7,7 +7,7 @@
         </ul>
 
         <a class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse">
-            MENU
+            <i class="fas fa-th"></i>
         </a>
     </div>
 
