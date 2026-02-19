@@ -43,7 +43,7 @@
                 </div>
                 
                 <div class="d-flex">
-                    <select name="currency" class="form-control mr-2">
+                    <select name="currency" id="order_currency" class="form-control mr-2">
                         @foreach(config('constants.currencies') as $code => $country)
                             <option value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
                         @endforeach
@@ -304,70 +304,6 @@
 
                             </div>
 
-                            
-
-                            {{-- Choose Payment Option --}}
-                            <!-- <div class="form-group">
-                                <label><strong>Payment Method</strong></label><br>
-                                <label class="mr-3">
-                                    <input type="radio" name="payment_type" value="card"> Credit Card (Stripe)
-                                </label>
-                                <label class="mr-3">
-                                    <input type="radio" name="payment_type" value="transaction"> Cash
-                                </label>
-                                <label>
-                                    <input type="radio" name="payment_type" value="other"> Other
-                                </label>
-                            </div> -->
-
-                            {{-- Stripe Credit Card Fields --}}
-                            <!-- <div id="cardFields" style="display:none;">
-                                <div class="form-group">
-                                    <label for="card-element">Card Details</label>
-                                    <div id="card-element" class="form-control col-6" style="padding: 10px; height: auto;"></div>
-                                    <div class="mt-3"><label><input type="checkbox" value="1" name="charge_ccnow" id="charge_ccnow" /> Charge credit card now</label></div>
-                                    <small id="card-errors" class="text-danger mt-2"></small>
-                                </div>
-                                <div class="form-group hidden" id="charge_ccnow_amount">
-                                    <div class="form-group  col-6">
-                                        <label>Amount</label>
-                                        <div class="input-group">
-                                            <div class="input-group-append">
-                                                <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
-                                            </div>    
-                                            <input type="text" class="form-control" id="addPaymentAmount" name="charge_ccnow_amount" placeholder="0.00">                                            
-                                        </div>
-                                        
-                                    </div>
-                                </div>
-                            </div> -->
-
-                            {{-- Transaction Fields (inline) --}}
-                            <!-- <div id="transactionFields" style="display:none;">
-                                <div class="form-row align-items-center">
-                                    <div class="form-group col-md-6">
-                                        <label for="transaction_id">Ref. Number</label>
-                                        <input type="text" name="transaction_id" class="form-control" placeholder="Enter Ref. Number">
-                                    </div>
-                                    <div class="form-group col-md-6">
-                                        <label for="payment_method">Payment Type</label>
-                                        <select name="payment_method" class="form-control">
-                                            <option value="">Select Type</option>
-                                            <option value="stripe">Stripe</option>
-                                            <option value="paypal">PayPal</option>
-                                            <option value="bank">Bank Transfer</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="cashFields" style="display:none;">
-                                <div class="form-group col-md-6">
-                                    <label for="transaction_id">Other</label>
-                                    <input type="text" name="other" class="form-control" placeholder="Enter other payment details" />
-                                </div>
-                            </div> -->
-
                         </div>
                     </div>
                 </div> 
@@ -473,6 +409,7 @@ function removeTour(id) {
 
 // ================= Load Single Tour Details =================
 function loadTourDetails(tourId, count) {
+
     if (!tourId) return;
 
     showLoader("Loading… Please wait");
@@ -480,7 +417,7 @@ function loadTourDetails(tourId, count) {
     $.ajax({
         url: '{{ route("admin.tour.single") }}',
         type: 'POST',
-        data: { id: tourId, tourCount: count, _token: '{{ csrf_token() }}' },
+        data: { id: tourId, tourCount: count, order_currency: document.getElementById('order_currency').value, _token: '{{ csrf_token() }}' },
 
         success: function(response) {
 
@@ -1065,12 +1002,6 @@ function calculateRowTotal(row) {
 
         if (priceType === "FIXED") {
 
-            // if (minQty !== null && qty < parseFloat(minQty)) {
-            //     alert("Quantity cannot be less than minimum allowed (" + minQty + ").");
-            //     qty = parseFloat(minQty);
-            //     qtyInput.value = qty;
-            // }
-
             if (maxQty !== null && qty > parseFloat(maxQty)) {
                 alert("Quantity cannot be more than maximum allowed (" + maxQty + ").");
                 qty = parseFloat(maxQty);
@@ -1309,6 +1240,24 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.removeItem(STORE_KEY);
     }
 });
+
+document.getElementById('order_currency').addEventListener('change', function () {
+
+    const newCurrency = this.value;
+
+    // Loop all selected tours
+    document.querySelectorAll("select[name^='tour_id']").forEach(function(select) {
+        
+        const tourId = select.value;
+        if (!tourId) return;
+        
+        
+        loadTourDetails(tourId, 0);
+        
+    });
+
+});
+
 </script>
 
 @endsection

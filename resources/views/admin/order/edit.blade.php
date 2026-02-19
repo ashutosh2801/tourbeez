@@ -374,6 +374,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                     </div>
                 </div>
             </div>
+
             
             <div class="bs-example">
                 <div class="accordion" id="accordionExample">
@@ -1376,7 +1377,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
             <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
             <div class="input-group">
                 <div class="input-group-append">
-                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                    <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
                 </div>    
                 <input type="text" class="form-control" id="chargeAmount" name="amount" placeholder="0.00" value="{{ $order->balance_amount }}" required style="width: 100px;">                                            
             </div>

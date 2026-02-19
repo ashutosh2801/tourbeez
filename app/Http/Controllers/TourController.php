@@ -12,6 +12,7 @@ use App\Models\Feature;
 use App\Models\Inclusion;
 use App\Models\Itinerary;
 use App\Models\Optional;
+use App\Models\PartnerTour;
 use App\Models\Pickup;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\TaxesFee;
@@ -252,6 +253,21 @@ class TourController extends Controller
             }
         }
 
+        if ($request->filled('has_sub_tour')) {
+
+            if ($request->has_sub_tour === 'yes') {
+
+                // Tours that HAVE at least one sub tour
+                $query->whereHas('subTours');
+
+            } elseif ($request->has_sub_tour === 'no') {
+                
+                // Tours that have NO sub tours
+                $query->whereDoesntHave('subTours');
+
+            }
+        }
+
 
 
         $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
@@ -352,7 +368,9 @@ class TourController extends Controller
     public function createSubTour($id)
     {
         $data  = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.sub-tour.create', compact('data'));
+
+        $parentTour = $data->load('pricings');
+        return view('admin.tours.sub-tour.create', compact('data', 'parentTour'));
     }
 
     public function editSubTour($id)
@@ -364,9 +382,9 @@ class TourController extends Controller
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        $parentTour = $data->parent->load('pricings');
         // return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule', 'metaData'));
-
-        return view('admin.tours.sub-tour.edit.index', compact('data', 'detail', 'schedule', 'metaData'));
+        return view('admin.tours.sub-tour.edit.index', compact('data', 'detail', 'schedule', 'metaData', 'parentTour'));
     }
 
 
@@ -430,6 +448,7 @@ class TourController extends Controller
         $tour->price      = $request->advertised_price;
         $tour->price_type = $request->price_type;
         $tour->order_email= $request->order_email;
+        $tour->currency   = $request->currency;
 
         if($tour->save()) {
             
@@ -556,6 +575,7 @@ class TourController extends Controller
         $tour->country    = $request->country;
         $tour->state      = $request->state;
         $tour->city       = $request->city;
+        $tour->currency       = $request->currency;
         $tour->order_email       = $request->order_email;
 
         if($tour->save()) {
@@ -654,6 +674,7 @@ class TourController extends Controller
     public function single(Request $request)
     {
         $data  = Tour::find($request->id);
+
         $str = '';
         $subtotal = 0;
         if($data) {
@@ -970,6 +991,13 @@ $pickupHtml .= '</div>';
         return view('admin.tours.feature.booking', compact( 'data', 'detail'));
     }
 
+    public function editPartner($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        return view('admin.tours.feature.partner', compact( 'data', 'detail'));
+    }
+
     public function editSeo($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
@@ -1182,7 +1210,6 @@ $pickupHtml .= '</div>';
     public function basic_detail_update(Request $request, $id)
     {
 
-        
         $request->validate([
             'title'                 => 'required|max:255',
             'description'           => 'required',
@@ -1234,6 +1261,7 @@ $pickupHtml .= '</div>';
         $tour->offer_ends_in = $request->offer_ends_in;
         $tour->coupon_type = $request->coupon_type;
         $tour->coupon_value = $request->coupon_value;
+        $tour->currency       = $request->currency;
         
         // $tour->country    = $request->country;
         // $tour->state      = $request->state;
@@ -1416,6 +1444,28 @@ $pickupHtml .= '</div>';
         return back()->withInput()->withErrors($request->all())->with('error','Something went wrong!');
     }
 
+    public function partner_update(Request $request, $id)
+    {
+        // $tour  = Tour::findOrFail($id);
+        // echo '<pre>'; print_r($request->all()); exit;
+                    
+        for ($i = 0; $i < count($request->partner_id); $i++) {
+            PartnerTour::updateOrCreate(
+                [
+                    'partner_id'    => $request->partner_id[$i],
+                    'link'          => $request->link[$i],
+                ],
+                [
+                    'tour_id'       => $request->tour_id,
+                    'partner_id'    => $request->partner_id[$i],
+                    'title'         => $request->title[$i],
+                    'link'          => $request->link[$i],
+                ]
+            );
+        }
+        return back()->withInput()->with('success','Partner link saved successfully.');
+
+    }
 
     public function pickup_update(Request $request, $id) {
         $tour = Tour::findOrFail($id);
@@ -2160,7 +2210,7 @@ $pickupHtml .= '</div>';
     }
 
 
-   
+       
     public function reviewUpdate(Request $request, $id)
     {
         $tour = Tour::findOrFail($id);
@@ -2183,21 +2233,53 @@ $pickupHtml .= '</div>';
             'review.banners' => 'array|nullable',
             'review.banners.*.heading' => 'nullable|string|max:255',
             'review.banners.*.text' => 'nullable|string',
+
+            // ✅ Tag
+            'review.tag.class' => 'nullable|string|max:50',
+            'review.tag.text' => 'nullable|string|max:255',
+            'review.tag.custom_text' => 'nullable|string|max:255',
         ]);
 
-        $data = $request->review;
+        $data = $request->review ?? [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Tag Processing (Single Tag Only)
+        |--------------------------------------------------------------------------
+        */
+
+        $tag = null;
+
+        if (!empty($data['tag'])) {
+
+            $tagText = $request->input('review.tag.text');
+
+                $data['tag'] = [
+                    'class' => $request->input('review.tag.class'),
+                    'text'  => $tagText,
+                ];
+
+                if ($tagText === 'Other') {
+                    $data['tag']['custom_text'] = $request->input('review.tag.custom_text');
+                }
+        }
 
         \DB::table('tour_reviews')->updateOrInsert(
             ['tour_id' => $tour->id],
             [
-                'use_review' => $data['use_review'] ?? 0,
+                'use_review'     => $data['use_review'] ?? 0,
                 'review_heading' => $data['review_heading'] ?? null,
-                'review_text' => $data['review_text'] ?? null,
-                'review_rating' => $data['review_rating'] ?? null,
-                'review_count' => $data['review_count'] ?? null,
+                'review_text'    => $data['review_text'] ?? null,
+                'review_rating'  => $data['review_rating'] ?? null,
+                'review_count'   => $data['review_count'] ?? null,
+
                 'recommended' => !empty($data['recommended']) ? json_encode($data['recommended']) : null,
-                'badges' => !empty($data['badges']) ? json_encode($data['badges']) : null,
-                'banners' => !empty($data['banners']) ? json_encode($data['banners']) : null,
+                'badges'      => !empty($data['badges']) ? json_encode($data['badges']) : null,
+                'banners'     => !empty($data['banners']) ? json_encode($data['banners']) : null,
+
+                // ✅ Store single tag as JSON
+                'tag' => !empty($data['tag']) ? json_encode($data['tag']) : null,
+
                 'updated_at' => now(),
                 'created_at' => now(),
             ]
@@ -2205,6 +2287,7 @@ $pickupHtml .= '</div>';
 
         return back()->with('success', 'Tour review updated successfully.');
     }
+
 
 
 

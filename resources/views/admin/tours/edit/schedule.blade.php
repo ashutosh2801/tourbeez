@@ -247,27 +247,9 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon-until">Until</span>
                                         </div>
-                                        <!-- <input type="text" placeholder="Date" name="schedules[{{ $index }}][until_date]" id="until_date_{{ $index }}" 
-                                        value="{{ old('schedules.$index.until_date', $schedule?->until_date) }}" 
-
-                                        class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}">  -->
-
-                                        @php
-                                            $value = old("schedules.$index.until_date", $schedule?->until_date);
-                                            $realMinDate = get_max_date();
-                                        @endphp
-
-                                        <input
-                                            type="text"
-                                            name="schedules[{{ $index }}][until_date]"
-                                            id="until_date_{{ $index }}"
-                                            value="{{ $value }}"
-                                            data-default-date="{{ $value }}"
-                                            data-real-min-date="{{ $realMinDate }}"
-                                            class="form-control aiz-date-range"
-                                            data-single="true"
-                                            data-show-dropdown="true"
-                                            data-min-date="{{ $value ?: $realMinDate }}">
+                                        <input type="text" placeholder="Date" name="schedules[{{ $index }}][until_date]" id="until_date_{{ $index }}" 
+                                        value="{{ old("schedules.$index.until_date", $schedule?->until_date) }}" 
+                                        class="form-control aiz-date-range" data-single="true" data-show-dropdown="true" data-min-date="{{ get_max_date() }}"> 
                                         <div class="input-group-prepend">
                                             <span class="input-group-text calendar-icon-util" id="basic-addon-from"><i class="fa fa-calendar"></i></span>
                                         </div>                       
@@ -380,10 +362,10 @@
 
                 <div class="row mb-4">
                     <label class="form-label col-lg-2">Minimum notice *</label>
-                    <div class="col-lg-5">
+                    <div class="col-lg-3">
                         <input type="text" name="schedules[__INDEX__][minimum_notice_num]" id="minimum_notice_num___INDEX__" class="form-control" placeholder="Before session start time">
                     </div>
-                    <div class="col-lg-5">
+                    <div class="col-lg-3">
                         <select class="form-control minimum_notice_unit" name="schedules[__INDEX__][minimum_notice_unit]" id="minimum_notice_unit___INDEX__">
                             <option value="MINUTES">Minutes</option>
                             <option value="HOURS">Hours</option>
@@ -393,10 +375,10 @@
 
                 <div class="row mb-4">
                     <label class="form-label col-lg-2">Estimated duration *</label>
-                    <div class="col-lg-5">
+                    <div class="col-lg-3">
                         <input type="text" name="schedules[__INDEX__][estimated_duration_num]" id="estimated_duration_num___INDEX__" class="form-control" placeholder="Session time">
                     </div>
-                    <div class="col-lg-5">
+                    <div class="col-lg-3">
                         <select class="form-control estimated_duration_unit" name="schedules[__INDEX__][estimated_duration_unit]" id="estimated_duration_unit___INDEX__">
                             <option value="MINUTES">Minutes</option>
                             <option value="HOURS">Hours</option>
@@ -405,10 +387,10 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-4">
                     <div class="row">
                         <label class="form-label col-lg-2">Next available session *</label>
-                        <div class="col-lg-5">
+                        <div class="col-lg-4">
                             <div class="input-group">
                                 <div class="input-group-prepend" >
                                     <span class="input-group-text" style="width:70px;">Form</span>
@@ -419,7 +401,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-5 not-all-date">
+                        <div class="col-lg-3 not-all-date">
                             <div class="input-group">
                                 <input type="text" name="schedules[__INDEX__][session_start_time]" id="session_start_time___INDEX__" class="form-control aiz-time-picker" placeholder="Time">
                                 <div class="input-group-prepend">
@@ -430,7 +412,7 @@
                     </div>
                     <div class="row mb-4">
                         <label class="form-label col-lg-2"></label>
-                        <div class="col-lg-5">
+                        <div class="col-lg-4">
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text" style="width:70px;">To</span>
@@ -441,7 +423,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-5 not-all-date">
+                        <div class="col-lg-3 not-all-date">
                             <div class="input-group">
                                 <input type="text" name="schedules[__INDEX__][session_end_time]" id="session_end_time___INDEX__" class="form-control aiz-time-picker" placeholder="Time">
                                 <div class="input-group-prepend">
@@ -450,7 +432,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row mb-5">
                         <label class="form-label col-lg-2"></label>
                         <div class="col-lg-6">
                             <label><input type="checkbox" class="sesion_all_day" name="schedules[__INDEX__][sesion_all_day]" id="sesion_all_day___INDEX__" value="1" style="width:17px;height:17px"> All day</label>
@@ -458,7 +440,7 @@
                     </div>
                 </div>
 
-                <div class="row">
+                <div class="row mb-5">
                     <label class="form-label col-lg-2">Repeat *</label>
                     <div class="col-lg-3">
                         <select class="form-control repeat_period" name="schedules[__INDEX__][repeat_period]" id="repeat_period___INDEX__">
@@ -506,13 +488,13 @@
                 @endphp
 
                 @foreach ($days as $day)
-                <div class="row mt-4 d-none not-repeat-period not-repeat-period2">
+                <div class="row mb-3 d-none not-repeat-period not-repeat-period2">
                     <input type="hidden" name="schedules[__INDEX__][Repeat][{{ $i }}][day]" value="{{ $day }}" />
                     <label class="form-label col-lg-2">{{ $day }}</label>
                     <div class="col-lg-1">
                         <input type="checkbox" name="schedules[__INDEX__][Repeat][{{ $i }}][num]" id="Repeat___INDEX___{{ $i }}_num" style="width:17px;height:17px">
                     </div>
-                    <div class="col-lg-5 not-repeat-weekly">
+                    <div class="col-lg-3 not-repeat-weekly">
                         <div class="input-group">
                             <div class="input-group-prepend">
                                 <span class="input-group-text">From</span>
@@ -523,7 +505,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-4 not-repeat-weekly">
+                    <div class="col-lg-3 not-repeat-weekly">
                         <div class="input-group">
                             <div class="input-group-prepend">
                                 <span class="input-group-text">To</span>
@@ -583,45 +565,53 @@
         }
     }
 
-    /* ==============================
-       DATE PICKER INIT (FIXED)
-       ============================== */
     function initDateRangeFor($card) {
-        $card.find('.aiz-date-range').each(function () {
-
+        $card.find('.aiz-date-range').each(function() {
             var $input = $(this);
-            var existingValue = $input.val();            // old saved value
-            var today = moment().startOf('day');         // real min date
-
-            // Destroy previous instance if any
             if ($input.data('daterangepicker')) {
                 $input.data('daterangepicker').remove();
             }
-
-            // Initialize picker
             $input.daterangepicker({
                 singleDatePicker: true,
                 showDropdowns: true,
-                minDate: today,
-                autoUpdateInput: false,
+                minDate: $input.data('min-date'),
                 locale: { format: 'YYYY-MM-DD' }
             });
-                                                              
-            // ✅ Show old date even if it's in the past
-            if (existingValue) {
-                $input.val(existingValue);
-            }
-
-            // ✅ Enforce minDate when user selects
-            $input.off('apply.daterangepicker').on('apply.daterangepicker', function (ev, picker) {
-                if (picker.startDate.isBefore(today)) {
-                    picker.setStartDate(today);
-                    $input.val(today.format('YYYY-MM-DD'));
-                } else {
-                    $input.val(picker.startDate.format('YYYY-MM-DD'));
-                }
-            });
         });
+    }
+
+    function initFlatpickrFor($card) {
+        // start time
+        // $card.find('.aiz-time-picker').each(function(){
+        //     if (this._flatpickr) this._flatpickr.destroy();
+        //     const inst = flatpickr(this, {
+        //         enableTime: true,
+        //         noCalendar: true,
+        //         dateFormat: "h:i K",
+        //         time_24hr: false
+        //     });
+        //     const $icon = $(this).closest('.input-group').find('.time-icon-start');
+        //     $icon.off('click').on('click', () => {
+        //         if (!inst.isOpen) inst.open();
+        //         $(this).focus();
+        //     });
+        // });
+
+        // end time
+        // $card.find('.aiz-time-picker').each(function(){
+        //     if (this._flatpickr) this._flatpickr.destroy();
+        //     const inst = flatpickr(this, {
+        //         enableTime: true,
+        //         noCalendar: true,
+        //         dateFormat: "h:i K",
+        //         time_24hr: false
+        //     });
+        //     const $icon = $(this).closest('.input-group').find('.time-icon-end');
+        //     $icon.off('click').on('click', () => {
+        //         if (!inst.isOpen) inst.open();
+        //         $(this).focus();
+        //     });
+        // });
     }
 
     function updateEndDateTimeLocal($card) {
@@ -659,11 +649,14 @@
         newHours = newHours % 12 || 12;
         newMinutes = newMinutes < 10 ? '0' + newMinutes : newMinutes;
 
-        $card.find('#session_end_time_' + idx).val(newHours + ':' + newMinutes + ' ' + newPeriod);
-        $card.find('#session_end_date_' + idx).val(date.toISOString().slice(0,10));
+        const formattedTime = newHours + ':' + newMinutes + ' ' + newPeriod;
+        const formattedDate = date.toISOString().slice(0,10);
+
+        $card.find('#session_end_time_' + idx).val(formattedTime);
+        $card.find('#session_end_date_' + idx).val(formattedDate);
 
         const dr = $card.find('#session_end_date_' + idx).data('daterangepicker');
-        if (dr) dr.setStartDate(date).setEndDate(date);
+        if (dr) dr.setStartDate(formattedDate).setEndDate(formattedDate);
     }
 
     function initScheduleCard($card) {
@@ -671,119 +664,113 @@
         if (typeof idx === 'undefined') return;
 
         initDateRangeFor($card);
-        validateRepeatTimeRange($card);
+        initFlatpickrFor($card);
 
         $card.find('.repeat_period').off('change').on('change', () => repeat_period_local($card));
         repeat_period_local($card);
 
+        $card.find('.sesion_all_day').off('click').on('click', () => $card.find('.not-all-date').toggleClass('hidden'));
+
+        $card.find('.calendar-icon-start').off('click').on('click', () => {
+            const input = $card.find('#session_start_date_' + idx);
+            const dr = input.data('daterangepicker');
+            if (dr && !dr.isShowing) input.focus();
+        });
+
+        $card.find('.calendar-icon-end').off('click').on('click', () => {
+            const input = $card.find('#session_end_date_' + idx);
+            const dr = input.data('daterangepicker');
+            if (dr && !dr.isShowing) input.focus();
+        });
+
         $card.find('#estimated_duration_num_' + idx + ', #estimated_duration_unit_' + idx + ', #session_start_time_' + idx)
             .off('input change').on('input change', () => updateEndDateTimeLocal($card));
 
-        $card.find('#session_start_date_' + idx)
-            .off('change input blur')
+        $card.find('#session_start_date_' + idx).off('change input blur')
             .on('change input blur', () => updateEndDateTimeLocal($card));
     }
 
-    /* ==============================
-       DOCUMENT READY
-       ============================== */
     $(document).ready(function(){
+        // init existing cards
+        $('.schedule-card').each(function(){ initScheduleCard($(this)); });
 
-        // Init existing cards
-        $('.schedule-card').each(function(){
-            initScheduleCard($(this));
-        });
-
-        // Add new card
+        // add new card
         $('#add-schedule').on('click', function(){
             const index = $('.schedule-card').length + 1;
             let tpl = $('#schedule-template').html().replace(/__INDEX__/g, index);
             $('#scheduleAccordion').append(tpl);
+            // $('#schedule .aiz-time-picker').last().flatpickr({
+            //     enableTime: true,
+            //     noCalendar: true,
+            //     dateFormat: "H:i",
+            // });
 
+                $('#scheduleAccordion .schedule-card:last .aiz-time-picker').each(function () {
+                    var $this = $(this);
+                    var minuteStep = $this.data("minute-step") || 5;
+                    var defaultTime = $this.data("default") || "00:00";
+
+                    $this.timepicker({
+                        template: "dropdown",
+                        minuteStep: minuteStep,
+                        defaultTime: defaultTime,
+                        icons: {
+                            up: "las la-angle-up",
+                            down: "las la-angle-down",
+                        },
+                        showInputs: false,
+                    });
+                });
             const $new = $('#scheduleAccordion .schedule-card').last();
             $new.attr('data-index', index);
-
             initScheduleCard($new);
 
+              // 🔹 Expand it if inside accordion (Bootstrap example)
             $new.find('.collapse').collapse('show');
 
+            // 🔹 Scroll into view smoothly
             $('html, body').animate({
                 scrollTop: $new.offset().top - 100
             }, 500);
+
+            // 🔹 Focus on first input inside new schedule
+            $new.find('input, textarea, select').filter(':visible:first').focus();
         });
 
-        // Remove card
-        $(document).on('click', '.remove-schedule', function () {
-            let $card = $(this).closest('.schedule-card');
+        // remove card
+       $(document).on('click', '.remove-schedule', function () {
+            let $scheduleCard = $(this).closest('.schedule-card');
+
             if ($('.schedule-card').length > 1) {
-                $card.remove();
-            } else if (confirm('This will delete the last schedule. Continue?')) {
-                $card.remove();
+                // Just remove the clicked one
+                $scheduleCard.remove();
+            } else {
+                // Last schedule left → confirmation
+                if (confirm('This will delete the last schedule. Are you sure you want to continue?')) {
+                    $scheduleCard.remove();
+                } else {
+                    // User cancelled → don’t remove
+                    return false;
+                }
             }
         });
     });
 
-    function timeToMinutes(timeStr) {
-    if (!timeStr) return null;
-
-    const match = timeStr.match(/(\d+):(\d+)\s?(AM|PM)/i);
-    if (!match) return null;
-
-    let hours = parseInt(match[1]);
-    let minutes = parseInt(match[2]);
-    let period = match[3].toUpperCase();
-
-    if (period === 'PM' && hours < 12) hours += 12;
-    if (period === 'AM' && hours === 12) hours = 0;
-
-    return hours * 60 + minutes;
-}
-
-function validateRepeatTimeRange($card) {
-
-    $card.find('.start_time, .end_time').off('change blur').on('change blur', function () {
-
-        const $row = $(this).closest('.row');
-
-        const $start = $row.find('.start_time');
-        const $end   = $row.find('.end_time');
-
-        const startVal = $start.val();
-        const endVal   = $end.val();
-
-        if (!startVal || !endVal) return;
-
-        const startMin = timeToMinutes(startVal);
-        const endMin   = timeToMinutes(endVal);
-
-        if (startMin === null || endMin === null) return;
-
-        // ❌ From >= To → invalid
-        if (startMin >= endMin) {
-
-            // Auto-fix: push end time 30 mins ahead
-            let fixedEnd = startMin + 30;
-
-            if (fixedEnd >= 24 * 60) {
-                fixedEnd = (24 * 60) - 1; // 11:59 PM safety
+    // fallback init for daterangepicker
+    $(document).ready(function () {
+        $('.aiz-date-range').each(function () {
+            var $input = $(this);
+            if (!$input.data('daterangepicker')) {
+                $input.daterangepicker({
+                    singleDatePicker: true,
+                    showDropdowns: true,
+                    minDate: $input.data('min-date'),
+                    locale: { format: 'YYYY-MM-DD' }
+                });
             }
-
-            let hours = Math.floor(fixedEnd / 60);
-            let minutes = fixedEnd % 60;
-            let period = hours >= 12 ? 'PM' : 'AM';
-
-            hours = hours % 12 || 12;
-            minutes = minutes < 10 ? '0' + minutes : minutes;
-
-            $end.val(hours + ':' + minutes + ' ' + period);
-
-            alert('End time must be greater than start time.');
-        }
+        });
     });
-}
-
 </script>
-
 
 
 
