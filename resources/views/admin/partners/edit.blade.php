@@ -6,10 +6,10 @@
         <div class="card-primary mb-3 partners-header">
             <div class="card-header">
                 <div class="row">
-                    <div class="col-md-8">
+                    <div class="col-md-8 col-6">
                         <h3 class="card-title">Edit Partner</h3>
                     </div>
-                    <div class="col-md-4 text-right">
+                    <div class="col-md-4 col-6 text-right">
                         <a class="btn btn-sm btn-back"
                            href="{{ route('admin.partners.index') }}">
                             Back
