@@ -144,6 +144,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/followup', [TourController::class, 'editFollowup'])->name('tour.edit.message.followup');
     Route::get('/tour/{id}/edit/paymentrequest', [TourController::class, 'editPaymentRequest'])->name('tour.edit.message.paymentrequest');
     Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
+    Route::get('/admin/category-search', [TourController::class, 'categorySearch'])->name('category.search');
     Route::get('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit.special.deposit');
     Route::get('/tour/{id}/edit/review', [TourController::class, 'review'])->name('tour.edit.review');
     Route::get('/tour/{id}/edit/schedule-calendar', [TourController::class, 'scheduleCalendar'])->name('tour.edit.schedule-calendar');

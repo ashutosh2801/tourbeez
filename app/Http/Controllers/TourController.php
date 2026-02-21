@@ -2122,6 +2122,24 @@ $pickupHtml .= '</div>';
         return response()->json(['results' => $results]);
     }
 
+    public function categorySearch(Request $request)
+    {
+        $term = $request->get('term', '');
+        // dd(32432, $term);
+        $results = Category::where('name', 'LIKE', "%{$term}%")
+                    ->orderBy('name')
+                    ->limit(10)
+                    ->get()
+                    ->map(function ($c) {
+                        return [
+                            'id' => $c->id,
+                            'text' => ucwords($c->name),
+                        ];
+                    });
+ 
+        return response()->json(['results' => $results]);
+    }
+
     public function saveCoupon(Request $request)
     {
         $request->validate([
