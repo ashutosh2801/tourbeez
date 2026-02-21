@@ -102,27 +102,53 @@ class TourController extends Controller
         // dd(getFullSql($query));
 
         $paginated = Cache::tags(['tours'])->remember($cacheKey, 86400, fn() => $query->paginate(12));
-
+        $orderCurrency = 'CAD';
         // Transform response
-        $items = $paginated->map(fn($d) => [
-            'id'              => $d->id,
-            'title'           => $d->title,
-            'slug'            => $d->slug,
-            'unique_code'     => $d->unique_code,
-            'all_images'      => $d->formatted_images,
-            'price'           => price_format($d->price),
-            'original_price'  => $d->discounted_data['original_price'],
-            'discount'        => $d->discounted_data['discount'],
-            'discount_type'   => $d->discounted_data['discount_type'],
-            'discounted_price'=> $d->discounted_data['discounted_price'],
-            'duration'        => $d->duration,
-            'rating'          => randomFloat(4, 5),
-            'comment'         => rand(50, 100),
-            'offer_ends_in'   => $d->offer_ends_in,
-            // 'meta_title'      => $paginated->total().' Things To Do In ' .ucfirst( $d->title ).' | ' .env('APP_NAME') ,
-            // 'meta_description'=> 'Discover tour in '.ucfirst( $d->title ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.',
-            
-        ]);
+        $items = $paginated->map(function ($d) use ($orderCurrency) {
+
+            $price = $d->price;
+            $discounted = $d->discounted_data;
+
+            $original_price   = $discounted['original_price'];
+            $discounted_price = $discounted['discounted_price'];
+
+            if (!empty($d->currency)) {
+
+                $price = currencyConvert($price, $d->currency, $orderCurrency);
+
+                $original_price = currencyConvert(
+                    $original_price,
+                    $d->currency,
+                    $orderCurrency
+                );
+
+                $discounted_price = currencyConvert(
+                    $discounted_price,
+                    $d->currency,
+                    $orderCurrency
+                );
+            }
+
+            return [
+                'id'              => $d->id,
+                'title'           => $d->title,
+                'slug'            => $d->slug,
+                'unique_code'     => $d->unique_code,
+                'all_images'      => $d->formatted_images,
+                'price'           => price_format($price),
+                'original_price'  => $original_price,
+                'discount'        => $d->discounted_data['discount'],
+                'discount_type'   => $d->discounted_data['discount_type'],
+                'discounted_price'=> $discounted_price,
+                'duration'        => $d->duration,
+                'rating'          => randomFloat(4, 5),
+                'comment'         => rand(50, 100),
+                'offer_ends_in'   => $d->offer_ends_in,
+                // 'meta_title'      => $paginated->total().' Things To Do In ' .ucfirst( $d->title ).' | ' .env('APP_NAME') ,
+                // 'meta_description'=> 'Discover tour in '.ucfirst( $d->title ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.',
+                
+            ];
+        });
 
         return response()->json([
             'status'         => true,
@@ -292,9 +318,9 @@ class TourController extends Controller
         }
 
         if (!empty($tour->currency)) {
-            $tour->price        = currencyConvert($tour->price, $tour->currency, 'USD');
-            $original_price     = currencyConvert($original_price, $tour->currency, 'USD');
-            $discounted_price   = currencyConvert($discounted_price, $tour->currency, 'USD');
+            $tour->price        = currencyConvert($tour->price, $tour->currency, 'CAD');
+            $original_price     = currencyConvert($original_price, $tour->currency, 'CAD');
+            $discounted_price   = currencyConvert($discounted_price, $tour->currency, 'CAD');
         }
 
         if ($tour) {
@@ -433,9 +459,23 @@ class TourController extends Controller
         }
 
         if (!empty($tour->currency)) {
-            $original_price   = currencyConvert($original_price, $tour->currency, 'USD');
-            $discounted_price = currencyConvert($discounted_price, $tour->currency, 'USD');
+            $original_price   = currencyConvert($original_price, $tour->currency, 'CAD');
+            $discounted_price = currencyConvert($discounted_price, $tour->currency, 'CAD');
         }
+
+         if ($tour->pricings && $tour->pricings->count()) {
+                $tourCurrency = $tour->currency ?? 'USD';
+                $tour->pricings->map(function ($pricing) use ($tourCurrency) {
+
+                    $pricing->price = currencyConvert(
+                        (float) $pricing->price,
+                        $tourCurrency,
+                        'CAD'
+                    );
+
+                    return $pricing;
+                });
+            }
 
         // Prepare response data (unchanged)
         $data = [
@@ -553,6 +593,26 @@ class TourController extends Controller
 
         $subTours->map(function ($tour) use ($date, $orderController) {
 
+             $tour->price = currencyConvert(
+                $tour->price,
+                $tour->currency ?? 'USD',
+                'CAD'
+            );
+
+             if ($tour->pricings && $tour->pricings->count()) {
+                $tourCurrency = $tour->currency ?? 'USD';
+                $tour->pricings->map(function ($pricing) use ($tourCurrency) {
+
+                    $pricing->price = currencyConvert(
+                        (float) $pricing->price,
+                        $tourCurrency,
+                        'CAD'
+                    );
+
+                    return $pricing;
+                });
+            }
+
             $req = new \Illuminate\Http\Request([
                 'tour_id' => $tour->id,
                 'date'    => $date,
@@ -584,6 +644,16 @@ class TourController extends Controller
             return TourSpecialDeposit::where('tour_id', $id)->first();
         });
 
+
+        if($depositRule && $depositRule->is_discount){
+
+            $discount = [
+                'discount_type'     =>  $depositRule->discount_type,
+                'discount_value'     =>  $depositRule->discount_value,
+                'is_discount'     =>  $depositRule->is_discount,
+            ];
+        }
+
         // If no rule found for specific tour, check global rule
         if (!$depositRule || ($depositRule && $depositRule->use_deposit == 0)) {
             $depositRule = Cache::remember('deposit_rule_global', 86400, function () {
@@ -606,6 +676,8 @@ class TourController extends Controller
                 'tour_booking_fee_type' => get_setting('tour_booking_fee_type'),
             ];
         }
+
+
         
 
         if (!$depositRule) {
@@ -614,7 +686,8 @@ class TourController extends Controller
                 'message' => 'Tour deposit rule not found (including global rule)',
                 'data' => [
                     'deposit_rule' => null,
-                    'booking_fees' => $bookingFees
+                    'booking_fees' => $bookingFees,
+                    'discount'     => $discount
                 ]
             ], 404);
         }
@@ -623,7 +696,8 @@ class TourController extends Controller
             'status' => true,
             'data'   => [
                 'deposit_rule' => $depositRule,
-                'booking_fees' => $bookingFees
+                'booking_fees' => $bookingFees,
+                'discount'     => $discount
             ]
         ]);
     }
@@ -1665,7 +1739,7 @@ class TourController extends Controller
         if (!$review) {
             return response()->json(['message' => 'No review found'], 404);
         }
-
+        // dd($review->tag);
         // Decode JSON fields safely
         $recommended = $review->use_recommended ? json_decode($review->recommended, true) ?? [] : [];
         $badges      = $review->use_badge ? json_decode($review->badges, true) ?? [] : [];

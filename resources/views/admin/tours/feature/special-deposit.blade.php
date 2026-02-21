@@ -104,9 +104,11 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                                             Use special deposit rules
                                                         </label>
                                                     </div>
+                                                    
+
 
                                                     {{-- Deposit Type --}}
-                                                    <div id="deposit_options" class="{{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? '' : 'd-none' }}">
+                                                    <div id="deposit_options" class="{{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? '' : 'd-none' }} mb-3">
                                                         <div class="form-row">
                                                             <div class="col-md-6">
                                                                 <select class="form-control" name="tour[charge]" id="tour_charge">
@@ -114,7 +116,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                                                     <option value="DEPOSIT_PERCENT" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_PERCENT' ? 'selected' : '' }}>Deposit (% of order total amount)</option>
                                                                     <option value="DEPOSIT_FIXED" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED' ? 'selected' : '' }}>Deposit (Fixed amount per person/quantity)</option>
                                                                     <option value="DEPOSIT_FIXED_PER_ORDER" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED_PER_ORDER' ? 'selected' : '' }}>Deposit (Fixed amount per order)</option>
-                                                                    <option value="NONE" {{ old('tour.charge', $specialDeposit?->charge) == 'NONE' ? 'selected' : '' }}>No charge</option>
+                                                                    <option value="NONE" {{ old('tour.charge', $specialDeposit?->charge) == 'NONE' ? 'selected' : '' }}>No charge (Enable Pay Later) </option>
                                                                 </select>
                                                             </div>
                                                             <div class="col-md-3">
@@ -166,6 +168,55 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                                             <span>days before tour date</span>
                                                         </div>
                                                     </div>
+                                                    {{-- Use Discount --}}
+                                                    <div class="form-group form-check">
+                                                        <input type="hidden" name="tour[is_discount]" value="0">
+                                                        <input type="checkbox" class="form-check-input" id="is_discount"
+                                                            name="tour[is_discount]" value="1"
+                                                            {{ old('tour.is_discount', $specialDeposit?->is_discount) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="is_discount">
+                                                            Use Discount
+                                                        </label>
+                                                    </div>
+
+                                                    {{-- Discount Options --}}
+                                                <div id="discount_options" class="{{ old('tour.is_discount', $specialDeposit?->is_discount) ? '' : 'd-none' }}">
+                                                    <div class="form-row mt-2">
+                                                        <div class="col-md-6">
+                                                            <select class="form-control" name="tour[discount_type]" id="discount_type">
+                                                                <option value="PERCENT" 
+                                                                    {{ old('tour.discount_type', $specialDeposit?->discount_type) == 'PERCENT' ? 'selected' : '' }}>
+                                                                    Discount (%)
+                                                                </option>
+                                                                <option value="FIXED" 
+                                                                    {{ old('tour.discount_type', $specialDeposit?->discount_type) == 'FIXED' ? 'selected' : '' }}>
+                                                                    Discount (Fixed Amount)
+                                                                </option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-md-4 input-group">
+                                                            <div class="input-group-prepend">
+                                                                <span class="input-group-text currency-symbol" id="discount_unit">{{ old('tour.discount_type', $specialDeposit?->discount_type) == 'PERCENT' ? '%' : $data->currency }}</span>
+                                                            </div>
+                                                            <input type="number"
+                                                                   name="tour[discount_value]"
+                                                                   id="discount_value"
+                                                                   class="form-control"
+                                                                   placeholder="Enter discount value"
+                                                                   value="{{ old('tour.discount_value', $specialDeposit?->discount_value) }}">
+                                                        </div>
+
+                                                        <div class="col-md-2">
+                                                            <span id="discount_unit">
+                                                                
+                                                            </span>
+                                                        </div>
+                                                        
+
+                                                    </div>
+                                                </div>
+
                                                 </div>
                                             </div>
                                             <div>
@@ -334,6 +385,30 @@ $(document).ready(function () {
     // Run on page load (to handle old values)
     toggleDeposit();
 });
+
+$(function () {
+
+    // Toggle discount section
+    $('#is_discount').on('change', function () {
+        $('#discount_options').toggleClass('d-none', !this.checked);
+    });
+
+    // Toggle discount unit symbol
+    function toggleDiscountUnit() {
+        let type = $('#discount_type').val();
+        if (type === 'PERCENT') {
+            $('#discount_unit').text('%');
+        } else {
+            $('#discount_unit').text('{{ $data->currency }}');
+        }
+    }
+
+    $('#discount_type').on('change', toggleDiscountUnit);
+
+    // Run on load
+    toggleDiscountUnit();
+});
+
 
 </script>
 

@@ -21,11 +21,18 @@
                             </select>
                         </div>
                         <div class="col-md-2 col-6">
+                            <select name="category" id="category-select" class="form-control">
+                                @if(request('category'))
+                                    <option value="{{ request('category') }}" selected>{{ ucwords(optional(\App\Models\Category::find(request('category')))->name) }}</option>
+                                @endif
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
                             <select name="author" class="form-control aiz-selectpicker" data-live-search="true">
                                 <option value="">Select Author</option>
                                     @foreach ($users as $author)
                                         <option value="{{ $author->id }}" {{ request('author') == $author->id ? 'selected' : '' }}>
-                                            {{ $author->name }}
+                                            {{ ucwords($author->name) }}
                                         </option>
                                     @endforeach
                                 
@@ -116,10 +123,10 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-2 col-12">
+                        <div class="col-md-2 col-6">
                             <button type="submit" class="btn btn-search mb-2"> <i class="fas fa-search"></i> Search</button>
                         </div>
-                        <div class="col-12">
+                        <div class="col-md-2 col-6">
                             <a href="{{ route('admin.tour.index')}}" class="btn-clear"> <i class="fas fa-times"></i> Clear Search</a>
                         </div>
                     </div>
@@ -484,6 +491,29 @@ $(document).ready(function () {
         },
         minimumInputLength: 2,
     });
+
+    $('#category-select').select2({
+        placeholder: 'Select a category',
+        ajax: {
+            url: '{{ route("admin.category.search") }}',
+            dataType: 'json',
+            delay: 300,
+            width: '250px',
+            dropdownAutoWidth: true,
+            dropdownParent: $('#category-select').parent(),
+            data: function (params) {
+                return { term: params.term };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.results
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 2,
+    });
+
 });
 </script>
 
@@ -518,6 +548,7 @@ $(document).ready(function () {
                     success: function () {
                         alert('Sort order updated!');
                         console.log('Order updated');
+                        location.reload();
                     },
                     error: function () {
                         alert('Failed to update tour order.');

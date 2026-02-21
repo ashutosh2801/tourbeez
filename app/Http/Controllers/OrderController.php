@@ -894,7 +894,11 @@ class OrderController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'order_status'   => 'required|max:255',
+
+            'tour_startdate'   => 'required|array',
             'tour_startdate.*' => 'required|date',
+
+            'tour_starttime'   => 'required|array',
             'tour_starttime.*' => 'required|string|max:10',
         ],
         [
@@ -1061,18 +1065,25 @@ class OrderController extends Controller
                 foreach ($request->paymentType as $i => $type) {
 
                     $paymentId       = $request->paymentId[$i] ?? null;
-                    $amount          = $request->amount[$i] ?? null;
+                    $amount          = $request->amount[$i] ?? 0;
+                    $refundAmount    = $request->refund_amount[$i] ?? 0;
+                    $status          = $request->status[$i] ?? null;
                     $collection_date = $request->collection_date[$i] ?? null;
                     $transactionId   = $request->transactionId[$i] ?? null;
-
+                    
                     // Skip empty rows
                     if (empty($type) && empty($amount)) {
                         continue;
                     }
 
                     // Add amount to total (only if valid) 
-                    if (!empty($amount)) { 
-                        $totalPaymentAmount += floatval($amount); 
+                    if ($status === 'succeeded') {
+
+                        $netAmount = floatval($amount) - floatval($refundAmount);
+
+                        if ($netAmount > 0) {
+                            $totalPaymentAmount += $netAmount;
+                        }
                     }
 
                     if ($paymentId) {
@@ -1101,7 +1112,7 @@ class OrderController extends Controller
                             'currency'       => $order->currency,
                             'amount'         => $amount,
                             'collection_type'=> 'Outside',
-                            'status'         => 'successful',
+                            'status'         => 'succeeded',
                             'created_at'     => now(),
                             'updated_at'     => now(),
                         ]);
@@ -1115,11 +1126,19 @@ class OrderController extends Controller
             }
         }
 
-        $balanceAmount = $total - $totalPaymentAmount;
+        $order->load('payments');
+
+        $totalPaymentAmount = $order->payments
+        ->where('status', 'succeeded')
+        ->sum(function ($payment) {
+            return floatval($payment->amount) - floatval($payment->refund_amount);
+        });
+
+        $balanceAmount = max($total - $totalPaymentAmount, 0);
 
         $order->total_amount    = $total;
         $order->balance_amount  = $balanceAmount;
-        $order->booked_amount  = $total - $balanceAmount;
+        $order->booked_amount  = $totalPaymentAmount;
         
         if( $order->save() ) {
 
@@ -3701,7 +3720,138 @@ class OrderController extends Controller
     }
 
     public function addCard(Request $request, Order $order)
+{
+    $request->validate([
+        'payment_method'      => 'required|string',
+        'charge_ccnow'        => 'nullable|boolean',
+        'charge_ccnow_amount' => 'nullable|numeric|min:0.01'
+    ]);
+
+    \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+    $shouldCharge = $request->boolean('charge_ccnow') 
+                    && $request->filled('charge_ccnow_amount');
+
+    // Ensure Stripe customer exists
+    if (
+        empty($order->stripe_customer_id) ||
+        !str_starts_with($order->stripe_customer_id, 'cus_')
+    ) {
+        $customer = \Stripe\Customer::create([
+            'name'  => $order->customer?->name,
+            'email' => $order->customer?->email,
+        ]);
+
+        $order->update([
+            'stripe_customer_id' => $customer->id
+        ]);
+    }
+
+    // Retrieve PaymentMethod
+    $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_method);
+
+    // Attach card to customer
+    $paymentMethod->attach([
+        'customer' => $order->stripe_customer_id
+    ]);
+
+    // Set as default card
+    \Stripe\Customer::update($order->stripe_customer_id, [
+        'invoice_settings' => [
+            'default_payment_method' => $paymentMethod->id
+        ]
+    ]);
+
+    // Store minimal info for UI (your original logic)
+    $order->update([
+        'payment_intent_id' => $paymentMethod->id
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHARGE LOGIC (NEW PART)
+    |--------------------------------------------------------------------------
+    */
+
+    if ($shouldCharge) {
+
+        $chargeAmount = (float) $request->charge_ccnow_amount;
+
+        if ($chargeAmount > $order->balance_amount) {
+            return response()->json([
+                'message' => 'Charge exceeds remaining balance.'
+            ], 400);
+        }
+
+        $intent = \Stripe\PaymentIntent::create([
+            'customer'       => $order->stripe_customer_id,
+            'amount'         => intval($chargeAmount * 100),
+            'currency'       => $order->currency ?? 'eur',
+            'payment_method' => $paymentMethod->id,
+            'off_session'    => true,
+            'confirm'        => true,
+            'description'    => "#{$order->order_number}",
+        ]);
+
+        // Update order financials
+        $order->booked_amount += $chargeAmount;
+        $order->balance_amount = max(
+            $order->total_amount - $order->booked_amount,
+            0
+        );
+
+        $order->save();
+
+        $order->payments()->create([
+            'payment_type'   => 'CREDITCARD',
+            'transaction_id' => $intent->id,
+            'card_last4'     => $paymentMethod->card->last4,
+            'card_brand'     => $paymentMethod->card->brand,
+            'amount'         => $chargeAmount,
+            'currency'       => $order->currency,
+            'collection_type'=> 'Inside',
+            'status'         =>  'succeeded'
+        ]);
+
+        $note = "Credit card added and charged {$chargeAmount} {$order->currency} by " . Auth::user()->name;
+
+    } else {
+
+        // Only card added (your original behaviour)
+        $order->payments()->create([
+            'payment_type'   => 'CREDITCARD',
+            'transaction_id' => $paymentMethod->id,
+            'card_last4'     => $paymentMethod->card->last4,
+            'card_brand'     => $paymentMethod->card->brand,
+            'amount'         => 0,
+            'currency'       => $order->currency,
+            'collection_type'=> 'Inside'
+        ]);
+
+        $note = "Credit card added successfully has been processed by " . Auth::user()->name;
+    }
+
+    OrderActions::insert([
+        'order_id'     => $order->id,
+        'performed_by' => Auth::id(),
+        'notes'        => $note,
+        'created_at'   => now(),
+        'updated_at'   => now()
+    ]);
+
+    return response()->json([
+        'message' => $shouldCharge 
+            ? 'Card added and charged successfully.'
+            : 'Card added successfully to this customer'
+    ]);
+}
+
+
+
+
+    public function addCard2342(Request $request, Order $order)
     {
+
         $request->validate([
             'payment_method' => 'required|string'
         ]);

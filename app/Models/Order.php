@@ -62,7 +62,8 @@ class Order extends Model
         'adv_deposite',
         'payment_method_id',
         'internal_notes',
-        'redzy_order_id'
+        'redzy_order_id',
+        'is_discount'
     ];
 
     public function tour_detail($id, $label='all') {

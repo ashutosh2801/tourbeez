@@ -17,7 +17,7 @@ class UpdateConversionRates extends Command
 
         try {
             // Fetch data from API
-            $response = Http::get('https://v6.exchangerate-api.com/v6/707643cafec57edfd7f224bd/latest/USD');
+            $response = Http::get('https://v6.exchangerate-api.com/v6/707643cafec57edfd7f224bd/latest/CAD');
 
             if ($response->successful()) {
                 $data = $response->json();

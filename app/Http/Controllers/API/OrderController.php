@@ -17,6 +17,7 @@ use App\Models\TourPricing;
 use App\Models\TourSchedule;
 use App\Models\TourScheduleRepeats;
 use App\Models\TourSpecialDeposit;
+use App\Services\PricingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -193,7 +194,10 @@ class OrderController extends Controller
     public function getOrderDetailByOrderID( Request $request, $orderID )
     {
         // $order = Order::where('id', decrypt($orderID))->first();
-
+        return response()->json([
+                'status' => $orderID,
+                'message' => 'Order not found.',
+            ], 404);
         $order = Order::findOrFail(decrypt($orderID));
 
         if (!$order) {
@@ -491,6 +495,7 @@ class OrderController extends Controller
             'formData.pickup_id' => 'nullable|numeric',
             'formData.pickup_name' => 'nullable|string|max:255',
             'formData.adv_deposite' => 'nullable|string|max:255',
+            'formData.is_discount' => 'nullable|string|max:255',
             'formData.booking_fee' => 'nullable|numeric|max:255',
 
         ]);
@@ -904,7 +909,34 @@ class OrderController extends Controller
 
                 }
             }else if($adv_deposite == "full") {
-                \Log::warning('full');
+                 
+
+                
+                 \Log::warning('full');
+                $order->booked_amount  = $order->total_amount;
+                $order->balance_amount = 0;
+                // $is_discount = $data['is_discount'] ?? true;
+                // $isDiscount = filter_var($request->is_discount, FILTER_VALIDATE_BOOLEAN);
+
+                // \Log::warning($is_discount);
+                // dd(2342);
+
+                // $discountAmount = PricingService::applyTourDiscount(
+                //     $tour,
+                //     $order->total_amount,
+                //     $is_discount
+                // );
+                // \Log::warning($discountAmount);
+
+                // if ($discountAmount > 0) {
+                //     $order->is_discount     = $is_discount;
+                //     $order->total_amount    = round($order->total_amount - $discountAmount, 2);
+                //     $order->booked_amount   = $order->total_amount;
+                // }
+                
+               
+
+                
 
                 // $pi = \Stripe\PaymentIntent::create([
                 //         'customer'  => $stripeCustomer->id,

@@ -2122,6 +2122,24 @@ $pickupHtml .= '</div>';
         return response()->json(['results' => $results]);
     }
 
+    public function categorySearch(Request $request)
+    {
+        $term = $request->get('term', '');
+        // dd(32432, $term);
+        $results = Category::where('name', 'LIKE', "%{$term}%")
+                    ->orderBy('name')
+                    ->limit(10)
+                    ->get()
+                    ->map(function ($c) {
+                        return [
+                            'id' => $c->id,
+                            'text' => ucwords($c->name),
+                        ];
+                    });
+ 
+        return response()->json(['results' => $results]);
+    }
+
     public function saveCoupon(Request $request)
     {
         $request->validate([
@@ -2289,9 +2307,120 @@ $pickupHtml .= '</div>';
     }
 
 
-
-
     public function specialDepositUpdate(Request $request, $id)
+    {
+        $tour = Tour::findOrFail($id);
+
+        $validated = $request->validate([
+            'tour.use_deposit'        => 'nullable|boolean',
+            'tour.charge'             => 'nullable|in:FULL,DEPOSIT_PERCENT,DEPOSIT_FIXED,DEPOSIT_FIXED_PER_ORDER,NONE',
+            'tour.deposit_amount'     => 'nullable|numeric|min:0',
+
+            'tour.is_discount'       => 'nullable|boolean',
+            'tour.discount_type'      => 'nullable|in:PERCENT,FIXED',
+            'tour.discount_value'    => 'nullable|numeric|min:0',
+
+            'tour.allow_full_payment' => 'nullable|boolean',
+            'tour.use_minimum_notice' => 'nullable|boolean',
+            'tour.notice_days'        => 'nullable|integer|min:0',
+
+            'price_booking_fee'       => 'nullable|in:0,1',
+            'tour_booking_fee'        => 'nullable|numeric|min:0',
+            'tour_booking_fee_type'   => 'nullable|in:PERCENT,FIXED',
+        ]);
+
+        $data = $request->tour ?? [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Deposit Logic
+        |--------------------------------------------------------------------------
+        */
+
+        $useDeposit = isset($data['use_deposit']) && (int)$data['use_deposit'] === 1;
+
+        if (!$useDeposit) {
+
+            $depositPayload = [
+                'use_deposit'        => 0,
+                'charge'             => null,
+                'deposit_amount'     => null,
+                'allow_full_payment' => null,
+                'use_minimum_notice' => null,
+                'notice_days'        => null,
+            ];
+
+        } else {
+
+            $useMinimumNotice = isset($data['use_minimum_notice']) && (int)$data['use_minimum_notice'] === 1;
+
+            $depositPayload = [
+                'use_deposit'        => 1,
+                'charge'             => $data['charge'] ?? null,
+                'deposit_amount'     => $data['deposit_amount'] ?? null,
+                'allow_full_payment' => $data['allow_full_payment'] ?? 0,
+                'use_minimum_notice' => $useMinimumNotice ? 1 : 0,
+                'notice_days'        => $useMinimumNotice ? ($data['notice_days'] ?? null) : null,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Discount Logic (Independent)
+        |--------------------------------------------------------------------------
+        */
+
+        $useDiscount = isset($data['is_discount']) && (int)$data['is_discount'] === 1;
+
+        if (!$useDiscount) {
+
+            $discountPayload = [
+                'is_discount'    => 0,
+                'discount_type'   => null,
+                'discount_value' => null,
+            ];
+
+        } else {
+
+            $discountPayload = [
+                'is_discount'    => 1,
+                'discount_type'   => $data['discount_type'] ?? null,
+                'discount_value' => $data['discount_value'] ?? null,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Final Payload Merge
+        |--------------------------------------------------------------------------
+        */
+
+        $payload = array_merge(
+            $depositPayload,
+            $discountPayload,
+            [
+                'price_booking_fee'     => $request->price_booking_fee,
+                'tour_booking_fee_type' => ($request->price_booking_fee == 1)
+                                            ? $request->tour_booking_fee_type
+                                            : null,
+                'tour_booking_fee'      => ($request->price_booking_fee == 1)
+                                            ? $request->tour_booking_fee
+                                            : null,
+                'updated_at'            => now(),
+                'created_at'            => now(),
+            ]
+        );
+
+        \DB::table('tour_special_deposits')->updateOrInsert(
+            ['tour_id' => $tour->id],
+            $payload
+        );
+
+        return redirect()->back()->with('success', 'Special deposit settings saved successfully.');
+    }
+
+
+    public function specialDepositUpdatesdsd(Request $request, $id)
     {
         $tour  = Tour::findOrFail($id);
 
