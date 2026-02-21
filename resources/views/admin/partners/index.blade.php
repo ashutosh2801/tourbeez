@@ -3,15 +3,14 @@
 
 <div class="row">
     <div class="col-lg-12">
-        <div class="card-primary mb-3">
+        <div class="card-primary mb-3 partners-header">
             <div class="card-header">
                 <div class="row">
                     <div class="col-md-8 col-6">
                         <h3 class="card-title">All Partners</h3>
                     </div>
                     <div class="col-md-4 col-6 text-right">
-                        <button type="button" class="btn btn-sm btn-success"
-                                data-toggle="modal" data-target="#addModal">
+                        <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#addModal">
                             + Add New
                         </button>
                     </div>
@@ -67,13 +66,22 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="addModal">
+<div class="modal fade add-modal" id="addModal">
     <div class="modal-dialog">
         <div class="modal-content">
 
             <div class="card-primary">
                 <div class="card-header">
-                    <h6 class="m-0">Add New Partner</h6>
+                    <div class="row">
+                        <div class="col-md-8 col-9">
+                            <h6 class="m-0">Add New Partner</h6>
+                        </div>
+                        <div class="col-md-4 col-3">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card-body">
@@ -115,9 +123,8 @@
                         </div>
 
                         <div class="text-right">
-                            <button type="submit"
-                                    class="btn btn-success">
-                                Save
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Save
                             </button>
                         </div>
 

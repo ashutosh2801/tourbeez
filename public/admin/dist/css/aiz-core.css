@@ -10167,3 +10167,19 @@ table.dataTable {
 .activity-log-body .aiz-pagination {
     padding: 15px;
 }
+
+.partners-header  .card-header {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.partners-header .card-header .row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.partners-header .card-header .card-tools {
+    text-align: right;
+}

@@ -3,7 +3,7 @@
 
 <div class="row">
     <div class="col-lg-12">
-        <div class="card-primary mb-3">
+        <div class="card-primary mb-3 partners-header">
             <div class="card-header">
                 <div class="row">
                     <div class="col-md-8">
@@ -71,7 +71,7 @@
                     <div class="text-right">
                         <button type="submit"
                                 class="btn btn-success">
-                            Update
+                            <i class="fas fa-save"></i> Update
                         </button>
                     </div>
 
