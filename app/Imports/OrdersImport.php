@@ -6,10 +6,12 @@ use App\Models\Order;
 use App\Models\OrderTour;
 use App\Models\OrderCustomer;
 use App\Models\Tour;
+use App\Models\Addon;
+use App\Mail\OrderImportFailureReport;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Concerns\{
     ToCollection,
     WithHeadingRow,
@@ -32,7 +34,6 @@ class OrdersImport implements ToCollection, WithHeadingRow, WithEvents
 
     public function collection(Collection $rows)
     {
-        // dd($rows);
         foreach ($rows as $row) {
 
             $this->currentRow++;
@@ -43,81 +44,145 @@ class OrdersImport implements ToCollection, WithHeadingRow, WithEvents
 
             $this->total++;
 
-            /* ---------- Validation ---------- */
-            // $validator = Validator::make($row->toArray(), [
-            //     'order_number'              => 'required',
-            //     'product_name'              => 'required',
-            //     'order_created_at'          => 'required|date',
-            //     'order_fulfilment_at'       => 'required|date',
-            //     'order_total_amount'        => 'required|numeric',
-            //     'num_participant'           => 'required|integer|min:1',
-            //     'customer_first_last_name'  => 'required',
-            // ]);
-
-            // if ($validator->fails()) {
-            //     $this->addFailure($validator->errors()->all());
-            //     continue;
-            // }
+            $orderNumber = $row['order_number'];
 
             /* ---------- Duplicate ---------- */
-            if (Order::where('redzy_order_id', $row['order_number'])->exists()) {
+            if (Order::where('redzy_order_id', $orderNumber)->exists()) {
                 $this->skipped++;
-                $this->addFailure(['Duplicate order number']);
+                $this->addFailure($orderNumber, ['Duplicate order number']);
                 continue;
             }
 
             /* ---------- Tour ---------- */
-            $tour = Tour::where('title', $row['product_name'])->first();
+            $tour = Tour::whereRaw('LOWER(title) = ?', [strtolower(trim($row['product_name'] ?? ''))])->first();
+
             if (!$tour) {
-                $this->addFailure(['Tour not found: '.$row['product_name']]);
+                $this->addFailure($orderNumber, ['Tour not found: '.$row['product_name']]);
                 continue;
             }
-            
+
             try {
 
-                DB::transaction(function () use ($row, $tour) {
+                DB::transaction(function () use ($row, $tour, $orderNumber) {
 
-                    $createdAt  = Carbon::parse($row['order_created_at']);
-                    $fulfilment = Carbon::parse($row['order_fulfilment_at']);
+                    $createdAt = Carbon::parse($row['date']);
+                    $tourDate  = Carbon::parse($row['check_in']);
 
-                    $isPaid = strtolower(trim($row['is_all_paid'] ?? ''));
+                    /* ================= PARSE PRICING ================= */
 
-                    $paymentStatus = in_array($isPaid, ['yes','100%','paid','1'])
-                        ? 1 : 0;
+                    $quantities     = array_map('trim', explode(',', $row['quantities'] ?? ''));
+                    $quantityLabels = array_map('trim', explode(',', $row['quantities_label'] ?? ''));
+
+                    $pricing = [];
+                    $totalGuests = 0;
+                    $itemTotal   = 0;
+
+                    foreach ($quantities as $index => $qty) {
+
+                        $qty = (int) $qty;
+                        if ($qty <= 0) continue;
+
+                        $label = $quantityLabels[$index] ?? null;
+
+                        if (!$label) {
+                            throw new \Exception("Missing pricing label at index {$index}");
+                        }
+
+                        $tourPricing = $tour->pricings()
+                            ->whereRaw('LOWER(label) = ?', [strtolower($label)])
+                            ->first();
+
+                        if (!$tourPricing) {
+                            throw new \Exception("Pricing not found: {$label}");
+                        }
+
+                        $total = $tourPricing->price * $qty;
+
+                        $pricing[] = [
+                            'tour_id'         => $tour->id,
+                            'tour_pricing_id' => $tourPricing->id,
+                            'label'           => $label,
+                            'quantity'        => $qty,
+                            'price'           => $tourPricing->price,
+                            'total_price'     => $total,
+                        ];
+
+                        $totalGuests += $qty;
+                        $itemTotal   += $total;
+                    }
+
+                    /* ================= PARSE EXTRAS ================= */
+
+                    $extras      = array_map('trim', explode(',', $row['extras'] ?? ''));
+                    $extraLabels = array_map('trim', explode(',', $row['extras_label'] ?? ''));
+
+                    $extraData = [];
+
+                    foreach ($extras as $index => $qty) {
+
+                        $qty = (int) $qty;
+                        if ($qty <= 0) continue;
+
+                        $label = $extraLabels[$index] ?? null;
+
+                        if (!$label) {
+                            throw new \Exception("Missing addon label at index {$index}");
+                        }
+
+                        $addon = Addon::where('tour_id', $tour->id)
+                            ->whereRaw('LOWER(name) = ?', [strtolower($label)])
+                            ->first();
+
+                        if (!$addon) {
+                            throw new \Exception("Addon not found: {$label}");
+                        }
+
+                        $total = $addon->price * $qty;
+
+                        $extraData[] = [
+                            'tour_id'       => $tour->id,
+                            'tour_extra_id' => $addon->id,
+                            'label'         => $label,
+                            'quantity'      => $qty,
+                            'price'         => $addon->price,
+                            'total_price'   => $total,
+                        ];
+
+                        $itemTotal += $total;
+                    }
+
+                    /* ================= CREATE ORDER ================= */
 
                     $order = Order::create([
                         'tour_id'          => $tour->id,
-                        'user_id'          => auth()->id() ?? 0,
-
-                        'order_number'     => $row['order_number'],
-                        'redzy_order_id'   => $row['order_number'],
-
-                        'source'           => $row['order_source'] ?? 'Redzy',
-                        'agent_name'       => $row['agent_name'] ?? null,
-
+                        'user_id'          => 0,
+                        'order_number'     => $orderNumber,
+                        'redzy_order_id'   => $orderNumber,
                         'currency'         => 'USD',
-                        'payment_method'   => strtolower($row['payment_gateway_type'] ?? 'import'),
-
-                        'payment_status'   => $paymentStatus,
-                        'order_status'     => $this->mapOrderStatus($row['order_status'] ?? ''),
-
-                        'number_of_guests' => (int) $row['num_participant'],
-
-                        'total_amount'     => $this->amount($row['order_total_amount']),
-                        'booked_amount'    => $this->amount($row['total_payment'] ?? 0),
-                        'balance_amount'   => $this->amount($row['order_balance'] ?? 0),
-
+                        'order_status'     => $this->mapOrderStatus($row['order_status']),
+                        'payment_status'   => ($row['order_total_paid'] >= $row['order_total_amount']) ? 1 : 0,
+                        'number_of_guests' => $totalGuests,
+                        'total_amount'     => $row['order_total_amount'],
+                        'booked_amount'    => $row['order_total_paid'],
+                        'balance_amount'   => $row['order_balance'],
                         'created_at'       => $createdAt,
                     ]);
+
+                    /* ================= CREATE ORDER TOUR ================= */
 
                     OrderTour::create([
                         'order_id'         => $order->id,
                         'tour_id'          => $tour->id,
-                        'tour_date'        => $fulfilment->toDateString(),
-                        'tour_time'        => $fulfilment->format('H:i'),
-                        'number_of_guests' => (int) $row['num_participant'],
-                        'total_amount'     => $this->amount($row['order_total_amount']),
+                        'tour_date'        => $tourDate->toDateString(),
+                        'tour_time'        => $row['pick_up_time'] ?? null,
+                        'tour_pricing'     => json_encode($pricing),
+                        'tour_extra'       => json_encode($extraData),
+                        'tour_fees'        => json_encode([]),
+                        'number_of_guests' => $totalGuests,
+                        'total_amount'     => $row['order_total_amount'],
                     ]);
+
+                    /* ================= CUSTOMER ================= */
 
                     [$first, $last] = array_pad(
                         explode(' ', trim($row['customer_full_name']), 2),
@@ -129,8 +194,9 @@ class OrdersImport implements ToCollection, WithHeadingRow, WithEvents
                         'order_id'   => $order->id,
                         'first_name' => $first,
                         'last_name'  => $last,
-                        'email'      => 'import_'.$order->id.'@rezdy.local',
-                        'phone'      => $row['customer_phone']
+                        'email'      => $row['customer_email'],
+                        'phone'      => $row['customer_phone'],
+                        'pickup_name'=> $row['pick_up_location'] ?? null,
                     ]);
                 });
 
@@ -138,30 +204,27 @@ class OrdersImport implements ToCollection, WithHeadingRow, WithEvents
 
             } catch (\Throwable $e) {
 
-                $this->addFailure([$e->getMessage()]);
+                $this->addFailure($orderNumber, [$e->getMessage()]);
 
                 Log::error('Order import row failed', [
                     'row' => $this->currentRow,
-                    'order_number' => $row['order_number'] ?? null,
+                    'order_number' => $orderNumber,
                     'error' => $e->getMessage(),
                 ]);
             }
         }
     }
 
-    /* ---------- Helper for failure ---------- */
-
-    private function addFailure(array $errors): void
+    private function addFailure(string $orderNumber, array $errors): void
     {
         $this->failed++;
 
         $this->failReasons[] = [
+            'order_number' => $orderNumber,
             'row' => $this->currentRow,
             'errors' => $errors
         ];
     }
-
-    /* ---------- After Import Logging ---------- */
 
     public function registerEvents(): array
     {
@@ -173,20 +236,26 @@ class OrdersImport implements ToCollection, WithHeadingRow, WithEvents
                     'imported' => $this->imported,
                     'skipped'  => $this->skipped,
                     'failed'   => $this->failed,
-                    'failures' => $this->failReasons,
                 ]);
+
+                if (!empty($this->failReasons)) {
+
+                    Mail::to(config('mail.from.address'))
+                        ->send(new OrderImportFailureReport(
+                            $this->failReasons,
+                            $this->total,
+                            $this->imported,
+                            $this->failed,
+                            $this->skipped
+                        ));
+                }
             },
         ];
     }
 
-    private function amount($value): float
-    {
-        return round((float) $value, 2);
-    }
-
     private function mapOrderStatus(?string $status): int
     {
-        $status = strtolower(trim($status));
+        $status = strtolower(trim($status ?? ''));
 
         return match (true) {
             str_contains($status, 'confirmed') => 5,
@@ -194,6 +263,7 @@ class OrdersImport implements ToCollection, WithHeadingRow, WithEvents
             default => 0,
         };
     }
+
     public function setSheetName(string $name)
     {
         $this->sheetName = $name;

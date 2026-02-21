@@ -644,6 +644,16 @@ class TourController extends Controller
             return TourSpecialDeposit::where('tour_id', $id)->first();
         });
 
+
+        if($depositRule && $depositRule->is_discount){
+
+            $discount = [
+                'discount_type'     =>  $depositRule->discount_type,
+                'discount_value'     =>  $depositRule->discount_value,
+                'is_discount'     =>  $depositRule->is_discount,
+            ];
+        }
+
         // If no rule found for specific tour, check global rule
         if (!$depositRule || ($depositRule && $depositRule->use_deposit == 0)) {
             $depositRule = Cache::remember('deposit_rule_global', 86400, function () {
@@ -666,6 +676,8 @@ class TourController extends Controller
                 'tour_booking_fee_type' => get_setting('tour_booking_fee_type'),
             ];
         }
+
+
         
 
         if (!$depositRule) {
@@ -674,7 +686,8 @@ class TourController extends Controller
                 'message' => 'Tour deposit rule not found (including global rule)',
                 'data' => [
                     'deposit_rule' => null,
-                    'booking_fees' => $bookingFees
+                    'booking_fees' => $bookingFees,
+                    'discount'     => $discount
                 ]
             ], 404);
         }
@@ -683,7 +696,8 @@ class TourController extends Controller
             'status' => true,
             'data'   => [
                 'deposit_rule' => $depositRule,
-                'booking_fees' => $bookingFees
+                'booking_fees' => $bookingFees,
+                'discount'     => $discount
             ]
         ]);
     }
