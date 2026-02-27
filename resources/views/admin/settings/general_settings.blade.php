@@ -163,23 +163,27 @@
         <div class="col-lg-12">
             <div class="card-primary bg-white border rounded-lg-custom mb-3">
                 <div class="card-header">
-                    <h5 class="mb-0 h6">{{__('Default Email')}}</h5>
+                    <h5 class="mb-0 h6">{{__('Default')}} </h5>
+
                 </div>
                 <div class="card-body">
                     <form action="{{ route('admin.settings.update') }}" method="POST">
                         @csrf
                         <div class="form-group row">
-                            <label class="col-md-12 col-form-label">{{translate('Default Email Header')}}</label>
+                            <label class="col-md-12 col-form-label">{{translate('Default Category Description')}}</label>
+
+                            <p class="ml-4">Parameters : - [[CATEGORY_TITLE]],  [[TOUR_COUNT]], [[YEAR]]</p>
+                            
                             <div class="col-md-12">
-                                <input type="hidden" name="types[]" value="default_email_header">
-                                <textarea name="default_email_header" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ get_setting('default_email_header') }}</textarea>
-                                @error('default_email_header')
+                                <input type="hidden" name="types[]" value="default_category_description">
+                                <textarea name="default_category_description" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ get_setting('default_category_description') }}</textarea>
+                                @error('default_category_description')
                                     <small class="form-text text-danger">{{ $message }}</small>
                                 @enderror
                             </div>                            
                         </div>
 
-                        <div class="form-group row">
+                        <!-- <div class="form-group row">
                             <label class="col-md-12 col-form-label">{{translate('Default Email Footer')}}</label>
                             <div class="col-md-12">
                                 <input type="hidden" name="types[]" value="default_email_footer">
@@ -188,7 +192,7 @@
                                     <small class="form-text text-danger">{{ $message }}</small>
                                 @enderror
                             </div>                            
-                        </div>
+                        </div> -->
 
                         <div class="text-right">
                             <button type="submit" class="btn btn-success">{{ __('Update') }}</button>

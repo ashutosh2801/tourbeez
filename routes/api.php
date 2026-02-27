@@ -33,8 +33,13 @@ use Illuminate\Support\Facades\Route;
 // Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
 // Route::get('/location-banner', [CommonController::class, 'getLocationBanner']);
 
+Route::get('/test', function () {
+    return 'ok';
+});
+
 Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
 Route::get('/tour/{slug}/booking', [TourController::class, 'fetch_booking']);
+Route::get('/home-listing',[CommonController::class,'home_listing']);
 
 Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
 
@@ -42,7 +47,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/categories',[CategoryController::class,'index'])->name('categories');
     Route::post('/sub-cateogries',[CategoryController::class,'subcategory'])->name('sub.category');
     
-    Route::get('/home-listing',[CommonController::class,'home_listing']);
+    // Route::get('/home-listing',[CommonController::class,'home_listing']);
     Route::get('/popular-cities',[CommonController::class,'popular_cities']);
     Route::get('/popular-destinations',[CommonController::class,'popular_destinations']);
     Route::get('/single-city/{id}',[CommonController::class,'single_city']);

@@ -30,7 +30,7 @@ class TourController extends Controller
     {
         $query = Tour::select([
                 'id', 'title', 'slug', 'unique_code', 'price',
-                'coupon_type', 'coupon_value', 'offer_ends_in'
+                'coupon_type', 'coupon_value', 'offer_ends_in','currency'
             ])
             ->with([
                 'galleries:id,file_name,medium_name,thumb_name',
@@ -38,6 +38,7 @@ class TourController extends Controller
                 'schedule:id,tour_id,estimated_duration_num,estimated_duration_unit',
                 'categories:id',
                 'location:id,city_id,state_id,country_id',
+                'review:id,tour_id,tag',
             ])
             ->onlyRoot()
             ->where('status', 1)
@@ -129,6 +130,8 @@ class TourController extends Controller
                 );
             }
 
+            $tag = $d->review && $d->review->tag ? $d->review->tag ?? [] : [];
+
             return [
                 'id'              => $d->id,
                 'title'           => $d->title,
@@ -144,6 +147,7 @@ class TourController extends Controller
                 'rating'          => randomFloat(4, 5),
                 'comment'         => rand(50, 100),
                 'offer_ends_in'   => $d->offer_ends_in,
+                'tag'             => $tag,
                 // 'meta_title'      => $paginated->total().' Things To Do In ' .ucfirst( $d->title ).' | ' .env('APP_NAME') ,
                 // 'meta_description'=> 'Discover tour in '.ucfirst( $d->title ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.',
                 
@@ -197,6 +201,7 @@ class TourController extends Controller
                     'schedule',
                     // 'pricings',
                     'category',
+                    'review'
                 ])
                 ->first();
         });
@@ -235,9 +240,9 @@ class TourController extends Controller
             $image      = uploaded_asset($addon->image);
             $medium_url = str_replace($item->file_name, $item->medium_name, $image);
             $thumb_url  = str_replace($item->file_name, $item->thumb_name, $image);
-            // if (!empty($tour->currency)) {
-            //     $addon->price = currencyConvert($addon->price, $tour->currency, 'USD');
-            // }
+            if (!empty($tour->currency)) {
+                $addon->price = currencyConvert($addon->price, 'USD', 'CAD');
+            }
             $addons[] = [
                 'id'            => $addon->id,
                 'name'          => $addon->name,
@@ -323,8 +328,18 @@ class TourController extends Controller
             $discounted_price   = currencyConvert($discounted_price, $tour->currency, 'CAD');
         }
 
-        if ($tour) {
+         $tour->taxes_fees = $tour->taxes_fees->map(function ($fee) {
 
+            // Only convert FIXED types (not percentage)
+            if ($fee->fee_type === 'FIXED_PER_ORDER') {
+                $fee->tax_fee_value = currencyConvert($fee->tax_fee_value,'USD','CAD');
+            }
+
+            return $fee;
+        });
+
+        if ($tour) {
+            // dd(2342);
             $title = $tour->title;
             if($request->company) {
                 $partner = Partner::where('slug', $request->company)->first();
@@ -372,9 +387,10 @@ class TourController extends Controller
                 'discounted_price'      => $discounted_price,
                 'tour_start_date'       => [],
                 'disabled_tour_dates'   => [],
-                'review'                => $this->getReview($tour->id)
+                'review'                => $this->getReview($tour->review)
             ];           
         }
+
 
         return response()->json([
             'status' => true,
@@ -639,7 +655,7 @@ class TourController extends Controller
     public function fetch_deposit_rule($id)
     {
         $cacheKey = 'deposit_rule_' . $id;
-
+        $discount = [];
         $depositRule = Cache::remember($cacheKey, 86400, function () use ($id) {
             return TourSpecialDeposit::where('tour_id', $id)->first();
         });
@@ -789,7 +805,7 @@ class TourController extends Controller
                     $query->select('id', 'tour_id', 'address');
                 }])
                 ->onlyRoot()
-                ->select('id', 'title', 'slug', 'unique_code', 'price')
+                ->select('id', 'title', 'slug', 'unique_code', 'price', 'currency')
                 ->where('status', 1)
                 ->when($search, function ($query, $search) {
                     $query->where('title', 'LIKE', '%' . $search . '%');
@@ -797,6 +813,17 @@ class TourController extends Controller
                 ->orderBy('title', 'asc')
                 ->limit(max(0, $total_tours))
                 ->get();
+
+                $tours->map(function ($tour) {
+
+                    $tour->price = currencyConvert(
+                        $tour->price,
+                        $tour->currency ?? 'USD',
+                        'CAD' // 👈 forced CAD
+                    );
+
+                    return $tour;
+                });
         });
 
         /*
@@ -1732,9 +1759,9 @@ class TourController extends Controller
         return $slots;
     }
 
-    public function getReview($tourId)
+    public function getReview($review)
     {
-        $review = TourReview::where('tour_id', $tourId)->first();
+        // $review = TourReview::where('tour_id', $tourId)->first();
 
         if (!$review) {
             return response()->json(['message' => 'No review found'], 404);
@@ -1744,7 +1771,7 @@ class TourController extends Controller
         $recommended = $review->use_recommended ? json_decode($review->recommended, true) ?? [] : [];
         $badges      = $review->use_badge ? json_decode($review->badges, true) ?? [] : [];
         $banners     = $review->use_banner ? json_decode($review->banners, true) ?? [] : [];
-        $tag        = $review->tag ? json_decode($review->tag, true) ?? [] : [];
+        $tag        =  $review->tag ? $review->tag ?? [] : [];
 
         // Build response respecting the flags
         $response = [

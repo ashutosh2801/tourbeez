@@ -82,6 +82,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/role',RoleController::class);
     Route::resource('/permission',PermissionController::class);
     Route::resource('/category',CategoryController::class);
+
+    Route::post('/category/{id}/clone', [CategoryController::class, 'clone'])
+    ->name('category.clone');
+    
     Route::resource('/tour_type',TourTypeController::class);
     Route::resource('/collection',CollectionController::class);
     

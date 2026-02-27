@@ -8,6 +8,7 @@
                         <option value="7" {{ request('days') == 7 ? 'selected' : '' }}>Last 7 Days</option>
                         <option value="15" {{ request('days') == 15 ? 'selected' : '' }}>Last 15 Days</option>
                         <option value="30" {{ request('days') == 30 ? 'selected' : '' }}>Last 30 Days</option>
+                        <option value="all" {{ request('days') == 'all' ? 'selected' : '' }}>ALL</option>
                     </select>
                 </form>
             </div>

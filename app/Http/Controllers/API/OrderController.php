@@ -718,7 +718,7 @@ class OrderController extends Controller
                             break;
 
                         case 'DEPOSIT_FIXED':
-                            $chargeAmount = $depositRule->deposit_amount;
+                            $chargeAmount = $order->total_amount - $depositRule->deposit_amount;
                             break;
 
                         case 'DEPOSIT_FIXED_PER_ORDER':
@@ -734,9 +734,28 @@ class OrderController extends Controller
                     if ($depositRule->use_minimum_notice && $depositRule->notice_days && $adv_deposite == "full") {
                         $daysUntilTour = \Carbon\Carbon::today()->diffInDays($tour->start_date, false);
                         if ($daysUntilTour < $depositRule->notice_days) {
+
+
+
+
                             $chargeAmount = $order->total_amount; // Force full
                         }
                     }
+
+                    if ($depositRule && $depositRule->charge === 'NONE') {
+                        if($depositRule->is_discount && $depositRule->discount_type === 'PERCENT') {
+                            $percentValue = ($order->total_amount * $depositRule->discount_value)/100;
+                            $chargeAmount = $order->total_amount - $percentValue;
+                            $order->total_amount =  $chargeAmount;
+
+                        }
+                        else if($depositRule->is_discount && $depositRule->discount_type === 'FIXED') {
+                            $chargeAmount = ($order->total_amount - $depositRule->discount_value);
+                            $order->total_amount =  $chargeAmount;
+                        }
+
+                    }
+
                 } else {
                     // Deposit not enabled → fallback to full
                     $chargeAmount = $order->total_amount;
