@@ -1526,6 +1526,15 @@ class OrderController extends Controller
 
             $balanceAmount = ($order->payment_status === 3) ? price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) : price_format_with_currency($order->balance_amount, $order->currency);
             // dd(23432);
+            $discounts = !empty($orderTour->discount) ? json_decode($orderTour->discount) : [];
+            $discountAmount = 0;
+            if(!empty($discounts)){
+
+                foreach ($discounts as $item)
+                        $discountAmount = $item->price;
+            }
+                                                            
+                                                        
 
             $TOUR_PAYMENT_HISTORY = '
             <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px; margin-left:0px">
@@ -1558,8 +1567,24 @@ class OrderController extends Controller
                             <strong>' . $totalPaid . '</strong>
                         </td>
                     </tr>
+                    ';
 
-                    <tr style="color:red;">
+                    if( $discountAmount > 0) {
+                     $TOUR_PAYMENT_HISTORY .= '
+                        <tr style="color:red;">
+                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                            <small style="font-size:14px; text-transform:uppercase;">Discount</small>
+                        </td>
+                        <td style="text-align:right; border-top:1pt solid #000;">
+                            <strong>' . price_format_with_currency($discountAmount, $order->currency) . '</strong>
+                        </td>
+                    </tr>';
+                    };
+                    
+
+
+
+                   $TOUR_PAYMENT_HISTORY .= '<tr style="color:red;">
                         <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
                             <small style="font-size:14px; text-transform:uppercase;">Balance</small>
                         </td>
@@ -1640,23 +1665,26 @@ class OrderController extends Controller
                      
                                     // Extras Rows
                                     foreach ($tour_extra as $extra) {
+
+
                                         // $result = getTourExtraDetails($tour_extra, $extra->id);
                                         $qty = $extra['quantity'] ?? 0;
                                         $price = $extra['price'] ?? 0;
+
                                         // $total = $qty * $price;
                                         $total = $extra['total_price'] ?? 0;
                                         if ($qty > 0) {
                                             $subtotal += $total;
                                             $TOUR_ITEM_SUMMARY .= '
                     <tr>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label']??"" . ' (Extra)</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
-                    </tr>';
+<td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
+<td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ($extra['label'] ?? "") . ' (Extra)</td>
+<td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
+<td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
+</tr>';
                                         }
                                     }
-                     
+                        
                                     // Taxes
                                     $taxRows = '';
                                     if ($order_tour->tour->taxes_fees) {
@@ -1676,9 +1704,45 @@ class OrderController extends Controller
                     </tr>';
                                         }
                                     }
+
+                                    // Discount
+                    $discountRows = '';
+                    $discounts = !empty($order_tour->discount) 
+                        ? json_decode($order_tour->discount) 
+                        : [];
+
+                    if (!empty($discounts)) {
+                        foreach ($discounts as $discount) {
+
+                            $discountAmount = 0;
+
+                            if ($discount->type === 'PERCENT') {
+                                $discountAmount = ($subtotal * $discount->discount) / 100;
+                            } else {
+                                $discountAmount = $discount->discount;
+                            }
+
+                            $subtotal -= $discountAmount;
+
+                            $discountRows .= '
+                            <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">
+                            Discount ' . ($discount->type === "PERCENT" ? '(' . $discount->discount . '%)' : '') . '
+                            </small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px; color:#d9534f;">
+                             ' . price_format_with_currency($discountAmount, $order->currency) . '
+                            </td>
+                            </tr>';
+                        }
+                    }
                      
                                     // Total Row
-                                    $TOUR_ITEM_SUMMARY .= $taxRows . '
+                                    
+                                    $TOUR_ITEM_SUMMARY .= $taxRows . $discountRows . '
                     <tr>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>

@@ -13,7 +13,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
             </div>
             <div class="col-md-4 col-12">
               <div class="card-tools">
-                  <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-success">+ Create New</a>
+                  <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-success">+ Create New </a>
               </div>
             </div>
           </div>
@@ -51,7 +51,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                               </td>
                               <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
                               <td>{{ substr($item->description,0,150) }}...</td>
-                              <td>{{ price_format_with_currency($item->price, 'USD' ,$data->currency) }}</td>
+                              <td>{{ price_format_with_currency($item->price, $item->currency) }}</td>
                               <td>{{ $item->price }}</td>
                               <td>{{ $item->customer_choice }}</td>
                                                     

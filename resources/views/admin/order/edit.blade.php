@@ -552,6 +552,11 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 $withoutTax = $subtotal;
                                                 $i=1;
                                                 $taxesfees = $order_tour->tour->taxes_fees;
+                                                $discounts = $order_tour->tour->discount;
+                                                
+
+
+                                                $discounts = !empty($order_tour->discount) ? json_decode($order_tour->discount) : [];
                                                 @endphp 
                                                 <tr>
                                                     <th>Sub Total </th>
@@ -570,6 +575,28 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                     <td class="text-right tax-amount">{{ price_format_with_currency($tax, $order->currency) }}</td>
                                                 </tr>
                                                 @endforeach
+                                                @endif
+                                                @if(!empty($discounts))
+                                                    @foreach ($discounts as $item)
+                                                        @php
+
+                                                            
+                                                            $discountAmount = $item->price;
+                                                            
+                                                        @endphp
+
+                                                        <tr class="discount-row">
+                                                            <td>
+                                                                Discount 
+                                                                @if($item->type === 'PERCENT')
+                                                                    ({{ $item->discount }}%)
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-right text-danger">
+                                                                 {{ price_format_with_currency($discountAmount, $order->currency) }}
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
                                                 @endif
                                                 <tr>
                                                     <th>Total </th>
@@ -596,7 +623,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             <td class="text-right">{{ $order->bookingFee ? price_format_with_currency($order->bookingFee->value('value'), $order->currency) : "NA" }} </td>
                                         </tr> --}}
                                         <tr>
-                                            <td class="cummulative-total"><b>Total</b></td>
+                                            <td class="cummulative-total"><b>Grand Total</b></td>
                                             <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                         </tr>
                                         <tr class="cummulative-total" style="color: red">
