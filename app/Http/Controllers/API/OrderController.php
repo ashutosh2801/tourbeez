@@ -194,10 +194,10 @@ class OrderController extends Controller
     public function getOrderDetailByOrderID( Request $request, $orderID )
     {
         // $order = Order::where('id', decrypt($orderID))->first();
-        return response()->json([
-                'status' => $orderID,
-                'message' => 'Order not found.',
-            ], 404);
+        // return response()->json([
+        //         'status' => $orderID,
+        //         'message' => 'Order not found.',
+        //     ], 404);
         $order = Order::findOrFail(decrypt($orderID));
 
         if (!$order) {
@@ -742,18 +742,24 @@ class OrderController extends Controller
                         }
                     }
 
-                    if ($depositRule && $depositRule->charge === 'NONE') {
-                        if($depositRule->is_discount && $depositRule->discount_type === 'PERCENT') {
-                            $percentValue = ($order->total_amount * $depositRule->discount_value)/100;
-                            $chargeAmount = $order->total_amount - $percentValue;
-                            $order->total_amount =  $chargeAmount;
+                    if($request->action_name == "reserve"){
+                        $chargeAmount = 0;
+                    } else{
+                        if ($depositRule && $depositRule->charge === 'NONE') {
+                            if($depositRule->is_discount && $depositRule->discount_type === 'PERCENT') {
+                                $percentValue = ($order->total_amount * $depositRule->discount_value)/100;
+                                $chargeAmount = $order->total_amount - $percentValue;
+                                $order->total_amount =  $chargeAmount;
+
+                            }
+                            else if($depositRule->is_discount && $depositRule->discount_type === 'FIXED') {
+                                $chargeAmount = ($order->total_amount - $depositRule->discount_value);
+                                $order->total_amount =  $chargeAmount;
+                            }
 
                         }
-                        else if($depositRule->is_discount && $depositRule->discount_type === 'FIXED') {
-                            $chargeAmount = ($order->total_amount - $depositRule->discount_value);
-                            $order->total_amount =  $chargeAmount;
-                        }
 
+                    
                     }
 
                 } else {
@@ -828,6 +834,11 @@ class OrderController extends Controller
 
                 // ✅ Update amounts in order
                 //$order->total_amount   = $order->total_amount; // full tour price (unchanged)
+
+
+                if($request->action_name == "reserve"){
+                    $chargeAmount = 0;
+                }
                 $order->booked_amount  = $chargeAmount;        // what’s being charged now
                 $order->balance_amount = $order->total_amount - $order->booked_amount;
 
@@ -897,31 +908,30 @@ class OrderController extends Controller
                     // No charge needed
                     $si = \Stripe\SetupIntent::create([
                         'customer'  => $stripeCustomer->id,
-                        'automatic_payment_methods' => ['enabled' => true],
-                        'usage'     => 'off_session',
+                        'automatic_payment_methods' => [
+                            'enabled' => true,
+                        ],                        // 'usage'     => 'off_session',
                         'metadata'  => $metaData
                     ]);               
                     $order->payment_intent_client_secret = $si->client_secret;
                     $order->payment_intent_id = $si->id;
 
 
-                    $retrievedIntent = \Stripe\PaymentIntent::retrieve($si->id);
+                    // $retrievedIntent = \Stripe\PaymentIntent::retrieve($si->id);
                     \Log::warning('uncaptured34234323432432');
-                    $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                    // $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
                     OrderPayment::create([
                             'order_id'          => $order->id,
                             'payment_intent_id' => $si->id,
                             'transaction_id'    => null, // no charge yet until capture
                             'payment_method'    => 'card',
-                            'card_brand'        => $paymentMethod->card->brand ?? null,
-                            'card_last4'        => $paymentMethod->card->last4 ?? null,
-                            'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
-                            'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
-                            'amount'            => ($adv_deposite == 'deposit')
-                                                    ? $chargeAmount
-                                                    : $order->total_amount,
+                            'card_brand'        => null,
+                            'card_last4'        => null,
+                            'card_exp_month'    => null,
+                            'card_exp_year'     => null,
+                            'amount'            => 0,
                             'currency'          => $order->currency,
-                            'status'            => 'uncaptured', // manual capture pending
+                            'status'            => 'reserve', // manual capture pending
                             'action'            => $adv_deposite,
                             'response_payload'  => json_encode($si),
                         ]);

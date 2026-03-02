@@ -50,7 +50,10 @@ class Tour extends Model
     // ---------------- RELATIONSHIPS ----------------
     public function galleries(): BelongsToMany
     {
-        return $this->belongsToMany(Upload::class)->withPivot('is_main');
+        //return $this->belongsToMany(Upload::class)->withPivot('is_main');
+        return $this->belongsToMany(Upload::class)
+            ->withPivot('is_main')
+            ->orderByPivot('is_main', 'desc');
     }
 
     public function getMainImageAttribute()
@@ -94,6 +97,8 @@ class Tour extends Model
     public function subTours() { return $this->hasMany(Tour::class, 'parent_id'); }
 
     public function parent() { return $this->belongsTo(Tour::class, 'parent_id'); }
+
+    public function partnerTours() { return $this->hasMany(PartnerTour::class); }
 
 
     // ---------------- ACCESSORS ----------------

@@ -506,6 +506,61 @@ class PaymentController extends Controller
            
     }
 
+    public function saveCard(Request $request)
+    {
+        Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        $order_id = $request->order_id;
+
+        $paymentMethod = \Stripe\PaymentMethod::retrieve(
+            $request->payment_method_id
+        );
+        if($paymentMethod->card){
+            $brand = $paymentMethod->card->brand;
+            $last4 = $paymentMethod->card->last4;
+            $expMonth = $paymentMethod->card->exp_month;
+            $expYear = $paymentMethod->card->exp_year;
+            $payment_method = 'card';
+            $payment_type = 'CARD';
+        } else{
+            $payment_method = 'link';
+            $payment_type = 'LINK';
+            $brand = NULL;
+            $last4 = NULL;
+            $expMonth = NULL;
+            $expYear = NULL;
+        }
+        
+
+        $payment = OrderPayment::where('order_id', $order_id)
+        ->latest()
+        ->first();
+
+        if ($payment) {
+            $payment->update([
+                'payment_intent_id' => $request->payment_method_id,
+                'card_last4'        => $last4,
+                'card_brand'        => $brand,
+                'card_exp_month'    => $expMonth,
+                'card_exp_year'     => $expYear,
+                'payment_method'    => $payment_method,
+                'payment_type'      => $payment_type
+            ]);
+
+            $order =  $payment->order;
+            $order->payment_method_id =  $request->payment_method_id;
+            $order->save();
+        }
+        
+
+        
+        return response()->json([
+            'status' => true,
+            'brand' => $brand,
+            'last4' => $last4,
+        ]);
+    }
+
     public function verifyPayment2323(Request $request)
 {
     $request->validate([

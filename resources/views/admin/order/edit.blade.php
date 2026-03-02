@@ -749,7 +749,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             </div>
                                             @endif
                                             <div class="col-2">
-                                                @if(str_contains( $order->payment_intent_id, 'pm_'))
+                                                @if(str_contains( $order->payment_intent_id, 'pm_') || str_contains( $order->payment_method_id, 'pm_'))
                                                 <a id="chargeSavedCard" type="button" class=" charge-btn font-base" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
                                                     <strong>Charge Now</strong>
                                                 </a>
