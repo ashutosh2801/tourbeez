@@ -614,7 +614,7 @@ class OrderController extends Controller
                                     'enabled' => true,
                                     'allow_redirects' => 'never',  // 🔥 prevents Stripe from requiring return_url
                                 ],
-                                'receipt_email' => $customer->email,
+                                
                                 'capture_method' => 'manual',
                                 'description' => $tour->title,
                                 'statement_descriptor_suffix' => $order->order_number,
@@ -1191,7 +1191,7 @@ class OrderController extends Controller
                                 'enabled' => true,
                                 'allow_redirects' => 'never',  // 🔥 prevents Stripe from requiring return_url
                             ],
-                            'receipt_email' => $customer->email,
+                            
                             'capture_method' => 'manual',
                             'description' => $tour->title,
                             'statement_descriptor_suffix' => $order->order_number,
