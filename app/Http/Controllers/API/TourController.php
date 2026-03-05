@@ -30,7 +30,7 @@ class TourController extends Controller
     {
         $query = Tour::select([
                 'id', 'title', 'slug', 'unique_code', 'price',
-                'coupon_type', 'coupon_value', 'offer_ends_in'
+                'coupon_type', 'coupon_value', 'offer_ends_in','currency'
             ])
             ->with([
                 'galleries:id,file_name,medium_name,thumb_name',
@@ -38,6 +38,7 @@ class TourController extends Controller
                 'schedule:id,tour_id,estimated_duration_num,estimated_duration_unit',
                 'categories:id',
                 'location:id,city_id,state_id,country_id',
+                'review:id,tour_id,tag',
             ])
             ->onlyRoot()
             ->where('status', 1)
@@ -129,6 +130,8 @@ class TourController extends Controller
                 );
             }
 
+            $tag = $d->review && $d->review->tag ? $d->review->tag ?? [] : [];
+
             return [
                 'id'              => $d->id,
                 'title'           => $d->title,
@@ -144,6 +147,7 @@ class TourController extends Controller
                 'rating'          => randomFloat(4, 5),
                 'comment'         => rand(50, 100),
                 'offer_ends_in'   => $d->offer_ends_in,
+                'tag'             => $tag,
                 // 'meta_title'      => $paginated->total().' Things To Do In ' .ucfirst( $d->title ).' | ' .env('APP_NAME') ,
                 // 'meta_description'=> 'Discover tour in '.ucfirst( $d->title ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.',
                 
@@ -197,6 +201,7 @@ class TourController extends Controller
                     'schedule',
                     // 'pricings',
                     'category',
+                    'review'
                 ])
                 ->first();
         });
@@ -235,9 +240,13 @@ class TourController extends Controller
             $image      = uploaded_asset($addon->image);
             $medium_url = str_replace($item->file_name, $item->medium_name, $image);
             $thumb_url  = str_replace($item->file_name, $item->thumb_name, $image);
-            // if (!empty($tour->currency)) {
-            //     $addon->price = currencyConvert($addon->price, $tour->currency, 'USD');
-            // }
+            if (!empty($tour->currency)) {
+                if($addon->price != 'CAD'){
+                    $addonCurrency = $addon->price ?? 'USD';
+                    $addon->price = currencyConvert($addon->price, $addonCurrency, 'CAD');
+                }
+                
+            }
             $addons[] = [
                 'id'            => $addon->id,
                 'name'          => $addon->name,
@@ -323,8 +332,18 @@ class TourController extends Controller
             $discounted_price   = currencyConvert($discounted_price, $tour->currency, 'CAD');
         }
 
-        if ($tour) {
+         $tour->taxes_fees = $tour->taxes_fees->map(function ($fee) {
 
+            // Only convert FIXED types (not percentage)
+            if ($fee->fee_type === 'FIXED_PER_ORDER') {
+                $fee->tax_fee_value = currencyConvert($fee->tax_fee_value,'USD','CAD');
+            }
+
+            return $fee;
+        });
+
+        if ($tour) {
+            // dd(2342);
             $title = $tour->title;
             if($request->company) {
                 $partner = Partner::where('slug', $request->company)->first();
@@ -372,9 +391,10 @@ class TourController extends Controller
                 'discounted_price'      => $discounted_price,
                 'tour_start_date'       => [],
                 'disabled_tour_dates'   => [],
-                'review'                => $this->getReview($tour->id)
+                'review'                => $this->getReview($tour->review)
             ];           
         }
+
 
         return response()->json([
             'status' => true,
@@ -639,7 +659,7 @@ class TourController extends Controller
     public function fetch_deposit_rule($id)
     {
         $cacheKey = 'deposit_rule_' . $id;
-
+        $discount = [];
         $depositRule = Cache::remember($cacheKey, 86400, function () use ($id) {
             return TourSpecialDeposit::where('tour_id', $id)->first();
         });
@@ -789,7 +809,7 @@ class TourController extends Controller
                     $query->select('id', 'tour_id', 'address');
                 }])
                 ->onlyRoot()
-                ->select('id', 'title', 'slug', 'unique_code', 'price')
+                ->select('id', 'title', 'slug', 'unique_code', 'price', 'currency')
                 ->where('status', 1)
                 ->when($search, function ($query, $search) {
                     $query->where('title', 'LIKE', '%' . $search . '%');
@@ -797,6 +817,17 @@ class TourController extends Controller
                 ->orderBy('title', 'asc')
                 ->limit(max(0, $total_tours))
                 ->get();
+
+                $tours->map(function ($tour) {
+
+                    $tour->price = currencyConvert(
+                        $tour->price,
+                        $tour->currency ?? 'USD',
+                        'CAD' // 👈 forced CAD
+                    );
+
+                    return $tour;
+                });
         });
 
         /*
@@ -1732,9 +1763,9 @@ class TourController extends Controller
         return $slots;
     }
 
-    public function getReview($tourId)
+    public function getReview($review)
     {
-        $review = TourReview::where('tour_id', $tourId)->first();
+        // $review = TourReview::where('tour_id', $tourId)->first();
 
         if (!$review) {
             return response()->json(['message' => 'No review found'], 404);
@@ -1744,7 +1775,7 @@ class TourController extends Controller
         $recommended = $review->use_recommended ? json_decode($review->recommended, true) ?? [] : [];
         $badges      = $review->use_badge ? json_decode($review->badges, true) ?? [] : [];
         $banners     = $review->use_banner ? json_decode($review->banners, true) ?? [] : [];
-        $tag        = $review->tag ? json_decode($review->tag, true) ?? [] : [];
+        $tag        =  $review->tag ? $review->tag ?? [] : [];
 
         // Build response respecting the flags
         $response = [
@@ -1908,260 +1939,6 @@ class TourController extends Controller
         return $str;
     }
 
-    public function single343(Request $request)
-{
-    $data = Tour::with(['detail', 'schedules', 'pricings', 'addons', 'taxes_fees', 'pickups.locations'])
-                ->find($request->id);
-
-    if (!$data) {
-        return 'Tour not found';
-    }
-
-    $count = $request->tourCount;
-    $_tourId = $data->id;
-
-    // ---------------------------------------------------
-    // GET NEXT AVAILABLE DATE + DISABLED DATES
-    // ---------------------------------------------------
-    $tour_start_date_arr = $this->getNextAvailableDate($data->id, $data->schedules);
-    $disabled_dates = $this->getDisabledTourDates($data->id, $data->schedules);
-
-    // Convert {date: "..."} into plain string
-    $tour_start_date = is_array($tour_start_date_arr)
-                        ? ($tour_start_date_arr['date'] ?? '')
-                        : ($tour_start_date_arr->date ?? '');
-
-    $disabledJson = json_encode($disabled_dates);
-
-
-    // ---------------------------------------------------
-    // PICKUP HTML
-    // ---------------------------------------------------
-    $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
-        <h4 style="font-size:16px; font-weight:600">Pickup Options</h4>';
-
-    if (!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'No Pickup') {
-
-        $pickupHtml .= '
-            <p>No Pickup Available</p>
-            <input type="hidden" name="pickup_id" value="0">
-            <input type="hidden" name="pickup_name" value="">
-        ';
-    }
-
-    else if (!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'Pickup') {
-
-        $comment = \DB::table('pickup_tour')
-                        ->where('tour_id', $data->id)
-                        ->where('pickup_id', $data->pickups[0]?->id)
-                        ->value('comment');
-
-        $commentText = $comment ?? "Enter the pickup location";
-
-        $pickupHtml .= '
-            <label>Pickup Location</label>
-            <input type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
-
-            <small style="color:#777; display:block; margin-top:5px;">'.$commentText.'</small>
-            <input type="hidden" name="pickup_id" value="0">
-        ';
-    }
-
-    else if (!empty($data->pickups) && isset($data->pickups[0])) {
-
-        $locations = $data->pickups[0]?->locations ?? [];
-
-        $pickupHtml .= '
-            <label>Select Pickup Point</label>
-            <select name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
-                <option value="">Select Pickup Point</option>';
-
-                foreach ($locations as $loc) {
-                    $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
-                }
-
-                $pickupHtml .= '<option value="other">Other</option>';
-
-        $pickupHtml .= '
-            </select>
-
-            <div id="pickup-other-box" style="display:none; margin-top:10px">
-                <label>Enter Pickup Location</label>
-                <input type="text" name="pickup_name" value=" " class="form-control" placeholder="Enter location manually">
-            </div>
-        ';
-    }
-
-    $pickupHtml .= '</div>';
-
-    // ---------------------------------------------------
-    // MAIN HTML BLOCK
-    // ---------------------------------------------------
-    $row_id = 'row_'.$count;
-    $subtotal = 0;
-
-    $str = '
-    <div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
-
-        <input type="hidden" name="tour_id[]" value="' .  $data->id . '" />
-
-        <table class="table">
-            <tr>
-                <td width="600"><h3 class="text-lg">'.$data->title.'</h3></td>
-
-                <td width="200" class="text-right">
-                    <div class="input-group">
-                        <input type="text"
-                               class="aiz-date-range form-control tour-startdate"
-                               data-count="'.$count.'"
-                               id="tour_startdate_'.$count.'"
-                               name="tour_startdate[]"
-                               data-single="true"
-                               data-show-dropdown="true"
-                               data-disabled-dates=\''.$disabledJson.'\'
-                               value="'.$tour_start_date.'">
-
-                        <div class="input-group-append">
-                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                        </div>
-                    </div>
-                </td>
-
-                <td width="200" class="text-right">
-                    <div class="input-group">
-                        <input type="text" placeholder="Time"
-                               name="tour_starttime[]"
-                               id="tour_starttime_'.$count.'"
-                               class="form-control aiz-time-picker"
-                               data-minute-step="1">
-
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-clock"></i></span>
-                        </div>
-                    </div>
-                </td>
-
-                <td class="text-right">
-                    <button type="button" class="btn btn-sm btn-danger" onclick="removeTour(\''.$row_id.'\')">-</button>
-                    <button type="button" onclick="addTour()" class="btn btn-sm btn-info">+</button>
-                </td>
-            </tr>
-        </table>
-
-        
-    ';
-
-    // ---------------------------------------------------
-    // PRICING BLOCK (kept exactly as original)
-    // ---------------------------------------------------
-    $str .= '<table class="table" style="background:#ebebeb">
-                <tr>
-                    <td style="width:200px" width="200">
-                        <table class="table">
-                            <tr>
-                                <td colspan="2">
-                                    <h4 style="font-size:16px; font-weight:600">Quantities</h4>
-                                </td>
-                            </tr>';
-
-    if ($data->pricings) {
-        $i = 0;
-        foreach ($data->pricings as $pricing) {
-            $num = ($i++ == 0) ? 1 : 0;
-            if ($num) $subtotal += ($num * $pricing->price);
-
-            $str .= '
-                <tr>
-                    <td width="60">
-                        <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
-                        <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl">
-                        <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$pricing->price.'" /> 
-                    </td>
-                    <td>'.$pricing->label.' ('. price_format($pricing->price) .')</td>
-                </tr>';
-        }
-    }
-
-    $str .= '</table>
-            </td>
-            <td style="width:200px">
-                <table class="table">
-                    <tr>
-                        <td colspan="2">
-                            <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
-                        </td>
-                    </tr>';
-
-    if ($data->addons) {
-        foreach ($data->addons as $extra) {
-            $price = $extra->price;
-
-            $str .= '
-                <tr>
-                    <td width="60">
-                        <input type="hidden" name="tour_extra_id_'.$_tourId.'[]" value="'.$extra->id.'" />  
-                        <input type="number" name="tour_extra_qty_'.$_tourId.'[]" value="0" style="width:60px" min="0" class="form-contorl text-center">
-                        <input type="hidden" name="tour_extra_price_'.$_tourId.'[]" value="'.$price.'" /> 
-                    </td>
-                    <td>'.$extra->name.' ('. price_format($extra->price) .')</td>
-                </tr>';
-        }
-    }
-
-    $str .= '</table>
-            </td>
-        </tr>
-    </table>' ;
-
-    $str .=$pickupHtml;
-
-    // ---------------------------------------------------
-    // TAXES & FEES
-    // ---------------------------------------------------
-    $str .= '<table class="table">';
-
-    $str .= '
-
-        <tr>
-            <th>total</th>
-            <th class="text-right withouttax-box">'. price_format($subtotal) .'</th>
-            <th class="text-right">'. price_format($subtotal) .'</th>
-        </tr>';
-    if ($data->taxes_fees) {
-        foreach ($data->taxes_fees as $item) {
-
-            $price = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
-            $tax = $price ?? 0;
-            $subtotal += $tax;
-
-            // $str .= '
-            //     <tr>
-            //         <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
-            //         <td class="text-right">'. price_format($tax) .'</td>
-            //     </tr>';
-
-                $str .= '<tr class="tax-row" 
-                data-type="'.$item->fee_type.'" 
-                data-value="'.$item->tax_fee_value.'">
-                <td>'.$item->label.' ('. taxes_format($item->fee_type, $item->tax_fee_value) .')</td>
-                <td class="text-right tax-amount">'. price_format($tax) .'</td>
-            </tr>';
-        }
-    }
-
-    $str .= '
-
-        <tr>
-            <th>Subtotal</th>
-            <th class="text-right subtotal-box">'. price_format($subtotal) .'</th>
-            <th class="text-right">'. price_format($subtotal) .'</th>
-        </tr>
-    </table>';
-
-    $str .= '</div>'; // end main div
-
-    return $str;
-}
 
 
 public function single(Request $request)
@@ -2367,14 +2144,14 @@ public function single(Request $request)
                                 if ($data->addons) {
                                     foreach($data->addons as $extra) {
                                         // $price = $extra->price;
-                                        $price = currencyConvert($extra->price, $data->currency, $orderCurrency);                                        
+                                        $price = currencyConvert($extra->price, $extra->currency, $orderCurrency);                                        
                                         $str.= '<tr>
                                             <td width="60">
                                                 <input type="hidden" name="tour_extra_id_'.$_tourId.'[]" value="'. $extra->id .'" />  
                                                 <input type="number" name="tour_extra_qty_'.$_tourId.'[]" value="0" style="width:60px" min="0" class="form-contorl text-center">
                                                 <input type="hidden" name="tour_extra_price_'.$_tourId.'[]" value="'.$price.'" /> 
                                             </td>
-                                            <td>'.$extra->name.' ('.price_format_with_currency($extra->price, $data->currency, $orderCurrency).')</td>
+                                            <td>'.$extra->name.' ('.price_format_with_currency($extra->price, $extra->currency, $orderCurrency).')</td>
                                         </tr>';
                                     }
                                 }

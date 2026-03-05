@@ -993,7 +993,8 @@ $pickupHtml .= '</div>';
 
     public function editPartner($id)
     {
-        $data       = Tour::findOrFail(decrypt($id));
+        $data       = Tour::with('partnerTours')->findOrFail(decrypt($id));
+        
         $detail     = $data->detail ? $data->detail : new TourDetail();
         return view('admin.tours.feature.partner', compact( 'data', 'detail'));
     }

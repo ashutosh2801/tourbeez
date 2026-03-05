@@ -34,12 +34,6 @@ if(!function_exists('getFullSql')) {
     }
 }
 
-if(!function_exists('remove_last_Tour_word')) {
-    function remove_last_Tour_word($string) {
-        return preg_replace('/\s+(tour|tours)$/i', '', $string);
-    }
-}
-
 if(!function_exists('countThingsToDo')) {
     function countThingsToDo($id, $type) {
         $query = Tour::select(['id'])
@@ -141,7 +135,7 @@ if (!function_exists('price_format_with_currency')) {
         
         $from = $currency;
 
-        $currency = $currency;
+        $currency = app('currency') ?: $currency;
 
         if($tourCurrency){
            $currency = $tourCurrency;
@@ -722,13 +716,13 @@ if (! function_exists('order_status_list')) {
     function order_status_list()
     {
         return [
-            1 => "Abandoned",
+            1 => "New",
             2 => "On Hold",
             3 => "Pending supplier",
             4 => "Pending customer",
             5 => "Confirmed",
             6 => "Cancelled",
-            7 => "Abandoned cart",
+            7 => "Abandoned cart"
         ];
     }
 }
@@ -1315,21 +1309,21 @@ if (!function_exists('currencyConvert')) {
         });
 
         if (empty($rates)) {
-            return round($amount);
+            return $amount;
         }
 
         $rateFrom = $rates[$from] ?? null;
         $rateTo   = $rates[$to] ?? null;
 
         if (!$rateFrom || !$rateTo) {
-            return round($amount);
+            return $amount;
         }
         // dd($rateFrom, $rateTo, $amount);
         // ✅ USD-based conversion (MATCHES FRONTEND)
         $converted = ($amount / $rateFrom) * $rateTo;
 
-        return round($converted);
-        // return (float) number_format($converted, 6, '.', '');
+
+        return (float) number_format($converted, 6, '.', '');
 
         // return round($converted, 2);
     }

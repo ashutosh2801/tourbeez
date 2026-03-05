@@ -37,7 +37,7 @@
                                 </td>
                                 <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
                                 <td>{{ $item->description }}</td>
-                                <td>{{ price_format($item->price) }}</td>
+                                <td>{{ price_format_with_currency($item->price, $item->currency) }}</td>
                                 <td>{{ $item->customer_choice }}</td>
                                 <td width="60">
                                     <!-- <a href="{{ route('admin.addon.edit', encrypt($item->id)) }}"

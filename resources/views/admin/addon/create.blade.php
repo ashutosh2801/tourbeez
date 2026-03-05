@@ -41,6 +41,25 @@
 
                         <div class="form-group row">
                             <div class="col-md-12">
+                                <label for="price">Currency</label>
+                            </div>
+                            <div class="col-md-6 price-input">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                    </div>
+                                    <select name="currency" class="form-control mr-2">
+                                        @foreach(config('constants.currencies') as $code => $country)
+                                            <option value="{{ $code }}" >{{ $code }} - {{ $country }}</option> 
+                                        @endforeach
+
+                                    </select>
+                                </div>
+                            </div>
+                            
+                        </div>
+
+                        <div class="form-group row">
+                            <div class="col-md-12">
                                 <label for="price">Price</label>
                             </div>
                             <div class="col-md-6 price-input">

@@ -203,7 +203,7 @@
                                             <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
                                         </div>
                                         <input type="text" placeholder="99.50" name="PriceOption[{{ $index }}][price]" id="PriceOption_price" 
-                                        value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control price-option-input" >
+                                        value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control price-option-input" step=any>
                                         
                                         
                                     </div>  
@@ -898,7 +898,7 @@ function advertisedToOffered() {
     $('#offerd_price').val(offered);
 
     const firstOption = getFirstPriceOption();
-    if (firstOption) firstOption.value = advertised;
+    // if (firstOption) firstOption.value = advertised; //we update if the issue in decimal
 
     isUpdating = false;
 }

@@ -722,13 +722,13 @@ if (! function_exists('order_status_list')) {
     function order_status_list()
     {
         return [
-            1 => "Abandoned",
+            1 => "New",
             2 => "On Hold",
             3 => "Pending supplier",
             4 => "Pending customer",
             5 => "Confirmed",
             6 => "Cancelled",
-            7 => "Abandoned cart",
+            7 => "Abandoned cart"
         ];
     }
 }

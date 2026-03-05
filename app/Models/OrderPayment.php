@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Order;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -31,4 +32,7 @@ class OrderPayment extends Model
         'refund_reason',
         'refunded_at',
     ];
+
+    public function order() { return $this->belongsTo(Order::class); }
+
 }
