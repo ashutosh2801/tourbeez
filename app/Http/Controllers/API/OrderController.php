@@ -107,8 +107,8 @@ class OrderController extends Controller
             });
 
             if ($booking && $booking->order_status !== 1) {
-                $booking->order_status   = 1;
-                $booking->payment_status = 1;
+                // $booking->order_status   = 1;
+                // $booking->payment_status = 1;
                 $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
                 $booking->updated_at     = now();
                 $booking->save();
@@ -545,7 +545,7 @@ class OrderController extends Controller
             $promo->save();
         }
         
-        // try {
+        try {
 
             $data = $request->input('formData');
             if(isset($data['pickup_id']) && $data['pickup_id']) {
@@ -710,6 +710,7 @@ class OrderController extends Controller
             $order->total_amount       = $item_total ?? 0;
             $order->balance_amount     = ($adv_deposite == 'deposit') ? $item_total : 0;
             $order->adv_deposite       = $adv_deposite;
+            $order->source             = $request->source ? ucwords($request->source) : 'Online';
             $order->updated_at         = now();
             $order->save();
             // dd(242);
@@ -850,8 +851,8 @@ class OrderController extends Controller
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($chargeAmount * 100)),
                         'currency' => $order->currency,
-                        
-                        'description' => $tour->title,
+                        // 'receipt_email' => $data['email'],
+                        'description' => '#' . $order->order_number . ' - ' . $tour->title,
                         'statement_descriptor_suffix' =>  $order->order_number,
                         'metadata'  => $metaData,
                         'capture_method' => 'manual',
@@ -950,11 +951,10 @@ class OrderController extends Controller
                         'customer'  => $stripeCustomer->id,
                         'amount' => intval(round($order->total_amount * 100)),
                         'currency' => $order->currency,
-                        
-                        'description' => $tour->title,
+                        // 'receipt_email' => $data['email'],
+                        'description' => '#' . $order->order_number . ' - ' . $tour->title,
                         'statement_descriptor_suffix' =>  $order->order_number,
                         'metadata'  => $metaData,
-
                         'automatic_payment_methods' => ['enabled' => true],
                         'capture_method' => 'manual',
                         'setup_future_usage'=> 'off_session',
@@ -1012,8 +1012,8 @@ class OrderController extends Controller
                     'customer' => $stripeCustomer->id,
                     'amount'   => intval(round($chargeAmount * 100)),
                     'currency' => $order->currency,
-                    
-                    'description' => $tour->title . ' (Remaining Balance)',
+                    // 'receipt_email' => $data['email'],
+                    'description' => '#' . $order->order_number . ' - ' . $tour->title . ' (Remaining Balance)',
                     'statement_descriptor_suffix' => $order->order_number,
                     'metadata' => $metaData,
                     'automatic_payment_methods' => ['enabled' => true],
@@ -1100,14 +1100,14 @@ class OrderController extends Controller
                 'payment_intent_id' => $order->payment_intent_id,
                 'payment_intent_client_secret' => $order->payment_intent_client_secret,
             ], 200);
-        // } catch (\Exception $e) {
-        //     Log::error('Cart Update Error: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Cart Update Error: ' . $e->getMessage());
 
-        //     return response()->json([
-        //         'status' => false,
-        //         'message' => 'Cart Update Error: ' . $e->getMessage(),
-        //     ], 500);
-        // }
+            return response()->json([
+                'status' => false,
+                'message' => 'Cart Update Error: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
 

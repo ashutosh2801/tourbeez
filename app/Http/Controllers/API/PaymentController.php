@@ -985,7 +985,7 @@ class PaymentController extends Controller
                                 $discountAmount = $discount->discount;
                             }
                         }
-
+                        $subtotalWithoutDiscount = $subtotal;
                         $subtotal -= $discountAmount;
 
                         $discountRows .= '
@@ -993,7 +993,20 @@ class PaymentController extends Controller
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
+                                    Sub Total 
+                                </small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                 ' . price_format_with_currency($subtotalWithoutDiscount, $order->currency) . '
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px; color:#d9534f;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#d9534f;">
                                     Discount ' . ($discount->type === "PERCENT" ? '(' . $discount->discount . '%)' : '') . '
                                 </small>
                             </td>
@@ -1005,7 +1018,10 @@ class PaymentController extends Controller
                 }
 
                 // Total Row
-                $TOUR_ITEM_SUMMARY .= $discountRows . $taxRows . '
+                
+
+                $TOUR_ITEM_SUMMARY .= $taxRows . $discountRows . '
+
                     <tr>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>

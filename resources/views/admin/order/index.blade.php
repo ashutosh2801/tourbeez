@@ -226,7 +226,19 @@
                                     <br>
                                     {{ $order->customer?->phone }}
                                 </td>
-                                <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                @php
+                                    $total = round($order->total_amount);
+                                    $paid = round($order->booked_amount) ?? 0;
+
+                                    if ($paid == 0) {
+                                        $amountClass = 'text-secondary'; // grey
+                                    } elseif ($paid < $total) {
+                                        $amountClass = 'text-danger'; // red
+                                    } else {
+                                        $amountClass = 'text-success'; // green
+                                    }
+                                @endphp
+                                <td class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                 <td>
                                     @if($order->payment_method)
                                         {{ ucwords($order->payment_method) }}
