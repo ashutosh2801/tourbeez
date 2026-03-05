@@ -98,6 +98,8 @@ class Tour extends Model
 
     public function parent() { return $this->belongsTo(Tour::class, 'parent_id'); }
 
+    public function partnerTours() { return $this->hasMany(PartnerTour::class); }
+
 
     // ---------------- ACCESSORS ----------------
     public function getCategoryNamesAttribute(): string

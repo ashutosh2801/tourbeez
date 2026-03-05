@@ -51,7 +51,8 @@ class AddonController extends Controller
             'name'          => 'required|max:255',
             'price'         => 'required|numeric',
             'description'   => 'required|string',
-            'image'         => 'required|integer'
+            'image'         => 'required|integer',
+            'currency'      => 'required|string',
         ]);
 
 
@@ -70,7 +71,8 @@ class AddonController extends Controller
             'customer_choice' => $request->customer_choice,
             'description' => $request->description,
             'availability' => $request->availability,
-            'image' => $request->image
+            'image' => $request->image,
+            'currency' => $request->currency
         ]);
 
         // $tourId = $tour->id;
@@ -110,7 +112,8 @@ class AddonController extends Controller
             'name'          => 'required|max:255',
             'price'         => 'required|numeric',
             'description'   => 'required|string',
-            'image'         => 'required|integer'
+            'image'         => 'required|integer',
+            'currency'      => 'required|string'
         ]);
 
         // $image = '';
@@ -128,6 +131,8 @@ class AddonController extends Controller
         $addon->description     = $request->description;
         $addon->availability    = $request->availability;
         $addon->image           = $request->image;
+        $addon->currency        = $request->currency;
+
         if($addon->save()) {
             return redirect()->route('admin.addon.index')->with('success','Addon updated successfully.');
         }

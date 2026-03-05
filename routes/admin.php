@@ -82,6 +82,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/role',RoleController::class);
     Route::resource('/permission',PermissionController::class);
     Route::resource('/category',CategoryController::class);
+
+    Route::post('/category/{id}/clone', [CategoryController::class, 'clone'])
+    ->name('category.clone');
+    
     Route::resource('/tour_type',TourTypeController::class);
     Route::resource('/collection',CollectionController::class);
     
@@ -110,6 +114,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // City
     Route::resource('/cities', CityController::class);
     Route::get('/cities/destroy/{id}', [CityController::class, 'destroy'])->name('cities.destroy');
+
+    Route::post('/cities/update-order', [CityController::class, 'updateOrder'])->name('cities.updateOrder');
 
     // Addone
     Route::resource('addon',AddonController::class);
@@ -143,6 +149,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/reminder', [TourController::class, 'editReminder'])->name('tour.edit.message.reminder');
     Route::get('/tour/{id}/edit/followup', [TourController::class, 'editFollowup'])->name('tour.edit.message.followup');
     Route::get('/tour/{id}/edit/paymentrequest', [TourController::class, 'editPaymentRequest'])->name('tour.edit.message.paymentrequest');
+    Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
+    Route::get('/admin/category-search', [TourController::class, 'categorySearch'])->name('category.search');
     Route::get('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit.special.deposit');
     Route::get('/tour/{id}/edit/review', [TourController::class, 'review'])->name('tour.edit.review');
     Route::get('/tour/{id}/edit/schedule-calendar', [TourController::class, 'scheduleCalendar'])->name('tour.edit.schedule-calendar');

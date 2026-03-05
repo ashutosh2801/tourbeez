@@ -964,8 +964,64 @@ class PaymentController extends Controller
                     }
                 }
 
+                // Discount
+                $discountRows = '';
+                $discounts = !empty($order_tour->discount) 
+                    ? json_decode($order_tour->discount) 
+                    : [];
+
+                if (!empty($discounts)) {
+                    foreach ($discounts as $discount) {
+
+                        // IMPORTANT: If you want historical accuracy,
+                        // use stored price instead of recalculating
+                        $discountAmount = $discount->price ?? 0;
+
+                        // If price is not stored, fallback to calculation
+                        if (!$discountAmount) {
+                            if ($discount->type === 'PERCENT') {
+                                $discountAmount = ($subtotal * $discount->discount) / 100;
+                            } else {
+                                $discountAmount = $discount->discount;
+                            }
+                        }
+                        $subtotalWithoutDiscount = $subtotal;
+                        $subtotal -= $discountAmount;
+
+                        $discountRows .= '
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
+                                    Sub Total 
+                                </small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                 ' . price_format_with_currency($subtotalWithoutDiscount, $order->currency) . '
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px; color:#d9534f;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#d9534f;">
+                                    Discount ' . ($discount->type === "PERCENT" ? '(' . $discount->discount . '%)' : '') . '
+                                </small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px; color:#d9534f;">
+                                 ' . price_format_with_currency($discountAmount, $order->currency) . '
+                            </td>
+                        </tr>';
+                    }
+                }
+
                 // Total Row
-                $TOUR_ITEM_SUMMARY .= $taxRows . '
+                
+
+                $TOUR_ITEM_SUMMARY .= $taxRows . $discountRows . '
+
                     <tr>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>

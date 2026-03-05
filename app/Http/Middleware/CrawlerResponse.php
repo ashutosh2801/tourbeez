@@ -31,11 +31,11 @@ class CrawlerResponse
         $ip = $request->ip();
         $url = $request->fullUrl();
 
-        logger()->info('UA LOG', [
-            'ua'  => $ua,
-            'ip'  => $ip,
-            'url' => $url,
-        ]);
+        // logger()->info('UA LOG', [
+        //     'ua'  => $ua,
+        //     'ip'  => $ip,
+        //     'url' => $url,
+        // ]);
 
         
         // $bots = [

@@ -61,8 +61,8 @@ class CityController extends Controller
                 $q->whereNotNull('latitude')
                   ->whereNotNull('longitude');
             })
-
-            ->orderBy('id', 'asc')
+            ->orderByRaw('CASE WHEN `order` = 0 THEN 1 ELSE 0 END')
+            ->orderBy('order', 'asc')
             ->paginate(10)
             ->appends($request->query());
 
@@ -195,5 +195,18 @@ class CityController extends Controller
     {
         $cities = City::where('state_id', $request->state_id)->get();
         return $cities;
+    }
+
+    public function updateOrder(Request $request)
+    {
+        if ($request->orders) {
+            foreach ($request->orders as $cityId => $order) {
+                City::where('id', $cityId)->update([
+                    'order' => (int) $order
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Order updated successfully.');
     }
 }

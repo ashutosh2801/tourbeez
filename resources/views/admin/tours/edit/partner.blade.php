@@ -21,56 +21,69 @@
 
                     <div class="col-lg-12">
                         <div class="form-group">
-                            @foreach (\App\Models\Partner::all() as $partner)  
-                            <div style="background:#f5f5f5;border-radius:10px;border:1px solid #ccc;padding:10px;margin-bottom:20px">
-                                <input id="{{ $partner->slug }}" type="hidden" name="partner_id[]" value="{{ $partner->id }}" /> 
-                                <h2 style="font-size:25px;padding:0; margin:0 0 15px">{{ $partner->id }} {{ $partner->name }}</h2>
-                                <div class="col-lg-12  mb-2">
-                                    @if($partner->upload_id)
-                                        <img src="{{ uploaded_asset($partner->upload_id) }}" height="45">
-                                    @elseif($partner->logo_url)
-                                        <img src="{{ $partner->logo_url }}" height="45">
-                                    @endif
-                                </div>
+                            @foreach (\App\Models\Partner::all() as $partner)
 
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <label for="title" class="form-label">Title</label>
-                                        <input type="text" name="title[]" id="title"
-                                            value="{{ $partner->tour?->title }}"
-                                            class="form-control" placeholder="Ex: Niagara Falls Day Tour" autocomplete="off">
+                                @php
+                                    $partnerTour = $data->partnerTours
+                                        ->where('partner_id', $partner->id)
+                                        ->first();
 
-                                        @error('title')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
+                                    $title = $partnerTour?->title ?? $data->title;
+                                    $link = $partnerTour?->link ?? "https://tourbeez.com/{$partner->slug}/tour/{$data->slug}";
+                                @endphp
+
+                                <div style="background:#f5f5f5;border-radius:10px;border:1px solid #ccc;padding:10px;margin-bottom:20px">
+
+                                    <input type="hidden" name="partner_id[]" value="{{ $partner->id }}" />
+
+                                    <h2 style="font-size:25px;padding:0; margin:0 0 15px">
+                                        {{ $partner->name }}
+                                    </h2>
+
+                                    <div class="col-lg-12 mb-2">
+                                        @if($partner->upload_id)
+                                            <img src="{{ uploaded_asset($partner->upload_id) }}" height="45">
+                                        @elseif($partner->logo_url)
+                                            <img src="{{ $partner->logo_url }}" height="45">
+                                        @endif
                                     </div>
-                                </div>
 
-                                
-
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <label for="link" class="form-label">Link</label>
-                                        <div class="input-group">
-                                            <input readonly type="text" name="link[]" id="{{'link_'.$partner->slug}}"
-                                                value="https://tourbeez.com/{{ $partner->slug }}/tour/{{ $data->slug }}"
-                                                class="form-control"
-                                                placeholder="Ex: https://tourbeez.com/{{ $partner->slug }}/tour/{{ $data->slug }}" autocomplete="off">
-                                            <button
-                                                type="button"
-                                                class="btn btn-outline-info"
-                                                onclick="copyLink('{{'link_'.$partner->slug}}')"
-                                            >
-                                                Copy Link
-                                            </button>    
+                                    {{-- TITLE --}}
+                                    <div class="col-lg-12">
+                                        <div class="form-group">
+                                            <label class="form-label">Title</label>
+                                            <input type="text"
+                                                   name="title[]"
+                                                   value="{{ $title }}"
+                                                   class="form-control"
+                                                   placeholder="Ex: Niagara Falls Day Tour"
+                                                   autocomplete="off">
                                         </div>
-                                        @error('link')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
                                     </div>
+
+                                    {{-- LINK --}}
+                                    <div class="col-lg-12">
+                                        <div class="form-group">
+                                            <label class="form-label">Link</label>
+                                            <div class="input-group">
+                                                <input readonly
+                                                       type="text"
+                                                       name="link[]"
+                                                       id="link_{{ $partner->slug }}"
+                                                       value="{{ $link }}"
+                                                       class="form-control">
+
+                                                <button type="button"
+                                                        class="btn btn-outline-info"
+                                                        onclick="copyLink('link_{{ $partner->slug }}')">
+                                                    Copy Link
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
-                            </div>
-                            @endforeach                          
+                            @endforeach                         
                         </div>
                     </div>
 

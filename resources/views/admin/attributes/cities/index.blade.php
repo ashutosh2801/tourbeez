@@ -63,10 +63,13 @@
 
             </div>
             <div class="card-body p-0">
+                <form action="{{ route('admin.cities.updateOrder') }}" method="POST">
+                    @csrf
                 <table class="table aiz-table mb-0">
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>Order</th>
                             <th>Image</th>
                             <th>{{translate('City')}}</th>
                             <th data-breakpoints="md">{{translate('State')}}</th>
@@ -78,7 +81,15 @@
                         @foreach($cities as $key => $city)
                             <tr>
                                 <td>{{ ($key+1) + ($cities->currentPage() - 1)*$cities->perPage() }}</td>
-                                <td><img class="img-md" src="{{ uploaded_asset($city->upload_id) }}" height="45px" alt="{{translate('photo')}}" /></td>
+                                <td width="10">
+                                    <input type="number"
+                                           name="orders[{{ $city->id }}]"
+                                           value="{{ $city->order }}"
+                                           class="form-control form-control-sm"
+                                           min="0">
+                                </td>
+
+                                <td ><img class="img-md" src="{{ uploaded_asset($city->upload_id) }}" height="45px" alt="{{translate('photo')}}" /></td>
                                 <td>{{ucwords($city->name)}}</td>
                                 <td>{{ucwords($city->state->name)}}</td>
                                 <td>{{ucwords($city->state->country->name)}}</td>
@@ -94,66 +105,18 @@
                         @endforeach
                     </tbody>
                 </table>
+                <div class="text-right p-3">
+                    <button type="submit" class="btn btn-primary">
+                        Save City Order
+                    </button>
+                </div>
+                </form>
                 <div class="aiz-pagination">
                     {{ $cities->appends(request()->input())->links() }}
                 </div>
             </div>
         </div>
     </div>
-    <!-- <div class="col-lg-5">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0 h6">{{translate('Add New City')}}</h5>
-            </div>
-            <div class="card-body">
-                <form action="{{ route('admin.cities.store') }}" method="POST" >
-                    @csrf
-                    <div class="form-group mb-3">
-                        <label for="name">{{translate('Country')}}</label>
-                        <select class="form-control aiz-selectpicker" id="country_id" data-live-search="true" name="country_id" required>
-                            @foreach($countries as $country)
-                                <option value="{{$country->id}}">{{ ucwords($country->name) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group mb-3">
-                        <label for="name">{{translate('State')}}</label>
-                        <select class="form-control aiz-selectpicker" name="state_id"  data-live-search="true"  id="state_id"  required>
-
-                        </select>
-                        @error('state_id')
-                            <small class="form-text text-danger">{{ $message }}</small>
-                        @enderror
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label for="name">{{translate('City Name')}}</label>
-                        <input type="text" id="name" name="name" placeholder="{{ translate('City Name') }}"
-                               class="form-control" required>
-                       @error('name')
-                           <small class="form-text text-danger">{{ $message }}</small>
-                       @enderror
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label class="form-label">{{translate('Image')}}</label>
-                        <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
-                            <div class="input-group-prepend">
-                                <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
-                            </div>
-                            <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
-                            <input type="hidden" name="upload_id" class="selected-files" >
-                        </div>
-                        <div class="file-preview box"></div>
-                    </div>
-
-                    <div class="form-group mb-3 text-right">
-                        <button type="submit" class="btn btn-primary">{{translate('Save')}}</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div> -->
 </div>
 
 <!-- Add Modal -->

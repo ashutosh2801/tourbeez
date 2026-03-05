@@ -33,8 +33,13 @@ use Illuminate\Support\Facades\Route;
 // Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
 // Route::get('/location-banner', [CommonController::class, 'getLocationBanner']);
 
-Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
-Route::get('/tour/{slug}/booking', [TourController::class, 'fetch_booking']);
+Route::get('/test', function () {
+    return 'ok';
+});
+
+// Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
+// Route::get('/tour/{slug}/booking', [TourController::class, 'fetch_booking']);
+// Route::get('/home-listing',[CommonController::class,'home_listing']);
 
 Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
 
@@ -55,8 +60,8 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/category-tours', [TourController::class, 'toursByCategory'])->name('tour.category');
     Route::get('/tours',[TourController::class,'index']);
     Route::get('/tour/search', [TourController::class, 'search']);
-    // Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
-    // Route::get('/tour/{slug}/booking', [TourController::class, 'fetch_booking']);
+    Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
+    Route::get('/tour/{slug}/booking', [TourController::class, 'fetch_booking']);
     Route::get('/tour/{id}/deposit-rule', [TourController::class, 'fetch_deposit_rule']);
     Route::get('/sub-tours/{id}/date/{date}', [TourController::class, 'getSubTour']);
     Route::get('/subtours/{id}/date/{date}', [TourController::class, 'fetch_sub_tours']);
@@ -84,6 +89,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
     Route::post('/verify-payment', [PaymentController::class, 'verifyPayment']);
     Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
+    Route::post('/save-card', [PaymentController::class, 'saveCard']);
 
     // Route::get('/supplier/register', [SupplierController::class, 'showForm'])->name('supplier.register');
     Route::post('/suppliers', [SupplierController::class, 'store']);
