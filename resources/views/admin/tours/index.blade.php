@@ -21,11 +21,18 @@
                             </select>
                         </div>
                         <div class="col-md-2 col-6">
+                            <select name="category" id="category-select" class="form-control">
+                                @if(request('category'))
+                                    <option value="{{ request('category') }}" selected>{{ ucwords(optional(\App\Models\Category::find(request('category')))->name) }}</option>
+                                @endif
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
                             <select name="author" class="form-control aiz-selectpicker" data-live-search="true">
                                 <option value="">Select Author</option>
                                     @foreach ($users as $author)
                                         <option value="{{ $author->id }}" {{ request('author') == $author->id ? 'selected' : '' }}>
-                                            {{ $author->name }}
+                                            {{ ucwords($author->name) }}
                                         </option>
                                     @endforeach
                                 
@@ -84,15 +91,7 @@
                                 <option value="expired" {{ request('schedule_expiry') == 'expired' ? 'selected' : '' }}>Expired</option>
                             </select>
                         </div>
-                        <div class="col-md-2 col-6">
-                            <select name="per_page" class="form-control">
-                                @foreach (['All',10, 25, 50, 100] as $number)
-                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                                        {{ $number }} per page
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        
                         <div class="col-md-2 col-6">
                             <select name="last_updated" class="form-control">
                                 <option value="">Last updated</option>
@@ -104,10 +103,30 @@
                                 <option value="expired" {{ request('last_updated') == 'expired' ? 'selected' : '' }}>Expired</option>
                             </select>
                         </div>
-                        <div class="col-md-2 col-12">
+                        
+                        <div class="col-md-2 col-6">
+                            <select name="has_sub_tour" class="form-control">
+                                <option value="">Has Sub Tour</option>
+                                @foreach (['Yes','No'] as $hasSubTour)
+                                    <option value="{{ strtolower($hasSubTour) }}" {{ request('has_sub_tour') == strtolower($hasSubTour) ? 'selected' : '' }}>
+                                        {{ str_replace('_', ' ', $hasSubTour) }} 
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <select name="per_page" class="form-control">
+                                @foreach (['All',10, 25, 50, 100] as $number)
+                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                        {{ $number }} per page
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
                             <button type="submit" class="btn btn-search mb-2"> <i class="fas fa-search"></i> Search</button>
                         </div>
-                        <div class="col-12">
+                        <div class="col-md-2 col-6">
                             <a href="{{ route('admin.tour.index')}}" class="btn-clear"> <i class="fas fa-times"></i> Clear Search</a>
                         </div>
                     </div>
@@ -187,8 +206,10 @@
 
                                     <div class="text-sm mt-2"> {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} | <a href="https://tourbeez.com/tour/{{ $tour->slug }}" class="text-success text-hover" target="_blank">{{translate('View Online')}}</a> | <a href="{{ route('admin.tour.sub-tour.index', encrypt($tour->id)) }}" class="text-success text-hover" target="_blank">{{ $tour->subTours()->exists() ? translate('View Sub Tours') : translate('Create Sub Tours')}}</a></div>
                                     <div class="text-sm text-gray-500 mt-2"><i style="font-size:11px"><b>By:</b> {{ $tour->user->name }} </i> <i style="font-size:13px"><b>at:</b> {{ $tour->updated_at }}</i></div>
-                                </td>    
-                                <td>{{ price_format_with_currency($tour->price) }}</td>
+                                </td>  
+
+                                
+                                <td>{{ price_format_with_currency($tour->price, $tour->currency) }}</td>
                                 <td>{{ $tour->unique_code }}</td>
                                 <td class="text-center">{{ $tour->trustpilot_review ? 'Yes' : 'No' }}</td>
                                 <td>{{ $tour->category_names ?: 'No categories' }}</td>
@@ -247,6 +268,7 @@
 </div>
 
 <!-- Tour Coupon Modal -->
+<!-- Tour Coupon Modal -->
 <div id="tour-coupon-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
@@ -292,7 +314,7 @@
         </div>
     </div>
 </div>
-
+<!-- Enable/Disable Tour Modal -->
 <!-- Enable/Disable Tour Modal -->
 <div id="enable-disable-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
@@ -469,6 +491,29 @@ $(document).ready(function () {
         },
         minimumInputLength: 2,
     });
+
+    $('#category-select').select2({
+        placeholder: 'Select a category',
+        ajax: {
+            url: '{{ route("admin.category.search") }}',
+            dataType: 'json',
+            delay: 300,
+            width: '250px',
+            dropdownAutoWidth: true,
+            dropdownParent: $('#category-select').parent(),
+            data: function (params) {
+                return { term: params.term };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.results
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 2,
+    });
+
 });
 </script>
 
@@ -503,6 +548,7 @@ $(document).ready(function () {
                     success: function () {
                         alert('Sort order updated!');
                         console.log('Order updated');
+                        location.reload();
                     },
                     error: function () {
                         alert('Failed to update tour order.');

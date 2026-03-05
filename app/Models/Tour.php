@@ -50,7 +50,10 @@ class Tour extends Model
     // ---------------- RELATIONSHIPS ----------------
     public function galleries(): BelongsToMany
     {
-        return $this->belongsToMany(Upload::class)->withPivot('is_main');
+        //return $this->belongsToMany(Upload::class)->withPivot('is_main');
+        return $this->belongsToMany(Upload::class)
+            ->withPivot('is_main')
+            ->orderByPivot('is_main', 'desc');
     }
 
     public function getMainImageAttribute()

@@ -4,87 +4,84 @@
 {{-- Include Bootstrap Icons --}}
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-<div class="card">
+<div class="card-primary mb-3">
     <form method="GET" action="{{ route('admin.orders.tour.manifest') }}">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center w-100">
-                <h3 class="card-title mb-0">Session Manifest</h3>
+        <div class="card-header order-manifest-head">
+            <div class="d-flex justify-content-between align-items-center w-100 mb-manifest">
+                <h3 class="card-title text-white">Session Manifest</h3>
                 <div class="d-flex align-items-center gap-1">
-                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" id="prev-date" style="height: 32px; width: 32px;">
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center left-btn" id="prev-date">
                         <i class="bi bi-chevron-left"></i>
                     </button>
-
-                    <input type="date" name="date" id="filter-date" class="form-control form-control-sm"
-                           value="{{ request('date', \Carbon\Carbon::today()->toDateString()) }}"
-                           style="height: 32px;" />
-
-                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" id="next-date" style="height: 32px; width: 32px;">
+                    <input type="date" name="date" id="filter-date" class="form-control form-control-sm filterDate" value="{{ request('date', \Carbon\Carbon::today()->toDateString()) }}" />
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center right-btn" id="next-date">
                         <i class="bi bi-chevron-right"></i>
                     </button>
                 </div>
                 <a href="{{ route('admin.orders.tour.manifest.download', ['date' => request('date')]) }}"
-                   class="btn btn-outline-success btn-sm">
+                   class="btn btn-success btn-sm">
                    <i class="bi bi-download"></i> Download PDF
                 </a>
             </div>
         </div>
     </form>
-
-    <div class="card-body">
+</div>
+<div class="card-primary bg-white border rounded-lg-custom">
+    <div class="card-body p-0">
         @forelse($sessions as $slotTime => $session)
-    <div class="card mb-2 border">
-        <div class="card-header d-flex justify-content-between align-items-center bg-light"
-             data-bs-toggle="collapse"
-             data-bs-target="#session-{{ \Illuminate\Support\Str::slug($slotTime) }}"
-             aria-expanded="false"
-             aria-controls="session-{{ \Illuminate\Support\Str::slug($slotTime) }}">
-            <strong>{{ $slotTime }}</strong>
+            <div class="card mb-2 border b-radius-0">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light b-radius-0"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#session-{{ \Illuminate\Support\Str::slug($slotTime) }}"
+                    aria-expanded="false"
+                    aria-controls="session-{{ \Illuminate\Support\Str::slug($slotTime) }}">
+                    <strong>{{ $slotTime }}</strong>
 
-            <div class="d-flex align-items-center gap-3">
-                <span>
-                    {{ count($session['orders']) }} Order{{ count($session['orders']) > 1 ? 's' : '' }} |
-                    {{ collect($session['orders'])->sum('number_of_guests') }} Participants
-                </span>
-            </div>
-            <i class="bi bi-chevron-down toggle-icon font-bold"></i>
-        </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span>
+                            {{ count($session['orders']) }} Order{{ count($session['orders']) > 1 ? 's' : '' }} |
+                            {{ collect($session['orders'])->sum('number_of_guests') }} Participants
+                        </span>
+                    </div>
+                    <i class="bi bi-chevron-down toggle-icon font-bold"></i>
+                </div>
 
-        <div id="session-{{ \Illuminate\Support\Str::slug($slotTime) }}" class="collapse">
-            <div class="card-body">
-                <table class="table table-bordered table-sm">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Order #</th>
-                            <th>Customer</th>
-                            <th>Phone</th>
-                            <th>Guests</th>
-                            <th>Extras</th>
-                            <th>Balance</th>
-                            <th>Total</th>
-                            <th>Paid</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($session['orders'] as $order)
-                            <tr>
-                                <td>{{ $order->order_number }}</td>
-                                <td>{{ $order->customer?->name }}</td>
-                                <td>{{ $order->customer?->phone }}</td>
-                                <td>{{ $order->guest_summary }}</td>
-                                <td>{{ $order->extras_summary }}</td>
-                                <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
-                                <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-                                <td>{{ price_format_with_currency($order->paid_amount, $order->currency) }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                <div id="session-{{ \Illuminate\Support\Str::slug($slotTime) }}" class="collapse">
+                    <div class="card-body">
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Customer</th>
+                                    <th>Phone</th>
+                                    <th>Guests</th>
+                                    <th>Extras</th>
+                                    <th>Balance</th>
+                                    <th>Total</th>
+                                    <th>Paid</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($session['orders'] as $order)
+                                    <tr>
+                                        <td>{{ $order->order_number }}</td>
+                                        <td>{{ $order->customer?->name }}</td>
+                                        <td>{{ $order->customer?->phone }}</td>
+                                        <td>{{ $order->guest_summary }}</td>
+                                        <td>{{ $order->extras_summary }}</td>
+                                        <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
+                                        <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        <td>{{ price_format_with_currency($order->paid_amount, $order->currency) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-@empty
-    <p>No sessions found for this date.</p>
-@endforelse
+        @empty
+        <p class="m-0 p-3">No sessions found for this date.</p>
+        @endforelse
     </div>
 </div>
 

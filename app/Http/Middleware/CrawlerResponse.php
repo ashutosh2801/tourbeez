@@ -26,6 +26,7 @@ class CrawlerResponse
      */
     public function handle(Request $request, Closure $next)
     {
+        // return $next($request);
         $ua = strtolower($request->userAgent());        
         $ip = $request->ip();
         $url = $request->fullUrl();
@@ -37,32 +38,36 @@ class CrawlerResponse
         ]);
 
         
+        // $bots = [
+        //     // Social
+        //     'facebookexternalhit', 'facebot', 'twitterbot', 'linkedinbot',
+        //     'pinterest', 'slackbot', 'discordbot', 'whatsapp',
+        //     'telegrambot', 'skypeuripreview', 'teamsbot',
+
+        //     // iOS / Apple Preview (CRITICAL)
+        //     'applebot', 'cfnetwork', 'darwin',
+
+        //     // Search Engines
+        //     'googlebot', 'bingbot', 'duckduckbot',
+        //     'baiduspider', 'yandex', 'sogou', 'petalbot',
+
+        //     // Schema / Rich Results Validators
+        //     'google-structured-data-testing-tool', 'schema-markup-validator',
+        //     'google rich results test',
+        //     'lighthouse',
+        //     'googlebot-image', 'googlebot-video',
+
+        //     // Others
+        //     'applebot', 'embedly', 'quora link preview',
+        //     'outbrain', 'rogerbot', 'ahrefsbot', 'semrushbot'
+        // ];
         $bots = [
-            // Social
-            'facebookexternalhit', 'facebot', 'twitterbot', 'linkedinbot',
-            'pinterest', 'slackbot', 'discordbot', 'whatsapp',
-            'telegrambot', 'skypeuripreview', 'teamsbot',
-
-            // iOS / Apple Preview (CRITICAL)
-            'applebot', 'cfnetwork', 'darwin',
-
-            // Search Engines
-            'googlebot', 'bingbot', 'duckduckbot',
-            'baiduspider', 'yandex', 'sogou', 'petalbot',
-
-            // Schema / Rich Results Validators
-            'google-structured-data-testing-tool', 'schema-markup-validator',
-            'google rich results test',
-            'lighthouse',
-            'googlebot-image', 'googlebot-video',
-
-            // Others
-            'applebot', 'embedly', 'quora link preview',
-            'outbrain', 'rogerbot', 'ahrefsbot', 'semrushbot'
+            'googlebot',
+            'bingbot',
+            'facebookexternalhit',
+            'twitterbot',
+            'linkedinbot',
         ];
-
-        
-
 
         foreach ($bots as $bot) {
             
@@ -191,10 +196,9 @@ class CrawlerResponse
                             'date' => date('d M, Y', strtotime($b->post_date))
                         ];
                     }
-
     
                     return response()->view('share.seo', [
-                        'title' => 'Tours, Activities &amp; Travel Experiences Worldwide | TourBeez',
+                        'title' => 'Tours, Activities & Travel Experiences Worldwide | TourBeez',
                         'description' => 'Discover unforgettable travel experiences with TourBeez. Book tours, activities, and tickets to top global destinations with ease and confidence. Explore, adventure, and enjoy every moment',
                         'keywords' => 'International Tour Packages, Best Travel Deals Worldwide, World Tours And Trips, Customizable Holiday Packages,  Budget-friendly Travel',
                         'image' => 'https://tourbeez.com/logo.jpg',
@@ -678,10 +682,12 @@ class CrawlerResponse
                     }
                 }
                 // ----- Listing Page -----
-                else if (count($segments) == 3) {
-                    $citySlug = $segments[0];   // toronto
-                    $id       = $segments[1];   // 10519
-                    $type     = $segments[2];   // c1
+                else if (count($segments) == 2) {
+                    $citySlug = $segments[0];   // things-to-do-in-toronto
+                    $slug_id  = explode("-",$segments[1]);   // 10519-c1
+                    $id       = $slug_id[0];
+                    $type     = $slug_id[1];   // c1
+
                     $d = null;
                     if ($type === 'c1') {
                         $d = City::findOrFail( $id );

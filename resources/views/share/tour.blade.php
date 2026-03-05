@@ -8,6 +8,7 @@
     <title>{{ $title ?? 'TourBeez - Going Beeyond' }}</title>
     <meta name="description" content="{{ $description ?? 'Discover and book amazing travel experiences with TourBeez. Plan your next adventure with ease and confidence.' }}">
     <meta name="robots" content="index, follow">
+    <meta name="facebook-domain-verification" content="l20d2gbx23knq6ka9r796y665h9hhy" />
 
     {{-- Open Graph Meta --}}
     <meta property="og:title" content="{{ $title ?? 'TourBeez - Going Beeyond' }}">
@@ -236,16 +237,15 @@
         @if(!empty($tour['galleries']))
             <!-- Main Image --> @php $i=0; @endphp
             @foreach ($tour['galleries'] as $g) 
-                @if($i++ == 0)
-                    <div class="col-span-3 row-span-2">
-                        <img src="{{ $g['original_url'] }}" alt="{{ $tour['title'] ?? 'Tour Image' }}"
-                        class="gallery-img h-[270px] lg:h-[400px]" />
-                    </div>
-                @else
-                    <!-- Side Images -->
-                    <img src="{{ $g['original_url'] }}" alt="{{ $tour['title'] ?? 'Tour Image' }}" class="gallery-img h-[130px] lg:h-[195px]" />
-                @endif
-                @if($i == 5) @php break;  @endphp @endif
+            @if($i++ == 0)
+            <div class="col-span-3 row-span-2">
+                <img src="{{ $g['original_url'] }}" alt="{{ $tour['title'] ?? 'Tour Image' }}"
+                class="gallery-img h-[270px] lg:h-[400px]" />
+            </div>
+            @else
+            <!-- Side Images -->
+            <img src="{{ $g['original_url'] }}" alt="{{ $tour['title'] ?? 'Tour Image' }}" class="gallery-img h-[130px] lg:h-[195px]" />
+            @endif
             @endforeach
         @endif
     </div>

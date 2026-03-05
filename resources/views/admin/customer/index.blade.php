@@ -1,11 +1,13 @@
 <x-admin>
     @section('title', 'Customers')
-    <div class="card">
-        <div class="card-header">
+    <div class="card-primary mb-3">
+        <div class="card-header customer-head">
             <h3 class="card-title">Customers</h3>
             <!-- <div class="card-tools"><a href="{{ route('admin.customers.create') }}" class="btn btn-sm btn-primary">Add New</a></div> -->
         </div>
-        <div class="card-body">
+    </div>
+    <div class="card card-primary bg-white border rounded-lg-custom customer-edit-body">
+        <div class="card-body p-0">
             <table class="table table-striped" id="userTable">
                 <thead>
                     <tr>
@@ -29,14 +31,17 @@
                             <td>
                                 <!-- <a href="{{ route('admin.customers.edit', encrypt($user->id)) }}"
                                     class="btn btn-sm btn-primary">Edit</a> -->
-                                    <a href="{{ route('admin.customers.edit.source', ['id' => encrypt($user->id),'source' => $user->source]) }}" class="btn btn-sm btn-primary">Edit</a>
+                                    <a href="{{ route('admin.customers.edit.source', ['id' => encrypt($user->id),'source' => $user->source]) }}" class="btn btn-sm btn-edit"><i class="far fa-edit"></i></a>
+
                             </td>
                             <td>
                                 <form action="{{ route('admin.customers.destroy', encrypt($user->id)) }}" method="POST"
                                     onsubmit="return confirm('Are sure want to delete?')">
                                     @method('DELETE')
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    <button type="submit" class="btn btn-danger confirm-delete">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
                                 </form>
                             </td>
                         </tr>

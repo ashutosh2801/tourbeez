@@ -52,8 +52,18 @@ Route::get('/{any}', function () {
 })->where('any', '.*');
 
 Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
-Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
-Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
+
+Route::get('/sitemaps/categories.xml', [SitemapController::class, 'categories']);
+Route::get('/sitemaps/destinations.xml', [SitemapController::class, 'destinations']);
+Route::get('/sitemaps/sitemap.xml', [SitemapController::class, 'index']);
+Route::get('/sitemaps/tours.xml', [SitemapController::class, 'tours']);
+
+// Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
+// Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
+
+
+
+
 Route::post('/states/get_state_by_country', [StateController::class,'get_state_by_country'])->name('states.get_state_by_country');
 Route::post('/cities/get_cities_by_state', [CityController::class,'get_cities_by_state'])->name('cities.get_cities_by_state');
 

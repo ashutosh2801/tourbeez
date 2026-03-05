@@ -21,6 +21,7 @@ use App\Http\Controllers\InclusionController;
 use App\Http\Controllers\ItineraryController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PickupController;
 use App\Http\Controllers\ProductController;
@@ -54,7 +55,19 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('/suplier_update', [ProfileController::class, 'suplierUpdate'])->name('profile.suplier_update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/convert-currency', [CurrencyController::class, 'convert'])->name('currency.convert');
-    Route::post('/set-currency', [CurrencyController::class, 'convert'])->name('set.currency');
+    
+    Route::post('/set-currency', function (\Illuminate\Http\Request $request) {
+
+        $currency = $request->currency;
+
+        if (empty($currency)) {
+            session()->forget('currency'); // back to default
+        } else {
+            session(['currency' => strtoupper($currency)]);
+        }
+
+        return response()->noContent();
+    })->name('set.currency');
 
     Route::resource('/user',UserController::class);
     Route::get('/user_supplier',[SupplierController::class, 'index'])->name('supplier.index');
@@ -130,11 +143,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/reminder', [TourController::class, 'editReminder'])->name('tour.edit.message.reminder');
     Route::get('/tour/{id}/edit/followup', [TourController::class, 'editFollowup'])->name('tour.edit.message.followup');
     Route::get('/tour/{id}/edit/paymentrequest', [TourController::class, 'editPaymentRequest'])->name('tour.edit.message.paymentrequest');
-    Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
     Route::get('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit.special.deposit');
     Route::get('/tour/{id}/edit/review', [TourController::class, 'review'])->name('tour.edit.review');
     Route::get('/tour/{id}/edit/schedule-calendar', [TourController::class, 'scheduleCalendar'])->name('tour.edit.schedule-calendar');
     Route::get('/tour/{id}/edit/schedule-calendar-event', [TourController::class, 'scheduleCalendarEvent'])->name('tour.edit.schedule-calendar-event');
+    Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
+    Route::get('/admin/category-search', [TourController::class, 'categorySearch'])->name('category.search');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
     Route::get('/export-tours', [TourController::class, 'exportTours'])->name('tours.export');
@@ -331,5 +345,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('promos', PromoController::class);
     Route::resource('vouchers', VoucherController::class);
     Route::post('/apply-promo', [PromoController::class, 'apply'])->name('promo.apply');
+
+    Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
+    Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
+
+
+    Route::get('/admin/orders/sample-excel', [OrderController::class, 'sampleExcel'])
+    ->name('orders.sample-excel');
+
+    Route::post('/admin/orders/import-orders', [OrderController::class, 'importOrders'])
+    ->name('orders.import');
+
+     Route::resource('partners', PartnerController::class);
 
 });

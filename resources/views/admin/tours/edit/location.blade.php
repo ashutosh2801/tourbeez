@@ -18,7 +18,7 @@
             <div class="card-body">
                 <div class="row">                   
                     
-                    <div class="col-lg-8">
+                    <div class="col-xl-8">
                         <div class="form-group">
                             <label for="country" class="form-label">Country *</label>
                             @php $countries = \App\Models\Country::where('status',1)->get(); @endphp
@@ -35,7 +35,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-8">
+                    <div class="col-xl-8">
                         <div class="form-group">
                             <label for="state" class="form-label">State *</label>
                             <select name="state" id="state_id" class="form-control aiz-selectpicker" data-live-search="true" >
@@ -47,7 +47,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-8">
+                    <div class="col-xl-8">
                         <div class="form-group">
                             <label for="city" class="form-label">City *</label>
                             <select name="city" id="city_id" class="form-control aiz-selectpicker" data-live-search="true" >
@@ -59,7 +59,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-8">
+                    <div class="col-xl-8">
                         <div class="form-group">
                             <label for="destination" class="form-label">Tourism destination*</label>
                             <input type="text" name="destination" id="destination" value="{{ old('destination') ? : $data->location?->destination }}"
@@ -71,7 +71,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-xl-6">
                         <div class="form-group">
                             <label for="address" class="form-label">Address *</label>
                             <input type="text" name="address" id="autocomplete" value="{{ old('address') ? old('address') : $data->location?->address }}"
@@ -83,7 +83,7 @@
                         </div>
                     </div> 
 
-                    <div class="col-lg-2">
+                    <div class="col-xl-2">
                         <div class="form-group">
                             <label for="postal_code" class="form-label">Postal/ZIP code*</label>
                             <input type="text" name="postal_code" id="postal_code" value="{{ old('postal_code') ? old('postal_code') : $data->location?->postal_code }}"
@@ -199,7 +199,7 @@ $('#state_id').on('change', function() {
     get_cities_by_state();
 });
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_API_KEY') }}&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&libraries=places"></script>
 <script>
 function initAutocompleteById() {
     const input = document.getElementById('autocomplete');

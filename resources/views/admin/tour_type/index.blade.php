@@ -12,7 +12,6 @@
                     </div>
                 </div>
             </div>
-            
         </div>
     </div>
     <div class="card-primary bg-white border rounded-lg-custom tour-type-body">

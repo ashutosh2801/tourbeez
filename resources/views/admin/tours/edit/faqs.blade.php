@@ -57,7 +57,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-lg-8">
+                        <div class="col-lg-12">
                             <div class="form-group">
                                 <label for="faq_question" class="form-label">Question</label>
                                 <input type="text" name="FaqOptions[{{ $index }}][question]" id="faq_question_{{ $index }}" value="{{ old("FaqOptions.$index.question", $option['question']) }}"
@@ -128,7 +128,7 @@ function addFaq() {
                 </select>
             </div>
         </div>
-        <div class="col-lg-8">
+        <div class="col-lg-12">
             <div class="form-group">
                 <label for="faq_question_${faqCount}" class="form-label">Question</label>
                 <input type="text" name="FaqOptions[${faqCount}][question]" id="faq_question_${faqCount}" value="" class="form-control" placeholder="Enter question">

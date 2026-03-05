@@ -54,7 +54,7 @@
     </script>
 </head>
 
-<body class="hold-transition sidebar-mini sidebar-collapse layout-fixed {{ Auth::user()->mode }}-mode">
+<body class="hold-transition sidebar-mini layout-fixed {{ Auth::user()->mode }}-mode">
 
     <div class="wrapper">
         <!-- Navbar -->
@@ -164,6 +164,7 @@
     <script src="{{ asset('admin/dist/js/toastr.min.js') }}"
         integrity="sha512-VEd+nq25CkR676O+pLBnDW09R7VQX9Mdiij052gVCp5yVH3jGtH70Ho/UUv4mJDsEdTvqRCFZg0NKGiojGnUCw=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+   
     <script>
         // Example starter JavaScript for disabling form submissions if there are invalid fields
         (function() {

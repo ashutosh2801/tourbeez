@@ -38,7 +38,7 @@ class CommonController extends Controller
                     ->join('uploads as u', 'u.id', '=', 'c.upload_id')
                     ->select('c.id', 'c.name', 'c.upload_id')
                     ->groupBy('c.id', 'c.name', 'c.upload_id')
-                    ->orderByRaw('RAND()')
+                    ->orderByRaw('c.order DESC')
                     ->where('c.upload_id', '>=', 1)
                     ->whereExists(function ($query) {
                         $query->select(DB::raw(1))
@@ -69,16 +69,20 @@ class CommonController extends Controller
                     t.title AS name, 
                     t.slug, 
                     t.price, 
+                    t.currency, 
                     t.created_at, 
                     t.unique_code, 
-                    u.upload_id
+                    u.upload_id,
+                    tr.tag
                 FROM tours t
                 JOIN tour_upload u ON u.tour_id = t.id
-                JOIN tour_locations l ON l.tour_id = t.id
+                JOIN category_tour c ON c.tour_id = t.id
+                LEFT JOIN tour_reviews tr ON tr.tour_id = t.id
                 WHERE t.status = 1 
                 AND t.deleted_at IS NULL
-                AND l.city_id IS NOT NULL 
-                AND l.city_id = 10519
+                AND c.category_id IS NOT NULL 
+                AND c.category_id = 388
+                AND u.is_main = 1
                 AND EXISTS (
                     SELECT 1 
                     FROM tour_schedules s 
@@ -95,13 +99,21 @@ class CommonController extends Controller
 
         $tours = [];
         foreach($tour_data as $d) {
+
+            $price = currencyConvert(
+                $d->price,
+                $d->currency,
+                'CAD'
+            );
             $tours[] = [
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
                 'url'   => '/tour/'.$d->slug,
-                'image' => uploaded_asset( $d->upload_id ),
-                'price' => $d->price,
+                'image' => uploaded_asset( $d->upload_id ).'?tr=w-400,h-300', // Assuming you want to resize the image for the home listing
+                'price' => $price,
                 'sku'   => $d->unique_code,
+                'tag'   => $d->tag ? json_decode($d->tag, true) ?? [] : [],
+
             ];
         }  
         
@@ -172,7 +184,7 @@ class CommonController extends Controller
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
                 'url'   => '/things-to-do-in-'.Str::slug( $d->name ).'/'.$d->id.'-c1',
-                'image' => uploaded_asset( $d->upload_id ),
+                'image' => uploaded_asset( $d->upload_id ).'?tr=w-400,h-300',
                 'extra' => ''
             ];
         }  
@@ -229,7 +241,7 @@ class CommonController extends Controller
         foreach ($paginated->items() as $d) {
             $cities[] = [
                 'id'    => $d->id,
-                'name'  => 'Things to do in ' . ucfirst($d->name),
+                'name'  => ucfirst($d->name),
                 'url'   => '/things-to-do-in-' . Str::slug($d->name) . '/' . $d->id . '-c1',
                 'image' => uploaded_asset($d->upload_id),
                 'extra' => ucwords($d->state_name) . ', ' . ucwords($d->country_name),
@@ -344,6 +356,7 @@ class CommonController extends Controller
             // Default case for 'city'
             return City::findOrFail( $id );
         });
+
         
         $meta_title = countThingsToDo($id, $type).' Things To Do In ' .ucfirst( $d->name ).' | ' .env('APP_NAME');
         $meta_description = 'Discover tour in '.ucfirst( $d->name ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.';
@@ -353,10 +366,15 @@ class CommonController extends Controller
 
         if (!empty($d->id)) {
 
-            $baseName = ucfirst($d->name);
+            $tourCount = countThingsToDo($id, $type);
+            $currentYear = date('Y');
+            $categoryTitle = ucfirst($d->name);
+
+            $baseName = remove_last_Tour_word($categoryTitle);
             $slug     = Str::slug($d->name);
             $image    = $d->upload_id ? uploaded_asset($d->upload_id) : '';
             $region   = '';
+            $description = get_setting('default_category_description');
 
             switch ($type) {
 
@@ -378,20 +396,27 @@ class CommonController extends Controller
                     break;
 
                 case 'c3': // Category
-                    $name = "Things to do in {$baseName}";
+                    $name = "{$baseName}";
                     $url  = "/things-to-do-in-{$slug}/{$d->id}-c3";
                     $image = ''; // category has no image
+                    $description = $d->description ?? '';
+                    $meta_title = ucfirst( $d->name ).' | ' .env('APP_NAME');
                     break;
 
                 default:
                     return response()->json(['error' => 'Invalid type'], 400);
             }
 
+            $description = str_replace('[TOUR_COUNT]', $tourCount, $description);
+            $description = str_replace('[YEAR]', $currentYear, $description);
+            $description = str_replace('[CATEGORY_TITLE]', $categoryTitle, $description);
+
             $data['result'] = [
                 'id'               => $d->id,
                 'name'             => $name,
                 'url'              => $url,
                 'image'            => $image,
+                'description'      => $description,
                 'meta_title'       => $meta_title,
                 'meta_description' => $meta_description,
                 'latitude'         => $d->latitude,
@@ -410,7 +435,7 @@ class CommonController extends Controller
     {
         $ids = $request->input('ids', []);
 
-        $recommended = Tour::whereIn('id', $ids)
+        $recommended = Tour::with('review')->whereIn('id', $ids)
             ->inRandomOrder()
             ->limit(4)
             ->paginate(4);
@@ -421,7 +446,7 @@ class CommonController extends Controller
             $galleries = [];
             if(count($d->galleries)>0) {
                 foreach( $d->galleries as $g ) {
-                    $image      = uploaded_asset($g->id);
+                    $image      = uploaded_asset($g->id).'?tr=w-400,h-300';
                     $medium_url = str_replace($g->file_name, $g->medium_name, $image);
                     $thumb_url  = str_replace($g->file_name, $g->thumb_name, $image);
                     $galleries[] = [
@@ -432,7 +457,7 @@ class CommonController extends Controller
                 }
             }
             else {
-                $image      = uploaded_asset($d->main_image->id);
+                $image      = uploaded_asset($d->main_image->id).'?tr=w-400,h-300';
                 $medium_url = str_replace($d->main_image->file_name, $d->main_image->medium_name, $image);
                 $thumb_url  = str_replace($d->main_image->file_name, $d->main_image->thumb_name, $image);
                 $galleries[] = [
@@ -445,6 +470,15 @@ class CommonController extends Controller
             $duration = $d->schedule?->estimated_duration_num.' ' ?? '';
             $duration.= ucfirst($d->schedule?->estimated_duration_unit ?? '');
 
+
+            $price = currencyConvert(
+                $d->price,
+                $d->currency,
+                'CAD'
+            );
+
+            $tag = $d->review && $d->review->tag ? json_decode($d->review->tag, true) ?? [] : [];
+
             $items[] = [
                 'id'             => $d->id,
                 'title'          => $d->title,
@@ -453,10 +487,11 @@ class CommonController extends Controller
                 'all_images'     => $galleries,
                 //'catogory'       => $d->catogory,
                 'price'          => price_format($d->price),
-                'original_price' => $d->price,
+                'original_price' => $price,
                 'duration'       => trim($duration),
                 'rating'         => randomFloat(4, 5),
                 'comment'        => rand(50, 100),
+                'tag'            => $tag,
             ];
         }    
 

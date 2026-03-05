@@ -163,6 +163,7 @@
 $statuses = config('constants.order_statuses');
 $expectEmails = ['order_pending', 'payment_receipt'];
 
+
 @endphp
 
     <form id="orderForm" action="{{ route('admin.orders.update',$order->id) }}" method="POST">
@@ -170,6 +171,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
     @csrf
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
     <input type="hidden" name="order_number" id="order_number" value="{{ $order->order_number }}" /> 
+
 
     <div class="card card-primary rounded-lg-custom border order-edit-head1">
         <div class="card-header">
@@ -374,7 +376,6 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                     </div>
                 </div>
             </div>
-
             
             <div class="bs-example">
                 <div class="accordion" id="accordionExample">
@@ -1377,7 +1378,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
             <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
             <div class="input-group">
                 <div class="input-group-append">
-                    <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
+                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
                 </div>    
                 <input type="text" class="form-control" id="chargeAmount" name="amount" placeholder="0.00" value="{{ $order->balance_amount }}" required style="width: 100px;">                                            
             </div>
@@ -1768,7 +1769,7 @@ document.addEventListener("click", function(e) {
             }
         });
         $.ajax({
-            url: '{{ route('admin.tour.single') }}',
+            url: '{{ route('tour.single') }}',
             type: 'POST',
             data: {
                 id: tour_id,
@@ -1809,7 +1810,7 @@ document.addEventListener("click", function(e) {
 </script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function () {
 
     // ✅ Function to update status UI
     function updateStatusUI(radio) {
@@ -2714,7 +2715,7 @@ $(document).ready(function () {
 function refreshCalendarAndSession23432(tourId, count, order_id) {
 
     $.ajax({
-        url: "{{ route('admin.tour.calendar') }}",
+        url: "{{ route('tour.calendar') }}",
         type: "POST",
         data: {
             id: tourId,
@@ -2768,7 +2769,7 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 
     // showLoader("Loading… Please wait");
     $.ajax({
-        url: "{{ route('admin.tour.calendar') }}",
+        url: "{{ route('tour.calendar') }}",
         type: "POST",
         data: {
             id: tourId,
@@ -3049,30 +3050,21 @@ let cardMounted = false;
 
 /* ================= SHOW / HIDE CARD ================= */
 
-$(document).ready(function () {
+document.getElementById('add_ccnow').addEventListener('change', function () {
+    const wrapper = document.getElementById('card-element-wrapper');
 
-    $(document).on("change", "#add_ccnow", function () {
-        const wrapper = $("#card-element-wrapper");
+    if (this.checked) {
+        wrapper.classList.remove('hidden');
 
-        if (this.checked) {
-            wrapper.removeClass("hidden").show();
-
-            if (!cardMounted) {
-                cardElement.mount('#card-element');
-                cardMounted = true;
-            }
-        } else {
-            wrapper.addClass("hidden").hide();
-            // never unmount Stripe element
+        if (!cardMounted) {
+            cardElement.mount('#card-element');
+            cardMounted = true;
         }
-    });
-
-    $(document).on("change", "#charge_ccnow", function () {
-        $("#charge_ccnow_amount").toggle(this.checked);
-    });
-
+    } else {
+        wrapper.classList.add('hidden');
+        // ❌ NEVER unmount Stripe element
+    }
 });
-
 
 /* ================= BUTTON HANDLER ================= */
 

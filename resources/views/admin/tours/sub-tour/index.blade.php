@@ -49,150 +49,168 @@
     height: 0px !important;
 }
 
-
-
 </style>
 
 <x-admin>
-    @section('title','Tours' . ' / '.  $parentTour->title)
-    <div class="card">
+    <!-- breadcrumb -->
+    @section('title','Sub Tours' . '')
+
+    <div class="card-primary mb-3">
+        <div class="card-header sub-tours">
+            <div class="row">
+                <div class="col-12">
+                    <h3 class="card-title text-white"> {{ $parentTour->title }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tour-main-body card border rounded-lg-custom">
 
         <!-- Search Form (GET) -->
-
-        <form method="GET" action="{{ route('admin.tour.sub-tour.index', [encrypt($parentTour->id)]) }}">
+        <form class="my-0" method="GET" action="{{ route('admin.tour.sub-tour.index', [encrypt($parentTour->id)]) }}">
             <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center w-100 flex-wrap gap-2">
-                    <h3 class="card-title mb-0">{{ translate('Sub Tours') }} </h3>
-
-                    <div class="d-flex gap-2 flex">
-
+                <div class="search-options">
+                    <div class="row">
                         {{-- City Dropdown --}}
-
-                    <select name="city" id="city-select" class="form-control form-control-sm">
-                        @if(request('city'))
-                            <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
-                        @endif
-                    </select>
-
+                        <div class="col-md-2 col-6">
+                            <select name="city" id="city-select" class="form-control">
+                                @if(request('city'))
+                                    <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
+                                @endif
+                            </select>
+                        </div>
 
                         {{-- Search Input --}}
-                        <input type="text" name="search" class="ml-2 form-control form-control-sm mr-2" placeholder="Search tour" value="{{ request('search') }}" />
+                        <div class="col-md-2 col-6">
+                            <input type="text" name="search" class="form-control" placeholder="Search tour" value="{{ request('search') }}" />
+                        </div>
 
                         {{-- Category Dropdown --}}
-
-                        <select name="category" class="form-control form-control-sm mr-2 select-searchable">
-                            <option value="">All Categories</option>
-                            @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
-                                    {{ $category->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="col-md-2 col-6">
+                            <select name="category" class="form-control select-searchable">
+                                <option value="">All Categories</option>
+                                @foreach ($categories as $category)
+                                    <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                                        {{ $category->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
                         {{-- Per Page Dropdown --}}
-                        <select name="per_page" class="ml-2 form-control form-control-sm mr-2">
-                            @foreach (['All',10, 25, 50, 100] as $number)
-                                <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                                    {{ $number }} per page
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="col-md-2 col-6">
+                            <select name="per_page" class="form-control">
+                                @foreach (['All',10, 25, 50, 100] as $number)
+                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                        {{ $number }} per page
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                        <select name="status" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
-                            <option value="">All Status</option>
+                        <div class="col-md-2 col-6">
+                            <select name="status" class="form-control" onchange="this.form.submit()">
+                                <option value="">All Status</option>
                                 <option value="0" {{ request('staus') === 0 ? 'selected' : '' }}>
                                     Pending
                                 </option>
                                 <option value="1" {{ request('staus') === 1 ? 'selected' : '' }}>
                                     Active
                                 </option>
-                            
-                        </select>
+                            </select>
+                        </div>
 
                         {{-- Submit Button --}}
-                        <button type="submit" class="btn btn-primary btn-sm">Search</button>
-                        <!-- <a href="{{ route('admin.tour.index')}}" class="btn btn-outline-secondary btn-sm">Clear</a> -->
+                        <div class="col-md-2 col-12">
+                            <button type="submit" class="btn btn-search mb-2"> <i class="fas fa-search"></i> Search</button>
+                        </div>
+
+                        <div class="col-12">
+                            <a href="{{ route('admin.tour.index')}}" class="btn-clear"> <i class="fas fa-times"></i> Clear Search</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </form>
         
-        <form id="bulkDeleteForm" method="POST" action="{{ route('admin.tour.bulkDelete') }}">
+        <!-- <form id="bulkDeleteForm" method="POST" action="{{ route('admin.tour.bulkDelete') }}">
         @csrf
         @method('DELETE')
-         </form>
+         </form> -->
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center w-100">
-                <h3 class="card-title mb-0"></h3>
-                <div class="card-tools">
-                    <button id="enableDisableTour" type="button" class="btn btn-sm btn-info">Enable/Disable</button>
+                <div class="card-tools btn-options">
+                    <button id="enableDisableTour" type="button" class="btn btn-enable"><i class="fas fa-sync"></i> Enable/Disable</button>
 
                     <!-- <button id="saveTourCoupon" type="button" class="btn btn-sm btn-info">Create Discount</button> -->
-                    <button id="saveSortOrder" type="button" class="btn btn-sm btn-primary">Save Sort Order</button>
+                    <button id="saveSortOrder" type="button" class="btn btn-success btn-save"> <i class="fas fa-save"></i> Save Sort Order</button>
 
                     @can('add_tour') 
-                    <a target="_blank" href="{{ route('admin.tours.sub-create', [encrypt($parentTour->id)]) }}" class="btn btn-sm btn-info">Create New Sub Tour</a>
+                    <a target="_blank" href="{{ route('admin.tours.sub-create', [encrypt($parentTour->id)]) }}" class="btn btn-success btn-create"> <i class="fas fa-calendar-plus"></i> Create New Sub Tour</a>
                     @endcan
                     @can('delete_tour') 
-                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure to delete selected orders?')">
-                        Delete Selected
+                    <button type="submit" class="btn btn-danger btn-delete" onclick="return confirm('Are you sure to delete selected orders?')">
+                        <i class="fas fa-trash-alt"></i> Delete Selected
                     </button>
                     @endcan
                 </div>
             </div>
         </div>
 
-        <div class="card-body">
-            <table class="table table-striped" id="tourTable">
-                <thead>
-                    <tr>
-                        <th><input style="width:15px; height:15px;" type="checkbox" id="checkAll" /></th>
-                        <th >{{ translate('Order') }}</th>
-                        <th >{{ translate('Image') }}</th>
-                        <th>{{ translate('Title') }}</th>
-                        <th width="150">{{ translate('Price') }}</th>
-                        <th width="150">{{ translate('Code') }}</th>
-                        <th width="150">{{ translate('Category') }}</th>
-                        <th width="150">{{ translate('Actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody id="sortable-tours">
-                    @foreach ($tours as $tour)
-                        <tr data-id="{{ $tour->id }}">
-                            <td><input style="width:15px; height:15px;" type="checkbox" name="ids[]" value="{{ $tour->id }}"></td>
+        <div class="card-body p-0">
+            <div class="table-viewport">
+                <table class="table table-striped" id="tourTable">
+                    <thead>
+                        <tr>
+                            <th><input style="width:15px; height:15px;" type="checkbox" id="checkAll" /></th>
+                            <th >{{ translate('Order') }}</th>
+                            <th >{{ translate('Image') }}</th>
+                            <th>{{ translate('Title') }}</th>
+                            <th width="150">{{ translate('Price') }}</th>
+                            <th width="150">{{ translate('Code') }}</th>
+                            <th width="150">{{ translate('Category') }}</th>
+                            <th width="150">{{ translate('Actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sortable-tours">
+                        @foreach ($tours as $tour)
+                            <tr data-id="{{ $tour->id }}">
+                                <td><input style="width:15px; height:15px;" type="checkbox" name="ids[]" value="{{ $tour->id }}"></td>
 
-                            <td>
-                                  <input type="hidden" name="tour_ids[]" value="{{ $tour->id }}">
-                                  <input style="width:35px; height:35px;" type="text" name="sort_order[{{ $tour->id }}]" value="{{ $tour->sort_order }}">
+                                <td>
+                                    <input type="hidden" name="tour_ids[]" value="{{ $tour->id }}">
+                                    <input style="width:35px; height:35px;" type="text" name="sort_order[{{ $tour->id }}]" value="{{ $tour->sort_order }}">
                                 </td>
 
 
-                            <td>{!! main_image_html($tour->main_image?->id) !!}</td>
-                            <td>
-                                @can('edit_tour')     
-                                <a target="_blank" class="text-info text-hover" href="{{ $tour->parent_id ? route('admin.tour.sub-tour.edit', encrypt($tour->id)) : route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
-                                @else
-                                {{ $tour->title }}
-                                @endcan
+                                <td>{!! main_image_html($tour->main_image?->id) !!}</td>
+                                <td>
+                                    @can('edit_tour')     
+                                    <a target="_blank" class="text-info text-hover" href="{{ $tour->parent_id ? route('admin.tour.sub-tour.edit', encrypt($tour->id)) : route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
+                                    @else
+                                    {{ $tour->title }}
+                                    @endcan
 
-                                <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} </div>
-                                <div class="text-sm text-gray-500"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
-                            </td>    
-                            <td>{{ price_format_with_currency($tour->price) }}</td>
-                            <td>{{ $tour->unique_code }}</td>
-                            <td>{{ $tour->category_names ?: 'No categories' }}</td>
-                            <td>
-                                @can('clone_tour')   
-                                <a class="btn btn-sm btn-success confirm-clone" data-href="{{ route('admin.tour.clone', encrypt($tour->id)) }}">Clone</a>
-                                @endcan
-                                @can('delete_tour')  
-                                <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.tour.destroy', encrypt($tour->id)) }}">{{translate('Delete')}}</a>
-                                @endcan
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                                    <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} </div>
+                                    <div class="text-sm text-gray-500"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
+                                </td>    
+                                <td>{{ price_format_with_currency($tour->price, $tour->currency) }}</td>
+                                <td>{{ $tour->unique_code }}</td>
+                                <td>{{ $tour->category_names ?: 'No categories' }}</td>
+                                <td>
+                                    @can('clone_tour')   
+                                    <a class="btn btn-sm btn-success confirm-clone" data-href="{{ route('admin.tour.clone', encrypt($tour->id)) }}">Clone</a>
+                                    @endcan
+                                    @can('delete_tour')  
+                                    <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.tour.destroy', encrypt($tour->id)) }}">{{translate('Delete')}}</a>
+                                    @endcan
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
         <div class="card-footer">
             {{ $tours->links() }}

@@ -1,13 +1,21 @@
 <x-admin>
     @section('title','Taxes and Fees')
-    <div class="card card-primary">
-        <div class="card-header">
-            <h3 class="card-title">Taxes and Fees</h3>
-            <div class="card-tools">
-                <a href="{{ route('admin.taxes.create') }}" class="btn btn-sm btn-info">Create New</a>
+    <div class="card-primary mb-3">
+        <div class="card-header taxes-fee-head">
+            <div class="row">
+                <div class="col-md-8 col-12">
+                    <h3 class="card-title text-white">Taxes and Fees</h3>
+                </div>
+                <div class="col-md-4 col-12">
+                    <div class="card-tools">
+                        <a href="{{ route('admin.taxes.create') }}" class="btn btn-sm btn-success">+ Create New</a>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="card-body">
+    </div>
+    <div class="card card-primary bg-white border rounded-lg-custom">
+        <div class="card-body p-0">
             <table class="table table-striped" id="taxesTable">
                 <thead>
                     <tr>
@@ -25,7 +33,7 @@
                             <td>{{ ($item->tax_fee_type=='FEE' ? '$' : '') . number_format($item->tax_fee_value,1) . ($item->tax_fee_type=='TAX' ? '%' : '') }}</td>
                             <td width="60">
                                 <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.taxes.destroy', encrypt($item->id)) }}">
-                                {{translate('Delete')}}</a>
+                                <i class="fas fa-trash-alt"></i></a>
                             </td>                            
                         </tr>
                     @endforeach

@@ -48,421 +48,438 @@
         {{ 'Tour' }}
     @endsection
     <div class="row justify-content-center">
-        <div class="col-md-10">
-            <div class="card">
-                <div class="card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">Create Tour</h3>
-                        <div class="card-tools">
-                            <a href="{{ route('admin.tour.index') }}" class="btn btn-info btn-sm">Back</a>
+        <div class="col-md-12">
+            <div class="card-primary mb-3">
+                <div class="card-header create-extra-header">
+                    <div class="row">
+                        <div class="col-md-8 col-6">
+                            <h3 class="card-title">Create Tour</h3>
+                        </div>
+                        <div class="col-md-4 col-6">
+                            <div class="card-tools">
+                                <a href="{{ route('admin.tour.index') }}" class="btn btn-sm btn-back">Back</a>
+                            </div>
                         </div>
                     </div>
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <ul class="list-unstyled">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-                    <form class="needs-validation" novalidate action="{{ route('admin.tour.store') }}" method="POST"
-                        enctype="multipart/form-data">
-                        @csrf
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-7">
-                                    <div class="form-group">
-                                        <label for="title" class="form-label">Title *</label>
-                                        <input type="text" name="title" id="title" value="{{ old('title') }}"
-                                            class="form-control" >
-                                           
-                                        @error('title')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-                                <div class="col-lg-3">
-                                    <div class="form-group">
-                                        <label for="unique_code" class="form-label">Unique code *</label>
-                                        <input type="text" name="unique_code" id="unique_code" value="{{ old('unique_code') ? old('unique_code') : unique_code() }}"
-                                            class="form-control" >
-                                           
-                                        @error('unique_code')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-                                <div class="col-lg-2">
-                                    <div class="form-group">
-                                        <label for="order_email" class="form-label d-block no-wrap" style="font-size: 14px;">Email Confirmation</label>
-
-                                        <!-- Hidden field sends 0 when checkbox is unchecked -->
-                                        <input type="hidden" name="order_email" value="0">
-
-                                        <!-- Toggle switch sends 1 if checked -->
-                                        <label class="switch mt-2">
-                                            <input type="checkbox"
-                                                   name="order_email"
-                                                   id="order_email"
-                                                   value="1"
-                                                   {{ old('order_email') ? 'checked' : '' }}>
-                                            <span class="slider"></span>
-                                        </label>
-
-                                        @error('order_email')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-
-                                <div class="col-lg-12">
-                                    <div class="form-group" id="product_pricing">
-                                        <label for="category" class="form-label">Product pricing *</label>
+                </div>
+            </div>
+            <div class="card-primary bg-white border rounded-lg-custom create-tour-body">
+                @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="list-unstyled">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+                <form class="needs-validation m-0" novalidate action="{{ route('admin.tour.store') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-7">
+                                <div class="form-group">
+                                    <label for="title" class="form-label">Title *</label>
+                                    <input type="text" name="title" id="title" value="{{ old('title') }}" class="form-control" >
                                         
-                                        @php
-                                            $priceOptions = old('PriceOption', [ ['label' => '', 'price' => '', 'qty_used' => 1] ]);
-                                            $count = count($priceOptions);
-                                        @endphp
-                                        @foreach ($priceOptions as $index => $option)   
-                                        
-                                        @if ($index > 0) <div class="priceOptionsWra"> @endif
-                                        
-                                        <div class="row mb-3" id="priceOptionRow_{{ $index }}">
-                                            @if($index == 0)
-                                            <div class="col-lg-2">
-                                                <select name="price_type" id="pricing" class="form-control">
-                                                    <option @if(old('price_type')=='PER_PERSON' || old('price_type')=='') echo 'selected'; @endif value="PER_PERSON">By Person</option>
-                                                    <option @if(old('price_type')=='FIXED') echo 'selected'; @endif value="FIXED">By Fixed</option>
-                                                </select>                                                
-                                            </div>
-                                            @else
-                                            <div class="col-lg-2"></div>
-                                            @endif
+                                    @error('title')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="form-group">
+                                    <label for="unique_code" class="form-label">Unique code *</label>
+                                    <input type="text" name="unique_code" id="unique_code" value="{{ old('unique_code') ? old('unique_code') : unique_code() }}" class="form-control">
+                                    @error('unique_code')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-lg-2">
+                                <div class="form-group">
+                                    <label for="order_email" class="form-label d-block no-wrap" style="font-size: 14px;">Email Confirmation</label>
 
-                                            <div class="col-lg-2">
-                                                <input type="text" placeholder="Adults" name="PriceOption[{{ $index }}][label]" id="PriceOption_name" 
-                                                value="{{ old("PriceOption.$index.label", $option['label']) }}" class="form-control" >
-                                                @error("PriceOption.$index.label")
-                                                    <div class="text-danger">{{ $message }}</div>
-                                                @enderror
-                                            </div>
-                                            <div class="col-lg-2">
-                                                <div class="input-group">
-                                                    <div class="input-group-prepend">
-                                                        <span class="input-group-text" id="basic-addon1">$</span>
-                                                    </div>
-                                                    <input type="text" placeholder="99.50" name="PriceOption[{{ $index }}][price]" id="PriceOption_price" 
-                                                    value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control price-option-input" >
-                                                    
-                                                </div>  
-                                                @error("PriceOption.$index.price")
-                                                    <div class="text-danger">{{ $message }}</div>
-                                                @enderror                                              
-                                            </div>
-                                            <div class="col-lg-5">
-                                                <div class="input-group quantity_used">
-                                                    <div class="input-group-prepend">
-                                                        <span class="input-group-text" id="basic-addon1">Quantity used</span>
-                                                    </div>
-                                                    <select name="PriceOption[{{ $index }}][qty_used]" id="PriceOption_qty_used" class="form-control mr-2" style="max-width:120px;">
-                                                        @for ($i = 0; $i < 55; $i++)
-                                                            <option value="{{ $i }}" {{ old("PriceOption.$index.qty_used", $option['qty_used']) == $i ? 'selected' : '' }}>{{ $i }}</option>
-                                                        @endfor
-                                                    </select>
-                                                    <button type="button" class="btn btn-sm btn-success mr-2" onclick="addPriceOption()"><i class="fa fa-plus"></i></button>
-                                                    @if($index > 0)
-                                                    <button type="button" class="btn btn-sm btn-danger" onclick="removePriceOption({{ $index }})"><i class="fa fa-minus"></i></button>
-                                                    @endif
-                                                </div>
-                                            </div>
+                                    <!-- Hidden field sends 0 when checkbox is unchecked -->
+                                    <input type="hidden" name="order_email" value="0">
+
+                                    <!-- Toggle switch sends 1 if checked -->
+                                    <label class="switch mt-2">
+                                        <input type="checkbox"
+                                                name="order_email"
+                                                id="order_email"
+                                                value="1"
+                                                {{ old('order_email') ? 'checked' : '' }}>
+                                        <span class="slider"></span>
+                                    </label>
+
+                                    @error('order_email')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-lg-5">
+                                <!-- <div class="col-xl-5"> -->
+                                    <div class="form-group">
+                                        <label for="slug" class="form-label">Currency *</label>
+                                        <select name="currency" class="form-control mr-2">
+                                            @foreach(config('constants.currencies') as $code => $country)
+                                                <option value="{{ $code }}" >{{ $code }} - {{ $country }}</option> 
+                                            @endforeach
+
+                                        </select>
+                                    </div>
+                                <!-- </div> -->
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group" id="product_pricing">
+                                    <label for="category" class="form-label">Product pricing *</label>
+                                    
+                                    @php
+                                        $priceOptions = old('PriceOption', [ ['label' => '', 'price' => '', 'qty_used' => 1] ]);
+                                        $count = count($priceOptions);
+                                    @endphp
+                                    @foreach ($priceOptions as $index => $option)   
+                                    
+                                    @if ($index > 0) <div class="priceOptionsWra"> @endif
+                                    
+                                    <div class="row mb-3 product-pricing" id="priceOptionRow_{{ $index }}">
+                                        @if($index == 0)
+                                        <div class="col-lg-2">
+                                            <select name="price_type" id="pricing" class="form-control">
+                                                <option @if(old('price_type')=='PER_PERSON' || old('price_type')=='') echo 'selected'; @endif value="PER_PERSON">By Person</option>
+                                                <option @if(old('price_type')=='FIXED') echo 'selected'; @endif value="FIXED">By Fixed</option>
+                                            </select>                                                
                                         </div>
-
-                                        @if ($index > 0) </div> @endif
-
-                                        @endforeach
-
-                                        @if ($count > 0)
-                                            <div id="priceOptionsContainer"></div>
+                                        @else
+                                        <div class="col-lg-2"></div>
                                         @endif
 
-                                    </div>
-                                </div>
-
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <label for="title" class="form-label">Advertised price *</label>
-                                        <div class="input-group">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group-text" id="basic-addon1">$</span>
-                                            </div>
-                                            <input type="text" class="form-control" placeholder="99.50" name="advertised_price" id="advertised_price" value="{{ old('advertised_price') }}" style="max-width: 200px;">
+                                        <div class="col-lg-2">
+                                            <input type="text" placeholder="Adults" name="PriceOption[{{ $index }}][label]" id="PriceOption_name" 
+                                            value="{{ old("PriceOption.$index.label", $option['label']) }}" class="form-control">
+                                            @error("PriceOption.$index.label")
+                                                <div class="text-danger">{{ $message }}</div>
+                                            @enderror
                                         </div>
-                                           
-                                        @error('advertised_price')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <label for="category" class="form-label">Quantity</label>
-                                        <div class="row">
-                                            <div class="col-lg-2">
-                                                <div class="input-group mb-3">
-                                                    <div class="input-group-prepend">
-                                                        <span class="input-group-text" id="basic-addon1">Min</span>
-                                                    </div>
-                                                    <input type="number" placeholder="Min" name="quantity_min" id="quantity_min" value="{{ old('quantity_min') }}" class="form-control" >
-                                                </div>                                                
-                                            </div>
-                                            <div class="col-lg-2">
-                                                <div class="input-group mb-3">
-                                                    <div class="input-group-prepend">
-                                                        <span class="input-group-text" id="basic-addon1">Max</span>
-                                                    </div>
-                                                    <input type="number" placeholder="Max" name="quantity_max" id="quantity_max" value="{{ old('quantity_max') }}" class="form-control" >
-                                                    </div>
-                                                </div>
-                                            </div>
-                                    </div>
-                                </div>
-                                                                
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <label for="category" class="form-label">Category *</label>
-                                        <select name="category[]" id="category" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
-                                            @foreach ($category as $cat)
-                                                <option value="{{ $cat->id }}"
-                                                {{ (collect(old('category'))->contains($cat->id)) ? 'selected':'' }}>{{ $cat->name }}</option>
-                                            @endforeach
-                                        </select>
-                                        @error('category')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <label for="tour_type" class="form-label">Tour Types *</label>
-                                        <select name="tour_type[]" id="tour_type" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
-                                            @foreach ($tour_type as $tt)
-                                                <option value="{{ $tt->id }}"
-                                                {{ (collect(old('tour_type'))->contains($tt->id)) ? 'selected':'' }}>{{ $tt->name }}</option>
-                                            @endforeach                                            
-                                        </select>
-                                        @error('tour_type')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-                                
-                                <div class="col-lg-4">
-                                    <div class="form-group">
-                                        <label for="country" class="form-label">Country *</label>
-                                        @php $countries = \App\Models\Country::where('status',1)->get(); @endphp
-                                        <select name="country" id="country_id" class="form-control aiz-selectpicker" data-live-search="true" >
-                                            <option value="">{{translate('Select One')}}</option>
-                                            @foreach ($countries as $country)
-                                                <option value="{{ $country->id }}"
-                                                {{ old('country')==$country->id ? 'selected':'' }}>{{ strtoupper($country->name) }}</option>
-                                            @endforeach
-                                        </select>
-                                        @error('country')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-                                <div class="col-lg-4">
-                                    <div class="form-group">
-                                        <label for="state" class="form-label">State *</label>
-                                        <select name="state" id="state_id" class="form-control aiz-selectpicker" data-live-search="true" >
-
-                                        </select>
-                                        @error('state')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-                                <div class="col-lg-4">
-                                    <div class="form-group">
-                                        <label for="city" class="form-label">City  *</label>
-                                        <select name="city" id="city_id" class="form-control aiz-selectpicker" data-live-search="true" >
-
-                                        </select>
-                                        @error('city')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <label for="description" class="form-label">Brief description *</label>
-                                        <textarea name="description" id="description" rows="3" class="form-control aiz-text-editor">{{ old('description') }}</textarea>
-                                        <small class="form-text text-right">{{ ('Max 240 characters') }}</small>
-                                        @error('description')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <label for="long_description" class="form-label">Long description *</label>
-                                        <textarea name="long_description" id="long_description" class="form-control aiz-text-editor" >{{ old('long_description') }}</textarea>
-                                         @error('long_description')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <label for="other_description" class="form-label">Other description</label>
-                                        <textarea name="other_description" id="other_description" class="form-control aiz-text-editor" >{{ old('other_description') }}</textarea>
-                                            @error('other_description')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div>
-
-                                <div class="col-lg-12">
-                                    <div class="form-group mb-5">
-                                        <label for="videos" class="form-label">Videos</label>
-
-                                        <div id="videosContainer">
-                                            <div class="input-group mb-3 video-input">
+                                        <div class="col-lg-2">
+                                            <div class="input-group">
                                                 <div class="input-group-prepend">
-                                                    <span class="input-group-text">https://www.youtube.com/watch?v=</span>
+                                                    <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
                                                 </div>
-                                                <input type="text" name="videos[]" class="form-control">
-                                                <button type="button" class="btn btn-sm btn-primary mr-2" onclick="previewVideoFromInput(this)">
-                                                    Preview
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-danger" onclick="removeVideo(this)">
-                                                    <i class="fa fa-minus"></i>
-                                                </button>
-                                            </div>
+                                                <input type="text" placeholder="99.50" name="PriceOption[{{ $index }}][price]" id="PriceOption_price" 
+                                                value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control price-option-input" >
+                                                
+                                            </div>  
+                                            @error("PriceOption.$index.price")
+                                                <div class="text-danger">{{ $message }}</div>
+                                            @enderror                                              
                                         </div>
-
-                                        <button type="button" class="btn btn-sm btn-success mt-2" onclick="addVideos()">
-                                            <i class="fa fa-plus"></i> Add Video
-                                        </button>
-                                    </div>
-                                </div>
-
-
-
-                                <div class="col-lg-12">
-                                    <div class="form-group mb-4">
-                                        <label for="IsPurchasedAsAGift" class="form-label"><input type="checkbox" name="IsPurchasedAsAGift" id="IsPurchasedAsAGift" /> Can be purchased as a gift</label>
-                                        <div class="row hidden" id="IsPurchasedAsAGift_show">
-                                            <div class="col-lg-4">
-                                                <label style="font-weight:400"><input type="checkbox" {{ old('IsExpiryDays') ? 'checked' : '' }} name="IsExpiryDays" id="IsExpiryDays" value="1" /> Gift Card expires a number of days after</lable><br />
-                                                <div class="input-group hidden" id="expiry_days_wra">
-                                                    <div class="input-group-prepend">
-                                                        <span class="input-group-text">expires</span>
-                                                    </div>
-                                                    <input type="text" placeholder="0" name="expiry_days" id="expiry_days" value="{{ old('expiry_days') }}" class="form-control" >
-                                                    <div class="input-group-append">
-                                                        <span class="input-group-text">days after purchase</span>
-                                                    </div>
+                                        <div class="col-lg-5">
+                                            <div class="input-group quantity_used">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="basic-addon1">Quantity used</span>
                                                 </div>
-                                            </div>
-                                            <div class="col-lg-4">
-                                                <label style="font-weight:400"><input type="checkbox" {{ old('IsExpiryDate') ? 'checked' : '' }} name="IsExpiryDate" id="IsExpiryDate" value="1" /> Gift Card expires on a specific date</label><br />
-
-                                                <div class="input-group hidden" id="expiry_date_wra">
-                                                    <div class="input-group-prepend">
-                                                        <span class="input-group-text">expires on</span>
-                                                    </div>
-                                                    <input type="text" class="aiz-date-range form-control" id="expiry_date" name="expiry_date" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="{{ old('expiry_date') }}">
-                                                    <div class="input-group-append">
-                                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-4">
-                                                <label style="font-weight:400"><input type="checkbox" name="gift_tax_fees" id="gift_tax_fees" {{ old('gift_tax_fees') ? 'checked' : '' }} value="1" /> Gift is inclusive of all taxes & fees</label>
+                                                <select name="PriceOption[{{ $index }}][qty_used]" id="PriceOption_qty_used" class="form-control mr-2" style="max-width:120px;">
+                                                    @for ($i = 0; $i < 55; $i++)
+                                                        <option value="{{ $i }}" {{ old("PriceOption.$index.qty_used", $option['qty_used']) == $i ? 'selected' : '' }}>{{ $i }}</option>
+                                                    @endfor
+                                                </select>
+                                                <button type="button" class="btn btn-sm btn-success mr-2" onclick="addPriceOption()"><i class="fa fa-plus"></i></button>
+                                                @if($index > 0)
+                                                <button type="button" class="btn btn-sm btn-danger" onclick="removePriceOption({{ $index }})"><i class="fa fa-minus"></i></button>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div class="col-lg-12">
-                                    <div class="form-group">
-                                        <label for="IsTermsAndConditions" class="form-label"><input type="checkbox" name="IsTerms" id="IsTermsAndConditions" {{ old('IsTerms') ? 'checked' : '' }} value="1" /> Add product-specific terms and conditions</label>
-                                        <div id="terms_and_conditions_wra" class="hidden" style=" overflow: hidden;">
-                                            <textarea name="terms_and_conditions" id="terms_and_conditions" class="form-control  aiz-text-editor" >{{ old('terms_and_conditions') }}</textarea>
-                                        </div>
-                                    </div>
-                                </div>
+                                    @if ($index > 0) </div> @endif
 
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label class="form-label">{{translate('Featured Image')}}</label>
-                                        <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
-                                            <div class="input-group-prepend">
-                                                <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
-                                            </div>
-                                            <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
-                                            <input type="hidden" name="image" class="selected-files" >
-                                        </div>
-                                        <div class="file-preview box"></div>
-                                    </div>
+                                    @endforeach
+
+                                    @if ($count > 0)
+                                        <div id="priceOptionsContainer"></div>
+                                    @endif
+
                                 </div>
-                                <!-- <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="image" class="form-label">Image</label>
-                                        <input type="file" name="image" id="image" class="form-control" accept="image/*"
-                                            >
-                                            @error('image')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div> -->
-                                <!-- <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="slider-images" class="form-label">Tour Slider Images</label>
-                                        <input type="file" name="slider_images[]" id="slider-images" accept="image/*"
-                                            class="form-control" multiple>
-                                            @error('slider_images')
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                </div> -->
                             </div>
-                        </div>
 
-                        <div class="modal fade" id="videoPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
-                          <div class="modal-dialog modal-lg" role="document">
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="title" class="form-label">Advertised price *</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
+                                        </div>
+                                        <input type="text" class="form-control" placeholder="99.50" name="advertised_price" id="advertised_price" value="{{ old('advertised_price') }}" style="max-width: 200px;">
+                                    </div>
+                                        
+                                    @error('advertised_price')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="category" class="form-label">Quantity</label>
+                                    <div class="row">
+                                        <div class="col-lg-2">
+                                            <div class="input-group mb-3">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="basic-addon1">Min</span>
+                                                </div>
+                                                <input type="number" placeholder="Min" name="quantity_min" id="quantity_min" value="{{ old('quantity_min') }}" class="form-control">
+                                            </div>                                                
+                                        </div>
+                                        <div class="col-lg-2">
+                                            <div class="input-group mb-3">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text" id="basic-addon1">Max</span>
+                                                </div>
+                                                <input type="number" placeholder="Max" name="quantity_max" id="quantity_max" value="{{ old('quantity_max') }}" class="form-control" >
+                                                </div>
+                                            </div>
+                                        </div>
+                                </div>
+                            </div>
+                                                            
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="category" class="form-label">Category *</label>
+                                    <select name="category[]" id="category" class="form-control aiz-selectpicker" data-live-search="true" multiple>
+                                        @foreach ($category as $cat)
+                                            <option value="{{ $cat->id }}"
+                                            {{ (collect(old('category'))->contains($cat->id)) ? 'selected':'' }}>{{ $cat->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('category')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="tour_type" class="form-label">Tour Types *</label>
+                                    <select name="tour_type[]" id="tour_type" class="form-control aiz-selectpicker" data-live-search="true" multiple>
+                                        @foreach ($tour_type as $tt)
+                                            <option value="{{ $tt->id }}"
+                                            {{ (collect(old('tour_type'))->contains($tt->id)) ? 'selected':'' }}>{{ $tt->name }}</option>
+                                        @endforeach                                            
+                                    </select>
+                                    @error('tour_type')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-4">
+                                <div class="form-group">
+                                    <label for="country" class="form-label">Country *</label>
+                                    @php $countries = \App\Models\Country::where('status',1)->get(); @endphp
+                                    <select name="country" id="country_id" class="form-control aiz-selectpicker" data-live-search="true">
+                                        <option value="">{{translate('Select One')}}</option>
+                                        @foreach ($countries as $country)
+                                            <option value="{{ $country->id }}"
+                                            {{ old('country')==$country->id ? 'selected':'' }}>{{ strtoupper($country->name) }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('country')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="form-group">
+                                    <label for="state" class="form-label">State *</label>
+                                    <select name="state" id="state_id" class="form-control aiz-selectpicker" data-live-search="true" >
+
+                                    </select>
+                                    @error('state')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="form-group">
+                                    <label for="city" class="form-label">City  *</label>
+                                    <select name="city" id="city_id" class="form-control aiz-selectpicker" data-live-search="true" >
+
+                                    </select>
+                                    @error('city')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="description" class="form-label">Brief description *</label>
+                                    <textarea name="description" id="description" rows="3" class="form-control aiz-text-editor">{{ old('description') }}</textarea>
+                                    <small class="form-text text-right">{{ ('Max 240 characters') }}</small>
+                                    @error('description')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="long_description" class="form-label">Long description *</label>
+                                    <textarea name="long_description" id="long_description" class="form-control aiz-text-editor" >{{ old('long_description') }}</textarea>
+                                        @error('long_description')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="other_description" class="form-label">Other description</label>
+                                    <textarea name="other_description" id="other_description" class="form-control aiz-text-editor" >{{ old('other_description') }}</textarea>
+                                        @error('other_description')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="videos" class="form-label">Videos</label>
+
+                                    <div id="videosContainer">
+                                        <div class="input-group mb-3 video-input">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">https://www.youtube.com/watch?v=</span>
+                                            </div>
+                                            <input type="text" name="videos[]" class="form-control">
+                                            <button type="button" class="btn btn-sm btn-primary btn-preview mr-2" onclick="previewVideoFromInput(this)">
+                                                Preview
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="removeVideo(this)">
+                                                <i class="fa fa-minus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button type="button" class="btn btn-sm btn-success mb-2" onclick="addVideos()">
+                                        <i class="fa fa-plus"></i> Add Video
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group mb-4">
+                                    <label for="IsPurchasedAsAGift" class="form-label"><input type="checkbox" name="IsPurchasedAsAGift" id="IsPurchasedAsAGift" /> Can be purchased as a gift</label>
+                                    <div class="row hidden" id="IsPurchasedAsAGift_show">
+                                        <div class="col-lg-4">
+                                            <label style="font-weight:400"><input type="checkbox" {{ old('IsExpiryDays') ? 'checked' : '' }} name="IsExpiryDays" id="IsExpiryDays" value="1" /> Gift Card expires a number of days after</lable><br />
+                                            <div class="input-group hidden" id="expiry_days_wra">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">expires</span>
+                                                </div>
+                                                <input type="text" placeholder="0" name="expiry_days" id="expiry_days" value="{{ old('expiry_days') }}" class="form-control" >
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">days after purchase</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <label style="font-weight:400"><input type="checkbox" {{ old('IsExpiryDate') ? 'checked' : '' }} name="IsExpiryDate" id="IsExpiryDate" value="1" /> Gift Card expires on a specific date</label><br />
+
+                                            <div class="input-group hidden" id="expiry_date_wra">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">expires on</span>
+                                                </div>
+                                                <input type="text" class="aiz-date-range form-control" id="expiry_date" name="expiry_date" placeholder="Select Date" data-single="true" data-show-dropdown="true" value="{{ old('expiry_date') }}">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <label style="font-weight:400"><input type="checkbox" name="gift_tax_fees" id="gift_tax_fees" {{ old('gift_tax_fees') ? 'checked' : '' }} value="1" /> Gift is inclusive of all taxes & fees</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="IsTermsAndConditions" class="form-label"><input type="checkbox" name="IsTerms" id="IsTermsAndConditions" {{ old('IsTerms') ? 'checked' : '' }} value="1" /> Add product-specific terms and conditions</label>
+                                    <div id="terms_and_conditions_wra" class="hidden" style=" overflow: hidden;">
+                                        <textarea name="terms_and_conditions" id="terms_and_conditions" class="form-control  aiz-text-editor" >{{ old('terms_and_conditions') }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label class="form-label">{{translate('Featured Image')}}</label>
+                                    <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
+                                        <div class="input-group-prepend">
+                                            <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
+                                        </div>
+                                        <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
+                                        <input type="hidden" name="image" class="selected-files" >
+                                    </div>
+                                    <div class="file-preview box"></div>
+                                </div>
+                            </div>
+                            <!-- <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="image" class="form-label">Image</label>
+                                    <input type="file" name="image" id="image" class="form-control" accept="image/*"
+                                        >
+                                        @error('image')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div> -->
+                            <!-- <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="slider-images" class="form-label">Tour Slider Images</label>
+                                    <input type="file" name="slider_images[]" id="slider-images" accept="image/*"
+                                        class="form-control" multiple>
+                                        @error('slider_images')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div> -->
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="videoPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
                             <div class="modal-content">
-                              <div class="modal-header">
+                                <div class="modal-header">
                                 <h5 class="modal-title">Video Preview</h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="stopPreview()">
-                                  <span aria-hidden="true">&times;</span>
+                                    <span aria-hidden="true">&times;</span>
                                 </button>
-                              </div>
-                              <div class="modal-body text-center">
+                                </div>
+                                <div class="modal-body text-center">
                                 <iframe id="videoPreviewFrame" width="100%" height="400" frameborder="0" allowfullscreen></iframe>
-                              </div>
+                                </div>
                             </div>
-                          </div>
                         </div>
+                    </div>
 
 
-                        <div class="card-footer">
-                            <button type="submit" id="submit" class="btn btn-primary">Save tour</button>
-                            <a href="{{ route('admin.tour.index') }}" class="btn btn-secondary">Cancel</a>
-                        </div>
-                    </form>
-                </div>
+                    <div class="card-footer">
+                        <button type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save tour</button>
+                        <a href="{{ route('admin.tour.index') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 @section('js')
+<script>
+    window.currencySymbols = @json(config('constants.currency_symbols'));
+</script>
 <script>
 // Get Countries and States
 function get_states_by_country() {
@@ -611,7 +628,7 @@ function addPriceOption() {
         <div class="col-lg-2">
             <div class="input-group">
                 <div class="input-group-prepend">
-                    <span class="input-group-text">$</span>
+                    <span class="input-group-text currency-symbol">$</span>
                 </div>
                 <input type="text" placeholder="Price" name="PriceOption[${priceOptionCount}][price]" id="PriceOption_${priceOptionCount}_price" class="form-control">
             </div>
@@ -632,6 +649,7 @@ function addPriceOption() {
         </div>`;
 
     container.appendChild(newRow);
+    updateCurrencySymbol();
     priceOptionCount++;
 }
 
@@ -730,6 +748,24 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+});
+</script>
+
+<script>
+function updateCurrencySymbol() {
+    let currency = $('select[name="currency"]').val();
+    let symbol = currencySymbols[currency] ?? currency;
+
+    $('.currency-symbol').text(symbol);
+}
+
+// On page load
+updateCurrencySymbol();
+
+// On currency change
+$('select[name="currency"]').on('change', function () {
+    
+    updateCurrencySymbol();
 });
 </script>
 @endsection

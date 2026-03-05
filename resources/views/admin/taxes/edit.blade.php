@@ -1,15 +1,23 @@
 <x-admin>
     @section('title','Update Tax or Fee')
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">Update Tax or Fee</h3>
-                        <div class="card-tools">
-                            <a href="{{ route('admin.taxes.index') }}" class="btn btn-info btn-sm">Back</a>
+        <div class="col-md-12">
+            <div class="card-primary mb-3">
+                <div class="card-header taxes-fee-head">
+                    <div class="row">
+                        <div class="col-md-8 col-12">
+                            <h3 class="card-title text-white">Update Tax and Fee</h3>
+                        </div>
+                        <div class="col-md-4 col-12">
+                            <div class="card-tools">
+                                <a href="{{ route('admin.taxes.index') }}" class="btn btn-back btn-sm">Back</a>
+                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            <div class="card taxes-fee-body">
+                <div class="card-primary bg-white border rounded-lg-custo">
                     @if ($errors->any())
                         <div class="alert alert-danger">
                             <ul class="list-unstyled">
@@ -61,8 +69,8 @@
                             <div class="form-group mb-3">
                                 <label for="name" id="percentTitle">Percent *</label>
                                 <div class="input-group ">                                    
-                                    <input type="text" class="form-control" id="tax_fee_value" name="tax_fee_value"
-                                        placeholder="Enter value" style="max-width: 200px;" required value="{{ $taxfee->tax_fee_value }}" />
+                                    <input type="text" class="form-control col-md-12" id="tax_fee_value" name="tax_fee_value"
+                                        placeholder="Enter value" required value="{{ $taxfee->tax_fee_value }}" />
                                     <div class="input-group-prepend">
                                         <span class="input-group-text" id="fee_type_symb">%</span>
                                     </div>
@@ -73,8 +81,8 @@
                             </div>
 
                         </div>
-                        <div class="card-footer">
-                            <button type="submit" class="btn btn-primary float-right">Save</button>
+                        <div class="card-footer" style="justify-content: flex-end;">
+                            <button type="submit" class="btn btn-success float-right"><i class="fas fa-save"></i> Save</button>
                         </div>
                     </form>
                 </div>

@@ -10,6 +10,7 @@ use Spatie\Sitemap\SitemapIndex;
 use Spatie\Sitemap\Tags\Url;
 use App\Models\Category;
 use App\Models\City;
+use App\Models\Destination;
 use App\Models\Tour;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;

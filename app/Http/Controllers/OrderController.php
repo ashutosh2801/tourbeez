@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ManifestExport;
+use App\Imports\OrderImport;
+use App\Imports\OrderMultiSheetImport;
+use App\Imports\OrdersImport;
 use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
@@ -16,22 +19,23 @@ use App\Models\OrderTour;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
 use App\Models\TourPricing;
-use App\Models\User;
-use App\Services\TwilioService;
-use App\Notifications\NewOrderNotification;
 use App\Models\TourSpecialDeposit;
+use App\Models\User;
+use App\Notifications\NewOrderNotification;
+use App\Services\TwilioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Concerns\FromArray;
+use Stripe\Cancel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
-use Stripe\Cancel;
 use Stripe\Stripe;
 use Validator;
 
@@ -890,7 +894,11 @@ class OrderController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'order_status'   => 'required|max:255',
+
+            'tour_startdate'   => 'required|array',
             'tour_startdate.*' => 'required|date',
+
+            'tour_starttime'   => 'required|array',
             'tour_starttime.*' => 'required|string|max:10',
         ],
         [
@@ -1057,18 +1065,25 @@ class OrderController extends Controller
                 foreach ($request->paymentType as $i => $type) {
 
                     $paymentId       = $request->paymentId[$i] ?? null;
-                    $amount          = $request->amount[$i] ?? null;
+                    $amount          = $request->amount[$i] ?? 0;
+                    $refundAmount    = $request->refund_amount[$i] ?? 0;
+                    $status          = $request->status[$i] ?? null;
                     $collection_date = $request->collection_date[$i] ?? null;
                     $transactionId   = $request->transactionId[$i] ?? null;
-
+                    
                     // Skip empty rows
                     if (empty($type) && empty($amount)) {
                         continue;
                     }
 
                     // Add amount to total (only if valid) 
-                    if (!empty($amount)) { 
-                        $totalPaymentAmount += floatval($amount); 
+                    if ($status === 'succeeded') {
+
+                        $netAmount = floatval($amount) - floatval($refundAmount);
+
+                        if ($netAmount > 0) {
+                            $totalPaymentAmount += $netAmount;
+                        }
                     }
 
                     if ($paymentId) {
@@ -1094,10 +1109,10 @@ class OrderController extends Controller
                             'payment_type'   => $type,
                             'transaction_id' => $transactionId,
                             'collection_date'=> Carbon::parse($collection_date)->format('Y-m-d'),
-                            'currency'       => 'USD',
+                            'currency'       => $order->currency,
                             'amount'         => $amount,
                             'collection_type'=> 'Outside',
-                            'status'         => 'successful',
+                            'status'         => 'succeeded',
                             'created_at'     => now(),
                             'updated_at'     => now(),
                         ]);
@@ -1111,11 +1126,19 @@ class OrderController extends Controller
             }
         }
 
-        $balanceAmount = $total - $totalPaymentAmount;
+        $order->load('payments');
+
+        $totalPaymentAmount = $order->payments
+        ->where('status', 'succeeded')
+        ->sum(function ($payment) {
+            return floatval($payment->amount) - floatval($payment->refund_amount);
+        });
+
+        $balanceAmount = max($total - $totalPaymentAmount, 0);
 
         $order->total_amount    = $total;
         $order->balance_amount  = $balanceAmount;
-        $order->booked_amount  = $total - $balanceAmount;
+        $order->booked_amount  = $totalPaymentAmount;
         
         if( $order->save() ) {
 
@@ -2277,6 +2300,10 @@ class OrderController extends Controller
             if(str_contains( $order->payment_method_id, 'pm_')){
                 $paymentMethodId = $order->payment_method_id;
 
+            }elseif(str_contains( $order->payment_intent_id, 'pm_')){
+
+                $paymentMethodId   = $order->payment_intent_id;
+
             } else {
 
                 if (!$customerId || !$intentId) {
@@ -2284,11 +2311,14 @@ class OrderController extends Controller
                 }
 
                 // Retrieve previous PaymentIntent
+
                 $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+
+               
                 $paymentMethodId = $paymentIntent->payment_method;
             }          
 
-            // dd($paymentMethodId);
+            
             if (!$paymentMethodId) {
                 throw new \Exception("No payment method found on previous PaymentIntent.");
             }
@@ -2478,7 +2508,7 @@ class OrderController extends Controller
                 // 'status' => $newStatus,
                 'refund_id' => $refund->id ?? null,
                 'refunded_at' => now(),
-                'refund_amount' => $payment->amount - $newRefundTotal, // cumulative refund
+                'refund_amount' => $newRefundTotal, // cumulative refund
                 'refund_reason' => $request->reason,
             ]);
 
@@ -3499,18 +3529,26 @@ class OrderController extends Controller
             $order->balance_amount = $order->total_amount;
             $order->save();
 
+
+
+
+            $orderPayment = OrderPayment::where('payment_intent_id', $paymentIntent->id)->first();
+            $orderPayment->status = 'pending';
+            $orderPayment->save();
+
+
             // Log the cancellation
-            OrderPayment::create([
-                'order_id'          => $order->id,
-                'payment_intent_id' => $intentId,
-                'transaction_id'    => $intentId,
-                'payment_method'    => 'card',
-                'status'            => 'canceled',
-                'amount'            => 0,
-                'currency'          => $order->currency,
-                'action'            => 'cancel_uncaptured',
-                'response_payload'  => json_encode($canceledIntent),
-            ]);
+            // OrderPayment::create([
+            //     'order_id'          => $order->id,
+            //     'payment_intent_id' => $intentId,
+            //     'transaction_id'    => $intentId,
+            //     'payment_method'    => 'card',
+            //     'status'            => 'canceled',
+            //     'amount'            => 0,
+            //     'currency'          => $order->currency,
+            //     'action'            => 'cancel_uncaptured',
+            //     'response_payload'  => json_encode($canceledIntent),
+            // ]);
 
             DB::commit();
 
@@ -3682,7 +3720,138 @@ class OrderController extends Controller
     }
 
     public function addCard(Request $request, Order $order)
+{
+    $request->validate([
+        'payment_method'      => 'required|string',
+        'charge_ccnow'        => 'nullable|boolean',
+        'charge_ccnow_amount' => 'nullable|numeric|min:0.01'
+    ]);
+
+    \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+    $shouldCharge = $request->boolean('charge_ccnow') 
+                    && $request->filled('charge_ccnow_amount');
+
+    // Ensure Stripe customer exists
+    if (
+        empty($order->stripe_customer_id) ||
+        !str_starts_with($order->stripe_customer_id, 'cus_')
+    ) {
+        $customer = \Stripe\Customer::create([
+            'name'  => $order->customer?->name,
+            'email' => $order->customer?->email,
+        ]);
+
+        $order->update([
+            'stripe_customer_id' => $customer->id
+        ]);
+    }
+
+    // Retrieve PaymentMethod
+    $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_method);
+
+    // Attach card to customer
+    $paymentMethod->attach([
+        'customer' => $order->stripe_customer_id
+    ]);
+
+    // Set as default card
+    \Stripe\Customer::update($order->stripe_customer_id, [
+        'invoice_settings' => [
+            'default_payment_method' => $paymentMethod->id
+        ]
+    ]);
+
+    // Store minimal info for UI (your original logic)
+    $order->update([
+        'payment_intent_id' => $paymentMethod->id
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHARGE LOGIC (NEW PART)
+    |--------------------------------------------------------------------------
+    */
+
+    if ($shouldCharge) {
+
+        $chargeAmount = (float) $request->charge_ccnow_amount;
+
+        if ($chargeAmount > $order->balance_amount) {
+            return response()->json([
+                'message' => 'Charge exceeds remaining balance.'
+            ], 400);
+        }
+
+        $intent = \Stripe\PaymentIntent::create([
+            'customer'       => $order->stripe_customer_id,
+            'amount'         => intval($chargeAmount * 100),
+            'currency'       => $order->currency ?? 'eur',
+            'payment_method' => $paymentMethod->id,
+            'off_session'    => true,
+            'confirm'        => true,
+            'description'    => "#{$order->order_number}",
+        ]);
+
+        // Update order financials
+        $order->booked_amount += $chargeAmount;
+        $order->balance_amount = max(
+            $order->total_amount - $order->booked_amount,
+            0
+        );
+
+        $order->save();
+
+        $order->payments()->create([
+            'payment_type'   => 'CREDITCARD',
+            'transaction_id' => $intent->id,
+            'card_last4'     => $paymentMethod->card->last4,
+            'card_brand'     => $paymentMethod->card->brand,
+            'amount'         => $chargeAmount,
+            'currency'       => $order->currency,
+            'collection_type'=> 'Inside',
+            'status'         =>  'succeeded'
+        ]);
+
+        $note = "Credit card added and charged {$chargeAmount} {$order->currency} by " . Auth::user()->name;
+
+    } else {
+
+        // Only card added (your original behaviour)
+        $order->payments()->create([
+            'payment_type'   => 'CREDITCARD',
+            'transaction_id' => $paymentMethod->id,
+            'card_last4'     => $paymentMethod->card->last4,
+            'card_brand'     => $paymentMethod->card->brand,
+            'amount'         => 0,
+            'currency'       => $order->currency,
+            'collection_type'=> 'Inside'
+        ]);
+
+        $note = "Credit card added successfully has been processed by " . Auth::user()->name;
+    }
+
+    OrderActions::insert([
+        'order_id'     => $order->id,
+        'performed_by' => Auth::id(),
+        'notes'        => $note,
+        'created_at'   => now(),
+        'updated_at'   => now()
+    ]);
+
+    return response()->json([
+        'message' => $shouldCharge 
+            ? 'Card added and charged successfully.'
+            : 'Card added successfully to this customer'
+    ]);
+}
+
+
+
+
+    public function addCard2342(Request $request, Order $order)
     {
+
         $request->validate([
             'payment_method' => 'required|string'
         ]);
@@ -3730,7 +3899,7 @@ class OrderController extends Controller
             'card_last4'     => $paymentMethod->card->last4,
             'card_brand'     => $paymentMethod->card->brand,
             'amount'         => 0,
-            'currency'       => 'USD',
+            'currency'       => $order->currency,
             'collection_type'=> 'Inside'
         ]);
         $order_actions = [
@@ -3746,6 +3915,101 @@ class OrderController extends Controller
             'message' => 'Card added successfully to this customer'
         ]);
     }
+
+
+
+    public function importOrders(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+
+            $import = new OrdersImport();
+            // dd( $request->file('file'));
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+            // $summary = $import->getSummary();
+
+            // dd(323432);
+
+
+            return back()->with('import_summary', []);
+
+        } catch (\Throwable $e) {
+
+            \Log::error('Multi sheet import crashed', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Import failed unexpectedly.');
+        }
+    }
+
+
+
+
+
+
+public function sampleExcel()
+{
+    $data = [
+        [
+            'Date',
+            'Check-in',
+            'Order Number',
+            'Customer Full Name',
+            'Customer Phone',
+            'Product name',
+            'Quantities',
+            'Quantities Label',
+            'Quantities Price',
+            'Extras',
+            'Extras Label',
+            'Extras Price',
+            'Order Balance',
+            'Order Total Amount',
+            'Order Total Paid',
+            'Pick-up Time',
+            'Pick-up Location',
+            'Order Status',
+        ],
+        // Optional sample row (remove if you want header only)
+        [
+            '2025-02-01',
+            '2025-02-10',
+            'ORD12345',
+            'John Doe',
+            '9876543210',
+            'Desert Safari',
+            '2',
+            'Adults',
+            '100',
+            '3',
+            'Boat Cruise Ride - Adult',
+            '50',
+            '50',
+            '500',
+            '450',
+            '10:00 AM',
+            'Dubai Mall',
+            'Confirmed',
+        ]
+    ];
+
+    return Excel::download(
+        new class($data) implements FromArray {
+            public function __construct(private array $data) {}
+            public function array(): array { 
+                return $this->data; 
+            }
+        },
+        'order_import_sample.xlsx'
+    );
+}
+
+
 
     
 
