@@ -50,6 +50,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/home-listing',[CommonController::class,'home_listing']);
     Route::get('/popular-cities',[CommonController::class,'popular_cities']);
     Route::get('/popular-destinations',[CommonController::class,'popular_destinations']);
+    Route::get('/destinations',[CommonController::class,'destinations']);
     Route::get('/single-city/{id}',[CommonController::class,'single_city']);
     Route::post('/contact',[CommonController::class,'contact']);
     Route::post('/careers',[CommonController::class,'careers']);
@@ -95,14 +96,6 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/fetch_coupon/{coupon}', [PromoController::class, 'fetch_coupon']);
     Route::get('/fetch_voucher/{voucher}', [VoucherController::class, 'fetch_voucher']);
 
-
-    // Route::post('/supplier/register', function(Request $request){
-    //     return response()->json([
-    //             'status' => false,
-    //             'data' => $request->all()
-    //         ]);
-    //     });
-
 });
 
 
@@ -110,8 +103,3 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/profile/update/{id}', [AuthController::class, 'update']);
 });
 
-
-
-// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-//     return $request->user();
-// });

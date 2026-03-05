@@ -72,6 +72,7 @@ class CustomerController extends Controller
             ['path' => request()->url(), 'query' => request()->query()]
         );
         return view('admin.customer.index', compact('data'));
+        
     }
 
     /**
