@@ -233,7 +233,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     @else
                                         <li class="payment-details-breakdown--item">
                                             <strong class="payment-details-breakdown--text">Paid</strong>
-                                            <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
+                                            <strong class="payment-details-breakdown--text">{{price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency)}}</strong>
                                         </li>
 
                                     @endif
@@ -751,29 +751,10 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             <div class="col-2">
                                                 @if($order->latestPayment->card_last4)
                                                     
-                                                    <svg width="48" height="40" viewBox="0 0 48 40" xmlns="http://www.w3.org/2000/svg">
-                                                              <rect width="48" height="40" rx="4" fill="#ffffff"/>
-
-                                                              <!-- Mastercard logo -->
-                                                              <circle cx="18" cy="15" r="10" fill="#EB001B"/>
-                                                              <circle cx="30" cy="15" r="10" fill="#F79E1B"/>
-                                                              <path d="M24 7.5a10 10 0 0 1 0 15a10 10 0 0 1 0-15z" fill="#FF5F00"/>
-
-                                                              <!-- Text below -->
-                                                              <text
-                                                                x="24"
-                                                                y="34"
-                                                                text-anchor="middle"
-                                                                font-family="Arial, Helvetica, sans-serif"
-                                                                font-size="7"
-                                                                font-weight="600"
-                                                                fill="#000">
-                                                                mastercard
-                                                              </text>
-                                                            </svg>
-
                                                     
 
+                                                    
+                                                    {!! cardSvg($order->latestPayment->card_brand) !!} 
 
                                                     {{ $order->latestPayment->card_last4}} ({{ strtoupper($order->latestPayment->card_brand) }})
                                                 @else
@@ -859,11 +840,9 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                         @endphp
                                         @foreach ($order->payments as $payment)
 
-                                        @if($payment->amount <= 0)
-                                            @continue
-                                        @endif   
+                                          
                                         <input type="hidden" name="paymentId[]" value="{{ $payment->id }}" />
-                                        <div class="row paymentRow py-2 border border-black-300">
+                                        <div class="row paymentRow py-2 border border-black-300 {{ $payment->amount <= 0 ? 'd-none' : '' }}">
                                             <div class="col-1">
                                                 {{ $payment->payment_type == 'CARD' ? 'CREDITCARD': $payment->payment_type  }}
                                                 <input type="hidden" name="paymentType[]" value="{{ $payment->payment_type }}" />
@@ -3013,32 +2992,62 @@ document.getElementById('refundAllForm').addEventListener('submit', async functi
 
 <script>
 $(document).on('click', '.btn-delete-order', function () {
-    if (!confirm('Are you sure?')) {
-        return false;
-    }
 
     let url = $(this).data('url');
-    let row = $(this).closest('tr'); // optional: remove row after delete
+    let row = $(this).closest('tr');
 
-    $.ajax({
-        url: url,
-        type: 'POST',
-        data: {
-            _method: 'DELETE',
-            _token: '{{ csrf_token() }}'
-        },
-        success: function (response) {
-            // remove row from table
-            row.fadeOut(300, function () {
-                $(this).remove();
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This order will be permanently deleted.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function (response) {
+
+                    row.fadeOut(300, function () {
+                        $(this).remove();
+                    });
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Deleted!',
+                        text: 'Order deleted successfully',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = "{{ route('admin.orders.index') }}";
+                    });
+
+                },
+                error: function (xhr) {
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Something went wrong. Please try again.'
+                    });
+
+                }
             });
 
-            alert(response.message ?? 'Order deleted successfully');
-        },
-        error: function (xhr) {
-            alert('Something went wrong. Please try again.');
         }
+
     });
+
 });
 </script>
 
@@ -3069,23 +3078,57 @@ $(document).on('click', '.btn-delete-order', function () {
 <script>
 
 const removeCardUrl = "{{ route('admin.orders.remove-card', ':orderId') }}";
-function removeCard(orderId) {
-    if (!confirm('Are you sure you want to remove this card?')) return;
 
-    fetch(removeCardUrl.replace(':orderId', orderId), {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
+function removeCard(orderId) {
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to remove this card!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, remove it!'
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+
+            fetch(removeCardUrl.replace(':orderId', orderId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(res => {
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Removed!',
+                    text: res.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+
+            })
+            .catch(() => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Something went wrong'
+                });
+            });
+
         }
-    })
-    .then(res => res.json())
-    .then(res => {
-        alert(res.message);
-        location.reload();
-    })
-    .catch(() => alert('Something went wrong'));
+
+    });
 }
+
 </script>
 <script>
 /* ================= STRIPE INIT (ONCE) ================= */
@@ -3137,9 +3180,15 @@ document.querySelectorAll('[data-action]').forEach(btn => {
 
 
 async function addCardOnly() {
-
+    showLoader("Loading… Please wait");
     if (!cardMounted) {
-        alert('Please enter card details first');
+        Swal.fire({
+                    icon: 'warning',
+                    title: 'warning!',
+                    text: 'Please enter card details first!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
         return;
     }
 
@@ -3158,7 +3207,15 @@ async function addCardOnly() {
 
     // If checkbox checked but no amount
     if (chargeNow && (!chargeAmount || parseFloat(chargeAmount) <= 0)) {
-        alert('Please enter a valid amount to charge.');
+        
+
+        Swal.fire({
+                    icon: 'warning',
+                    title: 'warning!',
+                    text: 'Please enter a valid amount to charge.!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
         return;
     }
 
@@ -3176,10 +3233,20 @@ async function addCardOnly() {
     })
     .then(res => res.json())
     .then(res => {
-        alert(res.message);
+
+
+        Swal.fire({
+                    icon: 'success',
+                    title: 'success!',
+                    text: res.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
         location.reload();
     })
     .catch(() => alert('Something went wrong'));
+
+    hideLoader();
 }
 
 async function addCardOnl42342() {

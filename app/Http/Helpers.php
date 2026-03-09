@@ -1334,5 +1334,42 @@ if (!function_exists('currencyConvert')) {
         // return round($converted, 2);
     }
 }
+if (!function_exists('cardSvg')) {
+    function cardSvg($brand) {
+
+        $brand = strtolower($brand);
+
+        $svgs = [
+
+        'visa' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#1A1F71"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="12" font-weight="bold">VISA</text>
+        </svg>',
+
+        'mastercard' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <circle cx="20" cy="12" r="8" fill="#EB001B"/>
+        <circle cx="28" cy="12" r="8" fill="#F79E1B"/>
+        </svg>',
+
+        'amex' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#2E77BB"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">AMEX</text>
+        </svg>',
+
+        'discover' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#FF6000"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">DISC</text>
+        </svg>',
+
+        'default' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#6c757d"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10">CARD</text>
+        </svg>'
+        ];
+
+        return $svgs[$brand] ?? $svgs['default'];
+
+    }
+}
 
 ?>

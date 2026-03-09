@@ -32,7 +32,11 @@ class CategoryController extends Controller
             }
         }
 
-        $data = $query->latest()->paginate(3)->withQueryString();
+        $paginated = 10;
+        if($request->has('per_page')){
+            $paginated  = $request->per_page;
+        }
+        $data = $query->latest()->paginate($paginated)->withQueryString();
         return view('admin.category.index', compact('data'));
     }
     /**

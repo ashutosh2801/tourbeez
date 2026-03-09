@@ -44,7 +44,7 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Order::with(['customer', 'orderTours.tour'])
+        $query = Order::with(['customer', 'orderTours.tour', 'payments'])
             ->whereHas('customer', function ($q) {
                 $q->whereNotNull('first_name')
                   ->where('first_name', '!=', ''); // exclude empty strings
@@ -2685,7 +2685,7 @@ class OrderController extends Controller
             OrderActions::insert($order_actions);
 
             // Update order amounts
-            $order->booked_amount -= $request->amount;
+            $order->booked_amount = $order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount');
             
 
 
