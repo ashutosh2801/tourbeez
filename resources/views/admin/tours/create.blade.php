@@ -103,7 +103,7 @@
                                     <!-- Hidden field sends 0 when checkbox is unchecked -->
                                     <input type="hidden" name="order_email" value="0">
 
-                                    <!-- Toggle switch sends 1 if checked -->..
+                                    <!-- Toggle switch sends 1 if checked -->
                                     <label class="switch mt-2">
                                         <input type="checkbox"
                                                 name="order_email"
@@ -119,11 +119,11 @@
                                 </div>
                             </div>
 
-                            <div class="col-lg-5">
+                            <div class="col-lg-12">
                                 <!-- <div class="col-xl-5"> -->
                                     <div class="form-group">
                                         <label for="slug" class="form-label">Currency *</label>
-                                        <select name="currency" class="form-control mr-2">
+                                        <select name="currency" class="form-control">
                                             @foreach(config('constants.currencies') as $code => $country)
                                                 <option value="{{ $code }}" >{{ $code }} - {{ $country }}</option> 
                                             @endforeach
@@ -145,26 +145,30 @@
                                     
                                     @if ($index > 0) <div class="priceOptionsWra"> @endif
                                     
-                                    <div class="row mb-3 product-pricing" id="priceOptionRow_{{ $index }}">
+                                    <div class="row mb-3 pro-pricing" id="priceOptionRow_{{ $index }}">
                                         @if($index == 0)
-                                        <div class="col-lg-2">
-                                            <select name="price_type" id="pricing" class="form-control">
-                                                <option @if(old('price_type')=='PER_PERSON' || old('price_type')=='') echo 'selected'; @endif value="PER_PERSON">By Person</option>
-                                                <option @if(old('price_type')=='FIXED') echo 'selected'; @endif value="FIXED">By Fixed</option>
-                                            </select>                                                
+                                        <div class="col-lg-3">
+                                            <div class="input-group">
+                                                <select name="price_type" id="pricing" class="form-control">
+                                                    <option @if(old('price_type')=='PER_PERSON' || old('price_type')=='') echo 'selected'; @endif value="PER_PERSON">By Person</option>
+                                                    <option @if(old('price_type')=='FIXED') echo 'selected'; @endif value="FIXED">By Fixed</option>
+                                                </select>      
+                                            </div>                                          
                                         </div>
                                         @else
-                                        <div class="col-lg-2"></div>
+                                        <div class="col-lg-3"></div>
                                         @endif
 
-                                        <div class="col-lg-2">
-                                            <input type="text" placeholder="Adults" name="PriceOption[{{ $index }}][label]" id="PriceOption_name" 
-                                            value="{{ old("PriceOption.$index.label", $option['label']) }}" class="form-control">
-                                            @error("PriceOption.$index.label")
-                                                <div class="text-danger">{{ $message }}</div>
-                                            @enderror
+                                        <div class="col-lg-3">
+                                            <div class="input-group">
+                                                <input type="text" placeholder="Adults" name="PriceOption[{{ $index }}][label]" id="PriceOption_name" 
+                                                value="{{ old("PriceOption.$index.label", $option['label']) }}" class="form-control">
+                                                @error("PriceOption.$index.label")
+                                                    <div class="text-danger">{{ $message }}</div>
+                                                @enderror
+                                            </div>
                                         </div>
-                                        <div class="col-lg-2">
+                                        <div class="col-lg-3">
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
@@ -177,7 +181,7 @@
                                                 <div class="text-danger">{{ $message }}</div>
                                             @enderror                                              
                                         </div>
-                                        <div class="col-lg-5">
+                                        <div class="col-lg-3">
                                             <div class="input-group quantity_used">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text" id="basic-addon1">Quantity used</span>
@@ -187,7 +191,7 @@
                                                         <option value="{{ $i }}" {{ old("PriceOption.$index.qty_used", $option['qty_used']) == $i ? 'selected' : '' }}>{{ $i }}</option>
                                                     @endfor
                                                 </select>
-                                                <button type="button" class="btn btn-sm btn-success mr-2" onclick="addPriceOption()"><i class="fa fa-plus"></i></button>
+                                                <button type="button" class="btn btn-sm btn-success" onclick="addPriceOption()"><i class="fa fa-plus"></i></button>
                                                 @if($index > 0)
                                                 <button type="button" class="btn btn-sm btn-danger" onclick="removePriceOption({{ $index }})"><i class="fa fa-minus"></i></button>
                                                 @endif
@@ -213,7 +217,7 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
                                         </div>
-                                        <input type="text" class="form-control" placeholder="99.50" name="advertised_price" id="advertised_price" value="{{ old('advertised_price') }}" style="max-width: 200px;">
+                                        <input type="text" class="form-control" placeholder="99.50" name="advertised_price" id="advertised_price" value="{{ old('advertised_price') }}" style="max-width: 100%;">
                                     </div>
                                         
                                     @error('advertised_price')
@@ -225,17 +229,17 @@
                             <div class="col-lg-12">
                                 <div class="form-group">
                                     <label for="category" class="form-label">Quantity</label>
-                                    <div class="row">
-                                        <div class="col-lg-2">
-                                            <div class="input-group mb-3">
+                                    <div class="row tour-quantity">
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text" id="basic-addon1">Min</span>
                                                 </div>
                                                 <input type="number" placeholder="Min" name="quantity_min" id="quantity_min" value="{{ old('quantity_min') }}" class="form-control">
                                             </div>                                                
                                         </div>
-                                        <div class="col-lg-2">
-                                            <div class="input-group mb-3">
+                                        <div class="col-lg-6">
+                                            <div class="input-group">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text" id="basic-addon1">Max</span>
                                                 </div>
@@ -371,7 +375,7 @@
                             </div>
 
                             <div class="col-lg-12">
-                                <div class="form-group mb-4">
+                                <div class="form-group">
                                     <label for="IsPurchasedAsAGift" class="form-label"><input type="checkbox" name="IsPurchasedAsAGift" id="IsPurchasedAsAGift" /> Can be purchased as a gift</label>
                                     <div class="row hidden" id="IsPurchasedAsAGift_show">
                                         <div class="col-lg-4">
@@ -415,7 +419,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-lg-6">
+                            <div class="col-lg-12">
                                 <div class="form-group">
                                     <label class="form-label">{{translate('Featured Image')}}</label>
                                     <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">

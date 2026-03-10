@@ -180,24 +180,24 @@
                             value="{{ old("PriceOption.$index.id", $option['id']) }}" class="form-control" />
 
                                 @if($index == 0)
-                                <div class="col-xl-2">
+                                <div class="col-xl-3">
                                     <select name="price_type" id="pricing" class="form-control">
                                         <option @if(old('price_type')=='PER_PERSON' || $data->price_type=="PER_PERSON" || old('price_type')=='') selected @endif value="PER_PERSON">By Person</option>
                                         <option @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") selected @endif value="FIXED">By Fixed</option>
                                     </select>                                                
                                 </div>
                                 @else
-                                <div class="col-xl-2"></div>
+                                <div class="col-xl-3"></div>
                                 @endif
 
-                                <div class="col-xl-2">
+                                <div class="col-xl-3">
                                     <input type="text" placeholder="Adults" name="PriceOption[{{ $index }}][label]" id="PriceOption_name" 
                                     value="{{ old("PriceOption.$index.label", $option['label']) }}" class="form-control" >
                                     @error("PriceOption.$index.label")
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                <div class="col-xl-2">
+                                <div class="col-xl-3">
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
@@ -211,7 +211,7 @@
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror                                              
                                 </div>
-                                <div class="col-xl-5 ">
+                                <div class="col-xl-3">
                                     <div class="input-group quantity_used @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") hidden @endif">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">Quantity used</span>
@@ -221,7 +221,7 @@
                                                 <option value="{{ $i }}" {{ old("PriceOption.$index.qty_used", $option['qty_used']) == $i ? 'selected' : '' }}>{{ $i }}</option>
                                             @endfor
                                         </select>
-                                        <button type="button" class="btn btn-sm btn-success mr-2" onclick="addPriceOption()"><i class="fa fa-plus"></i></button>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="addPriceOption()"><i class="fa fa-plus"></i></button>
                                         @if($index > 0)
                                         <button type="button" class="btn btn-sm btn-danger" onclick="removePriceOption({{ $index }})"><i class="fa fa-minus"></i></button>
                                         @endif
@@ -317,7 +317,7 @@
                         </div>
 
                     </div>
-                    <div class="col-xl-3">
+                    <div class="col-xl-6">
                         <div class="form-group">
                             <label for="title" class="form-label">Offer Ends In</label>
                             <div class="input-group">
@@ -335,12 +335,12 @@
                     </div>
                     
 
-                    <div class="col-xl-6">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="category" class="form-label">Quantity</label>
                             <div class="row">
                                 <div class="col-lg-6">
-                                    <div class="input-group mb-3">
+                                    <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">Min</span>
                                         </div>
@@ -348,7 +348,7 @@
                                     </div>                                                
                                 </div>
                                 <div class="col-lg-6">
-                                    <div class="input-group mb-3">
+                                    <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">Max</span>
                                         </div>

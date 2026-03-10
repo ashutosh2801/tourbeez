@@ -5,10 +5,44 @@
                 <a class="nav-link menu-bar" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
             </li>
         </ul>
+        <div class="sidenav-mobile">
+            <li class="nav-item dropdown item-currency">
+                <a class="nav-link dropdown-toggle nav-currency"
+                href="#"
+                id="currencyDropdown"
+                role="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+                title="Change Currency">
+                    <i class="fas fa-coins fa-lg mr-2"></i> {{ session('currency', 'Default (Currency)') }}
+                </a>
 
-        <a class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse">
-            <i class="fas fa-th"></i>
-        </a>
+                <div class="dropdown-menu dropdown-menu-right nav-currency-dropdown" aria-labelledby="currencyDropdown">
+
+                    {{-- Default / Auto --}}
+                    <a href="#"
+                    class="dropdown-item currency-option {{ !session()->has('currency') ? 'active' : '' }}"
+                    data-currency="">
+                        Default (Currency)
+                    </a>
+
+                    <div class="dropdown-divider"></div>
+
+                    @foreach(config('constants.currencies') as $code => $country)
+                        <a href="#"
+                        class="dropdown-item currency-option {{ session('currency') === $code ? 'active' : '' }}"
+                        data-currency="{{ $code }}">
+                            {{ $code }} - {{ $country }}
+                        </a>
+                    @endforeach
+                </div>
+            </li>
+
+            <a class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse">
+                <i class="fas fa-th"></i>
+            </a>
+        </div>
     </div>
 
     <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -34,8 +68,7 @@
                 $unreadCount = $notificationsQuery->whereNull('read_at')->count();
             @endphp
 
-            
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown currency-dropdown">
                 <a class="nav-link dropdown-toggle nav-currency"
                 href="#"
                 id="currencyDropdown"
@@ -44,7 +77,7 @@
                 aria-haspopup="true"
                 aria-expanded="false"
                 title="Change Currency">
-                    {{ session('currency', 'Default (Currency)') }}
+                    <i class="fas fa-coins fa-lg mr-2"></i> {{ session('currency', 'Default (Currency)') }}
                 </a>
 
                 <div class="dropdown-menu dropdown-menu-right nav-currency-dropdown" aria-labelledby="currencyDropdown">
@@ -66,12 +99,12 @@
                         </a>
                     @endforeach
                 </div>
-
             </li>
+            
             <li>
-            <button id="openCurrencyModal" class="btn nav-currency"  title="Convert currency to USD">
-                <i class="fas fa-calculator fa-lg"></i>
-            </button>
+                <button id="openCurrencyModal" class="btn nav-currency"  title="Convert currency to USD">
+                    <i class="fas fa-calculator fa-lg"></i>
+                </button>
             </li>
             <li class="nav-item dropdown">
                 <a class="nav-link nav-notify" data-toggle="dropdown" href="#" role="button" aria-expanded="false">

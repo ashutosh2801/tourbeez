@@ -9019,7 +9019,10 @@ a.dropdown-footer:hover {
 
     .card-footer .align-buttons {
         display: flex;
-        justify-content: space-between;
+    }
+
+    .card-footer .align-buttons .btn {
+        width: 100%;
     }
 
     #videosContainer .input-group-prepend {
@@ -9838,9 +9841,8 @@ table.dataTable {
     text-align: right;
 }
 
-.create-tour-body .product-pricing {
+.create-tour-body .pro-pricing {
     display: flex;
-    gap: 15px;
 }
 
 @media (max-width: 767px) {
@@ -9926,6 +9928,15 @@ table.dataTable {
     align-items: center;
 }
 
+.sub-tours .card-tools {
+    float: right;
+}
+
+.create-sub-tours select.form-control {
+    border: 1px solid #aeb0b4;
+    background-color: #FFF;
+}
+
 .create-sub-tours .card-footer {
     border-top: 1px solid #ebedf2;
     background: #FFF;
@@ -9936,6 +9947,24 @@ table.dataTable {
 
     .sub-tours .btn-back {
         margin-top: 10px;
+    }
+
+    .sub-tours .card-tools {
+        float: left;
+    }
+
+    .pro-pricing .input-group,
+    .tour-quantity .input-group {
+        margin-bottom: 15px;
+    }
+
+}
+
+@media (max-width: 992px) and (min-width: 767px) {
+
+    .pro-pricing .input-group,
+    .tour-quantity .input-group {
+        margin-bottom: 15px;
     }
 
 }
@@ -9970,6 +9999,7 @@ table.dataTable {
     overflow-y: scroll;
     min-width: 18rem;
     background: #FFF;
+    z-index: 1100;
 }
 
 .nav-currency-dropdown .dropdown-item:hover {
@@ -9996,7 +10026,6 @@ table.dataTable {
 
     .main-header .navbar-collapse {
         border-top: 1px solid #e6e6e6;
-        margin-top: 10px;
     }
 
     .navbar .nav-item .nav-currency {
@@ -10027,6 +10056,24 @@ table.dataTable {
         box-shadow: 0 0 15px #e5e9ec;
         padding: 10px;
         border-radius: 50px;
+    }
+
+    .sidenav-mobile {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .navbar-nav .currency-dropdown {
+        display: none;
+    }
+
+}
+
+@media (min-width: 767px) {
+
+    .sidenav-mobile {
+        display: none;
     }
 
 }
