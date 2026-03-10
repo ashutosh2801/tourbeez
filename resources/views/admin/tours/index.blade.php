@@ -38,130 +38,132 @@
     <div class="tour-main-body card rounded-lg-custom border">
 
         <form class="my-0" id="filterForm" method="GET" action="{{ route('admin.tour.index') }}">
-            <div class="card-header">
-                <div class="search-options">
-                    <div class="row">
-                        <div class="col-md-2 col-6">
-                            <input type="text" name="search" class="form-control" placeholder="Search tour" value="{{ request('search') }}" />
-                        </div>                        
-                        <div class="col-md-2 col-6">
-                            <input placeholder="date range" class="form-control datarange-pickur" type="text" />
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <select name="city" id="city-select" class="form-control">
-                                @if(request('city'))
-                                    <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
-                                @endif
-                            </select>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <select name="category" id="category-select" class="form-control">
-                                @if(request('category'))
-                                    <option value="{{ request('category') }}" selected>{{ ucwords(optional(\App\Models\Category::find(request('category')))->name) }}</option>
-                                @endif
-                            </select>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <select name="author" class="form-control aiz-selectpicker" data-live-search="true">
-                                <option value="">Select Author</option>
-                                    @foreach ($users as $author)
-                                        <option value="{{ $author->id }}" {{ request('author') == $author->id ? 'selected' : '' }}>
-                                            {{ ucwords($author->name) }}
+            <div class="filter-panel" id="filterPanel">
+                <div class="card-header">
+                    <div class="search-options">
+                        <div class="row">
+                            <div class="col-md-2 col-6">
+                                <input type="text" name="search" class="form-control" placeholder="Search tour" value="{{ request('search') }}" />
+                            </div>                        
+                            <div class="col-md-2 col-6">
+                                <input placeholder="date range" class="form-control datarange-pickur" type="text" />
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="city" id="city-select" class="form-control">
+                                    @if(request('city'))
+                                        <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
+                                    @endif
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="category" id="category-select" class="form-control">
+                                    @if(request('category'))
+                                        <option value="{{ request('category') }}" selected>{{ ucwords(optional(\App\Models\Category::find(request('category')))->name) }}</option>
+                                    @endif
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="author" class="form-control aiz-selectpicker" data-live-search="true">
+                                    <option value="">Select Author</option>
+                                        @foreach ($users as $author)
+                                            <option value="{{ $author->id }}" {{ request('author') == $author->id ? 'selected' : '' }}>
+                                                {{ ucwords($author->name) }}
+                                            </option>
+                                        @endforeach
+                                    
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="status" class="form-control" onchange="this.form.submit()">
+                                    <option value="">All Status</option>
+                                        <option value="0" {{ request('staus') === 0 ? 'selected' : '' }}>
+                                            Pending
+                                        </option>
+                                        <option value="1" {{ request('staus') === 1 ? 'selected' : '' }}>
+                                            Active
+                                        </option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="special_deposit" class="form-control">
+                                    <option value="">Special Deposit</option>
+                                    @foreach (['Active','Not_Active'] as $special_deposit)
+                                        <option value="{{ strtolower($special_deposit) }}" {{ request('special_deposit') == strtolower($special_deposit) ? 'selected' : '' }}>
+                                            {{ str_replace('_', ' ', $special_deposit) }} 
                                         </option>
                                     @endforeach
-                                
-                            </select>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <select name="status" class="form-control" onchange="this.form.submit()">
-                                <option value="">All Status</option>
-                                    <option value="0" {{ request('staus') === 0 ? 'selected' : '' }}>
-                                        Pending
-                                    </option>
-                                    <option value="1" {{ request('staus') === 1 ? 'selected' : '' }}>
-                                        Active
-                                    </option>
-                            </select>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <select name="special_deposit" class="form-control">
-                                <option value="">Special Deposit</option>
-                                @foreach (['Active','Not_Active'] as $special_deposit)
-                                    <option value="{{ strtolower($special_deposit) }}" {{ request('special_deposit') == strtolower($special_deposit) ? 'selected' : '' }}>
-                                        {{ str_replace('_', ' ', $special_deposit) }} 
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <select name="schedule" class="form-control">
-                                <option value="">Schedule</option>
-                                @foreach (['Active','Not_Active'] as $schedule)
-                                    <option value="{{ strtolower($schedule) }}" {{ request('schedule') == strtolower($schedule) ? 'selected' : '' }}>
-                                        {{ str_replace('_', ' ', $schedule) }} 
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <select name="trustpilot_review" class="form-control" onchange="this.form.submit()">
-                                <option value="">TrustPilot Review</option>
-                                    <option value="0" {{ request('trustpilot_review') === 0 ? 'selected' : '' }}>
-                                        No
-                                    </option>
-                                    <option value="1" {{ request('trustpilot_review') === 1 ? 'selected' : '' }}>
-                                        Yes
-                                    </option>
-                            </select>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <select name="schedule_expiry" class="form-control">
-                                <option value="">Schedule Expiry</option>
-                                <option value="today" {{ request('schedule_expiry') == 'today' ? 'selected' : '' }}>Today</option>
-                                <option value="last_7" {{ request('schedule_expiry') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
-                                <option value="last_15" {{ request('schedule_expiry') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
-                                <option value="this_week" {{ request('schedule_expiry') == 'this_week' ? 'selected' : '' }}>This Week</option>
-                                <option value="upcoming_15" {{ request('schedule_expiry') == 'upcoming_15' ? 'selected' : '' }}>Upcoming 15 Days</option>
-                                <option value="expired" {{ request('schedule_expiry') == 'expired' ? 'selected' : '' }}>Expired</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-2 col-6">
-                            <select name="last_updated" class="form-control">
-                                <option value="">Last updated</option>
-                                <option value="today" {{ request('last_updated') == 'today' ? 'selected' : '' }}>Today</option>
-                                <option value="last_7" {{ request('last_updated') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
-                                <option value="last_15" {{ request('last_updated') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
-                                <option value="this_week" {{ request('last_updated') == 'this_week' ? 'selected' : '' }}>This Week</option>
-                                <option value="upcoming_15" {{ request('last_updated') == 'upcoming_15' ? 'selected' : '' }}>Upcoming 15 Days</option>
-                                <option value="expired" {{ request('last_updated') == 'expired' ? 'selected' : '' }}>Expired</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-2 col-6">
-                            <select name="has_sub_tour" class="form-control">
-                                <option value="">Has Sub Tour</option>
-                                @foreach (['Yes','No'] as $hasSubTour)
-                                    <option value="{{ strtolower($hasSubTour) }}" {{ request('has_sub_tour') == strtolower($hasSubTour) ? 'selected' : '' }}>
-                                        {{ str_replace('_', ' ', $hasSubTour) }} 
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <select name="per_page" class="form-control">
-                                @foreach (['All',10, 25, 50, 100] as $number)
-                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                                        {{ $number }} per page
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <button type="submit" class="btn btn-search mb-2"> <i class="fas fa-search"></i> Search</button>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <a href="{{ route('admin.tour.index')}}" class="btn-clear"> <i class="fas fa-times"></i> Clear Search</a>
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="schedule" class="form-control">
+                                    <option value="">Schedule</option>
+                                    @foreach (['Active','Not_Active'] as $schedule)
+                                        <option value="{{ strtolower($schedule) }}" {{ request('schedule') == strtolower($schedule) ? 'selected' : '' }}>
+                                            {{ str_replace('_', ' ', $schedule) }} 
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="trustpilot_review" class="form-control" onchange="this.form.submit()">
+                                    <option value="">TrustPilot Review</option>
+                                        <option value="0" {{ request('trustpilot_review') === 0 ? 'selected' : '' }}>
+                                            No
+                                        </option>
+                                        <option value="1" {{ request('trustpilot_review') === 1 ? 'selected' : '' }}>
+                                            Yes
+                                        </option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="schedule_expiry" class="form-control">
+                                    <option value="">Schedule Expiry</option>
+                                    <option value="today" {{ request('schedule_expiry') == 'today' ? 'selected' : '' }}>Today</option>
+                                    <option value="last_7" {{ request('schedule_expiry') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
+                                    <option value="last_15" {{ request('schedule_expiry') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
+                                    <option value="this_week" {{ request('schedule_expiry') == 'this_week' ? 'selected' : '' }}>This Week</option>
+                                    <option value="upcoming_15" {{ request('schedule_expiry') == 'upcoming_15' ? 'selected' : '' }}>Upcoming 15 Days</option>
+                                    <option value="expired" {{ request('schedule_expiry') == 'expired' ? 'selected' : '' }}>Expired</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-2 col-6">
+                                <select name="last_updated" class="form-control">
+                                    <option value="">Last updated</option>
+                                    <option value="today" {{ request('last_updated') == 'today' ? 'selected' : '' }}>Today</option>
+                                    <option value="last_7" {{ request('last_updated') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
+                                    <option value="last_15" {{ request('last_updated') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
+                                    <option value="this_week" {{ request('last_updated') == 'this_week' ? 'selected' : '' }}>This Week</option>
+                                    <option value="upcoming_15" {{ request('last_updated') == 'upcoming_15' ? 'selected' : '' }}>Upcoming 15 Days</option>
+                                    <option value="expired" {{ request('last_updated') == 'expired' ? 'selected' : '' }}>Expired</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-2 col-6">
+                                <select name="has_sub_tour" class="form-control">
+                                    <option value="">Has Sub Tour</option>
+                                    @foreach (['Yes','No'] as $hasSubTour)
+                                        <option value="{{ strtolower($hasSubTour) }}" {{ request('has_sub_tour') == strtolower($hasSubTour) ? 'selected' : '' }}>
+                                            {{ str_replace('_', ' ', $hasSubTour) }} 
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="per_page" class="form-control">
+                                    @foreach (['All',10, 25, 50, 100] as $number)
+                                        <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                            {{ $number }} per page
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <button type="submit" class="btn btn-search mb-2"> <i class="fas fa-search"></i> Search</button>
+                            </div>
+                            <div class="col-12">
+                                <a href="{{ route('admin.tour.index')}}" class="btn-clear"> <i class="fas fa-times"></i> Clear Search</a>
+                            </div>
                         </div>
                     </div>
                 </div>
