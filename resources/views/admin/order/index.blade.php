@@ -1,4 +1,9 @@
 <x-admin>
+    <style>
+        .text-orange {
+            color: #fd7e14;
+        }
+</style>
     @section('title', 'Orders List')
 
     <style>
@@ -250,14 +255,60 @@
                                     <br>
                                     {{ $order->customer?->phone }}
                                 </td>
-                                <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                @php
+                                    $total = round($order->total_amount);
+                                   // $paid = round($order->booked_amount) ?? 0; 
+
+                                    $paid = round($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'));
+
+
+                                    $hasUncaptured = $order->payments->contains('status', 'uncaptured');
+
+                                    if ($paid < $total) {
+                                        if($paid == 0 && $hasUncaptured){
+                                            $amountClass = 'text-orange';
+                                        } else{
+                                            $amountClass = 'text-danger'; // red
+                                        }
+                                       
+                                    } else {
+                                        $amountClass = 'text-success'; // green
+                                    }
+
+                                    if ($order->order_status == 6) {
+                                        $amountClass = 'text-secondary'; // grey
+                                    } 
+                                @endphp
+                                <td class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                 <td>
-                                    @if($order->payment_method)
-                                        {{ ucwords($order->payment_method) }}
+                                    @php
+                                        $payment = $order->payments->first();
+                                    @endphp
+
+                                    @if($payment)
+                                        <br>
+                                        
+                                        @if(strtoupper($payment->payment_type) === 'LINK')
+
+                                            <span class="text-primary"><svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#00D66F" d="M0 0h32v32H0z"></path><path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path></svg>    Link</span>
+
+                                        @elseif($payment->card_brand)
+
+                                            {!! cardSvg($payment->card_brand) !!}
+                                            {{ ucfirst($payment->card_brand) }}
+
+                                            
+
+                                        @else
+
+                                            <span class="text-muted">Card info unavailable</span>
+
+                                        @endif
+
                                     @else
                                         N/A
                                     @endif
-                                </td>
+                                    </td>
                                 <td>{{ date__format($order->created_at) }}</td>
                                 <td>{{ $order->source ?? 'Online' }}</td>
                             </tr>

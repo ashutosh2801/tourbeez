@@ -41,8 +41,13 @@ class CityController extends Controller
     {
         $sort_search = $request->search;
 
+        $paginated = 10;
+        if($request->has('per_page')){
+            $paginated  = $request->per_page;
+        }
+
         $cities = City::query()
-            ->when($sort_search, function ($q) use ($sort_search) {
+            ->when($sort_search, function ($q) use ($sort_search, $paginated) {
                 $q->where('name', 'like', '%' . $sort_search . '%');
             })
 
@@ -61,9 +66,9 @@ class CityController extends Controller
                 $q->whereNotNull('latitude')
                   ->whereNotNull('longitude');
             })
-
-            ->orderBy('id', 'asc')
-            ->paginate(10)
+            ->orderByRaw('CASE WHEN `order` = 0 THEN 1 ELSE 0 END')
+            ->orderBy('order', 'asc')
+            ->paginate($paginated)
             ->appends($request->query());
 
         $states    = State::all();
@@ -195,5 +200,18 @@ class CityController extends Controller
     {
         $cities = City::where('state_id', $request->state_id)->get();
         return $cities;
+    }
+
+    public function updateOrder(Request $request)
+    {
+        if ($request->orders) {
+            foreach ($request->orders as $cityId => $order) {
+                City::where('id', $cityId)->update([
+                    'order' => (int) $order
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Order updated successfully.');
     }
 }

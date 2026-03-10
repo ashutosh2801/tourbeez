@@ -203,7 +203,7 @@
                                             <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
                                         </div>
                                         <input type="text" placeholder="99.50" name="PriceOption[{{ $index }}][price]" id="PriceOption_price" 
-                                        value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control price-option-input" >
+                                        value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control price-option-input" step=any>
                                         
                                         
                                     </div>  
@@ -893,10 +893,12 @@ function advertisedToOffered() {
     }
 
     isUpdating = true;
-    $('#offerd_price').val(offered.toFixed(2));
+    offered = Math.round(offered);
+    advertised = Math.round(advertised);
+    $('#offerd_price').val(offered);
 
     const firstOption = getFirstPriceOption();
-    if (firstOption) firstOption.value = advertised.toFixed(2);
+    // if (firstOption) firstOption.value = advertised; //we update if the issue in decimal
 
     isUpdating = false;
 }
@@ -922,10 +924,14 @@ function offeredToAdvertised() {
     if (advertised < 0) advertised = 0;
 
     isUpdating = true;
-    $('#advertised_price').val(advertised.toFixed(2));
+
+    advertised = Math.round(advertised);
+    offered = Math.round(offered);
+
+    $('#advertised_price').val(advertised);
 
     const firstOption = getFirstPriceOption();
-    if (firstOption) firstOption.value = advertised.toFixed(2);
+    if (firstOption) firstOption.value = advertised;
 
     isUpdating = false;
 }

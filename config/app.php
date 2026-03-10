@@ -17,6 +17,7 @@ return [
     */
 
     'name' => env('APP_NAME', 'TourBeez'),
+    'currency' => env('APP_CURRENCY', 'USD'),
 
     /*
     |--------------------------------------------------------------------------
@@ -55,7 +56,7 @@ return [
     |
     */ 
 
-    'url' => env('APP_URL', 'https://tourbeez.com/staging/admin/admin'),
+    'url' => env('APP_URL', 'https://tourbeez.com/admin'),
 
     'asset_url' => env('ASSET_URL'),
     'site_url' => env('SITE_URL', 'https://tourbeez.com'),

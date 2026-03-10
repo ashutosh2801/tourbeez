@@ -5,9 +5,11 @@ use App\Http\Controllers\CityController;
 use App\Http\Controllers\EmailController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\LoginWithOTPController;
+use App\Http\Controllers\RorController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SocialiteController;
 use App\Http\Controllers\StateController;
+use App\Http\Controllers\TestController;
 use App\Http\Controllers\TourController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -29,12 +31,25 @@ require('auth.php');
 require('admin.php');
 
 Route::get('/export', [ExportController::class, 'index']);
-Route::get('/seotest', [SitemapController::class, 'home']);
+Route::get('/seotest', [TestController::class, 'seotest']);
+Route::get('/formtest', [TestController::class, 'formtest']);
+
+Route::get('/sitemap/categories.xml', [SitemapController::class, 'categories']);
+Route::get('/sitemap/destinations.xml', [SitemapController::class, 'destinations']);
+Route::get('/sitemap/sitemap.xml', [SitemapController::class, 'index']);
+Route::get('/sitemap/tours-{page}.xml', [SitemapController::class, 'tours']);
+Route::get('/sitemap/pages.xml', [SitemapController::class, 'pages']);
+
+Route::get('/ror/ror.xml', [RorController::class, 'index']);
+Route::get('/ror/categories.xml', [RorController::class, 'categories']);
+Route::get('/ror/destinations.xml', [RorController::class, 'destinations']);
+Route::get('/ror/tours-{page}.xml', [RorController::class, 'tours']);
+Route::get('/ror/pages.xml', [RorController::class, 'pages']);
+
 
 Route::get('/{any}', function () {
     return file_get_contents(public_path('index.html'));
 })->where('any', '.*');
-
 
 Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
 

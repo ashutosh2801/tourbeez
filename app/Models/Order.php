@@ -62,7 +62,8 @@ class Order extends Model
         'adv_deposite',
         'payment_method_id',
         'internal_notes',
-        'redzy_order_id'
+        'redzy_order_id',
+        'is_discount'
     ];
 
     public function tour_detail($id, $label='all') {
@@ -130,7 +131,7 @@ class Order extends Model
     public function setOrderStatusAttribute($value)
     {
         $map = [
-            'New' => 1,
+            'Abandoned' => 1,
             'On Hold' => 2,
             'Pending supplier' => 3,
             'Pending customer' => 4,
@@ -139,21 +140,20 @@ class Order extends Model
             'Abandoned cart' => 7,
         ];
 
-        // optional fallback if string doesn't match
         $this->attributes['order_status'] = $map[$value] ?? $value;
     }
 
     public function getStatusAttribute()
     {
         return match ($this->order_status) {
-            1 => 'New',
+            1 => 'Abandoned',
             2 => 'On Hold',
             3 => 'Pending supplier',
             4 => 'Pending customer',
             5 => 'Confirmed',
             6 => 'Cancelled',
             7 => 'Abandoned cart',
-            default => 'Abandoned cart',
+            default => 'Not completed',
         };
     }
 

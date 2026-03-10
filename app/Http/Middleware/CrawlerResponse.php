@@ -26,43 +26,48 @@ class CrawlerResponse
      */
     public function handle(Request $request, Closure $next)
     {
+        // return $next($request);
         $ua = strtolower($request->userAgent());        
         $ip = $request->ip();
         $url = $request->fullUrl();
 
-        logger()->info('UA LOG', [
-            'ua'  => $ua,
-            'ip'  => $ip,
-            'url' => $url,
-        ]);
+        // logger()->info('UA LOG', [
+        //     'ua'  => $ua,
+        //     'ip'  => $ip,
+        //     'url' => $url,
+        // ]);
 
         
+        // $bots = [
+        //     // Social
+        //     'facebookexternalhit', 'facebot', 'twitterbot', 'linkedinbot',
+        //     'pinterest', 'slackbot', 'discordbot', 'whatsapp',
+        //     'telegrambot', 'skypeuripreview', 'teamsbot',
+
+        //     // iOS / Apple Preview (CRITICAL)
+        //     'applebot', 'cfnetwork', 'darwin',
+
+        //     // Search Engines
+        //     'googlebot', 'bingbot', 'duckduckbot',
+        //     'baiduspider', 'yandex', 'sogou', 'petalbot',
+
+        //     // Schema / Rich Results Validators
+        //     'google-structured-data-testing-tool', 'schema-markup-validator',
+        //     'google rich results test',
+        //     'lighthouse',
+        //     'googlebot-image', 'googlebot-video',
+
+        //     // Others
+        //     'applebot', 'embedly', 'quora link preview',
+        //     'outbrain', 'rogerbot', 'ahrefsbot', 'semrushbot'
+        // ];
         $bots = [
-            // Social
-            'facebookexternalhit', 'facebot', 'twitterbot', 'linkedinbot',
-            'pinterest', 'slackbot', 'discordbot', 'whatsapp',
-            'telegrambot', 'skypeuripreview', 'teamsbot',
-
-            // iOS / Apple Preview (CRITICAL)
-            'applebot', 'cfnetwork', 'darwin',
-
-            // Search Engines
-            'googlebot', 'bingbot', 'duckduckbot',
-            'baiduspider', 'yandex', 'sogou', 'petalbot',
-
-            // Schema / Rich Results Validators
-            'google-structured-data-testing-tool', 'schema-markup-validator',
-            'google rich results test',
-            'lighthouse',
-            'googlebot-image', 'googlebot-video',
-
-            // Others
-            'applebot', 'embedly', 'quora link preview',
-            'outbrain', 'rogerbot', 'ahrefsbot', 'semrushbot'
+            'googlebot',
+            'bingbot',
+            'facebookexternalhit',
+            'twitterbot',
+            'linkedinbot',
         ];
-
-        
-
 
         foreach ($bots as $bot) {
             
@@ -191,10 +196,9 @@ class CrawlerResponse
                             'date' => date('d M, Y', strtotime($b->post_date))
                         ];
                     }
-
     
                     return response()->view('share.seo', [
-                        'title' => 'Tours, Activities &amp; Travel Experiences Worldwide | TourBeez',
+                        'title' => 'Tours, Activities & Travel Experiences Worldwide | TourBeez',
                         'description' => 'Discover unforgettable travel experiences with TourBeez. Book tours, activities, and tickets to top global destinations with ease and confidence. Explore, adventure, and enjoy every moment',
                         'keywords' => 'International Tour Packages, Best Travel Deals Worldwide, World Tours And Trips, Customizable Holiday Packages,  Budget-friendly Travel',
                         'image' => 'https://tourbeez.com/logo.jpg',
@@ -385,6 +389,118 @@ class CrawlerResponse
                         'file' => 'login'
                     ]);
                 }
+                else if($path === 'sitemap') {
+                    $perPage = 500;
+                    $page = 1;
+                    $cities = [];
+                    $cacheKey = "destinations_page_{$page}";
+                    $cacheTtl = now()->addHours(12); // adjust if needed       
+                    $data = Cache::remember($cacheKey, $cacheTtl, function () use ($perPage) {
+
+                        $query = DB::table('tour_locations as tl')
+                            ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                            ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                            ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
+                            ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
+                            ->select(
+                                'c.id',
+                                'c.name',
+                                'c.upload_id',
+                                'tl.state_id',
+                                'tl.country_id',
+                                's.name as state_name',
+                                'co.name as country_name',
+                                DB::raw('(
+                                    SELECT COUNT(DISTINCT t2.id)
+                                    FROM tours t2
+                                    JOIN tour_locations tl2 ON tl2.tour_id = t2.id
+                                    WHERE tl2.city_id = c.id
+                                    AND t2.status = 1
+                                    AND t2.deleted_at IS NULL
+                                    AND EXISTS (
+                                        SELECT 1 FROM tour_schedules ts2
+                                        WHERE ts2.tour_id = t2.id
+                                            AND ts2.until_date >= CURDATE()
+                                    )
+                                ) as total_tours')
+                            )
+                            ->where('c.upload_id', '>=', 1)
+                            ->where('t.status', 1)
+                            ->whereNull('t.deleted_at')
+                            ->whereExists(function ($q) {
+                                $q->select(DB::raw(1))
+                                ->from('tour_schedules as ts')
+                                ->whereColumn('ts.tour_id', 't.id')
+                                ->whereDate('ts.until_date', '>=', now());
+                            })
+                            ->groupBy(
+                                'c.id','c.name','c.upload_id',
+                                'tl.state_id','tl.country_id',
+                                's.name','co.name'
+                            )
+                            ->orderBy('c.name', 'ASC');
+
+                        $paginated = $query->paginate($perPage);
+
+                        foreach ($paginated->items() as $d) {
+                            $cities[] = [
+                                'title' => ucfirst($d->name) . ', ' .
+                                        ucwords($d->state_name) . ', ' .
+                                        ucwords($d->country_name),
+                                'href'  => '/' . Str::slug($d->name) . '/' . $d->id . '/c1',
+                            ];
+                        }   
+
+                        return $cities;
+                    });
+
+                    $sitemapData = [
+                        [
+                            'title' => 'TourBeez',
+                            'children' => [
+                                ['title' => 'Home', 'href' => '/'],
+                                ['title' => 'Destinations', 'href' => '/destinations'],
+                                ['title' => 'Tickets', 'href' => '/tickets'],
+                            ],
+                        ],
+                        [
+                            'title' => 'Company',
+                            'children' => [
+                                ['title' => 'Our Story', 'href' => '/about'],
+                                [
+                                    'title' => 'Careers',
+                                    'href' => 'https://www.indeed.com/cmp/Tour-Beez-Inc',
+                                    'external' => true
+                                ],
+                                ['title' => 'Blog', 'href' => '/blog'],
+                                ['title' => 'Wishlist', 'href' => '/wishlist'],
+                                ['title' => 'Suppliers', 'href' => '/supplier'],
+                            ],
+                        ],
+                        [
+                            'title' => 'Support',
+                            'children' => [
+                                ['title' => 'Contact Us', 'href' => '/contact'],
+                                ['title' => 'Cancellation options', 'href' => '/cancellation-policy'],
+                                ['title' => 'Privacy Policy', 'href' => '/privacy-policy'],
+                                ['title' => 'Terms & Conditions', 'href' => '/terms-and-conditions'],
+                            ],
+                        ],
+                        [
+                            'title' => 'Things To Do In',
+                            'children' => $data,
+                        ],
+                    ];
+
+                    return response()->view('share.seo', [
+                        'title' => 'Sitemap | TourBeez',
+                        'description' => 'Sitemap',
+                        'keywords' => 'Sitemap',
+                        'image' => asset('public/images/login-banner.jpg'),
+                        'sitemapData' => $sitemapData,
+                        'file' => 'sitemap'
+                    ]);
+                }
                 else if ($path === 'supplier') {
                     return response()->view('share.seo', [
                         'title' => 'Partner with TourBeez, Supplier & Tour Provider Opportunities | TourBeez',
@@ -566,10 +682,12 @@ class CrawlerResponse
                     }
                 }
                 // ----- Listing Page -----
-                else if (count($segments) == 3) {
-                    $citySlug = $segments[0];   // toronto
-                    $id       = $segments[1];   // 10519
-                    $type     = $segments[2];   // c1
+                else if (count($segments) == 2) {
+                    $citySlug = $segments[0];   // things-to-do-in-toronto
+                    $slug_id  = explode("-",$segments[1]);   // 10519-c1
+                    $id       = $slug_id[0];
+                    $type     = $slug_id[1];   // c1
+
                     $d = null;
                     if ($type === 'c1') {
                         $d = City::findOrFail( $id );
@@ -679,6 +797,7 @@ class CrawlerResponse
                             'image' => uploaded_asset( $d->upload_id ) ?? asset('public/tourbeez-logo.jpg'),
                             'url' => url()->current(),
                             'items' => $items,
+                            'city' => $d,
                             'file' => 'listing',
                             'heading' => "All $name Tours & Excursions in 2026"
                         ]); 
