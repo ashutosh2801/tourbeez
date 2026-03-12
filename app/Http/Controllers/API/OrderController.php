@@ -107,8 +107,8 @@ class OrderController extends Controller
             });
 
             if ($booking && $booking->order_status !== 1) {
-                // $booking->order_status   = 1;
-                // $booking->payment_status = 1;
+                $booking->order_status   = 1;
+                $booking->payment_status = 1;
                 $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
                 $booking->updated_at     = now();
                 $booking->save();
@@ -548,9 +548,9 @@ class OrderController extends Controller
         try {
 
             $data = $request->input('formData');
-            if(isset($data['pickup_id']) && $data['pickup_id']) {
-                $data['pickup_id'] = 0;
-            }
+            // if(isset($data['pickup_id']) && $data['pickup_id']) {
+            //     $data['pickup_id'] = 0;
+            // }
             // Save or update customer
             $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
             $adv_deposite = $data['adv_deposite'];
@@ -594,8 +594,8 @@ class OrderController extends Controller
                 $qty        = ($item['quantity']);
                 $price      = ($item['price']);
                 $total      = ($item['total_price']);
-                $item_total += $total;
-                $quantity += $qty;
+                $item_total+= $total;
+                $quantity  += $qty;
 
                 $pricing[] = [
                     'tour_id'           => $request->tourId,
@@ -604,6 +604,7 @@ class OrderController extends Controller
                     //'price_type'        => $item['price_type'],
                     'quantity'          => $qty,
                     'price'             => $price,
+                    'discount'          => $item['discount'] ?? 0,
                     'total_price'       => $total,
                 ];
             }
@@ -649,7 +650,7 @@ class OrderController extends Controller
                     $depositRule = TourSpecialDeposit::where('type', 'global')->first();
                 }
 
-                if ($depositRule->is_discount && $depositRule->charge === 'NONE') {
+                /* if ($depositRule->is_discount && $depositRule->charge === 'NONE') {
                     if($depositRule->discount_type === 'PERCENT') {
                         $discountAmount = round((($item_total * $depositRule->discount_value)/100), 2);
                     }
@@ -665,7 +666,7 @@ class OrderController extends Controller
                         'price'        => $discountAmount,
                     ];
                     $item_total = $item_total - $discountAmount;
-                }                    
+                } */                   
             } 
             
             $order_tour_data = [
@@ -1146,7 +1147,6 @@ class OrderController extends Controller
 
         foreach ($schedules as $schedule) {
 
-
             $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
                 'minute', 'minutes' => $schedule->estimated_duration_num,
                 'hour', 'hours' => $schedule->estimated_duration_num * 60,
@@ -1155,7 +1155,6 @@ class OrderController extends Controller
                 'weekly', 'weekly' => $schedule->estimated_duration_num * 60,
                 'monthly', 'monthly' => $schedule->estimated_duration_num * 60 * 24 * 30,
                 'yearly', 'yearly' => $schedule->estimated_duration_num * 60,
- 
 
                  
                 default => 0
@@ -1473,23 +1472,131 @@ class OrderController extends Controller
             ]);
         }
         // $request->tour_id
-
-
-
         
+        $req = new Request([
+            'tour_date' => $request->date,
+            'tour_time' => $slots[0] ?? null
+        ]);
+        $tour = Tour::findOrFail($request->tour_id);
+        $lastMinuts = $this->getLastMinuteCharge($req, $tour);
+        $fetchDepositRule = $this->fetchDepositRule($request->tour_id);
 
         return response()->json([
             'status' => 'success',
             'data' => array_unique($slots),
+            'last_minute' => $lastMinuts,
+            'deposit_rule' => $fetchDepositRule,
             'schedule_set' => true
         ]);
     }
 
+    /**
+     * Calculate last minute charge based on tour date and time.
+     */
+    public function getLastMinuteCharge(Request $request, Tour $tour)
+    {
+        $request->validate([
+            'tour_date' => 'required|date',
+            'tour_time' => 'required'
+        ]);
+ 
+        $tourDateTime = Carbon::parse($request->tour_date . ' ' . $request->tour_time);
+        $now = Carbon::now();
+        $hoursDiff = $now->diffInHours($tourDateTime, false);
+ 
+        if ($hoursDiff < 0) {
+            return [
+                'apply' => false,
+                'message' => 'Tour time already passed'
+            ];
+        }
+ 
+        $rules = $tour->lastMinuteBookings()
+            ->whereDate('from_date', '<=', $request->tour_date)
+            ->whereDate('to_date', '>=', $request->tour_date)
+            ->get();
+ 
+        foreach ($rules as $rule) {
+            if ($hoursDiff <= $rule->last_minute_hours) {
+                return [
+                    'apply' => true,
+                    'type' => $rule->amount_type,
+                    'amount' => $rule->amount,
+                    'hours_remaining' => $hoursDiff
+                ];
+            }
+        }
+ 
+        return [
+            'apply' => false,
+            'rules' => $rules,
+            'message' => 'No last minute charge applicable ' . $request->tour_date . ' ' . $request->tour_time . ' ' .$hoursDiff
+        ];
+
+    }
+
+    /**
+     * Fetch a deposit rule by tour id.
+     */
+    public function fetchDepositRule($id)
+    {
+        $cacheKey = 'depositRule_' . $id;
+        $discount = [];
+        $depositRule = Cache::remember($cacheKey, 86400, function () use ($id) {
+            return TourSpecialDeposit::where('tour_id', $id)->first();
+        });
+
+        if($depositRule && $depositRule->is_discount){
+            $discount = [
+                'discount_type'     =>  $depositRule->discount_type,
+                'discount_value'     =>  $depositRule->discount_value,
+                'is_discount'     =>  $depositRule->is_discount,
+            ];
+        }
+
+        // If no rule found for specific tour, check global rule
+        if (!$depositRule || ($depositRule && $depositRule->use_deposit == 0)) {
+            $depositRule = Cache::remember('depositRule_global', 86400, function () {
+                return TourSpecialDeposit::where('type', 'global')->first();
+            });
+        }
+
+        if($depositRule && $depositRule->price_booking_fee){
+            $bookingFees = [
+                'price_booking_fee'     => $depositRule->price_booking_fee,
+                'tour_booking_fee'      => $depositRule->tour_booking_fee,
+                'tour_booking_fee_type' => $depositRule->tour_booking_fee_type,
+            ];
+        } else{
+            $bookingFees = [
+                'price_booking_fee'     => get_setting('price_booking_fee'),
+                'tour_booking_fee'      => get_setting('tour_booking_fee'),
+                'tour_booking_fee_type' => get_setting('tour_booking_fee_type'),
+            ];
+        }
+
+        if (!$depositRule) {
+            return [
+                'status' => false,
+                'message' => 'Tour deposit rule not found (including global rule)',
+                'deposit_rule' => null,
+                'booking_fees' => $bookingFees,
+                'discount'     => $discount
+            ];
+        }
+
+        return [
+            'status' => true,
+            'deposit_rule' => $depositRule,
+            'booking_fees' => $bookingFees,
+            'discount'     => $discount
+        ];
+    }
+ 
+
     public function fetchDeletedSlot($id)
     {
-
         return ScheduleDeleteSlot::where('tour_id', $id)->get();
-
         return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
     }
 

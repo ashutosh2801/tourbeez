@@ -34,6 +34,12 @@ if(!function_exists('getFullSql')) {
     }
 }
 
+if(!function_exists('remove_last_Tour_word')) {
+    function remove_last_Tour_word($string) {
+        return preg_replace('/\s+(tour|tours)$/i', '', $string);
+    }
+}
+
 if(!function_exists('countThingsToDo')) {
     function countThingsToDo($id, $type) {
         $query = Tour::select(['id'])
@@ -135,7 +141,7 @@ if (!function_exists('price_format_with_currency')) {
         
         $from = $currency;
 
-        $currency = app('currency') ?: $currency;
+        $currency = $currency;
 
         if($tourCurrency){
            $currency = $tourCurrency;
@@ -716,13 +722,13 @@ if (! function_exists('order_status_list')) {
     function order_status_list()
     {
         return [
-            1 => "New",
+            1 => "Abandoned",
             2 => "On Hold",
             3 => "Pending supplier",
             4 => "Pending customer",
             5 => "Confirmed",
             6 => "Cancelled",
-            7 => "Abandoned cart"
+            7 => "Abandoned cart",
         ];
     }
 }
@@ -1309,23 +1315,60 @@ if (!function_exists('currencyConvert')) {
         });
 
         if (empty($rates)) {
-            return $amount;
+            return round($amount);
         }
 
         $rateFrom = $rates[$from] ?? null;
         $rateTo   = $rates[$to] ?? null;
 
         if (!$rateFrom || !$rateTo) {
-            return $amount;
+            return round($amount);
         }
         // dd($rateFrom, $rateTo, $amount);
         // ✅ USD-based conversion (MATCHES FRONTEND)
         $converted = ($amount / $rateFrom) * $rateTo;
 
-
-        return (float) number_format($converted, 6, '.', '');
+        return round($converted);
+        // return (float) number_format($converted, 6, '.', '');
 
         // return round($converted, 2);
+    }
+}
+if (!function_exists('cardSvg')) {
+    function cardSvg($brand) {
+
+        $brand = strtolower($brand);
+
+        $svgs = [
+
+        'visa' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#1A1F71"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="12" font-weight="bold">VISA</text>
+        </svg>',
+
+        'mastercard' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <circle cx="20" cy="12" r="8" fill="#EB001B"/>
+        <circle cx="28" cy="12" r="8" fill="#F79E1B"/>
+        </svg>',
+
+        'amex' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#2E77BB"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">AMEX</text>
+        </svg>',
+
+        'discover' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#FF6000"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">DISC</text>
+        </svg>',
+
+        'default' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#6c757d"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10">CARD</text>
+        </svg>'
+        ];
+
+        return $svgs[$brand] ?? $svgs['default'];
+
     }
 }
 

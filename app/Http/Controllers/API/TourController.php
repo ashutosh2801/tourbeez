@@ -723,6 +723,49 @@ class TourController extends Controller
     }
 
 
+    public function getLastMinuteCharge(Request $request, Tour $tour)
+    {
+        $request->validate([
+            'tour_date' => 'required|date',
+            'tour_time' => 'required'
+        ]);
+
+        $tourDateTime = Carbon::parse($request->tour_date . ' ' . $request->tour_time);
+        $now = Carbon::now();
+
+        $hoursDiff = $now->diffInHours($tourDateTime, false);
+
+        if ($hoursDiff < 0) {
+            return response()->json([
+                'apply' => false,
+                'message' => 'Tour time already passed'
+            ]);
+        }
+
+        $rules = $tour->lastMinuteBookings()
+            ->whereDate('from_date', '<=', $request->tour_date)
+            ->whereDate('to_date', '>=', $request->tour_date)
+            ->get();
+
+        foreach ($rules as $rule) {
+
+            if ($hoursDiff <= $rule->last_minute_hours) {
+
+                return response()->json([
+                    'apply' => true,
+                    'type' => $rule->amount_type,
+                    'amount' => $rule->amount,
+                    'hours_remaining' => $hoursDiff
+                ]);
+            }
+        }
+
+        return response()->json([
+            'apply' => false
+        ]);
+    }
+
+
 
     /** 
      * Search home page tour  

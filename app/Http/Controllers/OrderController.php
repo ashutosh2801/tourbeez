@@ -44,7 +44,7 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Order::with(['customer', 'orderTours.tour', 'payments'])
+        $query = Order::with(['customer', 'orderTours.tour', 'payments', 'partner'])
             ->whereHas('customer', function ($q) {
                 $q->whereNotNull('first_name')
                   ->where('first_name', '!=', ''); // exclude empty strings
@@ -2309,6 +2309,7 @@ class OrderController extends Controller
 
         foreach ($timeSlots as $slot) {
             $orders = Order::with(['customer', 'orderTours'])
+                ->where('order_status', 5)
                 ->whereDate('created_at', $date)
                 ->whereTime('created_at', '>=', $slot['start'])
                 ->whereTime('created_at', '<', $slot['end'])
@@ -2736,6 +2737,7 @@ class OrderController extends Controller
 
         foreach ($timeSlots as $slot) {
             $orders = Order::with(['customer', 'orderTours.tour']) // ensure tour is loaded
+                ->where('order_status', 5)
                 ->whereDate('created_at', $date)
                 ->whereTime('created_at', '>=', $slot['start'])
                 ->whereTime('created_at', '<', $slot['end'])
@@ -2798,6 +2800,7 @@ class OrderController extends Controller
 
         // Load all orders for the date with their tours
         $orders = Order::with(['customer', 'orderTours.tour'])
+            ->where('order_status', 5)
             ->whereDate('created_at', $date)
             ->get();
 

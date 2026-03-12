@@ -48,30 +48,66 @@
 
                 <div id="session-{{ \Illuminate\Support\Str::slug($slotTime) }}" class="collapse">
                     <div class="card-body">
-                        <table class="table table-bordered table-sm">
+                        <table class="table table-bordered table-sm" style="table-layout: fixed; width:100%;">
+
                             <thead class="table-light">
                                 <tr>
-                                    <th>Order #</th>
-                                    <th>Customer</th>
-                                    <th>Phone</th>
-                                    <th>Guests</th>
-                                    <th>Extras</th>
-                                    <th>Balance</th>
-                                    <th>Total</th>
-                                    <th>Paid</th>
+                                    <th style="width:10%">Order #</th>
+                                    <th style="width:18%">Customer</th>
+                                    <th style="width:12%">Phone</th>
+                                    <th style="width:12%">Guests</th>
+                                    <th style="width:14%">Extras</th>
+                                    <th style="width:11%">Balance</th>
+                                    <th style="width:11%">Total</th>
+                                    <th style="width:12%">Paid</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($session['orders'] as $order)
                                     <tr>
-                                        <td>{{ $order->order_number }}</td>
-                                        <td>{{ $order->customer?->name }}</td>
+                                        <td>
+                                            <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink" target="_blank">
+                                                {{ $order->order_number }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}"
+                                                class="alink" target="_blank">
+                                                {{ $order->customer?->name }}
+                                            </a>
+                                        </td>
                                         <td>{{ $order->customer?->phone }}</td>
                                         <td>{{ $order->guest_summary }}</td>
                                         <td>{{ $order->extras_summary }}</td>
-                                        <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
-                                        <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-                                        <td>{{ price_format_with_currency($order->paid_amount, $order->currency) }}</td>
+
+                                        @php
+                                            $total = round($order->total_amount);
+                                           // $paid = round($order->booked_amount) ?? 0; 
+
+                                            $paid = round($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'));
+
+
+                                            $hasUncaptured = $order->payments->contains('status', 'uncaptured');
+
+                                            if ($paid < $total) {
+                                                if($paid == 0 && $hasUncaptured){
+                                                    $amountClass = 'text-orange';
+                                                } else{
+                                                    $amountClass = 'text-danger'; // red
+                                                }
+                                               
+                                            } else {
+                                                $amountClass = 'text-success'; // green
+                                            }
+
+                                            if ($order->order_status == 6) {
+                                                $amountClass = 'text-secondary'; // grey
+                                            } 
+                                        @endphp
+
+                                        <td class="{{ $amountClass}}">{{ price_format_with_currency($total-$paid, $order->currency) }}</td>
+                                        <td>{{ price_format_with_currency($total, $order->currency) }}</td>
+                                        <td class="{{ $amountClass}}">{{ price_format_with_currency($paid, $order->currency) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

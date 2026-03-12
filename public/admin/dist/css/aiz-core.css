@@ -8194,7 +8194,7 @@ a.dropdown-footer:hover {
 }
 
 .badge-cancelled {
-    background-color: #fe4141;
+    background-color: #436373;
     color: #FFF;
 }
 
@@ -8209,12 +8209,16 @@ a.dropdown-footer:hover {
 }
 
 .badge-pendingSupplier {
-    background-color: #436373;
+    background-color: #fe4141;
+
+    /*background-color: #436373;*/
     color: #FFF;
 }
 
 .badge-pendingCustomer {
-    background-color: #00675b;
+    /*background-color: #00675b;*/
+    background-color: #fe4141;
+    
     color: #FFF;
 }
 

@@ -331,6 +331,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         return redirect()->back()->with('success', 'Cache cleared!');
     })->name('clear.cache');
 
+    Route::get('/optimize-cache', function () {
+        Artisan::call('optimize:clear');
+        return back()->with('success','Cache cleared');
+    })->name('optimize.cache');
+
     Route::get('/uploaded-disable-date', function() {
         Artisan::call('app:update-tour-disable-date');
         

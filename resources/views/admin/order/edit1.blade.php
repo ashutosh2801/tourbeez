@@ -461,7 +461,7 @@
                                                                     <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
                                                                     <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
                                                                 </td>
-                                                                <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency, $order->currency) }})</td>
+                                                                <td>{{ $pricing->label }} ({{ price_with_currency_no_round($price, $order->currency, $order->currency) }})</td>
                                                             </tr>
                                                             @endforeach
                                                             @endif

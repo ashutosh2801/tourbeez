@@ -89,10 +89,12 @@
                             <input type="text" name="oc_stripe_customer_id" class="form-control" value="{{ $orderCustomer->stripe_customer_id }}">
                         </div> -->
                     </div>
+
+                @endif
                 </div>
             </div>
-        </div>
-    </div>
+        <!-- </div> -->
+    <!-- </div> -->
 
     @php
         $orderCustomer = $user->customer;
@@ -141,15 +143,14 @@
                         <textarea name="oc_pickup_name" class="form-control">{{ $orderCustomer->pickup_name }}</textarea>
                     </div>
 
-                    <!-- <div class="col-lg-6">
-                        <label>Stripe Customer ID</label>
-                        <input type="text" name="oc_stripe_customer_id" class="form-control" value="{{ $orderCustomer->stripe_customer_id }}">
-                    </div> -->
+                   
                 </div>
             </div>
         </div>
         
     @endif
+
+
     <div class="card-footer bg-white border rounded-lg-custom">
         <div class="float-right">
             <button class="btn btn-success m-0" type="submit"><i class="fas fa-save"></i> Save</button>

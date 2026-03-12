@@ -17,10 +17,23 @@ class SupplierController extends Controller
 
     public function index()
     {
+        $query = User::where('role', 'Supplier')
+            ->where('role', '<>', 'Super Admin');
 
-         $data = User::where('role', 'Supplier')->where('role', '<>', 'Super Admin')->orderBy('id','DESC')->paginate(10);   
-        
-        // $data = User::where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
+        // Filters
+        if ($name = request('name')) {
+            $query->where('name', 'like', "%$name%");
+        }
+
+        if ($email = request('email')) {
+            $query->where('email', 'like', "%$email%");
+        }
+
+        // Pagination count
+        $perPage = request('per_page', 10);
+
+        $data = $query->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
+
         return view('admin.user.index', compact('data'));
     }
 

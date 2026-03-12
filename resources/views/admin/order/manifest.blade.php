@@ -52,24 +52,24 @@
 
                 <div id="session-{{ $index }}" class="collapse">
                     <div class="card-body">
-                        <table class="table table-bordered table-sm">
+                        <table class="table table-bordered table-sm" style="table-layout: fixed; width:100%;">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="text-nowrap" style="white-space: nowrap;">Order #</th>
-                                    <th style="white-space: nowrap;">Customer</th>
-                                    <th style="white-space: nowrap;">Phone</th>
-                                    <th style="white-space: nowrap;">Guests</th>
-                                    <th style="white-space: nowrap;">Extras</th>
-                                    <th style="white-space: nowrap;">Balance</th>
-                                    <th style="white-space: nowrap;">Total</th>
-                                    <th style="white-space: nowrap;">Paid </th>
+                                    <th style="width:10%; white-space: nowrap;">Order #</th>
+                                    <th style="width:18%; white-space: nowrap;">Customer</th>
+                                    <th style="width:12%; white-space: nowrap;">Phone</th>
+                                    <th style="width:12%; white-space: nowrap;">Guests</th>
+                                    <th style="width:15%; white-space: nowrap;">Extras</th>
+                                    <th style="width:11%; white-space: nowrap;">Balance</th>
+                                    <th style="width:11%; white-space: nowrap;">Total</th>
+                                    <th style="width:11%; white-space: nowrap;">Paid</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($session['orders'] as $order)
                                     <tr>
                                         <td>
-                                            <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink">
+                                            <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink" target="_blank">
                                                 {{ $order->order_number }}
                                             </a>
                                         </td>
@@ -79,12 +79,37 @@
                                                 {{ $order->customer?->name }}
                                             </a>
                                         </td>
+
+                                        @php
+                                            $total = round($order->total_amount);
+                                           // $paid = round($order->booked_amount) ?? 0; 
+
+                                            $paid = round($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'));
+
+
+                                            $hasUncaptured = $order->payments->contains('status', 'uncaptured');
+
+                                            if ($paid < $total) {
+                                                if($paid == 0 && $hasUncaptured){
+                                                    $amountClass = 'text-orange';
+                                                } else{
+                                                    $amountClass = 'text-danger'; // red
+                                                }
+                                               
+                                            } else {
+                                                $amountClass = 'text-success'; // green
+                                            }
+
+                                            if ($order->order_status == 6) {
+                                                $amountClass = 'text-secondary'; // grey
+                                            } 
+                                        @endphp
                                         <td>{{ $order->customer?->phone }}</td>
                                         <td>{{ $order->guest_summary }}</td>
                                         <td>{{ $order->extras_summary }}</td>
-                                        <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
-                                        <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-                                        <td>{{ price_format_with_currency($order->paid_amount, $order->currency) }}</td>
+                                        <td class="{{ $amountClass}}">{{ price_format_with_currency($total-$paid, $order->currency) }}</td>
+                                        <td>{{ price_format_with_currency($total, $order->currency) }}</td>
+                                        <td class="{{ $amountClass}}">{{ price_format_with_currency($paid, $order->currency) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

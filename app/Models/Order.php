@@ -6,6 +6,7 @@ use App\Models\OrderCustomer;
 use App\Models\OrderEmailHistory;
 use App\Models\OrderMeta;
 use App\Models\OrderPayment;
+use App\Models\Partner;
 use App\Models\Scopes\SupplierOrderScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -188,6 +189,28 @@ class Order extends Model
         return $this->hasOne(OrderPayment::class)
                     ->where('collection_type', 'Inside')
                     ->where('amount', '>=', 0);
+    }
+
+    public function partner()
+    {
+        return $this->belongsTo(Partner::class, 'source', 'slug');
+    }
+
+    public function getPartnerAcronymAttribute()
+    {
+        if (!$this->partner || !$this->partner->name) {
+            return 'Online';
+        }
+
+        $words = explode(' ', $this->partner->name);
+
+        $acronym = '';
+
+        foreach ($words as $word) {
+            $acronym .= strtoupper(substr($word, 0, 1));
+        }
+
+        return $acronym;
     }
 
 }

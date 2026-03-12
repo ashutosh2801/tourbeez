@@ -31,6 +31,11 @@
         animation: fadeHighlight 2s ease;
     }
 
+    .text-orange {
+        color: #fd7e14;
+    }
+
+
     @keyframes fadeHighlight {
         0%   { background-color: #e1a10b; }
         100% { background-color: transparent; }
@@ -196,6 +201,32 @@ $expectEmails = ['order_pending', 'payment_receipt'];
             @endif
             <div>
                 <div class="row">
+
+
+                    @php
+                        $total = round($order->total_amount);
+                       // $paid = round($order->booked_amount) ?? 0; 
+
+                        $paid = round($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'));
+
+
+                        $hasUncaptured = $order->payments->contains('status', 'uncaptured');
+
+                        if ($paid < $total) {
+                            if($paid == 0 && $hasUncaptured){
+                                $amountClass = 'text-orange';
+                            } else{
+                                $amountClass = 'text-danger'; // red
+                            }
+                           
+                        } else {
+                            $amountClass = 'text-success'; // green
+                        }
+
+                        if ($order->order_status == 6) {
+                            $amountClass = 'text-secondary'; // grey
+                        } 
+                    @endphp
                     <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
@@ -203,7 +234,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                             </div>
                             <div class="sale-num">
                                 <p>Balance</p>
-                                <button type="button" class="btn btn-balance dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <button type="button" class="btn btn-balance dropdown-toggle arrow {{ $amountClass }}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     @if($order->payment_status === 3)
 
                                         <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
@@ -246,7 +277,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                         <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency) }}</strong>
                                     </li>
                                     @if($order->payment_status == 3)
-                                        <li class="payment-details-breakdown--item">
+                                        <li class="payment-details-breakdown--item {{ $amountClass }}">
                                         <strong class="payment-details-breakdown--text">Balance</strong>
                                             <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
                                         </li>
@@ -478,6 +509,8 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                             @if ($order_tour->tour)
                                                             @php
                                                                 $tour_pricing = !empty($order_tour->tour_pricing) ? ( json_decode($order_tour->tour_pricing) ) : [];
+
+                                                               
                                                             @endphp
 
 

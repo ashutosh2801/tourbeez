@@ -18,12 +18,25 @@ class UserController extends Controller
 
     public function index()
     {
-        
-         $data = User::where('user_type', '!=', 'Member')
-            ->where('role', '<>', 'Super Admin')->where('role', '<>', 'Admin')->orderBy('id','DESC')->paginate(10);
-            
-        
-        // $data = User::where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
+        $query = User::where('user_type', '!=', 'Member')
+            ->whereNotIn('role', ['Super Admin', 'Admin']);
+
+        // Filters
+        if ($name = request('name')) {
+            $query->where('name', 'like', "%{$name}%");
+        }
+
+        if ($email = request('email')) {
+            $query->where('email', 'like', "%{$email}%");
+        }
+
+        // Pagination count
+        $perPage = request('per_page', 10);
+
+        $data = $query->orderBy('id', 'DESC')
+            ->paginate($perPage)
+            ->withQueryString(); // keeps filters in pagination
+
         return view('admin.user.index', compact('data'));
     }
 
