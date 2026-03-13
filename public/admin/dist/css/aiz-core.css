@@ -9315,12 +9315,55 @@ table.dataTable {
 }
 
 .category-main-body .btn-edit {
-    font-size: 17px;
+    font-size: 18px;
 }
 
 .category-main-body .confirm-delete {
     padding: 8px 13px;
     font-size: 13px;
+}
+
+.category-main-body .btn-filter {
+    background-color: #aeadad;
+    color: #FFF;
+}
+
+.category-main-body .btn-filter:hover {
+    background-color: #545b62;
+}
+
+.category-main-body .confirm-clone,
+.category-main-body .delete-btn {
+    padding: 8px 13px;
+    font-size: 15px;
+}
+
+.category-main-body .toggle-tours {
+    border-radius: 50px;
+    padding: 6px 25px;
+    background: #a1e0c1;
+    border-color: #a1e0c1;
+    transition: .5s ease-in-out;
+}
+
+.category-main-body .toggle-tours:hover {
+    color: #222;
+}
+
+.category-main-body .card-footer,
+.create-category-body .card-footer,
+.add-category-body .card-footer {
+    border-top: 1px solid #ebedf2;
+    background-color: transparent;
+    padding: 12px 25px;
+}
+
+@media (max-width: 767px) {
+
+    .category-main-body .card-header .form-control {
+        margin-bottom: 15px;
+    }
+
 }
 
 .edit-cat-header {

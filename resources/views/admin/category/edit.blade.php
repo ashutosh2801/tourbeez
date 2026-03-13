@@ -17,7 +17,7 @@
                 </div>
             </div>
 
-            <div class="card-primary bg-white border rounded-lg-custom">
+            <div class="card-primary bg-white border rounded-lg-custom add-category-body">
                 <form class="needs-validation" novalidate action="{{ route('admin.category.update',$data) }}" method="POST">
                     @method('PUT')
                     @csrf
@@ -126,7 +126,7 @@
                         </div>
                         
 
-                        <button type="button" class="btn btn-sm btn-primary" id="add-faq">
+                        <button type="button" class="btn btn-sm btn-success" id="add-faq">
                             + Add FAQ
                         </button>
 
