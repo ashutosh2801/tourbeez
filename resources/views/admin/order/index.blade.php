@@ -81,8 +81,8 @@
                         <div class="col-md-2 col-6">
                             <button type="submit" class="btn btn-search"> <i class="fas fa-search"></i> Search</button>
                         </div>
-                        <div class="col-md-12 col-12">
-                            <a href="{{ route('admin.orders.index') }}" class="btn-clear" style="margin-top:10px;display: block;"> <i class="fas fa-times"></i> Clear Search</a>
+                        <div class="col-md-2 col-6">
+                            <a href="{{ route('admin.orders.index') }}" class="btn btn-clear border" > <i class="fas fa-times"></i> Clear Search</a>
                         </div>
                     </div>
                 </div>
@@ -268,7 +268,7 @@
 
                                     
                                     <br>
-                                    {{ $order->customer?->phone }}
+                                    {{ "+ " . $order->customer?->phone }}
                                 </td>
                                 @php
                                     $total = round($order->total_amount);
@@ -297,6 +297,8 @@
                                 <td class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}
                                 <!-- </td> -->
                                 <br>
+                                {{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "NA" }}
+                                
                                     @php
                                         $payment = $order->payments->first();
                                     @endphp
@@ -322,28 +324,14 @@
                                         @endif
 
                                     @else
+                                    <br>
                                         N/A
                                     @endif
                                     <!-- </td> -->
                                 <td>{{ date__format($order->created_at) }}</td>
                                 <td style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;">
-
-                                @if($order->partner)
-
-                                    <a href="{{ route('admin.partners.edit', $order->partner->id) }}" 
-                                       class="alink" 
-                                       title="{{ $order->partner->name }}"
-                                       target="_blank">
-
-                                        {{ strlen($order->partner->name) > 10 ? $order->partner_acronym : $order->partner->name }}
-
-                                    </a>
-
-                                @else
-
-                                    Online
-
-                                @endif
+                                {{ $order->source }}
+                                
 
                                 </td>
                             </tr>

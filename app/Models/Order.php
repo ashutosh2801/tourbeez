@@ -64,7 +64,8 @@ class Order extends Model
         'payment_method_id',
         'internal_notes',
         'redzy_order_id',
-        'is_discount'
+        'is_discount',
+        'source'
     ];
 
     public function tour_detail($id, $label='all') {

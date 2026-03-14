@@ -161,7 +161,7 @@ class CustomerController extends Controller
     }
     public function updateSource(Request $request, $id)
     {
-        
+        dd($id, $request->all());
         if ($request->source === 'user') {
             return $this->updateUser($request, $id);
         }

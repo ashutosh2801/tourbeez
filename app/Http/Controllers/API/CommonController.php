@@ -38,7 +38,7 @@ class CommonController extends Controller
                     ->join('uploads as u', 'u.id', '=', 'c.upload_id')
                     ->select('c.id', 'c.name', 'c.upload_id')
                     ->groupBy('c.id', 'c.name', 'c.upload_id')
-                    ->orderByRaw('RAND()')
+                    ->orderByRaw('c.order DESC')
                     ->where('c.upload_id', '>=', 1)
                     ->whereExists(function ($query) {
                         $query->select(DB::raw(1))
@@ -76,12 +76,12 @@ class CommonController extends Controller
                     tr.tag
                 FROM tours t
                 JOIN tour_upload u ON u.tour_id = t.id
-                JOIN tour_locations l ON l.tour_id = t.id
+                JOIN category_tour c ON c.tour_id = t.id
                 LEFT JOIN tour_reviews tr ON tr.tour_id = t.id
                 WHERE t.status = 1 
                 AND t.deleted_at IS NULL
-                AND l.city_id IS NOT NULL 
-                AND l.city_id = 10519
+                AND c.category_id IS NOT NULL 
+                AND c.category_id = 388
                 AND u.is_main = 1
                 AND EXISTS (
                     SELECT 1 

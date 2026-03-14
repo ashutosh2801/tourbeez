@@ -446,6 +446,8 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     @php
                                         $row_id = 'row_'.$index++;
                                         $subtotal = 0;
+                                        
+                                        $subtotal2 = 0;
                                         $_tourId = $order_tour->tour_id;
                                     @endphp
                                     <div id="{{ $row_id }}" style="border:1px solid #eaecef;">
@@ -510,23 +512,47 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                             @php
                                                                 $tour_pricing = !empty($order_tour->tour_pricing) ? ( json_decode($order_tour->tour_pricing) ) : [];
 
-                                                               
+
                                                             @endphp
 
 
                                                             @foreach($order_tour->tour?->pricings as $pricing)
                                                             @php
                                                                 $price = $pricing->price;
+
+
                                                                 $result = getTourPricingDetails($tour_pricing, $pricing->id);
+
+
                                                                 if(isset($result['price'])) {
-                                                                    $price = $result['price'];
+                                                                    $price = $result['price'] ?? 0;
+
+                                                                    $qty = $result['quantity'] ?? 0;
+
+                                        
+                                                                    $actual_price = (isset($result['actual_price']) && $result['actual_price'] != 0) ? $result['actual_price'] : $result['price'];
+                                                                    $discount = isset($result['discount']) ? $result['discount'] : 0;
+                                                                    
+                                                                    $gt_total = $actual_price * $qty;
+
+
+
                                                                     if($order_tour->tour?->price_type =='FIXED'){
                                                                         $subtotal = $subtotal + $price;
+                                                                        $subtotal2 = $subtotal2 + $actual_price;
+
                                                                     } else{
-                                                                        $subtotal = $subtotal + ($result['quantity'] * $price);
+                                                                        $subtotal = $subtotal + ($qty * $price);
+                                                                        $subtotal2 = $subtotal2 + ($qty * $actual_price);
+
                                                                     }
                                                                     
+                                                                } else{
+                                                                    $price = currencyConvertWithoutRound($price,$order_tour->tour?->currency, $order->currency);
+                                                                    $actual_price = $price;
                                                                 }
+
+
 
 
                                                             @endphp
@@ -535,12 +561,14 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                                     <input type="hidden" name="tour_pricing_id_{{$_tourId}}[]" value="{{ $pricing->id }}" />  
                                                                     <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" class="form-contorl text-center">
                                                                     <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
+                                                                    <input type="hidden" name="tour_pricing_actual_price_{{$_tourId}}[]" value="{{ $actual_price }}" />  
+                                                                    <input type="hidden" name="tour_pricing_discount_{{$_tourId}}[]" value="{{ $discount }}" />  
                                                                     
 
                                                                     <input type="hidden" name="tour_pricing_type_{{$_tourId}}[]" value="{{ $order_tour->tour->price_type }}" /> 
                                                                     <input type="hidden" name="tour_pricing_min_{{$_tourId}}[]" value="{{$pricing->quantity_used}}">
                                                                 </td>
-                                                                <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency) }})</td>
+                                                                <td>{{ $pricing->label }} ({{ price_with_currency_no_round($actual_price, $order->currency) }}) </td>
                                                             </tr>
                                                             @endforeach
                                                             @endif
@@ -559,11 +587,16 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                             @endphp
                                                             @foreach($order_tour->tour?->addons as $extra)
                                                             @php
+
                                                                 $price = $extra->price;
                                                                 $result = getTourExtraDetails($tour_extra, $extra->id);
                                                                 if(isset($result['price'])) {
+
                                                                     $price = $result['price'];
                                                                     $subtotal = $subtotal + ($result['quantity'] * $price);
+                                                                    $subtotal2 = $subtotal2 + ($result['quantity'] * $price);
+                                                                } else{
+                                                                    $price = currencyConvertWithoutRound($price,$extra->currency, $order->currency);
                                                                 }
                                                             @endphp
                                                             <tr>
@@ -572,7 +605,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                                     <input type="number" name="tour_extra_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
                                                                     <input type="hidden" name="tour_extra_price_{{$_tourId}}[]" value="{{ $price }}" /> 
                                                                 </td>
-                                                                <td>{{ $extra->name }} ({{ price_format_with_currency($extra->price, $order->currency) }})</td>
+                                                                <td>{{ $extra->name }} ({{ price_with_currency_no_round($price, $order->currency) }})</td>
                                                             </tr>
                                                             @endforeach
                                                             @endif
@@ -585,6 +618,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 @php
 
                                                 $withoutTax = $subtotal;
+                                                $subtotal2 = $subtotal2;
                                                 $i=1;
                                                 $taxesfees = $order_tour->tour->taxes_fees;
                                                 $discounts = $order_tour->tour->discount;
@@ -595,8 +629,41 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 @endphp 
                                                 <tr>
                                                     <th>Sub Total </th>
-                                                    <th class="text-right withouttax-box">  {{ price_format_with_currency($withoutTax, $order->currency) }} </th>
+                                                    <!-- <th class="text-right withouttax-box">  {{ price_format_with_currency($withoutTax, $order->currency) }}  </th> -->
+                                                    <th class="text-right withouttax-box"> {{ price_format_with_currency($subtotal2, $order->currency) }} </th>
                                                 </tr>
+                                                @php
+                                                $isFlag = 0;
+                                                @endphp
+                                                @if(!empty($discounts))
+                                                    @foreach ($discounts as $item)
+                                                        @if($item->discount > 0)
+                                                        @php
+                                                            $isFlag = 1;
+                                                            $discountAmount = $item->price;
+                                                        @endphp
+
+                                                        <tr class="discount-row">
+                                                            <td class="text-danger">
+                                                                Discount 
+                                                                @if($item->type === 'PERCENT')
+                                                                    ({{ $item->discount }}%)
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-right text-danger">
+                                                                 {{ price_format_with_currency($discountAmount, $order->currency) }}
+                                                            </td>
+                                                        </tr>
+                                                        @endif
+                                                    @endforeach
+                                                @endif
+
+                                                @if($isFlag) 
+                                                <tr>
+                                                    <th>Total </th>
+                                                    <th class="text-right subtotal-box">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
+                                                </tr>
+                                                @endif
 
                                                 @if( $taxesfees )
                                                 @foreach ($taxesfees as $key => $item)  
@@ -612,11 +679,11 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 @endforeach
                                                 @endif
 
-                                                <tr>
+                                                <!-- <tr>
                                                     <th>Total </th>
                                                     <th class="text-right subtotal-box">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
-                                                </tr>
-                                                @if(!empty($discounts))
+                                                </tr> -->
+                                               <!--  @if(!empty($discounts))
                                                     @foreach ($discounts as $item)
                                                         @php
 
@@ -637,7 +704,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                             </td>
                                                         </tr>
                                                     @endforeach
-                                                @endif
+                                                @endif -->
                                                 
                                             </table>
                                         </div>

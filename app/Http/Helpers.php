@@ -147,7 +147,10 @@ if (!function_exists('price_format_with_currency')) {
            $currency = $tourCurrency;
         }
         
-        $converted = currencyConvert($amount, $from, $currency);
+        // $converted = currencyConvert($amount, $from, $currency);
+
+
+        $converted = currencyConvertWithoutRound($amount, $from, $currency);
 
         return $currency . " " . number_format($converted, 2);
     }
@@ -201,6 +204,8 @@ if (! function_exists('getTourPricingDetails')) {
                 return [
                     'quantity' => $item->quantity,
                     'price' => $item->price,
+                    'actual_price' => isset($item->actual_price) ? $item->actual_price : $item->price,
+                    'discount'    => isset($item->discount) ? $item->discount : 0
                 ];
             }
         }
@@ -1315,21 +1320,24 @@ if (!function_exists('currencyConvert')) {
         });
 
         if (empty($rates)) {
-            return round($amount);
+            // return round($amount);
+            return (float) number_format($amount, 6, '.', '');
         }
 
         $rateFrom = $rates[$from] ?? null;
         $rateTo   = $rates[$to] ?? null;
 
         if (!$rateFrom || !$rateTo) {
-            return round($amount);
+            // return round($amount); 
+            return (float) number_format($amount, 6, '.', '');
+
         }
         // dd($rateFrom, $rateTo, $amount);
         // ✅ USD-based conversion (MATCHES FRONTEND)
         $converted = ($amount / $rateFrom) * $rateTo;
 
-        return round($converted);
-        // return (float) number_format($converted, 6, '.', '');
+        // return round($converted);
+        return (float) number_format($converted, 6, '.', '');
 
         // return round($converted, 2);
     }
