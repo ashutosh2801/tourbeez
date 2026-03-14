@@ -206,6 +206,8 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
+
+
         $request->merge([
             'customer_id' => $request->customer_id ?: null
         ]);    
@@ -380,7 +382,7 @@ class OrderController extends Controller
                 'additional_info'   => $request->additional_info ?? '',
                 'internal_notes'    => $request->internal_notes ?? '',
                 'created_by'        => auth()->user()->id,
-                'source'            => "internal",
+                'source'            => "Internal",
             ]);
 
             // ===== Customer =====

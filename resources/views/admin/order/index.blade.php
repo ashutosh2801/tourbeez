@@ -268,7 +268,7 @@
 
                                     
                                     <br>
-                                    {{ "+ " . $order->customer?->phone }}
+                                    {{ str_contains($order->customer?->phone, '+') || ($order->customer?->phone == 'N/A') ? '' : '+ ' }}{{ $order->customer?->phone }}
                                 </td>
                                 @php
                                     $total = round($order->total_amount);

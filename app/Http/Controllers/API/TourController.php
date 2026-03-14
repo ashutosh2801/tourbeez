@@ -285,12 +285,6 @@ class TourController extends Controller
 
         $pickups = [];
 
-        // dd($tour->pickups);
-
-        // return response()->json([
-        //     'status' => true,
-        //     'data'   =>$tour->pickups
-        // ]);
         if(!empty($tour->pickups) && isset($tour->pickups[0]) && $tour->pickups[0]?->name === 'No Pickup') {
             $pickups[] = 'No Pickup';
         }
@@ -298,9 +292,9 @@ class TourController extends Controller
             $pickups[0] = 'Pickup';
             
             $comment = \DB::table('pickup_tour')
-                                            ->where('tour_id', $tour->id)
-                                            ->where('pickup_id', $tour->pickups[0]?->id)  // a single pickup ID
-                                            ->value('comment');
+                        ->where('tour_id', $tour->id)
+                        ->where('pickup_id', $tour->pickups[0]?->id)  // a single pickup ID
+                        ->value('comment');
 
 
             $pickups[1] = $comment ?? "Enter the pickup location";
@@ -379,10 +373,10 @@ class TourController extends Controller
                 'galleries'     => $galleries,
                 'addons'        => $addons,
                 'offer_ends_in' => $tour->offer_ends_in,
-                'rating'          => randomFloat(4, 5),
-                'comment'         => rand(50, 100),
+                'rating'        => randomFloat(4, 5),
+                'comment'       => rand(50, 100),
                 // 'pricings'      => $tour->pricings,
-                // 'tour_special_deposits'        => $tour->specialDeposit,
+                // 'special_deposits'        => $tour->specialDeposit,
                 // 'itinerariesAll'=> $tour->itinerariesAll,
                 // 'schedule'      => $tour->schedule,
 
@@ -404,7 +398,7 @@ class TourController extends Controller
 
     /**
      * Fetch booking related info for a tour.
-     */
+     */    
     public function fetch_booking(Request $request, $slug)
     {
         // Remove query logging to reduce overhead in production
@@ -431,7 +425,8 @@ class TourController extends Controller
                             'estimated_duration_num', 'estimated_duration_unit', 'sesion_all_day'
                         ])->orderBy('session_start_date');
                     },
-                    'pricings' // Select specific fields
+                    'pricings', // Select specific fields
+                    'specialDeposit',
                 ])
                 ->first();
         // });
@@ -512,6 +507,7 @@ class TourController extends Controller
             'discounted_price'     => $discounted_price,
             'tour_start_date'      => $tour_start_date,
             'disabled_tour_dates'  => $disabled_dates,
+            'special_deposit'      => $tour->specialDeposit,
             'have_sub_tour'        => $tour->subTours()->exists(),
         ];
 
@@ -719,49 +715,6 @@ class TourController extends Controller
                 'booking_fees' => $bookingFees,
                 'discount'     => $discount
             ]
-        ]);
-    }
-
-
-    public function getLastMinuteCharge(Request $request, Tour $tour)
-    {
-        $request->validate([
-            'tour_date' => 'required|date',
-            'tour_time' => 'required'
-        ]);
-
-        $tourDateTime = Carbon::parse($request->tour_date . ' ' . $request->tour_time);
-        $now = Carbon::now();
-
-        $hoursDiff = $now->diffInHours($tourDateTime, false);
-
-        if ($hoursDiff < 0) {
-            return response()->json([
-                'apply' => false,
-                'message' => 'Tour time already passed'
-            ]);
-        }
-
-        $rules = $tour->lastMinuteBookings()
-            ->whereDate('from_date', '<=', $request->tour_date)
-            ->whereDate('to_date', '>=', $request->tour_date)
-            ->get();
-
-        foreach ($rules as $rule) {
-
-            if ($hoursDiff <= $rule->last_minute_hours) {
-
-                return response()->json([
-                    'apply' => true,
-                    'type' => $rule->amount_type,
-                    'amount' => $rule->amount,
-                    'hours_remaining' => $hoursDiff
-                ]);
-            }
-        }
-
-        return response()->json([
-            'apply' => false
         ]);
     }
 
@@ -2149,6 +2102,9 @@ public function single(Request $request)
 
                                             $convertedPricingPrice = currencyConvert($pricing->price, $data->currency, $orderCurrency);
                                             $subtotal += ($num * $convertedPricingPrice);
+                                        } else{
+                                            $convertedPricingPrice = currencyConvert($pricing->price, $data->currency, $orderCurrency);
+                                            // $subtotal += ($num * $convertedPricingPrice);
                                         }
 
                                         $minQuantity = 0;
