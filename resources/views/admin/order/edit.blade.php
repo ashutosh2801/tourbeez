@@ -446,7 +446,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     @php
                                         $row_id = 'row_'.$index++;
                                         $subtotal = 0;
-                                        
+                                        $discount = 0;
                                         $subtotal2 = 0;
                                         $_tourId = $order_tour->tour_id;
                                     @endphp
@@ -584,8 +584,14 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                             @if ($order_tour->tour)
                                                             @php
                                                                 $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
+
+                                                                 $addons = $order_tour->tour?->addons->sortBy(function ($extra) use ($tour_extra) {
+                                                                        $result = getTourExtraDetails($tour_extra, $extra->id);
+                                                                        return isset($result['quantity']) && $result['quantity'] > 0 ? 0 : 1;
+                                                                    });
+
                                                             @endphp
-                                                            @foreach($order_tour->tour?->addons as $extra)
+                                                            @foreach($addons as $extra)
                                                             @php
 
                                                                 $price = $extra->price;
@@ -618,12 +624,13 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 @php
 
                                                 $withoutTax = $subtotal;
+                                                
                                                 $subtotal2 = $subtotal2;
                                                 $i=1;
                                                 $taxesfees = $order_tour->tour->taxes_fees;
                                                 $discounts = $order_tour->tour->discount;
                                                 
-
+                                                $subtotal = $subtotal2 - $discount;
 
                                                 $discounts = !empty($order_tour->discount) ? json_decode($order_tour->discount) : [];
                                                 @endphp 

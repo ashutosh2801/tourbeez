@@ -268,7 +268,7 @@
 
                                     
                                     <br>
-                                    {{ str_contains($order->customer?->phone, '+') || ($order->customer?->phone == 'N/A') ? '' : '+ ' }}{{ $order->customer?->phone }}
+                                    {{ str_contains($order->customer?->phone, '+') || ($order->customer?->phone == 'N/A') ? '' : '+' }}{{ $order->customer?->phone }}
                                 </td>
                                 @php
                                     $total = round($order->total_amount);
@@ -294,10 +294,12 @@
                                         $amountClass = 'text-secondary'; // grey
                                     } 
                                 @endphp
-                                <td class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}
+                                <td >
+
+                                    <span class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}</span>
                                 <!-- </td> -->
                                 <br>
-                                {{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "NA" }}
+                                <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "NA" }}</span>
                                 
                                     @php
                                         $payment = $order->payments->first();
