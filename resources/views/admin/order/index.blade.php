@@ -77,6 +77,15 @@
                                 <option value="this_year" {{ request('tour_date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
                             </select>
                         </div>
+                        <div class="col-md-2 col-6">
+                            <select name="per_page" class="form-control">
+                                @foreach ([10, 25, 50, 100, 500] as $number)
+                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                        {{ $number }} per page
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                         
                         <div class="col-md-2 col-6">
                             <button type="submit" class="btn btn-search"> <i class="fas fa-search"></i> Search</button>

@@ -157,8 +157,10 @@ class OrderController extends Controller
         }
 
 
+        $perPage = $request->input('per_page', 10);
 
-        $orders = $query->paginate(10)->appends($request->all()); // preserve filters in pagination
+    
+        $orders = $query->paginate($perPage)->appends($request->all()); // preserve filters in pagination
 
         $products = Tour::select('id', 'title')->get(); // for filter dropdown
 
@@ -989,8 +991,16 @@ class OrderController extends Controller
                     ])->withInput();
                 }
 
-                $startDate = $request->tour_startdate[$index];
+                $startDate = Carbon::parse($request->tour_startdate[$index])->format('Y-m-d');// $request->tour_startdate[$index];
                 $startTime = $request->tour_starttime[$index];
+
+
+
+                // $tourStartDates = $request->input('tour_startdate', []);
+
+                // $tourStartDates = array_map(function ($date) {
+                //     return Carbon::parse($date)->format('Y-m-d');
+                // }, $tourStartDates);
 
                 //TOUR PRICING
                 $pricingIds = $request->input("tour_pricing_id_{$tourId}", []);
@@ -1761,16 +1771,17 @@ class OrderController extends Controller
                         </td>
                     </tr>';
                     };
-                    
-                    $TOUR_PAYMENT_HISTORY .='<tr style="color:green;">
-                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
-                            <small style="font-size:14px; text-transform:uppercase;">Total Paid</small>
-                        </td>
-                        <td style="text-align:right; border-top:1pt solid #000;">
-                            <strong>' . $totalPaid . '</strong>
-                        </td>
-                    </tr>
-                    ';
+                    if($totalPaid > 0) {
+                        $TOUR_PAYMENT_HISTORY .='<tr style="color:green;">
+                            <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                                <small style="font-size:14px; text-transform:uppercase;">Total Paid</small>
+                            </td>
+                            <td style="text-align:right; border-top:1pt solid #000;">
+                                <strong>' . $totalPaid . '</strong>
+                            </td>
+                        </tr>
+                        ';
+                    }
 
 
                    $TOUR_PAYMENT_HISTORY .= '
@@ -1808,7 +1819,12 @@ class OrderController extends Controller
                 $tour_pricing = !empty($order_tour->tour_pricing) ? json_decode($order_tour->tour_pricing, true) : [];
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
                 $tour_discount = !empty($order_tour->discount) ? json_decode($order_tour->discount, true) : [];
-                
+                // $totalFixedDiscount = 0;
+                // if($tour_discount){
+                //     foreach ($tour_discount as $discountFixed) {
+                //        $totalFixedDiscount = $discountFixed->price;
+                //     }
+                // }
                 $TOUR_ITEM_SUMMARY .= '
                 <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table">
                     <tbody>
@@ -1904,13 +1920,17 @@ class OrderController extends Controller
                     if ($qty > 0 && $discount > 0 && $i == 0) {
 
                         $subtotal2 = $subtotal2 - $discount;
-                        $TOUR_ITEM_SUMMARY .= '
-                        <tr>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;color:#f64747;">Discount</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;color:#f64747;">' . price_format_with_currency(($dis_total), $order->currency) . '</td>
-                        </tr>';
+
+                        if($discountAmount && $discountAmount > 0){
+                            $TOUR_ITEM_SUMMARY .= '
+                                <tr>
+                                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
+                                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
+                                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;color:#f64747;">Discount</td>
+                                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;color:#f64747;">' . price_format_with_currency(($discountAmount), $order->currency) . '</td>
+                                </tr>';
+                        }
+                        
                     }
                 }
 

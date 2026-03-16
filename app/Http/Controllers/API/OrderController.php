@@ -215,7 +215,7 @@ class OrderController extends Controller
                 'label'         => $tp->label,
                 'price_type'    => $tp->price_type ?? '',
                 'actual_price'  => currencyConvert( $actual_price, $order->currency, 'CAD'),
-                'discount'      => currencyConvert( $discount ? $tp->discount : 0, 'CAD'),
+                'discount'      => currencyConvert( $discount, $order->currency, 'CAD'),
                 'qty_used'      => 1,
                 'quantity'      => $tp->quantity,
             ];
@@ -242,7 +242,7 @@ class OrderController extends Controller
                     "id"    => $tf->tour_taxes_id,
                     "label" => $tf->label,
                     "type"  => $tf->type,
-                    "value" => currencyConvert($tf->value, $order->currency, 'CAD'),
+                    "value" => $tf->value,
                 ];
             }
         }
@@ -307,6 +307,8 @@ class OrderController extends Controller
             "customer"      => $customer,
             "cartItems"     => $cartItems,
             "cartAdons"     => $cartAdons,
+            "deposite_rule"  => $order->tour->specialDeposit,
+
         ];
 
         return response()->json([
@@ -500,6 +502,84 @@ class OrderController extends Controller
         $order->booked_amount       = 0;
         $order->updated_at         = now();
         $order->save();
+
+        $order_tour = $order->order_tour;
+        $pricing = [];
+        $discounts = [];
+        $item_total = 0;
+        $quantity = 0;
+        // Cart Items
+        foreach (json_decode($order_tour->tour_pricing) as $i => $item) {
+            $qty            = $item->quantity ?? 1;
+            $price          = $item->price ?? 0;
+            $actual_price   = $item->actual_price ?? 0;
+            $discount_price = $item->discount ?? 0;
+            $total          = $item->total_price ?? 0;
+            $item_total     += $total;
+            $quantity       += $qty;
+
+            $pricing[$i] = [
+                'tour_id'           => $item->tour_id,
+                'tour_pricing_id'   => $item->tour_pricing_id,
+                'label'             => $item->label,
+                'price_type'        => $item->price_type,
+                'quantity'          => $qty,
+                'actual_price'      => $actual_price,
+                'price'             => $price,
+                'discount'          => $discount_price,
+                'total_price'       => $total,
+            ];
+            
+            if($i === 0) {
+                $depositRule = TourSpecialDeposit::where('use_deposit', 1)
+                                ->where('tour_id', $order_tour->tour_id)
+                                ->first();
+                if(!$depositRule){
+                    $depositRule = TourSpecialDeposit::where('type', 'global')->first();
+                }
+
+                if ($depositRule->is_discount && $depositRule->charge === 'NONE') {
+
+                    if($depositRule->discount_type === 'PERCENT') {
+                        $discount_price = ($actual_price * $depositRule->discount_value)/100;
+                        $price = $actual_price - $discount_price;
+                    }
+                    else if($depositRule->discount_type === 'FIXED') {
+                        $discount_price = $depositRule->discount_value;
+                        $price = $actual_price - $discount_price;
+                    }
+
+                    $total = $price * $qty;
+
+                    $pricing[$i] = [
+                        'tour_id'           => $item->tour_id,
+                        'tour_pricing_id'   => $item->tour_pricing_id,
+                        'label'             => $item->label,
+                        'price_type'        => $item->price_type,
+                        'quantity'          => $qty,
+                        'actual_price'      => $actual_price,
+                        'price'             => $price,
+                        'discount'          => $discount_price,
+                        'total_price'       => $total,
+                    ];
+
+                    $discounts[] = [
+                        'tour_id'  => $request->tourId,
+                        'discount' => $depositRule->discount_value ?? 0,
+                        'label'    => 'Discount',
+                        'type'     => $depositRule->discount_type,
+                        'price'    => ($discount_price * $qty),
+                    ];
+                }
+            }
+        }
+        if(!empty($pricing)) {
+            $order_tour->tour_pricing = json_encode($pricing);
+        }
+        if(!empty($discounts)) {
+            $order_tour->discount = json_encode($discounts);
+        }
+        $order_tour->save();
 
         return response()->json([
             'status'   => true,
