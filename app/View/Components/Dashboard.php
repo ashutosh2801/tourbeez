@@ -70,10 +70,11 @@ class Dashboard extends Component
         $this->days = $days;
 
         // Base query
-        $query = Order::whereHas('customer', function ($q) {
+        //whereIn('order_status', [3, 5])->
+        $query = Order::whereIn('order_status', [3,5])->whereHas('customer', function ($q) {
                         $q->whereNotNull('first_name')
                           ->where('first_name', '!=', '');
-                    })
+                    })->with('payments')
                     ->whereNull('deleted_at');
 
         // Apply date filter only if NOT "all"
@@ -86,13 +87,15 @@ class Dashboard extends Component
         }
 
         $orders = $query->get([
+            'id',
+            'order_number',
             'currency',
             'total_amount',
             'booked_amount',
             'balance_amount',
             'order_status'
         ]);
-
+        
         // Initialize totals
         $totals = [
             'number_of_orders' => 0,
@@ -105,16 +108,27 @@ class Dashboard extends Component
 
         foreach ($orders as $order) {
 
+
+                                     
+
+            $paid = round($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'));
+
+
+                                     
+                                
+
             $convertedTotal   = currencyConvert($order->total_amount ?? 0, $order->currency, 'USD');
-            $convertedBalance = currencyConvert($order->balance_amount ?? 0, $order->currency, 'USD');
+            $convertedPaid    = currencyConvert($paid ?? 0, $order->currency, 'USD');
+
+
 
             $totals['number_of_orders']++;
             $totals['value_of_orders']  += $convertedTotal;
-            $totals['total_paid']       += ($convertedTotal - $convertedBalance);
-            $totals['total_owed']       += $convertedBalance;
+            $totals['total_paid']       += $convertedPaid;
+            $totals['total_owed']       += $convertedTotal - $convertedPaid;
             $totals['total_refund']     += ($order->order_status == 4) ? $convertedTotal : 0;
         }
-
+        
         foreach ($totals as $key => $val) {
             if ($key !== 'number_of_orders') {
                 $totals[$key] = round($val, 2);

@@ -1,4 +1,153 @@
+
 <x-admin>
+
+<style>
+
+.tour-action-btn{
+    background:#2563eb !important;
+    color:#ffffff !important;
+    border:none !important;
+    padding:6px 14px;
+    font-size:13px;
+    font-weight:500;
+    border-radius:6px;
+    cursor:pointer;
+    transition:all .2s ease;
+}
+
+.tour-action-btn i{
+    margin-right:4px;
+}
+
+.tour-action-btn:hover{
+    background:#1d4ed8 !important;
+    box-shadow:0 3px 8px rgba(37,99,235,0.25);
+}
+
+.tour-action-btn:active{
+    transform:scale(0.97);
+}
+
+
+/* Expand row */
+
+.tour-expand-row{
+    display:none;
+}
+
+
+/* Expanded panel */
+
+.tour-actions{
+    background:#f8fafc;
+    padding:16px;
+    border-top:1px solid #e5e7eb;
+
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    gap:10px;
+}
+
+
+/* Links */
+
+.tour-actions a{
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+    padding:8px 10px;
+    font-size:13px;
+
+    background:#eef2ff;      /* light blue default */
+    border:1px solid #c7d2fe;
+    border-radius:6px;
+
+    text-decoration:none;
+    color:#3730a3;
+
+    transition:all .15s ease;
+}
+
+.tour-actions a:hover{
+    background:#e0e7ff;
+    border-color:#6366f1;
+    color:#312e81;
+}
+
+
+.tour-modal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.45);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:9999;
+}
+
+.tour-modal-content{
+background:#fff;
+width:700px;
+max-width:90%;
+border-radius:8px;
+overflow:hidden;
+}
+
+.tour-modal-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:14px 18px;
+border-bottom:1px solid #eee;
+font-weight:600;
+}
+
+.tour-modal-header button{
+border:none;
+background:none;
+font-size:18px;
+cursor:pointer;
+}
+
+.tour-actions{
+padding:20px;
+
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+gap:10px;
+}
+
+.tour-actions a{
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+    padding:8px 10px;
+    font-size:13px;
+
+    background:#eef2ff;      /* light blue default */
+    border:1px solid #c7d2fe;
+    border-radius:6px;
+
+    text-decoration:none;
+    color:#3730a3;
+
+    transition:all .15s ease;
+}
+
+.tour-actions a:hover{
+    background:#e0e7ff;
+    border-color:#6366f1;
+    color:#312e81;
+}
+
+</style>
+
+</style>   
     @section('title','Tours')
     <style>
         .filter-panel {
@@ -206,18 +355,30 @@
         <div class="card-body p-0 tour-table">
             <div class="table-viewport">
                 <table class="table table-striped" id="tourTable">
-                    <thead>
-                        <tr>
-                            <th><input style="width:20px; height:20px;" type="checkbox" id="checkAll" /></th>
-                            <th >{{ translate('Order') }}</th>
-                            <th >{{ translate('Image') }}</th>
-                            <th>{{ translate('Title') }}</th>
-                            <th width="150">{{ translate('Price') }}</th>
-                            <th width="150">{{ translate('SKU') }}</th>
-                            <th width="10">{{ translate('Reviews') }}</th>
-                            <th width="200">{{ translate('Category') }}</th>
-                            <th width="150">{{ translate('Actions') }}</th>
-                        </tr>
+                    <thead class="table-light">
+                    <tr>
+
+                    <th style="width:4%; text-align:center;">
+                    <input type="checkbox" id="checkAll" class="table-checkbox">
+                    </th>
+
+                    <th style="width:4%;">{{ translate('Order') }}</th>
+
+                    <th style="width:6%;">{{ translate('Image') }}</th>
+
+                    <th style="width:32%;">{{ translate('Title') }}</th>
+
+                    <th style="width:12%;">{{ translate('Price') }}</th>
+
+                    <th style="width:12%;">{{ translate('SKU') }}</th>
+
+                    <th style="width:2%; text-align:center;">{{ translate('Reviews') }}</th>
+
+                    <th style="width:14%;">{{ translate('Category') }}</th>
+
+                    <th style="width:14%;">{{ translate('Actions') }}</th>
+
+                    </tr>
                     </thead>
                     <tbody id="sortable-tours">
                         @foreach ($tours as $tour)
@@ -256,8 +417,96 @@
                                     @can('delete_tour')  
                                     <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.tour.destroy', encrypt($tour->id)) }}"><i class="fas fa-trash-alt"></i></a>
                                     @endcan
+                                    <button class="btn btn-sm btn-primary tour-menu-btn mt-1" onclick="openTourMenu({{ $tour->id }})">
+                                        <i class="fas fa-layer-group"></i> Tour Menu
+                                    </button>
+                                    
+                                                                        
                                 </td>
                             </tr>
+                            
+                            <div id="tour-menu-{{ $tour->id }}"  style="display:none">
+                               
+
+                                <a target="_blank" href="{{ route('admin.tour.edit', encrypt($tour->id)) }}">
+                                <i class="fas fa-info-circle"></i> Basic
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.addone', encrypt($tour->id)) }}">
+                                <i class="fas fa-plus-circle"></i> Extra
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.scheduling', encrypt($tour->id)) }}">
+                                <i class="fas fa-calendar"></i> Scheduling
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.location', encrypt($tour->id)) }}">
+                                <i class="fas fa-map-marker-alt"></i> Location
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.pickups', encrypt($tour->id)) }}">
+                                <i class="fas fa-bus"></i> Pickups
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.itinerary', encrypt($tour->id)) }}">
+                                <i class="fas fa-route"></i> Itinerary
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.faqs', encrypt($tour->id)) }}">
+                                <i class="fas fa-question-circle"></i> FAQs
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.inclusions', encrypt($tour->id)) }}">
+                                <i class="fas fa-check-circle"></i> Inclusions
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.exclusions', encrypt($tour->id)) }}">
+                                <i class="fas fa-times-circle"></i> Exclusions
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.optionals', encrypt($tour->id)) }}">
+                                <i class="fas fa-plus"></i> Optional
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.taxesfees', encrypt($tour->id)) }}">
+                                <i class="fas fa-receipt"></i> Taxes
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.gallery', encrypt($tour->id)) }}">
+                                <i class="fas fa-images"></i> Gallery
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.message.notification', encrypt($tour->id)) }}">
+                                <i class="fas fa-envelope"></i> Message
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.booking', encrypt($tour->id)) }}">
+                                <i class="fas fa-ticket-alt"></i> Booking
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.partner', encrypt($tour->id)) }}">
+                                <i class="fas fa-handshake"></i> Partner
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.seo', encrypt($tour->id)) }}">
+                                <i class="fas fa-search"></i> SEO
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.special.deposit', encrypt($tour->id)) }}">
+                                <i class="fas fa-dollar-sign"></i> Special Deposit
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.review', encrypt($tour->id)) }}">
+                                <i class="fas fa-star"></i> Review
+                                </a>
+
+                                <a target="_blank" href="{{ route('admin.tour.edit.parent', encrypt($tour->id)) }}">
+                                <i class="fas fa-layer-group"></i> Parent
+                                </a>
+
+                                
+                                </div>
+                            
                         @endforeach
                     </tbody>
                 </table>
@@ -443,6 +692,27 @@
     </div>
   </div>
 </div>
+
+<div id="tourMenuModal" class="tour-modal">
+    <div class="tour-modal-content">
+
+    <div class="tour-modal-header">
+    <span>Tour Menu</span>
+    <button onclick="closeTourMenu()">✕</button>
+    </div>
+
+    <div id="tourMenuContent" class="tour-actions"></div>
+
+    </div>
+</div>
+
+
+
+
+
+
+
+
 <!-- /.modal -->
 
 @endsection
@@ -782,6 +1052,56 @@ function exportFilteredTours() {
     document.getElementById('downloadSample').addEventListener('click', function () {
         window.location.href = "{{ route('admin.tours.sample.download') }}";
     });
+</script>
+
+<script>
+
+function toggleTourMenu(id){
+
+    let rows = document.querySelectorAll(".tour-expand-row");
+
+    rows.forEach(function(row){
+
+        if(row.id !== "tour-menu-"+id){
+            row.style.display = "none";
+        }
+
+    });
+
+    let current = document.getElementById("tour-menu-"+id);
+
+    let isVisible = window.getComputedStyle(current).display === "table-row";
+
+    if(isVisible){
+        current.style.display = "none";
+    }else{
+        current.style.display = "table-row";
+    }
+
+}
+
+
+
+</script>
+
+<script>
+
+function openTourMenu(id){
+
+let content = document.getElementById("tour-menu-"+id).innerHTML;
+
+document.getElementById("tourMenuContent").innerHTML = content;
+
+document.getElementById("tourMenuModal").style.display = "flex";
+
+}
+
+function closeTourMenu(){
+
+document.getElementById("tourMenuModal").style.display = "none";
+
+}
+
 </script>
 
 @endsection
