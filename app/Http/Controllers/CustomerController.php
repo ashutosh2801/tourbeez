@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderCustomer;
+use App\Models\PickupLocation;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -129,6 +130,7 @@ class CustomerController extends Controller
 
     public function editFromSource($id, $source)
     {
+
         $id = decrypt($id);
 
         if ($source === 'user') {
@@ -139,7 +141,9 @@ class CustomerController extends Controller
             abort(404);
         }
 
-        return view('admin.customer.edit', compact('user', 'source'));
+        $pickupLocations = PickupLocation::get();
+
+        return view('admin.customer.edit', compact('user', 'source', 'pickupLocations'));
     }
 
     /**
@@ -161,7 +165,6 @@ class CustomerController extends Controller
     }
     public function updateSource(Request $request, $id)
     {
-        dd($id, $request->all());
         if ($request->source === 'user') {
             return $this->updateUser($request, $id);
         }
@@ -200,7 +203,7 @@ class CustomerController extends Controller
         }
 
         return redirect()
-            ->route('admin.customers.index')
+            ->back()
             ->with('success', 'User updated successfully');
     }
 
@@ -214,13 +217,13 @@ class CustomerController extends Controller
             'last_name'    => $request->oc_last_name,
             'email'        => $request->oc_email,
             'phone'        => $request->oc_phone,
-            // 'instructions' => $request->oc_instructions,
-            // 'pickup_id'    => $request->oc_pickup_id,
-            // 'pickup_name'  => $request->oc_pickup_name,
+            'instructions' => $request->oc_instructions,
+            'pickup_id'    => $request->oc_pickup_id,
+            'pickup_name'  => $request->oc_pickup_name,
         ]);
 
-        return redirect()
-            ->route('admin.customers.index')
+        return redirect()->back()
+            // ->route('admin.customers.index')
             ->with('success', 'Customer updated successfully');
     }
 

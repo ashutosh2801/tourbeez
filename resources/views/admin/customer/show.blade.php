@@ -1,9 +1,22 @@
 <x-admin>
     @section('title', 'Show Customer')
     <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between">
+            <div class="">
+                
+            
             <h3 class="card-title">{{ $user->name }}</h3>
-            <div class="card-tools"><a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-dark">Back</a></div>
+
+            </div>
+            <div class="card-tools "><a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-dark">Back</a>
+                
+
+
+                <a href="{{ route('admin.customers.edit.source', ['id' => encrypt($user->id),'source' => 'order_customer']) }}" class="btn btn-sm btn-primary"><i class="far fa-edit"></i> Edit</a>
+
+            </div>
+            
+            
         </div>
         <div class="card-body">
             <form action="{{ route('admin.user.update',$user) }}" method="POST">

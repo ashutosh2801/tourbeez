@@ -40,7 +40,7 @@
                     <div class="d-flex align-items-center gap-3">
                         <span>
                             {{ count($session['orders']) }} Order{{ count($session['orders']) > 1 ? 's' : '' }} |
-                            {{ collect($session['orders'])->sum('number_of_guests') }} Participants
+                            {{ $session['total_guests'] }} Participants
                         </span>
                     </div>
                     <i class="bi bi-chevron-down toggle-icon font-bold"></i>

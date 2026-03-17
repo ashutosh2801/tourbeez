@@ -649,18 +649,19 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                             $isFlag = 1;
                                                             $discountAmount = $item->price;
                                                         @endphp
-
-                                                        <tr class="discount-row">
-                                                            <td class="text-danger">
-                                                                Discount 
-                                                                @if($item->type === 'PERCENT')
-                                                                    ({{ $item->discount }}%)
-                                                                @endif
-                                                            </td>
-                                                            <td class="text-right text-danger">
-                                                                 {{ price_format_with_currency($discountAmount, $order->currency) }}
-                                                            </td>
-                                                        </tr>
+                                                        @if($discountAmount > 0)
+                                                            <tr class="discount-row">
+                                                                <td class="text-danger">
+                                                                    Discount 
+                                                                    @if($item->type === 'PERCENT')
+                                                                        ({{ $item->discount }}%)
+                                                                    @endif
+                                                                </td>
+                                                                <td class="text-right text-danger">
+                                                                     {{ price_format_with_currency($discountAmount, $order->currency) }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
                                                         @endif
                                                     @endforeach
                                                 @endif
@@ -987,6 +988,11 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             @else
                                                 @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded')
                                                 <div class="col-3">
+                                                    @if($payment->status == 'capture_canceled')
+                                                    <div class="text-danger text-sm">Capture Canceled</div>
+                                                @endif
+
+                                            
                                                 </div>
                                                 @else
                                                 <div class="col-2">
