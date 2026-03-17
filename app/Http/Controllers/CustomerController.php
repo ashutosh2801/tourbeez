@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Models\OrderCustomer;
+use App\Models\PickupLocation;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Spatie\Permission\Models\Role;
 
 class CustomerController extends Controller
 {
@@ -21,12 +23,10 @@ class CustomerController extends Controller
     }
     public function index()
     {
-        // $data = User::where('user_type', 'Member')
-        //     ->where('role', '<>', 'Super Admin')->where('role', '<>', 'Admin')->orderBy('id','DESC')->paginate(10);
+        $name = request('name');
+        $email = request('email');
 
-       
-
-    // Users
+        // Users
         $users = User::where('user_type', 'Member')
             ->whereNotIn('role', ['Super Admin', 'Admin'])
             ->get()
@@ -54,16 +54,29 @@ class CustomerController extends Controller
                 ];
             });
 
-        // Merge + unique email
         $merged = $users
             ->merge($customers)
-            ->unique('email')
-            ->sortByDesc('created_at')
-            ->values();
+            ->unique('email');
 
-        // Manual pagination
-        $perPage = 10;
+        // Apply filters
+        if ($name) {
+            $merged = $merged->filter(function ($item) use ($name) {
+                return stripos($item->name, $name) !== false;
+            });
+        }
+
+        if ($email) {
+            $merged = $merged->filter(function ($item) use ($email) {
+                return stripos($item->email, $email) !== false;
+            });
+        }
+
+        $merged = $merged->sortByDesc('created_at')->values();
+
+        // Pagination
+        $perPage = request('per_page', 10);
         $page = request()->get('page', 1);
+
         $data = new LengthAwarePaginator(
             $merged->forPage($page, $perPage),
             $merged->count(),
@@ -71,6 +84,7 @@ class CustomerController extends Controller
             $page,
             ['path' => request()->url(), 'query' => request()->query()]
         );
+
         return view('admin.customer.index', compact('data'));
         
     }
@@ -97,7 +111,11 @@ class CustomerController extends Controller
     public function show(string $id)
     {
         $user = OrderCustomer::findOrFail(decrypt($id) );
-        return view('admin.customer.show', compact('user'));
+        $allCustomerOrderId = OrderCustomer::where('email', $user->email)->get('order_id')->toArray();
+
+
+        $orders = Order::whereIn('id', $allCustomerOrderId)->paginate(10);
+        return view('admin.customer.show', compact('user', 'orders'));
     }
 
     /**
@@ -113,6 +131,7 @@ class CustomerController extends Controller
 
     public function editFromSource($id, $source)
     {
+
         $id = decrypt($id);
 
         if ($source === 'user') {
@@ -123,7 +142,9 @@ class CustomerController extends Controller
             abort(404);
         }
 
-        return view('admin.customer.edit', compact('user', 'source'));
+        $pickupLocations = PickupLocation::get();
+
+        return view('admin.customer.edit', compact('user', 'source', 'pickupLocations'));
     }
 
     /**
@@ -145,7 +166,6 @@ class CustomerController extends Controller
     }
     public function updateSource(Request $request, $id)
     {
-        
         if ($request->source === 'user') {
             return $this->updateUser($request, $id);
         }
@@ -184,7 +204,7 @@ class CustomerController extends Controller
         }
 
         return redirect()
-            ->route('admin.customers.index')
+            ->back()
             ->with('success', 'User updated successfully');
     }
 
@@ -198,13 +218,13 @@ class CustomerController extends Controller
             'last_name'    => $request->oc_last_name,
             'email'        => $request->oc_email,
             'phone'        => $request->oc_phone,
-            // 'instructions' => $request->oc_instructions,
-            // 'pickup_id'    => $request->oc_pickup_id,
-            // 'pickup_name'  => $request->oc_pickup_name,
+            'instructions' => $request->oc_instructions,
+            'pickup_id'    => $request->oc_pickup_id,
+            'pickup_name'  => $request->oc_pickup_name,
         ]);
 
-        return redirect()
-            ->route('admin.customers.index')
+        return redirect()->back()
+            // ->route('admin.customers.index')
             ->with('success', 'Customer updated successfully');
     }
 

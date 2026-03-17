@@ -77,12 +77,21 @@
                                 <option value="this_year" {{ request('tour_date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
                             </select>
                         </div>
+                        <div class="col-md-2 col-6">
+                            <select name="per_page" class="form-control">
+                                @foreach ([10, 25, 50, 100, 500] as $number)
+                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                        {{ $number }} per page
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                         
                         <div class="col-md-2 col-6">
                             <button type="submit" class="btn btn-search"> <i class="fas fa-search"></i> Search</button>
                         </div>
-                        <div class="col-md-12 col-12">
-                            <a href="{{ route('admin.orders.index') }}" class="btn-clear" style="margin-top:10px;display: block;"> <i class="fas fa-times"></i> Clear Search</a>
+                        <div class="col-md-2 col-6">
+                            <a href="{{ route('admin.orders.index') }}" class="btn btn-clear border" > <i class="fas fa-times"></i> Clear Search</a>
                         </div>
                     </div>
                 </div>
@@ -173,19 +182,44 @@
             @endif
             
             <div class="card-body p-0 order-table table-responsive">
-                <table class="table table-striped" id="OrderTable">
+                <table class="table table-striped" id="OrderTable" style="table-layout:fixed; width:100%;">
                     <thead>
                         <tr>
-                            <th><input type="checkbox" id="checkAll" style="width:20px; height:20px;"></th>
-                            <th style="white-space: nowrap;">Order Number</th>
-                            <th style="white-space: nowrap;">Status</th>
-                            <th style="white-space: nowrap;">Tour</th>
-                            <th style="white-space: nowrap;">Tour Date</th>
-                            <th style="white-space: nowrap;">Customer</th>
-                            <th style="white-space: nowrap;">Amount</th>
-                            <th style="white-space: nowrap;">Payment</th>
-                            <th style="white-space: nowrap;">Created</th>
-                            <th style="white-space: nowrap;">Source</th>
+                            <th style="width:4%;">
+                                <input type="checkbox" id="checkAll" style="width:20px; height:20px;">
+                            </th>
+
+                            <th style="width:8%; white-space: nowrap;">
+                                Order <br> Number
+                            </th>
+
+                            <th style="width:10%; white-space: nowrap;">
+                                Status
+                            </th>
+
+                            <th style="width:25%; white-space: nowrap;">
+                                Tour
+                            </th>
+
+                            <th style="width:12%; white-space: nowrap;">
+                                Tour Date
+                            </th>
+
+                            <th style="width:13%; white-space: nowrap;">
+                                Customer
+                            </th>
+
+                            <th style="width:10%; white-space: nowrap;">
+                                Amount
+                            </th>
+
+                            <th style="width:10%; white-space: nowrap;">
+                                Created
+                            </th>
+
+                            <th style="width:8%; white-space: nowrap;">
+                                Source
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -199,19 +233,31 @@
                                 <td>
                                     @foreach ($order->orderTours as $order_tour)
 
-                                            <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour_id)) }}" class="alink" target="_blank" >
+                                        <div style="display:flex; justify-content:space-start; align-items:center;">
+                                            <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour_id)) }}"
+                                               class="alink"
+                                               target="_blank"
+                                               style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">
                                                 {{ $order_tour->tour?->title }}
                                             </a>
-
-                                            @if($order->sub_tour_id  && $order->subTour)
-                                                <hr>
-                                                <a href="{{ route('admin.tour.edit', encrypt($order->subTour->tour_id)) }}" class="alink text-small" target="_blank" style="font-size: small;">
-                                                    {{ $order->subTour?->title }} 
-                                                </a>
+                                            @if($loop->iteration == 1)
+                                            <span class="font-bold ml-1">
+                                                X {{ $order->orderTours->sum('number_of_guests') }}
+                                            </span>
                                             @endif
+                                        </div>
 
-                                        <br>
-                                        
+                                        @if($order->sub_tour_id && $order->subTour)
+                                            <div style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                                <a href="{{ route('admin.tour.edit', encrypt($order->subTour->tour_id)) }}"
+                                                   class="alink text-small"
+                                                   target="_blank"
+                                                   style="font-size:small;">
+                                                    {{ $order->subTour?->title }}
+                                                </a>
+                                            </div>
+                                        @endif
+
                                     @endforeach
                                 </td>
                                 <td>
@@ -219,8 +265,10 @@
                                     @foreach ($order->orderTours as $order_tour)
                                         {{ \Carbon\Carbon::parse($order_tour->tour_date)->format('M d, Y') }}<br>
 
-                                         {{ $order_tour->tour_time }}
+                                         {{ $order_tour->tour_time }}<br>
                                     @endforeach
+
+
                                 </td>
                                 <td>
                                     <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}" class="alink" target="_blank">
@@ -229,7 +277,7 @@
 
                                     
                                     <br>
-                                    {{ $order->customer?->phone }}
+                                    {{ str_contains($order->customer?->phone, '+') || ($order->customer?->phone == 'N/A') ? '' : '+' }}{{ $order->customer?->phone }}
                                 </td>
                                 @php
                                     $total = round($order->total_amount);
@@ -255,8 +303,13 @@
                                         $amountClass = 'text-secondary'; // grey
                                     } 
                                 @endphp
-                                <td class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-                                <td>
+                                <td >
+
+                                    <span class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}</span>
+                                <!-- </td> -->
+                                <br>
+                                <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "NA" }}</span>
+                                
                                     @php
                                         $payment = $order->payments->first();
                                     @endphp
@@ -271,7 +324,7 @@
                                         @elseif($payment->card_brand)
 
                                             {!! cardSvg($payment->card_brand) !!}
-                                            {{ ucfirst($payment->card_brand) }}
+                                            <!-- {{ ucfirst($payment->card_brand) }} -->
 
                                             
 
@@ -282,11 +335,16 @@
                                         @endif
 
                                     @else
+                                    <br>
                                         N/A
                                     @endif
-                                    </td>
+                                    <!-- </td> -->
                                 <td>{{ date__format($order->created_at) }}</td>
-                                <td>{{ $order->source ?? 'Online' }}</td>
+                                <td style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;">
+                                {{ $order->source }}
+                                
+
+                                </td>
                             </tr>
                         @empty
                             <tr>

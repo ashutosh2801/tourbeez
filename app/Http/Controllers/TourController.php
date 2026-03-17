@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ToursExport;
+use App\Imports\ToursImport;
 use App\Models\Addon;
 use App\Models\Category;
 use App\Models\City;
@@ -19,6 +20,7 @@ use App\Models\TaxesFee;
 use App\Models\Tour;
 use App\Models\TourDetail;
 use App\Models\TourImage;
+use App\Models\TourLastMinuteBooking;
 use App\Models\TourLocation;
 use App\Models\TourPricing;
 use App\Models\TourSchedule;
@@ -31,11 +33,10 @@ use App\Traits\TourScheduleHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
+use Maatwebsite\Excel\Facades\Excel;
 use Redirect;
 use Str;
 use Validator;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\ToursImport;
 
 class TourController extends Controller
 {
@@ -2172,11 +2173,15 @@ $pickupHtml .= '</div>';
 
     public function specialdeposit($id)
     {
+        
         $data       = Tour::findOrFail(decrypt($id));
 
         $specialDeposit = $data->specialDeposit ?? new \App\Models\TourSpecialDeposit();
+
+        $lastMinutes = $data->lastMinuteBookings ?? [];
+
         
-        return view('admin.tours.feature.special-deposit', compact( 'data', 'specialDeposit'));
+        return view('admin.tours.feature.special-deposit', compact( 'data', 'specialDeposit','lastMinutes'));
     }
 
     public function review($id)
@@ -2416,6 +2421,66 @@ $pickupHtml .= '</div>';
             ['tour_id' => $tour->id],
             $payload
         );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Last Minute Booking Logic
+        |--------------------------------------------------------------------------
+        */
+
+        /*
+    |--------------------------------------------------------------------------
+    | Last Minute Booking Logic
+    |--------------------------------------------------------------------------
+    */
+
+    $ids = [];
+
+    if ($request->has('last_minute')) {
+
+        foreach ($request->last_minute as $row) {
+
+            // Skip empty rows
+            if (
+                empty($row['from_date']) &&
+                empty($row['to_date']) &&
+                empty($row['last_minute_hours']) &&
+                empty($row['amount'])
+            ) {
+                continue;
+            }
+
+            $booking = TourLastMinuteBooking::updateOrCreate(
+                [
+                    'id' => $row['id'] ?? null
+                ],
+                [
+                    'tour_id'           => $tour->id,
+                    'from_date'         => $row['from_date'] ?? null,
+                    'to_date'           => $row['to_date'] ?? null,
+                    'last_minute_hours' => $row['last_minute_hours'] ?? null,
+                    'amount_type'       => $row['amount_type'] ?? null,
+                    'amount'            => $row['amount'] ?? null,
+                ]
+            );
+
+            $ids[] = $booking->id;
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete Removed Rows
+    |--------------------------------------------------------------------------
+    */
+
+    $query = TourLastMinuteBooking::where('tour_id', $tour->id);
+
+    if (!empty($ids)) {
+        $query->whereNotIn('id', $ids);
+    }
+
+    $query->delete();
 
         return redirect()->back()->with('success', 'Special deposit settings saved successfully.');
     }

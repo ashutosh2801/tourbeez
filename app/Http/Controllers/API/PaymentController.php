@@ -183,6 +183,7 @@ class PaymentController extends Controller
 
     public function verifyPayment(Request $request)
     {
+
         $request->validate([
             'client_secret' => 'required|string',
         ]);
@@ -198,102 +199,79 @@ class PaymentController extends Controller
             $balance_amount = 0;
             $payment_method = null;
             $order_status   = 3;
+            $booked_amount  = 0;
+            $balance_amount = 0;
 
-            if ($action_name === "book") {
-                // Retrieve PaymentIntent
-                $paymentIntent = PaymentIntent::retrieve($intentId);
+            $flag_payment_status = 0;
 
-
-
-                $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
-                $payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
-
-                $cacheKey = 'booking_' . $paymentIntent->id;
-                // $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($paymentIntent) {
-                //     return Order::with([
-                //                 'tour',
-                //                 'tour.location',
-                //                 'tour.detail',
-                //                 'customer'
-                //             ])->where('payment_intent_id', $paymentIntent->id)->first();
-                // });
-
-                $booking = Order::with([
-                    'tour',
-                    'tour.location',
-                    'tour.detail',
-                    'customer'
-                ])
-                ->where('payment_intent_id', $paymentIntent->id)
-                ->first();
-
-                $total_amount   = $booking->total_amount;
-                $balance_amount = 0;
-
-            } else {
-                // Reserve flow → Retrieve SetupIntent
-                $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
-
-                $payment_status = 3; // Not paid yet
-                $total_amount   = 0;
-                $balance_amount = 0; // Full amount still pending
-                $payment_method = ''; // future use
-
-                $cacheKey = 'booking_' . $setupIntent->id;
-                // $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($setupIntent) {
-                //     return Order::with([
-                //                 'tour',
-                //                 'tour.location',
-                //                 'tour.detail',
-                //                 'customer'
-                //             ])->where('payment_intent_id', $setupIntent->id)->first();
-                // });
-
-                $booking = Order::with([
-                                'tour',
-                                'tour.location',
-                                'tour.detail',
-                                'customer'
-                            ])->where('payment_intent_id', $setupIntent->id)->first();
-            }
             // ================= CARD DETAILS (NO CAPTURE, NO WEBHOOK) =================
-                try {
-   
-                    if (!empty($paymentIntent->payment_method)) {
+            try {
 
-                        $paymentMethod = \Stripe\PaymentMethod::retrieve(
-                            $paymentIntent->payment_method
-                        );
+                if ($action_name === "book") {
+                    // Retrieve PaymentIntent
+                    $paymentIntent = PaymentIntent::retrieve($intentId);
+                    $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
 
-                        // if ($paymentMethod->type === 'card') {
+                    if($paymentIntent->status == "requires_capture"){
+                        $payment_status = 3;
+                    }
+                    \Log::warning($paymentIntent->status);
+
+                    $payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
+                    if($paymentIntent->last_payment_error?->payment_method?->type) {
+                        $payment_method = $paymentIntent->last_payment_error->payment_method->type;
+                    }
+
+                    $booking = Order::with([
+                        'tour',
+                        'tour.location',
+                        'tour.detail',
+                        'customer'
+                    ])
+                    ->where('payment_intent_id', $paymentIntent->id)
+                    ->first();
+
+                    //echo '<pre>'; print_r($paymentIntent); exit;
+                    $total_amount   = $booking->total_amount;
+                    if($paymentIntent->status === 'succeeded' || $paymentIntent->status === 'requires_capture') {
+                        $balance_amount = $booking->balance_amount;
+                        $booked_amount = $booking->booked_amount;
+                        $flag_payment_status = 1;
+                    }
+                    else {
+                        $balance_amount = $total_amount;
+                        $booked_amount  = 0;
+                        $order_status   = 1;
+                    }
 
 
-                        //     OrderPayment::updateOrCreate(
-                        //     // ✅ Unique condition
-                        //     [
-                        //         'payment_intent_id' => $booking->payment_intent_id,
-                        //     ],
-                        //     // ✅ Data to update or insert
-                        //     [
-                        //         'order_id'          => $booking->id,
-                        //         'payment_intent_id' => $booking->payment_intent_id,
-                        //         'transaction_id'    => null, // no charge yet until capture
-                        //         'payment_type'      => strtoupper($paymentMethod->type),
-                        //         'payment_method'    => $paymentMethod->type,
-                        //         'card_brand'        => $paymentMethod->card->brand ?? null,
-                        //         'card_last4'        => $paymentMethod->card->last4 ?? null,
-                        //         'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
-                        //         'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
-                        //         'amount'            => $booking->booked_amount,
-                        //         'currency'          => $booking->currency,
-                        //         'status'            => 'uncaptured', // manual capture pending
-                        //         'action'            => $action_name,
-                        //         'response_payload'  => null,
-                        //         'collection_date'   => now(),
-                        //     ]
-                        // );
+                } else {
+                    // Reserve flow → Retrieve SetupIntent
+                    $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
 
-                        OrderPayment::updateOrCreate(
+                    $payment_status = 3; // Not paid yet
+                    $payment_method = ''; // future use
+                    $flag_payment_status = 1;
+
+                    $booking = Order::with([
+                                    'tour',
+                                    'tour.location',
+                                    'tour.detail',
+                                    'customer'
+                                ])->where('payment_intent_id', $setupIntent->id)->first();
+
+                    $total_amount   = $booking->total_amount;
+                    $balance_amount = $total_amount;
+                    $booked_amount  = 0;
+                }
+
+                if (!empty($paymentIntent->payment_method)) {
+
+                    $paymentMethod = \Stripe\PaymentMethod::retrieve(
+                        $paymentIntent->payment_method
+                    );
+
+                    OrderPayment::updateOrCreate(
                         [
                             'payment_intent_id' => $paymentIntent->id,
                         ],
@@ -315,47 +293,22 @@ class PaymentController extends Controller
                             'collection_date'   => now(),
                         ]
                     );
-
-                            // Update OrderPayment (preferred)
-                            // OrderPayment::create([
-                            //         'payment_method' => 'card',
-                            //         'card_brand'     => $paymentMethod->card->brand ?? null,
-                            //         'card_last4'     => $paymentMethod->card->last4 ?? null,
-                            //         'card_exp_month' => $paymentMethod->card->exp_month ?? null,
-                            //         'card_exp_year'  => $paymentMethod->card->exp_year ?? null,
-                            //         'status'         => $paymentIntent->status === 'requires_capture'
-                            //                             ? 'authorized'
-                            //                             : $paymentIntent->status,
-                            //     ]);
-
-                            // Optional: also store on orders table (if fields exist)
-                            // $booking->card_brand     = $paymentMethod->card->brand ?? null;
-                            // $booking->card_last4     = $paymentMethod->card->last4 ?? null;
-                            // $booking->card_exp_month = $paymentMethod->card->exp_month ?? null;
-                            // $booking->card_exp_year  = $paymentMethod->card->exp_year ?? null;
-                            $booking->save();
-                        // }
-                    }
-                } catch (\Exception $e) {
-                    \Log::warning(
-                        'Card details not saved for PI ' . $paymentIntent->id . ' : ' . $e->getMessage()
-                    );
+                        
+                    // $booking->save();
                 }
-                // ========================================================================
-
-
-            if (!$booking) {
-                return response()->json([
-                    'status'  => 'failed',
-                    'message' => 'Order not found!',
-                ], 400);
+            } catch (\Exception $e) {
+                \Log::warning(
+                    'Card details not saved for PI ' . $paymentIntent->id . ' : ' . $e->getMessage()
+                );
             }
+            // ========================================================================
             
             // Update booking
-            $booking->payment_status = 3;
-            //$booking->total_amount   = $total_amount;
-            //$booking->balance_amount = $balance_amount;
+            $booking->total_amount   = $total_amount;
+            $booking->balance_amount = $balance_amount;
+            $booking->booked_amount  = $booked_amount;
             $booking->order_status   = $order_status;
+            $booking->payment_status = $payment_status;
             $booking->payment_method = $payment_method;
             $booking->updated_at     = now();
             $booking->save();
@@ -366,7 +319,16 @@ class PaymentController extends Controller
                     'message' => 'Order not found!',
                 ], 400);
             }
-                
+
+            if($flag_payment_status === 0 ) {
+                return response()->json(data: [
+                    'status'  => 'failed',
+                    'message' => 'Your previous payment was failed!',
+                    'booking' => [],
+                ]); 
+            }
+            
+            // [{"tour_id":24,"tour_pricing_id":41,"label":"Adults","price_type":"PER_PERSON","quantity":2,"actual_price":109,"price":99,"discount":10,"total_price":198}]
             $tour_pricing = json_decode($booking->order_tour->tour_pricing);
             $pricing=[]; $total = 0;
             if(!empty($tour_pricing) && is_array($tour_pricing)) {
@@ -378,6 +340,8 @@ class PaymentController extends Controller
                         'lable' => $label,
                         'qty'   => $tp->quantity,
                         'price' => $tp->price,
+                        'actual_price' => isset($tp->actual_price) ? $tp->actual_price : $tp->price,
+                        'discount' => isset($tp->discount) ? $tp->discount : 0,
                         'total' => $tp->total_price
                     ];
                 }
@@ -414,6 +378,20 @@ class PaymentController extends Controller
                 }
             }
 
+            // [{"tour_id":24,"discount":10,"label":"Discount","type":"FIXED","price":20}]
+            $discount = json_decode($booking->order_tour->discount);
+            $discounts = [];
+            if (!empty($discount) && is_array($discount)) {
+                foreach ($discount as $dp) {
+                    $discounts[] = [
+                        'lable' => $dp->label,
+                        'type'  => $dp->type,
+                        'price' => $dp->price,
+                        'total' => $dp->price
+                    ];
+                }
+            }
+
             $image = uploaded_asset($booking->tour?->main_image->id ?? 0, 'medium');
             $pickName = '';
             if($booking->customer && $booking->customer->pickup_name){
@@ -444,6 +422,7 @@ class PaymentController extends Controller
                     'pricing'       => $pricing,
                     'extra'         => $extra,
                     'fees'          => $fees,
+                    'discount'      => $discounts,
                     't_and_c'       => $booking->tour?->terms_and_conditions,
                     'order_email'   => $booking->tour?->order_email,
                 ],
@@ -482,14 +461,11 @@ class PaymentController extends Controller
                 // $booking->save();
             }
             $booking->save();
-
-        
-
-
             
             $admin_id = $booking->tour->user_id;
             $admin = User::findorFail($admin_id);
             $admin->notify(new NewOrderNotification($booking));
+            
             Log::info('NewOrderNotification');
             return response()->json([
                     'status'  => 'succeeded',
@@ -561,214 +537,17 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function verifyPayment2323(Request $request)
-{
-    $request->validate([
-        'client_secret' => 'required|string',
-    ]);
-
-    Stripe::setApiKey(env('STRIPE_SECRET'));
-
-    try {
-        $clientSecret = $request->client_secret;
-        $action_name  = $request->action_name ?? 'book';
-        $intentId     = explode('_secret_', $clientSecret)[0];
-
-        $payment_status = 0;
-        $balance_amount = 0;
-        $payment_method = null;
-        $order_status   = 3;
-        $card_last4     = null;
-        $card_brand     = null;
-
-        if ($action_name === "book") {
-            // Retrieve PaymentIntent
-            $paymentIntent = PaymentIntent::retrieve($intentId);
-            $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
-            $payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
-
-            $booking = Order::with([
-                'tour',
-                'tour.location',
-                'tour.detail',
-                'customer'
-            ])->where('payment_intent_id', $paymentIntent->id)->first();
-
-            $balance_amount = 0;
-        } else {
-            // Reserve flow → Retrieve SetupIntent
-            $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
-
-            $payment_status = 0; // Not paid yet
-            $payment_method = 'card'; // Saved card for future charges
-
-            // Retrieve attached payment method if exists
-            if ($setupIntent->payment_method) {
-                $pm = \Stripe\PaymentMethod::retrieve($setupIntent->payment_method);
-                $card_last4 = $pm->card->last4 ?? null;
-                $card_brand = $pm->card->brand ?? null;
-            }
-
-            $booking = Order::with([
-                'tour',
-                'tour.location',
-                'tour.detail',
-                'customer'
-            ])->where('payment_intent_id', $setupIntent->id)->first();
-        }
-
-        if (!$booking) {
-            return response()->json([
-                'status'  => 'failed',
-                'message' => 'Order not found!',
-            ], 400);
-        }
-
-        // Update booking
-        $booking->payment_status  = $payment_status;
-        $booking->order_status    = $order_status;
-        $booking->payment_method  = $payment_method;
-        $booking->updated_at      = now();
-        $booking->save();
-
-        // Prepare pricing
-        $pricing = [];
-        $tour_pricing = json_decode($booking->order_tour->tour_pricing);
-        if (!empty($tour_pricing) && is_array($tour_pricing)) {
-            foreach ($tour_pricing as $tp) {
-                $tourPricing = TourPricing::find($tp->tour_pricing_id);
-                $label = str_ireplace('Group', 'Participants', $tourPricing->label);
-                $pricing[] = [
-                    'label' => $label,
-                    'qty'   => $tp->quantity,
-                    'price' => $tp->price,
-                    'total' => $tp->total_price
-                ];
-            }
-        }
-
-        // Prepare extras
-        $extra = [];
-        $extra_pricing = json_decode($booking->order_tour->tour_extra);
-        if (!empty($extra_pricing) && is_array($extra_pricing)) {
-            foreach ($extra_pricing as $ep) {
-                $extraAddon = Addon::find($ep->tour_extra_id);
-                $extra[] = [
-                    'label' => $extraAddon->name,
-                    'qty'   => $ep->quantity,
-                    'price' => $ep->price,
-                    'total' => $ep->total_price
-                ];
-            }
-        }
-
-        // Prepare fees
-        $fees = [];
-        $fees_pricing = json_decode($booking->order_tour->tour_fees);
-        if (!empty($fees_pricing) && is_array($fees_pricing)) {
-            foreach ($fees_pricing as $fp) {
-                $fees[] = [
-                    'label' => $fp->label,
-                    'price' => $fp->price,
-                    'total' => $fp->price
-                ];
-            }
-        }
-
-        // Pickup info
-        $pickName = '';
-        if ($booking->customer && $booking->customer->pickup_name) {
-            $pickName = $booking->customer->pickup_name;
-        } elseif ($booking->customer && $booking->customer->pickup_id) {
-            $pickLocation = PickupLocation::find($booking->customer->pickup_id);
-            $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
-        }
-
-        // Tour image
-        $image = uploaded_asset($booking->tour?->main_image->id ?? 0, 'medium');
-
-        // Prepare detail
-        $detail = [
-            'action_name'      => $booking->action_name,
-            'order_number'     => $booking->order_number,
-            'number_of_guests' => $booking->number_of_guests,
-            'total_amount'     => $booking->total_amount ?? 0,
-            'balance_amount'   => $booking->balance_amount ?? 0,
-            'currency'         => $booking->currency,
-            'payment_method'   => ucfirst($booking->payment_method),
-            'card_last4'       => $card_last4,
-            'card_brand'       => $card_brand,
-            'customer'         => $booking->customer,
-            'pickup'           => $pickName,
-            'tour_date'        => date('D, M d, Y', strtotime($booking->order_tour->tour_date)),
-            'tour_time'        => $booking->order_tour->tour_time,
-            'created_at'       => date('Y-m-d', strtotime($booking->created_at)),
-            'tour'             => [
-                'image'       => $image,
-                'title'       => $booking->tour?->title,
-                'address'     => $booking->tour?->location->address,
-                'pricing'     => $pricing,
-                'extra'       => $extra,
-                'fees'        => $fees,
-                't_and_c'     => $booking->tour?->terms_and_conditions,
-                'order_email' => $booking->tour?->order_email,
-            ],
-        ];
-
-        // Send emails if not already sent
-        if ($booking && !$booking->tour?->order_email && !$booking->email_sent) {
-            self::sendOrderDetailMail($detail, $action_name);
-            $booking->email_sent = true;
-        }
-
-        if ($booking && !$booking->admin_email_sent) {
-            self::sendOrderDetailMail($detail, 'admin');
-            $booking->admin_email_sent = true;
-        }
-
-        $booking->save();
-
-        // Notify admin
-        $admin = User::findOrFail($booking->tour->user_id);
-        $admin->notify(new NewOrderNotification($booking));
-
-        return response()->json([
-            'status'  => 'succeeded',
-            'booking' => $detail,
-        ]);
-    } catch (\Exception $e) {
-        Log::error('VerifyPayment Error: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage()
-        ], 500);
-    }
-}
-
-
     //this function need name should should change
     public static function sendOrderDetailMail($detail, $action_name = 'book')
     {
-//         $booking->tour->order_email &&
-// $booking->tour->order_email &&
         Log::info('sendOrderDetailMail start');
         try{
             $order_id = $detail['order_number'];
             $order = Order::where('order_number',$order_id)->first();
-            if($action_name == 'admin'){
+            if($action_name === 'admin'){
                 $identifier = 'admin_order_booking';
             } else{
-               //  $orderTour  = $order->orderTours()->first();
-
-            
-               //  $tour       = $orderTour->tour;
-
-               //  if($tour->order_email){
-               //     $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_confirmed'; 
-               // }else{
-                   $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_pending';
-               // }
-                
+                $identifier = $action_name == 'reserve' ? 'order_reserve' : 'order_pending';
             }
             
             $email_template = EmailTemplate::where('identifier', $identifier)->first();
@@ -873,16 +652,18 @@ class PaymentController extends Controller
 
             foreach ($order->orderTours as $order_tour) {
                 $subtotal = 0;
+                $subtotal2 = 0;
                 $_tourId = $order_tour->tour_id;
                 $tour_pricing = !empty($order_tour->tour_pricing) ? json_decode($order_tour->tour_pricing, true) : [];
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
+                $tour_discount = !empty($order_tour->discount) ? json_decode($order_tour->discount, true) : [];
                 
                 $TOUR_ITEM_SUMMARY .= '
                 <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table">
                     <tbody>
                     <tr>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
-                            <h3 style="font-size:19px"><strong>' . $order_tour->tour->title . ' - Item Summary</strong></h3>
+                            <h3 style="font-size:19px"><strong>' . $order_tour->tour->title . '</strong></h3>
                         </td>
                     </tr>
                     </tbody>
@@ -911,19 +692,37 @@ class PaymentController extends Controller
                     // $result = getTourPricingDetails($tour_pricing, $pricing->id);
                     $qty = $result['quantity'] ?? 0;
                     $price = $result['price'] ?? 0;
-                    //$total = $qty * $price;
+                    $actual_price = isset($result['actual_price']) ? $result['actual_price'] : $result['price'];
+                    $discount = $result['discount'] ?? 0;
                     $total = $result['total_price'] ?? 0;
+                    $gt_total = $actual_price * $qty;
                     if ($qty > 0) {
                         $subtotal += $total;
+                        $subtotal2+= $gt_total;
+                        $price_text = $price ? price_format_with_currency($gt_total, $order->currency) : 'Free';
                         $TOUR_ITEM_SUMMARY .= '
                         <tr>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ucwords($result['label']) . '</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($actual_price, $order->currency) . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . $price_text . '</td>
                         </tr>';
                     }
                 }
+
+                $TOUR_ITEM_SUMMARY .= '
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
+                                <strong>Sub Total </strong>
+                            </small>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                ' . price_format_with_currency($subtotal2, $order->currency) . '
+                        </td>
+                    </tr>';
 
                 // Extras Rows
                 foreach ($tour_extra as $extra) {
@@ -943,6 +742,36 @@ class PaymentController extends Controller
                         </tr>';
                     }
                 }
+
+                // Discount
+                foreach ($tour_pricing as $result) {
+                    $qty = $result['quantity'] ?? 0;
+                    $discount = $result['discount'] ?? 0;
+                    $dis_total = $discount * $qty;
+                    if ($qty > 0 && $discount > 0) {
+                        $TOUR_ITEM_SUMMARY .= '
+                        <tr>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;color:#f64747;">Discount</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;color:#f64747;">' . price_format_with_currency(($dis_total), $order->currency) . '</td>
+                        </tr>';
+                    }
+                }
+
+                $TOUR_ITEM_SUMMARY .= '
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
+                                <strong>Total </strong>
+                            </small>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                ' . price_format_with_currency($subtotal, $order->currency) . '
+                        </td>
+                    </tr>';
 
                 // Taxes
                 $taxRows = '';
@@ -964,69 +793,14 @@ class PaymentController extends Controller
                     }
                 }
 
-                // Discount
-                $discountRows = '';
-                $discounts = !empty($order_tour->discount) 
-                    ? json_decode($order_tour->discount) 
-                    : [];
-
-                if (!empty($discounts)) {
-                    foreach ($discounts as $discount) {
-
-                        // IMPORTANT: If you want historical accuracy,
-                        // use stored price instead of recalculating
-                        $discountAmount = $discount->price ?? 0;
-
-                        // If price is not stored, fallback to calculation
-                        if (!$discountAmount) {
-                            if ($discount->type === 'PERCENT') {
-                                $discountAmount = ($subtotal * $discount->discount) / 100;
-                            } else {
-                                $discountAmount = $discount->discount;
-                            }
-                        }
-                        $subtotalWithoutDiscount = $subtotal;
-                        $subtotal -= $discountAmount;
-
-                        $discountRows .= '
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
-                                    Sub Total 
-                                </small>
-                            </td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                 ' . price_format_with_currency($subtotalWithoutDiscount, $order->currency) . '
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td>&nbsp;</td>
-                            <td>&nbsp;</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px; color:#d9534f;">
-                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#d9534f;">
-                                    Discount ' . ($discount->type === "PERCENT" ? '(' . $discount->discount . '%)' : '') . '
-                                </small>
-                            </td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px; color:#d9534f;">
-                                 ' . price_format_with_currency($discountAmount, $order->currency) . '
-                            </td>
-                        </tr>';
-                    }
-                }
-
                 // Total Row
-                
-
-                $TOUR_ITEM_SUMMARY .= $taxRows . $discountRows . '
+                $TOUR_ITEM_SUMMARY .= $taxRows . '
 
                     <tr>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:#000; margin:0; font-size:15px"><strong>Total</strong></h3>
+                            <h3 style="color:#000; margin:0; font-size:15px"><strong>Grand Total</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                             <h3 style="color:#000; margin:0; font-size:15px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>

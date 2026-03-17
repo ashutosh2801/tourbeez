@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Optional;
 use App\Models\Scopes\SupplierScope;
+use App\Models\TourLastMinuteBooking;
 use App\Models\TourReview;
 use App\Models\TourSpecialDeposit;
 use App\Upload;
@@ -99,6 +100,7 @@ class Tour extends Model
     public function parent() { return $this->belongsTo(Tour::class, 'parent_id'); }
 
     public function partnerTours() { return $this->hasMany(PartnerTour::class); }
+    public function lastMinuteBookings(){ return $this->hasMany(TourLastMinuteBooking::class); }
 
 
     // ---------------- ACCESSORS ----------------
