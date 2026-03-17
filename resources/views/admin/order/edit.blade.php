@@ -174,7 +174,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
     <div class="card card-primary rounded-lg-custom border order-edit-head1">
         <div class="card-header">
             <div class="row">
-                <div class="col-md-9">
+                <div class="col-md-12">
                     <h5 class="m-0">Created on {{ date__format($order->created_at) }} online on your booking form</h5>
                 </div>
                 <!-- <div class="col-md-3 {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}">
@@ -421,131 +421,154 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                         <input type="hidden" name="tour_id[]" value="{{ $order_tour->tour_id }}" />    
                                         
                                         <div class="table-viewport">
-                                            <table class="table">
-                                                <tr id="row_{{ $row_id }}">
-                                                    <td width="600"><h3 class="text-lg">{{ $order_tour->tour?->title }}</h3></td>
+                                            <table class="table m-0" style="border:none;">
+                                                <thead>
+                                                    <tr>
+                                                        <th colspan="5" class="text-center" style="border:none;">
+                                                            <h4 style="font-size:17px; font-weight:600; margin:0;">
+                                                            {{ $order_tour->tour?->title }}
+                                                            </h4>
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr id="row_{{ $row_id }}">
+                                                        <td style="border:none;">
+                                                            <div style="background:#f9f9f9; padding:15px; border-radius:10px; display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
 
-                                                    <td class="text-right" width="230">
-                                                        <div class="input-group">
-                                                            <input type="text"
-                                                                class="aiz-date-range form-control tour_startdate"
-                                                                name="tour_startdate[]"
-                                                                placeholder="Select Date"
-                                                                data-single="true"
-                                                                data-format="ddd MMM DD, YYYY"
-                                                                data-show-dropdown="true"
-                                                                value="{{ $order_tour->tour_date }}">
-                                                            <div class="input-group-append">
-                                                                <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                                <div style="flex:1; min-width:200px;">
+                                                                    <div class="input-group">
+                                                                        <input type="text"
+                                                                            class="aiz-date-range form-control tour_startdate"
+                                                                            name="tour_startdate[]"
+                                                                            placeholder="Select Date"
+                                                                            data-single="true"
+                                                                            data-format="ddd MMM DD, YYYY"
+                                                                            data-show-dropdown="true"
+                                                                            value="{{ $order_tour->tour_date }}">
+                                                                        <div class="input-group-append">
+                                                                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    
+                                                                </div>
+
+                                                                <div style="flex:1; min-width:150px;">
+                                                                    <div class="input-group">
+                                                                        <input type="text"
+                                                                            placeholder="Time"
+                                                                            name="tour_starttime[]"
+                                                                            class="form-control aiz-time-picker tour_starttime"
+                                                                            data-minute-step="1"
+                                                                            value="{{ $order_tour->tour_time }}">
+                                                                        <div class="input-group-prepend">
+                                                                            <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div style="display:flex; gap:10px;">
+                                                                    <button type="button" onClick="addTour()" class="btn btn-success btn-sm px-3" style="border-radius:6px;font-size: 20px;">+</button>
+                                                                    <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-danger btn-sm px-3" style="border-radius:6px;font-size: 20px;">-</button>
+                                                                </div>
+
+                                                                <div class="w-100">
+                                                                    <input type="text" class="tour_startdate_display border-0 px-2 w-100" readonly style="background:#f9f9f9;">
+                                                                </div>
+
                                                             </div>
-                                                        </div>
-
-                                                        <div>
-                                                            <input type="text" class="tour_startdate_display border-0" readonly>
-                                                        </div>
-                                                    </td>
-
-                                                    <td class="text-right" width="200">
-                                                        <div class="input-group">
-                                                            <input type="text"
-                                                                placeholder="Time"
-                                                                name="tour_starttime[]"
-                                                                class="form-control aiz-time-picker tour_starttime"
-                                                                data-minute-step="1"
-                                                                value="{{ $order_tour->tour_time }}">
-                                                            <div class="input-group-prepend">
-                                                                <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-
-                                                    <td class="text-right">
-                                                        <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button>
-                                                        <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
-                                                    </td>
-                                                </tr>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
                                             </table>
 
-                                            <table class="table m-0" style="background:#ebebeb">
-                                                <tr>
-                                                    <td style="width:200px">
-                                                        <table class="table">
-                                                            <tr>
-                                                                <td colspan="2">
-                                                                    <h4 style="font-size:16px; font-weight:600">Quantities</h4>
-                                                                </td>
-                                                            </tr>
-                                                            @if ($order_tour->tour)
-                                                            @php
-                                                                $tour_pricing = !empty($order_tour->tour_pricing) ? ( json_decode($order_tour->tour_pricing) ) : [];
-                                                            @endphp
+                                            <table class="table table-bordered m-0" style="background:#f7f7f7">
+                                                <tbody>
+                                                    <tr>
+                                                        <td>
+                                                            <table class="table m-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th colspan="2">
+                                                                            <h5 style="font-size:14px; font-weight:600; margin:0;">Quantities</h5>
+                                                                        </th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @if ($order_tour->tour)
+                                                                    @php
+                                                                        $tour_pricing = !empty($order_tour->tour_pricing) ? ( json_decode($order_tour->tour_pricing) ) : [];
+                                                                    @endphp
 
+                                                                    @foreach($order_tour->tour?->pricings as $pricing)
+                                                                    @php
+                                                                        $price = $pricing->price;
+                                                                        $result = getTourPricingDetails($tour_pricing, $pricing->id);
+                                                                        if(isset($result['price'])) {
+                                                                            $price = $result['price'];
+                                                                            if($order_tour->tour?->price_type =='FIXED'){
+                                                                                $subtotal = $subtotal + $price;
+                                                                            } else{
+                                                                                $subtotal = $subtotal + ($result['quantity'] * $price);
+                                                                            }
+                                                                        }
+                                                                    @endphp
+                                                                    <tr>
+                                                                        <td width="60">
+                                                                            <input type="hidden" name="tour_pricing_id_{{$_tourId}}[]" value="{{ $pricing->id }}" />  
+                                                                            <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" class="form-contorl text-center">
+                                                                            <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
 
-                                                            @foreach($order_tour->tour?->pricings as $pricing)
-                                                            @php
-                                                                $price = $pricing->price;
-                                                                $result = getTourPricingDetails($tour_pricing, $pricing->id);
-                                                                if(isset($result['price'])) {
-                                                                    $price = $result['price'];
-                                                                    if($order_tour->tour?->price_type =='FIXED'){
-                                                                        $subtotal = $subtotal + $price;
-                                                                    } else{
-                                                                        $subtotal = $subtotal + ($result['quantity'] * $price);
-                                                                    }
-                                                                    
-                                                                }
+                                                                            <input type="hidden" name="tour_pricing_type_{{$_tourId}}[]" value="{{ $order_tour->tour->price_type }}" /> 
+                                                                            <input type="hidden" name="tour_pricing_min_{{$_tourId}}[]" value="{{$pricing->quantity_used}}">
+                                                                        </td>
+                                                                        <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency) }})</td>
+                                                                    </tr>
+                                                                    @endforeach
+                                                                    @endif
+                                                                </tbody>
+                                                            </table>
+                                                        </td>
 
-
-                                                            @endphp
-                                                            <tr>
-                                                                <td width="60">
-                                                                    <input type="hidden" name="tour_pricing_id_{{$_tourId}}[]" value="{{ $pricing->id }}" />  
-                                                                    <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" class="form-contorl text-center">
-                                                                    <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
-                                                                    
-
-                                                                    <input type="hidden" name="tour_pricing_type_{{$_tourId}}[]" value="{{ $order_tour->tour->price_type }}" /> 
-                                                                    <input type="hidden" name="tour_pricing_min_{{$_tourId}}[]" value="{{$pricing->quantity_used}}">
-                                                                </td>
-                                                                <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency) }})</td>
-                                                            </tr>
-                                                            @endforeach
-                                                            @endif
-                                                        </table>
-                                                    </td>
-                                                    <td style="width:200px">
-                                                        <table class="table">
-                                                            <tr>
-                                                                <td colspan="2">
-                                                                    <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
-                                                                </td>
-                                                            </tr>
-                                                            @if ($order_tour->tour)
-                                                            @php
-                                                                $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
-                                                            @endphp
-                                                            @foreach($order_tour->tour?->addons as $extra)
-                                                            @php
-                                                                $price = $extra->price;
-                                                                $result = getTourExtraDetails($tour_extra, $extra->id);
-                                                                if(isset($result['price'])) {
-                                                                    $price = $result['price'];
-                                                                    $subtotal = $subtotal + ($result['quantity'] * $price);
-                                                                }
-                                                            @endphp
-                                                            <tr>
-                                                                <td width="60">
-                                                                    <input type="hidden" name="tour_extra_id_{{$_tourId}}[]" value="{{ $extra->id }}" />  
-                                                                    <input type="number" name="tour_extra_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
-                                                                    <input type="hidden" name="tour_extra_price_{{$_tourId}}[]" value="{{ $price }}" /> 
-                                                                </td>
-                                                                <td>{{ $extra->name }} ({{ price_format_with_currency($extra->price, $order->currency) }})</td>
-                                                            </tr>
-                                                            @endforeach
-                                                            @endif
-                                                        </table>
-                                                    </td>
-                                                </tr>
+                                                        <td>
+                                                            <table class="table m-0">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th colspan="2">
+                                                                            <h5 style="font-size:14px; font-weight:600; margin:0;">Optional extras</h5>
+                                                                        </th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @if ($order_tour->tour)
+                                                                    @php
+                                                                        $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
+                                                                    @endphp
+                                                                    @foreach($order_tour->tour?->addons as $extra)
+                                                                    @php
+                                                                        $price = $extra->price;
+                                                                        $result = getTourExtraDetails($tour_extra, $extra->id);
+                                                                        if(isset($result['price'])) {
+                                                                            $price = $result['price'];
+                                                                            $subtotal = $subtotal + ($result['quantity'] * $price);
+                                                                        }
+                                                                    @endphp
+                                                                    <tr>
+                                                                        <td width="60">
+                                                                            <input type="hidden" name="tour_extra_id_{{$_tourId}}[]" value="{{ $extra->id }}" />  
+                                                                            <input type="number" name="tour_extra_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
+                                                                            <input type="hidden" name="tour_extra_price_{{$_tourId}}[]" value="{{ $price }}" /> 
+                                                                        </td>
+                                                                        <td>{{ $extra->name }} ({{ price_format_with_currency($extra->price, $order->currency) }})</td>
+                                                                    </tr>
+                                                                    @endforeach
+                                                                    @endif
+                                                                </tbody>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
                                             </table>
 
                                             <table class="table m-0">

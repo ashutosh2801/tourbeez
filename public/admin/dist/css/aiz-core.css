@@ -9008,6 +9008,24 @@ a.dropdown-footer:hover {
     padding: 5px 10px;
 }
 
+.partner-body {
+    border-left: 1px solid #e2e5ec !important;
+    margin-bottom: 0;
+}
+
+.partner-body .card {
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.partner-body .card-header {
+    border-radius: 0 10px 0 0;
+}
+
+.partner-body .form-control {
+    border: 1px solid #aeb0b4;
+}
+
 @media (max-width: 767px) {
 
     .tour-edit-head .card-tools {
@@ -9022,6 +9040,7 @@ a.dropdown-footer:hover {
 
     .card-footer .align-buttons {
         display: flex;
+        gap: 15px;
     }
 
     .card-footer .align-buttons .btn {
@@ -9118,7 +9137,8 @@ a.dropdown-footer:hover {
     .seo-body .seo-nav,
     .SeoScore-body .SeoScore-nav,
     .deposit-body .card-header,
-    .review-body .card-header {
+    .review-body .card-header,
+    .partner-body .card-header {
         border-radius: 10px 10px 0 0;
     }
 
@@ -9356,6 +9376,10 @@ table.dataTable {
     border-top: 1px solid #ebedf2;
     background-color: transparent;
     padding: 12px 25px;
+}
+
+.add-category-body .bootstrap-select.form-control {
+    border: 1px solid #aeb0b4;
 }
 
 @media (max-width: 767px) {
