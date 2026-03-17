@@ -107,8 +107,8 @@ class OrderController extends Controller
             });
 
             if ($booking && $booking->order_status !== 1) {
-                // $booking->order_status   = 1;
-                // $booking->payment_status = 1;
+                $booking->order_status   = 1;
+                $booking->payment_status = 1;
                 $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
                 $booking->updated_at     = now();
                 $booking->save();
@@ -125,6 +125,8 @@ class OrderController extends Controller
                 $pricing[] = [
                     'lable' => $tourPricing->label,
                     'qty'   => $tp->quantity,
+                    'actual_price' => isset($tp->actual_price) ? $tp->actual_price : $tp->price,
+                    'discount' => isset($tp->discount) ? $tp->discount : 0,
                     'price' => $tp->price,
                     'total' => $total
                 ];
@@ -193,11 +195,6 @@ class OrderController extends Controller
 
     public function getOrderDetailByOrderID( Request $request, $orderID )
     {
-        // $order = Order::where('id', decrypt($orderID))->first();
-        // return response()->json([
-        //         'status' => $orderID,
-        //         'message' => 'Order not found.',
-        //     ], 404);
         $order = Order::findOrFail(decrypt($orderID));
 
         if (!$order) {
@@ -210,13 +207,17 @@ class OrderController extends Controller
         $tour_pricing = $order->order_tour->tour_pricing ? json_decode($order->order_tour->tour_pricing) : [];
         $cartItems=[];
         foreach($tour_pricing as $tp) {
+            $actual_price = isset($tp->actual_price) ? $tp->actual_price : $tp->price;
+            $discount = isset($tp->discount) ? $tp->discount : 0;
             $cartItems[] = [
-                'id'        => $tp->tour_pricing_id,
-                'price'     => $tp->price,
-                'label'     => $tp->label,
-                'price_type'=> $tp->price_type ?? '',
-                'qty_used'  => 1,
-                'quantity'  => $tp->quantity,
+                'id'            => $tp->tour_pricing_id,
+                'price'         => currencyConvert($tp->price, $order->currency, 'CAD'),
+                'label'         => $tp->label,
+                'price_type'    => $tp->price_type ?? '',
+                'actual_price'  => currencyConvert( $actual_price, $order->currency, 'CAD'),
+                'discount'      => currencyConvert( $discount, $order->currency, 'CAD'),
+                'qty_used'      => 1,
+                'quantity'      => $tp->quantity,
             ];
         }
 
@@ -226,7 +227,7 @@ class OrderController extends Controller
             $extraAddon = Addon::find($ep->tour_extra_id);
             $cartAdons[] = [
                 "id"        => $ep->tour_extra_id,
-                "price"     => $ep->price,
+                "price"     => currencyConvert($ep->price, $order->currency, 'CAD'),
                 "label"     => $extraAddon->name,
                 "quantity"  => $ep->quantity,
             ];
@@ -237,13 +238,13 @@ class OrderController extends Controller
 
         if($tour_fees){
             foreach($tour_fees as $tf) {
-            $tourFees[] = [
-                "id"    => $tf->tour_taxes_id,
-                "label" => $tf->label,
-                "type"  => $tf->type,
-                "value" => $tf->value,
-            ];
-        }
+                $tourFees[] = [
+                    "id"    => $tf->tour_taxes_id,
+                    "label" => $tf->label,
+                    "type"  => $tf->type,
+                    "value" => $tf->value,
+                ];
+            }
         }
         
 
@@ -282,6 +283,7 @@ class OrderController extends Controller
 
         $data = [
             "order_number"  => $order->order_number,
+            "source"        => $order->source,
             "currency"      => $order->currency,
             'payment_status'=> $paidAmount > 0 ? 'paid' : 'unpaid',
             "total_amount"  => $paidAmount > 0 ? $balanceAmount : $totalAmount,
@@ -305,6 +307,8 @@ class OrderController extends Controller
             "customer"      => $customer,
             "cartItems"     => $cartItems,
             "cartAdons"     => $cartAdons,
+            "deposite_rule"  => $order->tour->specialDeposit,
+
         ];
 
         return response()->json([
@@ -440,18 +444,6 @@ class OrderController extends Controller
                 }
             }
 
-            // OrderTour::create([
-            //     'order_id'          => $orderId,
-            //     'tour_id'           => $request->tourId, // mandatory
-            //     'tour_date'         => $validated['selectedDate'],
-            //     'tour_time'         => $validated['selectedTime'] ?? null,
-            //     'tour_pricing'      => json_encode($pricing),
-            //     'tour_extra'        => json_encode($extra),
-            //     'tour_fees'         => json_encode($fees),
-            //     'number_of_guests'  => $quantity,
-            //     'total_amount'      => round($item_total, 2),
-            // ]);
-
             OrderTour::updateOrCreate(
                 [
                     'order_id' => $orderId
@@ -488,6 +480,115 @@ class OrderController extends Controller
     }
 
     /**
+     * Summary of update_error
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function update_error(Request $request) {
+        $validated = $request->validate([
+            'order_id' => 'required|integer|exists:orders,id',
+            'payment_intent_id' => 'required'
+        ]);
+
+        $order = Order::find($request->order_id);
+        if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Order not found.'
+            ], 404);
+        }
+
+        $order->balance_amount     = $order->total_amount;
+        $order->booked_amount       = 0;
+        $order->updated_at         = now();
+        $order->save();
+
+        $order_tour = $order->order_tour;
+        $pricing = [];
+        $discounts = [];
+        $item_total = 0;
+        $quantity = 0;
+        // Cart Items
+        foreach (json_decode($order_tour->tour_pricing) as $i => $item) {
+            $qty            = $item->quantity ?? 1;
+            $price          = $item->price ?? 0;
+            $actual_price   = $item->actual_price ?? 0;
+            $discount_price = $item->discount ?? 0;
+            $total          = $item->total_price ?? 0;
+            $item_total     += $total;
+            $quantity       += $qty;
+
+            $pricing[$i] = [
+                'tour_id'           => $item->tour_id,
+                'tour_pricing_id'   => $item->tour_pricing_id,
+                'label'             => $item->label,
+                'price_type'        => $item->price_type,
+                'quantity'          => $qty,
+                'actual_price'      => $actual_price,
+                'price'             => $price,
+                'discount'          => $discount_price,
+                'total_price'       => $total,
+            ];
+            
+            if($i === 0) {
+                $depositRule = TourSpecialDeposit::where('use_deposit', 1)
+                                ->where('tour_id', $order_tour->tour_id)
+                                ->first();
+                if(!$depositRule){
+                    $depositRule = TourSpecialDeposit::where('type', 'global')->first();
+                }
+
+                if ($depositRule->is_discount && $depositRule->charge === 'NONE') {
+
+                    if($depositRule->discount_type === 'PERCENT') {
+                        $discount_price = ($actual_price * $depositRule->discount_value)/100;
+                        $price = $actual_price - $discount_price;
+                    }
+                    else if($depositRule->discount_type === 'FIXED') {
+                        $discount_price = $depositRule->discount_value;
+                        $price = $actual_price - $discount_price;
+                    }
+
+                    $total = $price * $qty;
+
+                    $pricing[$i] = [
+                        'tour_id'           => $item->tour_id,
+                        'tour_pricing_id'   => $item->tour_pricing_id,
+                        'label'             => $item->label,
+                        'price_type'        => $item->price_type,
+                        'quantity'          => $qty,
+                        'actual_price'      => $actual_price,
+                        'price'             => $price,
+                        'discount'          => $discount_price,
+                        'total_price'       => $total,
+                    ];
+
+                    $discounts[] = [
+                        'tour_id'  => $request->tourId,
+                        'discount' => $depositRule->discount_value ?? 0,
+                        'label'    => 'Discount',
+                        'type'     => $depositRule->discount_type,
+                        'price'    => ($discount_price * $qty),
+                    ];
+                }
+            }
+        }
+        if(!empty($pricing)) {
+            $order_tour->tour_pricing = json_encode($pricing);
+        }
+        if(!empty($discounts)) {
+            $order_tour->discount = json_encode($discounts);
+        }
+        $order_tour->save();
+
+        return response()->json([
+            'status'   => true,
+            'message'  => 'Cart balance updated successfully',
+            'data'     => $order,
+        ], 200);
+    }
+
+    /**
      * Update cart
      */
     public function update_cart(Request $request, $id)
@@ -499,10 +600,13 @@ class OrderController extends Controller
             'selectedTime' => 'nullable',
             'cartItems' => 'required|array|min:1',
             'cartItems.*.id' => 'required|integer',
+            'cartItems.*.actual_price' => 'required|numeric',
             'cartItems.*.price' => 'required|numeric',
+            'cartItems.*.discount' => 'required|numeric',
             'cartItems.*.quantity' => 'required|integer|min:1',
             'cartItems.*.total_price'=> 'required|numeric',
             'cartItems.*.label' => 'required|string',
+            'cartItems.*.price_type' => 'required|string',
 
             'formData.first_name' => 'required|string|max:255',
             'formData.last_name'  => 'required|string|max:255',
@@ -548,9 +652,7 @@ class OrderController extends Controller
         try {
 
             $data = $request->input('formData');
-            if(isset($data['pickup_id']) && $data['pickup_id']) {
-                $data['pickup_id'] = 0;
-            }
+
             // Save or update customer
             $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
             $adv_deposite = $data['adv_deposite'];
@@ -562,7 +664,7 @@ class OrderController extends Controller
             $customer->email        = $data['email'];
             $customer->phone        = $data['phone'];
             $customer->instructions = isset($data['instructions']) ? $data['instructions'] : '';
-            $customer->pickup_id    = isset($data['pickup_id']) ?  $data['pickup_id'] : '';
+            $customer->pickup_id    = isset($data['pickup_id']) ?  $data['pickup_id'] : 0;
             $customer->pickup_name  = isset($data['pickup_name']) ? ucwords($data['pickup_name']) : '';          
             $customer->promo_code   = $request->promo_code;          
             $customer->save();
@@ -583,29 +685,56 @@ class OrderController extends Controller
             }
 
             // Initialize
-            $quantity = 0;
-            $pricing = [];
-            $extra = [];
-            $fees = [];
+            $quantity   = 0;
+            $pricing    = [];
+            $extra      = [];
+            $fees       = [];
+            $discount   = [];
             $item_total = 0;
+
+            \Log::warning($validated['cartItems']);
 
             // Cart Items
             foreach ($validated['cartItems'] as $item) {
-                $qty        = ($item['quantity']);
-                $price      = ($item['price']);
-                $total      = ($item['total_price']);
-                $item_total += $total;
-                $quantity += $qty;
+                $qty            = $item['quantity'] ?? 1;
+                $actual_price   = $item['actual_price'] ?? 0;
+                $price          = $item['price'] ?? 0;
+                $discount_price = $item['discount'] ?? 0;
+                $total          = $item['total_price'] ?? 0;
+                $item_total     += $total;
+                $quantity       += $qty;
 
                 $pricing[] = [
                     'tour_id'           => $request->tourId,
                     'tour_pricing_id'   => $item['id'],
                     'label'             => $item['label'],
-                    //'price_type'        => $item['price_type'],
+                    'price_type'        => $item['price_type'],
                     'quantity'          => $qty,
+                    'actual_price'      => $actual_price,
                     'price'             => $price,
+                    'discount'          => $discount_price,
                     'total_price'       => $total,
                 ];
+                
+                if($request->action_name === "book" && $adv_deposite === "deposit" && ($item['label'] === 'Adults' && $discount>0)){
+                    $depositRule = TourSpecialDeposit::where('use_deposit', 1)
+                                    ->where('tour_id', $tour->id)
+                                    ->first();
+                    if(!$depositRule){
+                        $depositRule = TourSpecialDeposit::where('type', 'global')->first();
+                    }
+
+                    if ($depositRule->is_discount && $depositRule->charge === 'NONE') {
+
+                        $discount[] = [
+                            'tour_id'  => $request->tourId,
+                            'discount' => $depositRule->discount_value ?? 0,
+                            'label'    => 'Discount',
+                            'type'     => $depositRule->discount_type,
+                            'price'    => round($discount_price * $qty, 2),
+                        ];
+                    }
+                }
             }
 
             // Add-ons
@@ -642,7 +771,7 @@ class OrderController extends Controller
                 }
             }
 
-            $discount = [];
+            /*$discount = [];
             if($request->action_name == "book" && $adv_deposite == "deposit"){
                 $depositRule = TourSpecialDeposit::where('use_deposit', 1)->where('tour_id', $tour->id)->first();
                 if(!$depositRule){
@@ -651,10 +780,10 @@ class OrderController extends Controller
 
                 if ($depositRule->is_discount && $depositRule->charge === 'NONE') {
                     if($depositRule->discount_type === 'PERCENT') {
-                        $discountAmount = round((($item_total * $depositRule->discount_value)/100), 2);
+                        $discountAmount = round((($grand_item_total * $depositRule->discount_value)/100), 2);
                     }
                     else if($depositRule->discount_type === 'FIXED') {
-                        $discountAmount = round(($item_total - $depositRule->discount_value),2);
+                        $discountAmount = round(($grand_item_total - $depositRule->discount_value),2);
                     }
 
                     $discount[] = [
@@ -665,20 +794,20 @@ class OrderController extends Controller
                         'price'        => $discountAmount,
                     ];
                     $item_total = $item_total - $discountAmount;
-                }                    
-            } 
+                }                 
+            } */
             
             $order_tour_data = [
-                    'tour_id'           => $request->tourId,
-                    'order_id'          => $order->id,
-                    'tour_date'         => $validated['selectedDate'],
-                    'tour_pricing'      => json_encode($pricing ?? []),
-                    'tour_extra'        => json_encode($extra ?? []),
-                    'tour_fees'         => json_encode($fees ?? []),
-                    'discount'          => json_encode($discount ?? []),
-                    'number_of_guests'  => $quantity,
-                    'total_amount'      => $item_total,
-                ];
+                'tour_id'           => $request->tourId,
+                'order_id'          => $order->id,
+                'tour_date'         => $validated['selectedDate'],
+                'tour_pricing'      => json_encode($pricing ?? []),
+                'tour_extra'        => json_encode($extra ?? []),
+                'tour_fees'         => json_encode($fees ?? []),
+                'discount'          => json_encode($discount ?? []),
+                'number_of_guests'  => $quantity,
+                'total_amount'      => $item_total,
+            ];
 
             OrderTour::updateOrCreate(
                 [
@@ -710,23 +839,25 @@ class OrderController extends Controller
             $order->total_amount       = $item_total ?? 0;
             $order->balance_amount     = ($adv_deposite == 'deposit') ? $item_total : 0;
             $order->adv_deposite       = $adv_deposite;
-            $order->source             = $request->source ? ucwords($request->source) : 'Online';
+            $order->currency           = $request->currency;
+            $order->source             = $request->source ? ucwords($request->source) : 'Tourbeez';
             $order->updated_at         = now();
             $order->save();
             // dd(242);
-             $metaData = [
-                        'bookedDate'    => $order->created_at,
-                        'orderId'       => $order->id,
-                        'orderNumber'   => $order->order_number,
-                        'tourName'      => $tour->title,
-                        'tourDate'      => $tour->tour_date,
-                        'tourTime'      => $tour->tour_time,
-                        'customerId'    => $customer->id,
-                        'customerEmail' => $customer->email,
-                        'customerName'  => $customer->name,
-                        'planName'      => "TourBeez Plan",
-                        'status'        => 'Pending supplier',
-                        'totalAmount'   => $order->total_amount
+            $metaData = [
+                'bookedDate'    => $order->created_at,
+                'orderId'       => $order->id,
+                'orderNumber'   => $order->order_number,
+                'tourName'      => $tour->title,
+                'tourDate'      => $tour->tour_date,
+                'tourTime'      => $tour->tour_time,
+                'customerId'    => $customer->id,
+                'customerEmail' => $customer->email,
+                'customerName'  => $customer->name,
+                'planName'      => "TourBeez Plan",
+                'status'        => 'Pending supplier',
+                'source'        => $order->source,
+                'totalAmount'   => $order->total_amount
             ];
 
 
@@ -839,7 +970,7 @@ class OrderController extends Controller
 
                 // ✅ Update amounts in order
                 if($request->action_name == "reserve"){
-                     $chargeAmount = 0;
+                    $chargeAmount = 0;
                 }
                 $order->booked_amount  = $chargeAmount;        // what’s being charged now
                 $order->balance_amount = $order->total_amount - $order->booked_amount;
@@ -939,7 +1070,7 @@ class OrderController extends Controller
                         ]);
 
                 }
-            }else if($adv_deposite == "full") {
+            } else if($adv_deposite == "full") {
                 
                  \Log::warning('full');
                 $order->booked_amount  = $order->total_amount;
@@ -990,7 +1121,7 @@ class OrderController extends Controller
                 } catch (\Exception $cardError) {
                     \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
                 }
-            }else if ($adv_deposite === "partial") {
+            } else if ($adv_deposite === "partial") {
                 \Log::warning('partial');
                 $paidAmount = $order->payments()
                     ->where('status', 'succeeded')
@@ -1069,13 +1200,13 @@ class OrderController extends Controller
 
             $booking_fee = $data['booking_fee'];
             if($booking_fee > 0 && get_setting('price_booking_fee')){
-               $bookingFeeType = get_setting('tour_booking_fee_type'); 
+                $bookingFeeType = get_setting('tour_booking_fee_type'); 
 
-               if($bookingFeeType == 'FIXED'){
-                   $booking_fee = get_setting('tour_booking_fee');
-               } elseif($bookingFeeType == 'PERCENT') {
-                   $booking_fee = $order->total_amount * get_setting('tour_booking_fee')/100;
-               }
+                if($bookingFeeType === 'FIXED'){
+                    $booking_fee = get_setting('tour_booking_fee');
+                } elseif($bookingFeeType === 'PERCENT') {
+                    $booking_fee = $order->total_amount * get_setting('tour_booking_fee')/100;
+                }
             }
 
             $order->booking_fee = $booking_fee;
@@ -1083,12 +1214,12 @@ class OrderController extends Controller
             $order->save();
 
             $order_actions = [
-                    'order_id'         => $order->id,
-                    'performed_by'     => $customer->id,
-                    'notes'            => $order_actions_notes ?? $customer->name." placed a new order {$order->order_number}",
-                    'created_at'       => now(),
-                    'updated_at'       => now()
-                ];
+                'order_id'         => $order->id,
+                'performed_by'     => $customer->id,
+                'notes'            => $order_actions_notes ?? $customer->name." placed a new order {$order->order_number}",
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
             OrderActions::insert($order_actions);           
 
             return response()->json([
@@ -1146,7 +1277,6 @@ class OrderController extends Controller
 
         foreach ($schedules as $schedule) {
 
-
             $durationMinutes = match (strtolower($schedule->estimated_duration_unit)) {
                 'minute', 'minutes' => $schedule->estimated_duration_num,
                 'hour', 'hours' => $schedule->estimated_duration_num * 60,
@@ -1155,7 +1285,6 @@ class OrderController extends Controller
                 'weekly', 'weekly' => $schedule->estimated_duration_num * 60,
                 'monthly', 'monthly' => $schedule->estimated_duration_num * 60 * 24 * 30,
                 'yearly', 'yearly' => $schedule->estimated_duration_num * 60,
- 
 
                  
                 default => 0
@@ -1473,23 +1602,131 @@ class OrderController extends Controller
             ]);
         }
         // $request->tour_id
-
-
-
         
+        $req = new Request([
+            'tour_date' => $request->date,
+            'tour_time' => $slots[0] ?? null
+        ]);
+        $tour = Tour::findOrFail($request->tour_id);
+        $lastMinuts = $this->getLastMinuteCharge($req, $tour);
+        $fetchDepositRule = $this->fetchDepositRule($request->tour_id);
 
         return response()->json([
             'status' => 'success',
             'data' => array_unique($slots),
+            'last_minute' => $lastMinuts,
+            'deposit_rule' => $fetchDepositRule,
             'schedule_set' => true
         ]);
     }
 
+    /**
+     * Calculate last minute charge based on tour date and time.
+     */
+    public function getLastMinuteCharge(Request $request, Tour $tour)
+    {
+        $request->validate([
+            'tour_date' => 'required|date',
+            'tour_time' => 'required'
+        ]);
+ 
+        $tourDateTime = Carbon::parse($request->tour_date . ' ' . $request->tour_time);
+        $now = Carbon::now();
+        $hoursDiff = $now->diffInHours($tourDateTime, false);
+ 
+        if ($hoursDiff < 0) {
+            return [
+                'apply' => false,
+                'message' => 'Tour time already passed'
+            ];
+        }
+ 
+        $rules = $tour->lastMinuteBookings()
+            ->whereDate('from_date', '<=', $request->tour_date)
+            ->whereDate('to_date', '>=', $request->tour_date)
+            ->get();
+ 
+        foreach ($rules as $rule) {
+            if ($hoursDiff <= $rule->last_minute_hours) {
+                return [
+                    'apply' => true,
+                    'type' => $rule->amount_type,
+                    'amount' => $rule->amount,
+                    'hours_remaining' => $hoursDiff
+                ];
+            }
+        }
+ 
+        return [
+            'apply' => false,
+            'rules' => $rules,
+            'message' => 'No last minute charge applicable ' . $request->tour_date . ' ' . $request->tour_time . ' ' .$hoursDiff
+        ];
+
+    }
+
+    /**
+     * Fetch a deposit rule by tour id.
+     */
+    public function fetchDepositRule($id)
+    {
+        $cacheKey = 'depositRule_' . $id;
+        $discount = [];
+        $depositRule = Cache::remember($cacheKey, 86400, function () use ($id) {
+            return TourSpecialDeposit::where('tour_id', $id)->first();
+        });
+
+        if($depositRule && $depositRule->is_discount){
+            $discount = [
+                'discount_type'     =>  $depositRule->discount_type,
+                'discount_value'     =>  $depositRule->discount_value,
+                'is_discount'     =>  $depositRule->is_discount,
+            ];
+        }
+
+        // If no rule found for specific tour, check global rule
+        if (!$depositRule || ($depositRule && $depositRule->use_deposit == 0)) {
+            $depositRule = Cache::remember('depositRule_global', 86400, function () {
+                return TourSpecialDeposit::where('type', 'global')->first();
+            });
+        }
+
+        if($depositRule && $depositRule->price_booking_fee){
+            $bookingFees = [
+                'price_booking_fee'     => $depositRule->price_booking_fee,
+                'tour_booking_fee'      => $depositRule->tour_booking_fee,
+                'tour_booking_fee_type' => $depositRule->tour_booking_fee_type,
+            ];
+        } else{
+            $bookingFees = [
+                'price_booking_fee'     => get_setting('price_booking_fee'),
+                'tour_booking_fee'      => get_setting('tour_booking_fee'),
+                'tour_booking_fee_type' => get_setting('tour_booking_fee_type'),
+            ];
+        }
+
+        if (!$depositRule) {
+            return [
+                'status' => false,
+                'message' => 'Tour deposit rule not found (including global rule)',
+                'deposit_rule' => null,
+                'booking_fees' => $bookingFees,
+                'discount'     => $discount
+            ];
+        }
+
+        return [
+            'status' => true,
+            'deposit_rule' => $depositRule,
+            'booking_fees' => $bookingFees,
+            'discount'     => $discount
+        ];
+    }
+ 
+
     public function fetchDeletedSlot($id)
     {
-
         return ScheduleDeleteSlot::where('tour_id', $id)->get();
-
         return response()->json(['success' => true, 'message' => 'Slot saved successfully']);
     }
 
