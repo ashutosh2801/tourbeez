@@ -198,7 +198,10 @@ class OrderController extends Controller
         // $tours = $products;
 
         $tours = Tour::with('pricings', 'addons', 'taxes_fees', 'pickups', 'location.country', 'location.state', 'location.city')->get();
-        $customers = User::where('user_type', 'member')->get();
+        $customers = User::where('user_type', 'member')
+                            ->orderBy('first_name', 'asc')
+                            ->orderBy('last_name', 'asc')
+                            ->get();
 
         return view('admin.order.internal-order', compact('tours', 'customers'));
     }
