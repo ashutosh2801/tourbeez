@@ -1866,13 +1866,14 @@ class OrderController extends Controller
                 // Pricing Rows
                 $i = 1;
                 foreach ($tour_pricing as $result) {
+
                     // $result = getTourPricingDetails($tour_pricing, $pricing->id);
                     $qty = $result['quantity'] ?? 0;
                     $price = $result['price'] ?? 0;
                     $actual_price = isset($result['actual_price']) ? $result['actual_price'] : $result['price'];
                     $discount = $result['discount'] ?? 0;
                     $total = $result['total_price'] ?? 0;
-                    $gt_total = $actual_price * $qty;
+                    $gt_total = $result['price_type'] == "FIXED" ? $actual_price :  $actual_price * $qty;
                     if ($qty > 0) {
                         $subtotal += $total;
                         $subtotal2+= $gt_total;
