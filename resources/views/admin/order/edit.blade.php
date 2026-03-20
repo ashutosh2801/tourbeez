@@ -3058,7 +3058,10 @@ function refreshCalendarAndSession(tourId, count, order_id) {
                 }                
 
                 // Fetch sessions for initial date
-                fetchTourSessions(tourId, res.start_date, count, res.tour_time);
+                // console.log(res);
+                // console.log(res.start_date);
+                fetchTourSessions(tourId, res.tour_date, count, res.tour_time);
+                // fetchTourSessions(tourId, selectedDate, count, res.tour_time);
 
             }, 200);
 

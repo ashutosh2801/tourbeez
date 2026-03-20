@@ -3073,7 +3073,7 @@ class OrderController extends Controller
                 'payment_type'      => 'REFUND',
                 'collection_type'   => 'Inside',
                 'collection_date'   => now(),
-                'amount'            => $newRefundTotal,
+                'amount'            => $request->amount,
                 'currency'          => $order->currency,
                 'status'            => 'refunded',
                 'action'            => 'manual_charge',
@@ -3083,7 +3083,7 @@ class OrderController extends Controller
             $order_actions = [
                 'order_id'         => $order->id,
                 'performed_by'     => Auth::id(),
-                'notes'            => "Refund of payment (STRIPE: {$refund->id}) has been processed by ".Auth::user()->name.". Refund amount is : {$order->currency} {$newRefundTotal} ",
+                'notes'            => "Refund of payment (STRIPE: {$refund->id}) has been processed by ".Auth::user()->name.". Refund amount is : {$order->currency} {$request->amount} ",
                 'created_at'       => now(),
                 'updated_at'       => now()
             ];
