@@ -403,6 +403,7 @@ class PaymentController extends Controller
             
 
             $detail = [
+                'id'                => $booking->order_number,
                 'action_name'       => $booking->action_name,
                 'order_number'      => $booking->order_number,
                 'number_of_guests'  => $booking->number_of_guests,

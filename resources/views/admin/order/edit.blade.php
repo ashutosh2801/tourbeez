@@ -766,7 +766,13 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                         </div>
                         <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
+                                <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editPickupModal">
+                                            Edit Pickup
+                                        </button>
+                                    </div>
                                  <div style="border:1px solid #eaecef;">
+                                    
                                     <table class="table">
                                         
 
@@ -1663,6 +1669,82 @@ $expectEmails = ['order_pending', 'payment_receipt'];
 
     </div>
   </div>
+</div>
+
+<div class="modal fade" id="editPickupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <form id="pickupForm">
+                @csrf
+                <input type="hidden" name="order_id" value="{{ $order->id }}">
+                <input type="hidden" name="customer_id" value="{{ $order->customer->id }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Pickup Details</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row">
+
+                        <!-- Pickup Type -->
+                        <div class="col-lg-12 mb-2">
+                            <label><b>Pickup Type</b></label><br>
+
+                            <label>
+                                <input type="radio" name="pickup_type" value="existing"
+                                    {{ $order->customer->pickup_id ? 'checked' : '' }}>
+                                Select from list
+                            </label>
+
+                            <label class="ml-3">
+                                <input type="radio" name="pickup_type" value="custom"
+                                    {{ $order->customer->pickup_name ? 'checked' : '' }}>
+                                Custom pickup
+                            </label>
+                        </div>
+
+                        <!-- Pickup Dropdown -->
+                        <div class="col-lg-6 mb-2" id="pickup_id_block">
+                            <label>Pickup Location</label>
+                            <select name="oc_pickup_id" class="form-control">
+                                <option value="">Select pickup</option>
+                                @foreach($pickupLocations as $pickuplocation)
+                                    <option value="{{$pickuplocation->id}}"
+                                        {{$order->customer->pickup_id == $pickuplocation->id ? 'selected' : ''}}>
+                                        {{ $pickuplocation->location . " - " .  $pickuplocation->address }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Custom Pickup -->
+                        <div class="col-lg-6 mb-2" id="pickup_name_block">
+                            <label>Pickup Name</label>
+                            <textarea name="oc_pickup_name" class="form-control">{{ $order->customer->pickup_name }}</textarea>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="col-lg-12 mb-2">
+                            <label>Instructions</label>
+                            <textarea name="oc_instructions" class="form-control">{{ $order->customer->instructions }}</textarea>
+                        </div>
+
+                    </div>
+
+                    <div id="pickup_error" class="text-danger"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
 </div>
 
 
@@ -3541,6 +3623,64 @@ $(document).on('input', '#refundAmount', function () {
 
 
 
+</script>
+
+<script>
+    function togglePickupFields() {
+        let type = $('input[name="pickup_type"]:checked').val();
+
+        $('#pickup_id_block').toggle(type === 'existing');
+        $('#pickup_name_block').toggle(type === 'custom');
+    }
+
+    $(document).ready(function () {
+
+        togglePickupFields();
+
+        $('input[name="pickup_type"]').on('change', togglePickupFields);
+
+        $('#pickupForm').on('submit', function(e) {
+            e.preventDefault();
+
+            let formData = $(this).serialize();
+
+            $.ajax({
+                url: "{{ route('admin.order.pickup.update') }}",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+
+                    if(response.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Pickup is successfully updated'
+                        }).then(() => {
+                            location.reload();
+                        });
+
+                    } else {
+                        Swal.fire({
+                            icon: 'Error',
+                            title: 'error',
+                            text: 'There is Something wrong'
+                        }).then(() => {
+                            location.reload();
+                        });
+                        
+                    }
+                },
+                error: function(xhr) {
+                    let errors = xhr.responseJSON?.errors;
+                    if(errors) {
+                        let msg = Object.values(errors).map(e => e[0]).join(', ');
+                        $('#pickup_error').text(msg);
+                    }
+                }
+            });
+        });
+
+    });
 </script>
 
 

@@ -16,6 +16,7 @@ use App\Models\OrderEmailHistory;
 use App\Models\OrderPayment;
 use App\Models\OrderPaymentDetail;
 use App\Models\OrderTour;
+use App\Models\PickupLocation;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
 use App\Models\TourPricing;
@@ -31,8 +32,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Facades\Excel;
 use Stripe\Cancel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
@@ -930,11 +931,14 @@ class OrderController extends Controller
             'payment_receipt',
             'order_pending',
             'payment_request',
-            'follow_up'
+            'follow_up',
+            'abandoned_reminder',
+            'request_quote',
         ])->get();
         $sms_templates = SmsTemplate::get();
         $customers = User::where('user_type', 'member')->get();
-        return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates']));
+        $pickupLocations = PickupLocation::get();
+        return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates', 'pickupLocations']));
     }
 
     /**
@@ -1137,7 +1141,7 @@ class OrderController extends Controller
                     $price  = isset($extraPrice[$key]) ? (float)$extraPrice[$key] : 0;
 
                     $total_amount += (intval($qty) * floatval($price));
-                    $nog += $qty;
+                    // $nog += $qty;
 
                     // Skip all zero-quantity if needed
                     if ($qty <= 0) continue;
@@ -1730,6 +1734,7 @@ class OrderController extends Controller
             // dd(23432);
             $discounts = !empty($orderTour->discount) ? json_decode($orderTour->discount) : [];
             $discountAmount = 0;
+            $number_of_guests = 0;
             if(!empty($discounts)){
 
                 foreach ($discounts as $item)
@@ -1920,6 +1925,7 @@ class OrderController extends Controller
                 foreach ($tour_pricing as $i => $result) {
                     
                     $qty = $result['quantity'] ?? 0;
+                    $number_of_guests += $qty;
                     $discount = $result['discount'] ?? 0;
                     $dis_total = $discount;
                     if ($qty > 0 && $discount > 0 && $i == 0) {
@@ -2056,7 +2062,7 @@ class OrderController extends Controller
 
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
                 "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
-                // "[[TOUR_MAP]]"              => $tour->location->address ?? '',
+                "[[TOUR_MAP_FORMATTED]]"    => $tour->location->address ? str_replace(',', ',<br>', $tour->location->address) : '',
                 "[[TOUR_MAP]]"              => $pickup_address,
                 "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
                 "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
@@ -2074,15 +2080,16 @@ class OrderController extends Controller
                 "[[YEAR]]"                  => date('Y'),
 
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
-                "[[ORDER_STATUS]]"          => $order->status,
+                "[[ORDER_STATUS]]"          => str_contains($order->status, 'Pending') ? "Pending" :  $order->status,
                 "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($orderTour->tour_date)),
                 "[[ORDER_TOUR_TIME]]"       => $orderTour->tour_time,
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
                 "[[ORDER_BALANCE]]"         => ($order->payment_status === 3) ? price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) : price_format_with_currency($order->balance_amount, $order->currency),
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
-                "[[YEAR]]"                 => date('Y'),
-                "[[ORDER_LINK]]"           => $checkoutUrl,
+                "[[YEAR]]"                  => date('Y'),
+                "[[ORDER_LINK]]"            => $checkoutUrl,
+                "[[NUMBER_OF_GUESTS]]"      => $number_of_guests,
             ];
  
             $finalMessage = strtr($template, $replacements);
@@ -2410,7 +2417,7 @@ class OrderController extends Controller
         return response()->json(['success' => true, 'message' => 'Order status updated']);
     }
 
-    public function manifest(Request $request)
+    public function manifest23423(Request $request)
     {
 
         $date = $request->input('date') ?? Carbon::today()->toDateString();
@@ -2489,7 +2496,105 @@ class OrderController extends Controller
         return view('admin.order.manifest', compact('sessions', 'date'));
     }
 
-    public function downloadManifest(Request $request)
+    public function manifest(Request $request)
+    {
+        $date = $request->input('date') ?? \Carbon\Carbon::today()->toDateString();
+
+        $pricingLabels = \App\Models\TourPricing::pluck('label', 'id')->toArray();
+
+        $orders = \App\Models\Order::with(['customer', 'orderTours.tour', 'payments'])
+            ->where('order_status', 5)
+            ->get();
+
+        $sessions = [];
+
+        foreach ($orders as $order) {
+
+            foreach ($order->orderTours as $ot) {
+
+                // ✅ filter by date
+                if ($ot->tour_date != $date) {
+                    continue;
+                }
+
+                $slotTime = trim($ot->tour_time);
+                $tourTitle = $ot->tour?->title ?? 'N/A';
+
+                if (!$slotTime) {
+                    continue;
+                }
+
+                // ✅ KEY = time + tour (IMPORTANT)
+                $key = $slotTime . '||' . $tourTitle;
+
+                if (!isset($sessions[$key])) {
+                    $sessions[$key] = [
+                        'slot_time' => $slotTime,
+                        'tour_title' => $tourTitle,
+                        'orders' => collect(),
+                        'total_guests' => 0,
+                    ];
+                }
+
+                $guests = collect();
+                $extras = collect();
+                $guestCount = 0;
+
+                // ✅ guests from THIS orderTour
+                $pricingItems = json_decode($ot->tour_pricing, true);
+
+                if (is_array($pricingItems)) {
+                    foreach ($pricingItems as $p) {
+                        $qty = (int) ($p['quantity'] ?? 0);
+                        $pricingId = $p['tour_pricing_id'] ?? null;
+                        $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                        if ($qty && $label) {
+                            $guests->push("{$qty} {$label}");
+                            $guestCount += $qty;
+                        }
+                    }
+                }
+
+                // ✅ extras
+                $extraItems = json_decode($ot->tour_extra, true);
+
+                if (is_array($extraItems)) {
+                    foreach ($extraItems as $e) {
+                        $qty = $e['quantity'] ?? 0;
+                        $label = $e['label'] ?? null;
+
+                        if ($qty && $label) {
+                            $extras->push("{$qty} {$label}");
+                        }
+                    }
+                }
+
+                // attach summaries (per order)
+                $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+
+                // ✅ avoid duplicate order
+                if (!$sessions[$key]['orders']->contains('id', $order->id)) {
+                    $sessions[$key]['orders']->push($order);
+                }
+
+                // ✅ correct guest count per session
+                $sessions[$key]['total_guests'] += $guestCount;
+            }
+        }
+
+        // ✅ SORT by time
+        uasort($sessions, function ($a, $b) {
+            return strtotime($a['slot_time']) <=> strtotime($b['slot_time']);
+        });
+
+        return view('admin.order.manifest', [
+            'sessions' => collect($sessions)->values(), // important for blade
+            'date' => $date
+        ]);
+    }
+    public function downloadManifest323423(Request $request)
     {
         $date = $request->input('date') ?? Carbon::today()->toDateString();
 
@@ -2565,6 +2670,103 @@ class OrderController extends Controller
 
         return Excel::download(new ManifestExport($sessions, $date), "Manifest_{$date}.xlsx");
     }
+
+    public function downloadManifest(Request $request)
+{
+    $date = $request->input('date') ?? \Carbon\Carbon::today()->toDateString();
+
+    $pricingLabels = \App\Models\TourPricing::pluck('label', 'id')->toArray();
+
+    $orders = \App\Models\Order::with(['customer', 'orderTours.tour'])
+        ->where('order_status', 5)
+        ->get();
+
+    $sessions = [];
+
+    foreach ($orders as $order) {
+
+        foreach ($order->orderTours as $ot) {
+
+            // ✅ filter by date
+            if ($ot->tour_date != $date) {
+                continue;
+            }
+
+            $slotTime = trim($ot->tour_time);
+            $tourTitle = $ot->tour?->title ?? 'N/A';
+
+            if (!$slotTime) {
+                continue;
+            }
+
+            // ✅ KEY = time + tour (IMPORTANT FIX)
+            $key = $slotTime . '||' . $tourTitle;
+
+            if (!isset($sessions[$key])) {
+                $sessions[$key] = [
+                    'slot_time' => $slotTime,
+                    'tour_title' => $tourTitle,
+                    'orders' => collect(),
+                ];
+            }
+
+            $guests = collect();
+            $extras = collect();
+            $guestCount = 0;
+
+            // Guests
+            $pricingItems = json_decode($ot->tour_pricing, true);
+
+            if (is_array($pricingItems)) {
+                foreach ($pricingItems as $p) {
+                    $qty = (int) ($p['quantity'] ?? 0);
+                    $pricingId = $p['tour_pricing_id'] ?? null;
+                    $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                    if ($qty && $label) {
+                        $guests->push("{$qty} {$label}");
+                        $guestCount += $qty;
+                    }
+                }
+            }
+
+            // Extras
+            $extraItems = json_decode($ot->tour_extra, true);
+
+            if (is_array($extraItems)) {
+                foreach ($extraItems as $e) {
+                    $qty = $e['quantity'] ?? 0;
+                    $label = $e['label'] ?? null;
+
+                    if ($qty && $label) {
+                        $extras->push("{$qty} {$label}");
+                    }
+                }
+            }
+
+            // attach summaries
+            $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+            $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+            $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+            $order->guest_count = $guestCount;
+
+            // avoid duplicate order
+            if (!$sessions[$key]['orders']->contains('id', $order->id)) {
+                $sessions[$key]['orders']->push($order);
+            }
+        }
+    }
+
+    // ✅ SORT by time
+    uasort($sessions, function ($a, $b) {
+        return strtotime($a['slot_time']) <=> strtotime($b['slot_time']);
+    });
+
+    return \Maatwebsite\Excel\Facades\Excel::download(
+        new \App\Exports\ManifestExport(collect($sessions)->values(), $date),
+        "Manifest_{$date}.xlsx"
+    );
+}
 
     protected function sendOrderStatusEmail($order)
     {
@@ -2910,7 +3112,7 @@ class OrderController extends Controller
 
         } catch (\Stripe\Exception\ApiErrorException $e) {
 
-            return response()->json(['success' => false, 'message' => $e->getMessage() . "weew"]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
@@ -3339,7 +3541,7 @@ public function downloadTourManifest(Request $request)
 
     public function addStripePayment(Request $request, Order $order)
     {
-        // dd(2332, $request, $order, $order->payments());
+        dd(2332, $request, $order, $order->payments());
         try {
             \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
@@ -3927,7 +4129,8 @@ public function downloadTourManifest(Request $request)
 
             // Clean DB references
             $order->update([
-                'payment_intent_id' => null
+                'payment_intent_id' => null,
+                'payment_method_id' => null
             ]);
 
             // if ($order->latestPayment) {
@@ -4025,6 +4228,7 @@ public function downloadTourManifest(Request $request)
             'amount'         => intval($chargeAmount * 100),
             'currency'       => $order->currency ?? 'eur',
             'payment_method' => $paymentMethod->id,
+            
             'off_session'    => true,
             'confirm'        => true,
             'description'    => "#{$order->order_number}",
@@ -4042,6 +4246,7 @@ public function downloadTourManifest(Request $request)
         $order->payments()->create([
             'payment_type'   => 'CREDITCARD',
             'transaction_id' => $intent->id,
+            'payment_intent_id' => $intent->id,
             'card_last4'     => $paymentMethod->card->last4,
             'card_brand'     => $paymentMethod->card->brand,
             'amount'         => $chargeAmount,

@@ -189,7 +189,7 @@
                                 <input type="checkbox" id="checkAll" style="width:20px; height:20px;">
                             </th>
 
-                            <th style="width:8%; white-space: nowrap;">
+                            <th style="width:10%; white-space: nowrap;">
                                 Order <br> Number
                             </th>
 
@@ -197,7 +197,7 @@
                                 Status
                             </th>
 
-                            <th style="width:25%; white-space: nowrap;">
+                            <th style="width:23%; white-space: nowrap;">
                                 Tour
                             </th>
 

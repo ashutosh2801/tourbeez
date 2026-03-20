@@ -126,6 +126,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('pickups',PickupController::class);
     Route::get('/pickups/destroy/{id}', [PickupController::class, 'destroy'])->name('pickup.destroy');
     Route::post('/pickups/sort-order', [PickupController::class, 'updateOrder'])->name('pickup.order');
+    Route::post('/order/pickups/update', [PickupController::class, 'orderPickupUpdate'])->name('order.pickup.update');
+
+    
 
     // Tour Edit
     Route::resource('tour',TourController::class);

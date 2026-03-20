@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\OrderCustomer;
 use App\Models\Pickup;
 use App\Models\PickupLocation;
 use Illuminate\Http\Request;
@@ -170,4 +171,20 @@ class PickupController extends Controller
 
         return response()->json(['status' => 'success']);
     }
+
+    public function orderPickupUpdate(Request $request)
+    {
+
+        $orderCustomer = OrderCustomer::findOrFail($request->customer_id);
+        
+        $orderCustomer->pickup_id =  $request->pickup_type == "existing" ? $request->oc_pickup_id : NULL;
+        $orderCustomer->pickup_name = $request->pickup_type == "custom" ? $request->oc_pickup_name : NULL;
+        $orderCustomer->instructions = $request->oc_instructions;
+        $orderCustomer->save();
+        
+
+        return response()->json(['status' => 'success']);
+    }    
+
+    
 }
