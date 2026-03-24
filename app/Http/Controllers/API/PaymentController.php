@@ -400,6 +400,11 @@ class PaymentController extends Controller
                 $pickLocation = PickupLocation::find($booking->customer->pickup_id);
                 $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
             }
+
+            /* If already partially paid or added discount/promo etc in backend */
+            $paidAmount = $booking->payments()
+                            ->where('status', 'succeeded')
+                            ->sum('amount');
             
 
             $detail = [
@@ -407,6 +412,7 @@ class PaymentController extends Controller
                 'action_name'       => $booking->action_name,
                 'order_number'      => $booking->order_number,
                 'number_of_guests'  => $booking->number_of_guests,
+                'paid_amount'       => $paidAmount ?? 0,
                 'total_amount'      => $booking->total_amount ?? 0,
                 'balance_amount'    => $booking->balance_amount ?? 0,
                 'currency'          => $booking->currency,
@@ -888,6 +894,7 @@ class PaymentController extends Controller
                 "[[ORDER_TOUR_TIME]]"       => $order->order_tour->tour_time ? date('H:i A', strtotime($order->order_tour->tour_time)) : '',
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
                 "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
+                "[[ORDER_BALANCE_COLOR]]"   => (abs($order->balance_amount) < 0.01) ? '008000' : 'f64747',
                 "[[ORDER_PAID]]"            => price_format_with_currency($order_paid, $order->currency) ?? '',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',

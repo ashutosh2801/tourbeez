@@ -166,7 +166,7 @@
 
 @php
 $statuses = config('constants.order_statuses');
-$expectEmails = ['order_pending', 'payment_receipt'];
+$expectEmails = ['order_pending'];
 
 @endphp
 
@@ -630,8 +630,8 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 $taxesfees = $order_tour->tour->taxes_fees;
                                                 $discounts = $order_tour->tour->discount;
                                                 
-                                                $subtotal = $subtotal2 - $discount;
-
+                                                //$subtotal = $subtotal2 - $discount; 
+                                                // dd($subtotal, $subtotal2, $discount);
                                                 $discounts = !empty($order_tour->discount) ? json_decode($order_tour->discount) : [];
                                                 @endphp 
                                                 <tr>
@@ -648,6 +648,12 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                         @php
                                                             $isFlag = 1;
                                                             $discountAmount = $item->price;
+
+                                                            if($discountAmount > 0){
+                                                                $subtotal = $subtotal2 - $discountAmount;
+
+                                                                
+                                                            }
                                                         @endphp
                                                         @if($discountAmount > 0)
                                                             <tr class="discount-row">
@@ -842,12 +848,30 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                             @endforeach
 
                             <div class="card-total bg-light p-3 mb-3 row align-items-end">
+
+                                 @php
+                                        $paid = $order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount');
+
+                                        $overPaid =   $paid - $order->total_amount;
+
+                                    @endphp
                                 <div id="totalPayment1" class="col-md-6 text-start text-success">
                                     Paid:
 
-                                    {{price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency)}}
+                                    {{price_format_with_currency($paid, $order->currency)}}
                                 </div>
+                                @if($overPaid > 0)
+                                    <div id="totalPayment1" class="col-md-6 text-start text-success">
 
+
+                                        
+                                        Over Paid:
+
+                                        {{price_format_with_currency($overPaid , $order->currency)}}
+
+
+                                    </div>
+                                @endif
                                 
                             </div>
                             <div class="card-body">
