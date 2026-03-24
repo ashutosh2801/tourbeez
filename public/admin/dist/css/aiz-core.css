@@ -2828,7 +2828,7 @@ fixed-bottom 1030*/
     .h-xl-420px,.size-xl-420px { height: 420px; }
 
     .xl-rounded-sm {border-radius: 0.2rem !important;}
-    .xl-rounded {border-radius: 0.25rem !important;}
+    .xl-rounded {border-radius: 1rem !important;}
     .xl-rounded-top {border-top-left-radius: 0.25rem !important;border-top-right-radius: 0.25rem !important;}
     .xl-rounded-right {border-top-right-radius: 0.25rem !important;border-bottom-right-radius: 0.25rem !important;}
     .xl-rounded-bottom {border-bottom-right-radius: 0.25rem !important;border-bottom-left-radius: 0.25rem !important;}
@@ -8462,6 +8462,45 @@ a.dropdown-footer:hover {
 .order-edit .payment-details .table,
 .order-edit .email-history .table {
     border: 1px solid #eee;
+}
+
+.order-edit .payment-details input[type=checkbox] {
+    width: 18px;
+    height: 18px;
+}
+
+.order-edit .payment-details .card-body label {
+    width: 100%;
+    display: flex;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.order-edit .payment-details .field-box {
+    display:flex; 
+    gap:15px; 
+    align-items:center; 
+    flex-wrap:wrap;
+}
+
+.order-edit .email-history .view-email-btn {
+    width: 100%;
+    background-color: #a6b913;
+    border-radius: 50px;
+    border-color: #a6b913;
+    color: #FFF;
+}
+
+.order-edit .email-history .view-email-btn:hover {
+    background-color: #96a520;
+}
+
+.dropdown-menu.dropdown-value li.paid-amount {
+    color: #09a109;
+}
+
+.dropdown-menu.dropdown-value li.balance-amount {
+    color: #ef486a;
 }
 
 .order-edit .card-footer {
