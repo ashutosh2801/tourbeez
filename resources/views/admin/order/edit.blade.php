@@ -161,7 +161,7 @@
 
 @php
 $statuses = config('constants.order_statuses');
-$expectEmails = ['order_pending', 'payment_receipt'];
+$expectEmails = ['order_pending'];
 
 @endphp
 
@@ -648,8 +648,8 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 $taxesfees = $order_tour->tour->taxes_fees;
                                                 $discounts = $order_tour->tour->discount;
                                                 
-                                                $subtotal = $subtotal2 - $discount;
-
+                                                //$subtotal = $subtotal2 - $discount; 
+                                                // dd($subtotal, $subtotal2, $discount);
                                                 $discounts = !empty($order_tour->discount) ? json_decode($order_tour->discount) : [];
                                                 @endphp 
                                                 <tr>
@@ -666,6 +666,12 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                         @php
                                                             $isFlag = 1;
                                                             $discountAmount = $item->price;
+
+                                                            if($discountAmount > 0){
+                                                                $subtotal = $subtotal2 - $discountAmount;
+
+                                                                
+                                                            }
                                                         @endphp
                                                         @if($discountAmount > 0)
                                                             <tr class="discount-row">
@@ -784,8 +790,14 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                         </div>
                         <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
+                                <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editPickupModal">
+                                            Edit Pickup
+                                        </button>
+                                    </div>
                                  <div style="border:1px solid #eaecef;">
                                     <table class="table m-0">
+
                                         
 
                                         @php
@@ -852,13 +864,35 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     }
                                 @endphp
                             @endforeach
-                            
+
+
                             <div class="card-total bg-green p-3 row align-items-end">
+
+                                 @php
+                                        $paid = $order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount');
+
+                                        $overPaid =   $paid - $order->total_amount;
+
+                                    @endphp
                                 <div id="totalPayment1" class="fw-700">
                                     Paid:
 
-                                    {{price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency)}}
+                                    {{price_format_with_currency($paid, $order->currency)}}
                                 </div>
+
+                                @if($overPaid > 0)
+                                    <div id="totalPayment1" class="col-md-6 text-start text-success">
+
+
+                                        
+                                        Over Paid:
+
+                                        {{price_format_with_currency($overPaid , $order->currency)}}
+
+
+                                    </div>
+                                @endif
+                                
                             </div>
                             <div class="card-body">
 
@@ -1675,6 +1709,82 @@ $expectEmails = ['order_pending', 'payment_receipt'];
 
     </div>
   </div>
+</div>
+
+<div class="modal fade" id="editPickupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <form id="pickupForm">
+                @csrf
+                <input type="hidden" name="order_id" value="{{ $order->id }}">
+                <input type="hidden" name="customer_id" value="{{ $order->customer->id }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Pickup Details</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row">
+
+                        <!-- Pickup Type -->
+                        <div class="col-lg-12 mb-2">
+                            <label><b>Pickup Type</b></label><br>
+
+                            <label>
+                                <input type="radio" name="pickup_type" value="existing"
+                                    {{ $order->customer->pickup_id ? 'checked' : '' }}>
+                                Select from list
+                            </label>
+
+                            <label class="ml-3">
+                                <input type="radio" name="pickup_type" value="custom"
+                                    {{ $order->customer->pickup_name ? 'checked' : '' }}>
+                                Custom pickup
+                            </label>
+                        </div>
+
+                        <!-- Pickup Dropdown -->
+                        <div class="col-lg-6 mb-2" id="pickup_id_block">
+                            <label>Pickup Location</label>
+                            <select name="oc_pickup_id" class="form-control">
+                                <option value="">Select pickup</option>
+                                @foreach($pickupLocations as $pickuplocation)
+                                    <option value="{{$pickuplocation->id}}"
+                                        {{$order->customer->pickup_id == $pickuplocation->id ? 'selected' : ''}}>
+                                        {{ $pickuplocation->location . " - " .  $pickuplocation->address }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Custom Pickup -->
+                        <div class="col-lg-6 mb-2" id="pickup_name_block">
+                            <label>Pickup Name</label>
+                            <textarea name="oc_pickup_name" class="form-control">{{ $order->customer->pickup_name }}</textarea>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="col-lg-12 mb-2">
+                            <label>Instructions</label>
+                            <textarea name="oc_instructions" class="form-control">{{ $order->customer->instructions }}</textarea>
+                        </div>
+
+                    </div>
+
+                    <div id="pickup_error" class="text-danger"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
 </div>
 
 
@@ -2988,7 +3098,10 @@ function refreshCalendarAndSession(tourId, count, order_id) {
                 }                
 
                 // Fetch sessions for initial date
-                fetchTourSessions(tourId, res.start_date, count, res.tour_time);
+                // console.log(res);
+                // console.log(res.start_date);
+                fetchTourSessions(tourId, res.tour_date, count, res.tour_time);
+                // fetchTourSessions(tourId, selectedDate, count, res.tour_time);
 
             }, 200);
 
@@ -3553,6 +3666,64 @@ $(document).on('input', '#refundAmount', function () {
 
 
 
+</script>
+
+<script>
+    function togglePickupFields() {
+        let type = $('input[name="pickup_type"]:checked').val();
+
+        $('#pickup_id_block').toggle(type === 'existing');
+        $('#pickup_name_block').toggle(type === 'custom');
+    }
+
+    $(document).ready(function () {
+
+        togglePickupFields();
+
+        $('input[name="pickup_type"]').on('change', togglePickupFields);
+
+        $('#pickupForm').on('submit', function(e) {
+            e.preventDefault();
+
+            let formData = $(this).serialize();
+
+            $.ajax({
+                url: "{{ route('admin.order.pickup.update') }}",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+
+                    if(response.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Pickup is successfully updated'
+                        }).then(() => {
+                            location.reload();
+                        });
+
+                    } else {
+                        Swal.fire({
+                            icon: 'Error',
+                            title: 'error',
+                            text: 'There is Something wrong'
+                        }).then(() => {
+                            location.reload();
+                        });
+                        
+                    }
+                },
+                error: function(xhr) {
+                    let errors = xhr.responseJSON?.errors;
+                    if(errors) {
+                        let msg = Object.values(errors).map(e => e[0]).join(', ');
+                        $('#pickup_error').text(msg);
+                    }
+                }
+            });
+        });
+
+    });
 </script>
 
 

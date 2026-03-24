@@ -16,7 +16,7 @@ class SendTourExpiryNotification extends Command
 
     public function handle()
     {
-        \Log::info('Checking for expiring tour schedules...');
+        // \Log::info('Checking for expiring tour schedules...');
         $this->info('Checking for expiring tour schedules...');
 
         $today = Carbon::now()->startOfDay();
@@ -31,7 +31,7 @@ class SendTourExpiryNotification extends Command
 
         if ($tours->isEmpty()) {
             $this->info('No expiring tour schedules found.');
-            \Log::info('No expiring tour schedules found.');
+            // \Log::info('No expiring tour schedules found.');
             return;
         }
 
@@ -96,6 +96,6 @@ class SendTourExpiryNotification extends Command
         );
 
         $this->info("Tour expiry summary email sent to admin with {$tours->count()} tours listed.");
-        \Log::info("Tour expiry summary email sent to admin.");
+        // \Log::info("Tour expiry summary email sent to admin.");
     }
 }
