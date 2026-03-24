@@ -48,37 +48,54 @@
 
                 <div id="session-{{ \Illuminate\Support\Str::slug($slotTime) }}" class="collapse">
                     <div class="card-body">
-                        <table class="table table-bordered table-sm" style="table-layout: fixed; width:100%;">
+                        <table class="table table-bordered table-striped" style="table-layout: fixed; width:100%;">
 
-                            <thead class="table-light">
+                            <thead >
                                 <tr>
-                                    <th style="width:10%">Order #</th>
-                                    <th style="width:18%">Customer</th>
-                                    <th style="width:12%">Phone</th>
-                                    <th style="width:12%">Guests</th>
-                                    <th style="width:14%">Extras</th>
-                                    <th style="width:11%">Balance</th>
-                                    <th style="width:11%">Total</th>
-                                    <th style="width:12%">Paid</th>
+                                    <th class="px-1" style="width:10%; white-space: nowrap;">Order <br> Number</th>
+                                    <th style="width:10%; white-space: nowrap;">Customer</th>
+                                    <th style="width:12%; white-space: nowrap;">Phone</th>
+                                    <th style="width:12%; white-space: nowrap;">Guests</th>
+                                    <th style="width:14%; white-space: nowrap;">Extras</th>
+                                    <th style="width:10%; white-space: nowrap;">Balance</th>
+                                    <th style="width:10%; white-space: nowrap;">Total</th>
+                                    <th style="width:10%; white-space: nowrap;">Paid</th>
+                                    <th style="width:14%; white-space: nowrap;">Pickup</th>
+                                    <th style="width:14%; white-space: nowrap;">Intruction</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($session['orders'] as $order)
                                     <tr>
-                                        <td>
+                                        <td class="px-1">
                                             <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink" target="_blank">
                                                 {{ $order->order_number }}
                                             </a>
                                         </td>
-                                        <td>
+                                        <td class="px-1">
                                             <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}"
                                                 class="alink" target="_blank">
                                                 {{ $order->customer?->name }}
                                             </a>
                                         </td>
-                                        <td>{{ $order->customer?->phone }}</td>
-                                        <td>{{ $order->guest_summary }}</td>
-                                        <td>{{ $order->extras_summary }}</td>
+                                        <td class="px-1">{{ $order->customer?->phone }}</td>
+                                        <td class="px-1">{{ $order->guest_summary }}</td>
+                                        <td class="px-1">{{ $order->extras_summary }}</td>
+
+
+                                        @php
+                                            $pickName = '';
+                                            $instruction = '';
+                                            if($order->customer && $order->customer->pickup_name){
+                                                $pickName = $order->customer->pickup_name;
+                                                $instruction = $order->customer->instructions;
+                                            } elseif($order->customer && $order->customer->pickup_id) {
+                                                $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
+                                                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                                                $instruction = $order->customer->instructions;
+                                            }
+                                        @endphp
+                                        
 
                                         @php
                                             $total = round($order->total_amount);
@@ -105,9 +122,11 @@
                                             } 
                                         @endphp
 
-                                        <td class="{{ $amountClass}}">{{ price_format_with_currency($total-$paid, $order->currency) }}</td>
-                                        <td>{{ price_format_with_currency($total, $order->currency) }}</td>
-                                        <td class="{{ $amountClass}}">{{ price_format_with_currency($paid, $order->currency) }}</td>
+                                        <td class="{{ $amountClass}} px-1">{{ price_format_with_currency($total-$paid, $order->currency) }}</td>
+                                        <td class="px-1">{{ price_format_with_currency($total, $order->currency) }}</td>
+                                        <td class="{{ $amountClass}} px-1">{{ price_format_with_currency($paid, $order->currency) }}</td>
+                                        <td class="px-1">{{ $pickName }}</td>
+                                        <td class="px-1">{{ $order->customer?->instructions ?? '-' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -171,19 +190,25 @@
     const prevBtn = document.getElementById('prev-date');
     const nextBtn = document.getElementById('next-date');
 
-    // Submit on manual date change
     dateInput.addEventListener('change', function () {
         this.form.submit();
     });
 
+    function parseLocalDate(dateStr) {
+        if (!dateStr) return new Date();
+        const [year, month, day] = dateStr.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    }
+
     function changeDate(days) {
-        const currentDate = new Date(dateInput.value || new Date());
+        const currentDate = parseLocalDate(dateInput.value);
         currentDate.setDate(currentDate.getDate() + days);
+
         const yyyy = currentDate.getFullYear();
         const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
         const dd = String(currentDate.getDate()).padStart(2, '0');
-        const newDate = `${yyyy}-${mm}-${dd}`;
-        dateInput.value = newDate;
+
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
         dateInput.form.submit();
     }
 

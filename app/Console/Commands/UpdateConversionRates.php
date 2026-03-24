@@ -13,7 +13,7 @@ class UpdateConversionRates extends Command
 
     public function handle()
     {
-        $this->info('Fetching conversion rates...');
+        // $this->info('Fetching conversion rates...');
 
         try {
             // Fetch data from API
@@ -30,15 +30,15 @@ class UpdateConversionRates extends Command
                         json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
                     );
 
-                    $this->info('Conversion rates updated successfully ✅');
+                    // $this->info('Conversion rates updated successfully ✅');
                 }else {
-                    $this->error('Invalid response structure.');
+                    // $this->error('Invalid response structure.');
                 }
             } else {
-                $this->error('Failed to fetch data. HTTP Status: ' . $response->status());
+                // $this->error('Failed to fetch data. HTTP Status: ' . $response->status());
             }
         } catch (\Exception $e) {
-            $this->error('Error: ' . $e->getMessage());
+            // $this->error('Error: ' . $e->getMessage());
         }
 
         return Command::SUCCESS;

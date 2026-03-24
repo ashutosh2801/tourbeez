@@ -38,7 +38,7 @@
                         data-bs-target="#session-{{ $index }}"
                         aria-expanded="false"
                         aria-controls="session-{{ $index }}">
-                    <strong>{{ $session['slot_time'] }}</strong>
+                    <strong>{{ $session['slot_time']   }} || {{ $session['tour_title']   }}</strong>
 
                     <div class="d-flex align-items-center gap-3">
                         <span>
