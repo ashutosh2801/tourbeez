@@ -195,7 +195,7 @@ class OrderController extends Controller
 
     public function getOrderDetailByOrderID( Request $request, $orderID )
     {
-        $order = Order::findOrFail(decrypt($orderID));
+        $order = Order::find(decrypt($orderID));
 
         if (!$order) {
             return response()->json([
@@ -703,6 +703,13 @@ class OrderController extends Controller
                     }
                 }
             }
+
+            /* If already partially paid or added discount/promo etc in backend */
+            $paidAmount = $order->payments()
+                            ->where('status', 'succeeded')
+                            ->sum('amount');
+            if($paidAmount > 0)
+            $item_total = max($item_total - $paidAmount, 0);  
 
             // Final update to main order
             $previousOrderTotalAmount = $order->total_amount;
