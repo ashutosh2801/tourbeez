@@ -222,6 +222,14 @@ class CustomerController extends Controller
             'pickup_name'  => $request->oc_pickup_name,
         ]);
 
+        $user = User::where('email', $request->oc_email)->first();
+        if($user){
+            $user->first_name = $request->oc_first_name;
+            $user->last_name  = $request->oc_last_name;
+            $user->name  = $request->oc_first_name . " " .$request->oc_last_name;
+            $user->save();
+        }
+
         return redirect()->back()
             // ->route('admin.customers.index')
             ->with('success', 'Customer updated successfully');

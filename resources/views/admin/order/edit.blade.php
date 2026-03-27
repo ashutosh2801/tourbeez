@@ -740,10 +740,26 @@ $expectEmails = ['order_pending'];
                                             <td><b>Booking fee</b> (included in price)</td>
                                             <td class="text-right">{{ $order->bookingFee ? price_format_with_currency($order->bookingFee->value('value'), $order->currency) : "NA" }} </td>
                                         </tr> --}}
+
+                                        @php
+                                            
+
+                                            $outsidePayment = $order->payments()->where('collection_type', 'Outside')->sum('amount');
+
+                                        @endphp
+                                        @if($outsidePayment > 0)
+                                        <tr class="text-success">
+                                            <td class="cummulative-total"><b>Outside Paid/ Promo</b></td>
+                                            <td class="text-right">{{ price_format_with_currency($outsidePayment, $order->currency) }}</td>
+                                        </tr>
+                                        
+                                        @endif
                                         <tr>
                                             <td class="cummulative-total"><b>Grand Total</b></td>
                                             <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                         </tr>
+                                        
+                                        
                                         <tr class="cummulative-total" style="color: red">
                                             <td><b>Balance</b></td>
 

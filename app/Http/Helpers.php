@@ -34,6 +34,24 @@ if(!function_exists('getFullSql')) {
     }
 }
 
+if(!function_exists('source_list')) {
+    function source_list($item) {
+        switch(strtolower($item)) {
+            case 'toniagara':
+                return 'TN';
+                break;
+            case 'niagarafallstour' :
+                return 'NFT';
+                break;
+            case 'tourbeez' :
+                return 'TB';
+                break;
+            default:
+                return $item;
+        }
+    }
+}
+
 if(!function_exists('remove_last_Tour_word')) {
     function remove_last_Tour_word($string) {
         return preg_replace('/\s+(tour|tours)$/i', '', $string);

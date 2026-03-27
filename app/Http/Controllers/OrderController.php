@@ -218,7 +218,7 @@ class OrderController extends Controller
             'customer_id' => $request->customer_id ?: null
         ]);    
 
-        
+       
         $validated = $request->validate([
 
             // Existing Customer
@@ -415,6 +415,22 @@ class OrderController extends Controller
                     'pickup_id'    => $request->pickup_id ?? '',
                     'pickup_name'  => $request->pickup_name ?? '',
                 ]);
+
+                if($request->has('addToCustomer')){
+                    $userExists = User::where('email', $request->customer_email)->exists();
+                    if(!$userExists){
+                        User::create([
+                            'first_name'   => $firstName,
+                            'last_name'    => $lastName,
+                            'name'         => $firstName . " " . $lastName,
+                            'email'        => $user->email ?? 'N/A',
+                            'phone'        => $user->phone ?? 'N/A',
+                            'user_type'    => 'Member',
+                        ]);
+
+                    }
+                        
+                }
             } else {
                 // Fallback to request inputs
                 $user = User::where('email', $request->customer_email)->first();
@@ -432,6 +448,22 @@ class OrderController extends Controller
                     'pickup_id'    => $request->pickup_id ?? null,
                     'pickup_name'  => $request->pickup_name ?? null,
                 ]);
+                if($request->has('addToCustomer')){
+                    
+                    if(!$user_id){
+                        User::create([
+                            'first_name'   => $request->customer_first_name,
+                            'last_name'    => $request->customer_last_name,
+                            'name'         => $request->customer_first_name . " " . $request->customer_last_name,
+                            'email'        => $request->customer_email ?? 'N/A',
+                            'phone'        => $request->full_phone ?? 'N/A',
+                            'user_type'    => 'Member',
+                        ]);
+
+                    }
+                        
+                }
+
             }
 
             //echo '<pre>'; print_r( $customer ); echo '</pre>'; exit;
@@ -932,7 +964,7 @@ class OrderController extends Controller
             'order_pending',
             'payment_request',
             'follow_up',
-            'abandoned_reminder',
+            // 'abandoned_reminder',
             'request_quote',
         ])->get();
         $sms_templates = SmsTemplate::get();

@@ -97,7 +97,10 @@
                             {{-- New Customer Fields (hidden by default) --}}
                             <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
                                 <h5 class="cus-info-head">New Customer Information</h5>
-
+                                <div class="form-group">
+                                    <input type="checkbox" name="addToCustomer" id="addToCustomer" />
+                                    <label for="addToCustomer">Add to Customer</label>
+                                </div>
                                 <div class="form-row">
                                     <div class="form-group col-lg-3 col-md-6">
                                         <label for="customer_first_name">First Name *</label>
