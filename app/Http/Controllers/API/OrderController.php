@@ -272,23 +272,31 @@ class OrderController extends Controller
 
         $customer = $order->customer;
 
-        $image = uploaded_asset($order->tour->main_image->id ?? 0, 'medium');    
+        $image  = uploaded_asset($order->tour->main_image->id ?? 0, 'medium');    
         $paidAmount = $order->payments()
-            ->where('status', 'succeeded')
-            ->sum('amount');
+                    ->where('status', 'succeeded')
+                    ->where('payment_type', '<>', 'PROMO_CODE')
+                    ->sum('amount');
+                
+        $promoCode  = $order->payments()
+                    ->where('status', 'succeeded')
+                    ->where('payment_type', 'PROMO_CODE')
+                    ->sum('amount');    
 
-        $totalAmount = $order->total_amount ?? 0;
-
-        $balanceAmount = max($totalAmount - $paidAmount, 0);    
+        $totalAmount    = $order->total_amount ?? 0;
+        $totalPaid      = $paidAmount + $promoCode;
+        $balanceAmount  = max($totalAmount - $totalPaid, 0);        
 
         $data = [
             "order_number"  => $order->order_number,
             "source"        => $order->source,
             "currency"      => $order->currency,
-            'payment_status'=> $paidAmount > 0 ? 'paid' : 'unpaid',
-            "total_amount"  => $paidAmount > 0 ? $balanceAmount : $totalAmount,
+            'payment_status'=> $totalPaid > 0 ? 'paid' : 'unpaid',
+            "total_amount"  => $totalPaid > 0 ? $balanceAmount : $totalAmount,
             "balance_amount"=> $balanceAmount,
+            "promo_code"    => $promoCode,
             "paid_amount"   => $paidAmount,
+            "total_paid"    => $totalPaid,
             'payment_by'    => 'customer',
             "orderId"       => $order->id,
             "tourId"        => $order->tour_id,
@@ -705,11 +713,23 @@ class OrderController extends Controller
             }
 
             /* If already partially paid or added discount/promo etc in backend */
+            // $paidAmount = $order->payments()
+            //                 ->where('status', 'succeeded')
+            //                 ->sum('amount');
             $paidAmount = $order->payments()
-                            ->where('status', 'succeeded')
-                            ->sum('amount');
-            if($paidAmount > 0)
-            $item_total = max($item_total - $paidAmount, 0);  
+                        ->where('status', 'succeeded')
+                        ->where('payment_type', '<>', 'PROMO_CODE')
+                        ->sum('amount');
+                
+            $promoCode  = $order->payments()
+                        ->where('status', 'succeeded')
+                        ->where('payment_type', 'PROMO_CODE')
+                        ->sum('amount');    
+
+            $totalPaid  = $paidAmount + $promoCode;
+
+            if($totalPaid > 0)
+            $item_total = max($item_total - $totalPaid, 0);  
 
             // Final update to main order
             $previousOrderTotalAmount = $order->total_amount;

@@ -328,7 +328,6 @@ class PaymentController extends Controller
                 ]); 
             }
             
-            // [{"tour_id":24,"tour_pricing_id":41,"label":"Adults","price_type":"PER_PERSON","quantity":2,"actual_price":109,"price":99,"discount":10,"total_price":198}]
             $tour_pricing = json_decode($booking->order_tour->tour_pricing);
             $pricing=[]; $total = 0;
             if(!empty($tour_pricing) && is_array($tour_pricing)) {
@@ -366,12 +365,11 @@ class PaymentController extends Controller
             $fees = [];
             if (!empty($fees_pricing) && is_array($fees_pricing)) {
                 foreach ($fees_pricing as $fp) {
-                    // $labelText = $fp->price_type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
-
-                    $labelText = $fp->label;
+                    $labelText = isset($fp->type) && $fp->type == 'PERCENT' ? ' (' . $fp->value . '%)' : ' (' . $fp->value . ')';
+                    $labelText = $fp->label . $labelText;
 
                     $fees[] = [
-                        'lable' => $fp->label, // fixed spelling
+                        'lable' => $labelText, // fixed spelling
                         'price' => $fp->price,
                         'total' => $fp->price
                     ];
@@ -403,9 +401,16 @@ class PaymentController extends Controller
 
             /* If already partially paid or added discount/promo etc in backend */
             $paidAmount = $booking->payments()
-                            ->where('status', 'succeeded')
-                            ->sum('amount');
-            
+                        ->where('status', 'succeeded')
+                        ->where('payment_type', '<>', 'PROMO_CODE')
+                        ->sum('amount');
+                
+            $promoCode  = $booking->payments()
+                        ->where('status', 'succeeded')
+                        ->where('payment_type', 'PROMO_CODE')
+                        ->sum('amount');    
+
+            $totalPaid  = $paidAmount + $promoCode;                   
 
             $detail = [
                 'id'                => $booking->order_number,
@@ -413,6 +418,8 @@ class PaymentController extends Controller
                 'order_number'      => $booking->order_number,
                 'number_of_guests'  => $booking->number_of_guests,
                 'paid_amount'       => $paidAmount ?? 0,
+                'promo_code'        => $promoCode ?? 0,
+                'total_paid'        => $totalPaid ?? 0,
                 'total_amount'      => $booking->total_amount ?? 0,
                 'balance_amount'    => $booking->balance_amount ?? 0,
                 'currency'          => $booking->currency,

@@ -130,7 +130,7 @@ class TourController extends Controller
                 );
             }
 
-            $tag = $d->review && $d->review->tag ? $d->review->tag ?? [] : [];
+            $tag = $d->review && $d->review->tag ? $d->review->tag ?? "" : "";
 
             return [
                 'id'              => $d->id,
