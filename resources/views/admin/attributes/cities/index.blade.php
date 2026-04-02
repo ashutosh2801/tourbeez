@@ -51,12 +51,29 @@
                                     {{ translate('Has Lat/Long') }}
                                 </option>
                             </select>
+                            <select name="has_image" class="form-control col-2 ml-1">
+                                <option value="">{{ translate('Image') }}</option>
+                                <option value="1" {{ request('has_image') == '1' ? 'selected' : '' }}>
+                                    {{ translate('Has Image') }}
+                                </option>
+                            </select>
+
+                            <select name="per_page" class="form-control">
+                                @foreach (['All',10, 25, 50, 100] as $number)
+                                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                        {{ $number }} per page
+                                    </option>
+                                @endforeach
+                            </select>
+                        
 
                             <div class="input-group-append">
                                 <button class="btn btn-primary ml-1" type="submit">
                                     {{ translate('Search') }}
                                 </button>
                             </div>
+
+
 
                         </div>
                     </form>

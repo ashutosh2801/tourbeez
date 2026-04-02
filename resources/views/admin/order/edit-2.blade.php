@@ -31,6 +31,11 @@
         animation: fadeHighlight 2s ease;
     }
 
+    .text-orange {
+        color: #fd7e14;
+    }
+
+
     @keyframes fadeHighlight {
         0%   { background-color: #e1a10b; }
         100% { background-color: transparent; }
@@ -163,7 +168,6 @@
 $statuses = config('constants.order_statuses');
 $expectEmails = ['order_pending', 'payment_receipt'];
 
-
 @endphp
 
     <form id="orderForm" action="{{ route('admin.orders.update',$order->id) }}" method="POST">
@@ -171,7 +175,6 @@ $expectEmails = ['order_pending', 'payment_receipt'];
     @csrf
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
     <input type="hidden" name="order_number" id="order_number" value="{{ $order->order_number }}" /> 
-
 
     <div class="card card-primary rounded-lg-custom border order-edit-head1">
         <div class="card-header">
@@ -187,8 +190,43 @@ $expectEmails = ['order_pending', 'payment_receipt'];
             </div>
         </div>
         <div class="card-body order-edit">
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <div>
                 <div class="row">
+
+
+                    @php
+                        $total = round($order->total_amount);
+                       // $paid = round($order->booked_amount) ?? 0; 
+
+                        $paid = round($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'));
+
+
+                        $hasUncaptured = $order->payments->contains('status', 'uncaptured');
+
+                        if ($paid < $total) {
+                            if($paid == 0 && $hasUncaptured){
+                                $amountClass = 'text-orange';
+                            } else{
+                                $amountClass = 'text-danger'; // red
+                            }
+                           
+                        } else {
+                            $amountClass = 'text-success'; // green
+                        }
+
+                        if ($order->order_status == 6) {
+                            $amountClass = 'text-secondary'; // grey
+                        } 
+                    @endphp
                     <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
@@ -196,7 +234,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                             </div>
                             <div class="sale-num">
                                 <p>Balance</p>
-                                <button type="button" class="btn btn-balance dropdown-toggle arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <button type="button" class="btn btn-balance dropdown-toggle arrow {{ $amountClass }}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     @if($order->payment_status === 3)
 
                                         <strong id="totalDue" class="total-due">{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
@@ -226,7 +264,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     @else
                                         <li class="payment-details-breakdown--item">
                                             <strong class="payment-details-breakdown--text">Paid</strong>
-                                            <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong>
+                                            <strong class="payment-details-breakdown--text">{{price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency)}}</strong>
                                         </li>
 
                                     @endif
@@ -239,7 +277,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                         <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency) }}</strong>
                                     </li>
                                     @if($order->payment_status == 3)
-                                        <li class="payment-details-breakdown--item">
+                                        <li class="payment-details-breakdown--item {{ $amountClass }}">
                                         <strong class="payment-details-breakdown--text">Balance</strong>
                                             <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
                                         </li>
@@ -376,6 +414,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                     </div>
                 </div>
             </div>
+
             
             <div class="bs-example">
                 <div class="accordion" id="accordionExample">
@@ -407,6 +446,8 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     @php
                                         $row_id = 'row_'.$index++;
                                         $subtotal = 0;
+                                        $discount = 0;
+                                        $subtotal2 = 0;
                                         $_tourId = $order_tour->tour_id;
                                     @endphp
                                     <div id="{{ $row_id }}" style="border:1px solid #eaecef;">
@@ -470,34 +511,64 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                             @if ($order_tour->tour)
                                                             @php
                                                                 $tour_pricing = !empty($order_tour->tour_pricing) ? ( json_decode($order_tour->tour_pricing) ) : [];
+
+
                                                             @endphp
 
 
                                                             @foreach($order_tour->tour?->pricings as $pricing)
                                                             @php
                                                                 $price = $pricing->price;
+
+
                                                                 $result = getTourPricingDetails($tour_pricing, $pricing->id);
+
+
                                                                 if(isset($result['price'])) {
-                                                                    $price = $result['price'];
+                                                                    $price = $result['price'] ?? 0;
+
+                                                                    $qty = $result['quantity'] ?? 0;
+
+                                        
+                                                                    $actual_price = (isset($result['actual_price']) && $result['actual_price'] != 0) ? $result['actual_price'] : $result['price'];
+                                                                    $discount = isset($result['discount']) ? $result['discount'] : 0;
+                                                                    
+                                                                    $gt_total = $actual_price * $qty;
+
+
+
                                                                     if($order_tour->tour?->price_type =='FIXED'){
                                                                         $subtotal = $subtotal + $price;
+                                                                        $subtotal2 = $subtotal2 + $actual_price;
+
                                                                     } else{
-                                                                        $subtotal = $subtotal + ($result['quantity'] * $price);
+                                                                        $subtotal = $subtotal + ($qty * $price);
+                                                                        $subtotal2 = $subtotal2 + ($qty * $actual_price);
+
                                                                     }
                                                                     
+                                                                } else{
+                                                                    $price = currencyConvertWithoutRound($price,$order_tour->tour?->currency, $order->currency);
+                                                                    $actual_price = $price;
                                                                 }
+
+
+
+
                                                             @endphp
                                                             <tr>
                                                                 <td width="60">
                                                                     <input type="hidden" name="tour_pricing_id_{{$_tourId}}[]" value="{{ $pricing->id }}" />  
                                                                     <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" class="form-contorl text-center">
                                                                     <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
+                                                                    <input type="hidden" name="tour_pricing_actual_price_{{$_tourId}}[]" value="{{ $actual_price }}" />  
+                                                                    <input type="hidden" name="tour_pricing_discount_{{$_tourId}}[]" value="{{ $discount }}" />  
                                                                     
 
-                                                                    <input type="hidden" name="tour_pricing_type_{{$_tourId}}[]" value="{{ $order_tour->price_type }}" /> 
+                                                                    <input type="hidden" name="tour_pricing_type_{{$_tourId}}[]" value="{{ $order_tour->tour->price_type }}" /> 
                                                                     <input type="hidden" name="tour_pricing_min_{{$_tourId}}[]" value="{{$pricing->quantity_used}}">
                                                                 </td>
-                                                                <td>{{ $pricing->label }} ({{ price_format_with_currency($price, $order->currency) }})</td>
+                                                                <td>{{ $pricing->label }} ({{ price_with_currency_no_round($actual_price, $order->currency) }}) </td>
                                                             </tr>
                                                             @endforeach
                                                             @endif
@@ -513,14 +584,25 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                             @if ($order_tour->tour)
                                                             @php
                                                                 $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
+
+                                                                 $addons = $order_tour->tour?->addons->sortBy(function ($extra) use ($tour_extra) {
+                                                                        $result = getTourExtraDetails($tour_extra, $extra->id);
+                                                                        return isset($result['quantity']) && $result['quantity'] > 0 ? 0 : 1;
+                                                                    });
+
                                                             @endphp
-                                                            @foreach($order_tour->tour?->addons as $extra)
+                                                            @foreach($addons as $extra)
                                                             @php
+
                                                                 $price = $extra->price;
                                                                 $result = getTourExtraDetails($tour_extra, $extra->id);
                                                                 if(isset($result['price'])) {
+
                                                                     $price = $result['price'];
                                                                     $subtotal = $subtotal + ($result['quantity'] * $price);
+                                                                    $subtotal2 = $subtotal2 + ($result['quantity'] * $price);
+                                                                } else{
+                                                                    $price = currencyConvertWithoutRound($price,$extra->currency, $order->currency);
                                                                 }
                                                             @endphp
                                                             <tr>
@@ -529,7 +611,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                                     <input type="number" name="tour_extra_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
                                                                     <input type="hidden" name="tour_extra_price_{{$_tourId}}[]" value="{{ $price }}" /> 
                                                                 </td>
-                                                                <td>{{ $extra->name }} ({{ price_format_with_currency($extra->price, $order->currency) }})</td>
+                                                                <td>{{ $extra->name }} ({{ price_with_currency_no_round($price, $order->currency) }})</td>
                                                             </tr>
                                                             @endforeach
                                                             @endif
@@ -542,13 +624,60 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 @php
 
                                                 $withoutTax = $subtotal;
+                                                
+                                                $subtotal2 = $subtotal2;
                                                 $i=1;
                                                 $taxesfees = $order_tour->tour->taxes_fees;
+                                                $discounts = $order_tour->tour->discount;
+                                                
+                                                //$subtotal = $subtotal2 - $discount; 
+                                                // dd($subtotal, $subtotal2, $discount);
+                                                $discounts = !empty($order_tour->discount) ? json_decode($order_tour->discount) : [];
                                                 @endphp 
                                                 <tr>
                                                     <th>Sub Total </th>
-                                                    <th class="text-right withouttax-box">  {{ price_format_with_currency($withoutTax, $order->currency) }} </th>
+                                                    <!-- <th class="text-right withouttax-box">  {{ price_format_with_currency($withoutTax, $order->currency) }}  </th> -->
+                                                    <th class="text-right withouttax-box"> {{ price_format_with_currency($subtotal2, $order->currency) }} </th>
                                                 </tr>
+                                                @php
+                                                $isFlag = 0;
+                                                @endphp
+                                                @if(!empty($discounts))
+                                                    @foreach ($discounts as $item)
+                                                        @if($item->discount > 0)
+                                                        @php
+                                                            $isFlag = 1;
+                                                            $discountAmount = $item->price;
+
+                                                            if($discountAmount > 0){
+                                                                $subtotal = $subtotal2 - $discountAmount;
+
+                                                                
+                                                            }
+                                                        @endphp
+                                                        @if($discountAmount > 0)
+                                                            <tr class="discount-row">
+                                                                <td class="text-danger">
+                                                                    Discount 
+                                                                    @if($item->type === 'PERCENT')
+                                                                        ({{ $item->discount }}%)
+                                                                    @endif
+                                                                </td>
+                                                                <td class="text-right text-danger">
+                                                                     {{ price_format_with_currency($discountAmount, $order->currency) }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                        @endif
+                                                    @endforeach
+                                                @endif
+
+                                                @if($isFlag) 
+                                                <tr>
+                                                    <th>Total </th>
+                                                    <th class="text-right subtotal-box">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
+                                                </tr>
+                                                @endif
 
                                                 @if( $taxesfees )
                                                 @foreach ($taxesfees as $key => $item)  
@@ -563,10 +692,34 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 </tr>
                                                 @endforeach
                                                 @endif
-                                                <tr>
+
+                                                <!-- <tr>
                                                     <th>Total </th>
                                                     <th class="text-right subtotal-box">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
-                                                </tr>
+                                                </tr> -->
+                                               <!--  @if(!empty($discounts))
+                                                    @foreach ($discounts as $item)
+                                                        @php
+
+                                                            
+                                                            $discountAmount = $item->price;
+                                                            
+                                                        @endphp
+
+                                                        <tr class="discount-row">
+                                                            <td class="text-danger">
+                                                                Discount 
+                                                                @if($item->type === 'PERCENT')
+                                                                    ({{ $item->discount }}%)
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-right text-danger">
+                                                                 {{ price_format_with_currency($discountAmount, $order->currency) }}
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                @endif -->
+                                                
                                             </table>
                                         </div>
                                     </div>
@@ -588,7 +741,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             <td class="text-right">{{ $order->bookingFee ? price_format_with_currency($order->bookingFee->value('value'), $order->currency) : "NA" }} </td>
                                         </tr> --}}
                                         <tr>
-                                            <td class="cummulative-total"><b>Total</b></td>
+                                            <td class="cummulative-total"><b>Grand Total</b></td>
                                             <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                         </tr>
                                         <tr class="cummulative-total" style="color: red">
@@ -619,7 +772,13 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                         </div>
                         <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
+                                <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editPickupModal">
+                                            Edit Pickup
+                                        </button>
+                                    </div>
                                  <div style="border:1px solid #eaecef;">
+                                    
                                     <table class="table">
                                         
 
@@ -673,7 +832,10 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                         </div>
 
                         <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
-                            @php $totalPaid = 0; @endphp
+                            @php $totalPaid = 0; 
+
+
+                            @endphp
                             @foreach ($order->payments as $payment)
                                 @php
                                     if($payment->amount > 0 && $payment->payment_type === 'REFUND'){
@@ -686,12 +848,30 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                             @endforeach
 
                             <div class="card-total bg-light p-3 mb-3 row align-items-end">
+
+                                 @php
+                                        $paid = $order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount');
+
+                                        $overPaid =   $paid - $order->total_amount;
+
+                                    @endphp
                                 <div id="totalPayment1" class="col-md-6 text-start text-success">
                                     Paid:
 
-                                    {{price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency)}}
+                                    {{price_format_with_currency($paid, $order->currency)}}
                                 </div>
+                                @if($overPaid > 0)
+                                    <div id="totalPayment1" class="col-md-6 text-start text-success">
 
+
+                                        
+                                        Over Paid:
+
+                                        {{price_format_with_currency($overPaid , $order->currency)}}
+
+
+                                    </div>
+                                @endif
                                 
                             </div>
                             <div class="card-body">
@@ -709,29 +889,10 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             <div class="col-2">
                                                 @if($order->latestPayment->card_last4)
                                                     
-                                                    <svg width="48" height="40" viewBox="0 0 48 40" xmlns="http://www.w3.org/2000/svg">
-                                                              <rect width="48" height="40" rx="4" fill="#ffffff"/>
-
-                                                              <!-- Mastercard logo -->
-                                                              <circle cx="18" cy="15" r="10" fill="#EB001B"/>
-                                                              <circle cx="30" cy="15" r="10" fill="#F79E1B"/>
-                                                              <path d="M24 7.5a10 10 0 0 1 0 15a10 10 0 0 1 0-15z" fill="#FF5F00"/>
-
-                                                              <!-- Text below -->
-                                                              <text
-                                                                x="24"
-                                                                y="34"
-                                                                text-anchor="middle"
-                                                                font-family="Arial, Helvetica, sans-serif"
-                                                                font-size="7"
-                                                                font-weight="600"
-                                                                fill="#000">
-                                                                mastercard
-                                                              </text>
-                                                            </svg>
-
                                                     
 
+                                                    
+                                                    {!! cardSvg($order->latestPayment->card_brand) !!} 
 
                                                     {{ $order->latestPayment->card_last4}} ({{ strtoupper($order->latestPayment->card_brand) }})
                                                 @else
@@ -741,7 +902,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             </div>
                                             @endif
                                             <div class="col-2">
-                                                @if(str_contains( $order->payment_intent_id, 'pm_'))
+                                                @if(str_contains( $order->payment_intent_id, 'pm_') || str_contains( $order->payment_method_id, 'pm_'))
                                                 <a id="chargeSavedCard" type="button" class=" charge-btn font-base" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
                                                     <strong>Charge Now</strong>
                                                 </a>
@@ -777,7 +938,9 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 </button> -->
                                                 
                                     @endif
-                                    @if(!$order->payment_intent_id)
+
+
+                                    @if(!$order->payment_intent_id || $order->payments->isEmpty())
                                     <div class="mb-2"><label><input type="checkbox" value="1" name="add_ccnow" id="add_ccnow" > Add a credit card to this order</label></div>
                                     @endif
 
@@ -791,7 +954,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 <label>Amount</label>
                                                 <div class="input-group">
                                                     <div class="input-group-append">
-                                                        <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                                        <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
                                                     </div>    
                                                     <input type="text" class="form-control decimal" id="addPaymentAmount" name="charge_ccnow_amount" placeholder="0.00">                                            
                                                 </div>
@@ -813,9 +976,11 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                         @php
                                         $refFlaf = 0;
                                         @endphp
-                                        @foreach ($order->payments as $payment)   
+                                        @foreach ($order->payments as $payment)
+
+                                          
                                         <input type="hidden" name="paymentId[]" value="{{ $payment->id }}" />
-                                        <div class="row paymentRow py-2 border border-black-300">
+                                        <div class="row paymentRow py-2 border border-black-300 {{ $payment->amount <= 0 ? 'd-none' : '' }}">
                                             <div class="col-1">
                                                 {{ $payment->payment_type == 'CARD' ? 'CREDITCARD': $payment->payment_type  }}
                                                 <input type="hidden" name="paymentType[]" value="{{ $payment->payment_type }}" />
@@ -853,6 +1018,11 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             @else
                                                 @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded')
                                                 <div class="col-3">
+                                                    @if($payment->status == 'capture_canceled')
+                                                    <div class="text-danger text-sm">Capture Canceled</div>
+                                                @endif
+
+                                            
                                                 </div>
                                                 @else
                                                 <div class="col-2">
@@ -927,7 +1097,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             <div class="col-2">
                                                 <div class="input-group">
                                                     <div class="input-group-append">
-                                                        <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                                        <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
                                                     </div>
                                                     <input type="text" class="form-control" name="amount[]" placeholder="0.00" autocomplete="off">
                                                 </div>
@@ -1378,7 +1548,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
             <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
             <div class="input-group">
                 <div class="input-group-append">
-                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                    <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
                 </div>    
                 <input type="text" class="form-control" id="chargeAmount" name="amount" placeholder="0.00" value="{{ $order->balance_amount }}" required style="width: 100px;">                                            
             </div>
@@ -1525,6 +1695,82 @@ $expectEmails = ['order_pending', 'payment_receipt'];
   </div>
 </div>
 
+<div class="modal fade" id="editPickupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <form id="pickupForm">
+                @csrf
+                <input type="hidden" name="order_id" value="{{ $order->id }}">
+                <input type="hidden" name="customer_id" value="{{ $order->customer->id }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Pickup Details</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row">
+
+                        <!-- Pickup Type -->
+                        <div class="col-lg-12 mb-2">
+                            <label><b>Pickup Type</b></label><br>
+
+                            <label>
+                                <input type="radio" name="pickup_type" value="existing"
+                                    {{ $order->customer->pickup_id ? 'checked' : '' }}>
+                                Select from list
+                            </label>
+
+                            <label class="ml-3">
+                                <input type="radio" name="pickup_type" value="custom"
+                                    {{ $order->customer->pickup_name ? 'checked' : '' }}>
+                                Custom pickup
+                            </label>
+                        </div>
+
+                        <!-- Pickup Dropdown -->
+                        <div class="col-lg-6 mb-2" id="pickup_id_block">
+                            <label>Pickup Location</label>
+                            <select name="oc_pickup_id" class="form-control">
+                                <option value="">Select pickup</option>
+                                @foreach($pickupLocations as $pickuplocation)
+                                    <option value="{{$pickuplocation->id}}"
+                                        {{$order->customer->pickup_id == $pickuplocation->id ? 'selected' : ''}}>
+                                        {{ $pickuplocation->location . " - " .  $pickuplocation->address }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Custom Pickup -->
+                        <div class="col-lg-6 mb-2" id="pickup_name_block">
+                            <label>Pickup Name</label>
+                            <textarea name="oc_pickup_name" class="form-control">{{ $order->customer->pickup_name }}</textarea>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="col-lg-12 mb-2">
+                            <label>Instructions</label>
+                            <textarea name="oc_instructions" class="form-control">{{ $order->customer->instructions }}</textarea>
+                        </div>
+
+                    </div>
+
+                    <div id="pickup_error" class="text-danger"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
 
 
 
@@ -1590,7 +1836,7 @@ function calculateTotal() {
     let total_due = {{ $order->total_amount }} - sum;
 
     $('#total_amount').val(sum.toFixed(2));
-    $('#totalDue').text('USD'+total_due.toFixed(2));    
+    $('#totalDue').text(total_due.toFixed(2));    
 } 
 
 $(document).ready(function () {
@@ -1769,7 +2015,7 @@ document.addEventListener("click", function(e) {
             }
         });
         $.ajax({
-            url: '{{ route('tour.single') }}',
+            url: '{{ route('admin.tour.single') }}',
             type: 'POST',
             data: {
                 id: tour_id,
@@ -1810,7 +2056,7 @@ document.addEventListener("click", function(e) {
 </script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
 
     // ✅ Function to update status UI
     function updateStatusUI(radio) {
@@ -2588,7 +2834,7 @@ function calculateRowTotal(row, hide) {
 
         const price = parseFloat(priceInput.value) || 0;
         const priceType = priceTypeInput.value;
-
+        
         // -----------------------------------------
         // ADDITION: ENFORCE MIN/MAX IF FIXED
         // -----------------------------------------
@@ -2671,10 +2917,10 @@ function calculateRowTotal(row, hide) {
     const subtotalBox = row.querySelector('.subtotal-box');
     if (subtotalBox) {
         // subtotalBox.textContent = subtotal.toFixed(2);
-        document.getElementById("totalDue").innerText = 'USD'+subtotal.toFixed(2);
+        document.getElementById("totalDue").innerText = subtotal.toFixed(2);
         // document.getElementById("totalPayment").innerText = 'USD'+subtotal.toFixed(2);
         // document.getElementById("addPaymentAmount").value = subtotal.toFixed(2);
-        subtotalBox.textContent = 'USD'+subtotal.toFixed(2);
+        subtotalBox.textContent = subtotal.toFixed(2);
     }
     if(hide){
         $('.cummulative-total').hide();
@@ -2715,7 +2961,7 @@ $(document).ready(function () {
 function refreshCalendarAndSession23432(tourId, count, order_id) {
 
     $.ajax({
-        url: "{{ route('tour.calendar') }}",
+        url: "{{ route('admin.tour.calendar') }}",
         type: "POST",
         data: {
             id: tourId,
@@ -2769,7 +3015,7 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 
     // showLoader("Loading… Please wait");
     $.ajax({
-        url: "{{ route('tour.calendar') }}",
+        url: "{{ route('admin.tour.calendar') }}",
         type: "POST",
         data: {
             id: tourId,
@@ -2836,7 +3082,10 @@ function refreshCalendarAndSession(tourId, count, order_id) {
                 }                
 
                 // Fetch sessions for initial date
-                fetchTourSessions(tourId, res.start_date, count, res.tour_time);
+                // console.log(res);
+                // console.log(res.start_date);
+                fetchTourSessions(tourId, res.tour_date, count, res.tour_time);
+                // fetchTourSessions(tourId, selectedDate, count, res.tour_time);
 
             }, 200);
 
@@ -2965,32 +3214,62 @@ document.getElementById('refundAllForm').addEventListener('submit', async functi
 
 <script>
 $(document).on('click', '.btn-delete-order', function () {
-    if (!confirm('Are you sure?')) {
-        return false;
-    }
 
     let url = $(this).data('url');
-    let row = $(this).closest('tr'); // optional: remove row after delete
+    let row = $(this).closest('tr');
 
-    $.ajax({
-        url: url,
-        type: 'POST',
-        data: {
-            _method: 'DELETE',
-            _token: '{{ csrf_token() }}'
-        },
-        success: function (response) {
-            // remove row from table
-            row.fadeOut(300, function () {
-                $(this).remove();
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This order will be permanently deleted.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: {
+                    _method: 'DELETE',
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function (response) {
+
+                    row.fadeOut(300, function () {
+                        $(this).remove();
+                    });
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Deleted!',
+                        text: 'Order deleted successfully',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = "{{ route('admin.orders.index') }}";
+                    });
+
+                },
+                error: function (xhr) {
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Something went wrong. Please try again.'
+                    });
+
+                }
             });
 
-            alert(response.message ?? 'Order deleted successfully');
-        },
-        error: function (xhr) {
-            alert('Something went wrong. Please try again.');
         }
+
     });
+
 });
 </script>
 
@@ -3021,23 +3300,57 @@ $(document).on('click', '.btn-delete-order', function () {
 <script>
 
 const removeCardUrl = "{{ route('admin.orders.remove-card', ':orderId') }}";
-function removeCard(orderId) {
-    if (!confirm('Are you sure you want to remove this card?')) return;
 
-    fetch(removeCardUrl.replace(':orderId', orderId), {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
+function removeCard(orderId) {
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You want to remove this card!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, remove it!'
+    }).then((result) => {
+
+        if (result.isConfirmed) {
+
+            fetch(removeCardUrl.replace(':orderId', orderId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(res => {
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Removed!',
+                    text: res.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+
+            })
+            .catch(() => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Something went wrong'
+                });
+            });
+
         }
-    })
-    .then(res => res.json())
-    .then(res => {
-        alert(res.message);
-        location.reload();
-    })
-    .catch(() => alert('Something went wrong'));
+
+    });
 }
+
 </script>
 <script>
 /* ================= STRIPE INIT (ONCE) ================= */
@@ -3050,21 +3363,30 @@ let cardMounted = false;
 
 /* ================= SHOW / HIDE CARD ================= */
 
-document.getElementById('add_ccnow').addEventListener('change', function () {
-    const wrapper = document.getElementById('card-element-wrapper');
+$(document).ready(function () {
 
-    if (this.checked) {
-        wrapper.classList.remove('hidden');
+    $(document).on("change", "#add_ccnow", function () {
+        const wrapper = $("#card-element-wrapper");
 
-        if (!cardMounted) {
-            cardElement.mount('#card-element');
-            cardMounted = true;
+        if (this.checked) {
+            wrapper.removeClass("hidden").show();
+
+            if (!cardMounted) {
+                cardElement.mount('#card-element');
+                cardMounted = true;
+            }
+        } else {
+            wrapper.addClass("hidden").hide();
+            // never unmount Stripe element
         }
-    } else {
-        wrapper.classList.add('hidden');
-        // ❌ NEVER unmount Stripe element
-    }
+    });
+
+    $(document).on("change", "#charge_ccnow", function () {
+        $("#charge_ccnow_amount").toggle(this.checked);
+    });
+
 });
+
 
 /* ================= BUTTON HANDLER ================= */
 
@@ -3078,7 +3400,78 @@ document.querySelectorAll('[data-action]').forEach(btn => {
 
 /* ================= ADD CARD ONLY ================= */
 
+
 async function addCardOnly() {
+    showLoader("Loading… Please wait");
+    if (!cardMounted) {
+        Swal.fire({
+                    icon: 'warning',
+                    title: 'warning!',
+                    text: 'Please enter card details first!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+        return;
+    }
+
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement
+    });
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
+    const chargeNow = document.getElementById('charge_ccnow').checked;
+    const chargeAmount = document.getElementById('addPaymentAmount').value;
+
+    // If checkbox checked but no amount
+    if (chargeNow && (!chargeAmount || parseFloat(chargeAmount) <= 0)) {
+        
+
+        Swal.fire({
+                    icon: 'warning',
+                    title: 'warning!',
+                    text: 'Please enter a valid amount to charge.!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+        return;
+    }
+
+    fetch("{{ route('admin.orders.add-card', $order->id) }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            payment_method: paymentMethod.id,
+            charge_ccnow: chargeNow ? 1 : 0,
+            charge_ccnow_amount: chargeNow ? chargeAmount : null
+        })
+    })
+    .then(res => res.json())
+    .then(res => {
+
+
+        Swal.fire({
+                    icon: 'success',
+                    title: 'success!',
+                    text: res.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+        location.reload();
+    })
+    .catch(() => alert('Something went wrong'));
+
+    hideLoader();
+}
+
+async function addCardOnl42342() {
 
     if (!cardMounted) {
         alert('Please enter card details first');
@@ -3094,7 +3487,7 @@ async function addCardOnly() {
         alert(error.message);
         return;
     }
-
+    
     fetch("{{ route('admin.orders.add-card', $order->id) }}", {
         method: 'POST',
         headers: {
@@ -3257,6 +3650,64 @@ $(document).on('input', '#refundAmount', function () {
 
 
 
+</script>
+
+<script>
+    function togglePickupFields() {
+        let type = $('input[name="pickup_type"]:checked').val();
+
+        $('#pickup_id_block').toggle(type === 'existing');
+        $('#pickup_name_block').toggle(type === 'custom');
+    }
+
+    $(document).ready(function () {
+
+        togglePickupFields();
+
+        $('input[name="pickup_type"]').on('change', togglePickupFields);
+
+        $('#pickupForm').on('submit', function(e) {
+            e.preventDefault();
+
+            let formData = $(this).serialize();
+
+            $.ajax({
+                url: "{{ route('admin.order.pickup.update') }}",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+
+                    if(response.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Pickup is successfully updated'
+                        }).then(() => {
+                            location.reload();
+                        });
+
+                    } else {
+                        Swal.fire({
+                            icon: 'Error',
+                            title: 'error',
+                            text: 'There is Something wrong'
+                        }).then(() => {
+                            location.reload();
+                        });
+                        
+                    }
+                },
+                error: function(xhr) {
+                    let errors = xhr.responseJSON?.errors;
+                    if(errors) {
+                        let msg = Object.values(errors).map(e => e[0]).join(', ');
+                        $('#pickup_error').text(msg);
+                    }
+                }
+            });
+        });
+
+    });
 </script>
 
 

@@ -191,6 +191,37 @@
             </ul>
             </li>
         @endcan
+
+        @can('show_orders') 
+
+
+        <li class="nav-item">
+            <a href="javascript:void(0);" class="nav-link">
+                <i class="nav-icon fas fa-chart-bar"></i>
+                <p>{{ translate('Reports') }}
+                    <span class="aiz-side-nav-arrow right"></span>
+                </p>
+                
+            </a>
+            <ul class="aiz-side-nav-list level-2">
+                <li class="nav-item">
+                    <a href="{{ route('admin.report.overview') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.overview') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-chart-pie"></i>
+                        <p>{{ translate('Overview') }}</p>
+                    </a>
+                </li>
+
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.report.revenue') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.revenue') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-dollar-sign"></i>
+                        <p>{{ translate('Revenue') }}</p>
+                    </a>
+                </li>
+            </ul>
+            </li>
+        @endcan
           
         @can('show_users')  
         <li class="nav-item">

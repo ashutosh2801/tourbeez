@@ -28,7 +28,7 @@
         <form method="GET" action="{{ route('admin.category.index') }}">
             <div class="row">
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <input type="text"
                            name="search"
                            value="{{ request('search') }}"
@@ -47,6 +47,15 @@
                         </option>
                     </select>
                 </div>
+                <div class="col-md-2">
+                <select name="per_page" class="form-control">
+                    @foreach (['All',10, 25, 50, 100] as $number)
+                        <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                            {{ $number }} per page
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-primary">
@@ -89,25 +98,40 @@
 
                                 @endcan
                                 </td>
-                                <td>
-                                @foreach($cat->tours as $tour)
-                                    <div><a class="alink" href="{{ $tour->slug }}" title="{{ $tour->title }}"> <i class="fas fa-chevron-right"></i> {{ $tour->title }}</a></div>
-                                @endforeach
+                                <td width="400">
+                                    <button class="btn btn-sm btn-info toggle-tours" data-id="{{ $cat->id }}">
+                                        Show Tours
+                                    </button>
+
+                                    <div class="tour-list mt-2" id="tour-{{ $cat->id }}" style="display:none;">
+
+                                        @if(!$cat->tours->isEmpty())
+                                            @foreach($cat->tours as $tour)
+                                                <div>
+                                                    <a class="alink" href="{{ $tour->slug }}" title="{{ $tour->title }}">
+                                                        <i class="fas fa-chevron-right"></i> {{ $tour->title }}
+                                                    </a>
+                                                </div>
+                                            @endforeach
+                                        @else
+                                          No tours
+                                        @endif
+                                    </div>
                                 </td>
-                                <td width="5">
+                                <td width="60">
                                     @can('edit_category')
                                     <a href="{{ route('admin.category.edit', encrypt($cat->id)) }}"
                                         class="btn btn-sm btn-edit"> <i class="far fa-edit"></i> </a>
                                     @endcan
                                 </td>
-                                <td width="5">
+                                <td width="60">
                                     <button 
                                         class="btn btn-sm btn-warning clone-btn"
                                         data-id="{{ encrypt($cat->id) }}">
                                         <i class="fas fa-copy"></i>
                                     </button>
                                 </td>
-                                <td width="5">
+                                <td width="60">
                                     @can('destroy_category')
                                     <form action="{{ route('admin.category.destroy', encrypt($cat->id)) }}" 
                                           method="POST" 
@@ -202,6 +226,30 @@
             });
 
         });
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+
+                document.querySelectorAll('.toggle-tours').forEach(button => {
+
+                    button.addEventListener('click', function () {
+
+                        let id = this.dataset.id;
+                        let tourList = document.getElementById('tour-' + id);
+
+                        if (tourList.style.display === 'none') {
+                            tourList.style.display = 'block';
+                            this.textContent = 'Hide Tours';
+                        } else {
+                            tourList.style.display = 'none';
+                            this.textContent = 'Show Tours';
+                        }
+
+                    });
+
+                });
+
+            });
         </script>
     @endsection
 </x-admin>

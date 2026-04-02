@@ -287,7 +287,68 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                                         
                                                 </div>
                                             </div>
+                                        <!-- </div> -->
+                                        <div>
+                                          <div class="card-header sub-heading">
+                                            <h1 class="mb-0 h6">Last Minute Booking</h1>
+                                          </div>
+                                          <div class="card-body">
+                                            <div class="row mb-2 font-weight-bold">
+                                                <div class="col-md-2">From Date</div>
+                                                <div class="col-md-2">To Date</div>
+                                                <div class="col-md-2">Last Minute Hours</div>
+                                                <div class="col-md-2">Amount Type</div>
+                                                <div class="col-md-2">Amount</div>
+                                                <div class="col-md-2">Action</div>
+                                            </div>
+                                            <div id="lastMinuteContainer"> 
+                                                @php $lastMinutes = old('last_minute', $lastMinutes ?? []); 
+                                                    if(empty($lastMinutes) || count($lastMinutes) == 0) { 
+                                                        $lastMinutes = [ [ 'id' => '', 'from_date' => '', 'to_date' => '', 'last_minute_hours' => '', 'amount_type' => 'PERCENT', 'amount' => '' ] ]; 
+                                                    } 
+                                                @endphp 
+
+                                                @foreach($lastMinutes as $i => $row) 
+
+                                                <div class="row mb-3 lastMinuteRow" id="lastMinuteRow_{{ $i }}">
+                                                <input type="hidden" name="last_minute[{{ $i }}][id]" value="{{ $row->id ?? '' }}">
+                                                <div class="col-md-2">
+                                                    
+                                                  <input type="date" class="form-control" name="last_minute[{{ $i }}][from_date]" value="{{ $row->from_date ?? '' }}">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    
+
+                                                  <input type="date" class="form-control" name="last_minute[{{ $i }}][to_date]" value="{{ $row->to_date ?? '' }}">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    
+                                                  <input type="number" class="form-control" name="last_minute[{{ $i }}][last_minute_hours]" value="{{ $row->last_minute_hours ?? '' }}">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    
+                                                  <select class="form-control" name="last_minute[{{ $i }}][amount_type]">
+                                                    <option value="PERCENT" {{ ($row->amount_type ?? '') == 'PERCENT' ? 'selected' : '' }}>Percent</option>
+                                                    <option value="FIXED" {{ ($row->amount_type ?? '') == 'FIXED' ? 'selected' : '' }}>Fixed</option>
+                                                  </select>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    
+                                                  <input type="number" step="0.01" class="form-control" name="last_minute[{{ $i }}][amount]" value="{{ $row->amount ?? '' }}">
+                                                </div>
+                                                <div class="col-md-2 d-flex align-items-end">
+                                                  <button type="button" class="btn btn-success mr-2" onclick="addLastMinuteRow()">
+                                                    <i class="fa fa-plus"></i>
+                                                  </button>
+                                                  <button type="button" class="btn btn-danger" onclick="removeLastMinuteRow({{ $i }})">
+                                                    <i class="fa fa-minus"></i>
+                                                  </button>
+                                                </div>
+                                              </div> @endforeach </div>
+                                          </div>
                                         </div>
+
+                                    </div>
 
                                         <div class="card-footer special-deposit-footer" style="display:block">
                                             <div class="row">
@@ -312,6 +373,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
     </div>
 </x-admin>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     $(function () {
@@ -409,7 +471,202 @@ $(function () {
     toggleDiscountUnit();
 });
 
+let lastMinuteIndex = {{ count($lastMinutes ?? []) }};
 
+function addLastMinuteRow(){
+
+const container = document.getElementById('lastMinuteContainer');
+
+const row = document.createElement('div');
+
+row.classList.add('row','mb-3','lastMinuteRow');
+row.id = 'lastMinuteRow_'+lastMinuteIndex;
+
+row.innerHTML = `
+
+<div class="col-md-2">
+<input type="date" class="form-control"
+name="last_minute[${lastMinuteIndex}][from_date]">
+</div>
+
+<div class="col-md-2">
+<input type="date" class="form-control"
+name="last_minute[${lastMinuteIndex}][to_date]">
+</div>
+
+<div class="col-md-2">
+<input type="number" class="form-control"
+placeholder="Hours"
+name="last_minute[${lastMinuteIndex}][last_minute_hours]">
+</div>
+
+<div class="col-md-2">
+<select class="form-control"
+name="last_minute[${lastMinuteIndex}][amount_type]">
+<option value="PERCENT">Percent</option>
+<option value="FIXED">Fixed</option>
+</select>
+</div>
+
+<div class="col-md-2">
+<input type="number" step="0.01"
+placeholder="Amount"
+class="form-control"
+name="last_minute[${lastMinuteIndex}][amount]">
+</div>
+
+<div class="col-md-2">
+
+<button type="button"
+class="btn btn-success mr-2"
+onclick="addLastMinuteRow()">
+<i class="fa fa-plus"></i>
+</button>
+
+<button type="button"
+class="btn btn-danger"
+onclick="removeLastMinuteRow(${lastMinuteIndex})">
+<i class="fa fa-minus"></i>
+</button>
+
+</div>
+`;
+
+container.appendChild(row);
+
+lastMinuteIndex++;
+}
+
+function removeLastMinuteRow(id){
+
+    const row = document.getElementById('lastMinuteRow_'+id);
+
+    if(row){
+    row.remove();
+    }
+    if($('.lastMinuteRow').length === 0){
+    addLastMinuteRow();
+    }
+
+}
+
+
+</script>
+
+<script>
+    
+    $('form').on('submit', function(e){
+
+        let rows = $('.lastMinuteRow');
+
+        if(rows.length === 0){
+        return true;
+        }
+
+        let ranges = [];
+
+        for(let i=0;i<rows.length;i++){
+
+        let row = rows[i];
+
+        let from = $(row).find('input[name*="[from_date]"]').val();
+        let to = $(row).find('input[name*="[to_date]"]').val();
+        let hours = $(row).find('input[name*="[last_minute_hours]"]').val();
+        let amount = $(row).find('input[name*="[amount]"]').val();
+        let type = $(row).find('select[name*="[amount_type]"]').val();
+
+        if(!from && !to && !hours && !amount){
+        continue;
+        }
+
+        if(!from || !to || !hours || !amount){
+
+        
+        Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'All Last Minute Booking fields must be filled.'
+            });
+
+        e.preventDefault();
+
+        return false;
+
+        }
+
+        if(new Date(from) > new Date(to)){
+
+        
+        Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'From date cannot be greater than To date.'
+            });
+
+        e.preventDefault();
+
+        return false;
+
+        }
+
+        if(hours <= 0){
+
+        
+        Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Last minute hours must be greater than 0.'
+            });
+
+        e.preventDefault();
+
+        return false;
+
+        }
+
+        if(type === 'PERCENT' && amount > 100){
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Percentage',
+                text: 'Percent cannot exceed 100.'
+            });
+
+
+
+
+        e.preventDefault();
+
+        return false;
+
+        }
+
+        let start = new Date(from).getTime();
+        let end = new Date(to).getTime();
+
+        for(let r of ranges){
+
+        if(start <= r.end && end >= r.start){
+
+        Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Date ranges cannot overlap.'
+            });
+
+        e.preventDefault();
+
+        return false;
+
+        }
+
+        }
+
+        ranges.push({start,end});
+
+        }
+
+});
 </script>
 
 

@@ -1,6 +1,6 @@
 <x-admin>
     @section('title', 'Edit User')
-<form action="{{ route('admin.user.update',$user) }}" method="POST">        
+<!--         -->
     <div class="card card-primary bg-white border rounded-lg-custom">
         <div class="card-header customer-edit-head">
             <div class="row">
@@ -29,7 +29,7 @@
                         <div class="form-group">
                             <label for="name" class="form-label">Name:*</label>
                             <input type="text" class="form-control" name="name" required
-                                value="{{ $user->name }}">
+                                value="{{ $user->name }}" readonly>
                                 <x-error>name</x-error>
                         </div>
                     </div>
@@ -46,10 +46,10 @@
                 @if($orderCustomer ?? false)
 
 
-                    <h4 class="mt-4 mb-3">Order Customer Details</h4>
+                    <!-- <h4 class="mt-4 mb-3">Order Customer Details</h4> -->
 
-                    <div class="row">
-                        <div class="col-lg-6">
+                    <!-- <div class="row"> -->
+                        <!-- <div class="col-lg-6">
                             <label>First Name</label>
                             <input type="text" name="oc_first_name" class="form-control" value="{{ $orderCustomer->first_name }}">
                         </div>
@@ -67,7 +67,7 @@
                         <div class="col-lg-6">
                             <label>Phone</label>
                             <input type="text" name="oc_phone" class="form-control" value="{{ $orderCustomer->phone }}">
-                        </div>
+                        </div> -->
 
                         <!-- <div class="col-lg-12">
                             <label>Instructions</label>
@@ -88,11 +88,13 @@
                             <label>Stripe Customer ID</label>
                             <input type="text" name="oc_stripe_customer_id" class="form-control" value="{{ $orderCustomer->stripe_customer_id }}">
                         </div> -->
-                    </div>
+                    <!-- </div> -->
+
+                @endif
                 </div>
             </div>
-        </div>
-    </div>
+        <!-- </div> -->
+    <!-- </div> -->
 
     @php
         $orderCustomer = $user->customer;
@@ -118,7 +120,7 @@
 
                     <div class="col-lg-6">
                         <label>Email</label>
-                        <input type="email" name="oc_email" class="form-control" value="{{ $orderCustomer->email }}">
+                        <input type="email" name="oc_email" class="form-control" value="{{ $orderCustomer->email }}" readonly>
                     </div>
 
                     <div class="col-lg-6">
@@ -133,7 +135,16 @@
 
                     <div class="col-lg-6">
                         <label>Pickup ID</label>
-                        <textarea name="oc_pickup_id" class="form-control">{{ $orderCustomer->pickup?->location }}</textarea>
+
+
+                        <select name="oc_pickup_id" class="form-control">
+                            <option value="">Select pickup</option>
+                          @foreach($pickupLocations as $pickuplocation)
+
+                            <option value="{{$pickuplocation->id}}" {{$orderCustomer->pickup_id == $pickuplocation->id ? 'selected' : ''}}>{{ $pickuplocation->location . " - " .  $pickuplocation->address}}</option>
+                          @endforeach
+                        </select>
+                        
                     </div>
 
                     <div class="col-lg-6">
@@ -141,15 +152,14 @@
                         <textarea name="oc_pickup_name" class="form-control">{{ $orderCustomer->pickup_name }}</textarea>
                     </div>
 
-                    <!-- <div class="col-lg-6">
-                        <label>Stripe Customer ID</label>
-                        <input type="text" name="oc_stripe_customer_id" class="form-control" value="{{ $orderCustomer->stripe_customer_id }}">
-                    </div> -->
+                   
                 </div>
             </div>
         </div>
         
     @endif
+
+
     <div class="card-footer bg-white border rounded-lg-custom">
         <div class="float-right">
             <button class="btn btn-success m-0" type="submit"><i class="fas fa-save"></i> Save</button>

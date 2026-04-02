@@ -311,7 +311,7 @@
                                 <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "N/A" }}</span>
                                 
                                     @php
-                                        $payment = $order->payments->first();
+                                        $payment = $order->payments()->where( 'collection_type','Inside')->first();
                                     @endphp
 
                                     @if($payment)

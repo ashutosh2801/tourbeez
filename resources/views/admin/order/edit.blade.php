@@ -166,7 +166,7 @@
 
 @php
 $statuses = config('constants.order_statuses');
-$expectEmails = ['order_pending', 'payment_receipt'];
+$expectEmails = ['order_pending'];
 
 @endphp
 
@@ -446,7 +446,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                     @php
                                         $row_id = 'row_'.$index++;
                                         $subtotal = 0;
-                                        
+                                        $discount = 0;
                                         $subtotal2 = 0;
                                         $_tourId = $order_tour->tour_id;
                                     @endphp
@@ -490,6 +490,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                                 <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                                             </div>
                                                         </div>
+                                                        <input type="text" class="tour_startdate_time_display border-0" readonly>
                                                     </td>
 
                                                     <td class="text-right">
@@ -549,6 +550,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                                     
                                                                 } else{
                                                                     $price = currencyConvertWithoutRound($price,$order_tour->tour?->currency, $order->currency);
+                                                                    $actual_price = $price;
                                                                 }
 
 
@@ -583,8 +585,14 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                             @if ($order_tour->tour)
                                                             @php
                                                                 $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
+
+                                                                 $addons = $order_tour->tour?->addons->sortBy(function ($extra) use ($tour_extra) {
+                                                                        $result = getTourExtraDetails($tour_extra, $extra->id);
+                                                                        return isset($result['quantity']) && $result['quantity'] > 0 ? 0 : 1;
+                                                                    });
+
                                                             @endphp
-                                                            @foreach($order_tour->tour?->addons as $extra)
+                                                            @foreach($addons as $extra)
                                                             @php
 
                                                                 $price = $extra->price;
@@ -617,13 +625,14 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 @php
 
                                                 $withoutTax = $subtotal;
+                                                
                                                 $subtotal2 = $subtotal2;
                                                 $i=1;
                                                 $taxesfees = $order_tour->tour->taxes_fees;
                                                 $discounts = $order_tour->tour->discount;
                                                 
-
-
+                                                //$subtotal = $subtotal2 - $discount; 
+                                                // dd($subtotal, $subtotal2, $discount);
                                                 $discounts = !empty($order_tour->discount) ? json_decode($order_tour->discount) : [];
                                                 @endphp 
                                                 <tr>
@@ -640,19 +649,26 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                         @php
                                                             $isFlag = 1;
                                                             $discountAmount = $item->price;
-                                                        @endphp
 
-                                                        <tr class="discount-row">
-                                                            <td class="text-danger">
-                                                                Discount 
-                                                                @if($item->type === 'PERCENT')
-                                                                    ({{ $item->discount }}%)
-                                                                @endif
-                                                            </td>
-                                                            <td class="text-right text-danger">
-                                                                 {{ price_format_with_currency($discountAmount, $order->currency) }}
-                                                            </td>
-                                                        </tr>
+                                                            if($discountAmount > 0){
+                                                                $subtotal = $subtotal2 - $discountAmount;
+
+                                                                
+                                                            }
+                                                        @endphp
+                                                        @if($discountAmount > 0)
+                                                            <tr class="discount-row">
+                                                                <td class="text-danger">
+                                                                    Discount 
+                                                                    @if($item->type === 'PERCENT')
+                                                                        ({{ $item->discount }}%)
+                                                                    @endif
+                                                                </td>
+                                                                <td class="text-right text-danger">
+                                                                     {{ price_format_with_currency($discountAmount, $order->currency) }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
                                                         @endif
                                                     @endforeach
                                                 @endif
@@ -725,10 +741,42 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             <td><b>Booking fee</b> (included in price)</td>
                                             <td class="text-right">{{ $order->bookingFee ? price_format_with_currency($order->bookingFee->value('value'), $order->currency) : "NA" }} </td>
                                         </tr> --}}
+
+                                        @php
+                                            
+
+                                            $outsidePayment = $order->payments()->where('collection_type', 'Outside')->where('payment_type', 'PROMO_CODE')->sum('amount');
+
+                                        @endphp
+
+                                        @php
+                                        $paid = $order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount');
+
+                                            $overPaid =   $paid - $outsidePayment - $order->total_amount;
+
+                                        @endphp
+                                        
                                         <tr>
-                                            <td class="cummulative-total"><b>Grand Total</b></td>
+                                            <td class="cummulative-total"><b>Total</b></td>
                                             <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                         </tr>
+                                        @if($outsidePayment > 0)
+                                        <tr class="text-success">
+                                            <td class="cummulative-total"><b>Promo</b></td>
+                                            <td class="text-right">{{ price_format_with_currency($outsidePayment, $order->currency) }}</td>
+                                        </tr>
+                                        
+                                        @endif
+
+                                        @if(($paid - $outsidePayment) > 0)
+                                        <tr class="text-success">
+                                            <td class="cummulative-total"><b>Paid</b></td>
+                                            <td class="text-right">{{ price_format_with_currency($paid - $outsidePayment, $order->currency) }}</td>
+                                        </tr>
+                                        
+                                        @endif
+                                        
+                                        
                                         <tr class="cummulative-total" style="color: red">
                                             <td><b>Balance</b></td>
 
@@ -757,7 +805,13 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                         </div>
                         <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
+                                <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editPickupModal">
+                                            Edit Pickup
+                                        </button>
+                                    </div>
                                  <div style="border:1px solid #eaecef;">
+                                    
                                     <table class="table">
                                         
 
@@ -827,12 +881,30 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                             @endforeach
 
                             <div class="card-total bg-light p-3 mb-3 row align-items-end">
+
+                                 @php
+                                        $paid = $order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount');
+
+                                        $overPaid =   $paid - $order->total_amount;
+
+                                    @endphp
                                 <div id="totalPayment1" class="col-md-6 text-start text-success">
                                     Paid:
 
-                                    {{price_format_with_currency($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'), $order->currency)}}
+                                    {{price_format_with_currency($paid-$outsidePayment, $order->currency)}}
                                 </div>
+                                @if($overPaid > 0)
+                                    <div id="totalPayment1" class="col-md-6 text-start text-success">
 
+
+                                        
+                                        Over Paid:
+
+                                        {{price_format_with_currency($overPaid , $order->currency)}}
+
+
+                                    </div>
+                                @endif
                                 
                             </div>
                             <div class="card-body">
@@ -979,6 +1051,11 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                             @else
                                                 @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded')
                                                 <div class="col-3">
+                                                    @if($payment->status == 'capture_canceled')
+                                                    <div class="text-danger text-sm">Capture Canceled</div>
+                                                @endif
+
+                                            
                                                 </div>
                                                 @else
                                                 <div class="col-2">
@@ -1649,6 +1726,82 @@ $expectEmails = ['order_pending', 'payment_receipt'];
 
     </div>
   </div>
+</div>
+
+<div class="modal fade" id="editPickupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <form id="pickupForm">
+                @csrf
+                <input type="hidden" name="order_id" value="{{ $order->id }}">
+                <input type="hidden" name="customer_id" value="{{ $order->customer->id }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Pickup Details</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row">
+
+                        <!-- Pickup Type -->
+                        <div class="col-lg-12 mb-2">
+                            <label><b>Pickup Type</b></label><br>
+
+                            <label>
+                                <input type="radio" name="pickup_type" value="existing"
+                                    {{ $order->customer->pickup_id ? 'checked' : '' }}>
+                                Select from list
+                            </label>
+
+                            <label class="ml-3">
+                                <input type="radio" name="pickup_type" value="custom"
+                                    {{ $order->customer->pickup_name ? 'checked' : '' }}>
+                                Custom pickup
+                            </label>
+                        </div>
+
+                        <!-- Pickup Dropdown -->
+                        <div class="col-lg-6 mb-2" id="pickup_id_block">
+                            <label>Pickup Location</label>
+                            <select name="oc_pickup_id" class="form-control">
+                                <option value="">Select pickup</option>
+                                @foreach($pickupLocations as $pickuplocation)
+                                    <option value="{{$pickuplocation->id}}"
+                                        {{$order->customer->pickup_id == $pickuplocation->id ? 'selected' : ''}}>
+                                        {{ $pickuplocation->location . " - " .  $pickuplocation->address }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Custom Pickup -->
+                        <div class="col-lg-6 mb-2" id="pickup_name_block">
+                            <label>Pickup Name</label>
+                            <textarea name="oc_pickup_name" class="form-control">{{ $order->customer->pickup_name }}</textarea>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="col-lg-12 mb-2">
+                            <label>Instructions</label>
+                            <textarea name="oc_instructions" class="form-control">{{ $order->customer->instructions }}</textarea>
+                        </div>
+
+                    </div>
+
+                    <div id="pickup_error" class="text-danger"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
 </div>
 
 
@@ -2962,7 +3115,12 @@ function refreshCalendarAndSession(tourId, count, order_id) {
                 }                
 
                 // Fetch sessions for initial date
-                fetchTourSessions(tourId, res.start_date, count, res.tour_time);
+                // console.log(res);
+                console.log(res.tour_time);
+
+                $row.find(".tour_startdate_time_display").val(res.tour_time);
+                fetchTourSessions(tourId, res.tour_date, count, res.tour_time);
+                // fetchTourSessions(tourId, selectedDate, count, res.tour_time);
 
             }, 200);
 
@@ -3527,6 +3685,64 @@ $(document).on('input', '#refundAmount', function () {
 
 
 
+</script>
+
+<script>
+    function togglePickupFields() {
+        let type = $('input[name="pickup_type"]:checked').val();
+
+        $('#pickup_id_block').toggle(type === 'existing');
+        $('#pickup_name_block').toggle(type === 'custom');
+    }
+
+    $(document).ready(function () {
+
+        togglePickupFields();
+
+        $('input[name="pickup_type"]').on('change', togglePickupFields);
+
+        $('#pickupForm').on('submit', function(e) {
+            e.preventDefault();
+
+            let formData = $(this).serialize();
+
+            $.ajax({
+                url: "{{ route('admin.order.pickup.update') }}",
+                type: "POST",
+                data: formData,
+                success: function(response) {
+
+                    if(response.status) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Pickup is successfully updated'
+                        }).then(() => {
+                            location.reload();
+                        });
+
+                    } else {
+                        Swal.fire({
+                            icon: 'Error',
+                            title: 'error',
+                            text: 'There is Something wrong'
+                        }).then(() => {
+                            location.reload();
+                        });
+                        
+                    }
+                },
+                error: function(xhr) {
+                    let errors = xhr.responseJSON?.errors;
+                    if(errors) {
+                        let msg = Object.values(errors).map(e => e[0]).join(', ');
+                        $('#pickup_error').text(msg);
+                    }
+                }
+            });
+        });
+
+    });
 </script>
 
 
