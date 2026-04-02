@@ -27,6 +27,7 @@ use App\Http\Controllers\PickupController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromoController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\SmsTemplateController;
@@ -372,6 +373,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/admin/orders/import-orders', [OrderController::class, 'importOrders'])
     ->name('orders.import');
 
-     Route::resource('partners', PartnerController::class);
+    Route::resource('partners', PartnerController::class);
+    Route::get('report/overview', [ReportController::class, 'overview'])->name('report.overview');
+    Route::get('report/revenue', [ReportController::class, 'revenue'])->name('report.revenue');
+    Route::get('reports/revenue/export', [ReportController::class, 'exportRevenue'])
+    ->name('report.revenue.export');
+
+    Route::get('reports/customer/export', [ReportController::class, 'exportCustomer'])
+    ->name('report.customer.export');
+
+
 
 });

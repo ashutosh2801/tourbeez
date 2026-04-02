@@ -189,15 +189,15 @@
                                 <input type="checkbox" id="checkAll" style="width:20px; height:20px;">
                             </th>
 
-                            <th style="width:10%; white-space: nowrap;">
+                            <th style="width:9%; white-space: nowrap;">
                                 Order <br> Number
                             </th>
 
-                            <th style="width:10%; white-space: nowrap;">
+                            <th style="width:9%; white-space: nowrap;">
                                 Status
                             </th>
 
-                            <th style="width:23%; white-space: nowrap;">
+                            <th style="width:25%; white-space: nowrap;">
                                 Tour
                             </th>
 
@@ -308,30 +308,25 @@
                                     <span class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}</span>
                                 <!-- </td> -->
                                 <br>
-                                <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "NA" }}</span>
+                                <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "N/A" }}</span>
                                 
                                     @php
-                                        $payment = $order->payments->first();
+                                        $payment = $order->payments()->where( 'collection_type','Inside')->first();
                                     @endphp
 
                                     @if($payment)
                                         <br>
-                                        
                                         @if(strtoupper($payment->payment_type) === 'LINK')
+                                            <span class="text-black"><svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#00D66F" d="M0 0h32v32H0z"></path><path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path></svg>    Link</span>
 
-                                            <span class="text-primary"><svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#00D66F" d="M0 0h32v32H0z"></path><path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path></svg>    Link</span>
-
+                                        @elseif(strtoupper($payment->payment_type) === 'KLARNA')    
+                                            <span class="text-black"><svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--16-svg" height="16" width="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#FFA8CD" d="M0 0h32v32H0z"></path><path fill="#0B051D" d="M23.665 6h-4.342c0 3.571-2.185 6.771-5.506 9.057l-1.305.914V6H8v20h4.512v-9.914L19.975 26h5.506l-7.18-9.486c3.264-2.371 5.392-6.057 5.364-10.514Z"></path></svg>    Klarna</span>
                                         @elseif($payment->card_brand)
-
-                                            {!! cardSvg($payment->card_brand) !!}
-                                            <!-- {{ ucfirst($payment->card_brand) }} -->
-
-                                            
-
+                                            {!! cardSvg($payment->card_brand) !!} 
+                                        @elseif(!empty($payment->payment_type))  
+                                            {!! $payment->payment_type !!}                                            
                                         @else
-
                                             <span class="text-muted">Card info unavailable</span>
-
                                         @endif
 
                                     @else
@@ -341,9 +336,7 @@
                                     <!-- </td> -->
                                 <td>{{ date__format($order->created_at) }}</td>
                                 <td style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;">
-                                {{ $order->source }}
-                                
-
+                                    {{ source_list($order->source) }}
                                 </td>
                             </tr>
                         @empty

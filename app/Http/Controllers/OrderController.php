@@ -218,7 +218,7 @@ class OrderController extends Controller
             'customer_id' => $request->customer_id ?: null
         ]);    
 
-        
+       
         $validated = $request->validate([
 
             // Existing Customer
@@ -415,6 +415,22 @@ class OrderController extends Controller
                     'pickup_id'    => $request->pickup_id ?? '',
                     'pickup_name'  => $request->pickup_name ?? '',
                 ]);
+
+                if($request->has('addToCustomer')){
+                    $userExists = User::where('email', $request->customer_email)->exists();
+                    if(!$userExists){
+                        User::create([
+                            'first_name'   => $firstName,
+                            'last_name'    => $lastName,
+                            'name'         => $firstName . " " . $lastName,
+                            'email'        => $user->email ?? 'N/A',
+                            'phone'        => $user->phone ?? 'N/A',
+                            'user_type'    => 'Member',
+                        ]);
+
+                    }
+                        
+                }
             } else {
                 // Fallback to request inputs
                 $user = User::where('email', $request->customer_email)->first();
@@ -432,6 +448,22 @@ class OrderController extends Controller
                     'pickup_id'    => $request->pickup_id ?? null,
                     'pickup_name'  => $request->pickup_name ?? null,
                 ]);
+                if($request->has('addToCustomer')){
+                    
+                    if(!$user_id){
+                        User::create([
+                            'first_name'   => $request->customer_first_name,
+                            'last_name'    => $request->customer_last_name,
+                            'name'         => $request->customer_first_name . " " . $request->customer_last_name,
+                            'email'        => $request->customer_email ?? 'N/A',
+                            'phone'        => $request->full_phone ?? 'N/A',
+                            'user_type'    => 'Member',
+                        ]);
+
+                    }
+                        
+                }
+
             }
 
             //echo '<pre>'; print_r( $customer ); echo '</pre>'; exit;
@@ -601,7 +633,7 @@ class OrderController extends Controller
                                 'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
                                 'amount'            => $amount,
                                 'currency'          => $order->currency,
-                                'status'            => 'successful',
+                                'status'            => 'succeeded',
                                 'created_at'        => now(),
                                 'updated_at'        => now(),
                             ];
@@ -932,7 +964,7 @@ class OrderController extends Controller
             'order_pending',
             'payment_request',
             'follow_up',
-            'abandoned_reminder',
+            // 'abandoned_reminder',
             'request_quote',
         ])->get();
         $sms_templates = SmsTemplate::get();
@@ -946,14 +978,16 @@ class OrderController extends Controller
      */
     public function update(Request $request, $id)
     {
+
+        
         $validator = Validator::make($request->all(), [
             'order_status'   => 'required|max:255',
 
             'tour_startdate'   => 'required|array',
             'tour_startdate.*' => 'required|date',
 
-            'tour_starttime'   => 'required|array',
-            'tour_starttime.*' => 'required|string|max:10',
+            'tour_starttime'   => 'nullable|array',
+            'tour_starttime.*' => 'nullable|string|max:10',
         ],
         [
             'order_status.required'   => 'Please select order status',
@@ -999,10 +1033,13 @@ class OrderController extends Controller
                 }
 
                 $startDate = Carbon::parse($request->tour_startdate[$index])->format('Y-m-d');// $request->tour_startdate[$index];
-                $startTime = $request->tour_starttime[$index];
+                // $startTime = $request->tour_starttime[$index];
+
+                $startTimes = $request->input('tour_starttime', []);
+                $startTime  = $startTimes[$index] ?? null;
 
 
-
+                // dd($startTime);
                 // $tourStartDates = $request->input('tour_startdate', []);
 
                 // $tourStartDates = array_map(function ($date) {
@@ -1134,15 +1171,30 @@ class OrderController extends Controller
 
                     }
 
-                    $orderTour->update([
+                    $updateData = [
                         'tour_date'         => $startDate,
-                        'tour_time'         => $startTime,
+                        // 'tour_time'         => $startTime,
                         'tour_pricing'      => json_encode($pricingDetails),
                         'tour_extra'        => json_encode($extraDetails),
                         'total_amount'      => $total,
                         'number_of_guests'  => $nog
 
-                    ]);
+                    ];
+
+                    // $orderTour->update([
+                    //     'tour_date'         => $startDate,
+                    //     'tour_time'         => $startTime,
+                    //     'tour_pricing'      => json_encode($pricingDetails),
+                    //     'tour_extra'        => json_encode($extraDetails),
+                    //     'total_amount'      => $total,
+                    //     'number_of_guests'  => $nog
+
+                    // ]);
+
+                    if (!empty($startTime)) {
+                        $updateData['tour_time'] = $startTime;
+                    }
+                    $orderTour->update($updateData);
 
 
                 } else {
@@ -1155,7 +1207,7 @@ class OrderController extends Controller
                     $order_tours->tour_extra        = json_encode($extraDetails);
                     $order_tours->number_of_guests  = $nog;
                     $order_tours->total_amount      = $total;
-                    $order_tours->save();
+                    $orderTour = $order_tours->save();
                 }
 
                 
@@ -1769,7 +1821,7 @@ class OrderController extends Controller
 
                     <tr>
                         <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; padding:5px 0;">
-                            <small style="font-size:14px; text-transform:uppercase;">Grand Total</small>
+                            <small style="font-size:14px; text-transform:uppercase;">Total</small>
                         </td>
                         <td style="text-align:right; border-top:2pt solid #000;">
                             <h3 style="margin:0; font-size:19px;">
@@ -1836,6 +1888,8 @@ class OrderController extends Controller
                 
                 // Pricing Rows
                 $i = 1;
+                $subTotalRequired = 0;
+                $rowCount = 0;
                 foreach ($tour_pricing as $result) {
 
                     // $result = getTourPricingDetails($tour_pricing, $pricing->id);
@@ -1846,6 +1900,7 @@ class OrderController extends Controller
                     $total = $result['total_price'] ?? 0;
                     $gt_total = $result['price_type'] == "FIXED" ? $actual_price :  $actual_price * $qty;
                     if ($qty > 0) {
+                        $rowCount++;
                         $subtotal += $total;
                         $subtotal2+= $gt_total;
                         $price_text = $price ? price_format_with_currency($gt_total, $order->currency) : 'Free';
@@ -1859,19 +1914,11 @@ class OrderController extends Controller
                     }
                 }
 
-                $TOUR_ITEM_SUMMARY .= '
-                    <tr>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
-                                <strong>Sub Total </strong>
-                            </small>
-                        </td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                ' . price_format_with_currency($subtotal2, $order->currency) . '
-                        </td>
-                    </tr>';
+                if ($rowCount > 1) {
+                   $subTotalRequired = 1;
+                }
+
+
 
                 // Extras Rows
                 foreach ($tour_extra as $extra) {
@@ -1881,6 +1928,8 @@ class OrderController extends Controller
                     // $total = $qty * $price;
                     $total = $extra['total_price'] ?? 0;
                     if ($qty > 0) {
+                        $subTotalRequired = 1;
+
                         $subtotal += $total;
                         $subtotal2 += $total;
                         $TOUR_ITEM_SUMMARY .= '
@@ -1901,6 +1950,7 @@ class OrderController extends Controller
                     $discount = $result['discount'] ?? 0;
                     $dis_total = $discount;
                     if ($qty > 0 && $discount > 0 && $i == 0) {
+                        $subTotalRequired = 1;
 
                         $subtotal2 = $subtotal2 - $discountAmount;
 
@@ -1916,20 +1966,21 @@ class OrderController extends Controller
                         
                     }
                 }
-
-                $TOUR_ITEM_SUMMARY .= '
-                    <tr>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
-                                <strong>Total </strong>
-                            </small>
-                        </td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                ' . price_format_with_currency($subtotal2, $order->currency) . '
-                        </td>
-                    </tr>';
+                if($subTotalRequired){
+                    $TOUR_ITEM_SUMMARY .= '
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
+                                    <strong>Sub Total </strong>
+                                </small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                    ' . price_format_with_currency($subtotal2, $order->currency) . '
+                            </td>
+                        </tr>';
+                }
 
                 // Taxes
                 $taxRows = '';
@@ -1952,6 +2003,23 @@ class OrderController extends Controller
                     }
                 }
 
+                // $subTotalRequired = 1;
+                // if($subTotalRequired){
+                // $TOUR_ITEM_SUMMARY .= '
+                //     <tr>
+                //         <td>&nbsp;</td>
+                //         <td>&nbsp;</td>
+                //         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                //             <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
+                //                 <strong>Sub Total </strong>
+                //             </small>
+                //         </td>
+                //         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                //                 ' . price_format_with_currency($subtotal2, $order->currency) . '
+                //         </td>
+                //     </tr>';
+                // }
+
                 // Total Row
                 $TOUR_ITEM_SUMMARY .= $taxRows . '
 
@@ -1959,29 +2027,37 @@ class OrderController extends Controller
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:#000; margin:0; font-size:15px"><strong>Grand Total</strong></h3>
+                            <h3 style="color:#000; margin:0; font-size:15px"><strong>Total</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                             <h3 style="color:#000; margin:0; font-size:15px"><strong>' . price_format_with_currency($subtotal2, $order->currency) . '</strong></h3>
                         </td>
                     </tr>';
 
-                if ($order->balance_amount > 0) {
-                    // balance amount
+                
+                
+                $paid = $order->total_amount - $order->balance_amount;
+
+
+                $promoPayment = $order->payments()->where('collection_type', 'Outside')->where('payment_type', 'PROMO_CODE')->sum('amount');
+
+
+                if ($promoPayment > 0) {   
+                   $paid = $paid - $promoPayment;                 
+                    // paid amount
                     $TOUR_ITEM_SUMMARY .= '
                     <tr>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:red; margin:0; font-size:15px"><strong>Balance</strong></h3>
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>Promo</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($order->balance_amount, $order->currency) . '</strong></h3>
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>' . price_format_with_currency($promoPayment, $order->currency) . '</strong></h3>
                         </td>
                     </tr>'; 
-                }
-                
-                $paid = $order->total_amount - $order->balance_amount;
+                } 
+
                 if ($paid > 0) {                    
                     // paid amount
                     $TOUR_ITEM_SUMMARY .= '
@@ -1995,7 +2071,21 @@ class OrderController extends Controller
                             <h3 style="color:green; margin:0; font-size:15px"><strong>' . price_format_with_currency($paid, $order->currency) . '</strong></h3>
                         </td>
                     </tr>'; 
-                }    
+                }  
+                if ($order->balance_amount > 0) {
+                    // balance amount
+                    $TOUR_ITEM_SUMMARY .= '
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <h3 style="color:red; margin:0; font-size:15px"><strong>Balance</strong></h3>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($order->balance_amount, $order->currency) . '</strong></h3>
+                        </td>
+                    </tr>'; 
+                }  
                 
                 $TOUR_ITEM_SUMMARY .=  '</tbody>
                 </table>';
@@ -2471,6 +2561,7 @@ class OrderController extends Controller
 
     public function manifest(Request $request)
     {
+
         $date = $request->input('date') ?? \Carbon\Carbon::today()->toDateString();
 
         $pricingLabels = \App\Models\TourPricing::pluck('label', 'id')->toArray();
@@ -3278,8 +3369,10 @@ class OrderController extends Controller
 }
 
 
-public function downloadTourManifest(Request $request)
+public function downloadTourManifestMain(Request $request)
 {
+
+
     $date = $request->input('date') ?? Carbon::today()->toDateString();
 
     // Preload pricing labels
@@ -3385,101 +3478,146 @@ public function downloadTourManifest(Request $request)
     );
 }
 
-    public function downloadTourManifest213(Request $request)
-    {
-        $date = $request->input('date') ?? Carbon::today()->toDateString();
+    public function downloadTourManifest(Request $request)
+{
+    $date = $request->input('date') ?? \Carbon\Carbon::today()->toDateString();
 
-        // Preload pricing labels
-        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+    $rows = [];
 
-        // Load all orders for the date with their tours
-        $orders = Order::with(['customer', 'orderTours.tour'])
-            ->where('order_status', 5)
-            ->whereDate('created_at', $date)
-            ->get();
+    $orders = Order::with(['customer', 'orderTours.tour.categories'])
+        ->where('order_status', 5)
+        ->get();
 
-        // Build as a plain array (NOT a Collection)
-        $sessions = [];
+    foreach ($orders as $order) {
 
-        foreach ($orders as $order) {
-            // ---- enrich order once (guest/extras/paid) ----
-            $guests = collect();
-            $extras = collect();
-            $guestCount = 0;
+        $customer = $order->customer;
 
-            foreach ($order->orderTours as $ot) {
-                // pricing
-                $pricingItems = json_decode($ot->tour_pricing, true);
-                if (is_array($pricingItems)) {
-                    foreach ($pricingItems as $p) {
-                        $qty = (int) ($p['quantity'] ?? 0);
-                        $pricingId = $p['tour_pricing_id'] ?? null;
-                        $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
-                        if ($qty && $label) {
-                            $guests->push("{$qty} {$label}");
-                            $guestCount += $qty;
-                        }
-                    }
-                }
-                // extras
-                $extraItems = json_decode($ot->tour_extra, true);
-                if (is_array($extraItems)) {
-                    foreach ($extraItems as $e) {
-                        $qty = (int) ($e['quantity'] ?? 0);
-                        $label = $e['label'] ?? null;
-                        if ($qty && $label) {
-                            $extras->push("{$qty} {$label}");
-                        }
-                    }
-                }
-            }
+        if (!$customer) continue;
 
-            $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
-            $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
-            $order->paid_amount    = $order->total_amount - ($order->balance_amount ?? 0);
-            $order->guest_count    = $guestCount;
+        foreach ($order->orderTours as $ot) {
 
-            // ---- group per tour + half-hour slot ----
-            foreach ($order->orderTours as $ot) {
-                $tourTitle = optional($ot->tour)->title ?? 'Unknown Tour';
+            if ($ot->tour_date != $date) continue;
 
-                // slot from created_at (change to your scheduled time if you have one)
-                $createdAt = $order->created_at instanceof \Carbon\Carbon
-                    ? $order->created_at
-                    : \Carbon\Carbon::parse($order->created_at);
+             $serviceType = optional($ot->tour->category)->name ?? 'Tour';
 
-                $slotStart = $createdAt->copy()->second(0);
-                $slotStart->minute($slotStart->minute >= 30 ? 30 : 0);
-                $slotEnd   = $slotStart->copy()->addMinutes(30);
+             $serviceType = $ot->tour && $ot->tour->categories->isNotEmpty()
+                            ? $ot->tour->categories->pluck('name')->implode(', ')
+                            : 'Tour';
+             
+            $pickupDate = \Carbon\Carbon::parse($ot->tour_date)->format('m/d/Y');
+            $pickupTime = $ot->tour_time;
 
-                $slotLabel = $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A');
-                $key       = "{$slotLabel} {$tourTitle}";
+            $breakdown = $this->getPassengerBreakdown($ot);
 
-                if (!isset($sessions[$key])) {
-                    $sessions[$key] = [
-                        'slot_time' => $key,   // "Tour A 08:00 - 08:30"
-                        'orders'    => [],     // we’ll index by order id to avoid duplicates
-                    ];
-                }
+            $passengerCount = $breakdown['total'];
+            $infantCount    = $breakdown['infants'];
+            $childCount     = $breakdown['children'];
 
-                // Avoid duplicate same order under same tour+slot
+            $rows[] = [
+                // passenger
+                $customer->first_name,
+                $customer->last_name,
+                $customer->phone,
+                $customer->email,
 
-                $sessions[$key]['slot_time'] = $slotLabel;
-                $sessions[$key]['title'] = $tourTitle;
+                // booked by
+                $customer->first_name,
+                $customer->last_name,
 
-                $sessions[$key]['orders'][$order->id] = $order;
-            }
+                // pickup
+                $pickupDate,
+                $pickupTime,
+                $customer->pickup_name ?? '',
+                '', '', '', '',
+
+                optional($ot->tour)->title,
+
+                // dropoff
+                $pickupDate,
+                '5:30 PM',
+                '',
+                '',
+                $customer->pickup_name ?? '',
+                '', '', '', '', '',
+
+                // service
+                $serviceType,
+                '',
+                'Confirmed',
+
+                // payment
+                "TourBeez",
+
+                // airline (empty)
+                '', '', '', '',
+                '', '', '', '',
+
+                // counts
+                $passengerCount - $infantCount - $childCount,
+                0, // luggage
+                $infantCount,
+                $childCount,
+                0, // booster
+
+                // notes
+                '',
+                $customer->instructions ?? '',
+                '',
+                '',
+                '',
+
+                // billing
+                '',
+                '',
+                '',
+                '',
+
+                // reference
+                $order->order_number,
+
+                // amount
+                $order->total_amount
+            ];
         }
-        // dd($sessions);
-        // Reindex inner orders numerically for the view/export
-        foreach ($sessions as &$bucket) {
-            $bucket['orders'] = array_values($bucket['orders']);
-        }
-        unset($bucket);
-
-        // If your ManifestExport expects a collection, wrap with collect($sessions)
-        return Excel::download(new ManifestExport($sessions, $date, 'tour'), "Manifest_{$date}.xlsx");
     }
+    // dd($rows);
+    return \Maatwebsite\Excel\Facades\Excel::download(
+        new \App\Exports\ManifestExport($rows, $date, 'tour'),
+        "Manifest_{$date}.xlsx"
+    );
+}
+
+private function getPassengerBreakdown($ot)
+{
+    $adults = 0;
+    $children = 0;
+    $infants = 0;
+
+    $pricingItems = json_decode($ot->tour_pricing, true);
+
+    if (is_array($pricingItems)) {
+        foreach ($pricingItems as $p) {
+
+            $label = strtolower($p['label'] ?? '');
+            $qty   = (int) ($p['quantity'] ?? 0);
+
+            if (str_contains($label, 'adult')) {
+                $adults += $qty;
+            } elseif (str_contains($label, 'child')) {
+                $children += $qty;
+            } elseif (str_contains($label, 'infant')) {
+                $infants += $qty;
+            }
+        }
+    }
+
+    return [
+        'adults' => $adults,
+        'children' => $children,
+        'infants' => $infants,
+        'total' => $adults + $children + $infants
+    ];
+}
 
     public function getPaymentDetails($orderId)
     {

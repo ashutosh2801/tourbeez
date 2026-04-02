@@ -172,7 +172,7 @@ class CommonController extends Controller
                 ->join('uploads as u', 'u.id', '=', 'c.upload_id')
                 ->select('c.id', 'c.name', 'c.upload_id')
                 ->distinct()
-                ->orderByRaw('RAND()') // ✅ Correct way to randomize rows
+                ->orderByRaw('c.order ASC')
                 ->where('c.upload_id', '>=', 1)
                 ->whereExists(function ($query) {
                     $query->select(DB::raw(1))
@@ -230,14 +230,17 @@ class CommonController extends Controller
                     ) as total_tours')
                 )
                 ->distinct()
-                ->where('c.upload_id' , '>=', 1)
-                ->whereExists(function ($query) {
-                            $query->select(DB::raw(1))
-                                ->from('tour_schedules as ts')
-                                ->whereColumn('ts.tour_id', 't.id')
-                                ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
-                        })
-                ->orderByRaw('RAND()');
+                ->where('c.upload_id' , '>', 0)
+                ->where('c.order' , '>', 0)
+                // ->whereExists(function ($query) {
+                //             $query->select(DB::raw(1))
+                //                 ->from('tour_schedules as ts')
+                //                 ->whereColumn('ts.tour_id', 't.id')
+                //                 ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                //         })
+                ->orderByRaw('c.order ASC');
+
+        //dd(getFullSql($query));
 
         $paginated = $query->paginate($limit, ['*'], 'page', $page);
 
@@ -316,7 +319,8 @@ class CommonController extends Controller
                     'tl.state_id','tl.country_id',
                     's.name','co.name'
                 )
-                ->orderBy('c.name', 'ASC');
+                //->orderBy('c.name', 'ASC');
+                ->orderByRaw('c.order ASC');
 
             $paginated = $query->paginate($perPage);
 

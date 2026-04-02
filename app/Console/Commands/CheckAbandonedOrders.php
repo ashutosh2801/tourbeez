@@ -18,7 +18,7 @@ class CheckAbandonedOrders extends Command
     public function handle()
     {
         // \Log::info('Abandoned order check started.');
-        $this->info('Abandoned order check started.');
+        // $this->info('Abandoned order check started.');
 
         $orders = Order::where('order_status', 1)
             ->where(function ($q) {
@@ -34,7 +34,7 @@ class CheckAbandonedOrders extends Command
             ->get();
 
         if ($orders->isEmpty()) {
-            $this->info('No abandoned orders found.');
+            // $this->info('No abandoned orders found.');
             // \Log::info('No abandoned orders found.');
             return;
         }
@@ -120,7 +120,7 @@ class CheckAbandonedOrders extends Command
                 ]);
 
                 // \Log::info("Abandoned order email sent for order {$order->order_number} ({$type})");
-                $this->info("Email sent for order {$order->order_number} ({$type})");
+                // $this->info("Email sent for order {$order->order_number} ({$type})");
 
             } catch (\Exception $e) {
                 // \Log::error("Error for order {$order->order_number}: " . $e->getMessage());
@@ -128,6 +128,6 @@ class CheckAbandonedOrders extends Command
         }
 
         // \Log::info('Abandoned order check completed.');
-        $this->info('Abandoned order check completed.');
+        // $this->info('Abandoned order check completed.');
     }
 }

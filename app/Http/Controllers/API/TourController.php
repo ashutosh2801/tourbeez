@@ -130,7 +130,7 @@ class TourController extends Controller
                 );
             }
 
-            $tag = $d->review && $d->review->tag ? $d->review->tag ?? [] : [];
+            $tag = $d->review && $d->review->tag ? $d->review->tag ?? "" : "";
 
             return [
                 'id'              => $d->id,
@@ -343,7 +343,11 @@ class TourController extends Controller
                 $partner = Partner::where('slug', $request->company)->first();
                 $title = PartnerTour::where('partner_id', $partner->id)->where('tour_id', $tour->id)->first()?->title ?? $tour->title;
             }
-
+            $itineraries = $tour->itineraries
+                ->sortBy(function ($item) {
+                    return $item->pivot->sort_by ?? 9999;
+                })
+                ->values();
             $formattedTour = [
                 'id'            => $tour->id,
                 'title'         => $title,
@@ -360,7 +364,7 @@ class TourController extends Controller
                 'pickups'       => $pickups,
                 'categories'    => $tour->categories,
                 'tourtypes'     => $tour->tourtypes,
-                'itineraries'   => $tour->itineraries,
+                'itineraries'   => $itineraries,
                 'faqs'          => $tour->faqs,
                 'inclusions'    => $tour->inclusions,
                 'optionals'     => $tour->optionals,

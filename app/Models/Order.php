@@ -132,6 +132,7 @@ class Order extends Model
 
     public function setOrderStatusAttribute($value)
     {
+        
         $map = [
             'Abandoned' => 1,
             'On Hold' => 2,
@@ -147,6 +148,7 @@ class Order extends Model
 
     public function getStatusAttribute()
     {
+        
         return match ($this->order_status) {
             1 => 'Abandoned',
             2 => 'On Hold',

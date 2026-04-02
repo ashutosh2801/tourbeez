@@ -16,44 +16,49 @@ class SendTourExpiryNotification extends Command
 
     public function handle()
     {
-        // \Log::info('Checking for expiring tour schedules...');
-        $this->info('Checking for expiring tour schedules...');
+
 
         $today = Carbon::now()->startOfDay();
         $fiveDaysLater = $today->clone()->addDays(5)->endOfDay();
 
-        // ✅ Find all tours with schedules expiring in next 5 days
-        $tours = Tour::whereHas('schedules', function ($q) use ($today, $fiveDaysLater) {
-            $q->whereBetween('until_date', [$today->toDateString(), $fiveDaysLater->toDateString()]);
-        })->with(['schedules' => function ($q) use ($fiveDaysLater) {
-            $q->whereBetween('until_date', [now()->toDateString(), $fiveDaysLater->toDateString()]);
-        }])->get();
+        $tableRows = '';
+        $totalTours = 0;
 
-        if ($tours->isEmpty()) {
-            $this->info('No expiring tour schedules found.');
-            // \Log::info('No expiring tour schedules found.');
+        Tour::whereHas('schedules', function ($q) use ($today, $fiveDaysLater) {
+            $q->whereBetween('until_date', [$today->toDateString(), $fiveDaysLater->toDateString()]);
+        })
+        ->with(['schedules' => function ($q) use ($fiveDaysLater) {
+            $q->whereBetween('until_date', [now()->toDateString(), $fiveDaysLater->toDateString()]);
+        }])
+        ->chunk(100, function ($tours) use (&$tableRows, &$totalTours) {
+
+            foreach ($tours as $tour) {
+                $totalTours++;
+
+                foreach ($tour->schedules as $schedule) {
+                    $daysLeft = now()->diffInDays(Carbon::parse($schedule->until_date), false);
+                    $id = encrypt($tour->id);
+
+                    $tableRows .= "
+                        <tr>
+                            <td>{$tour->title}</td>
+                            <td>{$tour->unique_code}</td>
+                            <td>{$schedule->until_date}</td>
+                            <td>{$daysLeft} days</td>
+                            <td><a href='https://tourbeez.com/admin/tour/{$id}/edit'>View Tour</a></td>
+                        </tr>
+                    ";
+                }
+            }
+        });
+        
+
+        // ✅ No data found
+        if ($totalTours === 0) {
             return;
         }
-
-        // ✅ Prepare HTML list for the email body
-        $tableRows = '';
-        foreach ($tours as $tour) {
-            foreach ($tour->schedules as $schedule) {
-                $daysLeft = now()->diffInDays(Carbon::parse($schedule->until_date), false);
-                $id = encrypt($tour->id);
-
-                $tableRows .= "
-                    <tr>
-                        <td>{$tour->title}</td>
-                        <td>{$tour->unique_code}</td>
-                        <td>{$schedule->until_date}</td>
-                        <td>{$daysLeft} days</td>
-                        <td><a href='https://tourbeez.com/admin/tour/{$id}/edit'>View Tour</a></td>
-                    </tr>
-                ";
-            }
-        }
-
+        
+        // ✅ Build table
         $tableHtml = "
             <table border='1' cellspacing='0' cellpadding='8' style='border-collapse: collapse; width:100%;'>
                 <thead>
@@ -71,7 +76,7 @@ class SendTourExpiryNotification extends Command
             </table>
         ";
 
-        // ✅ Get the email template
+        // ✅ Email template
         $emailTemplate = EmailTemplate::where('identifier', 'schedule_expiry')->first();
         $subject = $emailTemplate->subject ?? 'Upcoming Tour Schedule Expiry Report';
         $body = $emailTemplate->body ?? '';
@@ -79,23 +84,20 @@ class SendTourExpiryNotification extends Command
         // ✅ Replace placeholders
         $placeholders = [
             '[[EXPIRY_TABLE]]' => $tableHtml,
-            '[[TOTAL_TOURS]]' => $tours->count(),
+            '[[TOTAL_TOURS]]' => $totalTours,
             '[[YEAR]]' => date('Y'),
         ];
         $body = strtr($body, $placeholders);
 
-        // ✅ Recipients (admin emails)
+        // ✅ Recipients
         $recipients = [
             env('MAIL_FROM_ADMIN_ADDRESS'),
             env('MAIL_FROM_ADDRESS'),
         ];
 
-        // ✅ Send single summary email
+        // ✅ Send email
         Mail::to($recipients)->send(
             new CommonMail($subject, $body, null, null, null, true)
         );
-
-        $this->info("Tour expiry summary email sent to admin with {$tours->count()} tours listed.");
-        // \Log::info("Tour expiry summary email sent to admin.");
     }
 }
