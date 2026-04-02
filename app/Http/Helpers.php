@@ -732,7 +732,7 @@ if (! function_exists('order_status')) {
                 return '<span class="badge badge-inline badge-cancelled text-red-800 bg-red-100 px-2 py-2  rounded-full">Cancelled</span>';   
                 break;  
             case 7:
-                return '<span class="badge badge-inline badge-abandoned text-red-800 bg-red-100 px-2 py-2  rounded-full">Abandoned cart</span>';   
+                return '<span class="badge badge-inline badge-abandoned text-blue-800 bg-blue-100 px-2 py-2  rounded-full">Requires capture</span>';   
                 break; 
             default:
                 return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-2 py-2  rounded-full">Not completed</span>';   
@@ -751,7 +751,7 @@ if (! function_exists('order_status_list')) {
             4 => "Pending customer",
             5 => "Confirmed",
             6 => "Cancelled",
-            7 => "Abandoned cart",
+            7 => "Requires capture",
         ];
     }
 }

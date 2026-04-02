@@ -10,6 +10,7 @@ use App\Models\OrderCustomer;
 use App\Models\OrderMeta;
 use App\Models\OrderPayment;
 use App\Models\OrderTour;
+use App\Models\PickupLocation;
 use App\Models\Promo;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\Tour;
@@ -45,15 +46,16 @@ class OrderController extends Controller
         $session_id = $request->input('session_id');
 
         $query = Order::where(function ($q) use ($id, $session_id) {
-            $q->where('user_id', $id);
+                $q->where('user_id', $id);
 
-            if($session_id) {
-                $q->orWhere('session_id', $session_id);
-            }
-        })
-        ->orderBy('created_at', 'DESC');
+                if($session_id) {
+                    $q->orWhere('session_id', $session_id);
+                }
+            })
+            ->orderBy('created_at', 'DESC');
 
         //dd($query->toSql());
+        //dd( getFullSql($query) );
         $orders = $query->paginate(10);
 
         $items = [];
@@ -157,15 +159,68 @@ class OrderController extends Controller
                 }
             }
 
+            $fees_pricing = json_decode($booking->order_tour->tour_fees);
+            $fees = [];
+            if (!empty($fees_pricing) && is_array($fees_pricing)) {
+                foreach ($fees_pricing as $fp) {
+                    $labelText = isset($fp->type) && $fp->type == 'PERCENT' ? ' (' . $fp->value . '%)' : ' (' . $fp->value . ')';
+                    $labelText = $fp->label . $labelText;
+
+                    $fees[] = [
+                        'lable' => $labelText, // fixed spelling
+                        'price' => $fp->price,
+                        'total' => $fp->price
+                    ];
+                }
+            }
+
+            $discount = json_decode($booking->order_tour->discount);
+            $discounts = [];
+            if (!empty($discount) && is_array($discount)) {
+                foreach ($discount as $dp) {
+                    $discounts[] = [
+                        'lable' => $dp->label,
+                        'type'  => $dp->type,
+                        'price' => $dp->price,
+                        'total' => $dp->price
+                    ];
+                }
+            }
+
             $image = uploaded_asset($booking->tour->main_image->id ?? 0, 'medium');
+            $pickName = '';
+            if($booking->customer && $booking->customer->pickup_name){
+                $pickName = $booking->customer->pickup_name;
+            } elseif($booking->customer && $booking->customer->pickup_id) {
+                $pickLocation = PickupLocation::find($booking->customer->pickup_id);
+                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+            }
+
+            /* If already partially paid or added discount/promo etc in backend */
+            $paidAmount = $booking->payments()
+                        ->where('status', 'succeeded')
+                        ->where('payment_type', '<>', 'PROMO_CODE')
+                        ->sum('amount');
+                
+            $promoCode  = $booking->payments()
+                        ->where('status', 'succeeded')
+                        ->where('payment_type', 'PROMO_CODE')
+                        ->sum('amount');    
+
+            $totalPaid  = $paidAmount + $promoCode;    
 
             $detail = [
                 'order_number'      => $booking->order_number,
                 'number_of_guests'  => $booking->number_of_guests,
-                'total_amount'      => $booking->total_amount,
+                'paid_amount'       => $paidAmount ?? 0,
+                'promo_code'        => $promoCode ?? 0,
+                'total_paid'        => $totalPaid ?? 0,
+                'total_amount'      => $booking->total_amount ?? 0,
+                'balance_amount'    => $booking->balance_amount ?? 0,
                 'currency'          => $booking->currency,
                 'payment_method'    => ucfirst($booking->payment_method),
                 'customer'          => $booking->customer,
+                'pickup'            => $pickName,
                 'tour_date'         => date('D, M d, Y', strtotime($booking->order_tour->tour_date)),
                 'tour_time'         => $booking->order_tour->tour_time,
                 'created_at'        => date('Y-m-d', strtotime($booking->created_at)),
@@ -177,6 +232,9 @@ class OrderController extends Controller
                     'extra'         => $extra,
                     'metas'         => $metas,
                     't_and_c'       => $booking->tour?->terms_and_conditions,
+                    'fees'          => $fees,
+                    'discount'      => $discounts,
+                    'order_email'   => $booking->tour?->order_email,
                 ],
             ];
 
@@ -640,7 +698,7 @@ class OrderController extends Controller
                             'type'     => $depositRule->discount_type,
                             'quantity' => $qty,
                             'discount' => $depositRule->discount_value ?? 0,
-                            'price'    => round($discount_price * $qty, 2),
+                            'price'    => $item['price_type'] === 'FIXED' ? round($discount_price, 2) : round($discount_price * $qty, 2),
                         ];
                     }
                 }
