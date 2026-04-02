@@ -159,6 +159,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/review', [TourController::class, 'review'])->name('tour.edit.review');
     Route::get('/tour/{id}/edit/schedule-calendar', [TourController::class, 'scheduleCalendar'])->name('tour.edit.schedule-calendar');
     Route::get('/tour/{id}/edit/schedule-calendar-event', [TourController::class, 'scheduleCalendarEvent'])->name('tour.edit.schedule-calendar-event');
+    Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
+    Route::get('/admin/category-search', [TourController::class, 'categorySearch'])->name('category.search');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
     Route::get('/export-tours', [TourController::class, 'exportTours'])->name('tours.export');

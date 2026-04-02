@@ -85,21 +85,7 @@
                                 <a class="nav-link" href="{{ route('admin.tour.edit.review', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Review')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.parent', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Parent Tour')}}</a>  
                             </div>
-                            <!-- <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-                                <a class="nav-link active" id="v-pills-tab-1" data-toggle="pill" href="#basic_information" role="tab" aria-controls="v-pills-profile" aria-selected="true"><i class="fas fa-caret-right"></i> {{translate('Basic Details')}}</a>
-                                <a class="nav-link" id="v-pills-tab-2" data-toggle="pill" href="#addon" ><i class="fas fa-caret-right"></i> {{translate('Extra')}}</a>
-                                <a class="nav-link" id="v-pills-tab-3" data-toggle="pill" href="#schduling" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Scheduling')}}</a>
-                                <a class="nav-link" id="v-pills-tab-4" data-toggle="pill" href="#location" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Location ')}}</a>
-                                <a class="nav-link" id="v-pills-tab-5" data-toggle="pill" href="#pickup" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Pickups')}}</a>
-                                <a class="nav-link" id="v-pills-tab-6" data-toggle="pill" href="#itinerary" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Itinerary')}}</a>
-                                <a class="nav-link" id="v-pills-tab-7" data-toggle="pill" href="#faq" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('FAQs')}}</a>
-                                <a class="nav-link" id="v-pills-tab-8" data-toggle="pill" href="#includes" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Inclusions')}}</a>
-                                <a class="nav-link" id="v-pills-tab-9" data-toggle="pill" href="#excludes" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Exclusions')}}</a>
-                                <a class="nav-link" id="v-pills-tab-10" data-toggle="pill" href="#taxes_nd_fees" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Taxes & Fees')}}</a>
-                                <a class="nav-link" id="v-pills-tab-11" data-toggle="pill" href="#gallery" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Gallery')}}</a>
-                                <a class="nav-link" id="v-pills-tab-12" data-toggle="pill" href="#message" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('Message')}}</a>
-                                <a class="nav-link" id="v-pills-tab-13" data-toggle="pill" href="#meta_information" role="tab" aria-controls="v-pills-settings" aria-selected="false"><i class="fas fa-caret-right"></i> {{translate('SEO')}}</a>                               
-                            </div> -->
+                            
                         </div>
                         <div class="col-xl-10 col-lg-9 col-12 pl-0">
                             <div class="tab-content" id="v-pills-tabContent">

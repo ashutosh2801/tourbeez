@@ -86,6 +86,7 @@ class CustomerController extends Controller
         );
 
         return view('admin.customer.index', compact('data'));
+        
     }
 
     /**
