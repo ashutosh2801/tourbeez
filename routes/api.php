@@ -67,6 +67,7 @@ Route::middleware(['api.key'])->group(function () {
 
     Route::post('/cart/add', [OrderController::class, 'add_to_cart']);
     Route::post('/cart/update/{id}', [OrderController::class, 'update_cart']);
+    Route::post('/cart/update_error',[OrderController::class,'update_error']);
     Route::get('/cart', [OrderController::class, 'cart']);
     Route::get('/checkout', [OrderController::class, 'checkout']);
     Route::get('/order/checkout/{orderID}',[OrderController::class,'getOrderDetailByOrderID']);

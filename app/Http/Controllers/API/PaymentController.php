@@ -37,25 +37,40 @@ class PaymentController extends Controller
 
         try {
             $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+            \Log::error('Payment event received', ['event' => $event, 'payload' => $payload]);
+            $paymentIntent = $event->data->object;
+            $orderId = $paymentIntent->metadata->order_id;
+            $orderNum = $paymentIntent->metadata->order_number;
+            // Update your order status in DB
+            if(!$orderId || !$orderNum) {
+                Log::error('Stripe Webhook Error: Missing order_id or order_number in metadata');
+                return response()->json(['error' => 'Invalid metadata'], 400);
+            }
+
+            $order = Order::find($orderId);
+            if ($order && $event->type === 'payment_intent.succeeded') {
+                $order->payment_status  = 1; // paid
+                $order->order_status    = 3; // pending suplier confirmation
+            }
+            else if ($order && $event->type === 'payment_intent.requires_capture') {
+                $order->payment_status  = 3; // not paid yet, but authorized
+                $order->order_status    = 3; // pending suplier confirmation
+            }
+            else if ($order && $event->type === 'payment_intent.payment_failed') {
+                $order->payment_status  = 0; // failed
+                $order->order_status    = 1; // abandoned cart
+            }
+            else if ($order && $event->type === 'payment_intent.canceled') {
+                $order->payment_status  = 0; // cancelled
+                $order->order_status    = 6; // cancelled
+            }
+            $order->transaction_id  = $paymentIntent->id;
+            $order->save();
+
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
 
-        if ($event->type === 'payment_intent.succeeded') {
-            $paymentIntent = $event->data->object;
-            $orderId = $paymentIntent->metadata->order_id;
-            $orderNum = $paymentIntent->metadata->order_number;
-
-            // Update your order status in DB
-            $order = Order::where('id', $orderId)->where('order_number', $orderNum)->first();
-            if ($order) {
-                $order->payment_status  = 1;
-                $order->status          = 1;
-                $order->transaction_id  = $paymentIntent->id;
-                $order->payment_id      = $paymentIntent->id;
-                $order->save();
-            }
-        }
 
         return response()->json(['status' => 'success']);
     }
@@ -336,12 +351,13 @@ class PaymentController extends Controller
                     $label = str_ireplace('Group', 'Participants', $tourPricing->label);
                     //$total = ($tp->quantity * $tp->price);
                     $pricing[] = [
-                        'lable' => $label,
-                        'qty'   => $tp->quantity,
-                        'price' => $tp->price,
-                        'actual_price' => isset($tp->actual_price) ? $tp->actual_price : $tp->price,
-                        'discount' => isset($tp->discount) ? $tp->discount : 0,
-                        'total' => $tp->total_price
+                        'lable'         => $label,
+                        'price_type'    => $tp->price_type,
+                        'qty'           => $tp->quantity,
+                        'price'         => $tp->price,
+                        'actual_price'  => isset($tp->actual_price) ? $tp->actual_price : $tp->price,
+                        'discount'      => isset($tp->discount) ? $tp->discount : 0,
+                        'total'         => $tp->total_price
                     ];
                 }
             }
@@ -712,7 +728,7 @@ class PaymentController extends Controller
                     $actual_price = isset($result['actual_price']) ? $result['actual_price'] : $result['price'];
                     $discount = $result['discount'] ?? 0;
                     $total = $result['total_price'] ?? 0;
-                    $gt_total = $actual_price * $qty;
+                    $gt_total = $result['price_type'] === 'FIXED' ? $actual_price : $actual_price * $qty;
                     if ($qty > 0) {
                         $rowCount++;
                         $subtotal += $total;
@@ -769,7 +785,7 @@ class PaymentController extends Controller
                 foreach ($tour_pricing as $result) {
                     $qty = $result['quantity'] ?? 0;
                     $discount = $result['discount'] ?? 0;
-                    $dis_total = $discount * $qty;
+                    $dis_total = $result['price_type'] === 'FIXED' ? $discount : ($discount * $qty);
                     if ($qty > 0 && $discount > 0) {
                         $subTotalRequired = 1;
                         $TOUR_ITEM_SUMMARY .= '
