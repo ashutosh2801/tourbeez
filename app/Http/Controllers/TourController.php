@@ -942,29 +942,30 @@ $pickupHtml .= '</div>';
     public function editItinerary($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.feature.itinerary', compact( 'data'));
+        $itineraries = Itinerary::groupBy('title')->get();
+        return view('admin.tours.feature.itinerary', compact( 'data', 'itineraries'));
     }
 
     public function editFaqs($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.feature.faqs', compact( 'data'));
+        $faqs       = Faq::groupBy('question')->get();
+        return view('admin.tours.feature.faqs', compact( 'data', 'faqs'));
     }
 
     public function editInclusions($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.feature.inclusions', compact( 'data'));
+        $inclusions   = Inclusion::groupBy('name')->get();
+        return view('admin.tours.feature.inclusions', compact( 'data', 'inclusions'));
     }
 
     public function editOptionals($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.feature.optionals', compact( 'data'));
+        $optionals   = Optional::groupBy('name')->get();
+        return view('admin.tours.feature.optionals', compact( 'data', 'optionals'));
     }
-
-
-    
 
     public function editExclusions($id)
     {
@@ -1706,11 +1707,17 @@ $pickupHtml .= '</div>';
             $faq->save();
 
             $faqIds[] = $faq->id;
+            $pivotData[$faq->id] = [
+                'sort_by' => $option['order'] ?? 0
+            ];
         }
 
         // Sycc faqs
-        if ( !empty($faqIds) ) {
-            $tour->faqs()->sync($faqIds);
+        // if ( !empty($faqIds) ) {
+        //     $tour->faqs()->sync($faqIds);
+        // }
+        if (!empty($pivotData)) {
+            $tour->faqs()->sync($pivotData); 
         }
 
         return redirect()->back()->with('success','FAQs saved successfully.');
@@ -1745,53 +1752,21 @@ $pickupHtml .= '</div>';
             else {
                 $featureIds[] = $feature->id;
             }
+
+            $pivotData[$feature->id] = [
+                'sort_by' => $option['order'] ?? 0
+            ];
         }
 
         // Sycc faqs
-        if ( !empty($featureIds) ) {
-            $tour->inclusions()->sync($featureIds);
+        // if ( !empty($featureIds) ) {
+        //     $tour->inclusions()->sync($featureIds);
+        // }
+        if (!empty($pivotData)) {
+            $tour->inclusions()->sync($pivotData); 
         }
 
         return redirect()->back()->with('success','Inclusions saved successfully.');
-    }
-
-    public function optional_update(Request $request, $id) {
-        $tour  = Tour::findOrFail($id);
-
-        $request->validate([
-            'optionalValue'        => 'required|array',
-            'optionalValue.*.name' => 'required|string|max:255',
-        ],
-        [
-            'optionalValue.*.name.required'=> 'Name is required',
-        ]);
-
-        //Save new Exclusion
-        $featureIds = [];
-        foreach ($request->optionalValue as $option) {
-            //$feature = Inclusion::where('name', $option['name'])->first();
-            $feature = Optional::find( $option['id'] ?? 0 );
-            if (!$feature) {
-                $feature = new Optional();
-                //$feature->tour_id     = $tour->id;
-                $feature->user_id     = auth()->user()->id;
-            }
-            $feature->name      = $option['name'] ?? null;
-            
-            if( $feature->save() ) {
-                $featureIds[] = $feature->id;
-            } 
-            else {
-                $featureIds[] = $feature->id;
-            }
-        }
-
-        // Sycc faqs
-        if ( !empty($featureIds) ) {
-            $tour->optionals()->sync($featureIds);
-        }
-
-        return redirect()->back()->with('success','Optionals saved successfully.');
     }
 
     public function exclusion_update(Request $request, $id) {
@@ -1823,14 +1798,67 @@ $pickupHtml .= '</div>';
             else {
                 $featureIds[] = $feature->id;
             }
+
+            $pivotData[$feature->id] = [
+                'sort_by' => $option['order'] ?? 0
+            ];
         }
 
         // Sycc faqs
-        if ( !empty($featureIds) ) {
-            $tour->exclusions()->sync($featureIds);
+        // if ( !empty($featureIds) ) {
+        //     $tour->exclusions()->sync($featureIds);
+        // }
+        if (!empty($pivotData)) {
+            $tour->exclusions()->sync($pivotData); 
         }
 
         return redirect()->back()->with('success','Exclusions saved successfully.');
+    }
+
+    public function optional_update(Request $request, $id) {
+        $tour  = Tour::findOrFail($id);
+
+        $request->validate([
+            'optionalValue'        => 'required|array',
+            'optionalValue.*.name' => 'required|string|max:255',
+        ],
+        [
+            'optionalValue.*.name.required'=> 'Name is required',
+        ]);
+
+        //Save new Exclusion
+        $featureIds = [];
+        foreach ($request->optionalValue as $option) {
+            //$feature = Inclusion::where('name', $option['name'])->first();
+            $feature = Optional::find( $option['id'] ?? 0 );
+            if (!$feature) {
+                $feature = new Optional();
+                //$feature->tour_id     = $tour->id;
+                $feature->user_id     = auth()->user()->id;
+            }
+            $feature->name      = $option['name'] ?? null;
+            
+            if( $feature->save() ) {
+                $featureIds[] = $feature->id;
+            } 
+            else {
+                $featureIds[] = $feature->id;
+            }
+
+            $pivotData[$feature->id] = [
+                'sort_by' => $option['order'] ?? 0
+            ];
+        }
+
+        // Sycc faqs
+        // if ( !empty($featureIds) ) {
+        //     $tour->optionals()->sync($featureIds);
+        // }
+        if (!empty($pivotData)) {
+            $tour->optionals()->sync($pivotData); 
+        }
+
+        return redirect()->back()->with('success','Optionals saved successfully.');
     }
 
     public function taxfee_update(Request $request, $id) {

@@ -30,7 +30,7 @@
                                 'datetime'    => $item->datetime,
                                 'address'     => $item->address,
                                 'description' => $item->description,
-                                'order'       => $item->order ?? ($index + 1),
+                                'order'       => $item->sort_by ?? ($index + 1),
                             ];
                         })->toArray() 
                         ?? [];
@@ -55,10 +55,15 @@
                     <div id="ItineraryRow_{{ $index }}" class="itinerary-row"> 
                         <input type="hidden" name="ItineraryOptions[{{ $index }}][id]" value="{{ old("ItineraryOptions.$index.id", $option['id']) }}" class="form-control" />
 
-                        <div class="row align-items-start"> 
+                        <div class="row align-items-start drag-handle" style="cursor: move; background-color: #fff;"> 
                             
+                            <?php /*<div class="col-lg-1 d-flex align-items-center justify-content-center">
+                                <div class="drag-handle" style="cursor: move;">
+                                    <i class="fa fa-grip-vertical fa-lg"></i>
+                                </div>
+                            </div>
                             <div class="col-lg-11">
-                                <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
+                                 <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
                                     <label for="itinerary" class="form-label">Itinerary</label>
                                     <select class="form-control" data-live-search="true" onchange="fetchItinerary(this.value, {{ $index }})">
                                         <option value="">Select one</option>
@@ -66,13 +71,8 @@
                                             <option value="{{ $item->id }}">{{ $item->title . ' - ' . $item->datetime }}</option>
                                         @endforeach
                                     </select>
-                                </div>
-                            </div>
-                            <div class="col-lg-1 d-flex align-items-center justify-content-center">
-                                <div class="drag-handle" style="cursor: move;">
-                                    <i class="fa fa-grip-vertical fa-lg"></i>
-                                </div>
-                            </div>
+                                </div> 
+                            </div>*/ ?>
 
 
                             <div class="col-lg-8">
@@ -106,13 +106,13 @@
                             <div class="col-lg-12">
                                 <div class="form-group">
                                     <label for="itinerary_description_{{ $index }}" class="form-label"> Description</label>
-                                    <textarea name="ItineraryOptions[{{ $index }}][description]" id="itinerary_description_{{ $index }}" class="form-control" placeholder="Enter description" rows="4">{{ old("ItineraryOptions.$index.description", $option['description']) }}</textarea>
+                                    <textarea name="ItineraryOptions[{{ $index }}][description]" id="itinerary_description_{{ $index }}" class="form-control aiz-text-editor" data-min-height="150" placeholder="Enter description" rows="4">{{ old("ItineraryOptions.$index.description", $option['description']) }}</textarea>
                                 </div>
                             </div>
                         </div>
 
                         <button type="button" class="btn btn-sm btn-danger" onclick="removeItinerary({{ $index }})"><i class="fa fa-minus"></i></button>
-                        <hr />
+                        <hr style="border: 2px solid #01228c !important; z-index: 5;" />
                     </div>
                     @endforeach
                 </div>
@@ -152,17 +152,12 @@ function addItinerary() {
     newRow.setAttribute('id', `ItineraryRow_${itineraryCount}`);
 
     newRow.innerHTML = `
-        <div class="row align-items-start"> 
-            <div class="col-lg-1 d-flex align-items-center justify-content-center">
-                <div class="drag-handle" style="cursor: move;">
-                    <i class="fa fa-grip-vertical fa-lg"></i>
-                </div>
-            </div>
+        <div class="row align-items-start drag-handle" style="cursor: move;"> 
 
-            <div class="col-lg-11">
+            <div class="col-lg-12">
                 <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
                     <label for="itinerary" class="form-label">Itinerary</label>
-                    <select class="form-control" data-live-search="true" onchange="fetchItinerary(this.value, ${itineraryCount})">
+                    <select class="form-control aiz-selectpicker" data-live-search="true" onchange="fetchItinerary(this.value, ${itineraryCount})">
                         <option value="">Select one</option>
                         @foreach ($data->itineraryAll() as $item)
                         <option value="{{ $item->id }}">{{ $item->title . ' - ' . $item->datetime }}</option>
@@ -188,21 +183,21 @@ function addItinerary() {
             <div class="col-lg-2">
                 <div class="form-group">
                     <label for="itinerary_order_${itineraryCount}" class="form-label">Order</label>
-                    <input type="number" name="ItineraryOptions[${itineraryCount}][order]" id="itinerary_order_${itineraryCount}" value="${itineraryCount+1}" class="form-control itinerary-order">
+                    <input type="number" name="ItineraryOptions[${itineraryCount}][order]" id="itinerary_order_${itineraryCount}" value="${itineraryCount+1}" class="form-control itinerary-order" required>
                 </div>
             </div>
 
             <div class="col-lg-12">
                 <div class="form-group">
                     <label for="itinerary_address_${itineraryCount}" class="form-label">Address</label>
-                    <input type="text" name="ItineraryOptions[${itineraryCount}][address]" id="itinerary_address_${itineraryCount}" value="" class="form-control" placeholder="Enter itinerary address">
+                    <input type="text" name="ItineraryOptions[${itineraryCount}][address]" id="itinerary_address_${itineraryCount}" value="" class="form-control" placeholder="Enter itinerary address" required>
                 </div>
             </div>
 
             <div class="col-lg-12">
                 <div class="form-group">
                     <label for="itinerary_description_${itineraryCount}" class="form-label"> Description</label>
-                    <textarea name="ItineraryOptions[${itineraryCount}][description]" id="itinerary_description_${itineraryCount}" class="form-control" placeholder="Enter description" rows="4"></textarea>
+                    <textarea name="ItineraryOptions[${itineraryCount}][description]" id="itinerary_description_${itineraryCount}" class="form-control aiz-text-editor" data-min-height="150" placeholder="Enter description" rows="4"></textarea>
                 </div>
             </div>
         </div>
@@ -211,7 +206,8 @@ function addItinerary() {
 
     container.appendChild(newRow);
     itineraryCount++;
-
+    TB.plugins.bootstrapSelect();
+    TB.plugins.textEditor();
     refreshSortable();
 }
 
@@ -232,7 +228,7 @@ function fetchItinerary(selectedValue, num) {
         $(`#itinerary_title_${num}`).val(data.title);
         $(`#itinerary_datetime_${num}`).val(data.datetime);
         $(`#itinerary_address_${num}`).val(data.address);
-        $(`#itinerary_description_${num}`).val(data.description);
+        $(`#itinerary_description_${num}`).summernote('code', data.description);
     });
 }
 
