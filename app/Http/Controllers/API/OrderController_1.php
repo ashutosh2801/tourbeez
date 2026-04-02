@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Log;
 use Stripe\Customer;
 use Stripe\Stripe;
 
-class OrderController extends Controller
+class OrderController_1 extends Controller
 {
     /**
      * Display a listing of the resource.

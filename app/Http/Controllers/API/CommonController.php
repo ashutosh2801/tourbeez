@@ -32,22 +32,26 @@ class CommonController extends Controller
     public function home_listing(Request $request)
     {
         $data = Cache::remember('cities_home_list', 86400, function () {
-            return DB::table('tour_locations as tl')
+            $query = DB::table('tour_locations as tl')
                     ->join('tours as t', 't.id', '=', 'tl.tour_id')
                     ->join('cities as c', 'c.id', '=', 'tl.city_id')
                     ->join('uploads as u', 'u.id', '=', 'c.upload_id')
                     ->select('c.id', 'c.name', 'c.upload_id')
-                    ->groupBy('c.id', 'c.name', 'c.upload_id')
-                    ->orderByRaw('c.order DESC')
+                    ->groupBy('c.name', 'c.upload_id')
+                    ->orderByRaw('c.order ASC')
                     ->where('c.upload_id', '>=', 1)
-                    ->whereExists(function ($query) {
-                        $query->select(DB::raw(1))
-                            ->from('tour_schedules as ts')
-                            ->whereColumn('ts.tour_id', 't.id')
-                            ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
-                    })
+                    ->where('c.order', '>', 0)
+                    // ->whereExists(function ($query) {
+                    //     $query->select(DB::raw(1))
+                    //         ->from('tour_schedules as ts')
+                    //         ->whereColumn('ts.tour_id', 't.id')
+                    //         ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                    // })
                     ->limit(50)
                     ->get();
+
+            // dd(getFullSql($sql));
+            return $query;
         });
 
         $cities = [];
@@ -81,7 +85,7 @@ class CommonController extends Controller
                 WHERE t.status = 1 
                 AND t.deleted_at IS NULL
                 AND c.category_id IS NOT NULL 
-                AND c.category_id = 388
+                AND c.category_id = 406
                 AND u.is_main = 1
                 AND EXISTS (
                     SELECT 1 
@@ -90,7 +94,7 @@ class CommonController extends Controller
                         AND s.until_date >= CURDATE()
                 )
                 GROUP BY t.unique_code
-                ORDER BY t.sort_order DESC
+                ORDER BY t.sort_order ASC
                 LIMIT 14
             ) as sub"))  // ✅ NO semicolon here
             ->get();
@@ -168,7 +172,7 @@ class CommonController extends Controller
                 ->join('uploads as u', 'u.id', '=', 'c.upload_id')
                 ->select('c.id', 'c.name', 'c.upload_id')
                 ->distinct()
-                ->orderByRaw('RAND()') // ✅ Correct way to randomize rows
+                ->orderByRaw('c.order ASC')
                 ->where('c.upload_id', '>=', 1)
                 ->whereExists(function ($query) {
                     $query->select(DB::raw(1))
@@ -226,14 +230,17 @@ class CommonController extends Controller
                     ) as total_tours')
                 )
                 ->distinct()
-                ->where('c.upload_id' , '>=', 1)
-                ->whereExists(function ($query) {
-                            $query->select(DB::raw(1))
-                                ->from('tour_schedules as ts')
-                                ->whereColumn('ts.tour_id', 't.id')
-                                ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
-                        })
-                ->orderByRaw('RAND()');
+                ->where('c.upload_id' , '>', 0)
+                ->where('c.order' , '>', 0)
+                // ->whereExists(function ($query) {
+                //             $query->select(DB::raw(1))
+                //                 ->from('tour_schedules as ts')
+                //                 ->whereColumn('ts.tour_id', 't.id')
+                //                 ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                //         })
+                ->orderByRaw('c.order ASC');
+
+        //dd(getFullSql($query));
 
         $paginated = $query->paginate($limit, ['*'], 'page', $page);
 
@@ -312,7 +319,8 @@ class CommonController extends Controller
                     'tl.state_id','tl.country_id',
                     's.name','co.name'
                 )
-                ->orderBy('c.name', 'ASC');
+                //->orderBy('c.name', 'ASC');
+                ->orderByRaw('c.order ASC');
 
             $paginated = $query->paginate($perPage);
 

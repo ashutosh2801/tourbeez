@@ -266,8 +266,8 @@
                     @foreach($blogs as $blog)
                     {
                         "@type": "BlogPosting",
-                        "headline": "{{ $blog['title'] }}",
-                        "description": "{{ $blog['title'] }}",
+                        "headline": "{{ $blog['name'] }}",
+                        "description": "{{ $blog['name'] }}",
                         "url": "{{ $blog['url'] }}",
                         "image": "{{ $blog['image'] }}",
                         "datePublished": "{{ $blog['date'] }}",
@@ -291,9 +291,9 @@
             <ul class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5 mt-5 py-5">
                 @foreach($blogs as $blog)
                     <li>
-                        <a href="{{ $blog['url'] }}" title="{{ $blog['title'] }}" class="text-black">
-                            <img src="{{ $blog['image'] }}" alt="{{ $blog['title'] }}" loading="lazy" class="w-full h-40 object-cover rounded-lg" />
-                            <h2>{{ $blog['title'] }}</h2>
+                        <a href="{{ $blog['url'] }}" title="{{ $blog['name'] }}" class="text-black">
+                            <img src="{{ $blog['image'] }}" alt="{{ $blog['name'] }}" loading="lazy" class="w-full h-40 object-cover rounded-lg" />
+                            <h2>{{ $blog['name'] }}</h2>
                             <p>{{ $blog['date'] }}</p>
                         </a>
                     </li>

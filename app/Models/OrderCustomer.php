@@ -15,7 +15,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class OrderCustomer extends Model
 {
     use HasFactory;
-       protected $fillable = [
+    use LogsActivity;
+
+    protected $fillable = [
         'order_id',
         'user_id',
         'first_name',

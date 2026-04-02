@@ -34,6 +34,24 @@ if(!function_exists('getFullSql')) {
     }
 }
 
+if(!function_exists('source_list')) {
+    function source_list($item) {
+        switch(strtolower($item)) {
+            case 'toniagara':
+                return 'TN';
+                break;
+            case 'niagarafallstour' :
+                return 'NFT';
+                break;
+            case 'tourbeez' :
+                return 'TB';
+                break;
+            default:
+                return $item;
+        }
+    }
+}
+
 if(!function_exists('remove_last_Tour_word')) {
     function remove_last_Tour_word($string) {
         return preg_replace('/\s+(tour|tours)$/i', '', $string);
@@ -147,7 +165,10 @@ if (!function_exists('price_format_with_currency')) {
            $currency = $tourCurrency;
         }
         
-        $converted = currencyConvert($amount, $from, $currency);
+        // $converted = currencyConvert($amount, $from, $currency);
+
+
+        $converted = currencyConvertWithoutRound($amount, $from, $currency);
 
         return $currency . " " . number_format($converted, 2);
     }
@@ -201,6 +222,8 @@ if (! function_exists('getTourPricingDetails')) {
                 return [
                     'quantity' => $item->quantity,
                     'price' => $item->price,
+                    'actual_price' => isset($item->actual_price) ? $item->actual_price : $item->price,
+                    'discount'    => isset($item->discount) ? $item->discount : 0
                 ];
             }
         }
@@ -691,28 +714,28 @@ if (! function_exists('order_status')) {
     {
         switch($val) {
             case 1:
-                return '<span class="badge badge-inline badge-abandoned text-green-800 bg-green-100 px-4 py-2  rounded-full">Abandoned</span>';
+                return '<span class="badge badge-inline badge-abandoned text-red-800 bg-red-100 px-2 py-2  rounded-full">Abandoned</span>';
                 break;
             case 2:
-                return '<span class="badge badge-inline badge-onHold text-red-800 bg-red-100 px-4 py-2  rounded-full">On Hold</span>';
+                return '<span class="badge badge-inline badge-onHold text-blue-800 bg-blue-100 px-2 py-2  rounded-full">On Hold</span>';
                 break;
             case 3:
-                return '<span class="badge badge-inline badge-pendingSupplier text-yellow-800 bg-yellow-100 px-4 py-2  rounded-full">Pending supplier</span>';
+                return '<span class="badge badge-inline badge-pendingSupplier text-yellow-800 bg-red-100 px-2 py-2  rounded-full">Pending supplier</span>';
                 break; 
             case 4:
-                return '<span class="badge badge-inline badge-pendingCustomer text-yellow-800 bg-yellow-100 px-4 py-2  rounded-full">Pending customer</span>';
+                return '<span class="badge badge-inline badge-pendingCustomer text-yellow-800 bg-red-100 px-2 py-2  rounded-full">Pending customer</span>';
                 break;
             case 5:
-                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-4 py-2  rounded-full">Confirmed</span>';
+                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-2 py-2  rounded-full">Confirmed</span>';
                 break;
             case 6:
-                return '<span class="badge badge-inline badge-cancelled text-red-800 bg-red-100 px-4 py-2  rounded-full">Cancelled</span>';   
+                return '<span class="badge badge-inline badge-cancelled text-red-800 bg-red-100 px-2 py-2  rounded-full">Cancelled</span>';   
                 break;  
             case 7:
-                return '<span class="badge badge-inline badge-abandoned text-red-800 bg-red-100 px-4 py-2  rounded-full">Abandoned cart</span>';   
+                return '<span class="badge badge-inline badge-abandoned text-blue-800 bg-blue-100 px-2 py-2  rounded-full">Requires capture</span>';   
                 break; 
             default:
-                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-4 py-2  rounded-full">Not completed</span>';   
+                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-2 py-2  rounded-full">Not completed</span>';   
                 break;   
         }
     }
@@ -728,7 +751,7 @@ if (! function_exists('order_status_list')) {
             4 => "Pending customer",
             5 => "Confirmed",
             6 => "Cancelled",
-            7 => "Abandoned cart",
+            7 => "Requires capture",
         ];
     }
 }
@@ -1315,21 +1338,118 @@ if (!function_exists('currencyConvert')) {
         });
 
         if (empty($rates)) {
-            return round($amount);
+            // return round($amount);
+            return (float) number_format($amount, 6, '.', '');
         }
 
         $rateFrom = $rates[$from] ?? null;
         $rateTo   = $rates[$to] ?? null;
 
         if (!$rateFrom || !$rateTo) {
-            return round($amount);
+            // return round($amount); 
+            return (float) number_format($amount, 6, '.', '');
+
         }
         // dd($rateFrom, $rateTo, $amount);
         // ✅ USD-based conversion (MATCHES FRONTEND)
         $converted = ($amount / $rateFrom) * $rateTo;
 
-        return round($converted);
-        // return (float) number_format($converted, 6, '.', '');
+        // return round($converted);
+        return (float) number_format($converted, 6, '.', '');
+
+        // return round($converted, 2);
+    }
+}
+if (!function_exists('cardSvg')) {
+    function cardSvg($brand) {
+
+        $brand = strtolower($brand);
+
+        $svgs = [
+
+        'visa' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#1A1F71"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="12" font-weight="bold">VISA</text>
+        </svg>',
+
+        'mastercard' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <circle cx="20" cy="12" r="8" fill="#EB001B"/>
+        <circle cx="28" cy="12" r="8" fill="#F79E1B"/>
+        </svg>',
+
+        'amex' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#2E77BB"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">AMEX</text>
+        </svg>',
+
+        'discover' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#FF6000"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">DISC</text>
+        </svg>',
+
+        'default' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#6c757d"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10">CARD</text>
+        </svg>'
+        ];
+
+        return $svgs[$brand] ?? $svgs['default'];
+
+    }
+}
+
+
+if (!function_exists('price_with_currency_no_round')) {
+    function price_with_currency_no_round($amount, $currency = 'USD', $tourCurrency=NULL)
+    {
+        $from = $currency;
+
+        $currency = $currency;
+
+        if($tourCurrency){
+           $currency = $tourCurrency;
+        }
+        
+        $converted = currencyConvertWithoutRound($amount, $from, $currency);
+
+        return $currency . " " . number_format($converted, 2);
+    }
+}
+
+if (!function_exists('currencyConvertWithoutRound')) {
+    function currencyConvertWithoutRound(?float $amount, string $from, string $to = 'USD')
+    {
+        if ($amount === null) {
+            return 0.0;
+        }
+
+        $from = strtoupper($from);
+        $to   = strtoupper($to);
+
+        $rates = Cache::remember('conversion_rates', 43200, function () {
+            $response = Http::get('https://tourbeez.com/public/data/conversion_rates.json');
+            if ($response->ok()) {
+                return $response->json()['conversion_rates'] ?? [];
+            }
+            return [];
+        });
+
+        if (empty($rates)) {
+            return number_format($amount, 6, '.', '');
+        }
+
+        $rateFrom = $rates[$from] ?? null;
+        $rateTo   = $rates[$to] ?? null;
+
+        if (!$rateFrom || !$rateTo) {
+            return number_format($amount, 6, '.', '');
+        }
+        // dd($rateFrom, $rateTo, $amount);
+        // ✅ USD-based conversion (MATCHES FRONTEND)
+        $converted = ($amount / $rateFrom) * $rateTo;
+
+        // return round($converted);
+        return (float) number_format($converted, 6, '.', '');
 
         // return round($converted, 2);
     }
