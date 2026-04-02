@@ -490,6 +490,7 @@ $expectEmails = ['order_pending'];
                                                                 <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                                             </div>
                                                         </div>
+                                                        <input type="text" class="tour_startdate_time_display border-0" readonly>
                                                     </td>
 
                                                     <td class="text-right">
@@ -744,20 +745,36 @@ $expectEmails = ['order_pending'];
                                         @php
                                             
 
-                                            $outsidePayment = $order->payments()->where('collection_type', 'Outside')->sum('amount');
+                                            $outsidePayment = $order->payments()->where('collection_type', 'Outside')->where('payment_type', 'PROMO_CODE')->sum('amount');
 
                                         @endphp
+
+                                        @php
+                                        $paid = $order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount');
+
+                                            $overPaid =   $paid - $outsidePayment - $order->total_amount;
+
+                                        @endphp
+                                        
+                                        <tr>
+                                            <td class="cummulative-total"><b>Total</b></td>
+                                            <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                        </tr>
                                         @if($outsidePayment > 0)
                                         <tr class="text-success">
-                                            <td class="cummulative-total"><b>Outside Paid/ Promo</b></td>
+                                            <td class="cummulative-total"><b>Promo</b></td>
                                             <td class="text-right">{{ price_format_with_currency($outsidePayment, $order->currency) }}</td>
                                         </tr>
                                         
                                         @endif
-                                        <tr>
-                                            <td class="cummulative-total"><b>Grand Total</b></td>
-                                            <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+
+                                        @if(($paid - $outsidePayment) > 0)
+                                        <tr class="text-success">
+                                            <td class="cummulative-total"><b>Paid</b></td>
+                                            <td class="text-right">{{ price_format_with_currency($paid - $outsidePayment, $order->currency) }}</td>
                                         </tr>
+                                        
+                                        @endif
                                         
                                         
                                         <tr class="cummulative-total" style="color: red">
@@ -874,7 +891,7 @@ $expectEmails = ['order_pending'];
                                 <div id="totalPayment1" class="col-md-6 text-start text-success">
                                     Paid:
 
-                                    {{price_format_with_currency($paid, $order->currency)}}
+                                    {{price_format_with_currency($paid-$outsidePayment, $order->currency)}}
                                 </div>
                                 @if($overPaid > 0)
                                     <div id="totalPayment1" class="col-md-6 text-start text-success">
@@ -3099,7 +3116,9 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 
                 // Fetch sessions for initial date
                 // console.log(res);
-                // console.log(res.start_date);
+                console.log(res.tour_time);
+
+                $row.find(".tour_startdate_time_display").val(res.tour_time);
                 fetchTourSessions(tourId, res.tour_date, count, res.tour_time);
                 // fetchTourSessions(tourId, selectedDate, count, res.tour_time);
 

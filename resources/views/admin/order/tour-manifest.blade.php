@@ -20,7 +20,7 @@
                 </div>
                 <a href="{{ route('admin.orders.tour.manifest.download', ['date' => request('date')]) }}"
                    class="btn btn-success btn-sm">
-                   <i class="bi bi-download"></i> Download PDF
+                   <i class="bi bi-download"></i> Download Excel
                 </a>
             </div>
         </div>

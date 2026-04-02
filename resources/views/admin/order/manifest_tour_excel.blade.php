@@ -1,34 +1,67 @@
 <table>
     <thead>
         <tr>
-            <th>Tour</th>
-            <th>Slot Time</th>
-            <th>Order #</th>
-            <th>Customer</th>
-            <th>Phone</th>
-            <th>Guests</th>
-            <th>Extras</th>
-            <th>Balance</th>
-            <th>Total</th>
-            <th>Paid</th>
+            <th>passenger_first_name</th>
+            <th>passenger_last_name</th>
+            <th>passenger_phone</th>
+            <th>passenger_email</th>
+            <th>booked_by_first_name</th>
+            <th>booked_by_last_name</th>
+            <th>pickup_date</th>
+            <th>pickup_time</th>
+            <th>pickup_address</th>
+            <th>pickup_city</th>
+            <th>pickup_state</th>
+            <th>pickup_zip</th>
+            <th>pickup_country</th>
+            <th>pickup_notes</th>
+            <th>dropoff_date</th>
+            <th>dropoff_time</th>
+            <th>dropoff_datetime</th>
+            <th>dropoff_name</th>
+            <th>dropoff_address</th>
+            <th>dropoff_city</th>
+            <th>dropoff_state</th>
+            <th>dropoff_zip</th>
+            <th>dropoff_country</th>
+            <th>dropoff_notes</th>
+            <th>service_type</th>
+            <th>vehicle_type</th>
+            <th>trip_status</th>
+            <th>payment_method</th>
+            <th>pickup_airline_code</th>
+            <th>pickup_airline_name</th>
+            <th>pickup_flight_number</th>
+            <th>pickup_flight_combined</th>
+            <th>dropoff_airline_code</th>
+            <th>dropoff_airline_name</th>
+            <th>dropoff_flight_number</th>
+            <th>dropoff_flight_combined</th>
+            <th>passenger_count</th>
+            <th>luggage_count</th>
+            <th>infant_child_seat_count</th>
+            <th>toddler_child_seat_count</th>
+            <th>booster_child_seat_count</th>
+            <th>handicap_accessible</th>
+            <th>notes</th>
+            <th>dispatch_notes</th>
+            <th>greeting_signs</th>
+            <th>greeting_sign_notes</th>
+            <th>billing_account_number</th>
+            <th>billing_contact</th>
+            <th>group_name</th>
+            <th>po_client_ref</th>
+            <th>voucher_number</th>
+            <th>Amount</th>
         </tr>
     </thead>
     <tbody>
-        @foreach ($sessions as $session)
-            @foreach ($session['orders'] as $order)
-                <tr>
-                    <td>{{ $session['title'] }}</td>
-                    <td>{{ $session['slot_time'] }}</td>
-                    <td>{{ $order->order_number }}</td>
-                    <td>{{ $order->customer?->name }}</td>
-                    <td>{{ $order->customer?->phone }}</td>
-                    <td>{{ $order->guest_summary }}</td>
-                    <td>{{ $order->extras_summary }}</td>
-                    <td>{{ number_format($order->balance_amount, 2) }}</td>
-                    <td>{{ number_format($order->total_amount, 2) }}</td>
-                    <td>{{ number_format($order->paid_amount, 2) }}</td>
-                </tr>
-            @endforeach
+        @foreach ($sessions as $row)
+            <tr>
+                @foreach ($row as $value)
+                    <td>{{ $value }}</td>
+                @endforeach
+            </tr>
         @endforeach
     </tbody>
 </table>

@@ -1644,6 +1644,8 @@ $pickupHtml .= '</div>';
 
         //Save new itinerary
         $itineraryIds = [];
+
+        
         foreach ($request->ItineraryOptions as $option) {
             // $itinerary = Itinerary::where('title', $option['title'])
             // ->where('datetime', $option['datetime'])
@@ -1665,7 +1667,7 @@ $pickupHtml .= '</div>';
 
             $itineraryIds[] = $itinerary->id;
             $pivotData[$itinerary->id] = [
-                'sort_by' => $option['sort_by'] ?? 0
+                'sort_by' => $option['order'] ?? 0
             ];
         }
 

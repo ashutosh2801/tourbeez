@@ -739,16 +739,27 @@ document.addEventListener("DOMContentLoaded", function () {
     ====================================================== */
     const phoneInput = document.querySelector("#customer_phone");
 
+
+
     const iti = window.intlTelInput(phoneInput, {
         initialCountry: "auto",
         separateDialCode: true,
         nationalMode: false,
+
+        // ✅ Enable searchable dropdown
+        allowDropdown: true,
+        autoPlaceholder: "polite",
+
+        // 🔥 THIS enables search inside dropdown
+        dropdownContainer: document.body,
+
         geoIpLookup: function (callback) {
             fetch("https://ipapi.co/json/")
                 .then(res => res.json())
                 .then(data => callback(data.country_code))
                 .catch(() => callback("US"));
         },
+
         utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
     });
 
