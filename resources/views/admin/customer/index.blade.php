@@ -8,33 +8,33 @@
     </div>
     <div class="card card-primary bg-white border rounded-lg-custom customer-edit-body">
         <form method="GET" class="p-3">
-    <div class="row">
-        <div class="col-md-3">
-            <input type="text" name="name" value="{{ request('name') }}" class="form-control" placeholder="Search Name">
-        </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <input type="text" name="name" value="{{ request('name') }}" class="form-control" placeholder="Search Name">
+                </div>
 
-        <div class="col-md-3">
-            <input type="text" name="email" value="{{ request('email') }}" class="form-control" placeholder="Search Email">
-        </div>
+                <div class="col-md-3">
+                    <input type="text" name="email" value="{{ request('email') }}" class="form-control" placeholder="Search Email">
+                </div>
 
-        <div class="col-md-2">
-           
+                <div class="col-md-3">
+                    <select name="per_page" class="form-control">
+                        @foreach ([10, 25, 50, 100] as $number)
+                            <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                {{ $number }} per page
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <select name="per_page" class="form-control">
-                @foreach ([10, 25, 50, 100] as $number)
-                    <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                        {{ $number }} per page
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <div class="col-md-3">
-            <button class="btn btn-primary">Filter</button>
-            <a href="{{ route('admin.customers.index') }}" class="btn btn-secondary">Reset</a>
-        </div>
-    </div>
-</form>
+                <div class="col-md-3">
+                    <div class="d-flex column-gap-10">
+                        <button class="btn btn-filter flex-fill">Filter</button>
+                        <a href="{{ route('admin.customers.index') }}" class="btn btn-secondary flex-fill">Reset</a>
+                    </div>
+                </div>
+            </div>
+        </form>
         <div class="card-body p-0">
             <table class="table table-striped" id="userTable">
                 <thead>

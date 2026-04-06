@@ -53,7 +53,7 @@
     /* Payment dropdown styling */
     .dropdown-menu.dropdown-value.payment-details-breakdown--container {
         min-width: 250px;
-        padding: 0.75rem;
+        padding: 0;
         border-radius: 0.25rem;
         background-color: #ffffff;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -1048,7 +1048,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
 
                                     <div id="paymentTemplate">
                                         <div class="field-box">
-                                            <div style="flex:1;">
+                                            <div class="field-wrap">
                                                 <select class="form-control" name="paymentType[]">
                                                     <option value="">Payment type...</option>
                                                     <option value="CASH">Cash</option>
@@ -1066,11 +1066,11 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 </select>
                                             </div>
 
-                                            <div style="flex:1;">
+                                            <div class="field-wrap">
                                                 <input class="form-control" name="transactionId[]" placeholder="Ref. number" autocomplete="off" />
                                             </div>
 
-                                            <div style="flex:1;">
+                                            <div class="field-wrap">
                                                 <div class="input-group">
                                                     <input type="text" class="aiz-date-range form-control"
                                                         name="collection_date[]" data-format="ddd MMM DD, YYYY" data-single="true" autocomplete="off" placeholder="Date">
@@ -1080,7 +1080,7 @@ $expectEmails = ['order_pending', 'payment_receipt'];
                                                 </div>
                                             </div>
 
-                                            <div  style="flex:1;">
+                                            <div class="field-wrap">
                                                 <div class="input-group">
                                                     <div class="input-group-append">
                                                         <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->

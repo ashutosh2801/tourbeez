@@ -2,7 +2,7 @@
     @section('title','Edit Permission')
     <section class="content">
         <!-- Default box -->
-        <div class="card card-primary bg-white border rounded-lg-custom">
+        <div class="card card-primary bg-white border rounded-lg-custom edit-permission-body">
             <div class="card card-primary">
                 <div class="card-header create-supplier-head">
                     <div class="row">
@@ -33,7 +33,7 @@
                                     <div class="invalid-feedback">Permission name field is required.</div>
                                 </div>
                             </div>
-                            <div class="col-lg-12">
+                            <div class="card-footer">
                                 <div class="float-right">
                                     <button type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
                                 </div>

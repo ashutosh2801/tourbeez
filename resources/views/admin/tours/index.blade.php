@@ -1,152 +1,6 @@
 
 <x-admin>
 
-<style>
-
-.tour-action-btn{
-    background:#2563eb !important;
-    color:#ffffff !important;
-    border:none !important;
-    padding:6px 14px;
-    font-size:13px;
-    font-weight:500;
-    border-radius:6px;
-    cursor:pointer;
-    transition:all .2s ease;
-}
-
-.tour-action-btn i{
-    margin-right:4px;
-}
-
-.tour-action-btn:hover{
-    background:#1d4ed8 !important;
-    box-shadow:0 3px 8px rgba(37,99,235,0.25);
-}
-
-.tour-action-btn:active{
-    transform:scale(0.97);
-}
-
-
-/* Expand row */
-
-.tour-expand-row{
-    display:none;
-}
-
-
-/* Expanded panel */
-
-.tour-actions{
-    background:#f8fafc;
-    padding:16px;
-    border-top:1px solid #e5e7eb;
-
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-    gap:10px;
-}
-
-
-/* Links */
-
-.tour-actions a{
-    display:flex;
-    align-items:center;
-    gap:8px;
-
-    padding:8px 10px;
-    font-size:13px;
-
-    background:#eef2ff;      /* light blue default */
-    border:1px solid #c7d2fe;
-    border-radius:6px;
-
-    text-decoration:none;
-    color:#3730a3;
-
-    transition:all .15s ease;
-}
-
-.tour-actions a:hover{
-    background:#e0e7ff;
-    border-color:#6366f1;
-    color:#312e81;
-}
-
-
-.tour-modal{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.45);
-display:none;
-align-items:center;
-justify-content:center;
-z-index:9999;
-}
-
-.tour-modal-content{
-background:#fff;
-width:700px;
-max-width:90%;
-border-radius:8px;
-overflow:hidden;
-}
-
-.tour-modal-header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:14px 18px;
-border-bottom:1px solid #eee;
-font-weight:600;
-}
-
-.tour-modal-header button{
-border:none;
-background:none;
-font-size:18px;
-cursor:pointer;
-}
-
-.tour-actions{
-padding:20px;
-
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-gap:10px;
-}
-
-.tour-actions a{
-    display:flex;
-    align-items:center;
-    gap:8px;
-
-    padding:8px 10px;
-    font-size:13px;
-
-    background:#eef2ff;      /* light blue default */
-    border:1px solid #c7d2fe;
-    border-radius:6px;
-
-    text-decoration:none;
-    color:#3730a3;
-
-    transition:all .15s ease;
-}
-
-.tour-actions a:hover{
-    background:#e0e7ff;
-    border-color:#6366f1;
-    color:#312e81;
-}
-
-</style>
-
 </style>   
     @section('title','Tours')
     <style>
@@ -356,29 +210,29 @@ gap:10px;
             <div class="table-viewport">
                 <table class="table table-striped" id="tourTable">
                     <thead class="table-light">
-                    <tr>
+                        <tr>
 
-                    <th style="width:4%; text-align:center;">
-                    <input type="checkbox" id="checkAll" class="table-checkbox">
-                    </th>
+                        <th style="width:4%; text-align:center;">
+                        <input style="width:20px; height:20px;" type="checkbox" id="checkAll" class="table-checkbox">
+                        </th>
 
-                    <th style="width:4%;">{{ translate('Order') }}</th>
+                        <th style="width:4%;">{{ translate('Order') }}</th>
 
-                    <th style="width:6%;">{{ translate('Image') }}</th>
+                        <th style="width:6%;">{{ translate('Image') }}</th>
 
-                    <th style="width:32%;">{{ translate('Title') }}</th>
+                        <th style="width:32%;">{{ translate('Title') }}</th>
 
-                    <th style="width:12%;">{{ translate('Price') }}</th>
+                        <th style="width:12%;">{{ translate('Price') }}</th>
 
-                    <th style="width:12%;">{{ translate('SKU') }}</th>
+                        <th style="width:12%;">{{ translate('SKU') }}</th>
 
-                    <th style="width:2%; text-align:center;">{{ translate('Reviews') }}</th>
+                        <th style="width:2%; text-align:center;">{{ translate('Reviews') }}</th>
 
-                    <th style="width:14%;">{{ translate('Category') }}</th>
+                        <th style="width:14%;">{{ translate('Category') }}</th>
 
-                    <th style="width:14%;">{{ translate('Actions') }}</th>
+                        <th style="width:14%;">{{ translate('Actions') }}</th>
 
-                    </tr>
+                        </tr>
                     </thead>
                     <tbody id="sortable-tours">
                         @foreach ($tours as $tour)
@@ -392,7 +246,7 @@ gap:10px;
 
                                 <td>{!! main_image_html($tour->main_image?->id) !!}</td>
                                 <td>
-                                    <div class="mb-2">
+                                    <div class="activated-btn mb-2">
                                         {!! tour_status($tour->status) !!}
                                     </div>
                                     @can('edit_tour')     
@@ -406,7 +260,7 @@ gap:10px;
                                 </td>  
 
                                 
-                                <td>{{ price_format_with_currency($tour->price, $tour->currency) }}</td>
+                                <td><b>{{ price_format_with_currency($tour->price, $tour->currency) }}</b></td>
                                 <td>{{ $tour->unique_code }}</td>
                                 <td class="text-center">{{ $tour->trustpilot_review ? 'Yes' : 'No' }}</td>
                                 <td>{{ $tour->category_names ?: 'No categories' }}</td>

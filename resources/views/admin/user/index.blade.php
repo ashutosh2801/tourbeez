@@ -25,7 +25,7 @@
                     <input type="text" name="email" value="{{ request('email') }}" class="form-control" placeholder="Search Email">
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <select name="per_page" class="form-control">
                         @foreach ([10, 25, 50, 100] as $number)
                             <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
@@ -36,8 +36,10 @@
                 </div>
 
                 <div class="col-md-3">
-                    <button class="btn btn-primary">Filter</button>
-                    <a href="{{ route('admin.user.index') }}" class="btn btn-secondary">Reset</a>
+                    <div class="d-flex column-gap-10">
+                        <button class="btn btn-filter flex-fill">Filter</button>
+                        <a href="{{ route('admin.user.index') }}" class="btn btn-secondary flex-fill">Reset</a>
+                    </div>
                 </div>
             </div>
         </form>
