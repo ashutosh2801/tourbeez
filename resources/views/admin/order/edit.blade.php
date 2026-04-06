@@ -852,8 +852,8 @@ $expectEmails = ['order_pending'];
                                         </button>
                                     </div>
                                  <div style="border:1px solid #eaecef;">
-                                    
                                     <table class="table m-0">
+
                                         
 
                                         @php
@@ -921,6 +921,10 @@ $expectEmails = ['order_pending'];
                                 @endphp
                             @endforeach
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> bc62fce793c99447b8807a5f63d910a14cc1c41b
                             <div class="card-total bg-green p-3 row align-items-end">
 
                                  @php
@@ -934,6 +938,10 @@ $expectEmails = ['order_pending'];
 
                                     {{price_format_with_currency($paid-$outsidePayment, $order->currency)}}
                                 </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> bc62fce793c99447b8807a5f63d910a14cc1c41b
                                 @if($overPaid > 0)
                                     <div id="totalPayment1" class="fw-700">
 
