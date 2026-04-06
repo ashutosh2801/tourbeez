@@ -37,25 +37,40 @@ class PaymentController extends Controller
 
         try {
             $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+            \Log::error('Payment event received', ['event' => $event, 'payload' => $payload]);
+            $paymentIntent = $event->data->object;
+            $orderId = $paymentIntent->metadata->order_id;
+            $orderNum = $paymentIntent->metadata->order_number;
+            // Update your order status in DB
+            if(!$orderId || !$orderNum) {
+                Log::error('Stripe Webhook Error: Missing order_id or order_number in metadata');
+                return response()->json(['error' => 'Invalid metadata'], 400);
+            }
+
+            $order = Order::find($orderId);
+            if ($order && $event->type === 'payment_intent.succeeded') {
+                $order->payment_status  = 1; // paid
+                $order->order_status    = 3; // pending suplier confirmation
+            }
+            else if ($order && $event->type === 'payment_intent.requires_capture') {
+                $order->payment_status  = 3; // not paid yet, but authorized
+                $order->order_status    = 3; // pending suplier confirmation
+            }
+            else if ($order && $event->type === 'payment_intent.payment_failed') {
+                $order->payment_status  = 0; // failed
+                $order->order_status    = 1; // abandoned cart
+            }
+            else if ($order && $event->type === 'payment_intent.canceled') {
+                $order->payment_status  = 0; // cancelled
+                $order->order_status    = 6; // cancelled
+            }
+            $order->transaction_id  = $paymentIntent->id;
+            $order->save();
+
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);
         }
 
-        if ($event->type === 'payment_intent.succeeded') {
-            $paymentIntent = $event->data->object;
-            $orderId = $paymentIntent->metadata->order_id;
-            $orderNum = $paymentIntent->metadata->order_number;
-
-            // Update your order status in DB
-            $order = Order::where('id', $orderId)->where('order_number', $orderNum)->first();
-            if ($order) {
-                $order->payment_status  = 1;
-                $order->status          = 1;
-                $order->transaction_id  = $paymentIntent->id;
-                $order->payment_id      = $paymentIntent->id;
-                $order->save();
-            }
-        }
 
         return response()->json(['status' => 'success']);
     }
@@ -328,7 +343,6 @@ class PaymentController extends Controller
                 ]); 
             }
             
-            // [{"tour_id":24,"tour_pricing_id":41,"label":"Adults","price_type":"PER_PERSON","quantity":2,"actual_price":109,"price":99,"discount":10,"total_price":198}]
             $tour_pricing = json_decode($booking->order_tour->tour_pricing);
             $pricing=[]; $total = 0;
             if(!empty($tour_pricing) && is_array($tour_pricing)) {
@@ -337,12 +351,13 @@ class PaymentController extends Controller
                     $label = str_ireplace('Group', 'Participants', $tourPricing->label);
                     //$total = ($tp->quantity * $tp->price);
                     $pricing[] = [
-                        'lable' => $label,
-                        'qty'   => $tp->quantity,
-                        'price' => $tp->price,
-                        'actual_price' => isset($tp->actual_price) ? $tp->actual_price : $tp->price,
-                        'discount' => isset($tp->discount) ? $tp->discount : 0,
-                        'total' => $tp->total_price
+                        'lable'         => $label,
+                        'price_type'    => $tp->price_type,
+                        'qty'           => $tp->quantity,
+                        'price'         => $tp->price,
+                        'actual_price'  => isset($tp->actual_price) ? $tp->actual_price : $tp->price,
+                        'discount'      => isset($tp->discount) ? $tp->discount : 0,
+                        'total'         => $tp->total_price
                     ];
                 }
             }
@@ -366,12 +381,11 @@ class PaymentController extends Controller
             $fees = [];
             if (!empty($fees_pricing) && is_array($fees_pricing)) {
                 foreach ($fees_pricing as $fp) {
-                    // $labelText = $fp->price_type == 'PERCENT' ? '(' . $fp->value . '%)' : $fp->value;
-
-                    $labelText = $fp->label;
+                    $labelText = isset($fp->type) && $fp->type == 'PERCENT' ? ' (' . $fp->value . '%)' : ' (' . $fp->value . ')';
+                    $labelText = $fp->label . $labelText;
 
                     $fees[] = [
-                        'lable' => $fp->label, // fixed spelling
+                        'lable' => $labelText, // fixed spelling
                         'price' => $fp->price,
                         'total' => $fp->price
                     ];
@@ -400,12 +414,28 @@ class PaymentController extends Controller
                 $pickLocation = PickupLocation::find($booking->customer->pickup_id);
                 $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
             }
-            
+
+            /* If already partially paid or added discount/promo etc in backend */
+            $paidAmount = $booking->payments()
+                        ->where('status', 'succeeded')
+                        ->where('payment_type', '<>', 'PROMO_CODE')
+                        ->sum('amount');
+                
+            $promoCode  = $booking->payments()
+                        ->where('status', 'succeeded')
+                        ->where('payment_type', 'PROMO_CODE')
+                        ->sum('amount');    
+
+            $totalPaid  = $paidAmount + $promoCode;                   
 
             $detail = [
+                'id'                => $booking->order_number,
                 'action_name'       => $booking->action_name,
                 'order_number'      => $booking->order_number,
                 'number_of_guests'  => $booking->number_of_guests,
+                'paid_amount'       => $paidAmount ?? 0,
+                'promo_code'        => $promoCode ?? 0,
+                'total_paid'        => $totalPaid ?? 0,
                 'total_amount'      => $booking->total_amount ?? 0,
                 'balance_amount'    => $booking->balance_amount ?? 0,
                 'currency'          => $booking->currency,
@@ -688,6 +718,9 @@ class PaymentController extends Controller
                 
                 // Pricing Rows
                 $i = 1;
+                $subTotalRequired = 1;
+                $subTotalRequired = 0;
+                $rowCount = 0;
                 foreach ($tour_pricing as $result) {
                     // $result = getTourPricingDetails($tour_pricing, $pricing->id);
                     $qty = $result['quantity'] ?? 0;
@@ -695,8 +728,9 @@ class PaymentController extends Controller
                     $actual_price = isset($result['actual_price']) ? $result['actual_price'] : $result['price'];
                     $discount = $result['discount'] ?? 0;
                     $total = $result['total_price'] ?? 0;
-                    $gt_total = $actual_price * $qty;
+                    $gt_total = $result['price_type'] === 'FIXED' ? $actual_price : $actual_price * $qty;
                     if ($qty > 0) {
+                        $rowCount++;
                         $subtotal += $total;
                         $subtotal2+= $gt_total;
                         $price_text = $price ? price_format_with_currency($gt_total, $order->currency) : 'Free';
@@ -709,20 +743,23 @@ class PaymentController extends Controller
                         </tr>';
                     }
                 }
+                if ($rowCount > 1) {
+                   $subTotalRequired = 1;
+                }
 
-                $TOUR_ITEM_SUMMARY .= '
-                    <tr>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
-                                <strong>Sub Total </strong>
-                            </small>
-                        </td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                ' . price_format_with_currency($subtotal2, $order->currency) . '
-                        </td>
-                    </tr>';
+                // $TOUR_ITEM_SUMMARY .= '
+                //     <tr>
+                //         <td>&nbsp;</td>
+                //         <td>&nbsp;</td>
+                //         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                //             <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
+                //                 <strong>Sub Total </strong>
+                //             </small>
+                //         </td>
+                //         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                //                 ' . price_format_with_currency($subtotal2, $order->currency) . '
+                //         </td>
+                //     </tr>';
 
                 // Extras Rows
                 foreach ($tour_extra as $extra) {
@@ -732,6 +769,7 @@ class PaymentController extends Controller
                     // $total = $qty * $price;
                     $total = $extra['total_price'] ?? 0;
                     if ($qty > 0) {
+                        $subTotalRequired = 1;
                         $subtotal += $total;
                         $TOUR_ITEM_SUMMARY .= '
                         <tr>
@@ -747,8 +785,9 @@ class PaymentController extends Controller
                 foreach ($tour_pricing as $result) {
                     $qty = $result['quantity'] ?? 0;
                     $discount = $result['discount'] ?? 0;
-                    $dis_total = $discount * $qty;
+                    $dis_total = $result['price_type'] === 'FIXED' ? $discount : ($discount * $qty);
                     if ($qty > 0 && $discount > 0) {
+                        $subTotalRequired = 1;
                         $TOUR_ITEM_SUMMARY .= '
                         <tr>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
@@ -758,20 +797,22 @@ class PaymentController extends Controller
                         </tr>';
                     }
                 }
+                if($subTotalRequired){
+                    $TOUR_ITEM_SUMMARY .= '
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
+                                    <strong>Sub Total </strong>
+                                </small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                    ' . price_format_with_currency($subtotal, $order->currency) . '
+                            </td>
+                        </tr>';
 
-                $TOUR_ITEM_SUMMARY .= '
-                    <tr>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
-                                <strong>Total </strong>
-                            </small>
-                        </td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                ' . price_format_with_currency($subtotal, $order->currency) . '
-                        </td>
-                    </tr>';
+                }
 
                 // Taxes
                 $taxRows = '';
@@ -800,7 +841,7 @@ class PaymentController extends Controller
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:#000; margin:0; font-size:15px"><strong>Grand Total</strong></h3>
+                            <h3 style="color:#000; margin:0; font-size:15px"><strong>Total</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                             <h3 style="color:#000; margin:0; font-size:15px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
@@ -823,6 +864,26 @@ class PaymentController extends Controller
                 }
                 
                 $paid = $order->total_amount - $order->balance_amount;
+
+                $promoPayment = $order->payments()->where('collection_type', 'Outside')->where('payment_type', 'PROMO_CODE')->sum('amount');
+
+
+                if ($promoPayment > 0) {   
+                   $paid = $paid - $promoPayment;                 
+                    // paid amount
+                    $TOUR_ITEM_SUMMARY .= '
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>Promo</strong></h3>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>' . price_format_with_currency($promoPayment, $order->currency) . '</strong></h3>
+                        </td>
+                    </tr>'; 
+                }
+
                 if ($paid > 0) {                    
                     // paid amount
                     $TOUR_ITEM_SUMMARY .= '
@@ -887,6 +948,7 @@ class PaymentController extends Controller
                 "[[ORDER_TOUR_TIME]]"       => $order->order_tour->tour_time ? date('H:i A', strtotime($order->order_tour->tour_time)) : '',
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
                 "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
+                "[[ORDER_BALANCE_COLOR]]"   => (abs($order->balance_amount) < 0.01) ? '008000' : 'f64747',
                 "[[ORDER_PAID]]"            => price_format_with_currency($order_paid, $order->currency) ?? '',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',

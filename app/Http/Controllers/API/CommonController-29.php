@@ -32,26 +32,22 @@ class CommonController extends Controller
     public function home_listing(Request $request)
     {
         $data = Cache::remember('cities_home_list', 86400, function () {
-            $query = DB::table('tour_locations as tl')
+            return DB::table('tour_locations as tl')
                     ->join('tours as t', 't.id', '=', 'tl.tour_id')
                     ->join('cities as c', 'c.id', '=', 'tl.city_id')
                     ->join('uploads as u', 'u.id', '=', 'c.upload_id')
                     ->select('c.id', 'c.name', 'c.upload_id')
-                    ->groupBy('c.name', 'c.upload_id')
-                    ->orderByRaw('c.order ASC')
+                    ->groupBy('c.id', 'c.name', 'c.upload_id')
+                    ->orderByRaw('RAND()')
                     ->where('c.upload_id', '>=', 1)
-                    ->where('c.order', '>', 0)
-                    // ->whereExists(function ($query) {
-                    //     $query->select(DB::raw(1))
-                    //         ->from('tour_schedules as ts')
-                    //         ->whereColumn('ts.tour_id', 't.id')
-                    //         ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
-                    // })
+                    ->whereExists(function ($query) {
+                        $query->select(DB::raw(1))
+                            ->from('tour_schedules as ts')
+                            ->whereColumn('ts.tour_id', 't.id')
+                            ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                    })
                     ->limit(50)
                     ->get();
-
-            // dd(getFullSql($sql));
-            return $query;
         });
 
         $cities = [];
@@ -59,11 +55,32 @@ class CommonController extends Controller
             $cities[] = [
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
-                'url'   => '/things-to-do-in-'.Str::slug( $d->name ).'/'.$d->id.'-c1',
+                'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
                 'image' => uploaded_asset( $d->upload_id ),
                 'extra' => ''
             ];
         }  
+
+
+        // $tour_data = Cache::remember('tours_home_list', 86400, function () {
+        //     return DB::table(DB::raw('(SELECT t.id, t.title AS name, t.slug, t.price, t.created_at, u.upload_id
+        //         FROM tours t
+        //         JOIN tour_upload u ON u.tour_id = t.id
+        //         JOIN tour_locations l ON l.tour_id = t.id
+        //         WHERE t.status = 1 
+        //           AND t.deleted_at IS NULL
+        //           AND l.city_id IS NOT NULL 
+        //           AND l.city_id = 10519
+        //           AND EXISTS (
+        //               SELECT 1 
+        //               FROM tour_schedules s 
+        //               WHERE s.tour_id = t.id
+        //           )
+        //         ORDER BY t.sort_order DESC
+        //     ) AS sub'))
+        //     ->limit(25)
+        //     ->get();
+        // });
 
 
         $tour_data = Cache::remember('tours_home_list', 86400, function () {
@@ -73,20 +90,16 @@ class CommonController extends Controller
                     t.title AS name, 
                     t.slug, 
                     t.price, 
-                    t.currency, 
                     t.created_at, 
                     t.unique_code, 
-                    u.upload_id,
-                    tr.tag
+                    u.upload_id
                 FROM tours t
                 JOIN tour_upload u ON u.tour_id = t.id
-                JOIN category_tour c ON c.tour_id = t.id
-                LEFT JOIN tour_reviews tr ON tr.tour_id = t.id
+                JOIN tour_locations l ON l.tour_id = t.id
                 WHERE t.status = 1 
                 AND t.deleted_at IS NULL
-                AND c.category_id IS NOT NULL 
-                AND c.category_id = 406
-                AND u.is_main = 1
+                AND l.city_id IS NOT NULL 
+                AND l.city_id = 10519
                 AND EXISTS (
                     SELECT 1 
                     FROM tour_schedules s 
@@ -94,7 +107,7 @@ class CommonController extends Controller
                         AND s.until_date >= CURDATE()
                 )
                 GROUP BY t.unique_code
-                ORDER BY t.sort_order ASC
+                ORDER BY t.sort_order DESC
                 LIMIT 14
             ) as sub"))  // ✅ NO semicolon here
             ->get();
@@ -103,21 +116,13 @@ class CommonController extends Controller
 
         $tours = [];
         foreach($tour_data as $d) {
-
-            $price = currencyConvert(
-                $d->price,
-                $d->currency,
-                'CAD'
-            );
             $tours[] = [
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
                 'url'   => '/tour/'.$d->slug,
-                'image' => uploaded_asset( $d->upload_id ).'?tr=w-400,h-300', // Assuming you want to resize the image for the home listing
-                'price' => $price,
+                'image' => uploaded_asset( $d->upload_id ),
+                'price' => $d->price,
                 'sku'   => $d->unique_code,
-                'tag'   => $d->tag ? json_decode($d->tag, true) ?? [] : [],
-
             ];
         }  
         
@@ -165,6 +170,16 @@ class CommonController extends Controller
 
     public function popular_cities(Request $request)
     {
+        // $cacheKey = 'popular_cities_list_'. $request->id;
+        // $data = Cache::remember($cacheKey, 86400, function () {
+            // $data =   DB::table('tour_locations as tl')
+            //         ->join('cities as c', 'c.id', '=', 'tl.city_id')
+            //         ->select('c.id', 'c.name', 'c.upload_id')
+            //         ->distinct()
+            //         ->orderBy( rand())
+            //         ->limit(25)
+            //         ->get();
+        // });
 
         $data = DB::table('tour_locations as tl')
                 ->join('tours as t', 't.id', '=', 'tl.tour_id')
@@ -172,7 +187,7 @@ class CommonController extends Controller
                 ->join('uploads as u', 'u.id', '=', 'c.upload_id')
                 ->select('c.id', 'c.name', 'c.upload_id')
                 ->distinct()
-                ->orderByRaw('c.order ASC')
+                ->orderByRaw('RAND()') // ✅ Correct way to randomize rows
                 ->where('c.upload_id', '>=', 1)
                 ->whereExists(function ($query) {
                     $query->select(DB::raw(1))
@@ -187,8 +202,8 @@ class CommonController extends Controller
             $cities[] = [
                 'id'    => $d->id,
                 'name'  => ucfirst( $d->name ),
-                'url'   => '/things-to-do-in-'.Str::slug( $d->name ).'/'.$d->id.'-c1',
-                'image' => uploaded_asset( $d->upload_id ).'?tr=w-400,h-300',
+                'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
+                'image' => uploaded_asset( $d->upload_id ),
                 'extra' => ''
             ];
         }  
@@ -196,10 +211,86 @@ class CommonController extends Controller
         return response()->json(['status' => true, 'popular_cities' => $cities], 200);
     }
 
+    // public function popular_destinations(Request $request)
+    // {
+
+    //     $data = DB::table('tour_locations as tl')
+    //         ->join('cities as c', 'c.id', '=', 'tl.city_id')
+    //         ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
+    //         ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
+    //         ->select(
+    //             'c.id',
+    //             'c.name',
+    //             'c.upload_id',
+    //             'tl.state_id',
+    //             'tl.country_id',
+    //             's.name as state_name',
+    //             'co.name as country_name'
+    //         )
+    //         ->distinct()
+    //         ->orderByRaw('RAND()')
+    //         ->limit(25)
+    //         ->get();
+
+    //     $cities = [];
+        
+    //     foreach($data as $d) {
+
+    //         $cities[] = [
+    //             'id'    => $d->id,
+    //             'name'  => 'Things to do in '.ucfirst( $d->name ),
+    //             'url'   => '/c1/'.$d->id.'/'.Str::slug( $d->name ),
+    //             'image' => uploaded_asset( $d->upload_id ),
+    //             'extra' => '' . ucwords($d->state_name) . ', ' . ucwords($d->country_name) . '', 
+    //         ];
+    //     }  
+
+    //     return response()->json(['status' => true, 'popular_cities' => $cities], 200);
+    // }
+
+
     public function popular_destinations(Request $request)
     {
         $limit = $request->input('limit', 15); 
         $page = $request->input('page', 1);  
+
+        /*$query = DB::table('tour_locations as tl')
+                ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
+                ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
+                ->select(
+                    'c.id',
+                    'c.name',
+                    'c.upload_id',
+                    'tl.state_id',
+                    'tl.country_id',
+                    's.name as state_name',
+                    'co.name as country_name',
+                    DB::raw('(
+                        SELECT COUNT(DISTINCT t2.id)
+                        FROM tours t2
+                        JOIN tour_locations tl2 ON tl2.tour_id = t2.id
+                        WHERE tl2.city_id = c.id
+                        AND t2.status = 1
+                        AND t2.deleted_at IS NULL
+                        AND EXISTS (
+                            SELECT 1
+                            FROM tour_schedules ts2
+                            WHERE ts2.tour_id = t2.id
+                                AND ts2.until_date >= CURDATE()
+                        )
+                    ) as total_tours')
+                )
+                ->distinct()
+                ->where('c.upload_id', '>=', 1)
+                ->whereExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('tour_schedules as ts')
+                        ->whereColumn('ts.tour_id', 't.id')
+                        ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                })
+                ->orderByRaw('RAND()');*/
 
         $query = DB::table('tour_locations as tl')
                 ->join('tours as t', 't.id', '=', 'tl.tour_id')
@@ -230,17 +321,14 @@ class CommonController extends Controller
                     ) as total_tours')
                 )
                 ->distinct()
-                ->where('c.upload_id' , '>', 0)
-                ->where('c.order' , '>', 0)
-                // ->whereExists(function ($query) {
-                //             $query->select(DB::raw(1))
-                //                 ->from('tour_schedules as ts')
-                //                 ->whereColumn('ts.tour_id', 't.id')
-                //                 ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
-                //         })
-                ->orderByRaw('c.order ASC');
-
-        //dd(getFullSql($query));
+                ->where('c.upload_id' , '>=', 1)
+                ->whereExists(function ($query) {
+                            $query->select(DB::raw(1))
+                                ->from('tour_schedules as ts')
+                                ->whereColumn('ts.tour_id', 't.id')
+                                ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                        })
+                ->orderByRaw('RAND()');
 
         $paginated = $query->paginate($limit, ['*'], 'page', $page);
 
@@ -248,8 +336,8 @@ class CommonController extends Controller
         foreach ($paginated->items() as $d) {
             $cities[] = [
                 'id'    => $d->id,
-                'name'  => ucfirst($d->name),
-                'url'   => '/things-to-do-in-' . Str::slug($d->name) . '/' . $d->id . '-c1',
+                'name'  => 'Things to do in ' . ucfirst($d->name),
+                'url'   => '/' . Str::slug($d->name) . '/' . $d->id . '/c1',
                 'image' => uploaded_asset($d->upload_id),
                 'extra' => ucwords($d->state_name) . ', ' . ucwords($d->country_name),
                 'total_tours' => $d->total_tours
@@ -268,89 +356,9 @@ class CommonController extends Controller
         ]);
     }
 
-    public function destinations(Request $request)
-    {
-        $perPage = 500;
-        $page = $request->get('page', 1);
-
-        $cacheKey = "destinations_page_{$page}";
-        $cacheTtl = now()->addHours(12); // adjust if needed
-
-        $data = Cache::remember($cacheKey, $cacheTtl, function () use ($perPage) {
-
-            $query = DB::table('tour_locations as tl')
-                ->join('tours as t', 't.id', '=', 'tl.tour_id')
-                ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
-                ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
-                ->select(
-                    'c.id',
-                    'c.name',
-                    'c.upload_id',
-                    'tl.state_id',
-                    'tl.country_id',
-                    's.name as state_name',
-                    'co.name as country_name',
-                    DB::raw('(
-                        SELECT COUNT(DISTINCT t2.id)
-                        FROM tours t2
-                        JOIN tour_locations tl2 ON tl2.tour_id = t2.id
-                        WHERE tl2.city_id = c.id
-                        AND t2.status = 1
-                        AND t2.deleted_at IS NULL
-                        AND EXISTS (
-                            SELECT 1 FROM tour_schedules ts2
-                            WHERE ts2.tour_id = t2.id
-                                AND ts2.until_date >= CURDATE()
-                        )
-                    ) as total_tours')
-                )
-                ->where('c.upload_id', '>=', 1)
-                ->where('t.status', 1)
-                ->whereNull('t.deleted_at')
-                ->whereExists(function ($q) {
-                    $q->select(DB::raw(1))
-                    ->from('tour_schedules as ts')
-                    ->whereColumn('ts.tour_id', 't.id')
-                    ->whereDate('ts.until_date', '>=', now());
-                })
-                ->groupBy(
-                    'c.id','c.name','c.upload_id',
-                    'tl.state_id','tl.country_id',
-                    's.name','co.name'
-                )
-                //->orderBy('c.name', 'ASC');
-                ->orderByRaw('c.order ASC');
-
-            $paginated = $query->paginate($perPage);
-
-            $cities = [];
-            foreach ($paginated->items() as $d) {
-                $cities[] = [
-                    'title' => ucfirst($d->name) . ', ' .
-                            ucwords($d->state_name) . ', ' .
-                            ucwords($d->country_name),
-                    'href'  => '/things-to-do-in-' . Str::slug($d->name) . '/' . $d->id . '-c1',
-                ];
-            }
-
-            return [
-                'destinations'  => $cities,
-                'current_page'  => $paginated->currentPage(),
-                'last_page'     => $paginated->lastPage(),
-                'per_page'      => $paginated->perPage(),
-                'total'         => $paginated->total(),
-                'next_page_url' => $paginated->nextPageUrl(),
-                'prev_page_url' => $paginated->previousPageUrl(),
-            ];
-        });
-
-        return response()->json(array_merge(['status' => true], $data));
-    }
-
     public function single_city(Request $request, $id)
     {
-        $type = $request->input('type', 'c1'); // Default to 'city' if not provided
+        $type = $request->input('type', 'city'); // Default to 'city' if not provided
 
         $cacheKey = 'single_city_' . $id . '_' . $type;
         $d = Cache::remember($cacheKey, 86400, function() use ($id, $type) {
@@ -364,77 +372,57 @@ class CommonController extends Controller
             // Default case for 'city'
             return City::findOrFail( $id );
         });
-
         
         $meta_title = countThingsToDo($id, $type).' Things To Do In ' .ucfirst( $d->name ).' | ' .env('APP_NAME');
         $meta_description = 'Discover tour in '.ucfirst( $d->name ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.';
 
         $data = [];
-        $data['result'] = null;
+        // Prepare the response data based on the  city type
+        if ($type == 'c1') {
+                $data['city'] = [
+                    'id'    => $d->id,
+                    'name'  => ucfirst( $d->name ),
+                    'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
+                    'image' => uploaded_asset( $d->upload_id ),
+                    'meta_title'      => $meta_title,
+                    'meta_description'=> $meta_description,
+                ];
+        }
 
-        if (!empty($d->id)) {
-
-            $tourCount = countThingsToDo($id, $type);
-            $currentYear = date('Y');
-            $categoryTitle = ucfirst($d->name);
-
-            $baseName = remove_last_Tour_word($categoryTitle);
-            $slug     = Str::slug($d->name);
-            $image    = $d->upload_id ? uploaded_asset($d->upload_id) : '';
-            $region   = '';
-            $description = get_setting('default_category_description');
-
-            switch ($type) {
-
-                case 'c1': // City
-                    $name = $baseName;
-                    $url  = "/things-to-do-in-{$slug}/{$d->id}-c1";
-                    $region = $d->state->country->iso2.'-'.$d->state->name;
-                    break;
-
-                case 's1': // State
-                    $name = "Things to do in {$baseName}";
-                    $url  = "/things-to-do-in-{$slug}/{$d->id}-s1";
-                    $region = $d->country->iso2.'-'.$d->name;
-                    break;
-
-                case 'c2': // Country
-                    $name = "Things to do in {$baseName}";
-                    $url  = "/things-to-do-in-{$slug}/{$d->id}-c2";
-                    break;
-
-                case 'c3': // Category
-                    $name = "{$baseName}";
-                    $url  = "/things-to-do-in-{$slug}/{$d->id}-c3";
-                    $image = ''; // category has no image
-                    $description = $d->description ?? '';
-                    $meta_title = ucfirst( $d->name ).' | ' .env('APP_NAME');
-                    break;
-
-                default:
-                    return response()->json(['error' => 'Invalid type'], 400);
-            }
-
-            $description = str_replace('[TOUR_COUNT]', $tourCount, $description);
-            $description = str_replace('[YEAR]', $currentYear, $description);
-            $description = str_replace('[CATEGORY_TITLE]', $categoryTitle, $description);
-
-            $data['result'] = [
-                'id'               => $d->id,
-                'name'             => $name,
-                'url'              => $url,
-                'image'            => $image,
-                'description'      => $description,
-                'meta_title'       => $meta_title,
-                'meta_description' => $meta_description,
-                'latitude'         => $d->latitude,
-                'longitude'        => $d->longitude,
-                'region'           => $region
+        // Prepare the response data based on the  city and state type
+        if ( $type == 's1' ) {
+            $data['state'] = [
+                'id'    => $d->state->id,
+                'name'  => 'Things to do in '.ucfirst( $d->state->name ),
+                'url'   => '/'.Str::slug( $d->state->name ).'/'.$d->state->id.'/s1',
+                'image' => $d->state->upload_id ? uploaded_asset( $d->state->upload_id ) : '',
+                'meta_title'      => $meta_title,
+                'meta_description'=> $meta_description,
             ];
         }
 
-        // return response()->json(['type' => $type, 'data' => $data], 200);
+        // Prepare the response data based on the  city, state and country type
+        if ( $type == 'c2' ) {
+            $data['country'] = [
+                'id'    => $d->state->country->id,
+                'name'  => 'Things to do in '.ucfirst( $d->state->country->name ),
+                'url'   => '/'.Str::slug( $d->state->country->name ).'/'.$d->state->country->id.'/c2',
+                'image' => $d->state?->country?->upload_id ? uploaded_asset( $d->state->country->upload_id ) : '',
+                'meta_title'      => $meta_title,
+                'meta_description'=> $meta_description,
+            ];
+        }
 
+        if ( $type == 'c3' ) {
+            $data['country'] = [
+                'id'    => $d->id,
+                'name'  => 'Things to do in '.ucfirst( $d->name ),
+                'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c3',
+                // 'image' => $d->upload_id ? uploaded_asset( $d->upload_id ) : '',
+                'meta_title'      => $meta_title,
+                'meta_description'=> $meta_description,
+            ];
+        }
 
         return response()->json(['status' => true, 'data' => $data], 200);
     }
@@ -443,7 +431,7 @@ class CommonController extends Controller
     {
         $ids = $request->input('ids', []);
 
-        $recommended = Tour::with('review')->whereIn('id', $ids)
+        $recommended = Tour::whereIn('id', $ids)
             ->inRandomOrder()
             ->limit(4)
             ->paginate(4);
@@ -454,7 +442,7 @@ class CommonController extends Controller
             $galleries = [];
             if(count($d->galleries)>0) {
                 foreach( $d->galleries as $g ) {
-                    $image      = uploaded_asset($g->id).'?tr=w-400,h-300';
+                    $image      = uploaded_asset($g->id);
                     $medium_url = str_replace($g->file_name, $g->medium_name, $image);
                     $thumb_url  = str_replace($g->file_name, $g->thumb_name, $image);
                     $galleries[] = [
@@ -465,7 +453,7 @@ class CommonController extends Controller
                 }
             }
             else {
-                $image      = uploaded_asset($d->main_image->id).'?tr=w-400,h-300';
+                $image      = uploaded_asset($d->main_image->id);
                 $medium_url = str_replace($d->main_image->file_name, $d->main_image->medium_name, $image);
                 $thumb_url  = str_replace($d->main_image->file_name, $d->main_image->thumb_name, $image);
                 $galleries[] = [
@@ -478,15 +466,6 @@ class CommonController extends Controller
             $duration = $d->schedule?->estimated_duration_num.' ' ?? '';
             $duration.= ucfirst($d->schedule?->estimated_duration_unit ?? '');
 
-
-            $price = currencyConvert(
-                $d->price,
-                $d->currency,
-                'CAD'
-            );
-
-            $tag = $d->review && $d->review->tag ? json_decode($d->review->tag, true) ?? [] : [];
-
             $items[] = [
                 'id'             => $d->id,
                 'title'          => $d->title,
@@ -495,11 +474,10 @@ class CommonController extends Controller
                 'all_images'     => $galleries,
                 //'catogory'       => $d->catogory,
                 'price'          => price_format($d->price),
-                'original_price' => $price,
+                'original_price' => $d->price,
                 'duration'       => trim($duration),
                 'rating'         => randomFloat(4, 5),
                 'comment'        => rand(50, 100),
-                'tag'            => $tag,
             ];
         }    
 
@@ -572,8 +550,7 @@ class CommonController extends Controller
         $template = fetch_email_template('contact_mail_for_admin');
         $parsedBody = parseTemplate($template->body, $placeholders);
         $parsedSubject = parseTemplate($template->subject, $placeholders);
-
-        Mail::to([ env('MAIL_FROM_ADDRESS'), 'kiran@tourbeez.com' ])->send(new CommonMail($parsedSubject, $parsedBody, null, $request->email, $request->name));
+        Mail::to( env('MAIL_FROM_ADDRESS') )->send(new CommonMail($parsedSubject, $parsedBody));
 
         $admin = User::where('role', 'Super Admin')->first();
 
@@ -591,7 +568,6 @@ class CommonController extends Controller
 
     public function careers(Request $request)
     {
-
         $validated = $request->validate([
             'first_name'       => 'required|string|max:255',
             'last_name'        => 'required|string|max:255',
@@ -617,7 +593,7 @@ class CommonController extends Controller
             // 'cv.file'                  => 'CV must be a file.',
             // 'cv.mimes'                 => 'CV must be a PDF or Word document.',
             // 'cv.max'                   => 'CV must not be larger than 2MB.',
-            // 'recaptcha_token.required' => 'reCAPTCHA token is required.',
+            'recaptcha_token.required' => 'reCAPTCHA token is required.',
         ]);
 
         if ($request->hasFile('cv')) {
@@ -646,19 +622,14 @@ class CommonController extends Controller
         $template = fetch_email_template('career_mail');
 
         // Parse placeholders 
-        $name = $request->first_name . " " . $request->last_name;
         $placeholders = [
-            'name' => $name,
+            'name' => $request->first_name . " " . $request->last_name,
             'email' => $request->email,
             'message' => $request->message,
             'year' => date('Y'),
             'app_name' => get_setting('site_name'),
             'app_name' => get_setting('site_name'),
             'login_url' => config('app.site_url') .  "/login",
-            'speciality' => $request->speciality,
-            'experience' => $request->experience,
-            'phone' => $request->phone,
-            'gender' => $request->gender,
         ];
 
         $parsedBody = parseTemplate($template->body, $placeholders);
@@ -666,11 +637,6 @@ class CommonController extends Controller
      
         // Send to user
         Mail::to($request->email)->send(new CommonMail($parsedSubject, $parsedBody));
-        $template = fetch_email_template('career_mail_for_admin');
-        $parsedBody = parseTemplate($template->body, $placeholders);
-        $parsedSubject = parseTemplate($template->subject, $placeholders);
-
-        Mail::to([env('MAIL_FROM_ADMIN_ADDRESS'), 'kiran@tourbeez.com'])->send(new CommonMail($parsedSubject, $parsedBody, null, $request->email, $name));
         
         // Send email using mailable and template
        

@@ -21,7 +21,7 @@
                 </div>
                 <a href="{{ route('admin.orders.manifest.download', ['date' => request('date')]) }}"
                    class="btn btn-success btn-sm">
-                   <i class="bi bi-download"></i> Download PDF
+                   <i class="bi bi-download"></i> Download Excel
                 </a>
             </div>
         </div>
@@ -38,7 +38,7 @@
                         data-bs-target="#session-{{ $index }}"
                         aria-expanded="false"
                         aria-controls="session-{{ $index }}">
-                    <strong>{{ $session['slot_time'] }}</strong>
+                    <strong>{{ $session['slot_time']   }} || {{ $session['tour_title']   }}</strong>
 
                     <div class="d-flex align-items-center gap-3">
                         <span>
@@ -63,6 +63,8 @@
                                     <th style="width:11%; white-space: nowrap;">Balance</th>
                                     <th style="width:11%; white-space: nowrap;">Total</th>
                                     <th style="width:11%; white-space: nowrap;">Paid</th>
+                                    <th style="width:11%; white-space: nowrap;">Pickup</th>
+                                    <th style="width:11%; white-space: nowrap;">Instructions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -79,6 +81,20 @@
                                                 {{ $order->customer?->name }}
                                             </a>
                                         </td>
+
+
+                                        @php
+                                            $pickName = '';
+                                            $instruction = '';
+                                            if($order->customer && $order->customer->pickup_name){
+                                                $pickName = $order->customer->pickup_name;
+                                                $instruction = $order->customer->instructions;
+                                            } elseif($order->customer && $order->customer->pickup_id) {
+                                                $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
+                                                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                                                $instruction = $order->customer->instructions;
+                                            }
+                                        @endphp
 
                                         @php
                                             $total = round($order->total_amount);
@@ -110,6 +126,8 @@
                                         <td class="{{ $amountClass}}">{{ price_format_with_currency($total-$paid, $order->currency) }}</td>
                                         <td>{{ price_format_with_currency($total, $order->currency) }}</td>
                                         <td class="{{ $amountClass}}">{{ price_format_with_currency($paid, $order->currency) }}</td>
+                                        <td class="px-1">{{ $pickName }}</td>
+                                        <td class="px-1">{{ $order->customer?->instructions ?? '-' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

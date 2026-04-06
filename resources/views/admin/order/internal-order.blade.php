@@ -97,7 +97,10 @@
                             {{-- New Customer Fields (hidden by default) --}}
                             <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
                                 <h5 class="cus-info-head">New Customer Information</h5>
-
+                                <div class="form-group">
+                                    <input type="checkbox" name="addToCustomer" id="addToCustomer" />
+                                    <label for="addToCustomer">Add to Customer</label>
+                                </div>
                                 <div class="form-row">
                                     <div class="form-group col-lg-3 col-md-6">
                                         <label for="customer_first_name">First Name *</label>
@@ -736,16 +739,27 @@ document.addEventListener("DOMContentLoaded", function () {
     ====================================================== */
     const phoneInput = document.querySelector("#customer_phone");
 
+
+
     const iti = window.intlTelInput(phoneInput, {
         initialCountry: "auto",
         separateDialCode: true,
         nationalMode: false,
+
+        // ✅ Enable searchable dropdown
+        allowDropdown: true,
+        autoPlaceholder: "polite",
+
+        // 🔥 THIS enables search inside dropdown
+        dropdownContainer: document.body,
+
         geoIpLookup: function (callback) {
             fetch("https://ipapi.co/json/")
                 .then(res => res.json())
                 .then(data => callback(data.country_code))
                 .catch(() => callback("US"));
         },
+
         utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
     });
 
