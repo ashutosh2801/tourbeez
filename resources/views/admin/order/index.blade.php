@@ -17,7 +17,7 @@
                 <div class="search-options">
                     <div class="row">
                         <div class="col-md-4 col-6">
-                            <input type="text" name="search" class="form-control" placeholder="Order # / Customer" value="{{ request('search') }}">
+                            <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name" value="{{ request('search') }}">
                         </div>
                         <?php /*
                         <div class="col-md-2">
@@ -52,12 +52,29 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-2 col-6">
-                            <input type="date" name="tour_start_date" class="form-control" value="{{ request('tour_start_date') }}">
-                        </div>
+
+                       <div class="col-md-2 col-6"> 
+                            <input 
+                                type="text" 
+                                name="tour_start_date" 
+                                class="form-control aiz-date-range" data-single="true" 
+                                                                    data-show-dropdown="true"
+                                placeholder="Tour date"
+                                value="{{ request('tour_start_date') }}"
+                            >
+                        </div> 
+
+
+                        <!-- <div class="col-md-2 col-6">
+
+                            <input type="date" name="tour_start_date"  class="form-control "
+        placeholder="Tour date"  value="{{ request('tour_start_date') }}">
+                        </div> -->
                         <div class="col-md-2 col-6">
                             <select name="date_filter" class="form-control" >
                                 <option value="">Filter by Order Created</option>
+                                <option value="today" {{ request('date_filter') == 'today' ? 'selected' : '' }}>Today</option>
+                                <option value="yesterday" {{ request('date_filter') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
                                 <option value="last_7" {{ request('date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
                                 <option value="last_15" {{ request('date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
                                 <option value="this_month" {{ request('date_filter') == 'this_month' ? 'selected' : '' }}>This Month</option>
@@ -69,6 +86,10 @@
                         <div class="col-md-2 col-6">
                             <select name="tour_date_filter" class="form-control" >
                                 <option value="">All Tour Dates</option>
+                                <option value="today" {{ request('tour_date_filter') == 'today' ? 'selected' : '' }}>Today</option>
+
+                                <option value="yesterday" {{ request('tour_date_filter') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
+
                                 <option value="last_7" {{ request('tour_date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
                                 <option value="last_15" {{ request('tour_date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
                                 <option value="this_month" {{ request('tour_date_filter') == 'this_month' ? 'selected' : '' }}>This Month</option>

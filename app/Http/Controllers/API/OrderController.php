@@ -108,16 +108,16 @@ class OrderController extends Controller
                 ])->findOrFail($id);
             });
 
-            if ($booking && $booking->order_status !== 1) {
-                $booking->order_status   = 1;
-                $booking->payment_status = 1;
-                $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
-                $booking->updated_at     = now();
-                $booking->save();
+            // if ($booking && $booking->order_status !== 1) {
+            //     $booking->order_status   = 1;
+            //     $booking->payment_status = 1;
+            //     $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
+            //     $booking->updated_at     = now();
+            //     $booking->save();
 
-                // Refresh cache after updating the order
-                // Cache::put($cacheKey, $booking->fresh(['tour.location', 'tour.detail', 'tour.addons', 'tour.fees', 'tour.pickups', 'customer']), now()->addMinutes(10));
-            }
+            //     // Refresh cache after updating the order
+            //     // Cache::put($cacheKey, $booking->fresh(['tour.location', 'tour.detail', 'tour.addons', 'tour.fees', 'tour.pickups', 'customer']), now()->addMinutes(10));
+            // }
             
             $tour_pricing = $booking->order_tour->tour_pricing ? json_decode($booking->order_tour->tour_pricing) : [];
             $pricing=[]; $total = 0;

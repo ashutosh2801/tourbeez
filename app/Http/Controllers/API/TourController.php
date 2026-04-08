@@ -2112,16 +2112,25 @@ public function single(Request $request)
                                         }
 
                                         $minQuantity = 0;
-                                        if($j === 0) {
-                                            $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min; 
-                                            $j++;
+                                        // if($j === 0) {
+                                        //     $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min; 
+                                        //     $j++;
+                                        // }
+                                        // $i++;
+
+                                        $isOptional = isOptionalPricing($pricing->label);
+
+                                        if ($isOptional) {
+                                            $minQuantity = 0;
+                                        } else {
+                                            $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min;
                                         }
                                         $i++;
 
                                         $str .= '<tr>
                                             <td width="60">
                                                 <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
-                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl" min="'.$minQuantity.'" max="'.$maxQuantity.'" >
+                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl text-center" min="0" data-min="'.$minQuantity.'" max="'.$maxQuantity.'" data-optional="'.($isOptional ? 1 : 0).'">
                                                 <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$convertedPricingPrice.'" /> 
                                                 <input type="hidden" name="tour_pricing_type_'.$_tourId.'[]" value="'.$data->price_type.'" /> 
                                                 <input type="hidden" name="tour_pricing_min_'.$_tourId.'[]" value="'.$pricing->quantity_used.'">
@@ -2130,6 +2139,8 @@ public function single(Request $request)
                                             <td>'.$pricing->label.' ('. price_format_with_currency($pricing->price, $data->currency, $orderCurrency) .')</td>
                                         </tr>';
                                     }
+
+                                        
                                 }
                                 
 

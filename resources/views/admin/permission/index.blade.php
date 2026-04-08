@@ -32,13 +32,15 @@
                             </td>
                             <td>
                                 <form action="{{ route('admin.permission.destroy', encrypt($permission->id)) }}"
-                                    method="POST" onclick="confirm('Are you sure')">
+                                      method="POST"
+                                      class="delete-form">
                                     @method('DELETE')
                                     @csrf
-                                    <button type="submit" class="btn btn-danger">
+                                    <button type="button" class="btn btn-danger delete-btn">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>
+                                                            
                             </td>
                         </tr>
                     @empty
@@ -52,6 +54,7 @@
     </div>
 
     @section('js')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script>
             $(function() {
                 $('#collectionTable').DataTable({
@@ -59,6 +62,28 @@
                     "searching": true,
                     "ordering": true,
                     "responsive": true,
+                });
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', function () {
+                        let form = this.closest('form');
+
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: "This action cannot be undone!",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Yes, delete it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.submit();
+                            }
+                        });
+                    });
                 });
             });
         </script>

@@ -146,7 +146,16 @@
                     <label class="filter-label">Order Status</label>
                     <select name="order_status" class="form-control">
                         <option value="">All</option>
-                        @foreach(config('constants.status_with_code') as $key => $val)
+                        @php
+                        $status_with_code = [
+                                    
+                                    3 => 'Pending supplier',
+                                    4 => 'Pending customer',
+                                    5 => 'Confirmed',
+                                    
+                            ];
+                        @endphp
+                        @foreach($status_with_code as $key => $val)
                             <option value="{{ $key }}"
                                 {{ request('order_status') == $key ? 'selected' : '' }}>
                                 {{ $val }}
@@ -165,13 +174,30 @@
                     </select>
                 </div>
 
-                {{-- BUTTONS --}}
-                <div class="col-md-2 d-flex align-items-end">
-                    <button class="btn btn-primary w-100">Apply</button>
+                <div class="col-md-2">
+                    <label class="filter-label">Source</label>
+                    <select name="partner" class="form-control">
+                        <option value="">All</option>
+                        @php
+                        
+                        @foreach($partners as $partner)
+                            <option value="{{ ucfirst($partner->slug) }}"
+                                {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
+                                {{ $partner->name }}
+                            </option>
+                        @endforeach
+                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                    </select>
                 </div>
 
-                <div class="col-md-2 d-flex align-items-end mt-2 mt-md-0">
-                    <a href="{{ route('admin.report.revenue') }}" class="btn btn-light w-100">Reset</a>
+                {{-- BUTTONS --}}
+                <div class="col-md-2 d-flex align-items-end mt-2">
+                    <button class="btn-sm btn-search ">Apply</button>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end mt-2">
+                    <a href="{{ route('admin.report.revenue') }}" class="btn-sm btn-clear border">Reset</a>
                 </div>
 
             </div>
@@ -183,7 +209,7 @@
             {{-- SCROLLABLE WRAPPER --}}
             <div class="table-wrapper">
 
-            <div class="row">
+            <div class="row mb-2">
                 <div class="col-md-2 panel-heading">
                 <strong>Detailed Revenue Report</strong>
             </div>
@@ -222,7 +248,7 @@
 
                             <th>Pax</th>
                             <th>Product Value</th>
-                            <th>Adjustment</th>
+                            <th>Discount</th>
                             <th>Extra Value</th>
 
                             <th>Promo/Voucher</th>
@@ -254,66 +280,73 @@
                         <tr>
 
                             <td>#{{ $order->order_number }}</td>
-                            <td>{{ config('constants.status_with_code')[$order->order_status] }}</td>
+                            <td>{{ config('constants.status_with_code')[$order->order_status] ?? '-' }}</td>
                             <td>{{ $order->source ?? '-' }}</td>
                             <td>{{ $order->agent_name ?? 'NA' }}</td>
 
-                            <td>{{ $order->booking_date }}</td>
-                            <td>{{ $order->fulfilment_date }}</td>
+                            <td>{{ \Carbon\Carbon::parse($order->booking_date)->format('Y-m-d H:i') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($order->fulfilment_date)->format('Y-m-d') }}</td>
 
-                            <td>{{ $order->customer_first_name . " " . $order->customer_last_name  }}</td>
+                            <td>{{ trim(($order->customer_first_name ?? '') . ' ' . ($order->customer_last_name ?? '')) ?: '-' }}</td>
 
-                            <td>{{ number_format($order->total_amount,2) }}</td>
-                            <td>{{ number_format($order->booked_amount,2) }}</td>
-                            <td>{{ number_format($order->balance,2) }}</td>
+                            {{-- ✅ MONEY (FROM FIXED BACKEND LOGIC) --}}
+                            <td>{{ number_format($order->total_amount, 2) }}</td>
+                            <td>{{ number_format($order->paid_amount, 2) }}</td>
+                            <td>{{ number_format($order->balance, 2) }}</td>
 
+                            {{-- Fees (keep 0 if not calculated yet) --}}
+                            <td>{{ number_format($order->booking_fee ?? 0, 2) }}</td>
                             <td>0</td>
                             <td>0</td>
                             <td>0</td>
                             <td>0</td>
-                            <td>0</td>
-                            <td>0</td>
-                            <td>0</td>
-                           <td>{{ number_format($order->total_amount,2) }}</td>
 
-                            
+                            {{-- Commission & Tax (if added later) --}}
+                            <td>{{ number_format($order->commission ?? 0, 2) }}</td>
+                            <td>{{ number_format($order->tax ?? 0, 2) }}</td>
 
-                            <td>{{ $order->pax }}</td>
-                            <td>{{ $order->total_amount }}</td>
+                            {{-- Net Sales --}}
+                            <td>{{ number_format($order->net_sales ?? $order->total_amount, 2) }}</td>
 
+                            {{-- Pax --}}
+                            <td>{{ $order->pax ?? 0 }}</td>
 
-                            <td>0</td>
-                            <td>0</td>
-                            
+                            {{-- Product Value --}}
+                            <td>{{ number_format($order->product_value, 2) }}</td>
 
-                            <td>{{ $order->promo_code }}</td>
+                            <td>{{ number_format($order->discount_value, 2) }}</td> {{-- Adjustment --}}
+                            <td>{{ number_format($order->extra_value, 2) }}</td> {{-- Extra Value --}}
 
+                            {{-- Promo --}}
+                            <td>{{ number_format($order->promo_amount ?? 0, 2) }}</td>
 
-                            <td>0</td>
-                            <td>0</td>
+                            {{-- Payment Split --}}
+                            <td>{{ number_format($order->card_payment ?? 0, 2) }}</td>
+                            <td>{{ number_format($order->cash_payment ?? 0, 2) }}</td>
 
+                            <td>{{ number_format($order->promo_amount ?? 0, 2) }}</td>
 
-                            <td>0</td>
-                            <td>0</td>
-                            <td>0</td>
+                            <td>0</td> {{-- Free --}}
+                            <td>{{ number_format($order->refunded ?? 0, 2) }}</td>
 
-                            <td>{{ $order->payment_status }}</td>
-                            <td>{{ $order->all_paid}}</td>
-                            
-                            <td>{{ $order->payment_method }}</td>
-                            <td>NA</td>
-                            <td>NA</td>
-                            
+                            {{-- Status --}}
+                            <td>{{ config('constants.payment_status')[$order->payment_status] ?? '-' }}</td>
+                            <td>{{ $order->all_paid }}</td>
 
-                            <td>{{ $order->instructions }}</td>
-                            <td>Social Site</td>
-                            
+                            {{-- Payment Info --}}
+                            <td>{{ $order->payment_method ?? '-' }}</td>
+                            <td>{{ $order->gateway ?? 'NA' }}</td>
+                            <td>{{ $order->gateway_type ?? 'NA' }}</td>
 
-                            <td>{{ $order->product_name }}</td>
-                            <td>{{ $order->category }}</td>
-                            
+                            {{-- Notes --}}
+                            <td>{{ $order->instructions ?? '-' }}</td>
+                            <td>{{ $order->how_heard ?? 'N/A' }}</td>
 
-                            <td>{{ $order->created_by }}</td>
+                            {{-- Product --}}
+                            <td>{{ $order->product_name ?? '-' }}</td>
+                            <td>{{ $order->category ?? '-' }}</td>
+
+                            <td>{{ $order->created_by ?? '-' }}</td>
 
                         </tr>
                         @empty
@@ -321,7 +354,7 @@
                             <td colspan="40" class="text-center">No Data Found</td>
                         </tr>
                         @endforelse
-                    </tbody>
+                        </tbody>
 
                 </table>
                 <div class="mt-3 text-center">
@@ -336,7 +369,7 @@
 
         
 
-        <div class="row">
+        <div class="row mb-2">
                 <div class="col-md-2 panel-heading">
                 <strong>Customer Report</strong>
             </div>
