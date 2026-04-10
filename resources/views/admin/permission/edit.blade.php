@@ -22,7 +22,7 @@
                     class="needs-validation" novalidate="">
                     @csrf
                     <input type="hidden" name="id" value="{{ $data->id }}">
-                    <div class="card-body">
+                    <div class="card-body create-role-body">
                         <div class="row">
                             <div class="col-lg-12">
                                 <div class="form-group">

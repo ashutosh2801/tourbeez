@@ -62,8 +62,8 @@
                 </div>
             </div>
         </div>
-        <div class="card-body">
-            <form action="{{ route('admin.user.store') }}" method="POST" enctype="multipart/form-data">
+        <div class="card-body create-role-body">
+            <form class="m-0" action="{{ route('admin.user.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <div class="row">
@@ -268,7 +268,7 @@
                     </div>
 
                     {{-- ================= SUBMIT BUTTON ================= --}}
-                    <div class="col-lg-12">
+                    <div class="card-footer">
                         <div class="float-right">
                             <button class="btn btn-success m-0" type="submit"><i class="fas fa-save"></i> Save</button>
                         </div>
