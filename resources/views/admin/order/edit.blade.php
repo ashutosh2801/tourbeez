@@ -1211,86 +1211,107 @@ $expectEmails = ['order_pending'];
 
 
                     <div class="card">
-                        <div class="card-header py-0">
-                            <button type="button" class="btn btn-link"> Recent Actions</button>                     
+                        
+
+                        <div class="card-header bg-secondary py-0" id="headingRecentActions">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapseRecentActions">
+                                <i class="fa fa-angle-right"></i> Recent Actions
+                            </button>
                         </div>
                         <div>
-                            <div class="card-body">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Subject</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if(!empty($order->actions) && is_iterable($order->actions))
-                                            @foreach($order->actions->sortByDesc('created_at') as $action)
-                                                <tr>
-                                                    <td>{{ $action->created_at }}</td>
-                                                    <td>{!! $action->notes !!}</td>
-                                                </tr>
-                                            @endforeach
-                                        @else
+                            <div id="collapseRecentActions" class="collapse show" aria-labelledby="headingRecentActions" data-parent="#accordionExample">
+                                <div class="card-body">
+                                    <table class="table">
+                                        <thead>
                                             <tr>
-                                                <td colspan="5">No action history found</td>
+                                                <th>Date</th>
+                                                <th>Subject</th>
                                             </tr>
-                                        @endif
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            @if(!empty($order->actions) && is_iterable($order->actions))
+                                                @foreach($order->actions->sortByDesc('created_at') as $action)
+                                                    <tr>
+                                                        <td>{{ $action->created_at }}</td>
+                                                        <td>{!! $action->notes !!}</td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5">No action history found</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="card">
-                        <div class="card-header py-0">
-                            <button type="button" class="btn btn-link"> Order Email History</button>                     
+
+
+                        
+
+                        <div class="card-header bg-secondary py-0" id="headingEmailHistory">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapseEmailHistory">
+                                <i class="fa fa-angle-right"></i> Order Email History
+                            </button>
                         </div>
+
+
+
+
+
                         <div>
-                            <div class="card-body">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>To</th>
-                                            <th>From</th>
-                                            <th>Subject</th>
-                                            <th>Status</th>
-                                            <th>Content</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
-                                            @foreach($order->emailHistories->sortByDesc('created_at') as $email)
-                                                <tr>
-                                                    <td>{{ $email->created_at }}</td>
-                                                    <td>{{ $email->to_email }}</td>
-                                                    <td>{{ $email->from_email }}</td>
-                                                    <td>{{ $email->subject }}</td>
-                                                    <td>{{ ucwords($email->status) }}</td>
-                                                    <td>
-                                                        <button type="button" class="btn btn-sm btn-primary view-email-btn">
-                                                            View
-                                                        </button>
-
-                                                        <textarea class="d-none email-body">
-                                                            {!! $email->body !!}
-                                                        </textarea>
-
-                                                        <input type="hidden" class="email-to" value="{{ $email->to_email }}">
-                                                        <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
-                                                        <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
-                                                        <input type="hidden" class="email-subject" value="{{ $email->subject }}">
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        @else
+                            <div id="collapseEmailHistory" class="collapse show" aria-labelledby="headingEmailHistory" data-parent="#accordionExample">
+                                <div class="card-body">
+                                    <table class="table">
+                                        <thead>
                                             <tr>
-                                                <td colspan="5">No email history found</td>
+                                                <th>Date</th>
+                                                <th>To</th>
+                                                <th>From</th>
+                                                <th>Subject</th>
+                                                <th>Status</th>
+                                                <th>Content</th>
                                             </tr>
-                                        @endif
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
+                                                @foreach($order->emailHistories->sortByDesc('created_at') as $email)
+                                                    <tr>
+                                                        <td>{{ $email->created_at }}</td>
+                                                        <td>{{ $email->to_email }}</td>
+                                                        <td>{{ $email->from_email }}</td>
+                                                        <td>{{ $email->subject }}</td>
+                                                        <td>{{ ucwords($email->status) }}</td>
+                                                        <td>
+                                                            <button type="button" class="btn btn-sm btn-primary view-email-btn">
+                                                                View
+                                                            </button>
+
+                                                            <textarea class="d-none email-body">
+                                                                {!! $email->body !!}
+                                                            </textarea>
+
+                                                            <input type="hidden" class="email-to" value="{{ $email->to_email }}">
+                                                            <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
+                                                            <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
+                                                            <input type="hidden" class="email-subject" value="{{ $email->subject }}">
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5">No email history found</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1982,6 +2003,7 @@ document.addEventListener("click", function(e) {
                             'error'
                         );
                         console.log(xhr.responseText);
+                        location.reload();
                     }
                 });
 
