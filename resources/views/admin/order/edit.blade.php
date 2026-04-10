@@ -361,26 +361,7 @@ $expectEmails = ['order_pending'];
                             </div>
                         </div>
                     </div>
-                    <!-- <div class="info-blog">
-                        <div class="info-stats4">
-                            <div class="info-icon flex-shrink-0">
-                                <i class="fas fa-comments"></i>
-                            </div>
-                            <div class="sale-num">
-                                <p>SMS</p>
-                                <select class="form-control form-option" name="sms_template_name" id="sms_template_name">
-                                    <option value="" >Select</option>
-
-                                    @foreach($sms_templates as $sms_template)
-                                
-
-                                    <option value="{{$sms_template->id}}" >{{snakeToWords($sms_template->identifier)}} -> Send Now</option>
-
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                    </div> -->
+                
                     <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
@@ -400,16 +381,7 @@ $expectEmails = ['order_pending'];
 
                                         <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Print Now</option>
                                     @endforeach
-                                    <!-- <option value="Order Details" >Order Details -> Send Now</option>
-                                    <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
-                                    <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
-                                    <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
-                                    <option value="Reminder 2nd" >Reminder 2nd -> Send Now</option>
-                                    <option value="Reminder 3rd" >Reminder 3rd -> Send Now</option>
-                                    <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
-                                    <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
-                                    <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
-                                    <option value="Simple Email" >Simple Email -> Send Now</option> -->
+                                    
                                 </select>
                             </div>
                         </div>
@@ -695,33 +667,6 @@ $expectEmails = ['order_pending'];
                                                 </tr>
                                                 @endforeach
                                                 @endif
-
-                                                <!-- <tr>
-                                                    <th>Total </th>
-                                                    <th class="text-right subtotal-box">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
-                                                </tr> -->
-                                               <!--  @if(!empty($discounts))
-                                                    @foreach ($discounts as $item)
-                                                        @php
-
-                                                            
-                                                            $discountAmount = $item->price;
-                                                            
-                                                        @endphp
-
-                                                        <tr class="discount-row">
-                                                            <td class="text-danger">
-                                                                Discount 
-                                                                @if($item->type === 'PERCENT')
-                                                                    ({{ $item->discount }}%)
-                                                                @endif
-                                                            </td>
-                                                            <td class="text-right text-danger">
-                                                                 {{ price_format_with_currency($discountAmount, $order->currency) }}
-                                                            </td>
-                                                        </tr>
-                                                    @endforeach
-                                                @endif -->
                                                 
                                             </table>
                                         </div>
@@ -835,14 +780,7 @@ $expectEmails = ['order_pending'];
                                             
 
                                         </tr>
-                                         
-                                        <!-- @foreach ($order->tour->pickups as $pickup)
-                                           
-                                            <tr>
-                                                <td><b>Pickup Charge</b></td>
-                                                <td class="text-right">{{ $pickup->pickup_charge }}</td>
-                                            </tr> 
-                                        @endforeach -->
+                                        
 
                                         <tr>
                                             <td><b>Intructions</b></td>
@@ -968,9 +906,7 @@ $expectEmails = ['order_pending'];
                                     </div>
                                     @else
 
-                                        <!-- <button class="btn btn-primary capture-btn" data-order-id="{{ $order->id }}" type="button">
-                                                    Capture Now
-                                                </button> -->
+                                        
                                                 
                                     @endif
 
@@ -989,7 +925,7 @@ $expectEmails = ['order_pending'];
                                                 <label>Amount</label>
                                                 <div class="input-group">
                                                     <div class="input-group-append">
-                                                        <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
+                                                        
                                                     </div>    
                                                     <input type="text" class="form-control decimal" id="addPaymentAmount" name="charge_ccnow_amount" placeholder="0.00">                                            
                                                 </div>
@@ -997,7 +933,7 @@ $expectEmails = ['order_pending'];
                                             </div>
                                         </div>
 
-                                        <!-- <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Submit</button> -->
+                                      
 
                                         <button type="button" class="btn btn-success" data-action="add-card"><i class="fas fa-save"></i>Save Card</button>
 
@@ -1192,13 +1128,7 @@ $expectEmails = ['order_pending'];
                                     <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
                                    <td>
 
-                                        <!-- <button class="btn btn-sm btn-danger refund-btn" 
-                                          style="width:150px; display:inline-block;" 
-                                          data-order-id="{{ $order->id }}" 
-                                          data-amount="{{ $order->booked_amount }}" 
-                                          type="button">
-                                          Refund
-                                        </button> -->
+                                        
                                         @if($order->booked_amount > 0 && $order->payments->isNotEmpty())
                                             <button type="button"
                                                             class="btn btn-sm btn-danger open-payment-refund"
@@ -1274,22 +1204,7 @@ $expectEmails = ['order_pending'];
                                     <p class="text-muted">No payments have been recorded yet.</p>
                                 @endif
                             </div>
-                            <!-- <div class="text-left mt-3">
-                                <button id="addPaymentBtn" type="button" class="btn btn-primary">
-                                    + Add Payment
-                                </button>
-                                @if(str_contains( $order->payment_method_id, 'pm_'))
-                                <button id="chargeSavedCard" type="button" class="btn btn-info charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
-                                    Charge Now
-                                </button>
-                                @endif
-
-                                @if(str_contains( $order->payment_method_id, 'pi_'))
-                                <button class="btn btn-primary charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                                    Charge Now
-                                </button>
-                                @endif
-                            </div> -->
+                            
                         </div>
                     </div> 
                     */ ?>
@@ -1861,12 +1776,6 @@ function calculateTotal() {
         }
     });
 
-    // $('input[name="paid_amount[]"]').each(function () {
-    //     let val = parseFloat($(this).val());
-    //     if (!isNaN(val)) {
-    //         sum_paid += val;
-    //     }
-    // });
 
     let total_due = {{ $order->total_amount }} - sum;
 
@@ -2591,96 +2500,6 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
     });
-
-/*    // Handle payment
-    const submitBtn = document.getElementById("addPaymentSubmit");
-    submitBtn.addEventListener("click", async function() {
-        
-        const amount = getTotalFromSubtotalBoxes();
-        
-        document.getElementById("addPaymentAmount").value = amount;
-        if (!amount || amount <= 0) {
-
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Please enter a valid amount',
-            }).then(() => {
-
-            });
-            
-            return;
-        }
-
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Processing...";
-
-        // Create Stripe Payment Method
-        const { paymentMethod, error } = await stripe.createPaymentMethod({
-            type: 'card',
-            card: card,
-        });
-
-        if (error) {
-            document.getElementById('card-errors').textContent = error.message;
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Pay Now";
-            return;
-        }
-
-        // Extract card details (safe data only)
-        const cardData = {
-            last4: paymentMethod.card.last4,
-            brand: paymentMethod.card.brand,
-            exp_month: paymentMethod.card.exp_month,
-            exp_year: paymentMethod.card.exp_year,
-        };
-        showLoader("Adding Payment. Please wait...");
-        // Send payment info to backend
-        const response = await fetch("{{ route('admin.orders.addPayment', $order->id) }}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": "{{ csrf_token() }}"
-            },
-            body: JSON.stringify({
-                payment_method_id: paymentMethod.id,
-                amount: amount,
-                card_last4: cardData.last4,
-                card_brand: cardData.brand,
-                card_exp_month: cardData.exp_month,
-                card_exp_year: cardData.exp_year,
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-
-            hideLoader();
-            Swal.fire({
-                icon: 'success',
-                title:'Success',
-                text: 'Payment added successfully!',
-            }).then(() => {
-                location.reload();
-            });
-            
-            
-        } else {
-            hideLoader();
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message,
-            }).then(() => {
-
-            });
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Pay Now";
-        }
-    });
-*/
 });
 </script>
 
