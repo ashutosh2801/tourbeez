@@ -176,6 +176,8 @@ $expectEmails = ['order_pending'];
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
     <input type="hidden" name="order_number" id="order_number" value="{{ $order->order_number }}" /> 
 
+    <input type="hidden" name="currency" id="order_currency" value="{{ $order->currency }}" />
+
     <div class="card card-primary rounded-lg-custom border order-edit-head1">
         <div class="card-header">
             <div class="row">
@@ -494,7 +496,7 @@ $expectEmails = ['order_pending'];
                                                     </td>
 
                                                     <td class="text-right">
-                                                        <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button>
+                                                        <button type="button" onClick="removeTour('{{ $order_tour->id }}')" class="btn btn-sm btn-danger">-</button>
                                                         <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
                                                     </td>
                                                 </tr>
@@ -2033,15 +2035,64 @@ document.addEventListener("click", function(e) {
     }
 
     function removeTour(id) {
+
+        const order_id = document.getElementById('order_id').value;
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This tour will be deleted permanently!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+
+                $.ajax({
+                    url: "{{ route('admin.order_tour.delete') }}",
+                    type: 'POST',
+                    data: {
+                        order_tour_id: id,
+                        order_id: order_id,
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        Swal.fire(
+                            'Deleted!',
+                            response.message,
+                            'success'
+                        ).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        Swal.fire(
+                            'Error!',
+                            'Something went wrong.',
+                            'error'
+                        );
+                        console.log(xhr.responseText);
+                    }
+                });
+
+            }
+        });
+    }
+    function removeTourdasdsd(id) {
         const row = document.getElementById(`${id}`);
         if (row) {
             row.remove();
             tourCount--;
         }
+
+
+        e.preventDefault();
     }
 
     function loadOrderTour(tour_id)
     {
+
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -2052,7 +2103,8 @@ document.addEventListener("click", function(e) {
             type: 'POST',
             data: {
                 id: tour_id,
-                tourCount: tourCount
+                tourCount: tourCount,
+                order_currency: document.getElementById('order_currency').value
             },
             success: function(response) {
                 //console.log('Success:', response);

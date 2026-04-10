@@ -4282,4 +4282,54 @@ class OrderController extends Controller
     }
 
 
+
+    public function removeOrderTour(Request $request)
+    {
+        $order = Order::find($request->order_id);
+
+        if (!$order) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        if($order->orderTours->count() <= 1){
+             return response()->json([
+                'status' => false,
+                'message' => 'OrderTour cannot found be deleted'
+            ], 404);
+
+        }
+
+        $tour = $order->orderTours()->where('id', $request->order_tour_id)->first();
+
+        if (!$tour) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tour not found'
+            ], 404);
+        }
+
+        $tour->delete();
+
+        $note = "Order Tour has been deleted by " . Auth::user()->name;
+
+        OrderActions::insert([
+            'order_id'     => $order->id,
+            'performed_by' => Auth::id(),
+            'notes'        => $note,
+            'created_at'   => now(),
+            'updated_at'   => now()
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Tour deleted successfully'
+        ]);
+    }
+
+
+
+
 }

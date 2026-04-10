@@ -319,6 +319,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/admin/orders/{order}/add-payment', [OrderController::class, 'addStripePayment'])
     ->name('orders.addPayment');
 
+    Route::post('/admin/orders/order_tour/delete', [OrderController::class, 'removeOrderTour'])
+    ->name('order_tour.delete');
+
+
     // SMS Templates
     Route::resource('/sms-templates', SmsTemplateController::class);
     Route::post('/sms-templates/update', [SmsTemplateController::class, 'update'])->name('sms-templates.update');
