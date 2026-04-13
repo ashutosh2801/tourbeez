@@ -176,6 +176,8 @@ $expectEmails = ['order_pending'];
     <input type="hidden" name="order_id" id="order_id" value="{{ $order->id }}" /> 
     <input type="hidden" name="order_number" id="order_number" value="{{ $order->order_number }}" /> 
 
+    <input type="hidden" name="currency" id="order_currency" value="{{ $order->currency }}" />
+
     <div class="card card-primary rounded-lg-custom border order-edit-head1">
         <div class="card-header">
             <div class="row">
@@ -359,26 +361,7 @@ $expectEmails = ['order_pending'];
                             </div>
                         </div>
                     </div>
-                    <!-- <div class="info-blog">
-                        <div class="info-stats4">
-                            <div class="info-icon flex-shrink-0">
-                                <i class="fas fa-comments"></i>
-                            </div>
-                            <div class="sale-num">
-                                <p>SMS</p>
-                                <select class="form-control form-option" name="sms_template_name" id="sms_template_name">
-                                    <option value="" >Select</option>
-
-                                    @foreach($sms_templates as $sms_template)
-                                
-
-                                    <option value="{{$sms_template->id}}" >{{snakeToWords($sms_template->identifier)}} -> Send Now</option>
-
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                    </div> -->
+                
                     <div class="info-blog">
                         <div class="info-stats4">
                             <div class="info-icon flex-shrink-0">
@@ -398,16 +381,7 @@ $expectEmails = ['order_pending'];
 
                                         <option value="{{$email_template->id}}" >{{snakeToWords($email_template->identifier)}} -> Print Now</option>
                                     @endforeach
-                                    <!-- <option value="Order Details" >Order Details -> Send Now</option>
-                                    <option value="Order Cancellation" >Order Cancellation -> Send Now</option>
-                                    <option value="Payment Receipt" >Payment Receipt -> Send Now</option>
-                                    <option value="Reminder 1st" >Reminder 1st -> Send Now</option>
-                                    <option value="Reminder 2nd" >Reminder 2nd -> Send Now</option>
-                                    <option value="Reminder 3rd" >Reminder 3rd -> Send Now</option>
-                                    <option value="FollowUp Review" >FollowUp Review -> Send Now</option>
-                                    <option value="FollowUp Recommend" >FollowUp Recommend -> Send Now</option>
-                                    <option value="FollowUp Coupon" >FollowUp Coupon -> Send Now</option>
-                                    <option value="Simple Email" >Simple Email -> Send Now</option> -->
+                                    
                                 </select>
                             </div>
                         </div>
@@ -444,7 +418,7 @@ $expectEmails = ['order_pending'];
                                     @php $count = count( $order->orderTours ); $index=0; @endphp
                                     @foreach ($order->orderTours as $order_tour)
                                     @php
-                                        $row_id = 'row_'.$index++;
+                                        $row_id = $index++;
                                         $subtotal = 0;
                                         $discount = 0;
                                         $subtotal2 = 0;
@@ -494,7 +468,7 @@ $expectEmails = ['order_pending'];
                                                     </td>
 
                                                     <td class="text-right">
-                                                        <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button>
+                                                        <button type="button" onClick="removeTour('{{ $order_tour->id }}')" class="btn btn-sm btn-danger">-</button>
                                                         <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
                                                     </td>
                                                 </tr>
@@ -693,33 +667,6 @@ $expectEmails = ['order_pending'];
                                                 </tr>
                                                 @endforeach
                                                 @endif
-
-                                                <!-- <tr>
-                                                    <th>Total </th>
-                                                    <th class="text-right subtotal-box">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
-                                                </tr> -->
-                                               <!--  @if(!empty($discounts))
-                                                    @foreach ($discounts as $item)
-                                                        @php
-
-                                                            
-                                                            $discountAmount = $item->price;
-                                                            
-                                                        @endphp
-
-                                                        <tr class="discount-row">
-                                                            <td class="text-danger">
-                                                                Discount 
-                                                                @if($item->type === 'PERCENT')
-                                                                    ({{ $item->discount }}%)
-                                                                @endif
-                                                            </td>
-                                                            <td class="text-right text-danger">
-                                                                 {{ price_format_with_currency($discountAmount, $order->currency) }}
-                                                            </td>
-                                                        </tr>
-                                                    @endforeach
-                                                @endif -->
                                                 
                                             </table>
                                         </div>
@@ -833,14 +780,7 @@ $expectEmails = ['order_pending'];
                                             
 
                                         </tr>
-                                         
-                                        <!-- @foreach ($order->tour->pickups as $pickup)
-                                           
-                                            <tr>
-                                                <td><b>Pickup Charge</b></td>
-                                                <td class="text-right">{{ $pickup->pickup_charge }}</td>
-                                            </tr> 
-                                        @endforeach -->
+                                        
 
                                         <tr>
                                             <td><b>Intructions</b></td>
@@ -966,9 +906,7 @@ $expectEmails = ['order_pending'];
                                     </div>
                                     @else
 
-                                        <!-- <button class="btn btn-primary capture-btn" data-order-id="{{ $order->id }}" type="button">
-                                                    Capture Now
-                                                </button> -->
+                                        
                                                 
                                     @endif
 
@@ -987,7 +925,7 @@ $expectEmails = ['order_pending'];
                                                 <label>Amount</label>
                                                 <div class="input-group">
                                                     <div class="input-group-append">
-                                                        <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
+                                                        
                                                     </div>    
                                                     <input type="text" class="form-control decimal" id="addPaymentAmount" name="charge_ccnow_amount" placeholder="0.00">                                            
                                                 </div>
@@ -995,7 +933,7 @@ $expectEmails = ['order_pending'];
                                             </div>
                                         </div>
 
-                                        <!-- <button type="submit" id="submit" class="btn btn-success btn-save"><i class="fas fa-save"></i> Submit</button> -->
+                                      
 
                                         <button type="button" class="btn btn-success" data-action="add-card"><i class="fas fa-save"></i>Save Card</button>
 
@@ -1190,13 +1128,7 @@ $expectEmails = ['order_pending'];
                                     <td>{{ price_format_with_currency($order->booked_amount, $order->currency) }}</td>
                                    <td>
 
-                                        <!-- <button class="btn btn-sm btn-danger refund-btn" 
-                                          style="width:150px; display:inline-block;" 
-                                          data-order-id="{{ $order->id }}" 
-                                          data-amount="{{ $order->booked_amount }}" 
-                                          type="button">
-                                          Refund
-                                        </button> -->
+                                        
                                         @if($order->booked_amount > 0 && $order->payments->isNotEmpty())
                                             <button type="button"
                                                             class="btn btn-sm btn-danger open-payment-refund"
@@ -1272,108 +1204,114 @@ $expectEmails = ['order_pending'];
                                     <p class="text-muted">No payments have been recorded yet.</p>
                                 @endif
                             </div>
-                            <!-- <div class="text-left mt-3">
-                                <button id="addPaymentBtn" type="button" class="btn btn-primary">
-                                    + Add Payment
-                                </button>
-                                @if(str_contains( $order->payment_method_id, 'pm_'))
-                                <button id="chargeSavedCard" type="button" class="btn btn-info charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
-                                    Charge Now
-                                </button>
-                                @endif
-
-                                @if(str_contains( $order->payment_method_id, 'pi_'))
-                                <button class="btn btn-primary charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                                    Charge Now
-                                </button>
-                                @endif
-                            </div> -->
+                            
                         </div>
                     </div> 
                     */ ?>
 
 
                     <div class="card">
-                        <div class="card-header py-0">
-                            <button type="button" class="btn btn-link"> Recent Actions</button>                     
+                        
+
+                        <div class="card-header bg-secondary py-0" id="headingRecentActions">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapseRecentActions">
+                                <i class="fa fa-angle-right"></i> Recent Actions
+                            </button>
                         </div>
                         <div>
-                            <div class="card-body">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Subject</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if(!empty($order->actions) && is_iterable($order->actions))
-                                            @foreach($order->actions->sortByDesc('created_at') as $action)
-                                                <tr>
-                                                    <td>{{ $action->created_at }}</td>
-                                                    <td>{!! $action->notes !!}</td>
-                                                </tr>
-                                            @endforeach
-                                        @else
+                            <div id="collapseRecentActions" class="collapse show" aria-labelledby="headingRecentActions" data-parent="#accordionExample">
+                                <div class="card-body">
+                                    <table class="table">
+                                        <thead>
                                             <tr>
-                                                <td colspan="5">No action history found</td>
+                                                <th>Date</th>
+                                                <th>Subject</th>
                                             </tr>
-                                        @endif
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            @if(!empty($order->actions) && is_iterable($order->actions))
+                                                @foreach($order->actions->sortByDesc('created_at') as $action)
+                                                    <tr>
+                                                        <td>{{ $action->created_at }}</td>
+                                                        <td>{!! $action->notes !!}</td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5">No action history found</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="card">
-                        <div class="card-header py-0">
-                            <button type="button" class="btn btn-link"> Order Email History</button>                     
+
+
+                        
+
+                        <div class="card-header bg-secondary py-0" id="headingEmailHistory">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapseEmailHistory">
+                                <i class="fa fa-angle-right"></i> Order Email History
+                            </button>
                         </div>
+
+
+
+
+
                         <div>
-                            <div class="card-body">
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>To</th>
-                                            <th>From</th>
-                                            <th>Subject</th>
-                                            <th>Status</th>
-                                            <th>Content</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
-                                            @foreach($order->emailHistories->sortByDesc('created_at') as $email)
-                                                <tr>
-                                                    <td>{{ $email->created_at }}</td>
-                                                    <td>{{ $email->to_email }}</td>
-                                                    <td>{{ $email->from_email }}</td>
-                                                    <td>{{ $email->subject }}</td>
-                                                    <td>{{ ucwords($email->status) }}</td>
-                                                    <td>
-                                                        <button type="button" class="btn btn-sm btn-primary view-email-btn">
-                                                            View
-                                                        </button>
-
-                                                        <textarea class="d-none email-body">
-                                                            {!! $email->body !!}
-                                                        </textarea>
-
-                                                        <input type="hidden" class="email-to" value="{{ $email->to_email }}">
-                                                        <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
-                                                        <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
-                                                        <input type="hidden" class="email-subject" value="{{ $email->subject }}">
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        @else
+                            <div id="collapseEmailHistory" class="collapse show" aria-labelledby="headingEmailHistory" data-parent="#accordionExample">
+                                <div class="card-body">
+                                    <table class="table">
+                                        <thead>
                                             <tr>
-                                                <td colspan="5">No email history found</td>
+                                                <th>Date</th>
+                                                <th>To</th>
+                                                <th>From</th>
+                                                <th>Subject</th>
+                                                <th>Status</th>
+                                                <th>Content</th>
                                             </tr>
-                                        @endif
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
+                                                @foreach($order->emailHistories->sortByDesc('created_at') as $email)
+                                                    <tr>
+                                                        <td>{{ $email->created_at }}</td>
+                                                        <td>{{ $email->to_email }}</td>
+                                                        <td>{{ $email->from_email }}</td>
+                                                        <td>{{ $email->subject }}</td>
+                                                        <td>{{ ucwords($email->status) }}</td>
+                                                        <td>
+                                                            <button type="button" class="btn btn-sm btn-primary view-email-btn">
+                                                                View
+                                                            </button>
+
+                                                            <textarea class="d-none email-body">
+                                                                {!! $email->body !!}
+                                                            </textarea>
+
+                                                            <input type="hidden" class="email-to" value="{{ $email->to_email }}">
+                                                            <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
+                                                            <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
+                                                            <input type="hidden" class="email-subject" value="{{ $email->subject }}">
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5">No email history found</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1859,12 +1797,6 @@ function calculateTotal() {
         }
     });
 
-    // $('input[name="paid_amount[]"]').each(function () {
-    //     let val = parseFloat($(this).val());
-    //     if (!isNaN(val)) {
-    //         sum_paid += val;
-    //     }
-    // });
 
     let total_due = {{ $order->total_amount }} - sum;
 
@@ -1946,6 +1878,21 @@ $(document).ready(function () {
             calculateTotal();
         });
     });
+
+$(document).ready(function () {
+
+    $('.tour_startdate').each(function () {
+        if (!$(this).data('daterangepicker')) {
+            $(this).daterangepicker({
+                singleDatePicker: true,
+                autoUpdateInput: true,
+                locale: {
+                    format: 'YYYY-MM-DD'
+                }
+            });
+        }
+    });
+});
 </script>
 
 <script>
@@ -2033,15 +1980,65 @@ document.addEventListener("click", function(e) {
     }
 
     function removeTour(id) {
+
+        const order_id = document.getElementById('order_id').value;
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This tour will be deleted permanently!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+
+                $.ajax({
+                    url: "{{ route('admin.order_tour.delete') }}",
+                    type: 'POST',
+                    data: {
+                        order_tour_id: id,
+                        order_id: order_id,
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        Swal.fire(
+                            'Deleted!',
+                            response.message,
+                            'success'
+                        ).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        Swal.fire(
+                            'Error!',
+                            'Something went wrong.',
+                            'error'
+                        );
+                        console.log(xhr.responseText);
+                        location.reload();
+                    }
+                });
+
+            }
+        });
+    }
+    function removeTourdasdsd(id) {
         const row = document.getElementById(`${id}`);
         if (row) {
             row.remove();
             tourCount--;
         }
+
+
+        e.preventDefault();
     }
 
     function loadOrderTour(tour_id)
     {
+
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -2052,16 +2049,121 @@ document.addEventListener("click", function(e) {
             type: 'POST',
             data: {
                 id: tour_id,
-                tourCount: tourCount
+                tourCount: tourCount,
+                order_currency: document.getElementById('order_currency').value
             },
             success: function(response) {
                 //console.log('Success:', response);
                 $('#tour_all').append(response);
-                $('#tourContainer').html('');
-                tourCount++;
+                // $('#tourContainer').html('');
+                // tourCount++;
 
-                TB.plugins.dateRange();
-                TB.plugins.timePicker();
+                // TB.plugins.dateRange();
+                // TB.plugins.timePicker();
+
+                    const newRow = $('#tour_all').children().last();
+
+                    // Init only inside new row
+                    newRow.find('.aiz-date-range').each(function () {
+                        $(this).daterangepicker({
+                            singleDatePicker: true,
+                            autoUpdateInput: true,
+                            locale: {
+                                format: 'ddd MMM DD, YYYY'
+                            }
+                        });
+                    });
+
+                    newRow.find('.aiz-time-picker').each(function () {
+                        $(this).timepicker({
+                            minuteStep: 1,
+                            showMeridian: true
+                        });
+                    });
+                    // console.log(tour_id, response.start_date, tourCount);
+                    // fetchTourSessions(tour_id, response.start_date, tourCount);s
+
+                    
+
+                    // const $container = $(`#tour_details_${count}`);
+            // $container.html(response);
+
+            // TB.plugins.dateRange();
+            // TB.plugins.timePicker();
+            // TB.plugins.bootstrapSelect('refresh');
+
+            // const $dateInput = $('#tour_all').find(
+            //     '.tour-startdate, .tour_startdate_field, input[name="tour_startdate[]"]'
+            // ).first();
+
+            const $dateInput = newRow.find('.tour_startdate_field');
+
+            if ($dateInput.length) {
+
+                const serverDate =
+                    $dateInput.attr('value') ||
+                    $dateInput.val() ||
+                    '';
+
+                const initialDate = serverDate
+                    ? serverDate
+                    : moment().format("YYYY-MM-DD");
+
+                $dateInput.val(initialDate);
+
+                $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {
+                    const selectedDate = picker.startDate.format("ddd MMM DD, YYYY");
+                    $(this).val(selectedDate).trigger('change');
+
+                    // const $row = $("#row_" + tourCount);
+                    const rowId = newRow.attr('id');
+                    const $row = $("#" + rowId);
+
+                    const pretty = moment(selectedDate).format("ddd MMM DD, YYYY");
+                    $row.find(".tour_startdate_display").val(pretty);
+                    
+                    fetchTourSessions(tour_id, selectedDate, tourCount);
+                });
+
+                setTimeout(() => {
+                    try {
+                        const drp = $dateInput.data('daterangepicker');
+                        if (drp) {
+
+                            // ----------- LIMIT START DATE -------------
+                            const tourStartDate = moment(initialDate, "YYYY-MM-DD");
+                            const today = moment().startOf('day');
+
+                            const minAllowedDate = moment.max(tourStartDate, today);
+
+                            drp.minDate = minAllowedDate;
+                            drp.updateView();
+                            drp.updateCalendars();
+                            // -------------------------------------------
+
+                            drp.setStartDate(initialDate);
+                            drp.setEndDate(initialDate);
+                        }
+                    } catch (e) {}
+                    console.log(tour_id, initialDate, tourCount);
+                    fetchTourSessions(tour_id, initialDate, tourCount);
+                    hideLoader();
+
+                }, 250);
+                // $("input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']").each(function () {
+                //     handleQtyInput.call(this);
+                // });
+                // $('#tour_all').html('');
+                    // tourCount++;
+
+            } else {
+                console.warn("Date input NOT FOUND for row:", tourCount);
+            }
+
+
+
+
+
             },
             error: function(xhr, status, error) {
                 console.error('Error:', error);
@@ -2070,6 +2172,7 @@ document.addEventListener("click", function(e) {
     }
 
     $(document).on('click', '.fa-calendar', function() {
+        
         $(this).closest('.input-group').find('.aiz-time-picker, .aiz-date-range').focus();
     });
 
@@ -2539,96 +2642,6 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
     });
-
-/*    // Handle payment
-    const submitBtn = document.getElementById("addPaymentSubmit");
-    submitBtn.addEventListener("click", async function() {
-        
-        const amount = getTotalFromSubtotalBoxes();
-        
-        document.getElementById("addPaymentAmount").value = amount;
-        if (!amount || amount <= 0) {
-
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Please enter a valid amount',
-            }).then(() => {
-
-            });
-            
-            return;
-        }
-
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Processing...";
-
-        // Create Stripe Payment Method
-        const { paymentMethod, error } = await stripe.createPaymentMethod({
-            type: 'card',
-            card: card,
-        });
-
-        if (error) {
-            document.getElementById('card-errors').textContent = error.message;
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Pay Now";
-            return;
-        }
-
-        // Extract card details (safe data only)
-        const cardData = {
-            last4: paymentMethod.card.last4,
-            brand: paymentMethod.card.brand,
-            exp_month: paymentMethod.card.exp_month,
-            exp_year: paymentMethod.card.exp_year,
-        };
-        showLoader("Adding Payment. Please wait...");
-        // Send payment info to backend
-        const response = await fetch("{{ route('admin.orders.addPayment', $order->id) }}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": "{{ csrf_token() }}"
-            },
-            body: JSON.stringify({
-                payment_method_id: paymentMethod.id,
-                amount: amount,
-                card_last4: cardData.last4,
-                card_brand: cardData.brand,
-                card_exp_month: cardData.exp_month,
-                card_exp_year: cardData.exp_year,
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-
-            hideLoader();
-            Swal.fire({
-                icon: 'success',
-                title:'Success',
-                text: 'Payment added successfully!',
-            }).then(() => {
-                location.reload();
-            });
-            
-            
-        } else {
-            hideLoader();
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message,
-            }).then(() => {
-
-            });
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Pay Now";
-        }
-    });
-*/
 });
 </script>
 
@@ -2978,18 +2991,76 @@ $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_ext
 //     });
 // });
 
+// $(document).ready(function () {
+
+//     let tourId = $("input[name='tour_id[]']").val();  // from edit row
+//     let order_id = $("input[name='order_id").val();  // from edit row
+
+
+//     let count  = 0; // or row number if multiple rows
+
+//     if (tourId) {
+        
+//         refreshCalendarAndSession(tourId, count, order_id);
+//     }
+// });
+
+// $(document).ready(function () {
+
+//     let order_id = $("input[name='order_id']").val();
+
+//     $("input[name='tour_id[]']").each(function(index) {
+
+//         let tourId = $(this).val();
+
+//         if (tourId) {
+//             refreshCalendarAndSession(tourId, index, order_id);
+//         }
+
+//     });
+
+// });
+
+
 $(document).ready(function () {
 
-    let tourId = $("input[name='tour_id[]']").val();  // from edit row
-    let order_id = $("input[name='order_id").val();  // from edit row
+    // ✅ init datepicker ONLY ONCE
+    TB.plugins.dateRange();
 
+    let order_id = $("input[name='order_id']").val();
 
-    let count  = 0; // or row number if multiple rows
+    $("#tour_all > div").each(function () {
 
-    if (tourId) {
-        refreshCalendarAndSession(tourId, count, order_id);
-    }
+        let tourId = $(this).find("input[name='tour_id[]']").val();
+        let count = $(this).attr("id");
+
+        
+
+        if (tourId) {
+            refreshCalendarAndSession(tourId, count, order_id);
+        }
+    });
+
 });
+
+
+// $(document).ready(function () {
+
+//     let order_id = $("input[name='order_id']").val();
+
+//     $("input[name='tour_id[]']").each(function(index) {
+
+//         let tourId = $(this).val();
+
+//         if (tourId) {
+//             refreshCalendarAndSession(tourId, index, order_id);
+//         }
+
+//     });
+
+// });
+
+
 
 function refreshCalendarAndSession23432(tourId, count, order_id) {
 
@@ -3044,7 +3115,120 @@ function refreshCalendarAndSession23432(tourId, count, order_id) {
 }
 
 function refreshCalendarAndSession(tourId, count, order_id) {
-    // alert(23432);
+
+    $.ajax({
+        url: "{{ route('admin.tour.calendar') }}",
+        type: "POST",
+        data: {
+            id: tourId,
+            order_id: order_id,
+            _token: "{{ csrf_token() }}"
+        },
+
+        success: function (res) {
+
+            const $row = $("#" + count);
+            const $dateInput = $row.find(".tour_startdate").first();
+
+            // ✅ destroy old picker
+            if ($dateInput.data('daterangepicker')) {
+                $dateInput.data('daterangepicker').remove();
+            }
+
+            // ✅ init with correct date (MAIN FIX)
+            $dateInput.daterangepicker({
+                singleDatePicker: true,
+                autoUpdateInput: true,
+                startDate: moment(res.tour_date, "YYYY-MM-DD"),
+                minDate: moment(res.start_date, "YYYY-MM-DD"),
+                locale: {
+                    format: "ddd MMM DD, YYYY"
+                }
+            });
+
+            // ✅ update display field
+            const pretty = moment(res.tour_date).format("ddd MMM DD, YYYY");
+            $row.find(".tour_startdate_display").val(pretty);
+
+            // disabled dates (if used later)
+            $row.find(".disabled-dates").val(JSON.stringify(res.disabled_dates));
+
+            // ✅ set time
+            $row.find(".tour_startdate_time_display").val(res.tour_time);
+
+            // ✅ fetch sessions
+            fetchTourSessions(tourId, res.tour_date, count, res.tour_time);
+        }
+    });
+}
+
+function refreshCalendarAndSession1(tourId, count, order_id) {
+
+    $.ajax({
+        url: "{{ route('admin.tour.calendar') }}",
+        type: "POST",
+        data: {
+            id: tourId,
+            order_id: order_id,
+            _token: "{{ csrf_token() }}"
+        },
+
+        success: function (res) {
+            console.log(res);
+            const $row = $("#" + count); // ✅ FIXED
+            const $dateInput = $row.find(".tour_startdate").first();
+
+            // ✅ destroy old picker (IMPORTANT)
+            if ($dateInput.data('daterangepicker')) {
+                $dateInput.data('daterangepicker').remove();
+            }
+
+            // ✅ set date
+            // $dateInput.val(res.tour_date);
+            
+            // ✅ re-init ONLY this input (NOT global)
+            $dateInput.daterangepicker({
+                singleDatePicker: true,
+                autoUpdateInput: true,
+                startDate: moment(res.tour_date, "YYYY-MM-DD"),
+                locale: {
+                    format: "ddd MMM DD, YYYY"
+                }
+            });
+
+            // UI updates
+            const pretty = moment(res.tour_date).format("ddd MMM DD, YYYY");
+            $row.find(".tour_startdate_display").val(pretty);
+
+            // disabled dates
+            $row.find(".disabled-dates").val(JSON.stringify(res.disabled_dates));
+
+            // set min date + selected
+            const drp = $dateInput.data("daterangepicker");
+
+            if (drp) {
+                const today = moment().startOf("day");
+
+                const minDate = moment(res.start_date).isAfter(today)
+                    ? moment(res.start_date)
+                    : today;
+
+                drp.minDate = minDate;
+                drp.setStartDate(res.tour_date);
+                drp.setEndDate(res.tour_date);
+                drp.updateView();
+                drp.updateCalendars();
+            }
+
+            // set time + fetch sessions
+            $row.find(".tour_startdate_time_display").val(res.tour_time);
+            fetchTourSessions(tourId, res.tour_date, count, res.tour_time);
+        }
+    });
+}
+
+function refreshCalendarAndSession234234(tourId, count, order_id) {
+    
 
     // showLoader("Loading… Please wait");
     $.ajax({
@@ -3058,7 +3242,10 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 
         success: function(res) {
 
-            const $row = $("#row_" + count);
+            // const $row = $("#row_" + count);
+            const $row = $("#" + count);
+
+            
             const $dateInput = $row.find(".tour_startdate");
 
             // Set initial date
@@ -3072,21 +3259,29 @@ function refreshCalendarAndSession(tourId, count, order_id) {
             $row.find(".tour_startdate_display").val(pretty);
 
             // Reinitialize date picker
-            TB.plugins.dateRange();
+            // TB.plugins.dateRange();
+
+            $dateInput.daterangepicker({
+                singleDatePicker: true,
+                autoUpdateInput: false,
+                locale: {
+                    format: "ddd MMM DD, YYYY"
+                }
+            });
 
             // 🔥 ADD THE DATE CHANGE LISTENER HERE
-            $dateInput
-                .off("apply.daterangepicker")
-                .on("apply.daterangepicker", function (ev, picker) {
+            // $dateInput
+            //     .off("apply.daterangepicker")
+            //     .on("apply.daterangepicker", function (ev, picker) {
 
-                    let selectedDate = picker.startDate.format("ddd MMM DD, YYYY");
-                    $(this).val(selectedDate).trigger("change");
+            //         let selectedDate = picker.startDate.format("ddd MMM DD, YYYY");
+            //         $(this).val(selectedDate).trigger("change");
 
-                    const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
-                    $row.find(".tour_startdate_display").val(pretty);
+            //         const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
+            //         $row.find(".tour_startdate_display").val(pretty);
 
-                    fetchTourSessions(tourId, selectedDate, count);
-                });
+            //         fetchTourSessions(tourId, selectedDate, count);
+            //     });
 
             // Delay only for initial render
             setTimeout(() => {
@@ -3131,12 +3326,16 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 
 
 function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
-
+    
     showLoader("Loading… Please wait");
 
-    const $row = $("#row_" + count);
-    const $timeField = $row.find(".tour_starttime, select[name='tour_starttime[]']").first();
+    // const $row = $("#row_" + count);
 
+    const $row = $("#" + count);
+
+    const $timeField = $row.find(".tour_starttime, select[name='tour_starttime[]']").first();
+    console.log($row);
+    console.log($timeField);
     if(!tourId || !selectedDate) return;  
 
     $.ajax({
@@ -3743,6 +3942,43 @@ $(document).on('input', '#refundAmount', function () {
         });
 
     });
+</script>
+
+<script>
+$(document).off('apply.daterangepicker', '.tour_startdate');
+
+// $(document).on('apply.daterangepicker', '.tour_startdate', function (ev, picker) {
+//     alert(23423);
+//     const $row = $(this).closest("#tour_all > div");
+
+//     const tourId = $row.find("input[name='tour_id[]']").val();
+//     const count = $row.attr('id');
+
+//     const selectedDate = picker.startDate.format("YYYY-MM-DD");
+
+//     const pretty = moment(selectedDate).format("ddd MMM DD, YYYY");
+//     $row.find(".tour_startdate_display").val(pretty);
+
+//     fetchTourSessions(tourId, selectedDate, count);
+// });
+
+
+$(document).on('change', '.tour_startdate', function () {
+
+    // alert('working'); // ✅ this WILL fire
+
+    const $row = $(this).closest("#tour_all > div");
+
+    const tourId = $row.find("input[name='tour_id[]']").val();
+    const count = $row.attr('id');
+
+    const selectedDate = moment($(this).val(), "ddd MMM DD, YYYY").format("YYYY-MM-DD");
+
+    const pretty = moment(selectedDate).format("ddd MMM DD, YYYY");
+    $row.find(".tour_startdate_display").val(pretty);
+
+    fetchTourSessions(tourId, selectedDate, count);
+});
 </script>
 
 

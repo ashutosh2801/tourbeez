@@ -108,16 +108,16 @@ class OrderController extends Controller
                 ])->findOrFail($id);
             });
 
-            if ($booking && $booking->order_status !== 1) {
-                $booking->order_status   = 1;
-                $booking->payment_status = 1;
-                $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
-                $booking->updated_at     = now();
-                $booking->save();
+            // if ($booking && $booking->order_status !== 1) {
+            //     $booking->order_status   = 1;
+            //     $booking->payment_status = 1;
+            //     $booking->payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
+            //     $booking->updated_at     = now();
+            //     $booking->save();
 
-                // Refresh cache after updating the order
-                // Cache::put($cacheKey, $booking->fresh(['tour.location', 'tour.detail', 'tour.addons', 'tour.fees', 'tour.pickups', 'customer']), now()->addMinutes(10));
-            }
+            //     // Refresh cache after updating the order
+            //     // Cache::put($cacheKey, $booking->fresh(['tour.location', 'tour.detail', 'tour.addons', 'tour.fees', 'tour.pickups', 'customer']), now()->addMinutes(10));
+            // }
             
             $tour_pricing = $booking->order_tour->tour_pricing ? json_decode($booking->order_tour->tour_pricing) : [];
             $pricing=[]; $total = 0;
@@ -352,9 +352,9 @@ class OrderController extends Controller
             'payment_status'=> $totalPaid > 0 ? 'paid' : 'unpaid',
             "total_amount"  => $totalPaid > 0 ? $balanceAmount : $totalAmount,
             "balance_amount"=> $balanceAmount,
-            "promo_code"    => $promoCode,
-            "paid_amount"   => $paidAmount,
-            "total_paid"    => $totalPaid,
+            "promo_code"    => currencyConvert( $promoCode, $order->currency, 'CAD'),
+            "paid_amount"   => currencyConvert( $paidAmount, $order->currency, 'CAD'),
+            "total_paid"    => currencyConvert( $totalPaid, $order->currency, 'CAD'),
             'payment_by'    => 'customer',
             "orderId"       => $order->id,
             "tourId"        => $order->tour_id,
