@@ -51,9 +51,9 @@
                     </select> -->
                     <select name="order_status" class="form-control mr-2">
                         <option value="0">New</option> 
-                        <option value="4">Pending Customer</option>
+                        <option value="4" selected>Pending Customer</option>
                         <option value="3">Pending Supplier</option>
-                        <option value="5" selected>Confirmed</option>
+                        <option value="5" >Confirmed</option>
                         <option value="2">On Hold</option>
                         <option value="6">Cancelled</option>
                         <option value="7">Abandoned Cart</option>
@@ -342,6 +342,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
 
 <script>
+
+
+    
 let tourCount = 1;
 
 // ================= Tour Options =================
@@ -576,9 +579,47 @@ function fetchTourSessions(tourId, selectedDate, count) {
         document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
     });
 
+    function validatePricing() {
+
+    let hasValidPricing = false;
+
+    document.querySelectorAll("[id^='row_']").forEach((row) => {
+
+        let rowValid = false;
+
+        row.querySelectorAll("input[name^='tour_pricing_qty_']").forEach((qtyInput) => {
+
+            const qty = parseFloat(qtyInput.value) || 0;
+            const min = parseFloat(qtyInput.dataset.min) || 0;
+            const isOptional = qtyInput.dataset.optional == "1";
+
+            // 🚨 KEY RULE
+            // Only NON-OPTIONAL can satisfy
+            if (!isOptional) {
+                if (qty >= min && qty > 0) {
+                    rowValid = true;
+                }
+            }
+        });
+
+        if (rowValid) {
+            hasValidPricing = true;
+        }
+    });
+
+    return hasValidPricing;
+}
+
     // Handle form submit
     const form = document.getElementById('orderForm');
     form.addEventListener('submit', async function(event) {
+
+        // ✅ STEP 1: Validate pricing first
+    if (!validatePricing()) {
+        event.preventDefault();
+        alert("Please select at least one valid pricing option.");
+        return;
+    }
         const selectedPayment = document.querySelector("input[name='add_ccnow']:checked").value;
         if (selectedPayment) {
             event.preventDefault();

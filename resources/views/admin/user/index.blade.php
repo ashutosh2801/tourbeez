@@ -66,12 +66,17 @@
                                 <a href="{{ route('admin.user.edit', encrypt($user->id)) }}" class="btn btn-sm btn-edit"><i class="far fa-edit"></i></a>
                             </td>
                             <td>
-                                <form action="{{ route('admin.user.destroy', encrypt($user->id)) }}" method="POST"
-                                    onsubmit="return confirm('Are sure want to delete?')">
-                                    @method('DELETE')
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-danger confirm-delete"><i class="fas fa-trash-alt"></i></button>
-                                </form>
+                                
+
+                                <form action="{{ route('admin.user.destroy', encrypt($user->id)) }}"
+                                          method="POST"
+                                          class="delete-form">
+                                        @method('DELETE')
+                                        @csrf
+                                        <button type="button" class="btn btn-danger delete-btn">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
                             </td>
                         </tr>
                     @endforeach
@@ -83,15 +88,31 @@
         </div>
     </div>
     @section('js')
-        <!-- <script>
-            $(function() {
-                $('#userTable').DataTable({
-                    "paging": false,
-                    "searching": true,
-                    "ordering": true,
-                    "responsive": true,
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+            
+
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', function () {
+                        let form = this.closest('form');
+
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: "This action cannot be undone!",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Yes, delete it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.submit();
+                            }
+                        });
+                    });
                 });
             });
-        </script> -->
+        </script>
     @endsection
 </x-admin>

@@ -18,6 +18,7 @@ class CustomerExport implements FromCollection, WithHeadings
 
     public function collection()
     {
+        $excludedStatuses = [1, 2, 6, 7];
         $request = $this->request;
 
         $startDate = $request->start_date
@@ -28,13 +29,29 @@ class CustomerExport implements FromCollection, WithHeadings
             ? Carbon::parse($request->end_date)->endOfDay()
             : Carbon::today()->endOfDay();
 
-        $data = DB::table('orders')
+        $query = DB::table('orders')
             ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
             ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
-            ->where('orders.order_status', '!=', 1)
-            ->whereBetween('orders.created_at', [$startDate, $endDate])
+            ->whereNotIn('orders.order_status', $excludedStatuses)
+            ->whereBetween('orders.created_at', [$startDate, $endDate]);
 
-            ->get();
+            
+        if ($request->filled('payment_status')) {
+            $query->where('orders.payment_status', $request->payment_status);
+        }
+
+        if ($request->action_type === 'pay_now') {
+            $query->where('orders.action_name', 'book');
+        } elseif ($request->action_type === 'pay_later') {
+            $query->where(function ($q) {
+                $q->where('orders.action_name', '!=', 'book')
+                  ->orWhereNull('orders.action_name');
+            });
+        }
+        if ($request->filled('partner')) {
+            $query->where('orders.source', $request->partner);
+        }
+        $data = $query->get();
 
         return $data->map(function ($c) {
             return [
