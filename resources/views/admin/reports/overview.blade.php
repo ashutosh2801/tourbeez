@@ -110,7 +110,16 @@
                     <label class="filter-label">Order Status</label>
                     <select name="order_status" class="form-control">
                         <option value="">All</option>
-                        @foreach(config('constants.status_with_code') as $key => $val)
+                        @php
+                        $status_with_code = [
+                                    
+                                    3 => 'Pending supplier',
+                                    4 => 'Pending customer',
+                                    5 => 'Confirmed',
+                                    
+                            ];
+                        @endphp
+                        @foreach($status_with_code as $key => $val)
                             <option value="{{ $key }}"
                                 {{ request('order_status') == $key ? 'selected' : '' }}>
                                 {{ $val }}
@@ -128,14 +137,30 @@
                         <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
                     </select>
                 </div>
-
-                {{-- BUTTONS --}}
-                <div class="col-md-2 d-flex align-items-end">
-                    <button class="btn btn-primary w-100">Apply</button>
+                <div class="col-md-2">
+                    <label class="filter-label">Source</label>
+                    <select name="partner" class="form-control">
+                        <option value="">All</option>
+                        @php
+                        
+                        @foreach($partners as $partner)
+                            <option value="{{ ucfirst($partner->slug) }}"
+                                {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
+                                {{ $partner->name }}
+                            </option>
+                        @endforeach
+                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                    </select>
                 </div>
 
-                <div class="col-md-2 d-flex align-items-end mt-2 mt-md-0">
-                    <a href="{{ route('admin.report.overview') }}" class="btn btn-light w-100">Reset</a>
+                {{-- BUTTONS --}}
+                <div class="col-md-2 d-flex align-items-end mt-2">
+                    <button class="btn-sm btn-search">Apply</button>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end mt-2 mt-2">
+                    <a href="{{ route('admin.report.overview') }}" class="btn-sm btn-sm-clear border">Reset</a>
                 </div>
 
             </div>

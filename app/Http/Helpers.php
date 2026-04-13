@@ -1454,5 +1454,11 @@ if (!function_exists('currencyConvertWithoutRound')) {
         // return round($converted, 2);
     }
 }
+    if (!function_exists('isOptionalPricing')) {
+        function isOptionalPricing($label) {
+            $label = strtolower($label);
+            return str_contains($label, 'child') || str_contains($label, 'infant');
+        }
+    }
 
 ?>
