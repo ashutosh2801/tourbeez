@@ -418,7 +418,7 @@ $expectEmails = ['order_pending'];
                                     @php $count = count( $order->orderTours ); $index=0; @endphp
                                     @foreach ($order->orderTours as $order_tour)
                                     @php
-                                        $row_id = 'row_'.$index++;
+                                        $row_id = $index++;
                                         $subtotal = 0;
                                         $discount = 0;
                                         $subtotal2 = 0;
@@ -1878,6 +1878,21 @@ $(document).ready(function () {
             calculateTotal();
         });
     });
+
+$(document).ready(function () {
+
+    $('.tour_startdate').each(function () {
+        if (!$(this).data('daterangepicker')) {
+            $(this).daterangepicker({
+                singleDatePicker: true,
+                autoUpdateInput: true,
+                locale: {
+                    format: 'YYYY-MM-DD'
+                }
+            });
+        }
+    });
+});
 </script>
 
 <script>
@@ -2040,11 +2055,115 @@ document.addEventListener("click", function(e) {
             success: function(response) {
                 //console.log('Success:', response);
                 $('#tour_all').append(response);
-                $('#tourContainer').html('');
-                tourCount++;
+                // $('#tourContainer').html('');
+                // tourCount++;
 
-                TB.plugins.dateRange();
-                TB.plugins.timePicker();
+                // TB.plugins.dateRange();
+                // TB.plugins.timePicker();
+
+                    const newRow = $('#tour_all').children().last();
+
+                    // Init only inside new row
+                    newRow.find('.aiz-date-range').each(function () {
+                        $(this).daterangepicker({
+                            singleDatePicker: true,
+                            autoUpdateInput: true,
+                            locale: {
+                                format: 'ddd MMM DD, YYYY'
+                            }
+                        });
+                    });
+
+                    newRow.find('.aiz-time-picker').each(function () {
+                        $(this).timepicker({
+                            minuteStep: 1,
+                            showMeridian: true
+                        });
+                    });
+                    // console.log(tour_id, response.start_date, tourCount);
+                    // fetchTourSessions(tour_id, response.start_date, tourCount);s
+
+                    
+
+                    // const $container = $(`#tour_details_${count}`);
+            // $container.html(response);
+
+            // TB.plugins.dateRange();
+            // TB.plugins.timePicker();
+            // TB.plugins.bootstrapSelect('refresh');
+
+            // const $dateInput = $('#tour_all').find(
+            //     '.tour-startdate, .tour_startdate_field, input[name="tour_startdate[]"]'
+            // ).first();
+
+            const $dateInput = newRow.find('.tour_startdate_field');
+
+            if ($dateInput.length) {
+
+                const serverDate =
+                    $dateInput.attr('value') ||
+                    $dateInput.val() ||
+                    '';
+
+                const initialDate = serverDate
+                    ? serverDate
+                    : moment().format("YYYY-MM-DD");
+
+                $dateInput.val(initialDate);
+
+                $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {
+                    const selectedDate = picker.startDate.format("ddd MMM DD, YYYY");
+                    $(this).val(selectedDate).trigger('change');
+
+                    // const $row = $("#row_" + tourCount);
+                    const rowId = newRow.attr('id');
+                    const $row = $("#" + rowId);
+
+                    const pretty = moment(selectedDate).format("ddd MMM DD, YYYY");
+                    $row.find(".tour_startdate_display").val(pretty);
+                    
+                    fetchTourSessions(tour_id, selectedDate, tourCount);
+                });
+
+                setTimeout(() => {
+                    try {
+                        const drp = $dateInput.data('daterangepicker');
+                        if (drp) {
+
+                            // ----------- LIMIT START DATE -------------
+                            const tourStartDate = moment(initialDate, "YYYY-MM-DD");
+                            const today = moment().startOf('day');
+
+                            const minAllowedDate = moment.max(tourStartDate, today);
+
+                            drp.minDate = minAllowedDate;
+                            drp.updateView();
+                            drp.updateCalendars();
+                            // -------------------------------------------
+
+                            drp.setStartDate(initialDate);
+                            drp.setEndDate(initialDate);
+                        }
+                    } catch (e) {}
+                    console.log(tour_id, initialDate, tourCount);
+                    fetchTourSessions(tour_id, initialDate, tourCount);
+                    hideLoader();
+
+                }, 250);
+                // $("input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']").each(function () {
+                //     handleQtyInput.call(this);
+                // });
+                // $('#tour_all').html('');
+                    // tourCount++;
+
+            } else {
+                console.warn("Date input NOT FOUND for row:", tourCount);
+            }
+
+
+
+
+
             },
             error: function(xhr, status, error) {
                 console.error('Error:', error);
@@ -2053,6 +2172,7 @@ document.addEventListener("click", function(e) {
     }
 
     $(document).on('click', '.fa-calendar', function() {
+        
         $(this).closest('.input-group').find('.aiz-time-picker, .aiz-date-range').focus();
     });
 
@@ -2871,18 +2991,76 @@ $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_ext
 //     });
 // });
 
+// $(document).ready(function () {
+
+//     let tourId = $("input[name='tour_id[]']").val();  // from edit row
+//     let order_id = $("input[name='order_id").val();  // from edit row
+
+
+//     let count  = 0; // or row number if multiple rows
+
+//     if (tourId) {
+        
+//         refreshCalendarAndSession(tourId, count, order_id);
+//     }
+// });
+
+// $(document).ready(function () {
+
+//     let order_id = $("input[name='order_id']").val();
+
+//     $("input[name='tour_id[]']").each(function(index) {
+
+//         let tourId = $(this).val();
+
+//         if (tourId) {
+//             refreshCalendarAndSession(tourId, index, order_id);
+//         }
+
+//     });
+
+// });
+
+
 $(document).ready(function () {
 
-    let tourId = $("input[name='tour_id[]']").val();  // from edit row
-    let order_id = $("input[name='order_id").val();  // from edit row
+    // ✅ init datepicker ONLY ONCE
+    TB.plugins.dateRange();
 
+    let order_id = $("input[name='order_id']").val();
 
-    let count  = 0; // or row number if multiple rows
+    $("#tour_all > div").each(function () {
 
-    if (tourId) {
-        refreshCalendarAndSession(tourId, count, order_id);
-    }
+        let tourId = $(this).find("input[name='tour_id[]']").val();
+        let count = $(this).attr("id");
+
+        
+
+        if (tourId) {
+            refreshCalendarAndSession(tourId, count, order_id);
+        }
+    });
+
 });
+
+
+// $(document).ready(function () {
+
+//     let order_id = $("input[name='order_id']").val();
+
+//     $("input[name='tour_id[]']").each(function(index) {
+
+//         let tourId = $(this).val();
+
+//         if (tourId) {
+//             refreshCalendarAndSession(tourId, index, order_id);
+//         }
+
+//     });
+
+// });
+
+
 
 function refreshCalendarAndSession23432(tourId, count, order_id) {
 
@@ -2937,7 +3115,120 @@ function refreshCalendarAndSession23432(tourId, count, order_id) {
 }
 
 function refreshCalendarAndSession(tourId, count, order_id) {
-    // alert(23432);
+
+    $.ajax({
+        url: "{{ route('admin.tour.calendar') }}",
+        type: "POST",
+        data: {
+            id: tourId,
+            order_id: order_id,
+            _token: "{{ csrf_token() }}"
+        },
+
+        success: function (res) {
+
+            const $row = $("#" + count);
+            const $dateInput = $row.find(".tour_startdate").first();
+
+            // ✅ destroy old picker
+            if ($dateInput.data('daterangepicker')) {
+                $dateInput.data('daterangepicker').remove();
+            }
+
+            // ✅ init with correct date (MAIN FIX)
+            $dateInput.daterangepicker({
+                singleDatePicker: true,
+                autoUpdateInput: true,
+                startDate: moment(res.tour_date, "YYYY-MM-DD"),
+                minDate: moment(res.start_date, "YYYY-MM-DD"),
+                locale: {
+                    format: "ddd MMM DD, YYYY"
+                }
+            });
+
+            // ✅ update display field
+            const pretty = moment(res.tour_date).format("ddd MMM DD, YYYY");
+            $row.find(".tour_startdate_display").val(pretty);
+
+            // disabled dates (if used later)
+            $row.find(".disabled-dates").val(JSON.stringify(res.disabled_dates));
+
+            // ✅ set time
+            $row.find(".tour_startdate_time_display").val(res.tour_time);
+
+            // ✅ fetch sessions
+            fetchTourSessions(tourId, res.tour_date, count, res.tour_time);
+        }
+    });
+}
+
+function refreshCalendarAndSession1(tourId, count, order_id) {
+
+    $.ajax({
+        url: "{{ route('admin.tour.calendar') }}",
+        type: "POST",
+        data: {
+            id: tourId,
+            order_id: order_id,
+            _token: "{{ csrf_token() }}"
+        },
+
+        success: function (res) {
+            console.log(res);
+            const $row = $("#" + count); // ✅ FIXED
+            const $dateInput = $row.find(".tour_startdate").first();
+
+            // ✅ destroy old picker (IMPORTANT)
+            if ($dateInput.data('daterangepicker')) {
+                $dateInput.data('daterangepicker').remove();
+            }
+
+            // ✅ set date
+            // $dateInput.val(res.tour_date);
+            
+            // ✅ re-init ONLY this input (NOT global)
+            $dateInput.daterangepicker({
+                singleDatePicker: true,
+                autoUpdateInput: true,
+                startDate: moment(res.tour_date, "YYYY-MM-DD"),
+                locale: {
+                    format: "ddd MMM DD, YYYY"
+                }
+            });
+
+            // UI updates
+            const pretty = moment(res.tour_date).format("ddd MMM DD, YYYY");
+            $row.find(".tour_startdate_display").val(pretty);
+
+            // disabled dates
+            $row.find(".disabled-dates").val(JSON.stringify(res.disabled_dates));
+
+            // set min date + selected
+            const drp = $dateInput.data("daterangepicker");
+
+            if (drp) {
+                const today = moment().startOf("day");
+
+                const minDate = moment(res.start_date).isAfter(today)
+                    ? moment(res.start_date)
+                    : today;
+
+                drp.minDate = minDate;
+                drp.setStartDate(res.tour_date);
+                drp.setEndDate(res.tour_date);
+                drp.updateView();
+                drp.updateCalendars();
+            }
+
+            // set time + fetch sessions
+            $row.find(".tour_startdate_time_display").val(res.tour_time);
+            fetchTourSessions(tourId, res.tour_date, count, res.tour_time);
+        }
+    });
+}
+
+function refreshCalendarAndSession234234(tourId, count, order_id) {
+    
 
     // showLoader("Loading… Please wait");
     $.ajax({
@@ -2951,7 +3242,10 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 
         success: function(res) {
 
-            const $row = $("#row_" + count);
+            // const $row = $("#row_" + count);
+            const $row = $("#" + count);
+
+            
             const $dateInput = $row.find(".tour_startdate");
 
             // Set initial date
@@ -2965,21 +3259,29 @@ function refreshCalendarAndSession(tourId, count, order_id) {
             $row.find(".tour_startdate_display").val(pretty);
 
             // Reinitialize date picker
-            TB.plugins.dateRange();
+            // TB.plugins.dateRange();
+
+            $dateInput.daterangepicker({
+                singleDatePicker: true,
+                autoUpdateInput: false,
+                locale: {
+                    format: "ddd MMM DD, YYYY"
+                }
+            });
 
             // 🔥 ADD THE DATE CHANGE LISTENER HERE
-            $dateInput
-                .off("apply.daterangepicker")
-                .on("apply.daterangepicker", function (ev, picker) {
+            // $dateInput
+            //     .off("apply.daterangepicker")
+            //     .on("apply.daterangepicker", function (ev, picker) {
 
-                    let selectedDate = picker.startDate.format("ddd MMM DD, YYYY");
-                    $(this).val(selectedDate).trigger("change");
+            //         let selectedDate = picker.startDate.format("ddd MMM DD, YYYY");
+            //         $(this).val(selectedDate).trigger("change");
 
-                    const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
-                    $row.find(".tour_startdate_display").val(pretty);
+            //         const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
+            //         $row.find(".tour_startdate_display").val(pretty);
 
-                    fetchTourSessions(tourId, selectedDate, count);
-                });
+            //         fetchTourSessions(tourId, selectedDate, count);
+            //     });
 
             // Delay only for initial render
             setTimeout(() => {
@@ -3024,12 +3326,16 @@ function refreshCalendarAndSession(tourId, count, order_id) {
 
 
 function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
-
+    
     showLoader("Loading… Please wait");
 
-    const $row = $("#row_" + count);
-    const $timeField = $row.find(".tour_starttime, select[name='tour_starttime[]']").first();
+    // const $row = $("#row_" + count);
 
+    const $row = $("#" + count);
+
+    const $timeField = $row.find(".tour_starttime, select[name='tour_starttime[]']").first();
+    console.log($row);
+    console.log($timeField);
     if(!tourId || !selectedDate) return;  
 
     $.ajax({
@@ -3636,6 +3942,43 @@ $(document).on('input', '#refundAmount', function () {
         });
 
     });
+</script>
+
+<script>
+$(document).off('apply.daterangepicker', '.tour_startdate');
+
+// $(document).on('apply.daterangepicker', '.tour_startdate', function (ev, picker) {
+//     alert(23423);
+//     const $row = $(this).closest("#tour_all > div");
+
+//     const tourId = $row.find("input[name='tour_id[]']").val();
+//     const count = $row.attr('id');
+
+//     const selectedDate = picker.startDate.format("YYYY-MM-DD");
+
+//     const pretty = moment(selectedDate).format("ddd MMM DD, YYYY");
+//     $row.find(".tour_startdate_display").val(pretty);
+
+//     fetchTourSessions(tourId, selectedDate, count);
+// });
+
+
+$(document).on('change', '.tour_startdate', function () {
+
+    // alert('working'); // ✅ this WILL fire
+
+    const $row = $(this).closest("#tour_all > div");
+
+    const tourId = $row.find("input[name='tour_id[]']").val();
+    const count = $row.attr('id');
+
+    const selectedDate = moment($(this).val(), "ddd MMM DD, YYYY").format("YYYY-MM-DD");
+
+    const pretty = moment(selectedDate).format("ddd MMM DD, YYYY");
+    $row.find(".tour_startdate_display").val(pretty);
+
+    fetchTourSessions(tourId, selectedDate, count);
+});
 </script>
 
 

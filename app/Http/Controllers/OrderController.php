@@ -1039,7 +1039,6 @@ class OrderController extends Controller
         }
         
         $order = Order::findOrFail( $id );
-
         $order->order_status    = $request->order_status;
         $order->additional_info = $request->additional_info;
 
@@ -1235,16 +1234,16 @@ class OrderController extends Controller
 
 
                 } else {
-                    $orderTour = new OrderTour();
-                    $orderTour->order_id          = $orderId;
-                    $orderTour->tour_id           = $tourId;
-                    $orderTour->tour_date         = $startDate;
-                    $orderTour->tour_time         = $startTime;
-                    $orderTour->tour_pricing      = json_encode($pricingDetails);
-                    $orderTour->tour_extra        = json_encode($extraDetails);
-                    $orderTour->number_of_guests  = $nog;
-                    $orderTour->total_amount      = $total;
-                    $orderTour->save();
+                    $order_tours = new OrderTour();
+                    $order_tours->order_id          = $orderId;
+                    $order_tours->tour_id           = $tourId;
+                    $order_tours->tour_date         = $startDate;
+                    $order_tours->tour_time         = $startTime;
+                    $order_tours->tour_pricing      = json_encode($pricingDetails);
+                    $order_tours->tour_extra        = json_encode($extraDetails);
+                    $order_tours->number_of_guests  = $nog;
+                    $order_tours->total_amount      = $total;
+                    $orderTour = $order_tours->save();
                 }
 
                 
@@ -4281,55 +4280,288 @@ class OrderController extends Controller
         );
     }
 
-
-
-    public function removeOrderTour(Request $request)
+    public function cancelUncapturedAmount234($orderId)
     {
-        $order = Order::find($request->order_id);
+        DB::beginTransaction();
 
-        if (!$order) {
+        try {
+            $order = Order::findOrFail($orderId);
+
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            $intentId = $order->payment_intent_id;
+
+            if (!$intentId) {
+                throw new \Exception("No payment intent found for this order.");
+            }
+
+            // Retrieve payment intent
+            $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+
+            // Stripe can only cancel if still in requires_capture state
+            if ($paymentIntent->status !== 'requires_capture') {
+                throw new \Exception("This payment intent cannot be canceled because it is already captured or canceled.");
+            }
+
+            // Cancel / void the uncaptured amount
+            $canceledIntent = \Stripe\PaymentIntent::cancel($intentId);
+
+            // Update order status
+            $order->payment_status = 0; // or any status meaning "capture canceled"
+            $order->save();
+
+            // Log the cancellation
+            OrderPayment::create([
+                'order_id'          => $order->id,
+                'payment_intent_id' => $intentId,
+                'transaction_id'    => $intentId,
+                'payment_method'    => 'card',
+                'status'            => 'canceled',
+                'amount'            => 0,
+                'currency'          => $order->currency,
+                'action'            => 'cancel_uncaptured',
+                'response_payload'  => json_encode($canceledIntent),
+            ]);
+
+            DB::commit();
+
             return response()->json([
-                'status' => false,
-                'message' => 'Order not found'
-            ], 404);
-        }
+                'success' => true,
+                'message' => 'Uncaptured amount canceled successfully.',
+                'status' => $canceledIntent->status,
+                'data' => $canceledIntent
+            ]);
 
-        if($order->orderTours->count() <= 1){
-             return response()->json([
-                'status' => false,
-                'message' => 'OrderTour cannot found be deleted'
-            ], 404);
+        } catch (\Exception $e) {
+            DB::rollBack();
 
-        }
-
-        $tour = $order->orderTours()->where('id', $request->order_tour_id)->first();
-
-        if (!$tour) {
             return response()->json([
-                'status' => false,
-                'message' => 'Tour not found'
-            ], 404);
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
+    }
 
-        $tour->delete();
+    public function addCard2342(Request $request, Order $order)
+    {
 
-        $note = "Order Tour has been deleted by " . Auth::user()->name;
-
-        OrderActions::insert([
-            'order_id'     => $order->id,
-            'performed_by' => Auth::id(),
-            'notes'        => $note,
-            'created_at'   => now(),
-            'updated_at'   => now()
+        $request->validate([
+            'payment_method' => 'required|string'
         ]);
 
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        // Ensure Stripe customer exists
+        if (
+            empty($order->stripe_customer_id) ||
+            !str_starts_with($order->stripe_customer_id, 'cus_')
+        ) {
+            $customer = \Stripe\Customer::create([
+                'name'  => $order->customer?->name,
+                'email' => $order->customer?->email,
+            ]);
+
+            $order->update([
+                'stripe_customer_id' => $customer->id
+            ]);
+        }
+
+        // Retrieve PaymentMethod
+        $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_method);
+
+        // Attach card to SAME customer (FIXED)
+        $paymentMethod->attach([
+            'customer' => $order->stripe_customer_id
+        ]);
+
+        // Set as default card
+        \Stripe\Customer::update($order->stripe_customer_id, [
+            'invoice_settings' => [
+                'default_payment_method' => $paymentMethod->id
+            ]
+        ]);
+
+        // Store minimal info for UI
+        $order->update([
+            'payment_intent_id' => $paymentMethod->id
+        ]);
+
+        $order->payments()->create([
+            'payment_type'   => 'CREDITCARD',
+            'transaction_id' => $paymentMethod->id,
+            'card_last4'     => $paymentMethod->card->last4,
+            'card_brand'     => $paymentMethod->card->brand,
+            'amount'         => 0,
+            'currency'       => $order->currency,
+            'collection_type'=> 'Inside'
+        ]);
+        $order_actions = [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => "Credit card added successfully has been processed by " . Auth::user()->name,
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
+        OrderActions::insert($order_actions);
+
         return response()->json([
-            'status' => true,
-            'message' => 'Tour deleted successfully'
+            'message' => 'Card added successfully to this customer'
         ]);
     }
 
+    public function manifest23423(Request $request)
+    {
 
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
 
+        // Preload pricing labels indexed by ID
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
 
+        // Create 48 half-hour slots
+        $timeSlots = collect();
+        $start = Carbon::createFromTime(0, 0);
+        for ($i = 0; $i < 48; $i++) {
+            $slotStart = $start->copy()->addMinutes($i * 30);
+            $slotEnd = $slotStart->copy()->addMinutes(30);
+            $timeSlots->push([
+                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                'start' => $slotStart->format('H:i:s'),
+                'end' => $slotEnd->format('H:i:s'),
+            ]);
+        }
+
+        $sessions = collect();
+
+        foreach ($timeSlots as $slot) {
+            $orders = Order::with(['customer', 'orderTours'])
+                ->whereDate('created_at', $date)
+                ->whereTime('created_at', '>=', $slot['start'])
+                ->whereTime('created_at', '<', $slot['end'])
+                ->get()
+                ->map(function ($order) use ($pricingLabels) {
+                    $guests = collect();
+                    $extras = collect();
+
+                    foreach ($order->orderTours as $ot) {
+                        // Parse guest pricing
+                        $pricingItems = json_decode($ot->tour_pricing, true);
+                        if (is_array($pricingItems)) {
+                            foreach ($pricingItems as $p) {
+                                $qty = $p['quantity'] ?? 0;
+                                $pricingId = $p['tour_pricing_id'] ?? null;
+                                $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                                if ($qty && $label) {
+                                    $guests->push("{$qty} {$label}");
+                                }
+                            }
+                        }
+
+                        // Parse extras
+                        $extraItems = json_decode($ot->tour_extra, true);
+                        if (is_array($extraItems)) {
+                            foreach ($extraItems as $e) {
+                                $qty = $e['quantity'] ?? 0;
+                                $label = $e['label'] ?? null;
+                                if ($qty && $label) {
+                                    $extras->push("{$qty} {$label}");
+                                }
+                            }
+                        }
+                    }
+
+                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+
+                    return $order;
+                });
+
+            if ($orders->isNotEmpty()) {
+                $sessions->push([
+                    'slot_time' => $slot['label'],
+                    'orders' => $orders,
+                ]);
+            }
+        }
+
+        return view('admin.order.manifest', compact('sessions', 'date'));
+    }
+    
+    public function downloadManifest323423(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+        $timeSlots = collect();
+        $start = Carbon::createFromTime(0, 0);
+        for ($i = 0; $i < 48; $i++) {
+            $slotStart = $start->copy()->addMinutes($i * 30);
+            $slotEnd = $slotStart->copy()->addMinutes(30);
+            $timeSlots->push([
+                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                'start' => $slotStart->format('H:i:s'),
+                'end' => $slotEnd->format('H:i:s'),
+            ]);
+        }
+
+        $sessions = collect();
+
+        foreach ($timeSlots as $slot) {
+            $orders = Order::with(['customer', 'orderTours'])
+                ->where('order_status', 5)
+                ->whereDate('created_at', $date)
+                ->whereTime('created_at', '>=', $slot['start'])
+                ->whereTime('created_at', '<', $slot['end'])
+                ->get()
+                ->map(function ($order) use ($pricingLabels) {
+                    $guests = collect();
+                    $extras = collect();
+                    $guestCount = 0;
+
+                    foreach ($order->orderTours as $ot) {
+                        $pricingItems = json_decode($ot->tour_pricing, true);
+                        if (is_array($pricingItems)) {
+                            foreach ($pricingItems as $p) {
+                                $qty = $p['quantity'] ?? 0;
+                                $pricingId = $p['tour_pricing_id'] ?? null;
+                                $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                                if ($qty && $label) {
+                                    $guests->push("{$qty} {$label}");
+                                    $guestCount += $qty;
+                                }
+                            }
+                        }
+
+                        $extraItems = json_decode($ot->tour_extra, true);
+                        if (is_array($extraItems)) {
+                            foreach ($extraItems as $e) {
+                                $qty = $e['quantity'] ?? 0;
+                                $label = $e['label'] ?? null;
+                                if ($qty && $label) {
+                                    $extras->push("{$qty} {$label}");
+                                }
+                            }
+                        }
+                    }
+
+                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+                    $order->guest_count = $guestCount;
+
+                    return $order;
+                });
+
+            if ($orders->isNotEmpty()) {
+                $sessions->push([
+                    'slot_time' => $slot['label'],
+                    'orders' => $orders,
+                ]);
+            }
+        }
+
+        return Excel::download(new ManifestExport($sessions, $date), "Manifest_{$date}.xlsx");
+    }
 }

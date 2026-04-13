@@ -2242,7 +2242,7 @@ public function singleCalendar(Request $request)
 {
     $tour = Tour::find($request->id);
 
-    $orderTour = OrderTour::where('order_id', $request->order_id)->first();
+    $orderTour = OrderTour::where('order_id', $request->order_id)->where('tour_id', $request->id)->first();
 
     if (!$tour) {
         return response()->json(['error' => 'Not found'], 404);

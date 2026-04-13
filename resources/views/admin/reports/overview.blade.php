@@ -159,7 +159,7 @@
                     <button class="btn-sm btn-search">Apply</button>
                 </div>
 
-                <div class="col-md-2 d-flex align-items-end mt-2">
+                <div class="col-md-2 d-flex align-items-end mt-2 mt-2">
                     <a href="{{ route('admin.report.overview') }}" class="btn-sm btn-sm-clear border">Reset</a>
                 </div>
 
