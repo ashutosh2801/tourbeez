@@ -14,10 +14,10 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('update:conversion-rates')->twiceDaily(1, 13);
-        $schedule->command('orders:check-abandoned')->everyFiveMinutes();
+        //$schedule->command('orders:check-abandoned')->everyFiveMinutes();
+        $schedule->command('orders:check-abandoned')->cron('*/20 * * * *');
         $schedule->command('tour:send-tour-expiry-notification')->dailyAt('09:00');
-
-        
+        $schedule->command('orders:send-tour-completed-notification')->dailyAt('09:00');
     }
 
 

@@ -2,67 +2,49 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\CommonMail;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Country;
+use App\Models\EmailTemplate;
+use App\Models\Order;
+use App\Models\OrderEmailHistory;
 use App\Models\State;
 use App\Services\ApiService;
 use Illuminate\Http\Request;
 use App\Models\Tour;
 use Illuminate\Support\Facades\Response;
+use Mail;
 use Str;
 
 class TestController extends Controller
 {
     public function test() {
-        // ----- Adjust for /tbadmin/ subfolder -----
-        $path = "/things-to-do-in-niagara-falls/48315-c1";
-        $prefix = '';
-        if (str_starts_with($path, $prefix)) {
-            $path = substr($path, strlen($prefix));
-        }
-
-        $segments = explode('/', $path); 
-        // print_r($segments); exit;
-                
-        $citySlug = $segments[0];   // things-to-do-in-toronto
-        $slug_id  = explode("-",$segments[1]);   // 10519-c1
-        $id       = $slug_id[0];
-        $type     = $slug_id[1];   // c1
-
-        $d = null;
-        if ($type === 'c1') {
-            $d = City::findOrFail( $id );
-        }
-        else if ( $type === 's1' ) {
-            $d = State::findOrFail( $id );
-        }
-        else if ( $type === 'c2' ) {
-            $d = Country::findOrFail( $id );
-        }
-        else if ( $type === 'c3' ) {
-            $d = Category::findOrFail( $id );
-        }
 
         $apiService = new ApiService();
-        $items = $apiService->request(
-                        'get', 'https://tourbeez.com/api/popular-destinations?page=1&limit=10', [],
-                        ['apiKey' => 'eyJpdiI6Ill5T0I5WGRNcHowVDFvYU51eHRUQkE9PSIsInZhbHVlIjoiT3']
+                    $response = $apiService->request(
+                        'get',
+                        'https://tourbeez.com/api/home-listing',
+                        [],
+                        [
+                            //'Authorization' => 'Bearer TOKEN',
+                            'apiKey' => 'eyJpdiI6Ill5T0I5WGRNcHowVDFvYU51eHRUQkE9PSIsInZhbHVlIjoiT3'
+                        ]
                     );
+    
+                    return response()->view('share.seo', [
+                        'title' => 'Tours, Activities & Travel Experiences Worldwide | TourBeez',
+                        'description' => 'Discover unforgettable travel experiences with TourBeez. Book tours, activities, and tickets to top global destinations with ease and confidence. Explore, adventure, and enjoy every moment',
+                        'keywords' => 'International Tour Packages, Best Travel Deals Worldwide, World Tours And Trips, Customizable Holiday Packages,  Budget-friendly Travel',
+                        'image' => 'https://tourbeez.com/logo.jpg',
+                        // 'page' => 'home',
+                        'file' => 'home',
+                        'tours' => $response['home_tours'], 
+                        'cities' => $response['popular_cities'], 
+                        'blogs' => $response['home_blogs']
 
-        $name = ucfirst( $d->name );
-
-        return response()->view('share.seo', [
-                            'title' => 'Top Things to Do in '.$name.' Tours & Attractions | TourBeez' ,
-                            'description' => 'Enjoy unforgettable experiences in '.$name.'. Explore tours, attractions & activities with TourBeez. Reserve your perfect '.$name.' trip today.',
-                            'keywords' => 'Things To Do In '.$name,
-                            'image' => uploaded_asset( $d->upload_id ) ?? asset('public/tourbeez-logo.jpg'),
-                            'url' => url()->current(),
-                            'items' => $items,
-                            'city' => $d,
-                            'file' => 'listing',
-                            'heading' => "All $name Tours & Excursions in 2026"
-                        ]);
+                        // "Laravel admin panel me feeback form create karna hai jisme kafi fields honge jo like input, dropdown, radio, checkbox etc and feedback message de sakta hai. jisme sare fields customizable honge aur form submit hone ke baad ek success message show hoga aur kuchh points bhi customer ko milega jo jab feedback create karte samay define hoga. Iske liye ek controller method, model aur ek blade bhi create karna hai."
+                    ]);
     }
     public function index(Request $request)
     {
