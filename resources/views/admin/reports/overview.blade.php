@@ -16,11 +16,11 @@
             <div class="row">
 
                 {{-- BOOKING DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                <div class="col-xl-2 col-md-2 col-12 position-relative">
                     <label class="filter-label">Booking Date</label>
 
                     <input type="text" id="booking_range" class="form-control"
-                        placeholder="Select date range">
+                        placeholder="Select date range" autocomplete="off">
 
                     @if(request('start_date'))
                         <span class="clear-btn" onclick="clearBooking()">✕</span>
@@ -31,11 +31,11 @@
                 </div>
 
                 {{-- TOUR DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                <div class="col-xl-2 col-md-2 col-12 position-relative">
                     <label class="filter-label">Fulfilment Date</label>
 
                     <input type="text" id="tour_range" class="form-control"
-                        placeholder="Select date range">
+                        placeholder="Select date range" autocomplete="off">
 
                     @if(request('tour_start_date'))
                         <span class="clear-btn" onclick="clearTour()">✕</span>
@@ -46,7 +46,7 @@
                 </div>
 
                 {{-- ORDER STATUS --}}
-                <div class="col-xl-2 col-md-3 col-12">
+                <div class="col-xl-2 col-md-2 col-12">
                     <label class="filter-label">Order Status</label>
                     <select name="order_status" class="form-control">
                         <option value="">All</option>
@@ -77,6 +77,22 @@
                         <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
                     </select>
                 </div>
+                <div class="col-md-2">
+                    <label class="filter-label">Source</label>
+                    <select name="partner" class="form-control">
+                        <option value="">All</option>
+                        @php
+                        
+                        @foreach($partners as $partner)
+                            <option value="{{ ucfirst($partner->slug) }}"
+                                {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
+                                {{ $partner->name }}
+                            </option>
+                        @endforeach
+                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                    </select>
+                </div>
 
                 {{-- BUTTONS --}}
                 <div class="col-xl-2 col-md-3 col-12">
@@ -94,7 +110,7 @@
     <div class="report-stats">
         <div class="row">
 
-            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-calendar-check"></i>
@@ -106,7 +122,7 @@
                 </div>
             </div>
 
-            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-dollar-sign"></i>
@@ -118,7 +134,7 @@
                 </div>
             </div>
 
-            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-undo"></i>
@@ -130,7 +146,39 @@
                 </div>
             </div>
 
-            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
+
+
+        </div>
+        <div class="row">
+
+            
+
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                <div class="info-stats4">
+                    <div class="info-icon">
+                        <i class="fa fa-check-circle"></i>
+                    </div>
+                    <div class="sale-num">
+                        <h3>{{ $performance['total_orders'] }}</h3>
+                        <div class="stat-title">Payment Recieved</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                <div class="info-stats4">
+                    <div class="info-icon">
+                        <i class="fa fa-wallet"></i>
+                    </div>
+                    <div class="sale-num">
+                        <h3>{{ number_format($performance['gross_sales'], 2) }}</h3>
+                        <div class="stat-title">Pending Balance</div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-chart-line"></i>
@@ -141,6 +189,7 @@
                     </div>
                 </div>
             </div>
+
 
         </div>
     </div>

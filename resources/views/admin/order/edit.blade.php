@@ -3538,7 +3538,7 @@ function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
             hideLoader();
 
             
-            let options = '';
+            let options = `<option value="">Select Session</option>`;
             if(resp.data && resp.data.length > 0){
                 $.each(resp.data, function(i, session){
                     options += `<option value="${session}">${session}</option>`;

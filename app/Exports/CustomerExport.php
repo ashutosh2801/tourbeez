@@ -58,25 +58,16 @@ class CustomerExport implements FromCollection, WithHeadings
                 $c->order_number,
                 $c->created_at,
                 $c->tour_date,
-                '-',
+                
                 $c->first_name,
-                '-',
+                
                 $c->last_name,
-                '-',
-                '-',
+                
                 $c->email,
                 $c->phone,
                 '-',
                 '-',
-                '-',
-                '-',
-                '-',
-                '-',
-                '-',
-                '-',
-                '-',
-                '-',
-                '-',
+                
                 $c->instructions,
             ];
         });
@@ -88,25 +79,16 @@ class CustomerExport implements FromCollection, WithHeadings
             'Order Number',
             'Booking Date',
             'Fulfilment Date',
-            'How Heard',
+            
             'First Name',
-            'Middle Name',
+            
             'Last Name',
-            'Gender',
-            'DOB',
+            
             'Email',
             'Phone',
-            'Mobile',
-            'Fax',
-            'Skype',
-            'Address',
-            'City',
-            'Postcode',
-            'State',
-            'Country',
-            'Language',
-            'Company',
-            'Marketing Consent',
+            'Gender',
+            'DOB',
+            
             'Special Requirement',
         ];
     }

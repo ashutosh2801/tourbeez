@@ -49,11 +49,11 @@
             <div class="row">
 
                 {{-- BOOKING DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                <div class="col-xl-2 col-md-2 col-12 position-relative">
                     <label class="filter-label">Booking Date</label>
 
                     <input type="text" id="booking_range" class="form-control"
-                        placeholder="Select date range">
+                        placeholder="Select date range" autocomplete="off">
 
                     @if(request('start_date'))
                         <span class="clear-btn" onclick="clearBooking()">✕</span>
@@ -64,11 +64,11 @@
                 </div>
 
                 {{-- TOUR DATE --}}
-                <div class="ccol-xl-3 col-md-3 col-12 position-relative">
+                <div class="col-xl-2 col-md-2 col-12 position-relative">
                     <label class="filter-label">Fulfilment Date</label>
 
                     <input type="text" id="tour_range" class="form-control"
-                        placeholder="Select date range">
+                        placeholder="Select date range" autocomplete="off">
 
                     @if(request('tour_start_date'))
                         <span class="clear-btn" onclick="clearTour()">✕</span>
@@ -102,7 +102,7 @@
                 </div>
 
                 {{-- PAY TYPE --}}
-                <div class="col-xl-2 col-md-3 col-12">
+                <div class="col-xl-2 col-md-2 col-12">
                     <label class="filter-label">Pay Type</label>
                     <select name="action_type" class="form-control">
                         <option value="">All</option>
@@ -110,9 +110,25 @@
                         <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
                     </select>
                 </div>
+                <div class="col-md-2">
+                    <label class="filter-label">Source</label>
+                    <select name="partner" class="form-control">
+                        <option value="">All</option>
+                        @php
+                        
+                        @foreach($partners as $partner)
+                            <option value="{{ ucfirst($partner->slug) }}"
+                                {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
+                                {{ $partner->name }}
+                            </option>
+                        @endforeach
+                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                    </select>
+                </div>
 
                 {{-- BUTTONS --}}
-                <div class="col-xl-2 col-md-3 col-12">
+                <div class="col-xl-2 col-md-2 col-12">
                     <div class="d-flex column-gap-10">
                         <button class="btn btn-apply flex-fill">Apply</button>
                         <a href="{{ route('admin.report.revenue') }}" class="btn btn-secondary flex-fill">Reset</a>
@@ -197,7 +213,7 @@
                         @forelse($orders as $order)
                         <tr>
 
-                            <td>#{{ $order->order_number }}</td>
+                            <td><a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink">{{ $order->order_number }}</a></td>
                             <td>{{ config('constants.status_with_code')[$order->order_status] ?? '-' }}</td>
                             <td>{{ $order->source ?? '-' }}</td>
                             <td>{{ $order->agent_name ?? 'NA' }}</td>
@@ -302,18 +318,19 @@
                         <th>Order #</th>
                         <th>Booking Date</th>
                         <th>Fulfilment Date</th>
-                        <th>How Heard</th>
+                        <!-- <th>How Heard</th> -->
 
                         <th>First Name</th>
-                        <th>Middle Name</th>
+                        <!-- <th>Middle Name</th> -->
                         <th>Last Name</th>
 
-                        <th>Gender</th>
-                        <th>DOB</th>
+                        
 
                         <th>Email</th>
                         <th>Phone</th>
-                        <th>Mobile</th>
+                        <th>Gender</th>
+                        <th>DOB</th>
+                        <!-- <th>Mobile</th>
 
                         <th>Fax</th>
                         <th>Skype</th>
@@ -327,7 +344,7 @@
                         <th>Language</th>
                         <th>Company</th>
 
-                        <th>Marketing Consent</th>
+                        <th>Marketing Consent</th> -->
                         <th>Special Requirement</th>
                     </tr>
                 </thead>
@@ -335,22 +352,26 @@
                 <tbody>
                     @forelse($customers as $c)
                     <tr>
-                        <td>#{{ $c->order_number }}</td>
+                        <td><a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink">{{ $c->order_number }}</a></td>
+
                         <td>{{ $c->booking_date }}</td>
                         <td>{{ $c->fulfilment_date }}</td>
 
-                        <td>-</td>
+                        <!-- <td>-</td> -->
 
-                        <td>{{ $c->first_name ?? '-' }}</td>
-                        <td>-</td>
+                        <td><a href="{{ route('admin.customers.show', encrypt($c->id) ) }}" class="alink" target="_blank"> {{ $c->first_name ?? '-' }}</a></td>
+
+                        <!-- <td>{{ $c->first_name ?? '-' }}</td> -->
+                        <!-- <td>-</td> -->
                         <td>{{ $c->last_name ?? '-' }}</td>
 
-                        <td>-</td>
-                        <td>-</td>
+                        
 
                         <td>{{ $c->email ?? '-' }}</td>
                         <td>{{ $c->phone ?? '-' }}</td>
                         <td>-</td>
+                        <td>-</td>
+                       <!--  <td>-</td>
 
                         <td>-</td>
                         <td>-</td>
@@ -364,7 +385,7 @@
                         <td>-</td>
                         <td>-</td>
 
-                        <td>-</td>
+                        <td>-</td> -->
                         <td>{{ $c->instructions ?? '-' }}</td>
                     </tr>
                     @empty

@@ -1034,7 +1034,6 @@ class OrderController extends Controller
      */
     public function update(Request $request, $id)
     {
-
         
         $validator = Validator::make($request->all(), [
             'order_status'   => 'required|max:255',
@@ -1225,7 +1224,7 @@ class OrderController extends Controller
                     }
 
                     $updateData = [
-                        'tour_date'         => $startDate,
+                        // 'tour_date'         => $startDate,
                         // 'tour_time'         => $startTime,
                         'tour_pricing'      => json_encode($pricingDetails),
                         'tour_extra'        => json_encode($extraDetails),
@@ -1245,6 +1244,7 @@ class OrderController extends Controller
                     // ]);
 
                     if (!empty($startTime)) {
+                        $updateData['tour_date'] = $startDate;
                         $updateData['tour_time'] = $startTime;
                     }
                     $orderTour->update($updateData);
