@@ -51,6 +51,8 @@ class ReportController extends Controller
 
     $orderQuery->whereBetween('orders.created_at', [$startDate, $endDate]);
 
+
+
     if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
         $orderQuery->whereBetween('order_tours.tour_date', [
             $request->tour_start_date,
@@ -446,7 +448,7 @@ public function revenue(Request $request)
         ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
         ->whereNull('orders.deleted_at')
         ->whereNotIn('orders.order_status', $excludedStatuses)
-        ->whereBetween('orders.created_at', [$startDate, $endDate]);
+        ->whereBetween('orders.created_at', [$startDate, $endDate])->groupBy('orders.id');
 
     /*
     |--------------------------------------------------------------------------
@@ -662,6 +664,8 @@ public function revenue(Request $request)
 
         return $order;
     });
+
+
     /*
 |--------------------------------------------------------------------------
 | CUSTOMER REPORT QUERY
@@ -672,7 +676,7 @@ $customers = DB::table('orders')
     ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
     ->whereNull('orders.deleted_at')
     ->whereNotIn('orders.order_status', $excludedStatuses)
-    ->whereBetween('orders.created_at', [$startDate, $endDate]);
+    ->whereBetween('orders.created_at', [$startDate, $endDate])->groupBy('orders.id');
 
 // SAME FILTERS (IMPORTANT)
 if ($request->filled('payment_status')) {

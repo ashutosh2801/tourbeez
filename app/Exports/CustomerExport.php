@@ -33,7 +33,7 @@ class CustomerExport implements FromCollection, WithHeadings
             ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
             ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
             ->whereNotIn('orders.order_status', $excludedStatuses)
-            ->whereBetween('orders.created_at', [$startDate, $endDate]);
+            ->whereBetween('orders.created_at', [$startDate, $endDate])->groupBy('orders.id');
 
             
         if ($request->filled('payment_status')) {

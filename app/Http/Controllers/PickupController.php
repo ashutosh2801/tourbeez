@@ -181,6 +181,10 @@ class PickupController extends Controller
         $orderCustomer->pickup_name = $request->pickup_type == "custom" ? $request->oc_pickup_name : NULL;
         $orderCustomer->instructions = $request->oc_instructions;
         $orderCustomer->save();
+
+        $orderCustomer->order->internal_notes = $request->internal_notes;
+
+        $orderCustomer->order->save();
         
 
         return response()->json(['status' => 'success']);

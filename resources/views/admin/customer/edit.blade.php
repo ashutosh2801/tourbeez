@@ -1,4 +1,33 @@
 <x-admin>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css"/>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js"></script>
+
+<style>
+.iti { width: 100%; }
+
+/* Fix flags */
+.iti__flag {
+    background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/img/flags.png");
+}
+.iti__flag.iti__flag--2x {
+    background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/img/flags@2x.png");
+}
+
+/* Search box styling */
+.iti__search-box {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
+.iti__search-input {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+</style>
     @section('title', 'Edit User')
 <!--         -->
     <div class="card card-primary bg-white border rounded-lg-custom">
@@ -17,7 +46,7 @@
         <div class="card-body">
             
          
-                <form action="{{ route('admin.customers.source.update', [
+                <form id="customerForm" action="{{ route('admin.customers.source.update', [
     'id' => encrypt($user->id),
     'source' => $source
 ]) }}" method="POST">
@@ -99,7 +128,17 @@
     @php
         $orderCustomer = $user->customer;
         $orderCustomer = $orderCustomer?? $user;
+        $phoneNumber = $orderCustomer->phone;
+                      
+          if(!str_contains($phoneNumber, '+')){
+
+            $phoneNumber = "+" . $phoneNumber;
+          }
+
+          
     @endphp
+
+    
 
     @if($orderCustomer ?? false)
         <div class="card card-primary bg-white border rounded-lg-custom customer-edit-body">
@@ -123,10 +162,34 @@
                         <input type="email" name="oc_email" class="form-control" value="{{ $orderCustomer->email }}" readonly>
                     </div>
 
-                    <div class="col-lg-6">
+                    <!-- <div class="col-lg-6">
                         <label>Phone</label>
                         <input type="text" name="oc_phone" class="form-control" value="{{ $orderCustomer->phone }}">
+                    </div> -->
+
+
+
+                    <div class="form-group col-lg-3 col-md-6">
+                        <label for="oc_phone_intel">Phone (with country code) *</label>
+
+
+
+                        <input 
+                            id="oc_phone_intel"
+                            name="oc_phone_intel"
+                            type="tel"
+                            class="form-control"
+                            value="{{ $phoneNumber }}"
+                        />
+
+
+                        <!-- Hidden field that stores full E.164 number -->
+                        <input type="hidden" name="oc_phone" id="oc_phone">
+
+                        <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
                     </div>
+
+                   
 
                     <div class="col-lg-12">
                         <label>Instructions</label>
@@ -166,6 +229,111 @@
         </div>
     </div>
 </form>
+
+@section('js') 
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css"/>
+
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const phoneInput = document.querySelector("#oc_phone_intel");
+
+    const iti = window.intlTelInput(phoneInput, {
+        initialCountry: "ca",
+        separateDialCode: true,
+        nationalMode: false,
+        dropdownContainer: document.body,
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
+    });
+
+    /* ======================================================
+       ADD SEARCH BOX INTO DROPDOWN (FIXED)
+    ====================================================== */
+    phoneInput.addEventListener("open:countrydropdown", function () {
+
+        setTimeout(() => {
+            const dropdown = document.querySelector(".iti__country-list");
+
+            if (!dropdown) return;
+
+            // Remove old search (avoid duplicates)
+            const oldSearch = dropdown.querySelector(".iti__search-box");
+            if (oldSearch) oldSearch.remove();
+
+            // Create search box
+            const searchBox = document.createElement("div");
+            searchBox.className = "iti__search-box";
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = "Search country...";
+            input.className = "iti__search-input";
+
+            searchBox.appendChild(input);
+            dropdown.prepend(searchBox);
+
+            const countries = dropdown.querySelectorAll(".iti__country");
+
+            // 🔥 FIX: prevent dropdown from closing
+            searchBox.addEventListener("click", function (e) {
+                e.stopPropagation();
+            });
+
+            input.addEventListener("click", function (e) {
+                e.stopPropagation();
+            });
+
+            input.addEventListener("keydown", function (e) {
+                e.stopPropagation();
+            });
+
+            // Filter logic
+            input.addEventListener("input", function () {
+                const value = this.value.toLowerCase();
+
+                countries.forEach(country => {
+                    const name = country.innerText.toLowerCase();
+                    country.style.display = name.includes(value) ? "" : "none";
+                });
+            });
+
+            // 🔥 FIX: keep focus on input
+            input.focus();
+
+        }, 100);
+    });
+
+    const form = document.getElementById("customerForm");
+
+    form.addEventListener("submit", function () {
+        console.log("FORM SUBMIT TRIGGERED"); // 🔥 test
+
+        const hiddenInput = document.querySelector("#oc_phone");
+
+        const rawValue = phoneInput.value.trim();
+
+        if (!rawValue) {
+            hiddenInput.value = "";
+            return;
+        }
+
+        if (iti.isValidNumber()) {
+            hiddenInput.value = iti.getNumber();
+        } else {
+            hiddenInput.value = rawValue;
+        }
+    });
+
+
+});
+
+</script>
+
+@endsection
     
 
 </x-admin>

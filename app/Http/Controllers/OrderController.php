@@ -65,7 +65,6 @@ class OrderController extends Controller
 
         // Filter by tour product
         if ($product = $request->input('product')) {
-
             $query->whereHas('orderTours', function ($q) use ($product) {
                 $q->where('tour_id', $product);
             });
@@ -77,23 +76,40 @@ class OrderController extends Controller
         }
 
         // Filter by order status
-
-
         if ($orderStatus = $request->input('order_status')) {
             $query->where('order_status', $orderStatus);
         }
 
         // Filter by tour start date range
-        if ($start = $request->input('tour_start_date')) {
-            // dd($request->input('tour_start_date'));
-            $query->whereHas('orderTours', function ($q) use ($start) {
+        if ($tour_start_date = $request->input('tour_start_date')) {
+            $dates = explode(' - ', $tour_start_date);
+            if (count($dates) === 2) {
+                $startDate = Carbon::parse($dates[0])->format('Y-m-d');
+                $endDate = Carbon::parse($dates[1])->format('Y-m-d');
+                $query->whereHas('orderTours', function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('tour_date', [$startDate, $endDate]);
+                });
+            } else {
+                $query->whereHas('orderTours', function ($q) use ($tour_start_date) {
+                    $q->whereDate('tour_date', '=', $tour_start_date);
+                });
+            }
+        }
 
-                $q->whereDate('tour_date', '=', $start);
-            });
+        // Filter by tour start date range
+        if ($order_created_date = $request->input('order_created_date')) {
+            $dates = explode(' - ', $order_created_date);
+            if (count($dates) === 2) {
+                $startDate = Carbon::parse($dates[0]);
+                $endDate = Carbon::parse($dates[1])->addDay();
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            } else {
+                $query->whereDate('created_at', '=', $order_created_date);
+            }
         }
 
 
-
+/*
         if ($tourFilter = $request->input('tour_date_filter')) {
 
                 $today = Carbon::today();
@@ -195,16 +211,17 @@ class OrderController extends Controller
                 }
             }
         }
-
-
+*/
+        $totalOrders = (clone $query)->count();
         $perPage = $request->input('per_page', 10);
 
-    
+                        //die (getFullSql($query));
+
         $orders = $query->paginate($perPage)->appends($request->all()); // preserve filters in pagination
 
-        $products = Tour::select('id', 'title')->get(); // for filter dropdown
+        $products = Tour::select('id', 'title')->where('status', 1)->get(); // for filter dropdown
 
-        return view('admin.order.index', compact('orders', 'products'));
+        return view('admin.order.index', compact('orders', 'products', 'totalOrders'));
     }
 
     public function showPdfFiles()
@@ -482,7 +499,7 @@ class OrderController extends Controller
                     'first_name'   => $request->customer_first_name,
                     'last_name'    => $request->customer_last_name,
                     'email'        => $request->customer_email ,
-                    'phone'        => $request->full_phone,
+                    'phone'        => $request->full_phone ?? $request->customer_phone,
                     'instructions' => $request->additional_info ?? null,
                     'pickup_id'    => $request->pickup_id ?? null,
                     'pickup_name'  => $request->pickup_name ?? null,
@@ -495,7 +512,7 @@ class OrderController extends Controller
                             'last_name'    => $request->customer_last_name,
                             'name'         => $request->customer_first_name . " " . $request->customer_last_name,
                             'email'        => $request->customer_email ?? 'N/A',
-                            'phone'        => $request->full_phone ?? 'N/A',
+                            'phone'        => $request->full_phone ?? $request->customer_phone,
                             'user_type'    => 'Member',
                         ]);
 
