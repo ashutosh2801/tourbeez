@@ -224,9 +224,9 @@
                             <td>{{ trim(($order->customer_first_name ?? '') . ' ' . ($order->customer_last_name ?? '')) ?: '-' }}</td>
 
                             {{-- ✅ MONEY (FROM FIXED BACKEND LOGIC) --}}
-                            <td>{{ number_format($order->total_amount, 2) }}</td>
-                            <td>{{ number_format($order->paid_amount, 2) }}</td>
-                            <td>{{ $order->balance > 0 ?number_format($order->balance, 2) : 0 }}</td>
+                            <td>{{ number_format($order->total_amount_converted, 2) }}</td>
+                            <td>{{ number_format($order->paid_amount_converted, 2) }}</td>
+                            <td>{{ $order->balance_converted > 0 ?number_format($order->balance_converted, 2) : 0 }}</td>
 
                             {{-- Fees (keep 0 if not calculated yet) --}}
                             <td>{{ number_format($order->booking_fee ?? 0, 2) }}</td>
@@ -237,19 +237,19 @@
 
                             {{-- Commission & Tax (if added later) --}}
                             <td>{{ number_format($order->commission ?? 0, 2) }}</td>
-                            <td>{{ number_format($order->tax ?? 0, 2) }}</td>
+                            <td>{{ number_format($order->tax_converted ?? 0, 2) }}</td>
 
                             {{-- Net Sales --}}
-                            <td>{{ number_format($order->net_sales ?? $order->total_amount, 2) }}</td>
+                            <td>{{ number_format($order->net_sales_converted ?? $order->total_amount_converted, 2) }}</td>
 
                             {{-- Pax --}}
                             <td>{{ $order->pax ?? 0 }}</td>
 
                             {{-- Product Value --}}
-                            <td>{{ number_format($order->product_value, 2) }}</td>
+                            <td>{{ number_format($order->product_value_converted, 2) }}</td>
 
-                            <td>{{ number_format($order->discount_value, 2) }}</td> {{-- Adjustment --}}
-                            <td>{{ number_format($order->extra_value, 2) }}</td> {{-- Extra Value --}}
+                            <td>{{ number_format($order->discount_value_converted, 2) }}</td> {{-- Adjustment --}}
+                            <td>{{ number_format($order->extra_value_converted, 2) }}</td> {{-- Extra Value --}}
 
                             {{-- Promo --}}
                             <td>{{ number_format($order->promo_amount ?? 0, 2) }}</td>
@@ -352,7 +352,7 @@
                 <tbody>
                     @forelse($customers as $c)
                     <tr>
-                        <td><a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink">{{ $c->order_number }}</a></td>
+                        <td>{{ $c->order_number }}</td>
 
                         <td>{{ $c->booking_date }}</td>
                         <td>{{ $c->fulfilment_date }}</td>

@@ -109,7 +109,6 @@
     {{-- STATS --}}
     <div class="report-stats">
         <div class="row">
-
             <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
@@ -159,7 +158,7 @@
                         <i class="fa fa-check-circle"></i>
                     </div>
                     <div class="sale-num">
-                        <h3>{{ $performance['total_orders'] }}</h3>
+                        <h3>{{ $performance['payment_received'] }}</h3>
                         <div class="stat-title">Payment Recieved</div>
                     </div>
                 </div>
@@ -171,7 +170,7 @@
                         <i class="fa fa-wallet"></i>
                     </div>
                     <div class="sale-num">
-                        <h3>{{ number_format($performance['gross_sales'], 2) }}</h3>
+                        <h3>{{ number_format($performance['pending_amount'], 2) }}</h3>
                         <div class="stat-title">Pending Balance</div>
                     </div>
                 </div>

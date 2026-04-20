@@ -179,7 +179,7 @@ class RevenueExport implements FromCollection, WithHeadings
                 : $order->tour_fees;
 
             foreach ($taxes as $tax) {
-                $taxAmount = get_tax($subtotal2, $tax['type'], $tax['value']);
+                $taxAmount = get_tax($subtotal2, $tax['type'], 13);
                 $subtotal2 += $taxAmount;
                 $totalTax += $taxAmount;
             }
