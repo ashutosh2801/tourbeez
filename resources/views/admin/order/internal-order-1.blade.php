@@ -1,553 +1,1378 @@
 <x-admin>
 @section('title', 'Internal Orders Create')
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css"/>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js"></script>
+
 <style>
-  #travellerModal {
-    position: fixed !important;
-    top: 0; 
-    left: 0; 
-    right: 0; 
-    bottom: 0;
-    display: none;
-  }
-  #travellerModal.show {
-    display: flex !important;
-  }
+.iti { width: 100%; }
+
+/* Fix flags */
+.iti__flag {
+    background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/img/flags.png");
+}
+.iti__flag.iti__flag--2x {
+    background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/img/flags@2x.png");
+}
+
+/* Search box styling */
+.iti__search-box {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
+.iti__search-input {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
 </style>
 
-<div class="card">
-    <form id="order-form" action="{{ route('admin.orders.internal.store') }}" method="POST">
-        @csrf
-
-        <!-- Top Header -->
-        <div class="d-flex justify-content-between align-items-center bg-dark text-white p-3 mb-3 rounded">
-            <div>
-                <h4 class="m-0">New Order</h4>
-                <small>Created by {{ auth()->user()->name }}</small>
-            </div>
-        </div>
-        <div class="d-flex justify-content-between align-items-center bg-dark text-white p-3 mb-3 rounded">
-            <div>
-                <strong id="totalDue">$0.00</strong><br>
-                <small>Balance</small>
-            </div>
-            <div>
-                <select name="Order[status]" class="form-control">
-                    <option value="CONFIRMED" selected>Confirmed</option>
-                    <option value="NEW">New</option>
-                    <option value="ON_HOLD">On Hold</option>
-                    <option value="PENDING_SUPPLIER">Pending Supplier</option>
-                    <option value="PENDING_CUSTOMER">Pending Customer</option>
-                    <option value="CANCELLED">Cancelled</option>
-                    <option value="ABANDONED_CART">Abandoned Cart</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary">Create Order</button>
-        </div>
-
-        <!-- Accordion Sections -->
-        <div class="accordion" id="orderAccordion">
-
-            <!-- Customer Section -->
-            <div class="card mb-2">
-                <div class="card-header" id="headingCustomer">
-                    <h5 class="mb-0">
-                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseCustomer">
-                            Customer
-                        </button>
-                    </h5>
-                </div>
-                <div id="collapseCustomer" class="collapse show" data-parent="#orderAccordion">
-                    <div class="card-body row">
-                        <div class="col-md-3"><input type="text" name="Order[customer][firstName]" class="form-control" placeholder="First Name"></div>
-                        <div class="col-md-3"><input type="text" name="Order[customer][lastName]" class="form-control" placeholder="Last Name"></div>
-                        <div class="col-md-3"><input type="email" name="Order[customer][email]" class="form-control" placeholder="Email"></div>
-                        <div class="col-md-3"><input type="text" name="Order[customer][mobile]" class="form-control" placeholder="Mobile"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Agent Section -->
-            <div class="card mb-2">
-                <div class="card-header" id="headingAgent">
-                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseAgent">
-                        Agent
-                    </button>
-                </div>
-                <div id="collapseAgent" class="collapse" data-parent="#orderAccordion">
-                    <div class="card-body">
-                        <input type="text" name="Order[agent]" class="form-control" placeholder="Search for agent companies">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Products Section -->
-            <div class="card mb-2">
-                <div class="card-header" id="headingProducts">
-                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseProducts">
-                        Products
-                    </button>
-                </div>
-                <div id="collapseProducts" class="collapse" data-parent="#orderAccordion">
-                    <div class="card-body">
-                        <!-- Product Selection -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <select name="Order[product]" id="productSelect" class="form-control">
-                                    <option value="">-- Select Product --</option>
-                                    @foreach($products as $product)
-
-                                        <option value="{{ $product->slug }}" data-price="{{ $product->price }}" data-id="{{ $product->id }}">{{ $product->title }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                             
-                                <div class="col-md-2" id="dateWrapper" style="display:none;">
-                                    
-                                    <input type="date" id="productDate" name="Order[productDate]" class="form-control" placeholder="Select Date">
-                                </div>
-                            
-                            
-                                <div class="col-md-2" id="sessionWrapper" style="display:none;">
-                                    <!-- <label for="productSession">Select Session</label> -->
-                                    <select id="productSession" name="Order[session]" class="form-control">
-                                        <option value="">-- Select Session --</option>
-                                    </select>
-                                </div>
-                                <div id="pricingWrapper" class="mt-4"></div>
-                                <div class="relative">
-                                <input type="text" id="travellerInput" readonly required
-                                    class="w-full text-black border rounded-lg border-gray-300 px-3 py-2 outline-none cursor-pointer text-sm lg:text-base"
-                                    value="">
-                            </div>
-                            
-                            
-                        </div>
-
-                        <!-- Addons -->
-                        <div id="addonsWrapper" style="display:none;">
-                            <h6>Addons</h6>
-                            <div id="addonsContainer"></div>
-                        </div>
-                        <div class="col-md-6 text-right">
-                                <strong>Total: $<span id="productTotal">0.00</span></strong>
-                            </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Additional Information -->
-            <div class="card mb-2">
-                <div class="card-header" id="headingInfo">
-                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseInfo">
-                        Additional Information
-                    </button>
-                </div>
-                <div id="collapseInfo" class="collapse" data-parent="#orderAccordion">
-                    <div class="card-body">
-                        <textarea name="Order[specialRequirements]" class="form-control" placeholder="Special Requirements"></textarea>
-                        <textarea name="Order[internalNotes]" class="form-control mt-2" placeholder="Internal Notes (only visible by supplier)"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Payment Section -->
-            <div class="card mb-2">
-                <div class="card-header" id="headingPayment">
-                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapsePayment">
-                        Customer Payment
-                    </button>
-                </div>
-                <div id="collapsePayment" class="collapse" data-parent="#orderAccordion">
-                    <div class="card-body">
-                        <div class="form-inline mb-2">
-                            <select name="Order[payment][type]" class="form-control mr-2">
-                                <option value="">Payment type...</option>
-                                <option value="cash">Cash</option>
-                                <option value="card">Card</option>
-                                <option value="bank">Bank Transfer</option>
-                            </select>
-                            <input type="text" name="Order[payment][reference]" class="form-control mr-2" placeholder="Reference number">
-                            <input type="date" name="Order[payment][date]" class="form-control mr-2">
-                            <input type="number" name="Order[payment][amount]" class="form-control" placeholder="Amount" id="paymentAmount">
-                        </div>
-                        <strong>Total Payment: $<span id="paymentTotal">0.00</span></strong>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Submit -->
-        <div class="mt-3">
-            <button type="submit" class="btn btn-success">Create Order</button>
-            <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary">Cancel</a>
-        </div>
-    </form>
-</div>
-
-<!-- Traveller Input -->
-
-
-<!-- Modal -->
-<div id="travellerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-  <div class="bg-white w-full max-w-md rounded-lg shadow-lg p-6">
-    <h3 class="text-lg font-semibold mb-4">Select Travellers</h3>
-
-    <!-- Dynamic pricing options will be inserted here -->
-    <div id="travellerOptions"></div>
-
-    <div class="mt-6 flex justify-end gap-3">
-      <button type="button" id="closeModal" class="px-4 py-2 rounded-md border">Cancel</button>
-      <button type="button" id="applyTravellers" class="px-4 py-2 rounded-md bg-blue-600 text-white">Apply</button>
+    @if ($errors->any())
+    <div class="alert alert-danger mb-4 p-3 rounded">
+        <ul class="mb-0 pl-4">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
     </div>
-  </div>
-</div>
+    @endif
 
+
+    <div class="internal-order-body">
+        <!-- ================= Header ================= -->
+        <div class="card-primary mb-3">
+            <div class="card-header internal-order-head">
+                <div class="row">
+                    <div class="col-12">
+                        <h3 class="card-title text-white w-full">New Order</h3>
+                        <small>Created by {{ auth()->user()->name }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="orderForm" action="{{ route('admin.orders.store') }}" method="POST">
+            @csrf        
+
+            <!-- ================= Balance + Status ================= -->
+            <div class="d-flex justify-content-between align-items-center rounded-lg-custom balance-bar border">
+                <div>
+                    <strong id="totalDue">0.00</strong>
+                    <small>Balance</small>
+                </div>
+                
+                <div class="d-flex">
+                    <input type="hidden" name="currency" id="order_currency" value="CAD" />
+                    <!-- <select readonly name="currency" id="order_currency" class="form-control mr-2">
+                        @foreach(config('constants.currencies') as $code => $country)
+                            <option @if($code === 'CAD') selected @endif value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
+                        @endforeach
+                    </select> -->
+                    <select name="order_status" class="form-control mr-2">
+                        <option value="0">New</option> 
+                        <option value="4" selected>Pending Customer</option>
+                        <option value="3">Pending Supplier</option>
+                        <option value="5" >Confirmed</option>
+                        <option value="2">On Hold</option>
+                        <option value="6">Cancelled</option>
+                        <option value="7">Abandoned Cart</option>
+                    </select>
+                    <!-- <button type="submit" class="btn btn-success w-full">+ Create Order</button> -->
+                </div>
+            </div>
+            
+            <div class="accordion" id="accordionExample">         
+                <div class="card card-primary rounded-lg-custom border">
+                    <div class="card-header order-heads py-0 z-10" id="headingOne">
+                        <h2 class="my-0 py-0">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0 text-white" 
+                                data-toggle="collapse" data-target="#collapseOne">
+                                <i class="fa fa-angle-right"></i> Customer Details
+                            </button>                                  
+                        </h2>
+                    </div>
+                    <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
+                        <div class="card-body">
+
+                            {{-- Existing Customer Dropdown --}}
+                            <div class="row d-flex justify-content-between align-items-center">
+                                <div class="form-group col-md-5">
+                                    <label for="customer">Select Existing Customer</label>
+                                    <select name="customer_id" id="customer" class="form-control aiz-selectpicker z-100 border" data-live-search="true">
+                                        <option value="">-- Select Customer --</option>
+                                        @foreach($customers as $customer)
+                                            <option value="{{ $customer->id }}">{{ ucwords($customer->name) }} - {{ $customer->email }} - {{ $customer->phone ?? 'NA' }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="form-group text-center font-thin text-md mt-3">  OR</div>
+                                    <div class="text-center">
+                                        <button type="button" id="addNewCustomerBtn" class="btn btn-md btn-success">
+                                            <i class="fa fa-user-plus mr-1"></i> Add New Customer
+                                        </button>
+                                    </div>
+                                </div>                            
+                            </div>
+
+                            {{-- New Customer Fields (hidden by default) --}}
+                            <div id="newCustomerFields" class="border rounded p-3 d-none bg-light">
+                                <h5 class="cus-info-head">New Customer Information</h5>
+                                <div class="form-group">
+                                    <input type="checkbox" name="addToCustomer" id="addToCustomer" />
+                                    <label for="addToCustomer">Add to Customer</label>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group col-lg-3 col-md-6">
+                                        <label for="customer_first_name">First Name *</label>
+                                        <input type="text" name="customer_first_name" id="customer_first_name"
+                                            class="form-control" minlength="2">
+                                        <small class="text-danger d-none" id="error_first_name">Enter a valid first name</small>
+                                    </div>
+
+                                    <div class="form-group col-lg-3 col-md-6">
+                                        <label for="customer_last_name">Last Name *</label>
+                                        <input type="text" name="customer_last_name" id="customer_last_name"
+                                            class="form-control" minlength="2">
+                                        <small class="text-danger d-none" id="error_last_name">Enter a valid last name</small>
+                                    </div>
+
+                                    <div class="form-group col-lg-3 col-md-6">
+                                        <label for="customer_email">Email *</label>
+                                        <input type="email" name="customer_email" id="customer_email"
+                                            class="form-control" >
+                                        <small class="text-danger d-none" id="error_email">Enter a valid email</small>
+                                    </div>
+
+                                    
+
+                                    <div class="form-group col-lg-3 col-md-6">
+                                        <label for="customer_phone">Phone (with country code) *</label>
+
+
+
+                                        <input 
+                                            id="customer_phone"
+                                            name="customer_phone"
+                                            type="tel"
+                                            class="form-control"
+                                            
+                                        />
+
+                                        <!-- Hidden field that stores full E.164 number -->
+                                        
+
+                                        <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
+                                        <input type="hidden" name="full_phone" id="full_phone">
+                                    </div>
+
+
+
+
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= Tour Details ================= -->
+                <div class="card card-primary rounded-lg-custom border tour-detail">
+                    <div class="card-header order-heads py-0" id="headingTwo">
+                        <h2 class="my-0 py-0">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0 text-white" 
+                                data-toggle="collapse" data-target="#collapseTwo">
+                                <i class="fa fa-angle-right"></i> Tour Details
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                        <div class="card-body">
+                            <table class="table">
+                                <tr>
+                                    <td style="border: none; padding: 0;">
+                                        <select 
+                                            onchange="loadTourDetails(this.value, 0)"
+                                            name="tour_id0" 
+                                            class="form-control col-12 col-md-6 aiz-selectpicker border" data-live-search="true">
+                                            <option value="">Select Tour</option>
+                                            @foreach($tours as $tour)
+                                                <option value="{{ $tour->id }}">{{ $tour->title }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                </tr>
+                            </table>
+                            <div id="tour_details_0"></div>
+                            <div id="tourContainer"></div>
+                            <button type="button" onclick="addTour()" class="btn btn-md btn-success px-5 mt-3">+ Add Tour</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= Additional Information ================= -->
+                <div class="card card-primary rounded-lg-custom border">
+                    <div class="card-header order-heads py-0" id="headingFour">
+                        <h2 class="my-0 py-0">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0 text-white"
+                                data-toggle="collapse" data-target="#collapseFour">
+                                <i class="fa fa-angle-right"></i> Additional Information
+                            </button>
+                        </h2>
+                    </div>
+                    <div id="collapseFour" class="collapse show" aria-labelledby="headingFour" data-parent="#accordionExample">
+                        <div class="card-body row">
+                            <div class="col-12 col-md-6">
+                                <textarea class="form-control" name="additional_info" rows="2" placeholder="Add Special Requirements"></textarea>
+                                <p style="color:#777;font-size:14px">Special Requirements visible by everybody</p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <textarea class="form-control" name="internal_notes" rows="2" placeholder="Add  Internal Notes"></textarea>
+                                <p style="color:#777;font-size:14px">Internal Notes only visible by supplier</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= Customer Payment ================= -->
+                <div class="card card-primary rounded-lg-custom border">
+                    <div class="card-header order-heads py-0" id="headingThree">
+                        <h2 class="my-0 py-0">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0 text-white" 
+                                data-toggle="collapse" data-target="#collapseThree">
+                                <i class="fa fa-angle-right"></i> Customer Payment
+                            </button>                     
+                        </h2>
+                    </div>
+
+                    <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+
+                        <div class="card-total p-3 mb-3" style="background: #edf3ff;">
+                            Total: <b id="totalPayment">0.00</b>
+                            <input type="text" id="total_amount" class="form-control" readonly placeholder="0.00">
+
+                        </div>
+                        <div class="card-body pt-0">
+
+                            <div>
+                                <div class="mb-2"><label><input type="checkbox" value="1" name="add_ccnow" id="add_ccnow" > Add a credit card to this order</label></div>
+
+                                <div id="card-element-wrapper" class="hidden">
+                                    <div id="card-element" class="form-control col-6" style="padding: 10px; height: auto;"></div>
+
+                                    <div class="mt-3"><label><input type="checkbox" value="1" name="charge_ccnow" id="charge_ccnow" /> Charge credit card now</label></div>
+
+                                    <div class="form-group hidden" id="charge_ccnow_amount">
+                                        <div class="form-group  col-6">
+                                            <label>Amount</label>
+                                            <div class="input-group">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                                </div>    
+                                                <input type="text" class="form-control decimal" id="addPaymentAmount" name="charge_ccnow_amount" placeholder="0.00">                                            
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="border rounded p-3 bg-light">                                   
+
+                                <div id="paymentTemplate">
+                                    <div class="row paymentRow my-2 border-b-1 border-blue-300">
+                                        <div class="col-12 col-md-2">
+                                            <select class="form-control" name="paymentType[]">
+                                                <option value="">Payment type...</option>
+                                                <option value="CASH">Cash</option>
+                                                <option value="CREDITCARD">Credit Card</option>
+                                                <option value="ALIPAY">Alipay</option>
+                                                <option value="BANKTRANSFER">Bank Transfer</option>
+                                                <option value="BANKCHEQUE">Cheque</option>
+                                                <option value="REFUND">Refund</option>
+                                                <option value="PAYPAL">Paypal</option>
+                                                <option value="VOUCHER">Voucher</option>
+                                                <option value="PROMO_CODE">Promo code</option>
+                                                <option value="FREE">Free of charge</option>
+                                                <option value="INVOICE">Invoice</option>
+                                                <option value="OTHER">Other</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-12 col-md-3">
+                                            <input class="form-control" name="transactionId[]" placeholder="Ref. number" autocomplete="off" />
+                                        </div>
+
+                                        <div class="col-12 col-md-3">
+                                            <div class="input-group">
+                                                <input type="text" class="aiz-date-range form-control"
+                                                    name="collection_date[]" data-format="ddd MMM DD, YYYY" data-single="true" autocomplete="off" placeholder="Date">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 col-md-2">
+                                            <div class="input-group">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                                </div>
+                                                <input type="text" class="form-control" name="amount[]" placeholder="0.00" autocomplete="off">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 col-md-2 text-right">
+                                            <button type="button" class="btn btn-success btn-sm addRow">+</button>
+                                            <button type="button" class="btn btn-danger btn-sm removeRow">-</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="paymentWrapper"></div>
+
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div> 
+
+                <!-- ================= Form Actions ================= -->
+                <div class="card card-primary card-footer rounded-lg-custom border" style="display:block">
+                    <button style="padding:0.6rem 2rem" type="submit" id="createOrderBtn" class="btn btn-success">+ Create Order</button>
+                    <a style="padding:0.6rem 2rem" href="{{ route('admin.orders.index') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+
+        <div id="globalLoader" 
+            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+                    background:rgba(255,255,255,0.6); z-index:99999;">
+            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+                        text-align:center; font-size:18px;">
+
+                <div class="loader-spinner" 
+                    style="width:40px; height:40px; border:4px solid #ccc; 
+                            border-top-color:#3498db; border-radius:50%;
+                            animation: spin 0.8s linear infinite; margin:auto;">
+                </div>
+
+                <div style="margin-top:10px; font-weight:bold; color:#333;">
+                    Processing...
+                </div>
+            </div>
+        </div>
+    </div>
 @section('js')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
+
+
 
 <script>
+
+
+    
+let tourCount = 1;
+
+// ================= Tour Options =================
+function tourOptions() {
+    let options = '';
+    @foreach($tours as $tour)
+        options += `<option value="{{ $tour->id }}">{{ $tour->title }}</option>`;
+    @endforeach
+    return options;
+}
+
+function addTour(savedTourId = null, index = null, silentMode = false) {
+
+    showLoader("Loading… Please wait");
+
+    // If index not provided → add new row
+    if (index === null) {
+        index = tourCount;
+    }
+
+    const container = document.getElementById('tourContainer');
+    const newRow = document.createElement('div');
+    newRow.setAttribute('id', `row_${index}`);
+
+    newRow.innerHTML = `
+    <div style="border:1px solid #ccc; margin-bottom:10px; padding:10px">
+        <table class="table" width="100%">
+            <tr>
+                <td width="90%" style="border: none; padding: 0;">
+                    <select 
+                        onchange="loadTourDetails(this.value, ${index})"
+                        name="tour_id[${index}]" 
+                        class="form-control aiz-selectpicker border" data-live-search="true">
+                        <option value="">Select Tour</option>` + tourOptions() + `</select>
+                </td>
+                <td style="border: none; padding: 0; text-align: right;">
+                    <button type="button" onclick="removeTour('row_${index}')" class="btn btn-danger">Remove</button>
+                </td>
+            </tr>
+        </table>
+        <div id="tour_details_${index}"></div>
+    </div>`;
+
+    container.appendChild(newRow);
+
+    TB.plugins.bootstrapSelect('refresh');
+
+    // Restore selected tour (if coming from localStorage)
+    if (savedTourId) {
+        newRow.querySelector(`select[name="tour_id[${index}]"]`).value = savedTourId;
+        newRow.querySelector(`select[name="tour_id[${index}]"]`)
+            .dispatchEvent(new Event("change"));
+    }
+
+    // Increase global counter only for user-added rows
+    if (!silentMode) {
+        tourCount++;
+    }
+
+    hideLoader();
+}
+
+// ================= Remove Tour Row =================
+function removeTour(id) {
+    const row = document.getElementById(id);
+    if(row) row.remove();
+}
+
+// ================= Load Single Tour Details =================
+function loadTourDetails(tourId, count) {
+
+    if (!tourId) return;
+
+    showLoader("Loading… Please wait");
+
+    $.ajax({
+        url: '{{ route("admin.tour.single") }}',
+        type: 'POST',
+        data: { id: tourId, tourCount: count, order_currency: document.getElementById('order_currency').value, _token: '{{ csrf_token() }}' },
+
+        success: function(response) {
+
+            const $container = $(`#tour_details_${count}`);
+            $container.html(response);
+
+            TB.plugins.dateRange();
+            TB.plugins.timePicker();
+            TB.plugins.bootstrapSelect('refresh');
+
+            const $dateInput = $container.find(
+                '.tour-startdate, .tour_startdate_field, input[name="tour_startdate[]"]'
+            ).first();
+
+            if ($dateInput.length) {
+
+                const serverDate =
+                    $dateInput.attr('value') ||
+                    $dateInput.val() ||
+                    '';
+
+                const initialDate = serverDate
+                    ? serverDate
+                    : moment().format("YYYY-MM-DD");
+
+                $dateInput.val(initialDate);
+
+                $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {
+                    const selectedDate = picker.startDate.format("ddd MMM DD, YYYY");
+                    $(this).val(selectedDate).trigger('change');
+
+                    const $row = $("#row_" + count);
+
+                    const pretty = moment(selectedDate).format("ddd MMM DD, YYYY");
+                    $row.find(".tour_startdate_display").val(pretty);
+                    
+                    fetchTourSessions(tourId, selectedDate, count);
+                });
+
+                setTimeout(() => {
+                    try {
+                        const drp = $dateInput.data('daterangepicker');
+                        if (drp) {
+
+                            // ----------- LIMIT START DATE -------------
+                            const tourStartDate = moment(initialDate, "YYYY-MM-DD");
+                            const today = moment().startOf('day');
+
+                            const minAllowedDate = moment.max(tourStartDate, today);
+
+                            drp.minDate = minAllowedDate;
+                            drp.updateView();
+                            drp.updateCalendars();
+                            // -------------------------------------------
+
+                            drp.setStartDate(initialDate);
+                            drp.setEndDate(initialDate);
+                        }
+                    } catch (e) {}
+
+                    fetchTourSessions(tourId, initialDate, count);
+                    hideLoader();
+
+                }, 250);
+                $("input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']").each(function () {
+                    handleQtyInput.call(this);
+                });
+
+            } else {
+                console.warn("Date input NOT FOUND for row:", count);
+            }
+        },
+
+        error: function(err) {
+            console.error(err);
+        }
+    });
+}
+
+function handleQtyInput() {
+    const row = this.closest("[id^='row_']");
+    calculateRowTotal(row);
+}
+
 $(document).ready(function () {
-    console.log("✅ Order form JS loaded");
+    $(document).on("change", "#add_ccnow", function () {
+        if (this.checked) {
+            $("#card-element-wrapper").show();
+        } else {
+            $("#card-element-wrapper").hide();
+        }
+    });
+    $(document).on("change", "#charge_ccnow", function () {
+        if (this.checked) {
+            $("#charge_ccnow_amount").show();
+        } else {
+            $("#charge_ccnow_amount").hide();
+        }
+    });
+});
 
-    // Map product slugs to IDs for sessions and addons
-    console.log("Product ID Map:");
+// ================= Fetch Tour Sessions =================
+function fetchTourSessions(tourId, selectedDate, count) {
+    const $container = $(`#tour_details_${count}`);
+    const $timeField = $container.find("input[name='tour_starttime[]'], select[name='tour_starttime[]']").first();
 
-    // Dummy Data (ideally fetched from server)
-    const sessionsData = {
-        1: ["Morning 9 AM", "Afternoon 1 PM", "Evening 5 PM"],
-        2: ["10 AM - Half Day", "2 PM - Half Day"],
-        3: ["Full Day 9 AM - 6 PM"]
+    if(!tourId || !selectedDate) return;
+    showLoader("Loading… Please wait");
+    const $row = $("#row_" + count);
+    const pretty = moment(selectedDate).format("ddd MMM DD YYYY");
+    $row.find(".tour_startdate_display").val(pretty);
+    $.ajax({
+        url: "{{ route('admin.tour.sessions') }}",
+        type: "GET",
+        data: { tour_id: tourId, date: selectedDate },
+        dataType: "json",
+        success: function(resp) {
+
+            let options = '';
+            if(resp.data && resp.data.length > 0){
+                $.each(resp.data, function(i, session){
+                    // If your API returns strings, use session; if objects, adapt.
+                    options += `<option value="${session}">${session}</option>`;
+                });
+            } else {
+                options = '<option value="">No sessions available</option>';
+            }
+
+            // Replace the time field within this container only
+            $timeField.replaceWith(`<select name="tour_starttime[]" class="form-control tour-time">${options}</select>`);
+            hideLoader();
+        },
+        error: function(xhr){
+            console.error("Failed to fetch sessions:", xhr.responseText);
+        }
+    });
+}
+
+</script>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    const stripe = Stripe("{{ env('STRIPE_KEY') }}");
+    const elements = stripe.elements();
+    const style = {
+        base: { fontSize: '16px', color: '#32325d', fontFamily: 'Arial, sans-serif' },
+        invalid: { color: '#fa755a' }
     };
+    const card = elements.create('card', { style });
+    card.mount('#card-element');
 
-    const addonsData = {
-        1: [{ id: "a1", title: "Lunch", price: 20 }, { id: "a2", title: "Guide", price: 50 }],
-        2: [{ id: "a3", title: "Transport", price: 40 }],
-        3: [{ id: "a4", title: "VIP Access", price: 100 }]
-    };
+    card.on('change', function(event) {
+        document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+    });
 
-    // Cache DOM elements
-    const $productSelect = $("#productSelect");
-    const $productTotalSpan = $("#productTotal");
-    const $totalDueStrong = $("#totalDue");
-    const $dateWrapper = $("#dateWrapper");
-    const $sessionWrapper = $("#sessionWrapper");
-    const $addonsWrapper = $("#addonsWrapper");
-    const $productDateInput = $("#productDate");
-    const $productSessionSelect = $("#productSession");
-    const $addonsContainer = $("#addonsContainer");
-    const $paymentAmount = $("#paymentAmount");
-    const $paymentTotal = $("#paymentTotal");
-    let bookingTimeout;
+    function validatePricing() {
 
-    // 🔥 Central calculation function for product total
-    function recalcTotal() {
-        const basePrice = parseFloat($productSelect.find(":selected").data("price")) || 0;
-        let addonTotal = 0;
+    let hasValidPricing = false;
 
-        $(".addon-checkbox:checked").each(function () {
-            addonTotal += parseFloat($(this).data("price") || 0);
+    document.querySelectorAll("[id^='row_']").forEach((row) => {
+
+        let rowValid = false;
+
+        row.querySelectorAll("input[name^='tour_pricing_qty_']").forEach((qtyInput) => {
+
+            const qty = parseFloat(qtyInput.value) || 0;
+            const min = parseFloat(qtyInput.dataset.min) || 0;
+            const isOptional = qtyInput.dataset.optional == "1";
+
+            // 🚨 KEY RULE
+            // Only NON-OPTIONAL can satisfy
+            if (!isOptional) {
+                if (qty >= min && qty > 0) {
+                    rowValid = true;
+                }
+            }
         });
 
-        const total = basePrice + addonTotal;
-        $productTotalSpan.text(total.toFixed(2));
-        $totalDueStrong.text(`$${total.toFixed(2)}`);
-    }
-
-    // Update payment total
-    function updatePaymentTotal() {
-        const paymentAmount = parseFloat($paymentAmount.val()) || 0;
-        $paymentTotal.text(paymentAmount.toFixed(2));
-    }
-
-    // Helper: Reset form state
-    function resetForm() {
-        $dateWrapper.hide();
-        $sessionWrapper.hide();
-        $addonsWrapper.hide();
-        $productDateInput.val("");
-        $productSessionSelect.html('<option value="">-- Select Session --</option>');
-        $addonsContainer.empty();
-        recalcTotal();
-    }
-
-    // Helper: Basic date validation (future date only)
-    function isValidDate(dateInput) {
-        const selectedDate = new Date($(dateInput).val());
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize to start of day
-        return selectedDate > today;
-    }
-
-    // Initial setup
-    if (!$productSelect.val()) {
-        resetForm();
-    } else {
-        $productSelect.trigger("change"); // Trigger change if product pre-selected
-    }
-    recalcTotal();
-    updatePaymentTotal();
-
-    // Handle product change
-// Handle product change
-$productSelect.on("change", function () {
-    console.log("🔄 Product change event fired");
-
-    const productSlug = $(this).val();
-    $dateWrapper.show();
-    $sessionWrapper.show();
-
-    console.log("➡️ Selected product:", productSlug);
-
-    if (!productSlug) {
-        resetForm();
-        return;
-    }
-
-    // 1️⃣ Fetch tour details
-    $.ajax({
-        url: `/admin/tour/${productSlug}/fetch_one`,
-        type: "GET",
-        dataType: "json",
-        success: function (response) {
-            console.log("✅ Fetch one response:", response);
-
-            // Reset downstream elements
-            $productDateInput.val("");
-            $addonsWrapper.hide();
-            $productSessionSelect.html('<option value="">-- Select Session --</option>');
-            $addonsContainer.empty();
-
-            // Set base price
-            if (response.price) {
-                $productSelect.find(":selected").data("price", response.price);
-            }
-
-            // Populate sessions
-            if (response.sessions && response.sessions.length > 0) {
-                $.each(response.sessions, function (index, session) {
-                    $productSessionSelect.append(
-                        `<option value="${session}">${session}</option>`
-                    );
-                });
-                $sessionWrapper.show();
-            }
-
-            // Populate addons
-            if (response.addons && response.addons.length > 0) {
-                $.each(response.addons, function (index, addon) {
-                    $addonsContainer.append(`
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input addon-checkbox"
-                                data-price="${addon.price}" id="addon-${addon.id}" 
-                                name="Order[addons][]" value="${addon.id}">
-                            <label class="form-check-label" for="addon-${addon.id}">
-                                ${addon.title} (+$${addon.price})
-                            </label>
-                        </div>
-                    `);
-                });
-                $addonsWrapper.show();
-            }
-
-            recalcTotal();
-
-            // 2️⃣ Now fetch booking/pricing
-            loadTravellerOptions(productSlug);
-        },
-        error: function (xhr, status, error) {
-            console.error("❌ Fetch one API error:", error);
-            resetForm();
+        if (rowValid) {
+            hasValidPricing = true;
         }
     });
 
-    // Function to load booking/pricing options
-    function loadTravellerOptions(slug) {
-        $.ajax({
-            url: `/admin/tour/${slug}/booking`,
-            type: "GET",
-            success: function (response) {
-                console.log("✅ Fetch booking response:", response);
+    return hasValidPricing;
+}
 
-                if (!response.data.pricings || response.data.pricings.length === 0) {
-                    $("#travellerOptions").html("<p>No pricing available for this tour.</p>");
-                    return;
-                }
+    // Handle form submit
+    const form = document.getElementById('orderForm');
+    form.addEventListener('submit', async function(event) {
+        setFullPhone();
 
-                let html = "";
-                response.data.pricings.forEach(item => {
-                    html += `
-                        <div class="flex justify-between items-center mb-4">
-                            <input type="hidden" name="tour_pricing_id[]" value="${item.id}">
-                            <span class="text-sm text-black">${item.label} 
-                                <small class="text-gray-500">($${item.price})</small>
-                            </span>
-                            <div class="flex items-center space-x-6 text-center">
-                                <button type="button" class="decrease w-6 h-6 rounded-full bg-gray-200 text-blue-900 border border-blue-900">–</button>
-                                <span class="text-black w-6 quantity">${item.quantity_used}</span>
-                                <button type="button" class="increase w-6 h-6 rounded-full bg-gray-200 text-blue-900 border border-blue-900" max="10">+</button>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                $("#travellerOptions").html(html);
-            },
-            error: function () {
-                $("#travellerOptions").html("<p class='text-red-500'>⚠️ Could not load pricing</p>");
-            }
-        });
+        // ✅ STEP 1: Validate pricing first
+    if (!validatePricing()) {
+        event.preventDefault();
+        alert("Please select at least one valid pricing option.");
+        return;
     }
-});
+        // const selectedPayment = document.querySelector("input[name='add_ccnow']:checked").value;
+        const selectedPaymentEl = document.querySelector("input[name='add_ccnow']:checked");
+const selectedPayment = selectedPaymentEl ? selectedPaymentEl.value : null;
+        if (selectedPayment) {
+            event.preventDefault();
+
+            const { paymentMethod, error } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: card,
+            });
+
+            if (error) {
+                document.getElementById('card-errors').textContent = error.message;
+            } else {
+                let hiddenInput = document.createElement('input');
+                hiddenInput.setAttribute('type', 'hidden');
+                hiddenInput.setAttribute('name', 'payment_intent_id');
+                hiddenInput.setAttribute('value', paymentMethod.id);
+                form.appendChild(hiddenInput);
+                form.submit();
+            }
+        }
+    });
 
     
 
-    // Handle date change → show sessions
-    // Handle date change → fetch sessions from server
-    $productDateInput.on("change", function () {
-        const productSlug = $productSelect.val();
-        // const productId = $productSelect.data("id");
+</script>
 
-        const productId = $productSelect.find(":selected").data("id");
-        const selectedDate = $(this).val();
-        console.log($productSelect);
-        if (!productId || !selectedDate) {
-            console.warn("⚠️ Missing product or date");
-            $sessionWrapper.hide();
-            return;
-        }
+<script>
+document.addEventListener("click", function(e) {
+    // Add row
+    if (e.target.classList.contains("addRow")) {
+        let html = document.querySelector("#paymentTemplate").innerHTML;
+        document.querySelector("#paymentWrapper").insertAdjacentHTML("beforeend", html);
 
-        console.log("📅 Date selected:", selectedDate, "for product:", productId);
-
-        $.ajax({
-            url: "/admin/tour-sessions", // adjust prefix if needed
-            type: "GET",
-            data: {
-                tour_id: productId,
-                date: selectedDate
-            },
-            dataType: "json",
-            success: function (response) {
-                console.log("✅ Session API response:", response);
-
-                $productSessionSelect.html('<option value="">-- Select Session --</option>');
-
-                if (response.data && response.data.length > 0) {
-                    $.each(response.data, function (index, session) {
-
-                        console.log(session);
-                        $productSessionSelect.append(
-                            `<option value="${session}">${session}</option>`
-                        );
-                    });
-                    $sessionWrapper.show();
-                } else {
-                    $productSessionSelect.html('<option value="">No sessions available</option>');
-                    $sessionWrapper.show();
+        // re-init datepicker if needed
+        if ($(".aiz-date-range").length) {
+            $(".aiz-date-range").daterangepicker({
+                singleDatePicker: true,      // Enable single-date mode
+                showDropdowns: true,
+                locale: {
+                    format: 'ddd MMM DD, YYYY'
                 }
+            });
+        }
+    }
 
+    // Remove row
+    if (e.target.classList.contains("removeRow")) {
+        let row = e.target.closest(".paymentRow");
+        row.remove();
+    }
+});
+</script>
 
+<script>
+function calculateTotal() {
+    let sum = 0;
 
-            },
-            error: function (xhr, status, error) {
-                console.error("❌ Failed to fetch sessions:", error);
-                $sessionWrapper.hide();
+    $('input[name="amount[]"]').each(function () {
+        let val = parseFloat($(this).val());
+        if (!isNaN(val)) {
+            sum += val;
+        }
+    });
+
+    $('#total_amount').val(sum.toFixed(2));
+    $('#totalDue').text(sum.toFixed(2));    
+}
+
+    document.querySelectorAll("input[name='payment_type']").forEach(el => {
+        el.addEventListener("click", function () {
+            if (this.value === "card") {
+                cardFields.style.display = "block";
+                transactionFields.style.display = "none";
+                cashFields.style.display = "none";
+            } else if (this.value === "transaction") {
+                cardFields.style.display = "none";
+                transactionFields.style.display = "block";
+                cashFields.style.display = "none";
+            } else if (this.value === "other") {
+                cardFields.style.display = "none";
+                transactionFields.style.display = "none";
+                cashFields.style.display = "block";
+            }
+        });
+    });
+    
+    $(document).ready(function () {
+        $(document).on('click', '#addNewCustomerBtn', function () {
+            
+             $('#newCustomerFields').removeClass('d-none');
+            $('#newCustomerFields').removeClass('d-none');
+            $('#customer').val('').trigger('change');
+
+            $("#customer_first_name").prop("required", true);
+            $("#customer_last_name").prop("required", true);
+            $("#customer_email").prop("required", true);
+            $("#customer_phone").prop("required", true);
+        });
+
+        $('#customer').on('change', function () {
+            if ($(this).val()) {
+                // If existing customer selected → hide new fields
+                $('#newCustomerFields').addClass('d-none');
+                $("#customer_first_name").prop("required", false);
+                $("#customer_last_name").prop("required", false);
+                $("#customer_email").prop("required", false);
+                $("#customer_phone").prop("required", false);
+                // remove required
             }
         });
 
-          // 0.5 second delay
+        $(document).on('blur', '.decimal', function () {
+            let val = $(this).val();
+
+            // If empty, do nothing
+            if (val === "") return;
+
+            // Convert to number and force 2 decimals
+            let num = parseFloat(val);
+
+            // If not a valid number → reset to empty or 0.00 (your choice)
+            if (isNaN(num)) {
+                $(this).val("");
+                return;
+            }
+
+            // Set back with 2 decimals
+            $(this).val(num.toFixed(2));
+        });
+
+        $(document).on('blur', 'input[name="amount[]"]', function () {
+            let val = $(this).val().trim();
+
+            if (val === "") {
+                calculateTotal();
+                return;
+            }
+
+            let num = parseFloat(val);
+
+            if (isNaN(num)) {
+                $(this).val("");
+                calculateTotal();
+                return;
+            }
+
+            $(this).val(num.toFixed(2));
+            calculateTotal();
+        });
     });
+</script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
 
-    // Handle session change → show addons
-    $productSessionSelect.on("change", function () {
-        const productSlug = $productSelect.val();
-        const productId = productIdMap[productSlug] || null;
-        const productAddons = addonsData[productId] || [];
-        console.log("Session selected:", { slug: productSlug, id: productId, addons: productAddons });
+    function validateFields() {
+        setFullPhone();
+        let valid = true;
 
-        $addonsContainer.empty();
-        if (productAddons.length > 0) {
-            $.each(productAddons, function (index, addon) {
-                $addonsContainer.append(`
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input addon-checkbox"
-                            data-price="${addon.price}" id="${addon.id}" name="Order[addons][]" value="${addon.id}">
-                        <label class="form-check-label" for="${addon.id}">
-                            ${addon.title} (+$${addon.price})
-                        </label>
-                    </div>
-                `);
-            });
-            $addonsWrapper.show();
+        // FIRST NAME
+        const first = document.getElementById("customer_first_name");
+        if (!/^[A-Za-z]{2,}$/.test(first.value.trim())) {
+            document.getElementById("error_first_name").classList.remove("d-none");
+            valid = false;
         } else {
-            $addonsContainer.html('<p class="text-muted">No addons available.</p>');
-            $addonsWrapper.show();
+            document.getElementById("error_first_name").classList.add("d-none");
         }
 
-        recalcTotal();
-    });
+        // LAST NAME
+        const last = document.getElementById("customer_last_name");
+        if (!/^[A-Za-z]{2,}$/.test(last.value.trim())) {
+            document.getElementById("error_last_name").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_last_name").classList.add("d-none");
+        }
 
-    // Handle addon check/uncheck (delegated event)
-    $(document).on("change", ".addon-checkbox", function () {
-        console.log("Addon toggled:", $(this).val());
-        recalcTotal();
-    });
+        // EMAIL
+        const email = document.getElementById("customer_email");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.value.trim())) {
+            document.getElementById("error_email").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_email").classList.add("d-none");
+        }
 
-    // Handle payment amount change
-    $paymentAmount.on("input", function () {
-        updatePaymentTotal();
-    });
+        // PHONE VALIDATION (Intl Tel Input)
+        if (!iti.isValidNumber()) {
+            document.getElementById("error_phone").classList.remove("d-none");
+            valid = false;
+        } else {
+            document.getElementById("error_phone").classList.add("d-none");
+        }
 
-    // Form submission validation
-    $("#order-form").on("submit", function (e) {
-        const productSlug = $productSelect.val();
-        if (!productSlug) {
+        return valid;
+    }
+
+    /* ======================================================
+       FORM SUBMIT VALIDATION
+    ====================================================== */
+    document.querySelector("form").addEventListener("submit", function (e) {
+
+        setFullPhone();
+        // ✅ Put in hidden field
+        document.getElementById("full_phone").value = iti.getNumber();
+            if (!validateFields()) {
             e.preventDefault();
-            alert("Please select a product.");
-            return false;
-        }
-        if (!$productDateInput.val()) {
-            e.preventDefault();
-            alert("Please select a date.");
-            return false;
-        }
-        if (!$productSessionSelect.val()) {
-            e.preventDefault();
-            alert("Please select a session.");
-            return false;
-        }
-    });
-    $(document).on("click", ".increase", function () {
-        let $qty = $(this).siblings(".quantity");
-        let current = parseInt($qty.text());
-        let max = parseInt($(this).attr("max")) || 10;
-
-        if (current < max) {
-            $qty.text(current + 1);
+            alert("Please correct the highlighted fields.");
         }
     });
 
-    // Decrease button
-    $(document).on("click", ".decrease", function () {
-        let $qty = $(this).siblings(".quantity");
-        let current = parseInt($qty.text());
-
-        if (current > 0) {
-            $qty.text(current - 1);
-        }
-    });
-    $(document).on("click", "#travellerInput", () => {
-        $("#travellerModal").removeClass("hidden");
-    });
-
-    // Close modal (Cancel button + overlay)
-    $(document).on("click", "#closeModal, #travellerModal", function (e) {
-        if (e.target.id === "closeModal" || e.target.id === "travellerModal") {
-            $("#travellerModal").addClass("hidden");
-        }
-    });
 });
 </script>
+
+<script>
+document.addEventListener("change", function(e){
+    if(e.target.classList.contains("pickup-dropdown")) {
+        const otherBox = document.getElementById("pickup-other-box");
+        if(e.target.value === "other") {
+            otherBox.style.display = "block";
+            otherBox.value = "";
+        } else {
+            otherBox.style.display = "none";
+            otherBox.value = " ";
+        }
+    }
+});
+</script>
+
+<script>
+// =====================================================
+// DYNAMIC TOTAL CALCULATION FOR EACH TOUR ROW
+// =====================================================
+
+
+function calculateRowTotal(row) {
+
+    let subtotal = 0;
+    let withouttax = 0;
+
+    // -----------------------------------------
+    // 1) PRICING QTY * PRICE
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
+        let qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_price_"]'
+        );
+
+        const priceTypeInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_type_"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+        const priceType = priceTypeInput.value;
+
+        // -----------------------------------------
+        // ADDITION: ENFORCE MIN/MAX IF FIXED
+        // -----------------------------------------
+        const minQty = qtyInput.getAttribute("min");
+        const maxQty = qtyInput.getAttribute("max");
+
+
+        if (priceType === "FIXED") {
+
+            if (maxQty !== null && qty > parseFloat(maxQty)) {
+                alert("Quantity cannot be more than maximum allowed (" + maxQty + ").");
+                qty = parseFloat(maxQty);
+                qtyInput.value = qty;
+            }
+
+        }
+        // -----------------------------------------
+
+        if (priceType === "FIXED") {
+            subtotal = price;
+        } else {
+            subtotal += qty * price;
+        }
+
+    });
+
+    // -----------------------------------------
+    // 2) ADDONS QTY * PRICE
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
+        const qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_extra_price_"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+
+        subtotal += qty * price;
+    });
+
+    withouttax = subtotal;
+
+    // -----------------------------------------
+    // 3) TAXES — read tax rows & recalc live
+    // -----------------------------------------
+    row.querySelectorAll('.tax-row').forEach((taxRow) => {
+        const feeType = taxRow.dataset.type;
+        const feeValue = parseFloat(taxRow.dataset.value);
+
+        let tax = 0;
+
+        if (feeType === "PERCENT") {
+            tax = subtotal * (feeValue / 100);
+        } else {
+            tax = feeValue;
+        }
+
+        const formattedTax = new Intl.NumberFormat('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(tax);
+
+        taxRow.querySelector('.tax-amount').textContent = formattedTax;
+
+        subtotal += tax;
+    });
+
+    // -----------------------------------------
+    // 4) UPDATE UI SUBTOTAL
+    // -----------------------------------------
+    const withouttaxBox = row.querySelector('.withouttax-box');
+    if (withouttaxBox) {
+        withouttaxBox.textContent = withouttax.toFixed(2);
+    }
+    const subtotalBox = row.querySelector('.subtotal-box');
+    if (subtotalBox) {
+        document.getElementById("totalDue").innerText = subtotal.toFixed(2);
+        document.getElementById("totalPayment").innerText = subtotal.toFixed(2);
+        document.getElementById("addPaymentAmount").value = subtotal.toFixed(2);
+        subtotalBox.textContent = subtotal.toFixed(2);
+    }
+}
+
+// =====================================================
+// EVENT LISTENERS — trigger on every quantity and extra change
+// =====================================================
+$(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']", function () {
+    const row = this.closest("[id^='row_']");
+    calculateRowTotal(row);
+});
+</script>
+
+<script>
+function showLoader(message = "Processing...") {
+    $("#globalLoader").find("div:last").text(message);
+    $("#globalLoader").show();
+}
+
+function hideLoader() {
+    $("#globalLoader").hide();
+}
+</script>
+
+<script>
+function autoPersistForm(formSelector) {
+    const form = document.querySelector(formSelector);
+    if (!form) return;
+
+    const STORE_KEY = form.id + "_formdata";
+
+    // Pull saved data safely
+    let saved = {};
+    try {
+        saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+    } catch (e) {
+        localStorage.removeItem(STORE_KEY);
+        saved = {};
+    }
+
+    // ==========================================
+    // 1. Detect all dynamic tour indexes safely
+    // Only match keys that EXACTLY end with [number]
+    // ==========================================
+    const indexedKeys = Object.keys(saved).filter(k => /\[\d+\]$/.test(k));
+
+    // Extract all index numbers
+    const indexList = [...new Set(
+        indexedKeys
+            .map(k => {
+                const m = k.match(/\[(\d+)\]$/);
+                return m ? parseInt(m[1], 10) : null;
+            })
+            .filter(i => i !== null)
+    )];
+
+    // Number of dynamic rows last time
+    const dynamicCount = indexList.length;
+
+    // ==========================================
+    // 2. Restore dynamic tour rows (if addTour exists)
+    // ==========================================
+    let dynamicReady = Promise.resolve();
+
+    if (dynamicCount > 0 && typeof addTour === "function") {
+
+        dynamicReady = new Promise(resolve => {
+
+            let current = 0;
+
+            function addNext() {
+                if (current >= dynamicCount) return resolve();
+
+                // We only need tour_id for row creation
+                const tourId = saved[`tour_id[${current}]`] || null;
+
+                // Create the row (silent mode)
+                addTour(tourId, current + 1, true);
+
+                current++;
+
+                // Give AJAX time to load row content
+                setTimeout(addNext, 350);
+            }
+
+            addNext();
+        });
+    }
+
+    // ==========================================
+    // 3. After rows exist → restore field values
+    // ==========================================
+    dynamicReady.then(() => {
+
+        setTimeout(() => {
+
+            Object.entries(saved).forEach(([name, value]) => {
+
+                const fields = form.querySelectorAll(`[name="${CSS.escape(name)}"]`);
+                if (!fields.length) return;
+
+                fields.forEach(field => {
+                    if (field.type === "checkbox" || field.type === "radio") {
+                        field.checked = value;
+                    } else {
+                        field.value = value;
+                    }
+
+                    field.dispatchEvent(new Event("change"));
+                });
+            });
+
+        }, 400); // ensure AJAX/DOM are ready
+    });
+
+    // ==========================================
+    // 4. Save data before submission
+    // ==========================================
+    form.addEventListener("submit", () => {
+
+        const data = {};
+
+        [...form.elements].forEach(el => {
+            if (!el.name) return;
+
+            const key = el.name;
+
+            if (el.type === "checkbox" || el.type === "radio") {
+                data[key] = el.checked;
+            } else {
+                data[key] = el.value;
+            }
+        });
+
+        localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    });
+
+    // ==========================================
+    // 5. Clear saved data if PHP says no errors
+    // Set window.hasFormError = true on error pages
+    // ==========================================
+    if (window.hasFormError === false) {
+        localStorage.removeItem(STORE_KEY);
+    }
+}
+</script>
+
+<script>
+    window.hasFormError = @json($errors->any() || count(old()) > 0);   
+    console.log("hasFormError:", window.hasFormError, "old values:", @json(old()));
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    
+    if (window.hasFormError) {
+        showLoader('Please wait...');
+        // Validation failed → restore old values
+        autoPersistForm("#orderForm");
+
+        hideLoader();
+    } else {
+        // Validation passed → clear old saved values
+        const STORE_KEY = "orderForm_formdata"; // form id + "_formdata"
+        localStorage.removeItem(STORE_KEY);
+    }
+});
+
+document.getElementById('order_currency').addEventListener('change', function () {
+
+    const newCurrency = this.value;
+
+    // Loop all selected tours
+    document.querySelectorAll("select[name^='tour_id']").forEach(function(select) {
+        
+        const tourId = select.value;
+        if (!tourId) return;
+        
+        
+        loadTourDetails(tourId, 0);
+        
+    });
+
+});
+
+</script>
+
+<!-- <script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const phoneInput = document.querySelector("#customer_phone");
+
+    window.iti = window.intlTelInput(phoneInput, {
+        initialCountry: "ca",
+        separateDialCode: true,
+        nationalMode: false,
+        dropdownContainer: document.body,
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
+    });
+
+    // Only block clicks inside the search box, not country items
+    document.addEventListener("click", function (e) {
+        const searchBox = document.querySelector(".iti__search-box");
+        if (searchBox && searchBox.contains(e.target)) {
+            e.stopImmediatePropagation();
+        }
+    }, true);
+
+    phoneInput.addEventListener("open:countrydropdown", function () {
+        setTimeout(() => {
+            const dropdown = document.querySelector(".iti__country-list");
+            if (!dropdown) return;
+
+            if (dropdown.querySelector(".iti__search-box")) return;
+
+            const searchBox = document.createElement("div");
+            searchBox.className = "iti__search-box";
+            searchBox.style.cssText = "padding:8px;border-bottom:1px solid #ddd;position:sticky;top:0;background:#fff;z-index:1;";
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = "Search country...";
+            input.className = "iti__search-input";
+            input.style.cssText = "width:100%;padding:6px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;";
+
+            searchBox.appendChild(input);
+            dropdown.prepend(searchBox);
+
+            const countries = dropdown.querySelectorAll(".iti__country");
+
+            input.addEventListener("input", function () {
+                const value = this.value.toLowerCase();
+                countries.forEach(country => {
+                    country.style.display = country.innerText.toLowerCase().includes(value) ? "" : "none";
+                });
+            });
+
+            input.focus();
+        }, 50);
+    });
+
+});
+
+function setFullPhone() {
+    if (window.iti && iti.isValidNumber()) {
+        document.getElementById("full_phone").value = iti.getNumber();
+    }
+}
+document.getElementById("customer_phone").addEventListener("blur", function () {
+    setFullPhone();
+});
+</script> -->
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const phoneInput = document.querySelector("#customer_phone");
+    const hiddenInput = document.querySelector("#full_phone");
+    const errorBox = document.querySelector("#error_phone");
+    const form = document.querySelector("form");
+
+    const iti = window.intlTelInput(phoneInput, {
+        initialCountry: "ca",
+        separateDialCode: true,
+        nationalMode: false,
+        formatOnDisplay: true, // ✅ auto format
+        autoPlaceholder: "aggressive",
+        dropdownContainer: document.body,
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
+    });
+
+    /* =========================================
+       SEARCH BOX (FIXED)
+    ========================================= */
+    phoneInput.addEventListener("open:countrydropdown", function () {
+        setTimeout(() => {
+            const dropdown = document.querySelector(".iti__country-list");
+            if (!dropdown) return;
+
+            if (dropdown.querySelector(".iti__search-box")) return;
+
+            const searchBox = document.createElement("div");
+            searchBox.className = "iti__search-box";
+            searchBox.style.cssText = "padding:8px;border-bottom:1px solid #ddd;position:sticky;top:0;background:#fff;z-index:1;";
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = "Search country...";
+            input.className = "iti__search-input";
+            input.style.cssText = "width:100%;padding:6px;border:1px solid #ccc;border-radius:4px;";
+
+            searchBox.appendChild(input);
+            dropdown.prepend(searchBox);
+
+            const countries = dropdown.querySelectorAll(".iti__country");
+
+            // ✅ FIX: allow typing
+            input.addEventListener("input", function () {
+                const value = this.value.toLowerCase();
+                countries.forEach(country => {
+                    country.style.display =
+                        country.innerText.toLowerCase().includes(value) ? "" : "none";
+                });
+            });
+
+            input.focus();
+        }, 50);
+    });
+
+    /* =========================================
+       BLOCK INVALID CHARACTERS
+    ========================================= */
+    phoneInput.addEventListener("input", function () {
+        let value = phoneInput.value;
+
+        // allow only digits
+        value = value.replace(/[^\d]/g, "");
+
+        phoneInput.value = value;
+    });
+
+    /* =========================================
+       LIMIT LENGTH (E.164 max = 15)
+    ========================================= */
+    phoneInput.addEventListener("input", function () {
+        if (phoneInput.value.length > 15) {
+            phoneInput.value = phoneInput.value.slice(0, 15);
+        }
+    });
+
+    /* =========================================
+       VALIDATION FUNCTION
+    ========================================= */
+    function validateNumber() {
+        const value = phoneInput.value.trim();
+
+        if (!value) {
+            errorBox.classList.remove("d-none");
+            errorBox.innerText = "Phone number is required";
+            phoneInput.classList.add("is-invalid");
+            hiddenInput.value = "";
+            return false;
+        }
+
+        if (iti.isValidNumber()) {
+            errorBox.classList.add("d-none");
+            phoneInput.classList.remove("is-invalid");
+            phoneInput.classList.add("is-valid");
+
+            hiddenInput.value = iti.getNumber(); // full formatted
+            return true;
+        } else {
+            errorBox.classList.remove("d-none");
+            errorBox.innerText = "Invalid phone number for selected country";
+            phoneInput.classList.add("is-invalid");
+            phoneInput.classList.remove("is-valid");
+
+            hiddenInput.value = "";
+            return false;
+        }
+    }
+
+    /* =========================================
+       LIVE VALIDATION
+    ========================================= */
+    phoneInput.addEventListener("input", validateNumber);
+    phoneInput.addEventListener("blur", validateNumber);
+    phoneInput.addEventListener("countrychange", validateNumber);
+
+    /* =========================================
+       BLOCK FORM SUBMIT IF INVALID
+    ========================================= */
+    form.addEventListener("submit", function (e) {
+        if (!validateNumber()) {
+            e.preventDefault();
+        }
+    });
+
+});
+</script>
+
+
 @endsection
 </x-admin>

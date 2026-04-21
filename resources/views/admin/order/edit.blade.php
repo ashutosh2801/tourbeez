@@ -281,13 +281,13 @@ $expectEmails = ['order_pending'];
                                     @if($order->payment_status == 3)
                                         <li class="payment-details-breakdown--item {{ $amountClass }}">
                                         <strong class="payment-details-breakdown--text">Balance</strong>
-                                            <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
+                                            <strong class="payment-details-breakdown--text due total-due">{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
                                         </li>
 
                                     @else
                                         <li class="payment-details-breakdown--item">
-                                        <strong class="payment-details-breakdown--text">Balance</strong>
-                                            <strong class="payment-details-breakdown--text due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
+                                        <strong class="payment-details-breakdown--text ">Balance</strong>
+                                            <strong class="payment-details-breakdown--text due total-due">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</strong>
                                         </li>
 
                                     @endif
@@ -401,7 +401,13 @@ $expectEmails = ['order_pending'];
                                 <ul class="flex flex-row">
                                     <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"><i class="fas fa-user-tie"></i>  {{ $order->customer?->name }}</a></li>
                                     <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
-                                    <li><i class="fas fa-phone-square-alt"></i> {{ $order->customer?->phone }}</li>
+                                    <li>
+                                        <i class="fas fa-phone-square-alt"></i>
+                                        <span id="phone">{{ $order->customer?->phone }}</span>
+                                        <span id="country_name"></span>
+                                    </li>
+
+
                                 </ul>                                
                             </div>
                         </div>
@@ -707,6 +713,9 @@ $expectEmails = ['order_pending'];
                                             <td class="cummulative-total"><b>Total</b></td>
                                             <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                         </tr>
+
+
+                                        <tr><td class="total-paid hidden">{{$paid}}</td></tr>
                                         @if($outsidePayment > 0)
                                         <tr class="text-success">
                                             <td class="cummulative-total"><b>Promo</b></td>
@@ -730,10 +739,10 @@ $expectEmails = ['order_pending'];
                                             @if($order->payment_status ==3)
 
 
-                                                <td class="text-right cummulative-total"><b>{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</b></td>
+                                                <td class="text-right cummulative-total total-due"><b>{{ price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</b></td>
                                             @else
 
-                                                <td class="text-right cummulative-total"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
+                                                <td class="text-right cummulative-total total-due"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
                                             @endif
 
 
@@ -754,7 +763,7 @@ $expectEmails = ['order_pending'];
                             <div class="card-body">
                                 <div class="d-flex justify-content-end">
                                         <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editPickupModal">
-                                            Edit Pickup
+                                            Edit Info
                                         </button>
                                     </div>
                                  <div style="border:1px solid #eaecef;">
@@ -788,6 +797,14 @@ $expectEmails = ['order_pending'];
                                             
 
                                         </tr>
+
+                                        <tr>
+                                            <td><b>Internal Notes</b></td>
+                                            <td class="text-right">{{ $order->internal_notes }}</td> 
+                                            
+
+                                        </tr>
+
                                         
                                     </table>
                                 </div>
@@ -834,7 +851,7 @@ $expectEmails = ['order_pending'];
                                     {{price_format_with_currency($paid-$outsidePayment, $order->currency)}}
                                 </div>
                                 @if($overPaid > 0)
-                                    <div id="totalPayment1" class="col-md-6 text-start text-success">
+                                    <div id="overPaid" class="col-md-6 text-start text-success">
 
 
                                         
@@ -1219,8 +1236,8 @@ $expectEmails = ['order_pending'];
                                 <i class="fa fa-angle-right"></i> Recent Actions
                             </button>
                         </div>
-                        <div>
-                            <div id="collapseRecentActions" class="collapse show" aria-labelledby="headingRecentActions" data-parent="#accordionExample">
+                        <!-- <div> -->
+                            <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions" data-parent="#accordionExample">
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1230,8 +1247,8 @@ $expectEmails = ['order_pending'];
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @if(!empty($order->actions) && is_iterable($order->actions))
-                                                @foreach($order->actions->sortByDesc('created_at') as $action)
+                                            @if(!empty($actions) && is_iterable($actions))
+                                                @foreach($actions as $action)
                                                     <tr>
                                                         <td>{{ $action->created_at }}</td>
                                                         <td>{!! $action->notes !!}</td>
@@ -1244,9 +1261,11 @@ $expectEmails = ['order_pending'];
                                             @endif
                                         </tbody>
                                     </table>
+
+                                    {{ $actions->links() }}
                                 </div>
                             </div>
-                        </div>
+                        <!-- </div> -->
                     </div>
 
                     <div class="card">
@@ -1265,8 +1284,8 @@ $expectEmails = ['order_pending'];
 
 
 
-                        <div>
-                            <div id="collapseEmailHistory" class="collapse show" aria-labelledby="headingEmailHistory" data-parent="#accordionExample">
+                        <!-- <div> -->
+                            <div id="collapseEmailHistory" class="collapse" aria-labelledby="headingEmailHistory" data-parent="#accordionExample">
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1280,8 +1299,8 @@ $expectEmails = ['order_pending'];
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
-                                                @foreach($order->emailHistories->sortByDesc('created_at') as $email)
+                                            @if(!empty($emailHistories) && is_iterable($emailHistories))
+                                                @foreach($emailHistories as $email)
                                                     <tr>
                                                         <td>{{ $email->created_at }}</td>
                                                         <td>{{ $email->to_email }}</td>
@@ -1311,9 +1330,68 @@ $expectEmails = ['order_pending'];
                                             @endif
                                         </tbody>
                                     </table>
+                                    {{ $emailHistories->links() }}
                                 </div>
                             </div>
+                        <!-- </div> -->
+                    </div>
+
+                    <div class="card">
+                        
+
+                        <div class="card-header bg-secondary py-0" id="headingPaymentLog">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapsePaymentLog">
+                                <i class="fa fa-angle-right"></i> Payment Logs
+                            </button>
                         </div>
+                        <!-- <div> -->
+                            <div id="collapsePaymentLog" class="collapse" aria-labelledby="headingPaymentLog" data-parent="#accordionExample">
+                                <div class="card-body">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:20%; white-space: nowrap;">Date</th>
+                                                <!-- <th>Event ID</th> -->
+                                                <th>Event</th>
+                                                <th>Message</th>
+                                                
+                                                <th>Status</th>
+                                                <!-- <th>Payload</th> -->
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+
+                                            @if(!empty($paymentLogs) && is_iterable($paymentLogs))
+                                                @foreach($paymentLogs as $paymentLog)
+                                                    <tr>
+                                                        <td>{{ $paymentLog->created_at }}</td>
+                                                        <!-- <td>{{ $paymentLog->event_id }}</td> -->
+
+                                                       @php
+                                                        $raw = $paymentLog->event_type;
+
+                                                        $readable = str_replace('_', ' ', explode('.', $raw)[1]);
+                                                        $readable = ucwords($readable);
+
+                                                        @endphp
+                                                        <td>{{ $readable }}</td>
+                                                        <td>{{ $paymentLog->message }}</td>
+                                                        <td>{{ ucwords($paymentLog->status) }}</td>
+                                                        
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5">No Payment history found</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                    {{ $paymentLogs->links() }}
+                                </div>
+                            </div>
+                        <!-- </div> -->
                     </div>
 
                     <div class="card-footer" style="display:block">
@@ -1676,7 +1754,7 @@ $expectEmails = ['order_pending'];
                 <input type="hidden" name="customer_id" value="{{ $order->customer->id }}">
 
                 <div class="modal-header">
-                    <h5 class="modal-title">Edit Pickup Details</h5>
+                    <h5 class="modal-title">Edit Details</h5>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
 
@@ -1724,6 +1802,10 @@ $expectEmails = ['order_pending'];
                         <div class="col-lg-12 mb-2">
                             <label>Instructions</label>
                             <textarea name="oc_instructions" class="form-control">{{ $order->customer->instructions }}</textarea>
+                        </div>
+                        <div class="col-lg-12 mb-2">
+                            <label>Innternal Notes</label>
+                            <textarea name="internal_notes" class="form-control">{{ $order->internal_notes }}</textarea>
                         </div>
 
                     </div>
@@ -1784,8 +1866,16 @@ $expectEmails = ['order_pending'];
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js"></script>
+<script>
+    const ORDER_CURRENCY = "{{ $order->currency }}";
+</script>
 
 <script>
+    function formatCurrency(amount) {
+    return `${ORDER_CURRENCY} ${parseFloat(amount).toFixed(2)}`;
+}
+
 function calculateTotal() {
     let sum = 0;
     let sum_paid = 0;
@@ -1801,7 +1891,7 @@ function calculateTotal() {
     let total_due = {{ $order->total_amount }} - sum;
 
     $('#total_amount').val(sum.toFixed(2));
-    $('#totalDue').text(total_due.toFixed(2));    
+     $('#totalDue').text(total_due.toFixed(2));    
 } 
 
 $(document).ready(function () {
@@ -2145,7 +2235,7 @@ document.addEventListener("click", function(e) {
                             drp.setEndDate(initialDate);
                         }
                     } catch (e) {}
-                    console.log(tour_id, initialDate, tourCount);
+                    
                     fetchTourSessions(tour_id, initialDate, tourCount);
                     hideLoader();
 
@@ -2184,7 +2274,10 @@ document.addEventListener("click", function(e) {
         
         // Toggle right and down arrow icon on show hide of collapse element
         $(".collapse").on('show.bs.collapse', function(){
+            console.log($(this).prev(".card-header").find(".fa"));
             $(this).prev(".card-header").find(".fa").removeClass("fa-angle-right").addClass("fa-angle-down");
+
+
         }).on('hide.bs.collapse', function(){
             $(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
         });
@@ -2859,11 +2952,108 @@ function hideLoader() {
 </script>
 
 <script>
-function calculateRowTotal(row, hide) {
+
+function calculateRowTotal(row) {
+    let subtotal2 = 0; // BEFORE discount
+    let subtotal = 0;  // AFTER discount
+
+    // -----------------------------------------
+    // 1) PRICING (USE actual_price)
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
+
+        let qty = parseFloat(qtyInput.value) || 0;
+
+        const actualPriceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_actual_price_"]'
+        );
+
+        const priceTypeInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_pricing_type_"]'
+        );
+
+        const actualPrice = parseFloat(actualPriceInput.value) || 0;
+        const priceType = priceTypeInput.value;
+
+        if (priceType === "FIXED") {
+            subtotal2 += actualPrice;
+        } else {
+            subtotal2 += qty * actualPrice;
+        }
+
+    });
+
+    // -----------------------------------------
+    // 2) EXTRAS
+    // -----------------------------------------
+    row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
+
+        const qty = parseFloat(qtyInput.value) || 0;
+
+        const priceInput = qtyInput.parentElement.querySelector(
+            'input[name^="tour_extra_price_"]'
+        );
+
+        const price = parseFloat(priceInput.value) || 0;
+
+        subtotal2 += qty * price;
+    });
+
+    // -----------------------------------------
+    // 3) APPLY DISCOUNT (from UI)
+    // -----------------------------------------
+    let discount = 0;
+
+    row.querySelectorAll('.discount-row').forEach((rowEl) => {
+        const text = rowEl.querySelector('td.text-right')?.innerText || "0";
+        discount += parseFloat(text.replace(/[^\d.]/g, '')) || 0;
+    });
+
+    subtotal = subtotal2 - discount;
+
+    // -----------------------------------------
+    // 4) UPDATE SUBTOTAL UI
+    // -----------------------------------------
+    const withouttaxBox = row.querySelector('.withouttax-box');
+    if (withouttaxBox) {
+        withouttaxBox.textContent = ORDER_CURRENCY + ' ' + subtotal2.toFixed(2);
+    }
+
+    const subtotalBox = row.querySelector('.subtotal-box');
+    if (subtotalBox) {
+        subtotalBox.textContent = ORDER_CURRENCY + ' ' + subtotal.toFixed(2);
+    }
+
+    // -----------------------------------------
+    // 5) TAXES (apply AFTER discount)
+    // -----------------------------------------
+    let finalTotal = subtotal;
+
+    row.querySelectorAll('.tax-row').forEach((taxRow) => {
+
+        const feeType = taxRow.dataset.type.trim();
+        const feeValue = parseFloat(taxRow.dataset.value);
+
+        let tax = 0;
+
+        if (feeType === "PERCENT") {
+            tax = finalTotal * (feeValue / 100);
+        } else {
+            tax = feeValue;
+        }
+
+        taxRow.querySelector('.tax-amount').textContent = ORDER_CURRENCY + ' ' + tax.toFixed(2);
+
+        finalTotal += tax;
+    });
+
+    return finalTotal;
+
+}
+function calculateRowTotal23423(row, hide) {
 
     let subtotal = 0;
     let withouttax = 0;
-    
     // -----------------------------------------
     // 1) PRICING QTY * PRICE
     // -----------------------------------------
@@ -2968,10 +3158,69 @@ function calculateRowTotal(row, hide) {
         // document.getElementById("addPaymentAmount").value = subtotal.toFixed(2);
         subtotalBox.textContent = subtotal.toFixed(2);
     }
-    if(hide){
-        $('.cummulative-total').hide();
-    }
+    // if(hide){
+    //     $('.cummulative-total').hide();
+    // }
+
+
     
+}
+
+function calculateFinalTotal() {
+
+    let grandTotal = 0;
+
+    document.querySelectorAll("#tour_all > div").forEach((row) => {
+        grandTotal += calculateRowTotal(row);
+    });
+
+    // Update TOTAL
+    const totalRow = document.querySelector(".cummulative-total tr:first-child td.text-right");
+    if (totalRow) {
+        totalRow.textContent = ORDER_CURRENCY + ' ' + grandTotal.toFixed(2);
+    }
+
+    // Paid
+    // let paidText = document.querySelector(".text-success td.text-right")?.innerText || "0";
+    // let paid = parseFloat(paidText.replace(/[^\d.]/g, '')) || 0;
+
+    let paidText = document.querySelector(".total-paid")?.innerText || "0";
+    let paid = parseFloat(paidText) || 0;
+
+    let balance = grandTotal - paid;
+
+    const balanceTd = document.querySelector(".cummulative-total tr:last-child td.text-right");
+    const balanceTotalDueElements = document.querySelectorAll(".total-due");
+    // console.log(balanceTotalDue);
+    if (balanceTd) {
+        balanceTd.innerHTML = "<b> " + ORDER_CURRENCY + ' ' + Math.abs(balance).toFixed(2) + "</b>";
+
+       // balanceTotalDue.innerHTML = "<b> " + ORDER_CURRENCY + ' ' + balance.toFixed(2) + "</b>";
+        const formatted = ORDER_CURRENCY + ' ' + Math.abs(balance).toFixed(2);
+       balanceTotalDueElements.forEach(el => {
+        el.innerHTML = "<b>" + formatted + "</b>";
+
+        el.classList.remove("text-danger", "text-success");
+
+        if (balance > 0) {
+            el.classList.add("text-danger");
+        } else {
+            el.classList.add("text-success");
+        }
+    });
+
+
+        balanceTd.classList.remove("text-danger", "text-success");
+        // balanceTotalDue.classList.remove("text-danger", "text-success");/
+
+        if (balance > 0) {
+            balanceTd.classList.add("text-danger");
+            // balanceTotalDue.classList.add("text-danger");
+        } else {
+            balanceTd.classList.add("text-success");
+            // balanceTotalDue.classList.add("text-success");
+        }
+    }
 }
 
 
@@ -2980,8 +3229,21 @@ function calculateRowTotal(row, hide) {
 // =====================================================
 
 $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']", function () {
-    const row = this.closest("[id^='row_']");
+    // const row = this.closest("[id^='row_']");
+    const row = this.closest("#tour_all > div");
+
     calculateRowTotal(row, true);
+    calculateFinalTotal();
+});
+
+$(document).ready(function () {
+    // Loop through all rows and calculate
+    $("#tour_all > div").each(function () {
+        calculateRowTotal(this, true);
+    });
+
+    // Then calculate final total
+    calculateFinalTotal();
 });
 
 // $(document).ready(function () {
@@ -3174,7 +3436,7 @@ function refreshCalendarAndSession1(tourId, count, order_id) {
         },
 
         success: function (res) {
-            console.log(res);
+            
             const $row = $("#" + count); // ✅ FIXED
             const $dateInput = $row.find(".tour_startdate").first();
 
@@ -3334,8 +3596,7 @@ function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
     const $row = $("#" + count);
 
     const $timeField = $row.find(".tour_starttime, select[name='tour_starttime[]']").first();
-    console.log($row);
-    console.log($timeField);
+    
     if(!tourId || !selectedDate) return;  
 
     $.ajax({
@@ -3347,7 +3608,7 @@ function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
             hideLoader();
 
             
-            let options = '';
+            let options = `<option value="">Select Session</option>`;
             if(resp.data && resp.data.length > 0){
                 $.each(resp.data, function(i, session){
                     options += `<option value="${session}">${session}</option>`;
@@ -3978,6 +4239,67 @@ $(document).on('change', '.tour_startdate', function () {
     $row.find(".tour_startdate_display").val(pretty);
 
     fetchTourSessions(tourId, selectedDate, count);
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+     
+    const phoneEl = document.getElementById("phone");
+    const countryEl = document.getElementById("country_name");
+
+    if (!phoneEl) return;
+
+    let phone = phoneEl.innerText.trim();
+    if (!phone) return;
+
+    try {
+        // Clean number (remove spaces, brackets, etc.)
+        let cleaned = phone.replace(/[^0-9]/g, "");
+
+        // ✅ Create hidden input
+        const tempInput = document.createElement("input");
+        tempInput.style.display = "none";
+        document.body.appendChild(tempInput);
+
+        const iti = window.intlTelInput(tempInput, {
+            initialCountry: "auto",
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js"
+        });
+
+        let countryData = null;
+
+        /* ======================================================
+           TRY 1: ORIGINAL NUMBER
+        ====================================================== */
+        iti.setNumber(phone);
+        countryData = iti.getSelectedCountryData();
+
+        /* ======================================================
+           TRY 2: ADD + IF FAILED
+        ====================================================== */
+        if (!countryData || !countryData.iso2) {
+            const withPlus = "+" + cleaned;
+            iti.setNumber(withPlus);
+            countryData = iti.getSelectedCountryData();
+        }
+
+        /* ======================================================
+           RESULT
+        ====================================================== */
+        if (countryData && countryData.name) {
+            countryEl.innerText = " (" + countryData.name + ")";
+        } else {
+            countryEl.innerText = ""; // fallback empty
+        }
+
+        // Cleanup
+        iti.destroy();
+        document.body.removeChild(tempInput);
+
+    } catch (e) {
+        console.log("Country detection failed", e);
+    }
 });
 </script>
 

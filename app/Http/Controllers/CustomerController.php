@@ -153,7 +153,6 @@ class CustomerController extends Controller
 
     public function update(Request $request, $id)
     {
-
         if ($request->source === 'user') {
             return $this->updateUser($request, $id);
         }

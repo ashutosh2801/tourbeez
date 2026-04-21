@@ -19,23 +19,16 @@
                         <div class="col-md-4 col-6">
                             <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name" value="{{ request('search') }}">
                         </div>
-                        <?php /*
-                        <div class="col-md-2">
-                            <select name="product" class="form-control form-control-sm" >
-                                <option value="">All Tours</option>
-                                @foreach ($products as $product)
-                                    <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>{{ $product->title }}</option>
-                                @endforeach
-                            </select>
-                        </div> 
-                        */ ?>
-                        <div class="col-md-4 col-6">
+                        <!-- <div class="col-md-4 col-6">
                             <select name="product" class="form-control aiz-selectpicker" data-live-search="true">
                                 <option value="">Select Tour</option>
                                 @foreach ($products->sortBy('title') as $product)
                                     <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>{{ $product->title }}</option>
                                 @endforeach
                             </select>
+                        </div> -->
+                        <div class="col-md-4 col-6">
+                            <select id="productFilter" class="form-control"></select>
                         </div>
                         <div class="col-md-2 col-6">
                             <select name="payment_status" class="form-control" >
@@ -53,24 +46,35 @@
                             </select>
                         </div>
 
-                       <div class="col-md-2 col-6"> 
+                        <div class="col-md-2 col-6"> 
                             <input 
                                 type="text" 
                                 name="tour_start_date" 
-                                class="form-control aiz-date-range" data-single="true" 
-                                                                    data-show-dropdown="true"
-                                placeholder="Tour date"
+                                class="form-control aiz-date-range" 
+                                data-advanced-range="true" 
+                                data-separator=" - " 
+                                data-show-dropdown="true"
+                                data-tomorrow="true"
+                                data-yesterday="false"
+                                placeholder="Filter by Tour Date"
+                                autocapitalize="off" autocomplete="off" 
+
                                 value="{{ request('tour_start_date') }}"
                             >
                         </div> 
 
-
-                        <!-- <div class="col-md-2 col-6">
-
-                            <input type="date" name="tour_start_date"  class="form-control "
-        placeholder="Tour date"  value="{{ request('tour_start_date') }}">
-                        </div> -->
-                        <div class="col-md-2 col-6">
+                        <div class="col-md-2 col-6"> 
+                            <input 
+                                type="text" 
+                                name="order_created_date" 
+                                class="form-control aiz-date-range" data-advanced-range="true" data-separator=" - " data-show-dropdown="true"
+                                placeholder="Filter by Order Created"
+                                autocapitalize="off" autocomplete="off" 
+                                value="{{ request('order_created_date') }}"
+                            >
+                        </div> 
+                        
+                        <?php /* <div class="col-md-2 col-6">
                             <select name="date_filter" class="form-control" >
                                 <option value="">Filter by Order Created</option>
                                 <option value="today" {{ request('date_filter') == 'today' ? 'selected' : '' }}>Today</option>
@@ -97,7 +101,8 @@
                                 <option value="last_6_months" {{ request('tour_date_filter') == 'last_6_months' ? 'selected' : '' }}>Last 6 Months</option>
                                 <option value="this_year" {{ request('tour_date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
                             </select>
-                        </div>
+                        </div> */ ?>
+
                         <div class="col-md-2 col-6">
                             <select name="per_page" class="form-control">
                                 @foreach ([10, 25, 50, 100, 500] as $number)
@@ -112,7 +117,7 @@
                             <button type="submit" class="btn btn-search"> <i class="fas fa-search"></i> Search</button>
                         </div>
                         <div class="col-md-2 col-6">
-                            <a href="{{ route('admin.orders.index') }}" class="btn btn-clear border" > <i class="fas fa-times"></i> Clear Search</a>
+                            <a href="{{ route('admin.orders.index') }}" class="btn btn-clear " > <i class="fas fa-times"></i> Clear Search</a>
                         </div>
                     </div>
                 </div>
@@ -145,10 +150,16 @@
                         <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure to delete selected orders?')">
                             <i class="fas fa-trash-alt"></i> Delete Selected
                         </button>
-                            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#importOrderModal">
-                                <i class="fas fa-file-import"></i> Import Order
-                            </button>
                         
+                        
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#importOrderModal">
+                            <i class="fas fa-file-import"></i> Import Order
+                        </button>
+                        <a type="button" class="btn btn-info" href="{{ route('admin.orders.index') }}">
+                            <i class="fas fa-cog"></i> Refresh
+                        </a>
                     </div>
                 </div>
             </div>
@@ -211,7 +222,7 @@
                             </th>
 
                             <th style="width:9%; white-space: nowrap;">
-                                Order <br> Number
+                                #
                             </th>
 
                             <th style="width:9%; white-space: nowrap;">
@@ -367,13 +378,24 @@
                         @endforelse
                     </tbody>
                 </table>
-                <div class="card-footer">
-                    {{ $orders->withQueryString()->links() }}
+                <div class="card-footer d-flex justify-content-between align-items-center">
+
+                    <!-- Pagination -->
+                    <div class="mb-0">
+                        {{ $orders->withQueryString()->links() }}
+                    </div>
+
+                    <!-- Total Orders -->
+                    <div class="d-flex align-items-center " style="font-size: 14px; font-weight: 500;">
+                        <span class="badge badge-primary" style="font-size: 14px; font-weight: 500;">Total Orders: {{ $totalOrders }}</span>
+                        
+                    </div>
+
                 </div>
             </div>
         </form>
     </div>
-    <div id="importOrderModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+<div id="importOrderModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -405,16 +427,57 @@
 </div>
 
     @section('js')
-        <script>
-            document.getElementById('checkAll').addEventListener('click', function () {
-                const checkboxes = document.querySelectorAll('input[name="ids[]"]');
-                checkboxes.forEach(checkbox => checkbox.checked = this.checked);
-            });
-        </script>
-        <script>
-            document.getElementById('downloadSample').addEventListener('click', function () {
-                window.location.href = "{{ route('admin.orders.sample-excel') }}";
-            });
-            </script>
-    @endsection
+
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<!-- jQuery UI (for sortable) -->
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- jQuery UI JS -->
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+<script>
+$(document).ready(function () {
+
+    // ✅ Check all
+    $('#checkAll').on('click', function () {
+        $('input[name="ids[]"]').prop('checked', this.checked);
+    });
+
+    // ✅ Download sample
+    $('#downloadSample').on('click', function () {
+        window.location.href = "{{ route('admin.orders.sample-excel') }}";
+    });
+
+    // ✅ Select2 (optimized)
+    $('#productFilter').select2({
+        placeholder: 'Select Tour',
+        minimumInputLength: 4,
+        ajax: {
+            url: '{{ route("admin.tours.tours-list") }}',
+            dataType: 'json',
+            delay: 0,
+            cache: true,
+            data: function (params) {
+                return { q: params.term };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.map(tour => ({
+                        id: tour.id,
+                        text: tour.title
+                    }))
+                };
+            }
+        }
+    });
+
+});
+</script>
+
+@endsection
 </x-admin>

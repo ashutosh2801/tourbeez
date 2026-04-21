@@ -3,6 +3,67 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
 <style>
+    .filter-box {
+        background: #fff;
+        padding: 18px;
+        border-radius: 10px;
+        border: 1px solid #eaeaea;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 22px;
+        border: 1px solid #eee;
+        text-align: center;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        transition: 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .stat-card h3 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    .stat-title {
+        color: #888;
+        font-size: 13px;
+        margin-top: 5px;
+    }
+
+    .text-green { color: #28a745; }
+    .text-red { color: #dc3545; }
+
+    .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .btn-primary {
+        background: #3b82f6;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: #2563eb;
+    }
+
+    .position-relative .clear-btn {
+        position: absolute;
+        right: 10px;
+        top: 38px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #999;
+    }
     /* TABLE FIX */
     .table {
         font-size: 12px; /* smaller text */
@@ -37,23 +98,25 @@
     }
 </style>
 
-    <div class="card-primary mb-3">
-        <div class="card-header reports-head">
-            <h3 class="card-title">Revenue</h3>
-        </div>
-    </div>
 
-    <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
+
+
+<div class="container-fluid mt-3">
+
+    <div class="panel panel-default">
+        
+
+          <div class="filter-box">
         <form method="GET">
 
             <div class="row">
 
                 {{-- BOOKING DATE --}}
-                <div class="col-xl-2 col-md-2 col-12 position-relative">
+                <div class="col-md-3 position-relative">
                     <label class="filter-label">Booking Date</label>
 
                     <input type="text" id="booking_range" class="form-control"
-                        placeholder="Select date range" autocomplete="off">
+                        placeholder="Select date range">
 
                     @if(request('start_date'))
                         <span class="clear-btn" onclick="clearBooking()">✕</span>
@@ -64,11 +127,11 @@
                 </div>
 
                 {{-- TOUR DATE --}}
-                <div class="col-xl-2 col-md-2 col-12 position-relative">
+                <div class="col-md-3 position-relative">
                     <label class="filter-label">Fulfilment Date</label>
 
                     <input type="text" id="tour_range" class="form-control"
-                        placeholder="Select date range" autocomplete="off">
+                        placeholder="Select date range">
 
                     @if(request('tour_start_date'))
                         <span class="clear-btn" onclick="clearTour()">✕</span>
@@ -79,7 +142,7 @@
                 </div>
 
                 {{-- ORDER STATUS --}}
-                <div class="col-xl-2 col-md-3 col-12">
+                <div class="col-md-2">
                     <label class="filter-label">Order Status</label>
                     <select name="order_status" class="form-control">
                         <option value="">All</option>
@@ -102,7 +165,7 @@
                 </div>
 
                 {{-- PAY TYPE --}}
-                <div class="col-xl-2 col-md-2 col-12">
+                <div class="col-md-2">
                     <label class="filter-label">Pay Type</label>
                     <select name="action_type" class="form-control">
                         <option value="">All</option>
@@ -110,6 +173,7 @@
                         <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
                     </select>
                 </div>
+
                 <div class="col-md-2">
                     <label class="filter-label">Source</label>
                     <select name="partner" class="form-control">
@@ -128,92 +192,94 @@
                 </div>
 
                 {{-- BUTTONS --}}
-                <div class="col-xl-2 col-md-2 col-12">
-                    <div class="d-flex column-gap-10">
-                        <button class="btn btn-apply flex-fill">Apply</button>
-                        <a href="{{ route('admin.report.revenue') }}" class="btn btn-secondary flex-fill">Reset</a>
-                    </div>
+                <div class="col-md-2 d-flex align-items-end mt-2">
+                    <button class="btn-sm btn-search ">Apply</button>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end mt-2">
+                    <a href="{{ route('admin.report.revenue') }}" class="btn-sm btn-clear border">Reset</a>
                 </div>
 
             </div>
         </form>
     </div>
 
-    <div class="card card-primary bg-white border rounded-lg-custom report-table">
-        <div class="card-header report-table-head">
-            <div class="row">
-                <div class="col-md-8 col-12">
-                    <h3 class="card-title">Detailed Revenue Report</h3>
-                </div>
-                <div class="col-md-4 col-12">
-                    <div class="card-tools">
-                        <a href="{{ route('admin.report.revenue.export', request()->all()) }}" class="btn-sm btn-success">
-                            Download Excel
-                        </a>
-                    </div>
-                </div>
+        <div class="panel-body">
+
+            {{-- SCROLLABLE WRAPPER --}}
+            <div class="table-wrapper">
+
+            <div class="row mb-2">
+                <div class="col-md-2 panel-heading">
+                <strong>Detailed Revenue Report</strong>
             </div>
-        </div>
-        <div class="table-wrapper">
-            <table class="table table-bordered" style="min-width: 2200px; margin: 15px 20px;">
+                <div class="d-flex align-items-end mt-2 mt-md-0">
+                    <a href="{{ route('admin.report.revenue.export', request()->all()) }}" 
+                       class="btn-sm btn-success">
+                        Download Excel
+                    </a>
+                </div>
+                </div>
 
-                <thead>
-                    <tr>
-                        <th>Order #</th>
-                        <th>Order Status</th>
-                        <th>Order Source</th>
-                        <th>Agent/Supplier</th>
-                        <th>Booking Date</th>
-                        <th>Fulfilment Date</th>
-                        <th>Customer</th>
+                <table class="table table-bordered" style="min-width: 2200px;">
 
-                        <th>Order Amount</th>
-                        <th>Payment Received</th>
-                        <th>Balance</th>
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Order Status</th>
+                            <th>Order Source</th>
+                            <th>Agent/Supplier</th>
+                            <th>Booking Date</th>
+                            <th>Fulfilment Date</th>
+                            <th>Customer</th>
 
-                        <th>Booking Fees</th>
-                        <th>Custom Fees</th>
-                        <th>Surge</th>
-                        <th>CC Surcharge</th>
-                        <th>Platform Fees</th>
-                        <th>Commission</th>
-                        <th>Tax</th>
-                        <th>Net Sales</th>
+                            <th>Order Amount</th>
+                            <th>Payment Received</th>
+                            <th>Balance</th>
 
-                        <th>Pax</th>
-                        <th>Product Value</th>
-                        <th>Adjustment</th>
-                        <th>Extra Value</th>
+                            <th>Booking Fees</th>
+                            <th>Custom Fees</th>
+                            <th>Surge</th>
+                            <th>CC Surcharge</th>
+                            <th>Platform Fees</th>
+                            <th>Commission</th>
+                            <th>Tax</th>
+                            <th>Net Sales</th>
 
-                        <th>Promo/Voucher</th>
+                            <th>Pax</th>
+                            <th>Product Value</th>
+                            <th>Discount</th>
+                            <th>Extra Value</th>
 
-                        <th>Credit Card Payment</th>
-                        <th>Cash Payment</th>
-                        <th>Promo/Voucher Value</th>
+                            <th>Promo/Voucher</th>
 
-                        <th>Free of Charge</th>
-                        <th>Other Refund</th>
+                            <th>Credit Card Payment</th>
+                            <th>Cash Payment</th>
+                            <th>Promo/Voucher Value</th>
 
-                        <th>Payment Status</th>
-                        <th>All Paid</th>
-                        <th>Payment Type</th>
-                        <th>Gateway</th>
-                        <th>Gateway Type</th>
+                            <th>Free of Charge</th>
+                            <th>Other Refund</th>
 
-                        <th>Internal Notes</th>
-                        <th>How Heard</th>
+                            <th>Payment Status</th>
+                            <th>All Paid</th>
+                            <th>Payment Type</th>
+                            <th>Gateway</th>
+                            <th>Gateway Type</th>
 
-                        <th>Product</th>
-                        <th>Category</th>
-                        <th>Agent Ref</th>
-                    </tr>
-                </thead>
+                            <th>Internal Notes</th>
+                            <th>How Heard</th>
 
-                <tbody>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Agent Ref</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
                         @forelse($orders as $order)
                         <tr>
 
-                            <td><a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink">{{ $order->order_number }}</a></td>
+                            <td>#{{ $order->order_number }}</td>
                             <td>{{ config('constants.status_with_code')[$order->order_status] ?? '-' }}</td>
                             <td>{{ $order->source ?? '-' }}</td>
                             <td>{{ $order->agent_name ?? 'NA' }}</td>
@@ -224,9 +290,9 @@
                             <td>{{ trim(($order->customer_first_name ?? '') . ' ' . ($order->customer_last_name ?? '')) ?: '-' }}</td>
 
                             {{-- ✅ MONEY (FROM FIXED BACKEND LOGIC) --}}
-                            <td>{{ number_format($order->total_amount_converted, 2) }}</td>
-                            <td>{{ number_format($order->paid_amount_converted, 2) }}</td>
-                            <td>{{ $order->balance_converted > 0 ?number_format($order->balance_converted, 2) : 0 }}</td>
+                            <td>{{ number_format($order->total_amount, 2) }}</td>
+                            <td>{{ number_format($order->paid_amount, 2) }}</td>
+                            <td>{{ number_format($order->balance, 2) }}</td>
 
                             {{-- Fees (keep 0 if not calculated yet) --}}
                             <td>{{ number_format($order->booking_fee ?? 0, 2) }}</td>
@@ -237,19 +303,19 @@
 
                             {{-- Commission & Tax (if added later) --}}
                             <td>{{ number_format($order->commission ?? 0, 2) }}</td>
-                            <td>{{ number_format($order->tax_converted ?? 0, 2) }}</td>
+                            <td>{{ number_format($order->tax ?? 0, 2) }}</td>
 
                             {{-- Net Sales --}}
-                            <td>{{ number_format($order->net_sales_converted ?? $order->total_amount_converted, 2) }}</td>
+                            <td>{{ number_format($order->net_sales ?? $order->total_amount, 2) }}</td>
 
                             {{-- Pax --}}
                             <td>{{ $order->pax ?? 0 }}</td>
 
                             {{-- Product Value --}}
-                            <td>{{ number_format($order->product_value_converted, 2) }}</td>
+                            <td>{{ number_format($order->product_value, 2) }}</td>
 
-                            <td>{{ number_format($order->discount_value_converted, 2) }}</td> {{-- Adjustment --}}
-                            <td>{{ number_format($order->extra_value_converted, 2) }}</td> {{-- Extra Value --}}
+                            <td>{{ number_format($order->discount_value, 2) }}</td> {{-- Adjustment --}}
+                            <td>{{ number_format($order->extra_value, 2) }}</td> {{-- Extra Value --}}
 
                             {{-- Promo --}}
                             <td>{{ number_format($order->promo_amount ?? 0, 2) }}</td>
@@ -290,47 +356,54 @@
                         @endforelse
                         </tbody>
 
-            </table>
-            <div class="text-center">
-                {{ $orders->links() }}
-            </div>
-        </div>
-    </div>
+                </table>
+                <div class="mt-3 text-center">
+                    {{ $orders->links() }}
+                </div>
 
-    <div class="card card-primary bg-white border rounded-lg-custom mt-4 report-table">
-        <div class="card-header report-table-head">
-            <div class="row">
-                <div class="col-md-8 col-12">
-                    <h3 class="card-title">Customer Report</h3>
-                </div>
-                <div class="col-md-4 col-12">
-                    <div class="card-tools">
-                        <a href="{{ route('admin.report.customer.export', request()->query()) }}" class="btn-sm btn-success">Export Customers</a>
-                    </div>
-                </div>
             </div>
+
         </div>
+
+        <div class="panel panel-default mt-4">
+
+        
+
+        <div class="row mb-2">
+                <div class="col-md-2 panel-heading">
+                <strong>Customer Report</strong>
+            </div>
+                <div class="d-flex align-items-end mt-2 mt-md-0">
+                    <a href="{{ route('admin.report.customer.export', request()->query()) }}"
+               class="btn-sm btn-success">
+               Export Customers
+            </a>
+                </div>
+                </div>
+
+    <div class="panel-body">
+
         <div class="table-wrapper">
-            <table class="table table-bordered" style="min-width: 2000px; margin: 15px 20px;">
+
+            <table class="table table-bordered" style="min-width: 2000px;">
 
                 <thead>
                     <tr>
                         <th>Order #</th>
                         <th>Booking Date</th>
                         <th>Fulfilment Date</th>
-                        <!-- <th>How Heard</th> -->
+                        <th>How Heard</th>
 
                         <th>First Name</th>
-                        <!-- <th>Middle Name</th> -->
+                        <th>Middle Name</th>
                         <th>Last Name</th>
 
-                        
+                        <th>Gender</th>
+                        <th>DOB</th>
 
                         <th>Email</th>
                         <th>Phone</th>
-                        <th>Gender</th>
-                        <th>DOB</th>
-                        <!-- <th>Mobile</th>
+                        <th>Mobile</th>
 
                         <th>Fax</th>
                         <th>Skype</th>
@@ -344,7 +417,7 @@
                         <th>Language</th>
                         <th>Company</th>
 
-                        <th>Marketing Consent</th> -->
+                        <th>Marketing Consent</th>
                         <th>Special Requirement</th>
                     </tr>
                 </thead>
@@ -352,26 +425,22 @@
                 <tbody>
                     @forelse($customers as $c)
                     <tr>
-                        <td>{{ $c->order_number }}</td>
-
+                        <td>#{{ $c->order_number }}</td>
                         <td>{{ $c->booking_date }}</td>
                         <td>{{ $c->fulfilment_date }}</td>
 
-                        <!-- <td>-</td> -->
+                        <td>-</td>
 
-                        <td><a href="{{ route('admin.customers.show', encrypt($c->id) ) }}" class="alink" target="_blank"> {{ $c->first_name ?? '-' }}</a></td>
-
-                        <!-- <td>{{ $c->first_name ?? '-' }}</td> -->
-                        <!-- <td>-</td> -->
+                        <td>{{ $c->first_name ?? '-' }}</td>
+                        <td>-</td>
                         <td>{{ $c->last_name ?? '-' }}</td>
 
-                        
+                        <td>-</td>
+                        <td>-</td>
 
                         <td>{{ $c->email ?? '-' }}</td>
                         <td>{{ $c->phone ?? '-' }}</td>
                         <td>-</td>
-                        <td>-</td>
-                       <!--  <td>-</td>
 
                         <td>-</td>
                         <td>-</td>
@@ -385,7 +454,7 @@
                         <td>-</td>
                         <td>-</td>
 
-                        <td>-</td> -->
+                        <td>-</td>
                         <td>{{ $c->instructions ?? '-' }}</td>
                     </tr>
                     @empty
@@ -396,11 +465,19 @@
                 </tbody>
 
             </table>
-            <div class="text-center">
+
+            {{-- PAGINATION --}}
+            <div class="mt-3 text-center">
                 {{ $customers->links() }}
             </div>
+
         </div>
+
     </div>
+</div>
+    </div>
+
+</div>
 
 @section('js') 
 @parent()
