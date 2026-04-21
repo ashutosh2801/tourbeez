@@ -363,7 +363,7 @@ class OrderController extends Controller
             "tourImage"     => $image,
             "selectedDate"  => $order->order_tour->tour_date,
             "selectedTime"  => $order->order_tour->tour_time,
-            "tourPrice"     => $order->total_amount,
+            "tourPrice"     => currencyConvert( $order->total_amount, $order->currency, 'CAD'),
             "sessionId"     => $order->session_id ?? strtotime('now'),
             "userId"        => $order->user_id ?? 0,
             "minQty"        => $order->tour->detail->quantity_min,
@@ -373,8 +373,8 @@ class OrderController extends Controller
             "customer"      => $customer,
             "cartItems"     => $cartItems,
             "cartAdons"     => $cartAdons,
-            "deposite_rule"  => $order->tour->specialDeposit,
-
+            "deposite_rule" => $order->tour->specialDeposit,
+            "action_name"   => $order->action_name,
         ];
 
         return response()->json([
@@ -428,6 +428,7 @@ class OrderController extends Controller
             'order_number'  => unique_order(),
             'currency'      => $request->currency,
             'total_amount'  => $request->tourPrice,
+            'action_name'   => $request->btnAction,
             'order_status'  => 1,
             'created_at'    => date('Y-m-d H:i:s'),
             'updated_at'    => date('Y-m-d H:i:s'),
@@ -574,7 +575,7 @@ class OrderController extends Controller
             'formData.last_name'  => 'required|string|max:255',
             'formData.email'      => 'required|email|max:255',
             'formData.phone'      => 'required|string|max:20',
-            'formData.instructions' => 'nullable|string|max:255',
+            'formData.instructions' => 'nullable|string|max:500',
             'formData.pickup_id' => 'nullable|numeric',
             'formData.pickup_name' => 'nullable|string|max:255',
             'formData.adv_deposite' => 'nullable|string|max:255',
@@ -959,7 +960,7 @@ class OrderController extends Controller
                         if (!empty($retrievedIntent->payment_method)) {
                             $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
                             // return $paymentMethod;
-                            if ($paymentMethod->type === 'card') {
+                            if (isset($paymentMethod->card) && $paymentMethod->type === 'card') {
                                 $cardDetails = [
                                     'brand'     => $paymentMethod->card->brand ?? null,
                                     'last4'     => $paymentMethod->card->last4 ?? null,
@@ -1791,7 +1792,6 @@ class OrderController extends Controller
             'discount'     => $discount
         ];
     }
- 
 
     public function fetchDeletedSlot($id)
     {
@@ -1800,16 +1800,16 @@ class OrderController extends Controller
     }
 
     /**
- * Normalize time string to 24h "HH:MM" for comparison
- */
-function normalizeTime(string $time): string
-{
-    return date("H:i", strtotime($time));
-}
+     * Normalize time string to 24h "HH:MM" for comparison
+     */
+    function normalizeTime(string $time): string
+    {
+        return date("H:i", strtotime($time));
+    }
 
-/**
- * Sort slots chronologically (keeps AM/PM format)
- */
+    /**
+     * Sort slots chronologically (keeps AM/PM format)
+     */
     function sortSlots(array $slots): array
     {
         usort($slots, function ($a, $b) {
@@ -1899,7 +1899,6 @@ function normalizeTime(string $time): string
         return $response;
     }
 
-
     /**
      * Generate slots
      */
@@ -1920,8 +1919,6 @@ function normalizeTime(string $time): string
 
         return $slots;
     }
-
-
  
     private function getSlotsForDate($schedule, $date, $durationMinutes = 30, $minimumNoticePeriod = 0)
     {
@@ -1962,7 +1959,6 @@ function normalizeTime(string $time): string
 
         return $slots;
     }
-
 
     private function getNextAvailableSlots($schedule, Carbon $carbonDate, $limit = 1, $durationMinutes = 30, $minimumNoticePeriod = 0, $storeDeleteSlot)
     {
@@ -2180,10 +2176,5 @@ function normalizeTime(string $time): string
 
         return $nextDates;
     }
-
-
-
-
-
     
 }

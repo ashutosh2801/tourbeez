@@ -1011,6 +1011,19 @@ class OrderController extends Controller
         $tours = Tour::orderBy('title', 'ASC')->get();
         // $email_templates = EmailTemplate::get();
 
+
+        $actions = $order->actions()
+            ->orderByDesc('created_at')
+            ->paginate(7, ['*'], 'actions_page');
+
+        $emailHistories = $order->emailHistories()
+            ->orderByDesc('created_at')
+            ->paginate(7, ['*'], 'emails_page');
+
+        $paymentLogs = $order->paymentLogs()
+            ->orderByDesc('created_at')
+            ->paginate(7, ['*'], 'payments_page');
+
         $email_templates = EmailTemplate::whereIn('identifier', [
             'order_detail',
             'order_cancelled',
@@ -1026,7 +1039,7 @@ class OrderController extends Controller
         $sms_templates = SmsTemplate::get();
         $customers = User::where('user_type', 'member')->get();
         $pickupLocations = PickupLocation::get();
-        return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates', 'pickupLocations']));
+        return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates', 'pickupLocations', 'actions', 'emailHistories','paymentLogs']));
     }
 
     /**

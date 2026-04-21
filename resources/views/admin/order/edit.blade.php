@@ -713,6 +713,9 @@ $expectEmails = ['order_pending'];
                                             <td class="cummulative-total"><b>Total</b></td>
                                             <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
                                         </tr>
+
+
+                                        <tr><td class="total-paid hidden">{{$paid}}</td></tr>
                                         @if($outsidePayment > 0)
                                         <tr class="text-success">
                                             <td class="cummulative-total"><b>Promo</b></td>
@@ -1233,8 +1236,8 @@ $expectEmails = ['order_pending'];
                                 <i class="fa fa-angle-right"></i> Recent Actions
                             </button>
                         </div>
-                        <div>
-                            <div id="collapseRecentActions" class="collapse show" aria-labelledby="headingRecentActions" data-parent="#accordionExample">
+                        <!-- <div> -->
+                            <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions" data-parent="#accordionExample">
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1244,8 +1247,8 @@ $expectEmails = ['order_pending'];
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @if(!empty($order->actions) && is_iterable($order->actions))
-                                                @foreach($order->actions->sortByDesc('created_at') as $action)
+                                            @if(!empty($actions) && is_iterable($actions))
+                                                @foreach($actions as $action)
                                                     <tr>
                                                         <td>{{ $action->created_at }}</td>
                                                         <td>{!! $action->notes !!}</td>
@@ -1258,9 +1261,11 @@ $expectEmails = ['order_pending'];
                                             @endif
                                         </tbody>
                                     </table>
+
+                                    {{ $actions->links() }}
                                 </div>
                             </div>
-                        </div>
+                        <!-- </div> -->
                     </div>
 
                     <div class="card">
@@ -1279,8 +1284,8 @@ $expectEmails = ['order_pending'];
 
 
 
-                        <div>
-                            <div id="collapseEmailHistory" class="collapse show" aria-labelledby="headingEmailHistory" data-parent="#accordionExample">
+                        <!-- <div> -->
+                            <div id="collapseEmailHistory" class="collapse" aria-labelledby="headingEmailHistory" data-parent="#accordionExample">
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1294,8 +1299,8 @@ $expectEmails = ['order_pending'];
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @if(!empty($order->emailHistories) && is_iterable($order->emailHistories))
-                                                @foreach($order->emailHistories->sortByDesc('created_at') as $email)
+                                            @if(!empty($emailHistories) && is_iterable($emailHistories))
+                                                @foreach($emailHistories as $email)
                                                     <tr>
                                                         <td>{{ $email->created_at }}</td>
                                                         <td>{{ $email->to_email }}</td>
@@ -1325,9 +1330,68 @@ $expectEmails = ['order_pending'];
                                             @endif
                                         </tbody>
                                     </table>
+                                    {{ $emailHistories->links() }}
                                 </div>
                             </div>
+                        <!-- </div> -->
+                    </div>
+
+                    <div class="card">
+                        
+
+                        <div class="card-header bg-secondary py-0" id="headingPaymentLog">
+                            <button type="button" class="btn btn-link collapsed py-0 px-0" 
+                                data-toggle="collapse" data-target="#collapsePaymentLog">
+                                <i class="fa fa-angle-right"></i> Payment Logs
+                            </button>
                         </div>
+                        <!-- <div> -->
+                            <div id="collapsePaymentLog" class="collapse" aria-labelledby="headingPaymentLog" data-parent="#accordionExample">
+                                <div class="card-body">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width:20%; white-space: nowrap;">Date</th>
+                                                <!-- <th>Event ID</th> -->
+                                                <th>Event</th>
+                                                <th>Message</th>
+                                                
+                                                <th>Status</th>
+                                                <!-- <th>Payload</th> -->
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+
+                                            @if(!empty($paymentLogs) && is_iterable($paymentLogs))
+                                                @foreach($paymentLogs as $paymentLog)
+                                                    <tr>
+                                                        <td>{{ $paymentLog->created_at }}</td>
+                                                        <!-- <td>{{ $paymentLog->event_id }}</td> -->
+
+                                                       @php
+                                                        $raw = $paymentLog->event_type;
+
+                                                        $readable = str_replace('_', ' ', explode('.', $raw)[1]);
+                                                        $readable = ucwords($readable);
+
+                                                        @endphp
+                                                        <td>{{ $readable }}</td>
+                                                        <td>{{ $paymentLog->message }}</td>
+                                                        <td>{{ ucwords($paymentLog->status) }}</td>
+                                                        
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5">No Payment history found</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                    {{ $paymentLogs->links() }}
+                                </div>
+                            </div>
+                        <!-- </div> -->
                     </div>
 
                     <div class="card-footer" style="display:block">
@@ -2210,7 +2274,10 @@ document.addEventListener("click", function(e) {
         
         // Toggle right and down arrow icon on show hide of collapse element
         $(".collapse").on('show.bs.collapse', function(){
+            console.log($(this).prev(".card-header").find(".fa"));
             $(this).prev(".card-header").find(".fa").removeClass("fa-angle-right").addClass("fa-angle-down");
+
+
         }).on('hide.bs.collapse', function(){
             $(this).prev(".card-header").find(".fa").removeClass("fa-angle-down").addClass("fa-angle-right");
         });
@@ -3114,8 +3181,11 @@ function calculateFinalTotal() {
     }
 
     // Paid
-    let paidText = document.querySelector(".text-success td.text-right")?.innerText || "0";
-    let paid = parseFloat(paidText.replace(/[^\d.]/g, '')) || 0;
+    // let paidText = document.querySelector(".text-success td.text-right")?.innerText || "0";
+    // let paid = parseFloat(paidText.replace(/[^\d.]/g, '')) || 0;
+
+    let paidText = document.querySelector(".total-paid")?.innerText || "0";
+    let paid = parseFloat(paidText) || 0;
 
     let balance = grandTotal - paid;
 
