@@ -29,15 +29,16 @@ class SendTourCompletedNotification extends Command
 
         // ✅ No data found
         if ($orders->count() === 0) {
+            echo 'No orders found for processing.';
             return;
-        }       
+        }
 
         // ✅ Email template
         $emailTemplate = EmailTemplate::where('identifier', 'trip_completed')->first();
-        
-        $subject = $emailTemplate->subject;
-        $body = $emailTemplate->body;
+        $emailSubject = $emailTemplate->subject;
+        $emailBody = $emailTemplate->body;
 
+        $i=0;
         foreach($orders as $order) {
 
             $pickup_address = '';
@@ -48,17 +49,17 @@ class SendTourCompletedNotification extends Command
                 $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
 
-            // ✅ Replace placeholders
+            // Replace placeholders
             $placeholders = [
                 "[[CUSTOMER_NAME]]"         => $order->customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $order->customer->email ?? '',
                 "[[CUSTOMER_PHONE]]"        => $order->customer->phone ?? '',
 
-                "[[TOUR_TITLE]]"            => $order->order_tour->title ?? '',
-                "[[TOUR_SKU]]"              => $order->order_tour->unique_code ?? '',
+                "[[TOUR_TITLE]]"            => $order->tour->title ?? '',
+                "[[TOUR_SKU]]"              => $order->tour->unique_code ?? '',
                 "[[TOUR_MAP]]"              => $pickup_address ?? '',
-                "[[TOUR_ADDRESS]]"          => $order->order_tour->location->address ?? '',
-                "[[TOUR_TERMS_CONDITIONS]]" => $order->order_tour->terms_and_conditions ?? '',
+                "[[TOUR_ADDRESS]]"          => $order->tour->location->address ?? '',
+                "[[TOUR_TERMS_CONDITIONS]]" => $order->tour->terms_and_conditions ?? '',
                 "[[PICKUP_ADDRESS]]"        => $pickup_address ?? '',
 
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
@@ -77,23 +78,33 @@ class SendTourCompletedNotification extends Command
                 "[[YEAR]]"                  => date('Y'),
 
             ];
-            $subject = strtr($subject, $placeholders);
-            $body = strtr($body, $placeholders);
+            $subject = strtr($emailSubject, $placeholders);
+            $body = strtr($emailBody, $placeholders);
 
-            // ✅ Recipients
+            // Recipients
             $recipients = [
-                env('MAIL_FROM_ADMIN_ADDRESS'),
-                env('MAIL_FROM_ADDRESS'),
+                'email' => $order->customer->email,
+                'name'  => $order->customer->name
             ];
 
-            // ✅ Send email
-            $sentMessage = Mail::to($recipients)
-                            ->bcc(['tourbeez.com+9768a17f10@invite.trustpilot.com'])
-                            ->send(
-                                new CommonMail($subject, $body, null, null, null, true)
-                            );
+            // echo '<pre>'; 
+            // print_r([
+            //     'subject' => $subject,
+            //     'body' => $body,
+            //     'recipients' => $recipients
+            // ]); 
+            // echo '</pre>';
+            
+            // Explicitly use Mailgun mailer
+            $mailer = Mail::mailer('mailgun');
+
+            // Send email and capture message inf
+            $sentMessage = $mailer->to([$recipients]);
+            $sentMessage->bcc(['tourbeez.com+9768a17f10@invite.trustpilot.com']);            
+            $sentMessage = $sentMessage->send(new CommonMail($subject, $body, null, null, null, true));
 
 
+            // die('Email sent');
             $messageId = null;
             if ($sentMessage instanceof \Illuminate\Mail\SentMessage) {
                 $symfonySent = $sentMessage->getSymfonySentMessage();
@@ -113,6 +124,8 @@ class SendTourCompletedNotification extends Command
                 'status'     => $messageId ? 'sent' : 'failed',
                 'message_id' => $messageId, // ✅ store for webhook tracking
             ]);
+
+            if($i++%3==0) sleep(1); // Wait for 1 seconds to ensure email is sent before script ends
         }
 
         command::info('Tour completed notifications sent successfully.');

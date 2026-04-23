@@ -9,7 +9,8 @@ return [
         'Pending customer' => 'Pending customer',
         'Confirmed' => 'Confirmed',
         'Cancelled' => 'Cancelled',
-        'Abandoned cart' => 'Abandoned cart',
+        'Requires capture' => 'Requires capture',
+        'Trip completed' => 'Trip completed',
     ],
 
     'status_with_code' => [
@@ -19,7 +20,8 @@ return [
             4 => 'Pending customer',
             5 => 'Confirmed',
             6 => 'Cancelled',
-            7 => 'Abandoned cart',
+            7 => "Requires capture",
+            8 => "Trip completed",
     ],
     'currencies' => [
         'USD' => 'United States – USD',

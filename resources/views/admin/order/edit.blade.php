@@ -401,7 +401,13 @@ $expectEmails = ['order_pending'];
                                 <ul class="flex flex-row">
                                     <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"><i class="fas fa-user-tie"></i>  {{ $order->customer?->name }}</a></li>
                                     <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
-                                    <li><i class="fas fa-phone-square-alt"></i> {{ $order->customer?->phone }}</li>
+                                    <li>
+                                        <i class="fas fa-phone-square-alt"></i>
+                                        <span id="phone">{{ $order->customer?->phone }}</span>
+                                        <span id="country_name"></span>
+                                    </li>
+
+
                                 </ul>                                
                             </div>
                         </div>
@@ -754,7 +760,7 @@ $expectEmails = ['order_pending'];
                             <div class="card-body">
                                 <div class="d-flex justify-content-end">
                                         <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editPickupModal">
-                                            Edit Pickup
+                                            Edit Info
                                         </button>
                                     </div>
                                  <div style="border:1px solid #eaecef;">
@@ -788,6 +794,14 @@ $expectEmails = ['order_pending'];
                                             
 
                                         </tr>
+
+                                        <tr>
+                                            <td><b>Internal Notes</b></td>
+                                            <td class="text-right">{{ $order->internal_notes }}</td> 
+                                            
+
+                                        </tr>
+
                                         
                                     </table>
                                 </div>
@@ -1676,7 +1690,7 @@ $expectEmails = ['order_pending'];
                 <input type="hidden" name="customer_id" value="{{ $order->customer->id }}">
 
                 <div class="modal-header">
-                    <h5 class="modal-title">Edit Pickup Details</h5>
+                    <h5 class="modal-title">Edit Details</h5>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
 
@@ -1724,6 +1738,10 @@ $expectEmails = ['order_pending'];
                         <div class="col-lg-12 mb-2">
                             <label>Instructions</label>
                             <textarea name="oc_instructions" class="form-control">{{ $order->customer->instructions }}</textarea>
+                        </div>
+                        <div class="col-lg-12 mb-2">
+                            <label>Innternal Notes</label>
+                            <textarea name="internal_notes" class="form-control">{{ $order->internal_notes }}</textarea>
                         </div>
 
                     </div>
@@ -1784,6 +1802,7 @@ $expectEmails = ['order_pending'];
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js"></script>
 
 <script>
 function calculateTotal() {
@@ -3979,6 +3998,50 @@ $(document).on('change', '.tour_startdate', function () {
 
     fetchTourSessions(tourId, selectedDate, count);
 });
+</script>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+     console.log("kfvsdhvfhdsv");
+    const phoneEl = document.getElementById("phone");
+    const countryEl = document.getElementById("country_name");
+
+    if (!phoneEl) return;
+
+    const phone = phoneEl.innerText.trim();
+    if (!phone) return;
+
+    try {
+        // ✅ Create hidden input and attach to DOM
+        const tempInput = document.createElement("input");
+        tempInput.style.display = "none";
+        document.body.appendChild(tempInput);
+
+        const iti = window.intlTelInput(tempInput, {
+            initialCountry: "auto",
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js"
+        });
+
+        // Parse number
+        iti.setNumber(phone);
+
+        const countryData = iti.getSelectedCountryData();
+
+        if (countryData && countryData.name) {
+            countryEl.innerText = " (" + countryData.name + ")";
+        }
+
+        // ✅ Cleanup
+        iti.destroy();
+        document.body.removeChild(tempInput);
+
+    } catch (e) {
+        console.log("Country detection failed", e);
+    }
+
+});
+
 </script>
 
 

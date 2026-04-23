@@ -65,7 +65,8 @@ class Order extends Model
         'internal_notes',
         'redzy_order_id',
         'is_discount',
-        'source'
+        'source',
+        'failure_message'
     ];
 
     public function tour_detail($id, $label='all') {
@@ -132,7 +133,6 @@ class Order extends Model
 
     public function setOrderStatusAttribute($value)
     {
-        
         $map = [
             'Abandoned' => 1,
             'On Hold' => 2,
@@ -148,7 +148,6 @@ class Order extends Model
 
     public function getStatusAttribute()
     {
-        
         return match ($this->order_status) {
             1 => 'Abandoned',
             2 => 'On Hold',

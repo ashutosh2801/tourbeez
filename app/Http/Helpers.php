@@ -726,7 +726,7 @@ if (! function_exists('order_status')) {
                 return '<span class="badge badge-inline badge-pendingCustomer text-yellow-800 bg-red-100 px-2 py-2  rounded-full">Pending customer</span>';
                 break;
             case 5:
-                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-2 py-2  rounded-full">Confirmed</span>';
+                return '<span class="badge badge-inline badge-confirmed text-green-600 bg-green-100 px-2 py-2  rounded-full">Confirmed</span>';
                 break;
             case 6:
                 return '<span class="badge badge-inline badge-cancelled text-red-800 bg-red-100 px-2 py-2  rounded-full">Cancelled</span>';   
@@ -734,8 +734,11 @@ if (! function_exists('order_status')) {
             case 7:
                 return '<span class="badge badge-inline badge-abandoned text-blue-800 bg-blue-100 px-2 py-2  rounded-full">Requires capture</span>';   
                 break; 
+            case 8:
+                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-2 py-2  rounded-full">Trip completed</span>';
+                break;    
             default:
-                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-2 py-2  rounded-full">Not completed</span>';   
+                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-2 py-2  rounded-full">Abandoned</span>';   
                 break;   
         }
     }
@@ -752,6 +755,7 @@ if (! function_exists('order_status_list')) {
             5 => "Confirmed",
             6 => "Cancelled",
             7 => "Requires capture",
+            8 => "Trip completed",
         ];
     }
 }

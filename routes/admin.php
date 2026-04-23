@@ -20,7 +20,6 @@ use App\Http\Controllers\FeatureController;
 use App\Http\Controllers\InclusionController;
 use App\Http\Controllers\ItineraryController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\OptionalController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PartnerController;
 use App\Http\Controllers\PermissionController;
@@ -77,15 +76,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::get('/customers/{id}/{source}/edit',[CustomerController::class, 'editFromSource'])->name('customers.edit.source');
     Route::put(
-                '/customers-source/{id}/{source}',
-                [CustomerController::class, 'updateSource']
-            )->name('customers.source.update');
+    '/customers-source/{id}/{source}',
+    [CustomerController::class, 'updateSource']
+)->name('customers.source.update');
     
     Route::resource('/role',RoleController::class);
     Route::resource('/permission',PermissionController::class);
     Route::resource('/category',CategoryController::class);
 
-    Route::post('/category/{id}/clone', [CategoryController::class, 'clone'])->name('category.clone');
+    Route::post('/category/{id}/clone', [CategoryController::class, 'clone'])
+    ->name('category.clone');
     
     Route::resource('/tour_type',TourTypeController::class);
     Route::resource('/collection',CollectionController::class);
@@ -220,6 +220,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/tours/{id}/sub-tour-store', [TourController::class, 'subTourStore'])->name('tour.sub-tour-store');
     Route::get('/tours/{id}/sub-edit', [TourController::class, 'editSubTour'])->name('tour.sub-tour.edit');
     Route::get('/tours/{id}/sub-index', [TourController::class, 'subTourIndex'])->name('tour.sub-tour.index');
+    Route::get('/tours/tours-list', [TourController::class, 'toursList'])->name('tours.tours-list');
 
     Route::resource('itineraries',ItineraryController::class);
     Route::post('/itinerary/single', [ItineraryController::class, 'single'])->name('itinerary.single');
@@ -236,8 +237,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('inclusions',InclusionController::class);
     Route::post('/inclusions/single', [InclusionController::class, 'single'])->name('inclusion.single');
 
-    Route::resource('optionals',OptionalController::class);
-    Route::post('/optionals/single', [OptionalController::class, 'single'])->name('optionals.single');
+    Route::resource('optionals',InclusionController::class);
+    Route::post('/optionals/single', [InclusionController::class, 'single'])->name('optionals.single');
 
     // Product
     Route::get('/get/subcategory',[ProductController::class,'getsubcategory'])->name('getsubcategory');

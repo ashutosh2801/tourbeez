@@ -15,7 +15,6 @@ $.fn.toggleAttr = function (attr, attr1, attr2) {
         appUrl: $('meta[name="app-url"]').attr("content"),
         fileBaseUrl: $('meta[name="file-base-url"]').attr("content"),
     };
-
     TB.uploader = {
         data: {
             selectedFiles: [],
@@ -883,23 +882,53 @@ updateUploaderFiles: function () {
                 var startDate = today;
                 var minDate = false;
                 var advncdRange = false;
-                var ranges = {
-                    Today: [moment(), moment()],
-                    Yesterday: [
+                var showYesterday = $this.data("yesterday") ?? true;
+                var showTomorrow = $this.data("tomorrow") ?? false;
+                // var ranges = {
+                //     // Today: [moment(), moment()],
+                //     // Yesterday: [
+                //     //     moment().subtract(1, "days"),
+                //     //     moment().subtract(1, "days"),
+                //     // ],
+                //     "Last 7 Days": [moment().subtract(6, "days"), moment()],
+                //     "Last 30 Days": [moment().subtract(29, "days"), moment()],
+                //     "This Month": [
+                //         moment().startOf("month"),
+                //         moment().endOf("month"),
+                //     ],
+                //     "Last Month": [
+                //         moment().subtract(1, "month").startOf("month"),
+                //         moment().subtract(1, "month").endOf("month"),
+                //     ],
+                // };
+                var ranges = {};
+                ranges["Today"] = [moment(), moment()];
+
+                // conditionally add
+                if (showYesterday) {
+                    ranges["Yesterday"] = [
                         moment().subtract(1, "days"),
                         moment().subtract(1, "days"),
-                    ],
-                    "Last 7 Days": [moment().subtract(6, "days"), moment()],
-                    "Last 30 Days": [moment().subtract(29, "days"), moment()],
-                    "This Month": [
-                        moment().startOf("month"),
-                        moment().endOf("month"),
-                    ],
-                    "Last Month": [
-                        moment().subtract(1, "month").startOf("month"),
-                        moment().subtract(1, "month").endOf("month"),
-                    ],
-                };
+                    ];
+                }
+
+                if (showTomorrow) {
+                    ranges["Tomorrow"] = [
+                        moment().add(1, "days"),
+                        moment().add(1, "days"),
+                    ];
+                }
+
+                ranges["Last 7 Days"] = [moment().subtract(6, "days"), moment()];
+                ranges["Last 30 Days"] = [moment().subtract(29, "days"), moment()];
+                ranges["This Month"] = [
+                    moment().startOf("month"),
+                    moment().endOf("month"),
+                ];
+                ranges["Last Month"] = [
+                    moment().subtract(1, "month").startOf("month"),
+                    moment().subtract(1, "month").endOf("month"),
+                ];
 
                 var single = $this.data("single");
                 var monthYearDrop = $this.data("show-dropdown");
@@ -940,8 +969,6 @@ updateUploaderFiles: function () {
                 });
                 if (single) {
                     $this.on("apply.daterangepicker", function (ev, picker) {
-                        //const displayFormat = 'MMM DD, YYYY'; 
-                        //$this.val(picker.startDate.format(displayFormat));
                         $this.val(picker.startDate.format(format));
                     });
                 } else {
@@ -1676,6 +1703,7 @@ updateUploaderFiles: function () {
             });
         }
     };
+
     setInterval(function(){
         TB.extra.refreshToken();
     }, 3600000);
@@ -1720,46 +1748,9 @@ updateUploaderFiles: function () {
     TB.uploader.removeAttachment();
     TB.uploader.previewGenerate();
 
-    // ✅ New Code: Add Files button enable/disable based on active tab
-    $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
-        var target = $(e.target).attr("href"); // active tab id
-
-        if (target === '#aiz-select-file') {
-            $('#addFilesBtn').prop('disabled', false); // enable button
-        } else {
-            $('#addFilesBtn').prop('disabled', true); // disable button
-        }
-    });
-
-    // YouTube video form submit via AJAX
-    $(document).on('submit', '#youtubeUploadForm', function (e) {
-        e.preventDefault();
-
-        var form = $(this);
-        var url = TB.data.appUrl + "/aiz-uploader/youtube";
-        var formData = form.serialize();
-
-        $.post(url, formData, function (response) {
-            console.log(response);
-            if (response.data) {
-                // success message
-                TB.plugins.notify('success', '{{ translate("Video uploaded successfully") }}');
-
-                // form reset
-                form[0].reset();
-
-                // update listing with new video
-                TB.uploader.getAllUploads(
-                    TB.data.appUrl + "/aiz-uploader/get_uploaded_files"
-                );
-                
-            } else {
-                TB.plugins.notify('danger', '{{ translate("Invalid YouTube link") }}');
-            }
-        }).fail(function () {
-            TB.plugins.notify('danger', '{{ translate("Something went wrong") }}');
-        });
-    });
+    // $(document).ajaxComplete(function(){
+    //     TB.plugins.bootstrapSelect('refresh');
+    // });
 
     // ✅ New Code: Add Files button enable/disable based on active tab
     $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
@@ -1803,6 +1794,3 @@ updateUploaderFiles: function () {
     });
 
 })(jQuery);
-
-
-

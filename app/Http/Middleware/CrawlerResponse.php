@@ -590,7 +590,7 @@ class CrawlerResponse
                     $citySlug = $segments[0];   // things-to-do-in-toronto
                     $slug_id  = explode("-",$segments[1]);   // 10519-c1
                     $id       = $slug_id[0];
-                    $type     = $slug_id[1];   // c1
+                    $type     = $slug_id[1] ?? null;   // c1
 
                     $d = null;
                     if ($type === 'c1') {

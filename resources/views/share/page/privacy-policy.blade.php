@@ -108,7 +108,7 @@
 <p class='text-gray-700 leading-relaxed text-sm lg:text-base'>• Customer data is not shared with 3rd parties for promotional or marketing purposes.</p>
 <p class='text-gray-700 leading-relaxed text-sm lg:text-base'>• Mobile opt-in and consent are never shared with anyone for any purpose. Any information sharing that may be mentioned elsewhere in this policy excludes mobile opt-in data.</p>
 <h3 class='text-lg font-bold text-black tour-font mt-8 mb-2'>Messaging Terms and Conditions</h3>
-<p class='text-gray-700 leading-relaxed text-sm lg:text-base'>• By providing your phone number and agreeing to receive texts, you consent to receive text messages from Tour Beez Inc., from 647-402-4233 regarding account notifications. Consent is not a condition of purchase. Message frequency varies. Message & data rates may apply. You can reply STOP to unsubscribe at any time or HELP for assistance. You can also contact us at 647-402-4233 or info@tourbeez.com. Mobile opt-in information is never shared with third parties.</p>
+<p class='text-gray-700 leading-relaxed text-sm lg:text-base'>• By providing your phone number and agreeing to receive texts, you consent to receive text messages from Tour Beez Inc., from +1 877-888-2339 regarding account notifications. Consent is not a condition of purchase. Message frequency varies. Message & data rates may apply. You can reply STOP to unsubscribe at any time or HELP for assistance. You can also contact us at +1 877-888-2339 or info@tourbeez.com. Mobile opt-in information is never shared with third parties.</p>
 
           </div>
         </div>
