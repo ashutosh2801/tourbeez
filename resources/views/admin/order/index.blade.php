@@ -378,8 +378,19 @@
                         @endforelse
                     </tbody>
                 </table>
-                <div class="card-footer">
-                    {{ $orders->withQueryString()->links() }}
+                <div class="card-footer d-flex justify-content-between align-items-center">
+
+                    <!-- Pagination -->
+                    <div class="mb-0">
+                        {{ $orders->withQueryString()->links() }}
+                    </div>
+
+                    <!-- Total Orders -->
+                    <div class="d-flex align-items-center " style="font-size: 14px; font-weight: 500;">
+                        <span class="badge badge-primary" style="font-size: 14px; font-weight: 500;">Total Orders: {{ $totalOrders }}</span>
+                        
+                    </div>
+
                 </div>
             </div>
         </form>

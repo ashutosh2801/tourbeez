@@ -212,7 +212,7 @@ class OrderController extends Controller
             }
         }
 */
-
+        $totalOrders = (clone $query)->count();
         $perPage = $request->input('per_page', 10);
 
                         //die (getFullSql($query));
@@ -221,7 +221,7 @@ class OrderController extends Controller
 
         $products = Tour::select('id', 'title')->where('status', 1)->get(); // for filter dropdown
 
-        return view('admin.order.index', compact('orders', 'products'));
+        return view('admin.order.index', compact('orders', 'products', 'totalOrders'));
     }
 
     public function showPdfFiles()
@@ -499,7 +499,7 @@ class OrderController extends Controller
                     'first_name'   => $request->customer_first_name,
                     'last_name'    => $request->customer_last_name,
                     'email'        => $request->customer_email ,
-                    'phone'        => $request->full_phone,
+                    'phone'        => $request->full_phone ?? $request->customer_phone,
                     'instructions' => $request->additional_info ?? null,
                     'pickup_id'    => $request->pickup_id ?? null,
                     'pickup_name'  => $request->pickup_name ?? null,
@@ -512,7 +512,7 @@ class OrderController extends Controller
                             'last_name'    => $request->customer_last_name,
                             'name'         => $request->customer_first_name . " " . $request->customer_last_name,
                             'email'        => $request->customer_email ?? 'N/A',
-                            'phone'        => $request->full_phone ?? 'N/A',
+                            'phone'        => $request->full_phone ?? $request->customer_phone,
                             'user_type'    => 'Member',
                         ]);
 
@@ -1011,6 +1011,19 @@ class OrderController extends Controller
         $tours = Tour::orderBy('title', 'ASC')->get();
         // $email_templates = EmailTemplate::get();
 
+
+        $actions = $order->actions()
+            ->orderByDesc('created_at')
+            ->paginate(7, ['*'], 'actions_page');
+
+        $emailHistories = $order->emailHistories()
+            ->orderByDesc('created_at')
+            ->paginate(7, ['*'], 'emails_page');
+
+        $paymentLogs = $order->paymentLogs()
+            ->orderByDesc('created_at')
+            ->paginate(7, ['*'], 'payments_page');
+
         $email_templates = EmailTemplate::whereIn('identifier', [
             'order_detail',
             'order_cancelled',
@@ -1026,7 +1039,7 @@ class OrderController extends Controller
         $sms_templates = SmsTemplate::get();
         $customers = User::where('user_type', 'member')->get();
         $pickupLocations = PickupLocation::get();
-        return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates', 'pickupLocations']));
+        return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates', 'pickupLocations', 'actions', 'emailHistories','paymentLogs']));
     }
 
     /**
@@ -1034,7 +1047,6 @@ class OrderController extends Controller
      */
     public function update(Request $request, $id)
     {
-
         
         $validator = Validator::make($request->all(), [
             'order_status'   => 'required|max:255',
@@ -1225,7 +1237,7 @@ class OrderController extends Controller
                     }
 
                     $updateData = [
-                        'tour_date'         => $startDate,
+                        // 'tour_date'         => $startDate,
                         // 'tour_time'         => $startTime,
                         'tour_pricing'      => json_encode($pricingDetails),
                         'tour_extra'        => json_encode($extraDetails),
@@ -1245,6 +1257,7 @@ class OrderController extends Controller
                     // ]);
 
                     if (!empty($startTime)) {
+                        $updateData['tour_date'] = $startDate;
                         $updateData['tour_time'] = $startTime;
                     }
                     $orderTour->update($updateData);

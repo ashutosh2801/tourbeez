@@ -35,7 +35,7 @@ class RevenueExport implements FromCollection, WithHeadings
         ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
         ->whereNull('orders.deleted_at')
         ->whereNotIn('orders.order_status', $excludedStatuses)
-        ->whereBetween('orders.created_at', [$startDate, $endDate]);
+        ->whereBetween('orders.created_at', [$startDate, $endDate])->groupBy('orders.id');
 
     // Filters
     if ($request->filled('order_status')) {
@@ -179,7 +179,7 @@ class RevenueExport implements FromCollection, WithHeadings
                 : $order->tour_fees;
 
             foreach ($taxes as $tax) {
-                $taxAmount = get_tax($subtotal2, $tax['type'], $tax['value']);
+                $taxAmount = get_tax($subtotal2, $tax['type'], 13);
                 $subtotal2 += $taxAmount;
                 $totalTax += $taxAmount;
             }
