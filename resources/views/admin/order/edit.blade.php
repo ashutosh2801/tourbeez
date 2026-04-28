@@ -873,9 +873,12 @@ $expectEmails = ['order_pending'];
                                         <p>Stored Credit Card :</p>
                                         <div class="row">
 
+                                            @php
 
+                                                $latestPayment = $order->payments()->latest()->first();
+                                            @endphp
 
-                                            @if($order->payment_intent_id)
+                                            <!-- @if($order->payment_intent_id)
                                             <div class="col-2">
                                                 @if($order->latestPayment->card_last4)
                                                     
@@ -890,6 +893,25 @@ $expectEmails = ['order_pending'];
                                                     <svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#00D66F" d="M0 0h32v32H0z"></path><path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path></svg>    Link
                                                 @endif
                                             </div>
+                                            @endif -->
+
+                                            @if($order->payment_intent_id)
+                                                <div class="col-2">
+                                                    @if($latestPayment && $latestPayment->card_last4)
+
+                                                        {!! cardSvg($latestPayment->card_brand) !!} 
+
+                                                        {{ $latestPayment->card_last4 }} ({{ strtoupper($latestPayment->card_brand) }})
+
+                                                    @else
+
+                                                        <svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none">
+                                                            <path fill="#00D66F" d="M0 0h32v32H0z"></path>
+                                                            <path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path>
+                                                        </svg> Link
+
+                                                    @endif
+                                                </div>
                                             @endif
                                             <div class="col-2">
                                                 @if(str_contains( $order->payment_intent_id, 'pm_') || str_contains( $order->payment_method_id, 'pm_'))

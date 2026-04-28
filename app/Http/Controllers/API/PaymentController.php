@@ -71,7 +71,7 @@ class PaymentController extends Controller
                 return response()->json(['error' => "Invalid metadata for order ID: $orderId, Order Number: $orderNum"], 400);
             }
 
-            // ✅ Find Order
+            // Find Order
             $order = Order::where('id', $orderId)
                 ->where('order_number', $orderNum)
                 ->first();
@@ -84,7 +84,7 @@ class PaymentController extends Controller
                 return response()->json(['error' => 'Order not found'], 404);
             }
 
-            // ✅ Idempotency check
+            // Idempotency check
             if (
                 $order->transaction_id === $paymentIntent->id &&
                 $order->payment_status == 1
@@ -96,82 +96,89 @@ class PaymentController extends Controller
                 return response()->json(['status' => 'already processed']);
             }
 
-            $previousOrderStatus = $order->order_status;
+            // $previousOrderStatus = $order->order_status;
 
-            // ✅ Handle events
+            // Handle events
             switch ($event->type) {
                 case 'payment_intent.created':
-                    $order->payment_status = 0;
-                    $order->order_status   = 1;
+                    // $order->payment_status = 0;
+                    // $order->order_status   = 1;
 
                     $logData['status'] = 'created';
                     $logData['message'] = 'Payment created';
                     break;
 
                 case 'payment_intent.succeeded':
-                    $order->payment_status = 1;
-                    $order->order_status   = 3;
+                    // $order->payment_status = 1;
+                    // $order->order_status   = 3;
+
                     $logData['status'] = 'success';
                     $logData['message'] = 'Payment successful';
                     break;
 
                 case 'payment_intent.payment_failed':
-                    $order->payment_status = 0;
-                    $order->order_status   = 1;
-                    $order->failure_message =
-                        $paymentIntent->last_payment_error->message ?? 'Payment failed';
+                    // $order->payment_status  = 0;
+                    // $order->order_status    = 1;
+                    $order->failure_message = $paymentIntent->last_payment_error->message ?? 'Payment failed';
 
-                    $logData['status'] = 'failed';
+                    $logData['status']  = 'failed';
                     $logData['message'] = $order->failure_message;
                     break;
 
                 case 'payment_intent.canceled':
-                    $order->payment_status = 0;
-                    $order->order_status   = 6;
+                    // $order->payment_status = 0;
+                    // $order->order_status   = 6;
 
-                    $logData['status'] = 'cancelled';
+                    $logData['status']  = 'cancelled';
                     $logData['message'] = 'Payment cancelled';
                     break;
 
                 case 'payment_intent.requires_action':
-                case 'payment_intent.processing':
-                    $order->payment_status = 3;
-                    $order->order_status   = 3;
+                    // $order->payment_status = 3;
+                    // $order->order_status   = 3;
 
-                    $logData['status'] = 'pending';
+                    $logData['status']  = 'requires_action';
+                    $logData['message'] = 'Payment requires additional action';
+                    break;  
+
+                case 'payment_intent.processing':
+                    // $order->payment_status = 3;
+                    // $order->order_status   = 3;
+
+                    $logData['status']  = 'pending';
                     $logData['message'] = 'Payment pending';
                     break;  
                     
                 case 'payment_intent.amount_capturable_updated':
-                    $order->payment_status = 3; // Not paid yet, but authorized
-                    $order->order_status   = 3;
+                    // $order->payment_status = 3; // Not paid yet, but authorized
+                    // $order->order_status   = 3;
 
                     $logData['status'] = 'authorized';
                     $logData['message'] = 'Payment authorized, awaiting capture';
                     break;                      
 
                 default:
-                    $logData['status'] = 'ignored';
+                    $logData['status']  = 'ignored';
                     $logData['message'] = 'Unhandled event: ' . $event->type;
-                    $logData['order_id'] = $order->id;
+                    $logData['order_id']= $order->id;
 
                     StripeWebhookLog::create($logData);
 
                     return response()->json(['status' => 'ignored']);
             }
 
-            if($previousOrderStatus == 5){
-                $order->order_status   = 5;
-            }
+            // if($previousOrderStatus == 5){
+            //     $order->order_status   = 5;
+            // }
 
-            // ✅ Save order
+            // Save order
             $order->transaction_id = $paymentIntent->id;
             // $order->stripe_response = json_encode($paymentIntent);
             $order->save();
 
             $logData['order_id'] = $order->id;
 
-            // ✅ Save webhook log
+            // Save webhook log
             StripeWebhookLog::create($logData);
 
             return response()->json(['status' => 'success']);

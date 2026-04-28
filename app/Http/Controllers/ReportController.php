@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\CustomerExport;
+use App\Exports\InvoiceWithDetailsExport;
 use App\Exports\RevenueExport;
 use App\Models\Category;
 use App\Models\Order;
@@ -664,6 +665,441 @@ $customers = $customers->select(
     $partners = Partner::get();
 
     return view('admin.reports.revenue', compact('orders', 'customers', 'partners'));
+}
+
+public function invoice(Request $request)
+{
+    $data = $this->getInvoiceData($request, true);
+
+    return view('admin.reports.invoice', [
+        'rows' => $data['rows'],
+        'orders' => $data['pagination'],
+        'partners' => Partner::get()
+    ]);
+}
+
+public function invoiceExport(Request $request)
+{
+    $data = $this->getInvoiceData($request);
+
+    return \Maatwebsite\Excel\Facades\Excel::download(
+        new \App\Exports\InvoiceExport($data),
+        'invoice-report.xlsx'
+    );
+}
+
+
+private function getInvoiceData($request, $paginate = false)
+{
+    $excludedStatuses = [1, 2, 6, 7];
+
+    $startDate = $request->start_date
+        ? Carbon::parse($request->start_date)->startOfDay()
+        : Carbon::today()->startOfDay();
+
+    $endDate = $request->end_date
+        ? Carbon::parse($request->end_date)->endOfDay()
+        : Carbon::today()->endOfDay();
+
+    $query = DB::table('orders')
+        ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
+        ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
+        ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
+        ->whereNull('orders.deleted_at')
+        ->whereNotIn('orders.order_status', $excludedStatuses)
+        ->whereBetween('orders.created_at', [$startDate, $endDate])
+        ->groupBy('orders.id');
+
+    // Filters
+    if ($request->filled('order_status')) {
+        $query->where('orders.order_status', $request->order_status);
+    }
+
+    if ($request->filled('payment_status')) {
+        $query->where('orders.payment_status', $request->payment_status);
+    }
+
+    if ($request->filled('partner')) {
+        $query->where('orders.source', $request->partner);
+    }
+
+    if ($request->action_type === 'pay_now') {
+        $query->where('orders.action_name', 'book');
+    } elseif ($request->action_type === 'pay_later') {
+        $query->where(function ($q) {
+            $q->where('orders.action_name', '!=', 'book')
+              ->orWhereNull('orders.action_name');
+        });
+    }
+
+    if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
+        $query->whereBetween('order_tours.tour_date', [
+            Carbon::parse($request->tour_start_date)->startOfDay(),
+            Carbon::parse($request->tour_end_date)->endOfDay(),
+        ]);
+    }
+
+    $query->select(
+        'orders.id',
+        'orders.order_number',
+        'orders.payment_status',
+        'orders.created_at',
+        'orders.currency',
+        'orders.booking_fee',
+
+        'order_tours.tour_date',
+        'order_tours.tour_pricing',
+        'order_tours.tour_extra',
+        'order_tours.discount',
+        'order_tours.tour_fees',
+
+        'order_customers.first_name',
+        'order_customers.last_name',
+
+        'tours.title as product_name'
+    )->orderByDesc('orders.id');
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAGINATION SWITCH
+    |--------------------------------------------------------------------------
+    */
+    $orders = $paginate
+        ? $query->paginate(8)->withQueryString()
+        : $query->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | TRANSFORM
+    |--------------------------------------------------------------------------
+    */
+    $collection = $paginate ? $orders->getCollection() : $orders;
+
+    $rows = [];
+    $index = $paginate
+        ? ($orders->currentPage() - 1) * $orders->perPage() + 1
+        : 1;
+
+    foreach ($collection as $order) {
+
+        $productValue = 0;
+        $extraValue = 0;
+        $taxValue = 0;
+        $discountAmount = 0;
+        $subtotal = 0;
+
+        $pricing = json_decode($order->tour_pricing, true) ?? [];
+        $extras  = json_decode($order->tour_extra, true) ?? [];
+        $discounts = json_decode($order->discount, true) ?? [];
+
+        foreach ($pricing as $p) {
+            $qty = $p['quantity'] ?? 0;
+            $price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+            if ($qty > 0) {
+                $productValue += ($p['price_type'] == 'FIXED')
+                    ? $price
+                    : $price * $qty;
+            }
+        }
+
+        $subtotal += $productValue;
+
+        foreach ($extras as $e) {
+            $qty = $e['quantity'] ?? 0;
+            $price = $e['price'] ?? 0;
+
+            if ($qty > 0) {
+                $extraValue += ($e['total_price'] ?? ($qty * $price));
+            }
+        }
+
+        $subtotal += $extraValue;
+
+        foreach ($discounts as $d) {
+            $discountAmount += $d['price'] ?? 0;
+        }
+
+        $subtotal -= $discountAmount;
+
+        if (!empty($order->tour_fees)) {
+            $taxes = is_string($order->tour_fees)
+                ? json_decode($order->tour_fees, true)
+                : $order->tour_fees;
+
+            foreach ($taxes as $tax) {
+                $taxAmount = get_tax($subtotal, $tax['type'], 13);
+                $subtotal += $taxAmount;
+                $taxValue += $taxAmount;
+            }
+        }
+
+        $finalTotal = $subtotal;
+
+        $rows[] = [
+            'no' => $index++,
+            'order_number' => $order->order_number,
+            'customer_name' => $order->first_name . ' ' . $order->last_name,
+            'order_date' => $order->created_at,
+            'fulfilment_date' => $order->tour_date,
+
+            'product_price' => round(currencyConvertWithoutRound($productValue, $order->currency, 'CAD'), 2),
+            'extra_amount' => round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2),
+            'tax_amount' => round(currencyConvertWithoutRound($taxValue, $order->currency, 'CAD'), 2),
+            'booking_fee' => round(currencyConvertWithoutRound($order->booking_fee ?? 0, $order->currency, 'CAD'), 2),
+            'customer_total' => round(currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD'), 2),
+
+            'payment_status' => config('constants.payment_status')[$order->payment_status] ?? '-',
+
+            'product_name' => $order->product_name,
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | RETURN FORMAT
+    |--------------------------------------------------------------------------
+    */
+    return $paginate
+        ? ['rows' => $rows, 'pagination' => $orders]
+        : $rows;
+}
+
+
+public function invoiceWithDetails(Request $request)
+{
+    $data = $this->getInvoiceWithDetailsData($request, true);
+
+    return view('admin.reports.invoice_details', [
+        'rows' => $data['rows'],
+        'orders' => $data['pagination'],
+        'partners' => Partner::get()
+    ]);
+}
+
+public function invoiceWithDetailsExport(Request $request)
+{
+    $data = $this->getInvoiceWithDetailsData($request, false);
+
+    return Excel::download(
+        new \App\Exports\InvoiceWithDetailsExport($data),
+        'invoice-details.xlsx'
+    );
+}
+
+private function getInvoiceWithDetailsData($request, $paginate = false)
+{
+    $excludedStatuses = [1, 2, 6, 7];
+
+    $startDate = $request->start_date
+        ? Carbon::parse($request->start_date)->startOfDay()
+        : Carbon::today()->startOfDay();
+
+    $endDate = $request->end_date
+        ? Carbon::parse($request->end_date)->endOfDay()
+        : Carbon::today()->endOfDay();
+
+    /*
+    |--------------------------------------------------------------------------
+    | MAPS
+    |--------------------------------------------------------------------------
+    */
+
+    // tour_extra_id → addon_id
+    $tourExtraMap = DB::table('addon_tour')
+        ->pluck('addon_id', 'id')
+        ->toArray();
+
+    // FIXED REPORT COLUMNS
+    $addonColumnMap = [
+        1  => 'boat_cruise',
+        2  => 'helicopter',
+        4  => 'journey_falls',
+        11 => 'sheraton',
+        12 => 'skylon',
+        21 => 'airport',
+        22 => 'wine',
+        25 => 'jet',
+        26 => 'guide',
+        27 => 'zipline',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | QUERY
+    |--------------------------------------------------------------------------
+    */
+    $query = DB::table('orders')
+        ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
+        ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
+        ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
+        ->whereNull('orders.deleted_at')
+        ->whereNotIn('orders.order_status', $excludedStatuses)
+        ->whereBetween('orders.created_at', [$startDate, $endDate])
+        ->groupBy('orders.id');
+
+    // SAME FILTERS (copy-paste safe)
+    if ($request->filled('order_status')) {
+        $query->where('orders.order_status', $request->order_status);
+    }
+
+    if ($request->filled('payment_status')) {
+        $query->where('orders.payment_status', $request->payment_status);
+    }
+
+    if ($request->filled('partner')) {
+        $query->where('orders.source', $request->partner);
+    }
+
+    if ($request->action_type === 'pay_now') {
+        $query->where('orders.action_name', 'book');
+    } elseif ($request->action_type === 'pay_later') {
+        $query->where(function ($q) {
+            $q->where('orders.action_name', '!=', 'book')
+              ->orWhereNull('orders.action_name');
+        });
+    }
+
+    if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
+        $query->whereBetween('order_tours.tour_date', [
+            Carbon::parse($request->tour_start_date)->startOfDay(),
+            Carbon::parse($request->tour_end_date)->endOfDay(),
+        ]);
+    }
+
+    $query->select(
+        'orders.id',
+        'orders.order_number',
+        'orders.payment_status',
+        'orders.created_at',
+        'orders.currency',
+        'orders.booking_fee',
+
+        'order_tours.tour_date',
+        'order_tours.tour_pricing',
+        'order_tours.tour_extra',
+        'order_tours.tour_fees',
+
+        'order_customers.first_name',
+        'order_customers.last_name',
+
+        'tours.title as product_name'
+    )->orderByDesc('orders.id');
+
+    $orders = $paginate
+        ? $query->paginate(8)->withQueryString()
+        : $query->get();
+
+    $collection = $paginate ? $orders->getCollection() : $orders;
+
+    $rows = [];
+    $index = $paginate
+        ? ($orders->currentPage() - 1) * $orders->perPage() + 1
+        : 1;
+
+    foreach ($collection as $order) {
+
+        $extras = json_decode($order->tour_extra, true) ?? [];
+
+        // INIT
+        $extraColumns = [];
+
+        foreach ($addonColumnMap as $addonId => $key) {
+            $extraColumns[$key] = [
+                'description' => '*',
+                'price' => '*',
+                'tax' => '*',
+                'fee' => '*',
+                'total' => 0,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | MAP EXTRAS
+        |--------------------------------------------------------------------------
+        */
+        foreach ($extras as $e) {
+
+            $tourExtraId = $e['tour_extra_id'] ?? null;
+
+            if (!$tourExtraId || !isset($tourExtraMap[$tourExtraId])) {
+                continue;
+            }
+
+            $addonId = $tourExtraMap[$tourExtraId];
+
+            if (!isset($addonColumnMap[$addonId])) {
+                continue;
+            }
+
+            $key = $addonColumnMap[$addonId];
+
+            $price = $e['price'] ?? 0;
+            $qty   = $e['quantity'] ?? 1;
+            $total = $e['total_price'] ?? ($price * $qty);
+
+            $extraColumns[$key] = [
+                'description' => $e['label'],
+                'price' => round(currencyConvertWithoutRound($price, $order->currency, 'CAD'), 2),
+                'tax' => '*',
+                'fee' => '*',
+                'total' => round(currencyConvertWithoutRound($total, $order->currency, 'CAD'), 2),
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | MAIN CALCULATION (CAD)
+        |--------------------------------------------------------------------------
+        */
+        $productValue = 0;
+        $extraValue = 0;
+        $taxValue = 0;
+
+        foreach ($extras as $e) {
+            $extraValue += $e['total_price'] ?? 0;
+        }
+
+        if (!empty($order->tour_fees)) {
+            $taxes = json_decode($order->tour_fees, true) ?? [];
+            foreach ($taxes as $tax) {
+                $taxValue += $tax['price'] ?? 0;
+            }
+        }
+
+        $customerTotal = $productValue + $extraValue + $taxValue;
+
+        /*
+        |--------------------------------------------------------------------------
+        | FINAL ROW
+        |--------------------------------------------------------------------------
+        */
+        $row = [
+            'no' => $index++,
+            'order_number' => $order->order_number,
+            'customer_name' => $order->first_name . ' ' . $order->last_name,
+            'order_date' => $order->created_at,
+            'fulfilment_date' => $order->tour_date,
+            'customer_total' => round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
+            'payment_status' => $order->payment_status == 2 ? 'Yes' : 'No',
+            'product_name' => $order->product_name,
+        ];
+
+        foreach ($extraColumns as $key => $extra) {
+            $row[$key.'_desc'] = $extra['description'];
+            $row[$key.'_price'] = $extra['price'];
+            $row[$key.'_tax'] = $extra['tax'];
+            $row[$key.'_fee'] = $extra['fee'];
+            $row[$key.'_total'] = $extra['total'];
+        }
+
+        $rows[] = $row;
+    }
+
+    return $paginate
+        ? ['rows' => $rows, 'pagination' => $orders]
+        : $rows;
 }
 
 

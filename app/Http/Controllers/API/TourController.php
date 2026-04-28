@@ -596,7 +596,8 @@ class TourController extends Controller
                             "slug",
                             "unique_code",
                             "price",
-                            "price_type"
+                            "price_type",
+                            "currency"
                         ])
                         ->where('parent_id', $id)
                         ->where('status', 1)
