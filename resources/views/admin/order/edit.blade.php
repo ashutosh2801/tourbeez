@@ -196,8 +196,6 @@ $expectEmails = ['order_pending'];
             @endif
             <div>
                 <div class="row">
-
-
                     @php
                         $total = round($order->total_amount);
                        // $paid = round($order->booked_amount) ?? 0; 
@@ -248,7 +246,6 @@ $expectEmails = ['order_pending'];
                                             <!-- <strong class="payment-details-breakdown--text">{{ price_format_with_currency($order->booked_amount, $order->currency) }}</strong> -->
 
                                             <strong class="payment-details-breakdown--text">{{  price_format_with_currency($order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) }}</strong>
-
                                         </li>
 
                                         <li class="payment-details-breakdown--item paid-amount">
@@ -288,7 +285,6 @@ $expectEmails = ['order_pending'];
 
                                     <!-- Divider -->
                                     <li role="separator" class="divider"></li>
-
                                     <!-- Action Button -->
                                     
                                 </ul>
@@ -338,9 +334,6 @@ $expectEmails = ['order_pending'];
                                 <p>Email</p>
                                 <select class="form-control form-option" name="email_template_name" id="email_template_name">
                                     <option value="" >Select</option>
-
-                                    
-
                                     @foreach($email_templates as $email_template)
 
                                         @if(in_array($email_template->identifier, $expectEmails))
@@ -480,7 +473,7 @@ $expectEmails = ['order_pending'];
                                                                     </div>
                                                                 </div>
 
-                                                                <div style="flex:1; min-width:150px;">
+                                                                <div style="flex:1; min-width:200px;">
                                                                     <div class="input-group">
                                                                         <input type="text"
                                                                             placeholder="Time"
@@ -489,46 +482,24 @@ $expectEmails = ['order_pending'];
                                                                             data-minute-step="1"
                                                                             value="{{ $order_tour->tour_time }}">
                                                                         <div class="input-group-prepend">
-                                                                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                                            <span class="input-group-text"><i class="fas fa-clock"></i></span>
                                                                         </div>
                                                                     </div>
                                                                 </div>
 
                                                                 <div style="display:flex; gap:10px;">
-                                                                    <button type="button" onClick="addTour()" class="btn btn-success btn-sm px-3" style="border-radius:6px;font-size: 20px;">+</button>
-                                                                    <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-danger btn-sm px-3" style="border-radius:6px;font-size: 20px;">-</button>
+                                                                    <button type="button" onClick="addTour()" class="btn btn-success btn-sm px-3" style="border-radius:6px;font-size: 22px;">+</button>
+                                                                    <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-danger btn-sm px-3" style="border-radius:6px;font-size: 22px;">-</button>
                                                                 </div>
 
                                                                 <div class="w-100">
-                                                                    <input type="text" class="tour_startdate_display border-0 px-2 w-100" readonly style="background:#f9f9f9;">
+                                                                    <input type="text" class="tour_startdate_display border-0" readonly style="background:#f9f9f9; width: 120px;">
+                                                                    -
+                                                                    <input type="text" class="tour_startdate_time_display border-0" readonly style="background:#f9f9f9; margin-left: 15px;">
                                                                 </div>
 
                                                             </div>
                                                         </div>
-
-                                                        <div>
-                                                            <input type="text" class="tour_startdate_display border-0" readonly>
-                                                        </div>
-                                                    </td>
-
-                                                    <td class="text-right" width="200">
-                                                        <div class="input-group">
-                                                            <input type="text"
-                                                                placeholder="Time"
-                                                                name="tour_starttime[]"
-                                                                class="form-control aiz-time-picker tour_starttime"
-                                                                data-minute-step="1"
-                                                                value="{{ $order_tour->tour_time }}">
-                                                            <div class="input-group-prepend">
-                                                                <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                                            </div>
-                                                        </div>
-                                                        <input type="text" class="tour_startdate_time_display border-0" readonly>
-                                                    </td>
-
-                                                    <td class="text-right">
-                                                        <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-sm btn-danger">-</button>
-                                                        <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
                                                     </td>
                                                 </tr>
                                             </table>
@@ -829,10 +800,6 @@ $expectEmails = ['order_pending'];
 
                                                 <td class="text-right cummulative-total"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
                                             @endif
-
-
-
-                                            
                                         </tr>
                                     </table>
                                 </div>
@@ -842,12 +809,12 @@ $expectEmails = ['order_pending'];
 
                     <div class="card additional-info">
                         <div class="card-header bg-secondary py-0" id="heading4">
-                                <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
+                            <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
                         </div>
                         <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
                             <div class="card-body">
                                 <div class="d-flex justify-content-end">
-                                        <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editPickupModal">
+                                        <button type="button" class="btn btn-sm btn-primary edit-pickup" data-toggle="modal" data-target="#editPickupModal">
                                             Edit Pickup
                                         </button>
                                     </div>
@@ -921,10 +888,6 @@ $expectEmails = ['order_pending'];
                                 @endphp
                             @endforeach
 
-<<<<<<< HEAD
-=======
-
->>>>>>> bc62fce793c99447b8807a5f63d910a14cc1c41b
                             <div class="card-total bg-green p-3 row align-items-end">
 
                                  @php
@@ -938,10 +901,6 @@ $expectEmails = ['order_pending'];
 
                                     {{price_format_with_currency($paid-$outsidePayment, $order->currency)}}
                                 </div>
-<<<<<<< HEAD
-=======
-
->>>>>>> bc62fce793c99447b8807a5f63d910a14cc1c41b
                                 @if($overPaid > 0)
                                     <div id="totalPayment1" class="fw-700">
 
@@ -2051,7 +2010,7 @@ document.addEventListener("click", function(e) {
         //newRow.classList.add('row', 'align-items-end', 'mb-2');
         newRow.setAttribute('id', `row_${tourCount}`);
 
-        newRow.innerHTML = `<div style="border:1px solid #ccc; margin-bottom:10px">
+        newRow.innerHTML = `<div class="tour-selector">
         <table class="table">
             <tr>
                 <td>

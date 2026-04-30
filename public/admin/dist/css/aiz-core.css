@@ -7406,7 +7406,7 @@ ul.social.colored [class*="linkedin"] {
 }
 
 .alink {
-    color:#007bff;
+    color: #01228b;
 }
 .alink:hover {
     text-decoration: underline;
@@ -7715,6 +7715,14 @@ a.dropdown-footer:hover {
 
 .border-l {
     border-left: 1px solid #dee2e6 !important;
+}
+
+.border-r-0 {
+    border-right: 0 !important;
+}
+
+.border-l-0 {
+    border-left: 0 !important;
 }
 
 .b-radius-0 {
@@ -8041,6 +8049,7 @@ a.dropdown-footer:hover {
     color: #495057;
     box-shadow: none !important;
     cursor: auto;
+    margin-bottom: 15px;
 }
 
 .search-options .select2-container {
@@ -8052,7 +8061,7 @@ a.dropdown-footer:hover {
 .search-options .select2-container--default .select2-selection--single .select2-selection__arrow {
     height: 100% !important;
     right: 10px;
-    top: 0;
+    top: -10px;
     transform: none;
 }
 
@@ -8138,6 +8147,33 @@ a.dropdown-footer:hover {
 
 @media (max-width: 767px) {
 
+    .search-options .form-control {
+        padding: 6px;
+        font-size: 12px;
+    }
+
+    .search-options .select2-container--default .select2-selection--single {
+        padding: 6px !important;
+    }
+
+    .search-options .bootstrap-select.form-control {
+        padding: 0;
+    }
+
+    .search-options .bootstrap-select .dropdown-toggle {
+        padding: 10px 6px;
+        font-size: 12px;
+    }
+
+    .search-options .select2-container--default .select2-selection--single .select2-selection__rendered {
+        padding: 0 20px 0 0;
+        font-size: 12px;
+    }
+
+    .search-options .btn-clear {
+        padding: 10px 0;
+    }
+
     .tour-main-body .btn-options .btn {
         margin-bottom: 8px;
         font-size: 12px;
@@ -8185,11 +8221,18 @@ a.dropdown-footer:hover {
     background: #f7c77d;
 }
 
-.tour-table .activated-btn span.badge {
+.tour-table .activated-btn span.badge-success {
     border-radius: 50px;
     background: #0abb354d;
     border: 1px solid #0abb75;
     color: #035d12;
+}
+
+.tour-table .activated-btn span.badge-danger {
+    border-radius: 50px;
+    background: #b8bb0a4d;
+    border: 1px solid #b8bb0a;
+    color: #5d4a03;
 }
 
 .order-table .badge {
@@ -8359,6 +8402,39 @@ a.dropdown-footer:hover {
     font-weight: 600;
 }
 
+.internal-order-body .form-group label {
+    font-weight: 400;
+}
+
+.internal-order-body label[for="addToCustomer"],
+.internal-order-body label[for="customer"] {
+  font-weight: 600;
+}
+
+.order-edit .edit-pickup {
+    border-radius: 4px 4px 0 0;
+    color: #FFF;
+}
+
+.order-edit .tour-time {
+    border-right: 0;
+}
+
+.order-edit .tour-selector {
+    border: 1px solid #e0e0e0;
+    background: #f2f3f8;
+    border-top: 0;
+}
+
+.order-edit .tour-selector table {
+    margin: 0;
+}
+
+.order-edit .input-group>.input-group-prepend>.input-group-text {
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
 @media (max-width: 767px) {
 
     .order-edit-head .card-header h5 {
@@ -8402,6 +8478,10 @@ a.dropdown-footer:hover {
     .order-edit .card-footer .confirm-delete {
         width: 47%;
         float: right;
+    }
+
+    .order-table table {
+        table-layout: auto;
     }
 }
 
@@ -9022,6 +9102,12 @@ a.dropdown-footer:hover {
     border-radius: 0 10px 0 0;
 }
 
+.review-body h5 {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0;
+}
+
 .preview-tour-body .bootstrap-select .dropdown-toggle {
     color: #898b92;
     background-color: #f7f8fa !important;
@@ -9320,6 +9406,12 @@ table.dataTable {
 
 .extra-addon-body .form-control {
     border: 1px solid #aeb0b4;
+}
+
+.extra-addon-body .currency-text {
+    border: 1px solid #aeb0b4;
+    border-right: 0;
+    border-radius: 4px 0 0 4px;
 }
 
 .card-primary .card-header.create-extra-header {
@@ -9659,22 +9751,23 @@ table.dataTable {
 .order-manifest-head .left-btn {
     height: 32px;
     width: 32px;
-    background: #FFF;
-    border: 1px solid #FFF;
+    background: #e2e2e2;
+    border: 1px solid #e2e2e2;
     border-radius: 4px 0 0 4px;
 }
 
 .order-manifest-head .right-btn {
     height: 32px;
     width: 32px;
-    background: #FFF;
-    border: 1px solid #FFF;
+    background: #e2e2e2;
+    border: 1px solid #e2e2e2;
     border-radius: 0 4px 4px 0;
 }
 
 .order-manifest-head .left-btn:hover,
 .order-manifest-head .right-btn:hover {
     color: #000;
+    background: #FFF;
 }
 
 .order-manifest-head .filterDate {
@@ -9684,6 +9777,26 @@ table.dataTable {
     border-left: 1px solid #c0c0c0;
     border-right: 1px solid #c0c0c0;
     color: #000;
+}
+
+.order-manifest-head .today-btn {
+    background: #FFF;
+}
+
+.order-manifest-head .today-btn:hover {
+    background: #e2e2e2;
+}
+
+.order-manifest-head .btn-download {
+    background: #8f97ab;
+    color: #ffffff;
+    border-color: #8f97ab;
+}
+
+.order-manifest-head .btn-download:hover {
+    background: #5a6268;
+    color: #ffffff;
+    border-color: #5a6268;
 }
 
 @media (max-width: 767px) {
@@ -9976,11 +10089,16 @@ table.dataTable {
 }
 
 #markReviewModal .modal-header {
-    background-color: #eee;
+    background-color: #147c07;
+    color: #FFF;
 }
 
 #markReviewModal .modal-header .modal-title {
     font-weight: bold;
+} 
+
+#markReviewModal .modal-header .close {
+    color: #FFF;
 }
 
 .create-tour-body .bootstrap-select.form-control {
@@ -10277,6 +10395,39 @@ table.dataTable {
     background-color: #505050;
 }
 
+.order-list-body .order-table{
+    overflow-x: scroll;
+    width: 100%;
+}
+
+.order-table>.table>tbody>tr>td, 
+.order-table>.table>tbody>tr>th, 
+.order-table>.table>tfoot>tr>td, 
+.order-table>.table>tfoot>tr>th, 
+.order-table>.table>thead>tr>td, 
+.order-table>.table>thead>tr>th {
+    white-space: nowrap;
+}
+
+.order-list-body .order-table .tour-name {
+    white-space:normal; 
+    display: flex; 
+    flex-direction: column; 
+    width: 350px;
+}
+
+.order-list-body .order-table .tour-name a {
+    overflow: hidden;
+   display: -webkit-box;
+   -webkit-line-clamp: 1;
+           line-clamp: 1; 
+   -webkit-box-orient: vertical;
+}
+
+.order-list-body .order-table .tour-date span {
+   display: flex;
+}
+
 @media (max-width: 767px) {
 
     .order-list-body .btn-options .btn {
@@ -10324,6 +10475,7 @@ table.dataTable {
 
 .voucher-list-body .form-control {
     border: 1px solid #aeb0b4;
+    border-color: #aeb0b4 !important;
 }
 
 @media (max-width: 767px) {
@@ -10342,17 +10494,19 @@ table.dataTable {
 
 }
 
-#importPriceModal .modal-title {
-    font-weight: bold;
+#importPriceModal .modal-content .modal-header {
+    background-color: #343a41;
+    color: #FFF;
+    padding: 10px 20px;
+}
+
+#importPriceModal .modal-content .modal-header .close {
+    color: #FFF;
 }
 
 #importPriceModal .modal-footer {
     display: flex;
     justify-content: space-between;
-}
-
-#importPriceModal .modal-footer div {
-    margin: 0;
 }
 
 #importPriceModal .modal-footer .btn-ExpoImpo {
@@ -10362,6 +10516,22 @@ table.dataTable {
 
 #importPriceModal .modal-footer .btn-ExpoImpo:hover {
     background-color: #505050;
+}
+
+#enable-disable-modal .modal-content .modal-header {
+    background: #5aa8b2;
+    color: #FFF;
+    padding: 10px 20px;
+}
+
+#enable-disable-modal .modal-content .modal-header .close {
+    color: #FFF;
+}
+
+#enable-disable-modal .modal-content .modal-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 20px;
 }
 
 .activity-log-body .aiz-pagination {
@@ -10414,16 +10584,6 @@ table.dataTable {
     display:none;
 }
 
-/* Expanded panel */
-.tour-actions {
-    background:#f8fafc;
-    padding:16px;
-    border-top:1px solid #e5e7eb;
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-    gap:10px;
-}
-
 .tour-modal {
     position:fixed;
     top:0;
@@ -10451,7 +10611,9 @@ table.dataTable {
     align-items:center;
     padding:14px 18px;
     border-bottom:1px solid #eee;
+    background: #343a41;
     font-weight:600;
+    color: #FFF;
 }
 
 .tour-modal-header button {
@@ -10459,13 +10621,15 @@ table.dataTable {
     background:none;
     font-size:18px;
     cursor:pointer;
+    color: #FFF;
 }
 
 .tour-actions {
-    padding:20px;
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-    gap:10px;
+    padding: 15px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(150px,1fr));
+    gap: 10px;
+    background: #FFF;
 }
 
 .tour-actions a {
@@ -10587,6 +10751,19 @@ table.dataTable {
 
 @media (max-width: 767px) {
 
+    .tour-actions {
+        padding: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 10px;
+        height: 400px;
+        overflow-y: scroll;
+    }
+
+    .tour-actions a {
+        font-size: 14px;
+    }
+
     .report-filter-box .btn {
         margin-top: 10px;
     }
@@ -10600,4 +10777,120 @@ table.dataTable {
         margin-top: 10px;
     }
 
+}
+
+#tour-coupon-modal .modal-content .modal-header {
+    background: #c2ab21;
+    color: #FFF;
+    padding: 10px 20px;
+}
+
+#tour-coupon-modal .modal-content .modal-header .close {
+    color: #FFF;
+}
+
+#delete-modal .modal-content .modal-header {
+    background: #4c4a48;
+    color: #FFF;
+    padding: 10px 20px;
+}
+
+#delete-modal .modal-content .modal-header .close {
+    color: #FFF;
+}
+
+.quantity_used .btn-success,
+.quantity_used .btn-danger {
+    padding: 10px 15px;
+}
+
+.manifest-card {
+    border: 1px solid #00000020;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.manifest-card .card-header {
+    cursor: pointer;
+    display: flex;
+    justify-content: flex-start;
+    gap: 20px;
+    background-color: #FFF;
+    align-items: center;
+    font-size: 14px;
+}
+
+.manifest-card .card-header strong {
+    color: #01228b;
+}
+
+.manifest-card .card-header p {
+    font-weight: 600;
+    color: #2c3d4f;
+    margin: 0;
+}
+
+.manifest-card .card-header span {
+    color: #ccc;
+}
+
+.manifest-card .card-body {
+    padding: 15px;
+    background: #FFF;
+}
+
+.manifest-card .toggle-icon {
+    transition: transform 0.3s ease;
+    font-size: 1rem;
+}
+
+.manifest-card .card-header[aria-expanded="true"] .toggle-icon {
+    transform: rotate(90deg) !important;
+}
+
+.manifest-card .card-header:hover {
+    background-color: #f0f4f8;
+}
+
+.manifest-card .card-header[aria-expanded="true"] {
+  background-color: #f0f4f8;
+}
+
+.manifest-card thead {
+    font-size: 14px;
+    background: #f6f6f6;
+}
+
+.manifest-card table thead th {
+    border: 1px solid #d3d3d3;
+    border-bottom: 0;
+    padding: 10px !important;
+}
+
+.manifest-card table td {
+    padding: 10px !important;
+}
+
+.manifest-card tbody {
+    font-size: 13px;
+}
+
+.sidebar-calendar {
+    margin: 10px 0;
+}
+
+.sidebar-calendar .table thead {
+    background: #FFF;
+    font-size: 13px;
+}
+
+.sidebar-calendar .table thead th {
+    border: 0;
+}
+
+.sidebar-calendar table td {
+    color: #01228b;
+    border: 0;
+    font-size: 13px;
+    white-space: normal;
 }

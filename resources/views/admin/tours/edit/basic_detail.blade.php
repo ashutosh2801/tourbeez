@@ -145,7 +145,6 @@
                                 @foreach(config('constants.currencies') as $code => $country)
                                     <option value="{{ $code }}" {{ $code == $data->currency ? 'selected' : '' }}>{{ $code }} - {{ $country }}</option> 
                                 @endforeach
-
                             </select>
                         </div>
                     </div>
@@ -180,14 +179,14 @@
                             value="{{ old("PriceOption.$index.id", $option['id']) }}" class="form-control" />
 
                                 @if($index == 0)
-                                <div class="col-xl-3">
-                                    <select name="price_type" id="pricing" class="form-control">
+                                <div class="col-xl-12">
+                                    <select name="price_type" id="pricing" class="form-control mb-3">
                                         <option @if(old('price_type')=='PER_PERSON' || $data->price_type=="PER_PERSON" || old('price_type')=='') selected @endif value="PER_PERSON">By Person</option>
                                         <option @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") selected @endif value="FIXED">By Fixed</option>
                                     </select>                                                
                                 </div>
                                 @else
-                                <div class="col-xl-3"></div>
+                                <div class="col-xl-12"></div>
                                 @endif
 
                                 <div class="col-xl-3">
@@ -211,19 +210,19 @@
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror                                              
                                 </div>
-                                <div class="col-xl-3">
+                                <div class="col-xl-6">
                                     <div class="input-group quantity_used @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") hidden @endif">
-                                        <div class="input-group-prepend">
+                                        <div class="input-group-prepend">++9+
                                             <span class="input-group-text" id="basic-addon1">Quantity used</span>
                                         </div>
-                                        <select name="PriceOption[{{ $index }}][qty_used]" id="PriceOption_qty_used" class="form-control mr-2" style="max-width:120px;">
+                                        <select name="PriceOption[{{ $index }}][qty_used]" id="PriceOption_qty_used" class="form-control mr-2">
                                             @for ($i = 0; $i < 55; $i++)
                                                 <option value="{{ $i }}" {{ old("PriceOption.$index.qty_used", $option['qty_used']) == $i ? 'selected' : '' }}>{{ $i }}</option>
                                             @endfor
                                         </select>
                                         <button type="button" class="btn btn-sm btn-success" onclick="addPriceOption()"><i class="fa fa-plus"></i></button>
                                         @if($index > 0)
-                                        <button type="button" class="btn btn-sm btn-danger" onclick="removePriceOption({{ $index }})"><i class="fa fa-minus"></i></button>
+                                        <button type="button" class="btn btn-sm btn-danger ml-2" onclick="removePriceOption({{ $index }})"><i class="fa fa-minus"></i></button>
                                         @endif
                                     </div>
                                 </div>
@@ -265,7 +264,7 @@
                         </div>
                     </div>
                     <div class="col-xl-6">
-                        <div class="form-group">
+                        <div class="form-group mb-0">
                             <label for="coupon_type" class="form-label">Discount Type & Value</label>
                             <div class="row">
                                 <!-- Coupon Type -->

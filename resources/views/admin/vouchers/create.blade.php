@@ -95,7 +95,7 @@
                                         <span class="input-group-text">From</span>
                                     </div>
                                     <input type="text"
-                                   class="aiz-date-range form-control help-field"
+                                   class="aiz-date-range form-control help-field border-r-0"
                                    name="issueDate" data-single="true" readonly
                                                data-help="The date when voucher becomes active.">
                                         
@@ -139,7 +139,7 @@
                                         <span class="input-group-text">From</span>
                                     </div>
                                     <input type="text"
-                                       class="aiz-date-range form-control help-field"
+                                       class="aiz-date-range form-control help-field border-r-0"
                                        name="travelFromDate" data-single="true" readonly
                                        data-help="Earliest travel date allowed.">
                                         

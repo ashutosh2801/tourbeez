@@ -169,11 +169,9 @@
                 <div class="card-body">
                     <form action="{{ route('admin.settings.update') }}" method="POST">
                         @csrf
-                        <div class="form-group row">
-                            <label class="col-md-12 col-form-label">{{translate('Default Category Description')}}</label>
-
-                            <p class="ml-4">Parameters : - [[CATEGORY_TITLE]],  [[TOUR_COUNT]], [[YEAR]]</p>
-                            
+                            <label>{{translate('Default Category Description')}}</label>
+                            <p>Parameters : - [[CATEGORY_TITLE]],  [[TOUR_COUNT]], [[YEAR]]</p>
+                        <div class="form-group row">    
                             <div class="col-md-12">
                                 <input type="hidden" name="types[]" value="default_category_description">
                                 <textarea name="default_category_description" class="form-control aiz-text-editor" placeholder="Type.." data-min-height="300" required>{{ get_setting('default_category_description') }}</textarea>

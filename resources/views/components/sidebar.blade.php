@@ -1,3 +1,6 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <nav class="mt-2">
 
     <ul class="nav nav-pills nav-sidebar flex-column aiz-side-nav-list" data-toggle="aiz-side-menu" data-widget="treeview" role="menu" data-accordion="false">
@@ -188,8 +191,11 @@
                         <p>{{ translate('Tour Manifest') }}</p>
                     </a>
                 </li>
+                <div class="sidebar-calendar">
+                    <div id="calendar"></div>
+                </div>
             </ul>
-            </li>
+        </li>
         @endcan
 
         @can('show_orders') 

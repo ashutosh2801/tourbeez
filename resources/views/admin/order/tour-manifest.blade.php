@@ -8,135 +8,138 @@
     <form method="GET" action="{{ route('admin.orders.tour.manifest') }}">
         <div class="card-header order-manifest-head">
             <div class="d-flex justify-content-between align-items-center w-100 mb-manifest">
-                <h3 class="card-title text-white">Session Manifest</h3>
-                <div class="d-flex align-items-center gap-1">
-                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center left-btn" id="prev-date">
-                        <i class="bi bi-chevron-left"></i>
+                <div class="d-flex column-gap-10">
+                    <button type="button" class="btn btn-sm today-btn" id="today-date">
+                        Today
                     </button>
-                    <input type="date" name="date" id="filter-date" class="form-control form-control-sm filterDate" value="{{ request('date', \Carbon\Carbon::today()->toDateString()) }}" />
-                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center right-btn" id="next-date">
-                        <i class="bi bi-chevron-right"></i>
-                    </button>
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center left-btn" id="prev-date">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <input type="date" name="date" id="filter-date" class="form-control form-control-sm filterDate" value="{{ request('date', \Carbon\Carbon::today()->toDateString()) }}" />
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center right-btn" id="next-date">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
                 </div>
                 <a href="{{ route('admin.orders.tour.manifest.download', ['date' => request('date')]) }}"
-                   class="btn btn-success btn-sm">
+                   class="btn btn-download btn-sm">
                    <i class="bi bi-download"></i> Download Excel
                 </a>
             </div>
         </div>
     </form>
 </div>
-<div class="card-primary bg-white border rounded-lg-custom">
-    <div class="card-body p-0">
-        @forelse($sessions as $slotTime => $session)
-            <div class="card mb-2 border b-radius-0">
-                <div class="card-header d-flex justify-content-between align-items-center bg-light b-radius-0"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#session-{{ \Illuminate\Support\Str::slug($slotTime) }}"
-                    aria-expanded="false"
-                    aria-controls="session-{{ \Illuminate\Support\Str::slug($slotTime) }}">
-                    <strong>{{ $slotTime }}</strong>
 
-                    <div class="d-flex align-items-center gap-3">
-                        <span>
-                            {{ count($session['orders']) }} Order{{ count($session['orders']) > 1 ? 's' : '' }} |
-                            {{ $session['total_guests'] }} Participants
-                        </span>
+<div class="manifest-body">
+    <div class="card-primary">
+        <div class="card-body p-0">
+            @forelse($sessions as $slotTime => $session)
+                <div class="manifest-card">
+                    <div class="card-header" data-bs-toggle="collapse" data-bs-target="#session-{{ \Illuminate\Support\Str::slug($slotTime) }}" aria-expanded="false" aria-controls="session-{{ \Illuminate\Support\Str::slug($slotTime) }}">
+                        <i class="bi bi-chevron-right toggle-icon font-bold"></i>
+                        <strong>{{ $slotTime }}</strong>
+                        <span>|</span>
+                        <div class="d-flex align-items-center gap-3">
+                            <p>
+                                {{ count($session['orders']) }} Order{{ count($session['orders']) > 1 ? 's' : '' }} |
+                                {{ $session['total_guests'] }} Participants
+                            </p>
+                        </div>
                     </div>
-                    <i class="bi bi-chevron-down toggle-icon font-bold"></i>
-                </div>
 
-                <div id="session-{{ \Illuminate\Support\Str::slug($slotTime) }}" class="collapse">
-                    <div class="card-body">
-                        <table class="table table-bordered table-striped" style="table-layout: fixed; width:100%;">
-
-                            <thead >
-                                <tr>
-                                    <th class="px-1" style="width:10%; white-space: nowrap;">Order <br> Number</th>
-                                    <th style="width:10%; white-space: nowrap;">Customer</th>
-                                    <th style="width:12%; white-space: nowrap;">Phone</th>
-                                    <th style="width:12%; white-space: nowrap;">Guests</th>
-                                    <th style="width:14%; white-space: nowrap;">Extras</th>
-                                    <th style="width:10%; white-space: nowrap;">Balance</th>
-                                    <th style="width:10%; white-space: nowrap;">Total</th>
-                                    <th style="width:10%; white-space: nowrap;">Paid</th>
-                                    <th style="width:14%; white-space: nowrap;">Pickup</th>
-                                    <th style="width:14%; white-space: nowrap;">Intruction</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($session['orders'] as $order)
-                                    <tr>
-                                        <td class="px-1">
-                                            <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink" target="_blank">
-                                                {{ $order->order_number }}
-                                            </a>
-                                        </td>
-                                        <td class="px-1">
-                                            <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}"
-                                                class="alink" target="_blank">
-                                                {{ $order->customer?->name }}
-                                            </a>
-                                        </td>
-                                        <td class="px-1">{{ $order->customer?->phone }}</td>
-                                        <td class="px-1">{{ $order->guest_summary }}</td>
-                                        <td class="px-1">{{ $order->extras_summary }}</td>
+                    <div id="session-{{ \Illuminate\Support\Str::slug($slotTime) }}" class="collapse">
+                        <div class="card-body">
+                            <div class="table-viewport">
+                                <table class="table table-bordered table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Order #</th>
+                                            <th>Customer</th>
+                                            <th>Phone</th>
+                                            <th>Guests</th>
+                                            <th>Extras</th>
+                                            <th>Balance</th>
+                                            <th>Total</th>
+                                            <th>Paid</th>
+                                            <th>Pickup</th>
+                                            <th>Intruction</th>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($session['orders'] as $order)
+                                            <tr>
+                                                <td class="px-1">
+                                                    <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink" target="_blank">
+                                                        {{ $order->order_number }}
+                                                    </a>
+                                                </td>
+                                                <td class="px-1">
+                                                    <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}"
+                                                        class="alink" target="_blank">
+                                                        {{ $order->customer?->name }}
+                                                    </a>
+                                                </td>
+                                                <td class="px-1">{{ $order->customer?->phone }}</td>
+                                                <td class="px-1">{{ $order->guest_summary }}</td>
+                                                <td class="px-1">{{ $order->extras_summary }}</td>
 
 
-                                        @php
-                                            $pickName = '';
-                                            $instruction = '';
-                                            if($order->customer && $order->customer->pickup_name){
-                                                $pickName = $order->customer->pickup_name;
-                                                $instruction = $order->customer->instructions;
-                                            } elseif($order->customer && $order->customer->pickup_id) {
-                                                $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
-                                                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
-                                                $instruction = $order->customer->instructions;
-                                            }
-                                        @endphp
-                                        
+                                                @php
+                                                    $pickName = '';
+                                                    $instruction = '';
+                                                    if($order->customer && $order->customer->pickup_name){
+                                                        $pickName = $order->customer->pickup_name;
+                                                        $instruction = $order->customer->instructions;
+                                                    } elseif($order->customer && $order->customer->pickup_id) {
+                                                        $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
+                                                        $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                                                        $instruction = $order->customer->instructions;
+                                                    }
+                                                @endphp
+                                                
 
-                                        @php
-                                            $total = round($order->total_amount);
-                                           // $paid = round($order->booked_amount) ?? 0; 
+                                                @php
+                                                    $total = round($order->total_amount);
+                                                // $paid = round($order->booked_amount) ?? 0; 
 
-                                            $paid = round($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'));
+                                                    $paid = round($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'));
 
 
-                                            $hasUncaptured = $order->payments->contains('status', 'uncaptured');
+                                                    $hasUncaptured = $order->payments->contains('status', 'uncaptured');
 
-                                            if ($paid < $total) {
-                                                if($paid == 0 && $hasUncaptured){
-                                                    $amountClass = 'text-orange';
-                                                } else{
-                                                    $amountClass = 'text-danger'; // red
-                                                }
-                                               
-                                            } else {
-                                                $amountClass = 'text-success'; // green
-                                            }
+                                                    if ($paid < $total) {
+                                                        if($paid == 0 && $hasUncaptured){
+                                                            $amountClass = 'text-orange';
+                                                        } else{
+                                                            $amountClass = 'text-success'; // red
+                                                        }
+                                                    
+                                                    } else {
+                                                        $amountClass = 'text-success'; // green
+                                                    }
 
-                                            if ($order->order_status == 6) {
-                                                $amountClass = 'text-secondary'; // grey
-                                            } 
-                                        @endphp
+                                                    if ($order->order_status == 6) {
+                                                        $amountClass = 'text-secondary'; // grey
+                                                    } 
+                                                @endphp
 
-                                        <td class="{{ $amountClass}} px-1">{{ price_format_with_currency($total-$paid, $order->currency) }}</td>
-                                        <td class="px-1">{{ price_format_with_currency($total, $order->currency) }}</td>
-                                        <td class="{{ $amountClass}} px-1">{{ price_format_with_currency($paid, $order->currency) }}</td>
-                                        <td class="px-1">{{ $pickName }}</td>
-                                        <td class="px-1">{{ $order->customer?->instructions ?? '-' }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                                <td class="text-danger">{{ price_format_with_currency($total-$paid, $order->currency) }}</td>
+                                                <td>{{ price_format_with_currency($total, $order->currency) }}</td>
+                                                <td class="{{ $amountClass}}">{{ price_format_with_currency($paid, $order->currency) }}</td>
+                                                <td>{{ $pickName }}</td>
+                                                <td>{{ $order->customer?->instructions ?? '-' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        @empty
-        <p class="m-0 p-3">No sessions found for this date.</p>
-        @endforelse
+            @empty
+            <p class="m-0 p-3">No sessions found for this date.</p>
+            @endforelse
+        </div>
     </div>
 </div>
 
@@ -144,22 +147,6 @@
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-
-<style>
-    .toggle-icon {
-        transition: transform 0.3s ease;
-        font-size: 1rem;
-    }
-
-    .card-header[aria-expanded="true"] .toggle-icon {
-        transform: rotate(180deg);
-    }
-
-    .card-header:hover {
-        background-color: #f0f4f8;
-    }
-</style>
 
 <script>
     // Auto-expand first accordion
@@ -216,6 +203,19 @@
     nextBtn.addEventListener('click', () => changeDate(1));
 </script>
 
+<script>
+    const todayBtn = document.getElementById('today-date');
+    todayBtn.addEventListener('click', () => {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+
+        const formatted = `${yyyy}-${mm}-${dd}`;
+        dateInput.value = formatted;
+        dateInput.form.submit();
+    });
+</script>
 
 @endsection
 

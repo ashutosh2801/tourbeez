@@ -236,7 +236,7 @@
                                     <div class="form-group">
                                         <label>Minimum Order Amount</label>
                                         <div class="input-group col-md-12 p-0">
-                                            <span class="input-group-text">$</span>
+                                            <span class="input-group-text currency-text">$</span>
                                             <input
                                                 type="text"
                                                 name="Promos[minAmount]"
