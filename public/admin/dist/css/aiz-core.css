@@ -10504,6 +10504,10 @@ table.dataTable {
     color: #FFF;
 }
 
+#importPriceModal .modal-title {
+    font-weight: bold;
+}
+
 #importPriceModal .modal-footer {
     display: flex;
     justify-content: space-between;

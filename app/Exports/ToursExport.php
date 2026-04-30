@@ -126,9 +126,7 @@ class ToursExport implements FromCollection, WithHeadings, WithMapping, WithColu
         // Sort order same as index
         $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
 
-        
-
-        return $query->with(['categories', 'location'])->get(['id', 'title', 'slug', 'unique_code']);
+        return $query->with(['categories', 'location'])->get(['id', 'title', 'slug', 'unique_code', 'price', 'currency']);
     }
 
     /**
@@ -136,52 +134,58 @@ class ToursExport implements FromCollection, WithHeadings, WithMapping, WithColu
      */
     public function map($tour): array
     {
+        // $cityName    = optional(optional($tour->location)->city)->name;
+        // $stateName   = optional(optional($tour->location)->city->state ?? null)->name;
+        // $countryName = optional(optional($tour->location)->city->state->country ?? null)->name;
 
-        $cityName    = optional(optional($tour->location)->city)->name;
-        $stateName   = optional(optional($tour->location)->city->state ?? null)->name;
-        $countryName = optional(optional($tour->location)->city->state->country ?? null)->name;
+        // // Format same as citySearch()
+        // $locationText = trim(collect([$cityName, $stateName, $countryName])
+        //     ->filter()
+        //     ->map(fn($v) => ucwords($v))
+        //     ->implode(', '));
 
-        // Format same as citySearch()
-        $locationText = trim(collect([$cityName, $stateName, $countryName])
-            ->filter()
-            ->map(fn($v) => ucwords($v))
-            ->implode(', '));
+        // if ($locationText === '') {
+        //     $locationText = '-';
+        // }
 
-        if ($locationText === '') {
-            $locationText = '-';
-        }
+        $image = uploaded_asset($tour->main_image->id ?? 0, 'medium');
 
         return [
-            $tour->id,
+            $tour->unique_code,
             $tour->title,
             'https://tourbeez.com/tour/' . $tour->slug,
-            $tour->unique_code,
-            optional($tour->categories->first())->name ?? '-',
-            $locationText,
-
+            $image,
+            $tour->price,
+            $tour->currency,
         ];
     }
 
     public function headings(): array
     {
         return [
-            'ID',
-            'Title',
-            'URL',
-            'SKU',
-            'Category',
-            'Location',
+            // 'ID',
+            // 'Title',
+            // 'URL',
+            // 'SKU',
+            // 'Category',
+            // 'Location',
+            'Product SKU',
+            'Product Name',
+            'Product URL',
+            'Product image URL',
+            'Price',
+            'Currency',
         ];
     }
     public function columnWidths(): array
     {
         return [
-            'A' => 10,  // ID
+            'A' => 20,  // SKU
             'B' => 40,  // Title
             'C' => 50,  // URL
-            'D' => 25,  // SKU
-            'E' => 30,  // Category
-            'F' => 30,  // Location
+            'D' => 50,  // Image URL
+            'E' => 20,  // Price
+            'F' => 20,  // Currency
         ];
     }
 }

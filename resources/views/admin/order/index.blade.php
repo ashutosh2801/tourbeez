@@ -47,74 +47,98 @@
         @endphp
 
         {{-- Filter/Search Form --}}
+        <form method="GET" action="{{ route('admin.orders.index') }}">
+            <div class="card-header">
+                <div class="search-options">
+                    <div class="row">
+                        <div class="col-md-4 col-6">
+                            <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name" value="{{ request('search') }}">
+                        </div>
+                        <!-- <div class="col-md-4 col-6">
+                            <select name="product" class="form-control aiz-selectpicker" data-live-search="true">
+                                <option value="">Select Tour</option>
+                                @foreach ($products->sortBy('title') as $product)
+                                    <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>{{ $product->title }}</option>
+                                @endforeach
+                            </select>
+                        </div> -->
+                        <div class="col-md-4 col-6">
+                            <select id="productFilter" class="form-control"></select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <select name="payment_status" class="form-control" >
+                                <option value="">Payment Status</option>
+                                <option value="1" {{ request('payment_status') === '1' ? 'selected' : '' }}>Paid</option>
+                                <option value="0" {{ request('payment_status') === '0' ? 'selected' : '' }}>Unpaid</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <select name="order_status" class="form-control" >
+                                <option value="">Order Status</option>
+                                @foreach ($statuses as $key => $label)
+                                <option value="{{ $key }}" {{ request('order_status') == $key ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
-        <form method="GET" id="filterForm" action="{{ route('admin.orders.index') }}">
-            <div class="filter-panel" id="filterPanel">
-                <div class="card-header">
-                    <div class="search-options">
-                        <div class="row">
-                            <div class="col-md-4 col-6">
-                                <input type="text" name="search" class="form-control" placeholder="Order # / Customer" value="{{ request('search') }}">
-                            </div>
-                            <?php /*
-                            <div class="col-md-2">
-                                <select name="product" class="form-control form-control-sm" >
-                                    <option value="">All Tours</option>
-                                    @foreach ($products as $product)
-                                        <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>{{ $product->title }}</option>
-                                    @endforeach
-                                </select>
-                            </div> 
-                            */ ?>
-                            <div class="col-md-4 col-6">
-                                <select name="product" class="form-control aiz-selectpicker" data-live-search="true">
-                                    <option value="">Select Tour</option>
-                                    @foreach ($products->sortBy('title') as $product)
-                                        <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>{{ $product->title }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-2 col-6">
-                                <select name="payment_status" class="form-control" >
-                                    <option value="">Payment Status</option>
-                                    <option value="1" {{ request('payment_status') === '1' ? 'selected' : '' }}>Paid</option>
-                                    <option value="0" {{ request('payment_status') === '0' ? 'selected' : '' }}>Unpaid</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2 col-6">
-                                <select name="order_status" class="form-control" >
-                                    <option value="">Order Status</option>
-                                    @foreach ($statuses as $key => $label)
-                                    <option value="{{ $key }}" {{ request('order_status') == $key ? 'selected' : '' }}>{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-2 col-6">
-                                <input type="date" name="tour_start_date" class="form-control" value="{{ request('tour_start_date') }}">
-                            </div>
-                            <div class="col-md-2 col-6">
-                                <select name="date_filter" class="form-control" >
-                                    <option value="">Filter by Order Created</option>
-                                    <option value="last_7" {{ request('date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
-                                    <option value="last_15" {{ request('date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
-                                    <option value="this_month" {{ request('date_filter') == 'this_month' ? 'selected' : '' }}>This Month</option>
-                                    <option value="last_90" {{ request('date_filter') == 'last_90' ? 'selected' : '' }}>Last 90 Days</option>
-                                    <option value="last_6_months" {{ request('date_filter') == 'last_6_months' ? 'selected' : '' }}>Last 6 Months</option>
-                                    <option value="this_year" {{ request('date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2 col-6">
-                                <select name="tour_date_filter" class="form-control" >
-                                    <option value="">All Tour Dates</option>
-                                    <option value="last_7" {{ request('tour_date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
-                                    <option value="last_15" {{ request('tour_date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
-                                    <option value="this_month" {{ request('tour_date_filter') == 'this_month' ? 'selected' : '' }}>This Month</option>
-                                    <option value="last_90" {{ request('tour_date_filter') == 'last_90' ? 'selected' : '' }}>Last 90 Days</option>
-                                    <option value="last_6_months" {{ request('tour_date_filter') == 'last_6_months' ? 'selected' : '' }}>Last 6 Months</option>
-                                    <option value="this_year" {{ request('tour_date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2 col-6">
+                        <div class="col-md-2 col-6"> 
+                            <input 
+                                type="text" 
+                                name="tour_start_date" 
+                                class="form-control aiz-date-range" 
+                                data-advanced-range="true" 
+                                data-separator=" - " 
+                                data-show-dropdown="true"
+                                data-tomorrow="true"
+                                data-yesterday="false"
+                                placeholder="Filter by Tour Date"
+                                autocapitalize="off" autocomplete="off" 
+
+                                value="{{ request('tour_start_date') }}"
+                            >
+                        </div> 
+
+                        <div class="col-md-2 col-6"> 
+                            <input 
+                                type="text" 
+                                name="order_created_date" 
+                                class="form-control aiz-date-range" data-advanced-range="true" data-separator=" - " data-show-dropdown="true"
+                                placeholder="Filter by Order Created"
+                                autocapitalize="off" autocomplete="off" 
+                                value="{{ request('order_created_date') }}"
+                            >
+                        </div> 
+                        
+                        <?php /* <div class="col-md-2 col-6">
+                            <select name="date_filter" class="form-control" >
+                                <option value="">Filter by Order Created</option>
+                                <option value="today" {{ request('date_filter') == 'today' ? 'selected' : '' }}>Today</option>
+                                <option value="yesterday" {{ request('date_filter') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
+                                <option value="last_7" {{ request('date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
+                                <option value="last_15" {{ request('date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
+                                <option value="this_month" {{ request('date_filter') == 'this_month' ? 'selected' : '' }}>This Month</option>
+                                <option value="last_90" {{ request('date_filter') == 'last_90' ? 'selected' : '' }}>Last 90 Days</option>
+                                <option value="last_6_months" {{ request('date_filter') == 'last_6_months' ? 'selected' : '' }}>Last 6 Months</option>
+                                <option value="this_year" {{ request('date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <select name="tour_date_filter" class="form-control" >
+                                <option value="">All Tour Dates</option>
+                                <option value="today" {{ request('tour_date_filter') == 'today' ? 'selected' : '' }}>Today</option>
+
+                                <option value="yesterday" {{ request('tour_date_filter') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
+
+                                <option value="last_7" {{ request('tour_date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
+                                <option value="last_15" {{ request('tour_date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
+                                <option value="this_month" {{ request('tour_date_filter') == 'this_month' ? 'selected' : '' }}>This Month</option>
+                                <option value="last_90" {{ request('tour_date_filter') == 'last_90' ? 'selected' : '' }}>Last 90 Days</option>
+                                <option value="last_6_months" {{ request('tour_date_filter') == 'last_6_months' ? 'selected' : '' }}>Last 6 Months</option>
+                                <option value="this_year" {{ request('tour_date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
+                            </select>
+                        </div> */ ?>
+
+                        <div class="col-md-2 col-6">
                             <select name="per_page" class="form-control">
                                 @foreach ([10, 25, 50, 100, 500] as $number)
                                     <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
@@ -129,9 +153,6 @@
                         </div>
                         <div class="col-md-2 col-6">
                             <a href="{{ route('admin.orders.index') }}" class="btn btn-clear" > <i class="fas fa-times"></i> Clear Search</a>
-                        </div>
-
-
                         </div>
                     </div>
                 </div>
@@ -152,9 +173,16 @@
                         <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure to delete selected orders?')">
                             <i class="fas fa-trash-alt"></i> Delete Selected
                         </button>
+                        
+                        
+                    </div>
+                    <div>
                         <button type="button" class="btn btn-ImpOrder" data-toggle="modal" data-target="#importOrderModal">
                             <i class="fas fa-file-import"></i> Import Order
                         </button>
+                        <a type="button" class="btn btn-info" href="{{ route('admin.orders.index') }}">
+                            <i class="fas fa-cog"></i> Refresh
+                        </a>
                     </div>
                 </div>
             </div>
@@ -370,13 +398,24 @@
                         @endforelse
                     </tbody>
                 </table>
-                <div class="card-footer">
-                    {{ $orders->withQueryString()->links() }}
+                <div class="card-footer d-flex justify-content-between align-items-center">
+
+                    <!-- Pagination -->
+                    <div class="mb-0">
+                        {{ $orders->withQueryString()->links() }}
+                    </div>
+
+                    <!-- Total Orders -->
+                    <div class="d-flex align-items-center " style="font-size: 14px; font-weight: 500;">
+                        <span class="badge badge-primary" style="font-size: 14px; font-weight: 500;">Total Orders: {{ $totalOrders }}</span>
+                        
+                    </div>
+
                 </div>
             </div>
         </form>
     </div>
-    <div id="importOrderModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+<div id="importOrderModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -440,5 +479,58 @@
             window.location.href = "{{ route('admin.orders.sample-excel') }}";
         });
         </script>
+    @section('js')
+
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<!-- jQuery UI (for sortable) -->
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- jQuery UI JS -->
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+<script>
+$(document).ready(function () {
+
+    // ✅ Check all
+    $('#checkAll').on('click', function () {
+        $('input[name="ids[]"]').prop('checked', this.checked);
+    });
+
+    // ✅ Download sample
+    $('#downloadSample').on('click', function () {
+        window.location.href = "{{ route('admin.orders.sample-excel') }}";
+    });
+
+    // ✅ Select2 (optimized)
+    $('#productFilter').select2({
+        placeholder: 'Select Tour',
+        minimumInputLength: 4,
+        ajax: {
+            url: '{{ route("admin.tours.tours-list") }}',
+            dataType: 'json',
+            delay: 0,
+            cache: true,
+            data: function (params) {
+                return { q: params.term };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.map(tour => ({
+                        id: tour.id,
+                        text: tour.title
+                    }))
+                };
+            }
+        }
+    });
+
+});
+</script>
+
 @endsection
 </x-admin>

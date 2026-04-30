@@ -65,6 +65,7 @@
                                             <th>Paid</th>
                                             <th>Pickup</th>
                                             <th>Instructions</th>
+                                            <th>Internal Notes</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -128,6 +129,7 @@
                                                 <td class="{{ $amountClass}}">{{ price_format_with_currency($paid, $order->currency) }}</td>
                                                 <td class="px-1">{{ $pickName }}</td>
                                                 <td class="px-1">{{ $order->customer?->instructions ?? '-' }}</td>
+                                                <td class="px-1">{{ $order->internal_notes ?? '-' }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>

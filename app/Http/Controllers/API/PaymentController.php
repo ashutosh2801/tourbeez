@@ -13,6 +13,7 @@ use App\Models\OrderEmailHistory;
 use App\Models\OrderPayment;
 use App\Models\Pickup;
 use App\Models\PickupLocation;
+use App\Models\StripeWebhookLog;
 use App\Models\TourPricing;
 use App\Models\User;
 use App\Notifications\NewOrderNotification;
@@ -21,71 +22,202 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Stripe\PaymentIntent;
+use Stripe\SetupIntent;
 use Stripe\Stripe;
 use Stripe\Webhook;
-
-
+use Stripe\Exception\SignatureVerificationException;
 
 class PaymentController extends Controller
 {
     public function handleWebhook(Request $request)
     {
-        $payload = $request->getContent();
-        $sigHeader = $request->server('HTTP_STRIPE_SIGNATURE');
-        //$endpointSecret = config('services.stripe.webhook_secret');
-        $endpointSecret = env('STRIPE_SECRET');
+        $payload    = $request->getContent();
+        $sigHeader  = $request->header('Stripe-Signature');
+        $secret     = env('STRIPE_WEBHOOK_SECRET');
+
+        $logData = [
+            'event_id' => null,
+            'event_type' => null,
+            'payment_intent_id' => null,
+            'payload' => $payload,
+            'status' => 'received',
+            'message' => null
+        ];
+
+        // ✅ Verify signature
+        $event = Webhook::constructEvent(
+            $payload,
+            $sigHeader,
+            $secret
+        );
+
+        $paymentIntent = $event->data->object;
+
+        // ✅ Metadata
+        $orderId  = $paymentIntent->metadata->orderId ?? null;
+        $orderNum = $paymentIntent->metadata->orderNumber ?? null;
 
         try {
-            $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
-            \Log::error('Payment event received', ['event' => $event, 'payload' => $payload]);
-            $paymentIntent = $event->data->object;
-            $orderId = $paymentIntent->metadata->order_id;
-            $orderNum = $paymentIntent->metadata->order_number;
-            // Update your order status in DB
-            if(!$orderId || !$orderNum) {
-                Log::error('Stripe Webhook Error: Missing order_id or order_number in metadata');
-                return response()->json(['error' => 'Invalid metadata'], 400);
+            
+            $logData['event_id'] = $event->id;
+            $logData['event_type'] = $event->type;
+            $logData['payment_intent_id'] = $paymentIntent->id ?? null;
+
+            if (!$orderId || !$orderNum) {
+                $logData['status'] = 'failed';
+                $logData['message'] = "Invalid metadata for order ID: $orderId, Order Number: $orderNum";
+                StripeWebhookLog::create($logData);
+
+                return response()->json(['error' => "Invalid metadata for order ID: $orderId, Order Number: $orderNum"], 400);
             }
 
-            $order = Order::find($orderId);
-            if ($order && $event->type === 'payment_intent.succeeded') {
-                $order->payment_status  = 1; // paid
-                $order->order_status    = 3; // pending suplier confirmation
+            // ✅ Find Order
+            $order = Order::where('id', $orderId)
+                ->where('order_number', $orderNum)
+                ->first();
+
+            if (!$order) {
+                $logData['status'] = 'failed';
+                $logData['message'] = 'Order not found';
+                StripeWebhookLog::create($logData);
+
+                return response()->json(['error' => 'Order not found'], 404);
             }
-            else if ($order && $event->type === 'payment_intent.requires_capture') {
-                $order->payment_status  = 3; // not paid yet, but authorized
-                $order->order_status    = 3; // pending suplier confirmation
+
+            // ✅ Idempotency check
+            if (
+                $order->transaction_id === $paymentIntent->id &&
+                $order->payment_status == 1
+            ) {
+                $logData['status'] = 'duplicate';
+                $logData['message'] = 'Already processed';
+                StripeWebhookLog::create($logData);
+
+                return response()->json(['status' => 'already processed']);
             }
-            else if ($order && $event->type === 'payment_intent.payment_failed') {
-                $order->payment_status  = 0; // failed
-                $order->order_status    = 1; // abandoned cart
+
+            $previousOrderStatus = $order->order_status;
+
+            // ✅ Handle events
+            switch ($event->type) {
+                case 'payment_intent.created':
+                    $order->payment_status = 0;
+                    $order->order_status   = 1;
+
+                    $logData['status'] = 'created';
+                    $logData['message'] = 'Payment created';
+                    break;
+
+                case 'payment_intent.succeeded':
+                    $order->payment_status = 1;
+                    $order->order_status   = 3;
+                    $logData['status'] = 'success';
+                    $logData['message'] = 'Payment successful';
+                    break;
+
+                case 'payment_intent.payment_failed':
+                    $order->payment_status = 0;
+                    $order->order_status   = 1;
+                    $order->failure_message =
+                        $paymentIntent->last_payment_error->message ?? 'Payment failed';
+
+                    $logData['status'] = 'failed';
+                    $logData['message'] = $order->failure_message;
+                    break;
+
+                case 'payment_intent.canceled':
+                    $order->payment_status = 0;
+                    $order->order_status   = 6;
+
+                    $logData['status'] = 'cancelled';
+                    $logData['message'] = 'Payment cancelled';
+                    break;
+
+                case 'payment_intent.requires_action':
+                case 'payment_intent.processing':
+                    $order->payment_status = 3;
+                    $order->order_status   = 3;
+
+                    $logData['status'] = 'pending';
+                    $logData['message'] = 'Payment pending';
+                    break;  
+                    
+                case 'payment_intent.amount_capturable_updated':
+                    $order->payment_status = 3; // Not paid yet, but authorized
+                    $order->order_status   = 3;
+
+                    $logData['status'] = 'authorized';
+                    $logData['message'] = 'Payment authorized, awaiting capture';
+                    break;                      
+
+                default:
+                    $logData['status'] = 'ignored';
+                    $logData['message'] = 'Unhandled event: ' . $event->type;
+                    $logData['order_id'] = $order->id;
+
+                    StripeWebhookLog::create($logData);
+
+                    return response()->json(['status' => 'ignored']);
             }
-            else if ($order && $event->type === 'payment_intent.canceled') {
-                $order->payment_status  = 0; // cancelled
-                $order->order_status    = 6; // cancelled
+
+            if($previousOrderStatus == 5){
+                $order->order_status   = 5;
             }
-            $order->transaction_id  = $paymentIntent->id;
+
+            // ✅ Save order
+            $order->transaction_id = $paymentIntent->id;
+            // $order->stripe_response = json_encode($paymentIntent);
             $order->save();
 
+            $logData['order_id'] = $order->id;
+
+            // ✅ Save webhook log
+            StripeWebhookLog::create($logData);
+
+            return response()->json(['status' => 'success']);
+
+        } catch (SignatureVerificationException $e) {
+
+            $logData['status'] = 'failed';
+            $logData['message'] = 'Invalid signature';
+            $logData['order_id'] = $order->id;
+
+            StripeWebhookLog::create($logData);
+
+            return response()->json(['error' => 'Invalid signature'], 400);
+
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 400);
+
+            $logData['status'] = 'error';
+            $logData['message'] = $e->getMessage();
+            $logData['order_id'] = $order->id;
+
+            StripeWebhookLog::create($logData);
+
+            return response()->json(['error' => 'Server error'], 500);
         }
-
-
-        return response()->json(['status' => 'success']);
     }
 
-    public function createSetupIntent()
+    public function createSetupIntent($action = 'paynow')
     {
         try {
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+            Stripe::setApiKey(env('STRIPE_SECRET'));
 
-            $setupIntent = \Stripe\SetupIntent::create([
-                'automatic_payment_methods' => ['enabled' => true],
+            $params = [];
+            if ($action === 'paynow' ) { 
+                $params['automatic_payment_methods'] = ['enabled' => true];
+            }
+            else {
+                $params['payment_method_types'] = ['card'];
+            }
+
+            $setupIntent = SetupIntent::create([
+                $params
             ]);
 
             return response()->json([
                 'clientSecret' => $setupIntent->client_secret,
+                'action' => $action
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -97,16 +229,17 @@ class PaymentController extends Controller
 
     public function createOrUpdate(Request $request)
     {
-        return $this->createSetupIntent();
+        return $this->createSetupIntent($request->action);
         
         try {
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+            Stripe::setApiKey(env('STRIPE_SECRET'));
 
             $amount     = floatval($request->amount) * 100; // cents
             $currency   = $request->currency ?? 'CAD';
             $order_id   = $request->order_id;
             $order_num  = $request->order_number;
             $description= $request->description;
+
 
             // Get or create the latest order/cart (you can adjust logic here)
             $order = Order::find($order_id);
@@ -117,9 +250,27 @@ class PaymentController extends Controller
                 ], 404);
             }
 
+            $params = [
+                'amount' => $amount,
+                'currency' => $currency,
+                'description' => $description,
+                'statement_descriptor_suffix' => $order_num,
+                'metadata' => [
+                    'order_id'  => $order_id,
+                    'order_num' => $order_num
+                ]
+            ];
+
+            if ($request->action === 'paynow' ) { 
+                $params['automatic_payment_methods'] = ['enabled' => true];
+            }
+            else {
+                $params['payment_method_types'] = ['card'];
+            }
+
             if ($order && $order->payment_intent_id) {
                 try {
-                    $paymentIntent = \Stripe\PaymentIntent::retrieve($order->payment_intent_id);
+                    $paymentIntent = PaymentIntent::retrieve($order->payment_intent_id);
 
                     if ($paymentIntent->status === 'requires_payment_method') {
                         // Update amount if needed
@@ -129,55 +280,21 @@ class PaymentController extends Controller
                         }
                     } else {
                         // Create new PaymentIntent if status is not reusable
-                        $paymentIntent = \Stripe\PaymentIntent::create([
-                            'amount' => $amount,
-                            'currency' => $currency,
-                            'description' => $description,
-                            // 'statement_descriptor' => 'TOURBEEZ',
-                            'statement_descriptor_suffix' =>  $order_num,
-                            'automatic_payment_methods' => ['enabled' => true],
-                            'metadata' => [
-                                'order_id'  => $order_id,
-                                'order_num' => $order_num // This lets webhook identify the order
-                            ]
-                        ]);
+                        $paymentIntent = PaymentIntent::create($params);
                         $order->payment_intent_client_secret = $paymentIntent->client_secret;
                         $order->payment_intent_id = $paymentIntent->id;
                         $order->save();
                     }
                 } catch (\Exception $e) {
                     // If retrieval fails, create new
-                    $paymentIntent = \Stripe\PaymentIntent::create([
-                        'amount' => $amount,
-                        'currency' => $currency,
-                        'description' => $description,
-                        // 'statement_descriptor' => 'TOURBEEZ',
-                        'statement_descriptor_suffix' =>  $order_num,
-                        'automatic_payment_methods' => ['enabled' => true],
-                        'metadata' => [
-                            'order_id'  => $order_id,
-                            'order_num' => $order_num // This lets webhook identify the order
-                        ]
-                    ]);
+                    $paymentIntent = PaymentIntent::create($params);
                     $order->payment_intent_client_secret = $paymentIntent->client_secret;
                     $order->payment_intent_id = $paymentIntent->id;
                     $order->save();
                 }
             } else {
                 // Create new if no ID present
-                $paymentIntent = \Stripe\PaymentIntent::create([
-                    'amount' => $amount,
-                    'currency' => $currency,
-                    'description' => $description,
-                    // 'statement_descriptor' => 'TOURBEEZ',
-                    'statement_descriptor_suffix' =>  $order_num,
-                    'automatic_payment_methods' => ['enabled' => true],
-                    'metadata' => [
-                        'order_id'  => $order_id,
-                        'order_num' => $order_num // This lets webhook identify the order
-                    ]
-                ]);
-                
+                $paymentIntent = PaymentIntent::create($params);                
                 $order->payment_intent_client_secret = $paymentIntent->client_secret;
                 $order->payment_intent_id = $paymentIntent->id;
                 $order->save();
@@ -198,7 +315,6 @@ class PaymentController extends Controller
 
     public function verifyPayment(Request $request)
     {
-
         $request->validate([
             'client_secret' => 'required|string',
         ]);
@@ -223,8 +339,32 @@ class PaymentController extends Controller
             try {
 
                 if ($action_name === "book") {
-                    // Retrieve PaymentIntent
                     $paymentIntent = PaymentIntent::retrieve($intentId);
+
+                    $booking = Order::with([
+                            'tour',
+                            'tour.location',
+                            'tour.detail',
+                            'customer'
+                        ])
+                        ->where('payment_intent_id', $paymentIntent->id)
+                        ->first();
+
+                    if($booking->order_status === 6) { // For cancellation case, if user try to pay again with same PI, then show order cancelled message instead of order confirmed message
+                        return response()->json(data: [
+                            'status'  => 'cancelled',
+                            'message' => 'Your order was already cancelled! Please chceck your email for order details.',
+                            'booking' => [],
+                        ]); 
+                    }
+                    else if($booking->order_status === 5) { // For confirmed case, if user try to pay again with same PI, then show order confirmed message instead of order confirmed message.
+                        return response()->json(data: [
+                            'status'  => 'confirmed',
+                            'message' => 'Your order was already confirmed! Please chceck your email for order details.',
+                            'booking' => [],
+                        ]); 
+                    }
+                    // Retrieve PaymentIntent
                     $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
 
                     if($paymentIntent->status == "requires_capture"){
@@ -235,16 +375,7 @@ class PaymentController extends Controller
                     $payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
                     if($paymentIntent->last_payment_error?->payment_method?->type) {
                         $payment_method = $paymentIntent->last_payment_error->payment_method->type;
-                    }
-
-                    $booking = Order::with([
-                        'tour',
-                        'tour.location',
-                        'tour.detail',
-                        'customer'
-                    ])
-                    ->where('payment_intent_id', $paymentIntent->id)
-                    ->first();
+                    }                    
 
                     //echo '<pre>'; print_r($paymentIntent); exit;
                     $total_amount   = $booking->total_amount;
@@ -505,7 +636,7 @@ class PaymentController extends Controller
         catch (\Exception $e) {
             Log::error('VerifyPayment Error: ' . $e->getMessage());
             return response()->json([
-                'success' => false,
+                'status'  => 'failed',
                 'message' => $e->getMessage()
             ], 500);
         }
@@ -1105,4 +1236,5 @@ class PaymentController extends Controller
         }
        
     }
+    
 }

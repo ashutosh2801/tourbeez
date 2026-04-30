@@ -220,6 +220,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/tours/{id}/sub-tour-store', [TourController::class, 'subTourStore'])->name('tour.sub-tour-store');
     Route::get('/tours/{id}/sub-edit', [TourController::class, 'editSubTour'])->name('tour.sub-tour.edit');
     Route::get('/tours/{id}/sub-index', [TourController::class, 'subTourIndex'])->name('tour.sub-tour.index');
+    Route::get('/tours/tours-list', [TourController::class, 'toursList'])->name('tours.tours-list');
 
     Route::resource('itineraries',ItineraryController::class);
     Route::post('/itinerary/single', [ItineraryController::class, 'single'])->name('itinerary.single');
@@ -318,6 +319,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::post('/admin/orders/{order}/add-payment', [OrderController::class, 'addStripePayment'])
     ->name('orders.addPayment');
+
+    Route::post('/admin/orders/order_tour/delete', [OrderController::class, 'removeOrderTour'])
+    ->name('order_tour.delete');
+
 
     // SMS Templates
     Route::resource('/sms-templates', SmsTemplateController::class);

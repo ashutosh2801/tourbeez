@@ -64,6 +64,7 @@
                                             <th>Paid</th>
                                             <th>Pickup</th>
                                             <th>Intruction</th>
+                                            <th>Internal Notes</th>
                                     </thead>
                                     <tbody>
                                         @foreach ($session['orders'] as $order)
@@ -128,6 +129,7 @@
                                                 <td class="{{ $amountClass}}">{{ price_format_with_currency($paid, $order->currency) }}</td>
                                                 <td>{{ $pickName }}</td>
                                                 <td>{{ $order->customer?->instructions ?? '-' }}</td>
+                                                <td class="px-1">{{ $order->internal_notes ?? '-' }}</td>
                                             </tr>
                                         @endforeach
                                     </tbody>

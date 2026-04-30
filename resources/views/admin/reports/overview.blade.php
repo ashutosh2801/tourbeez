@@ -20,7 +20,7 @@
                     <label class="filter-label">Booking Date</label>
 
                     <input type="text" id="booking_range" class="form-control"
-                        placeholder="Select date range">
+                        placeholder="Select date range" autocomplete="off">
 
                     @if(request('start_date'))
                         <span class="clear-btn" onclick="clearBooking()">✕</span>
@@ -35,7 +35,7 @@
                     <label class="filter-label">Fulfilment Date</label>
 
                     <input type="text" id="tour_range" class="form-control"
-                        placeholder="Select date range">
+                        placeholder="Select date range" autocomplete="off">
 
                     @if(request('tour_start_date'))
                         <span class="clear-btn" onclick="clearTour()">✕</span>
@@ -50,7 +50,16 @@
                     <label class="filter-label">Order Status</label>
                     <select name="order_status" class="form-control">
                         <option value="">All</option>
-                        @foreach(config('constants.status_with_code') as $key => $val)
+                        @php
+                        $status_with_code = [
+                                    
+                                    3 => 'Pending supplier',
+                                    4 => 'Pending customer',
+                                    5 => 'Confirmed',
+                                    
+                            ];
+                        @endphp
+                        @foreach($status_with_code as $key => $val)
                             <option value="{{ $key }}"
                                 {{ request('order_status') == $key ? 'selected' : '' }}>
                                 {{ $val }}
@@ -66,6 +75,22 @@
                         <option value="">All</option>
                         <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
                         <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="filter-label">Source</label>
+                    <select name="partner" class="form-control">
+                        <option value="">All</option>
+                        @php
+                        
+                        @foreach($partners as $partner)
+                            <option value="{{ ucfirst($partner->slug) }}"
+                                {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
+                                {{ $partner->name }}
+                            </option>
+                        @endforeach
+                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
                     </select>
                 </div>
 
@@ -121,7 +146,39 @@
                 </div>
             </div>
 
-            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
+
+
+        </div>
+        <div class="row">
+
+            
+
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                <div class="info-stats4">
+                    <div class="info-icon">
+                        <i class="fa fa-check-circle"></i>
+                    </div>
+                    <div class="sale-num">
+                        <h3>{{ $performance['payment_received'] }}</h3>
+                        <div class="stat-title">Payment Recieved</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                <div class="info-stats4">
+                    <div class="info-icon">
+                        <i class="fa fa-wallet"></i>
+                    </div>
+                    <div class="sale-num">
+                        <h3>{{ number_format($performance['pending_amount'], 2) }}</h3>
+                        <div class="stat-title">Pending Balance</div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-chart-line"></i>
@@ -132,6 +189,7 @@
                     </div>
                 </div>
             </div>
+
 
         </div>
     </div>

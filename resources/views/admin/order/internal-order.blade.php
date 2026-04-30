@@ -1,11 +1,33 @@
 <x-admin>
 @section('title', 'Internal Orders Create')
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css"/>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js"></script>
+
 <style>
+.iti { width: 100%; }
 
-/* Balance bar */
+/* Fix flags */
+.iti__flag {
+    background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/img/flags.png");
+}
+.iti__flag.iti__flag--2x {
+    background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/img/flags@2x.png");
+}
 
-
+/* Search box styling */
+.iti__search-box {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
+.iti__search-input {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
 </style>
 
     @if ($errors->any())
@@ -51,9 +73,9 @@
                     </select> -->
                     <select name="order_status" class="form-control mr-2">
                         <option value="0">New</option> 
-                        <option value="4">Pending Customer</option>
+                        <option value="4" selected>Pending Customer</option>
                         <option value="3">Pending Supplier</option>
-                        <option value="5" selected>Confirmed</option>
+                        <option value="5" >Confirmed</option>
                         <option value="2">On Hold</option>
                         <option value="6">Cancelled</option>
                         <option value="7">Abandoned Cart</option>
@@ -123,24 +145,31 @@
                                         <small class="text-danger d-none" id="error_email">Enter a valid email</small>
                                     </div>
 
+                                    
+
                                     <div class="form-group col-lg-3 col-md-6">
                                         <label for="customer_phone">Phone (with country code) *</label>
 
-                                        <!-- Allow typing "+" -->
+
+
                                         <input 
                                             id="customer_phone"
                                             name="customer_phone"
                                             type="tel"
                                             class="form-control"
-                                            autocomplete="tel"
-                                            inputmode="tel"
+                                            
                                         />
 
                                         <!-- Hidden field that stores full E.164 number -->
-                                        <input type="hidden" id="full_phone" name="full_phone">
+                                        
 
                                         <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
+                                        <input type="hidden" name="full_phone" id="full_phone">
                                     </div>
+
+
+
+
                                 </div>
                             </div>
 
@@ -342,6 +371,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
 
 <script>
+
+
+    
 let tourCount = 1;
 
 // ================= Tour Options =================
@@ -576,33 +608,38 @@ function fetchTourSessions(tourId, selectedDate, count) {
         document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
     });
 
-    // Handle form submit
-    const form = document.getElementById('orderForm');
-    form.addEventListener('submit', async function(event) {
-        const selectedPayment = document.querySelector("input[name='add_ccnow']:checked").value;
-        if (selectedPayment) {
-            event.preventDefault();
+    function validatePricing() {
 
-            const { paymentMethod, error } = await stripe.createPaymentMethod({
-                type: 'card',
-                card: card,
-            });
+    let hasValidPricing = false;
 
-            if (error) {
-                document.getElementById('card-errors').textContent = error.message;
-            } else {
-                let hiddenInput = document.createElement('input');
-                hiddenInput.setAttribute('type', 'hidden');
-                hiddenInput.setAttribute('name', 'payment_intent_id');
-                hiddenInput.setAttribute('value', paymentMethod.id);
-                form.appendChild(hiddenInput);
-                form.submit();
+    document.querySelectorAll("[id^='row_']").forEach((row) => {
+
+        let rowValid = false;
+
+        row.querySelectorAll("input[name^='tour_pricing_qty_']").forEach((qtyInput) => {
+
+            const qty = parseFloat(qtyInput.value) || 0;
+            const min = parseFloat(qtyInput.dataset.min) || 0;
+            const isOptional = qtyInput.dataset.optional == "1";
+
+            // 🚨 KEY RULE
+            // Only NON-OPTIONAL can satisfy
+            if (!isOptional) {
+                if (qty >= min && qty > 0) {
+                    rowValid = true;
+                }
             }
+        });
+
+        if (rowValid) {
+            hasValidPricing = true;
         }
     });
 
-    
+    return hasValidPricing;
+}
 
+    
 </script>
 
 <script>
@@ -731,146 +768,6 @@ function calculateTotal() {
     });
 </script>
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-    /* ======================================================
-       INTL TEL INPUT INITIALIZATION
-    ====================================================== */
-    const phoneInput = document.querySelector("#customer_phone");
-
-
-
-    const iti = window.intlTelInput(phoneInput, {
-        initialCountry: "auto",
-        separateDialCode: true,
-        nationalMode: false,
-
-        // ✅ Enable searchable dropdown
-        allowDropdown: true,
-        autoPlaceholder: "polite",
-
-        // 🔥 THIS enables search inside dropdown
-        dropdownContainer: document.body,
-
-        geoIpLookup: function (callback) {
-            fetch("https://ipapi.co/json/")
-                .then(res => res.json())
-                .then(data => callback(data.country_code))
-                .catch(() => callback("US"));
-        },
-
-        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
-    });
-
-    /* ======================================================
-       ALLOW + AUTO-DETECT COUNTRY FROM FULL NUMBER
-    ====================================================== */
-    phoneInput.addEventListener("input", function () {
-        let value = this.value.trim();
-
-        // Allow the first character to be "+"
-        if (value.startsWith("+")) {
-            // Remove non-numeric characters except +
-            value = value.replace(/[^0-9+]/g, "");
-            this.value = value;
-
-            // Auto-detect country if number has enough digits
-            if (value.length > 3) {
-                iti.setNumber(value);
-            }
-            return; // stop here, do not apply numeric restrictions below
-        }
-    });
-    document.getElementById("full_phone").value = iti.getNumber();
-    /* ======================================================
-       BLOCK LETTERS — only numbers allowed
-    ====================================================== */
-    phoneInput.addEventListener("keypress", function (e) {
-        const char = String.fromCharCode(e.which);
-
-        // Allow "+" only as first character
-        if (char === "+" && this.value.length === 0) return;
-
-        if (!/[0-9]/.test(char)) {
-            e.preventDefault();
-        }
-    });
-
-    /* ======================================================
-       BLOCK INVALID PASTE (allow + at start)
-    ====================================================== */
-
-
-    /* ======================================================
-       UPDATE HIDDEN FULL NUMBER
-    ====================================================== */
-    function updateFullNumber() {
-        document.getElementById("full_phone").value = iti.getNumber();
-    }
-
-    phoneInput.addEventListener("input", updateFullNumber);
-    phoneInput.addEventListener("countrychange", updateFullNumber);
-
-    /* ======================================================
-       FIELD VALIDATIONS
-    ====================================================== */
-    function validateFields() {
-        let valid = true;
-
-        // FIRST NAME
-        const first = document.getElementById("customer_first_name");
-        if (!/^[A-Za-z]{2,}$/.test(first.value.trim())) {
-            document.getElementById("error_first_name").classList.remove("d-none");
-            valid = false;
-        } else {
-            document.getElementById("error_first_name").classList.add("d-none");
-        }
-
-        // LAST NAME
-        const last = document.getElementById("customer_last_name");
-        if (!/^[A-Za-z]{2,}$/.test(last.value.trim())) {
-            document.getElementById("error_last_name").classList.remove("d-none");
-            valid = false;
-        } else {
-            document.getElementById("error_last_name").classList.add("d-none");
-        }
-
-        // EMAIL
-        const email = document.getElementById("customer_email");
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.value.trim())) {
-            document.getElementById("error_email").classList.remove("d-none");
-            valid = false;
-        } else {
-            document.getElementById("error_email").classList.add("d-none");
-        }
-
-        // PHONE VALIDATION (Intl Tel Input)
-        if (!iti.isValidNumber()) {
-            document.getElementById("error_phone").classList.remove("d-none");
-            valid = false;
-        } else {
-            document.getElementById("error_phone").classList.add("d-none");
-        }
-
-        return valid;
-    }
-
-    /* ======================================================
-       FORM SUBMIT VALIDATION
-    ====================================================== */
-    document.querySelector("form").addEventListener("submit", function (e) {
-        updateFullNumber(); // always update before form submit
-
-        if (!validateFields()) {
-            e.preventDefault();
-            alert("Please correct the highlighted fields.");
-        }
-    });
-
-});
-</script>
 
 <script>
 document.addEventListener("change", function(e){
@@ -892,98 +789,6 @@ document.addEventListener("change", function(e){
 // DYNAMIC TOTAL CALCULATION FOR EACH TOUR ROW
 // =====================================================
 
-function calculateRowTotal34234(row) {
-    let subtotal = 0;
-    let withouttax = 0;
-
-    // -----------------------------------------
-    // 1) PRICING QTY * PRICE
-    // -----------------------------------------
-    row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
-        const qty = parseFloat(qtyInput.value) || 0;
-
-        const priceInput = qtyInput.parentElement.querySelector(
-            'input[name^="tour_pricing_price_"]'
-        );
-
-        
-
-        const priceTypeInput = qtyInput.parentElement.querySelector(
-            'input[name^="tour_pricing_type"]'
-        );
-
-        const price = parseFloat(priceInput.value) || 0;
-        const priceType = priceTypeInput.value;
-        
-        if(priceType === "FIXED"){
-            subtotal = price;
-        } else{
-            subtotal += qty * price;
-        }
-
-        
-    });
-
-    // -----------------------------------------
-    // 2) ADDONS QTY * PRICE
-    // -----------------------------------------
-    row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
-        const qty = parseFloat(qtyInput.value) || 0;
-
-        const priceInput = qtyInput.parentElement.querySelector(
-            'input[name^="tour_extra_price_"]'
-        );
-
-        const price = parseFloat(priceInput.value) || 0;
-
-        subtotal += qty * price;
-    });
-
-    withouttax = subtotal;
-
-    // -----------------------------------------
-    // 3) TAXES — read tax rows & recalc live
-    // -----------------------------------------
-    row.querySelectorAll('.tax-row').forEach((taxRow) => {
-    const feeType = taxRow.dataset.type;
-    const feeValue = parseFloat(taxRow.dataset.value);
-// FIXED_PER_ORDER
-    let tax = 0;
-    
-    if (feeType === "PERCENT") {
-        tax = subtotal * (feeValue / 100);
-    } else {
-        tax = feeValue;
-    }
-
-    // Format tax for UI
-    const formattedTax = new Intl.NumberFormat('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(tax);
-    
-    taxRow.querySelector('.tax-amount').textContent = formattedTax;
-
-    
-    
-    subtotal += tax;
-});
-
-
-    // -----------------------------------------
-    // 4) UPDATE UI SUBTOTAL
-    // -----------------------------------------
-
-    const withouttaxBox = row.querySelector('.withouttax-box');
-    if (withouttaxBox) {
-        withouttaxBox.textContent = withouttax.toFixed(2);
-    }
-    const subtotalBox = row.querySelector('.subtotal-box');
-    if (subtotalBox) {
-        subtotalBox.textContent = subtotal.toFixed(2);
-        document.getElementById("totalDue").innerText = subtotal.toFixed(2);
-    }
-}
 
 function calculateRowTotal(row) {
 
@@ -1273,6 +1078,216 @@ document.getElementById('order_currency').addEventListener('change', function ()
 });
 
 </script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const phoneInput = document.querySelector("#customer_phone");
+    const hiddenInput = document.querySelector("#full_phone");
+    const errorBox = document.querySelector("#error_phone");
+    const form = document.getElementById("orderForm");
+
+    let isNewCustomer = false; // 🔥 KEY FLAG
+
+    /* =========================================
+       INIT INTL TEL INPUT
+    ========================================= */
+    const iti = window.intlTelInput(phoneInput, {
+        initialCountry: "ca",
+        separateDialCode: true,
+        nationalMode: false,
+        formatOnDisplay: true,
+        autoPlaceholder: "aggressive",
+        dropdownContainer: document.body,
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
+    });
+
+    /* =========================================
+       ADD NEW CUSTOMER CLICK
+    ========================================= */
+    $(document).on('click', '#addNewCustomerBtn', function () {
+
+        isNewCustomer = true; // ✅ enable validation
+
+        $('#newCustomerFields').removeClass('d-none');
+        $('#customer').val('').trigger('change');
+
+        $("#customer_first_name").prop("required", true);
+        $("#customer_last_name").prop("required", true);
+        $("#customer_email").prop("required", true);
+        $("#customer_phone").prop("required", true);
+    });
+
+    /* =========================================
+       EXISTING CUSTOMER SELECT
+    ========================================= */
+    $('#customer').on('change', function () {
+
+        if ($(this).val()) {
+            isNewCustomer = false; // ❌ disable validation
+
+            $('#newCustomerFields').addClass('d-none');
+
+            $("#customer_first_name").prop("required", false);
+            $("#customer_last_name").prop("required", false);
+            $("#customer_email").prop("required", false);
+            $("#customer_phone").prop("required", false);
+
+            // 🔥 clear phone errors
+            errorBox.classList.add("d-none");
+            phoneInput.classList.remove("is-invalid");
+            hiddenInput.value = "";
+        }
+    });
+
+    /* =========================================
+       SEARCH BOX (FIXED + TYPING WORKS)
+    ========================================= */
+    phoneInput.addEventListener("open:countrydropdown", function () {
+
+        setTimeout(() => {
+            const dropdown = document.querySelector(".iti__country-list");
+            if (!dropdown) return;
+
+            // prevent duplicate
+            if (dropdown.querySelector(".iti__search-box")) return;
+
+            const searchBox = document.createElement("div");
+            searchBox.className = "iti__search-box";
+            searchBox.style.cssText = `
+                padding:8px;
+                border-bottom:1px solid #ddd;
+                background:#fff;
+                position:sticky;
+                top:0;
+                z-index:2;
+            `;
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.placeholder = "Search country...";
+            input.className = "iti__search-input";
+            input.style.cssText = `
+                width:100%;
+                padding:6px;
+                border:1px solid #ccc;
+                border-radius:4px;
+            `;
+
+            searchBox.appendChild(input);
+            dropdown.prepend(searchBox);
+
+            const countries = dropdown.querySelectorAll(".iti__country");
+
+            /* =========================================
+               🔥 CRITICAL FIX: STOP DROPDOWN CLOSE
+            ========================================= */
+            ["click", "mousedown", "mouseup", "keydown"].forEach(evt => {
+                input.addEventListener(evt, function (e) {
+                    e.stopPropagation();
+                });
+            });
+
+            /* =========================================
+               SEARCH FILTER
+            ========================================= */
+            input.addEventListener("input", function () {
+                const value = this.value.toLowerCase();
+
+                countries.forEach(country => {
+                    const text = country.innerText.toLowerCase();
+                    country.style.display = text.includes(value) ? "" : "none";
+                });
+            });
+
+            input.focus();
+
+        }, 50);
+    });
+
+    /* =========================================
+       INPUT SANITIZATION (ONLY DIGITS)
+    ========================================= */
+    phoneInput.addEventListener("input", function () {
+        phoneInput.value = phoneInput.value.replace(/[^\d]/g, '');
+
+        // limit max 15 digits
+        if (phoneInput.value.length > 15) {
+            phoneInput.value = phoneInput.value.slice(0, 15);
+        }
+    });
+
+    /* =========================================
+       VALIDATION FUNCTION
+    ========================================= */
+    function validatePhone() {
+
+        // ✅ skip validation if NOT new customer
+        if (!isNewCustomer) return true;
+
+        const value = phoneInput.value.trim();
+
+        if (!value) {
+            errorBox.classList.remove("d-none");
+            errorBox.innerText = "Phone number is required";
+            phoneInput.classList.add("is-invalid");
+            hiddenInput.value = "";
+            return false;
+        }
+
+        if (!iti.isValidNumber()) {
+            errorBox.classList.remove("d-none");
+            errorBox.innerText = "Invalid phone number for selected country";
+            phoneInput.classList.add("is-invalid");
+            hiddenInput.value = "";
+            return false;
+        }
+
+        // ✅ valid
+        errorBox.classList.add("d-none");
+        phoneInput.classList.remove("is-invalid");
+        phoneInput.classList.add("is-valid");
+
+        hiddenInput.value = iti.getNumber();
+        return true;
+    }
+
+    /* =========================================
+       LIVE VALIDATION (ONLY FOR NEW CUSTOMER)
+    ========================================= */
+    phoneInput.addEventListener("input", validatePhone);
+    phoneInput.addEventListener("blur", validatePhone);
+    phoneInput.addEventListener("countrychange", validatePhone);
+
+    /* =========================================
+       FINAL FORM SUBMIT CONTROL
+    ========================================= */
+    form.addEventListener("submit", function (e) {
+
+        // 🔥 IMPORTANT: only validate if new customer
+        if (isNewCustomer) {
+            if (!validatePhone()) {
+                e.preventDefault();
+                return;
+            }
+        }
+
+        // always set value if exists
+        if (phoneInput.value.trim() && iti.isValidNumber()) {
+            hiddenInput.value = iti.getNumber();
+        } else {
+            hiddenInput.value = phoneInput.value;
+        }
+    });
+
+});
+</script>
+
+
+
+
+
 
 @endsection
 </x-admin>
