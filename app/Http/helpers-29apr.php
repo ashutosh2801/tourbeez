@@ -726,7 +726,7 @@ if (! function_exists('order_status')) {
                 return '<span class="badge badge-inline badge-pendingCustomer text-yellow-800 bg-red-100 px-2 py-2  rounded-full">Pending customer</span>';
                 break;
             case 5:
-                return '<span class="badge badge-inline badge-confirmed text-green-600 bg-green-100 px-2 py-2  rounded-full">Confirmed</span>';
+                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-2 py-2  rounded-full">Confirmed</span>';
                 break;
             case 6:
                 return '<span class="badge badge-inline badge-cancelled text-red-800 bg-red-100 px-2 py-2  rounded-full">Cancelled</span>';   
@@ -734,11 +734,8 @@ if (! function_exists('order_status')) {
             case 7:
                 return '<span class="badge badge-inline badge-abandoned text-blue-800 bg-blue-100 px-2 py-2  rounded-full">Requires capture</span>';   
                 break; 
-            case 8:
-                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-2 py-2  rounded-full">Trip completed</span>';
-                break;    
             default:
-                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-2 py-2  rounded-full">Abandoned</span>';   
+                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-2 py-2  rounded-full">Not completed</span>';   
                 break;   
         }
     }
@@ -755,7 +752,6 @@ if (! function_exists('order_status_list')) {
             5 => "Confirmed",
             6 => "Cancelled",
             7 => "Requires capture",
-            8 => "Trip completed",
         ];
     }
 }
@@ -1464,41 +1460,17 @@ if (!function_exists('currencyConvertWithoutRound')) {
             return str_contains($label, 'child') || str_contains($label, 'infant');
         }
     }
+    if (!function_exists('getCountryFromPhone')) {
+        function getCountryFromPhone($phone) {
+            try {
+                $phoneUtil = \libphonenumber\PhoneNumberUtil::getInstance();
+                $numberProto = $phoneUtil->parse($phone, null);
 
-    if (! function_exists('formatActivityValue')) {
-        function formatActivityValue($key, $value)
-        {
-            // ✅ Order Status
-            if ($key == 'order_status') {
-                return order_status_list()[$value] ?? $value;
+                $geocoder = \libphonenumber\geocoding\PhoneNumberOfflineGeocoder::getInstance();
+                return $geocoder->getDescriptionForNumber($numberProto, 'en');
+            } catch (\Exception $e) {
+                return null;
             }
-            if (in_array($key, ['created_at', 'updated_at', 'deleted_at'])) {
-                return humanDate(\Carbon\Carbon::parse($value));
-            }
-
-            // ✅ Numeric values
-            if (is_numeric($value)) {
-                return number_format($value, 2);
-            }
-
-
-
-            return $value;
-        }
-    }
-
-    if (! function_exists('formatActivityKey')) {
-        function formatActivityKey($key)
-        {
-            return ucfirst(str_replace('_', ' ', $key));
-        }
-    }
-    if (! function_exists('humanDate')) {
-        function humanDate($date)
-        {
-            if (!$date) return '-';
-
-            return $date->diffForHumans() . ' (' . $date->format('d M Y, h:i A') . ')';
         }
     }
 
