@@ -175,7 +175,7 @@
                     <th>Tax</th>
                     <th>Booking Fee</th>
                     <th>Total</th>
-                    <th>Payment Status</th>
+                    <th>Total Paid</th>
                     <th>Product Name</th>
                 </tr>
             </thead>
@@ -184,7 +184,7 @@
                 @forelse($rows as $row)
                     <tr>
                         <td>{{ $row['no'] }}</td>
-                        <td>{{ $row['order_number'] }}</td>
+                        <td><a href="{{ route('admin.orders.edit', encrypt($row['id'])) }}" class="alink">{{ $row['order_number'] }} </a></td>
                         <td>{{ $row['customer_name'] }}</td>
                         <td>{{ \Carbon\Carbon::parse($row['order_date'])->format('Y-m-d') }}</td>
                         <td>{{ \Carbon\Carbon::parse($row['fulfilment_date'])->format('Y-m-d') }}</td>
@@ -195,7 +195,7 @@
                         <td>{{ number_format($row['booking_fee'], 2) }}</td>
                         <td>{{ number_format($row['customer_total'], 2) }}</td>
 
-                        <td>{{ $row['payment_status'] }}</td>
+                        <td>{{ $row['total_paid'] }}</td>
                         <td>{{ $row['product_name'] }}</td>
                     </tr>
                 @empty

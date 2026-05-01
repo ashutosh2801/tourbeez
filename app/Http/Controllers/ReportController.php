@@ -704,6 +704,7 @@ private function getInvoiceData($request, $paginate = false)
     $query = DB::table('orders')
         ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
         ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
+        ->leftJoin('order_payments', 'orders.id', '=', 'order_payments.order_id')
         ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
         ->whereNull('orders.deleted_at')
         ->whereNotIn('orders.order_status', $excludedStatuses)
@@ -764,9 +765,24 @@ private function getInvoiceData($request, $paginate = false)
     | PAGINATION SWITCH
     |--------------------------------------------------------------------------
     */
+
+
     $orders = $paginate
         ? $query->paginate(8)->withQueryString()
         : $query->get();
+
+    $orderCollection = $paginate ? $orders->getCollection() : $orders;
+
+    $orderIds = $orderCollection->pluck('id');
+    // $orderIds = collect($orders)->pluck('id');
+
+    $payments = DB::table('order_payments')
+        ->whereIn('order_id', $orderIds)
+        ->whereNull('deleted_at')
+        ->get()
+        ->groupBy('order_id');
+
+    
 
     /*
     |--------------------------------------------------------------------------
@@ -836,7 +852,30 @@ private function getInvoiceData($request, $paginate = false)
 
         $finalTotal = $subtotal;
 
+
+
+        $orderPayments = $payments[$order->id] ?? collect();
+
+
+        // total successful payments
+        $totalPaid = $orderPayments
+            ->where('status', 'succeeded')
+            ->sum('amount');
+        $refunded = $orderPayments
+            ->where('status', 'refunded')
+            ->sum('amount');
+
+        // remove promo payments (if applicable)
+        $promoPayment = $orderPayments
+            ->where('collection_type', 'Outside')
+            ->where('payment_type', 'PROMO_CODE')
+            ->sum('amount');
+
+        
+        $totalPaid = $totalPaid - $refunded;
+
         $rows[] = [
+            'id' => $order->id,
             'no' => $index++,
             'order_number' => $order->order_number,
             'customer_name' => $order->first_name . ' ' . $order->last_name,
@@ -848,8 +887,9 @@ private function getInvoiceData($request, $paginate = false)
             'tax_amount' => round(currencyConvertWithoutRound($taxValue, $order->currency, 'CAD'), 2),
             'booking_fee' => round(currencyConvertWithoutRound($order->booking_fee ?? 0, $order->currency, 'CAD'), 2),
             'customer_total' => round(currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD'), 2),
-
-            'payment_status' => config('constants.payment_status')[$order->payment_status] ?? '-',
+            'total_paid' => round(currencyConvertWithoutRound($totalPaid, $order->currency, 'CAD'), 2),
+            
+            // 'paid' => config('constants.payment_status')[$order->payment_status] ?? '-',
 
             'product_name' => $order->product_name,
         ];

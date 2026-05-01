@@ -27,7 +27,7 @@ class InvoiceExport implements FromArray
                 'Tax (CAD)',
                 'Booking Fee (CAD)',
                 'Customer Total (CAD)',
-                'Payment Status',
+                'Paid',
                 'Product Name'
             ]
         ], $this->data);
