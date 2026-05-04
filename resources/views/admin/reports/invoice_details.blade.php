@@ -157,7 +157,7 @@
                     <th>Customer</th>
                     <th>Order Date</th>
                     <th>Fulfilment</th>
-                    <th>Total (CAD)</th>
+                    <th>Total</th>
                     <th>Paid</th>
                     <th>Product</th>
 
