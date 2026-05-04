@@ -384,6 +384,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('reports/revenue/export', [ReportController::class, 'exportRevenue'])
     ->name('report.revenue.export');
 
+    Route::get('report/invoice', [ReportController::class, 'invoice'])->name('report.invoice');
+
+        // Invoice Excel Export
+    Route::get('report/invoice/export', [ReportController::class, 'invoiceExport'])->name('report.invoice.export');
+
+    Route::get('/reports/invoice-details', [ReportController::class, 'invoiceWithDetails'])
+    ->name('report.invoice.details');
+
+    Route::get('/reports/invoice-details/export', [ReportController::class, 'invoiceWithDetailsExport'])
+    ->name('report.invoice.details.export');
+
     Route::get('reports/customer/export', [ReportController::class, 'exportCustomer'])
     ->name('report.customer.export');
 

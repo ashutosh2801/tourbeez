@@ -399,7 +399,7 @@ class OrderController extends Controller
             'cartItems.*.label'         => 'required|string|min:1',
             'cartItems.*.quantity'      => 'required|integer|min:1',
             'cartItems.*.price'         => 'required',
-            'cartItems.*.actual_price'  => 'required',
+            'cartItems.*.actual_price'  => 'nullable',
         ]);
 
         if (!$validated) {
@@ -563,9 +563,9 @@ class OrderController extends Controller
             'selectedTime' => 'nullable',
             'cartItems' => 'required|array|min:1',
             'cartItems.*.id' => 'required|integer',
-            'cartItems.*.actual_price' => 'required|numeric',
+            'cartItems.*.actual_price' => 'nullable|numeric',
             'cartItems.*.price' => 'required|numeric',
-            'cartItems.*.discount' => 'required|numeric',
+            'cartItems.*.discount' => 'nullable|numeric',
             'cartItems.*.quantity' => 'required|integer|min:1',
             'cartItems.*.total_price'=> 'required|numeric',
             'cartItems.*.label' => 'required|string',
@@ -962,6 +962,7 @@ class OrderController extends Controller
                             // return $paymentMethod;
                             if (isset($paymentMethod->card) && $paymentMethod->type === 'card') {
                                 $cardDetails = [
+                                    'type'      => $paymentMethod->type ?? null,
                                     'brand'     => $paymentMethod->card->brand ?? null,
                                     'last4'     => $paymentMethod->card->last4 ?? null,
                                     'exp_month' => $paymentMethod->card->exp_month ?? null,
@@ -969,23 +970,24 @@ class OrderController extends Controller
                                 ];
 
                                 // Optional: store in Order table (if fields exist)
-                                $order->card_brand = $cardDetails['brand'];
-                                $order->card_last4 = $cardDetails['last4'];
-                                $order->card_exp_month = $cardDetails['exp_month'];
-                                $order->card_exp_year = $cardDetails['exp_year'];
+                                // Store full card details as JSON if you have a field for it
+                                $order->card_info = json_encode($cardDetails); 
+                                // $order->card_last4 = $cardDetails['last4'];
+                                // $order->card_exp_month = $cardDetails['exp_month'];
+                                // $order->card_exp_year = $cardDetails['exp_year'];
                             }
 
-                        }
-                        \Log::warning('uncaptured3423432');
-                        OrderPayment::create([
+                            \Log::warning('PaymentIntent uncaptured - ' . $order->order_number . ' - ' . $pi->id);
+                            
+                            OrderPayment::create([
                                 'order_id'          => $order->id,
                                 'payment_intent_id' => $pi->id,
                                 'transaction_id'    => null, // no charge yet until capture
-                                'payment_method'    => $paymentMethod->type,
-                                'card_brand'        => $paymentMethod->card->brand ?? null,
-                                'card_last4'        => $paymentMethod->card->last4 ?? null,
-                                'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
-                                'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                                'payment_method'    => $cardDetails['type'] ?? null,
+                                'card_brand'        => $cardDetails['brand'] ?? null,
+                                'card_last4'        => $cardDetails['last4'] ?? null,
+                                'card_exp_month'    => $cardDetails['exp_month'] ?? null,
+                                'card_exp_year'     => $cardDetails['exp_year'] ?? null,
                                 'amount'            => ($adv_deposite == 'deposit')
                                                         ? $chargeAmount
                                                         : $order->total_amount,
@@ -994,6 +996,7 @@ class OrderController extends Controller
                                 'action'            => $adv_deposite,
                                 'response_payload'  => json_encode($pi),
                             ]);
+                        }
                     } catch (\Exception $cardError) {
                         \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
                     }
@@ -1012,7 +1015,7 @@ class OrderController extends Controller
 
 
                     // $retrievedIntent = \Stripe\PaymentIntent::retrieve($si->id);
-                    \Log::warning('uncaptured34234323432432');
+                    \Log::warning('SetupIntent uncaptured - ' . $order->order_number . ' - ' . $si->id);
                     // $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
                     OrderPayment::create([
                             'order_id'          => $order->id,
@@ -1033,7 +1036,7 @@ class OrderController extends Controller
                 }
             } else if($adv_deposite === "full") {
                 
-                 \Log::warning('full');
+                \Log::warning('full - ' . $order->order_number . ' - Stripe Customer: ' . $stripeCustomer->id);
                 $order->booked_amount  = $order->total_amount;
                 $order->balance_amount = 0;
 
@@ -1058,20 +1061,33 @@ class OrderController extends Controller
                         
                     $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
                     if ($paymentMethod->type === 'card') {
-                        $order->card_brand = $paymentMethod->card->brand ?? null;
-                        $order->card_last4 = $paymentMethod->card->last4 ?? null;
-                        $order->card_exp_month = $paymentMethod->card->exp_month ?? null;
-                        $order->card_exp_year = $paymentMethod->card->exp_year ?? null;
+
+                        $cardDetails = [
+                            'type'      => $paymentMethod->type ?? null,
+                            'brand'     => $paymentMethod->card->brand ?? null,
+                            'last4'     => $paymentMethod->card->last4 ?? null,
+                            'exp_month' => $paymentMethod->card->exp_month ?? null,
+                            'exp_year'  => $paymentMethod->card->exp_year ?? null,
+                        ];
+
+                        // Optional: store in Order table (if fields exist)
+                        // Store full card details as JSON if you have a field for it
+                        $order->card_info = json_encode($cardDetails);
+
+                        // $order->card_brand = $paymentMethod->card->brand ?? null;
+                        // $order->card_last4 = $paymentMethod->card->last4 ?? null;
+                        // $order->card_exp_month = $paymentMethod->card->exp_month ?? null;
+                        // $order->card_exp_year = $paymentMethod->card->exp_year ?? null;
                     }
                     OrderPayment::create([
                             'order_id'          => $order->id,
                             'payment_intent_id' => $pi->id,
                             'transaction_id'    => null, // no charge yet until capture
-                            'payment_method'    => 'card',
-                            'card_brand'        => $paymentMethod->card->brand ?? null,
-                            'card_last4'        => $paymentMethod->card->last4 ?? null,
-                            'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
-                            'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                            'payment_method'    => $cardDetails['type'] ?? 'card',
+                            'card_brand'        => $cardDetails['brand'] ?? null,
+                            'card_last4'        => $cardDetails['last4'] ?? null,
+                            'card_exp_month'    => $cardDetails['exp_month'] ?? null,
+                            'card_exp_year'     => $cardDetails['exp_year'] ?? null,
                             'amount'            => $order->total_amount,
                             'currency'          => $order->currency,
                             'status'            => 'pending', // manual capture pending
@@ -1083,22 +1099,19 @@ class OrderController extends Controller
                     \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
                 }
             } else if ($adv_deposite === "partial") {
-                \Log::warning('partial');
+
+                \Log::warning('partial - ' . $order->order_number . ' - Stripe Customer: ' . $stripeCustomer->id);
                 $paidAmount = $order->payments()
                     ->where('status', 'succeeded')
                     ->sum('amount');
 
-                \Log::warning($order);
-                
-
                 $order->total_amount = $previousOrderTotalAmount;
                 $totalAmount  = $previousOrderTotalAmount ?? 0;
                 $chargeAmount = max(($totalAmount - $paidAmount), 0);
-                \Log::warning("$chargeAmount");
+                \Log::warning("Charge Amount - $chargeAmount");
                 if ($chargeAmount <= 0) {
                     throw new \Exception('No remaining amount to charge.');
                 }
-
                 
                 $pi = \Stripe\PaymentIntent::create([
                     'customer' => $stripeCustomer->id,
@@ -1122,33 +1135,30 @@ class OrderController extends Controller
                         
                 $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
                 if ($paymentMethod->type === 'card') {
-                    $order->card_brand = $paymentMethod->card->brand ?? null;
-                    $order->card_last4 = $paymentMethod->card->last4 ?? null;
-                    $order->card_exp_month = $paymentMethod->card->exp_month ?? null;
-                    $order->card_exp_year = $paymentMethod->card->exp_year ?? null;
+
+                    $cardDetails = [
+                        'type'      => $paymentMethod->type ?? null,
+                        'brand'     => $paymentMethod->card->brand ?? null,
+                        'last4'     => $paymentMethod->card->last4 ?? null,
+                        'exp_month' => $paymentMethod->card->exp_month ?? null,
+                        'exp_year'  => $paymentMethod->card->exp_year ?? null,
+                    ];
+
+                    // Optional: store in Order table (if fields exist)
+                    // Store full card details as JSON if you have a field for it
+                    $order->card_info = json_encode($cardDetails);
                 }                
 
                 // 5️⃣ Store payment record
-                // OrderPayment::create([
-                //     'order_id'          => $order->id,
-                //     'payment_intent_id' => $pi->id,
-                //     'transaction_id'    => $pi->latest_charge ?? null,
-                //     'amount'            => $chargeAmount,
-                //     'currency'          => $order->currency,
-                //     'status'            => 'succeeded', // succeeded / requires_action / processing
-                //     'action'            => 'partial',
-                //     'response_payload'  => json_encode($pi),
-                // ]);
-
                 OrderPayment::create([
                     'order_id'          => $order->id,
                     'payment_intent_id' => $pi->id,
                     'transaction_id'    => null, // no charge yet until capture
-                    'payment_method'    => 'card',
-                    'card_brand'        => $paymentMethod->card->brand ?? null,
-                    'card_last4'        => $paymentMethod->card->last4 ?? null,
-                    'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
-                    'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
+                    'payment_method'    => $cardDetails['type'] ?? 'card',
+                    'card_brand'        => $cardDetails['brand'] ?? null,
+                    'card_last4'        => $cardDetails['last4'] ?? null,
+                    'card_exp_month'    => $cardDetails['exp_month'] ?? null,
+                    'card_exp_year'     => $cardDetails['exp_year'] ?? null,
                     'amount'            => $order->total_amount,
                     'currency'          => $order->currency,
                     'status'            => 'pending', // manual capture pending
