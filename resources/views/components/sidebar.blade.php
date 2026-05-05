@@ -225,6 +225,23 @@
                         <p>{{ translate('Revenue') }}</p>
                     </a>
                 </li>
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.report.invoice') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.invoice') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-file"></i>
+                        <p>{{ translate('Invoice') }}</p>
+                    </a>
+                </li>
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.report.invoice.details') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.invoice.details') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-file-invoice"></i>
+                        <p>{{ translate('Invoice Details') }}</p>
+                    </a>
+                </li>
+
+
+                
             </ul>
             </li>
         @endcan

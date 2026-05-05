@@ -28,6 +28,7 @@ class Tour extends Model
 
     protected static function booted()
     {
+        parent::booted();
         static::addGlobalScope(new SupplierScope('user_id'));
     }
     public function scopeOnlyRoot($query)
@@ -42,10 +43,8 @@ class Tour extends Model
     {
         return LogOptions::defaults()
             ->useLogName('Tour')
-            ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
-            ->logOnly(['*'])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
+            ->setDescriptionForEvent(fn(string $eventName) => "Tour {$eventName}")
+            ->logAll(); // 🔥 important
     }
 
     // ---------------- RELATIONSHIPS ----------------

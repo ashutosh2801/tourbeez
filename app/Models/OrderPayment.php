@@ -6,11 +6,15 @@ use App\Models\Order;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class OrderPayment extends Model
 {
     use SoftDeletes;
     use HasFactory;
+    use LogsActivity;
+
     protected $fillable = [
         'order_id',
         'payment_intent_id',
@@ -34,6 +38,16 @@ class OrderPayment extends Model
         'refund_reason',
         'refunded_at',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+        ->useLogName('OrderPayment')
+        ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
+        ->logOnly(['*'])
+        ->logOnlyDirty()
+        ->dontSubmitEmptyLogs();
+    }
 
     public function order() { return $this->belongsTo(Order::class); }
 

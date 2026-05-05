@@ -157,6 +157,39 @@
         margin: 10px auto !important;   /* center horizontally */
     }
 </style>
+<style>
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+.switch input { display:none; }
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px; width: 18px;
+  left: 3px; bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: #28a745;
+}
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+</style>
 @endsection
 
 @php
@@ -384,7 +417,7 @@ $expectEmails = ['order_pending'];
                         <div class="card-header bg-secondary py-0" id="headingOne">
                             <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne"><i class="fa fa-angle-right"></i>Customer Details</button>
                         </div>
-                        <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
+                        <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" >
                             <div class="card-body">
                                 <ul class="flex flex-row">
                                     <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"><i class="fas fa-user-tie"></i>  {{ $order->customer?->name }}</a></li>
@@ -405,7 +438,7 @@ $expectEmails = ['order_pending'];
                         <div class="card-header bg-secondary py-0" id="headingTwo">
                             <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-right"></i> Tour Details</button>
                         </div>
-                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordionExample">
+                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" >
                             <div class="card-body">                               
                                 
                                 <div id="tour_all">
@@ -791,10 +824,10 @@ $expectEmails = ['order_pending'];
                         <div class="card-header bg-secondary py-0" id="heading4">
                             <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapse4"><i class="fa fa-angle-right"></i>Additional information</button>
                         </div>
-                        <div id="collapse4" class="collapse show" aria-labelledby="heading4" data-parent="#accordionExample">
+                        <div id="collapse4" class="collapse show" aria-labelledby="heading4" >
                             <div class="card-body">
                                 <div class="d-flex justify-content-end">
-                                        <button type="button" class="btn btn-sm btn-primary edit-pickup" data-toggle="modal" data-target="#editPickupModal">
+                                        <button type="button" class="btn btn-sm btn-primary edit-pickup" data-toggle="modal" data-target="#editPickupModal"  data-feedback="{{ $order->send_feedback_email }}">
                                             Edit Info
                                         </button>
                                     </div>
@@ -838,6 +871,15 @@ $expectEmails = ['order_pending'];
                                         </tr>
 
                                         
+                                        <tr>
+                                            <td><b>Feedback Email</b></td>
+                                            <td class="text-right">{{ $order->send_feedback_email == 1 ? "Enabled" : "Disabled" }}</td> 
+                                            
+
+                                        </tr>
+
+
+                                        
                                     </table>
                                 </div>
                             </div>
@@ -853,7 +895,7 @@ $expectEmails = ['order_pending'];
                             </button>                     
                         </div>
 
-                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" data-parent="#accordionExample">
+                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" >
                             @php $totalPaid = 0; 
 
 
@@ -905,9 +947,12 @@ $expectEmails = ['order_pending'];
                                         <p>Stored Credit Card :</p>
                                         <div class="row">
 
+                                            @php
 
+                                                $latestPayment = $order->payments()->latest()->first();
+                                            @endphp
 
-                                            @if($order->payment_intent_id)
+                                            <!-- @if($order->payment_intent_id)
                                             <div class="col-2">
                                                 @if($order->latestPayment->card_last4)
                                                     
@@ -922,6 +967,25 @@ $expectEmails = ['order_pending'];
                                                     <svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#00D66F" d="M0 0h32v32H0z"></path><path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path></svg>    Link
                                                 @endif
                                             </div>
+                                            @endif -->
+
+                                            @if($order->payment_intent_id)
+                                                <div class="col-2">
+                                                    @if($latestPayment && $latestPayment->card_last4)
+
+                                                        {!! cardSvg($latestPayment->card_brand) !!} 
+
+                                                        {{ $latestPayment->card_last4 }} ({{ strtoupper($latestPayment->card_brand) }})
+
+                                                    @else
+
+                                                        <svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none">
+                                                            <path fill="#00D66F" d="M0 0h32v32H0z"></path>
+                                                            <path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path>
+                                                        </svg> Link
+
+                                                    @endif
+                                                </div>
                                             @endif
                                             <div class="col-2">
                                                 @if(str_contains( $order->payment_intent_id, 'pm_') || str_contains( $order->payment_method_id, 'pm_'))
@@ -1143,7 +1207,7 @@ $expectEmails = ['order_pending'];
                             </button>
                         </div>
 
-                        <div id="collapsePaymentDetails" class="collapse show" aria-labelledby="headingPaymentDetails" data-parent="#accordionExample">
+                        <div id="collapsePaymentDetails" class="collapse show" aria-labelledby="headingPaymentDetails" >
                             <div class="card-body">
                                 <!-- <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div> -->
                                 
@@ -1262,7 +1326,7 @@ $expectEmails = ['order_pending'];
                             </button>
                         </div>
                         <!-- <div> -->
-                            <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions" data-parent="#accordionExample">
+                            <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions" >
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1310,7 +1374,7 @@ $expectEmails = ['order_pending'];
 
 
                         <!-- <div> -->
-                            <div id="collapseEmailHistory" class="collapse" aria-labelledby="headingEmailHistory" data-parent="#accordionExample">
+                            <div id="collapseEmailHistory" class="collapse" aria-labelledby="headingEmailHistory" >
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1371,7 +1435,7 @@ $expectEmails = ['order_pending'];
                             </button>
                         </div>
                         <!-- <div> -->
-                            <div id="collapsePaymentLog" class="collapse" aria-labelledby="headingPaymentLog" data-parent="#accordionExample">
+                            <div id="collapsePaymentLog" class="collapse" aria-labelledby="headingPaymentLog" >
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1831,6 +1895,16 @@ $expectEmails = ['order_pending'];
                         <div class="col-lg-12 mb-2">
                             <label>Innternal Notes</label>
                             <textarea name="internal_notes" class="form-control">{{ $order->internal_notes }}</textarea>
+                        </div>
+                        <div class="col-lg-12 mb-3">
+
+                            <label><b>Send Feedback Email {{$order->send_feeback_email}}</b></label><br>
+                            <input type="hidden" name="send_feedback_email" value="0">
+                            <label class="switch">
+                                <input type="checkbox" name="send_feedback_email" value="1"
+                                    >
+                                <span class="slider round"></span>
+                            </label>
                         </div>
 
                     </div>
@@ -2299,7 +2373,7 @@ document.addEventListener("click", function(e) {
         
         // Toggle right and down arrow icon on show hide of collapse element
         $(".collapse").on('show.bs.collapse', function(){
-            console.log($(this).prev(".card-header").find(".fa"));
+            
             $(this).prev(".card-header").find(".fa").removeClass("fa-angle-right").addClass("fa-angle-down");
 
 
@@ -4325,6 +4399,14 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (e) {
         console.log("Country detection failed", e);
     }
+});
+$('#editPickupModal').on('show.bs.modal', function (e) {
+    let button = $(e.relatedTarget);
+    let value = parseInt(button.data('feedback'));
+
+    let checkbox = $(this).find('input[name="send_feedback_email"]');
+
+    checkbox.prop('checked', value === 1);
 });
 </script>
 

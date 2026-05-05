@@ -30,10 +30,16 @@
                         <tr>
                             <td><a href="{{ route('admin.taxes.edit', encrypt($item->id)) }}" class="text-info text-sm">{{ $item->label }}</a></td>
                             <td>{{ $item->tax_fee_type }}</td>
-                            <td>{{ ($item->tax_fee_type=='FEE' ? '$' : '') . number_format($item->tax_fee_value,1) . ($item->tax_fee_type=='TAX' ? '%' : '') }}</td>
+                            <td>
+                                {{
+                                    ($item->fee_type == 'PERCENT' ? '' : 'CAD ') .
+                                    number_format($item->tax_fee_value, 2) .
+                                    ($item->fee_type == 'PERCENT' ? ' %' : '')
+                                }}
+                            </td>
                             <td width="60">
-                                <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.taxes.destroy', encrypt($item->id)) }}">
-                                <i class="fas fa-trash-alt"></i></a>
+                                <a class="btn btn-soft-info btn-icon btn-circle btn-sm" href="{{ route('admin.taxes.edit', encrypt($item->id)) }}">
+                                <i class="las la-edit"></i></a>
                             </td>                            
                         </tr>
                     @endforeach

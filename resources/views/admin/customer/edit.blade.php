@@ -229,8 +229,9 @@
 
                     <div class="col-lg-6">
                         <label>Email</label>
-                        <input type="email" name="oc_email" class="form-control" value="{{ $orderCustomer->email }}" readonly>
+                        <input type="email" name="oc_email" class="form-control" value="{{ $orderCustomer->email }}">
                     </div>
+                    
 
                     <!-- <div class="col-lg-6">
                         <label>Phone</label>

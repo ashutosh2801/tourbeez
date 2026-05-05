@@ -1,4 +1,4 @@
-<style>
+`<style>
     .switch {
         position: relative;
         display: inline-block;

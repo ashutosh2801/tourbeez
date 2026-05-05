@@ -596,17 +596,20 @@ class TourController extends Controller
                             "slug",
                             "unique_code",
                             "price",
-                            "price_type"
+                            "price_type",
+                            "currency"
                         ])
                         ->where('parent_id', $id)
                         ->where('status', 1)
                         ->whereNull('deleted_at')
-                        ->with(['detail:id,tour_id,description', 'pricings'])
+                        ->with(['detail:id,tour_id,description', 'pricings', 'addons', 'specialDeposit'])
                         ->get();
 
         if ($subTours->isEmpty()) {
             return response()->json(['status' => false, 'message' => 'No sub tours found'], 404);
         }
+
+
 
         // 👇 Reuse OrderController@getSessionTimes
         $orderController = app(\App\Http\Controllers\API\OrderController::class);
@@ -632,6 +635,44 @@ class TourController extends Controller
                     return $pricing;
                 });
             }
+            $galleries = [];
+                foreach ($tour->galleries as $item) {
+                    $image      = uploaded_asset($item->id);
+                    $medium_url = str_replace($item->file_name, $item->medium_name, $image);
+                    $thumb_url  = str_replace($item->file_name, $item->thumb_name, $image);
+
+                    $galleries[] = [
+                        'original_url'  => $image,
+                        'medium_url'    => $medium_url,
+                        'thumb_url'     => $thumb_url
+                    ];
+                }
+
+            $addons = [];
+                foreach ($tour->addons as $addon) {
+                    $image      = uploaded_asset($addon->image);
+                    $medium_url = str_replace($item->file_name, $item->medium_name, $image);
+                    $thumb_url  = str_replace($item->file_name, $item->thumb_name, $image);
+                    if (!empty($tour->currency)) {
+                        if($addon->price != 'CAD'){
+                            $addonCurrency = $addon->price ?? 'USD';
+                            $addon->price = currencyConvert($addon->price, $addonCurrency, 'CAD');
+                        }
+                        
+                    }
+                    $addons[] = [
+                        'id'            => $addon->id,
+                        'name'          => $addon->name,
+                        'description'   => $addon->description,
+                        'price'         => $addon->price,
+                        'original_url'  => $image,
+                        'medium_url'    => $medium_url,
+                        'thumb_url'     => $thumb_url,
+                    ];
+                }
+
+            
+            $tour->setRelation('addons', collect($addons));
 
             $req = new \Illuminate\Http\Request([
                 'tour_id' => $tour->id,

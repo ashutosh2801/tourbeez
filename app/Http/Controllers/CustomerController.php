@@ -211,7 +211,7 @@ class CustomerController extends Controller
     {
 
         $customer = OrderCustomer::findOrFail(decrypt($id));
-
+        $customerEmail = $customer->email;
         $customer->update([
             'first_name'   => $request->oc_first_name,
             'last_name'    => $request->oc_last_name,
@@ -222,11 +222,12 @@ class CustomerController extends Controller
             'pickup_name'  => $request->oc_pickup_name,
         ]);
 
-        $user = User::where('email', $request->oc_email)->first();
+        $user = User::where('email', $customerEmail)->first();
         if($user){
             $user->first_name = $request->oc_first_name;
             $user->last_name  = $request->oc_last_name;
-            $user->name  = $request->oc_first_name . " " .$request->oc_last_name;
+            $user->email      = $request->oc_email;
+            $user->name       = $request->oc_first_name . " " .$request->oc_last_name;
             $user->save();
         }
 
