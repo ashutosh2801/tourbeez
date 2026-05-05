@@ -438,7 +438,7 @@ $expectEmails = ['order_pending'];
                         <div class="card-header bg-secondary py-0" id="headingTwo">
                             <button type="button" class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo"><i class="fa fa-angle-right"></i> Tour Details</button>
                         </div>
-                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" >
+                        <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo">
                             <div class="card-body">                               
                                 
                                 <div id="tour_all">
@@ -469,6 +469,7 @@ $expectEmails = ['order_pending'];
                                                     <tr id="row_{{ $row_id }}">
                                                         <td style="border:none;">
                                                             <div style="background:#f9f9f9; padding:15px; border-radius:10px; display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+
 
                                                                 <div style="flex:1; min-width:200px;">
                                                                     <div class="input-group">
@@ -514,12 +515,12 @@ $expectEmails = ['order_pending'];
                                                             </div>
                                                         </div>
 
-                                                        <div>
+                                                        <!-- <div>
                                                             <input type="text" class="tour_startdate_display border-0" readonly>
-                                                        </div>
+                                                        </div> -->
                                                     </td>
 
-                                                    <td class="text-right" width="200">
+                                                    <!-- <td class="text-right" width="200">
                                                         <div class="input-group">
                                                             <input type="text"
                                                                 placeholder="Time"
@@ -537,7 +538,7 @@ $expectEmails = ['order_pending'];
                                                     <td class="text-right">
                                                         <button type="button" onClick="removeTour('{{ $order_tour->id }}')" class="btn btn-sm btn-danger">-</button>
                                                         <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
-                                                    </td>
+                                                    </td> -->
                                                 </tr>
                                             </table>
 
@@ -779,8 +780,8 @@ $expectEmails = ['order_pending'];
                                         @endphp
                                         
                                         <tr>
-                                            <td class="cummulative-total"><b>Total</b></td>
-                                            <td class="text-right">{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
+                                            <td class="cummulative-total"><strong>Total</strong></td>
+                                            <td class="text-right" style="font-weight:bold;"><strong>{{ price_format_with_currency($order->total_amount, $order->currency) }}</strong></td>
                                         </tr>
 
 
@@ -833,9 +834,6 @@ $expectEmails = ['order_pending'];
                                     </div>
                                  <div style="border:1px solid #eaecef;">
                                     <table class="table m-0">
-
-                                        
-
                                         @php
                                             $pickName = '';
                                             $instruction = '';
@@ -850,36 +848,25 @@ $expectEmails = ['order_pending'];
                                         @endphp
                                         <tr>
                                             <td><b>Pickup Location</b></td>
-                                            <td class="text-right">{{ $pickName }}</td> 
-                                            
-
+                                            <td class="text-right">{{ $pickName }}</td>
                                         </tr>
                                         
 
                                         <tr>
                                             <td><b>Intructions</b></td>
-                                            <td class="text-right">{{ $instruction }}</td> 
-                                            
-
+                                            <td class="text-right">{{ $instruction }}</td>
                                         </tr>
 
                                         <tr>
                                             <td><b>Internal Notes</b></td>
-                                            <td class="text-right">{{ $order->internal_notes }}</td> 
-                                            
-
+                                            <td class="text-right">{{ $order->internal_notes }}</td>
                                         </tr>
 
                                         
                                         <tr>
                                             <td><b>Feedback Email</b></td>
-                                            <td class="text-right">{{ $order->send_feedback_email == 1 ? "Enabled" : "Disabled" }}</td> 
-                                            
-
+                                            <td class="text-right">{{ $order->send_feedback_email == 1 ? "Enabled" : "Disabled" }}</td>
                                         </tr>
-
-
-                                        
                                     </table>
                                 </div>
                             </div>
@@ -989,29 +976,23 @@ $expectEmails = ['order_pending'];
                                             @endif
                                             <div class="col-2">
                                                 @if(str_contains( $order->payment_intent_id, 'pm_') || str_contains( $order->payment_method_id, 'pm_'))
-                                                <a id="chargeSavedCard" type="button" class=" charge-btn font-base" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
-                                                    <strong>Charge Now</strong>
+                                                <a id="chargeSavedCard" type="button" class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
+                                                    Charge Now
                                                 </a>
 
 
                                                 @elseif(str_contains( $order->payment_intent_id, 'pi_'))
-                                                <a class=" charge-btn font-base" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                                                    <strong>Charge Now</strong>
+                                                <a class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
+                                                    Charge Now
                                                 </a>
                                                 @endif
                                                 
                                             </div>
                                             @if($order->payment_intent_id)
                                                 <div class="col-2">
-                                                    <!-- <div class=" btn "> -->
-                                                    
-
-                                                    <a href="javascript:void(0)"
-                                                       onclick="removeCard({{ $order->id }})"
-                                                       class="text-black font-base">
-                                                       <strong>Remove Credit Card</strong>
+                                                    <a href="javascript:void(0)" onclick="removeCard({{ $order->id }})" class="remove-card-btn">
+                                                       Remove Credit Card
                                                     </a>
-                                                    <!-- </div> -->
                                                 </div>
                                             @endif
                                         </div>
@@ -1044,8 +1025,6 @@ $expectEmails = ['order_pending'];
                                             </div>
                                         </div>
 
-                                      
-
                                         <button type="button" class="btn btn-success" data-action="add-card"><i class="fas fa-save mr-2"></i>Save Card</button>
 
                                     </div>
@@ -1053,7 +1032,7 @@ $expectEmails = ['order_pending'];
                                     
                                 </div>
 
-                                <div class="bg-light px-3 py-3 mt-4 xl-rounded"> 
+                                <div class="mt-4"> 
                                     <div id="paymentTemplate1">
                                         @php
                                         $refFlaf = 0;
@@ -1062,7 +1041,8 @@ $expectEmails = ['order_pending'];
 
                                           
                                         <input type="hidden" name="paymentId[]" value="{{ $payment->id }}" />
-                                        <div class="row paymentRow py-2 border border-black-300 {{ $payment->amount <= 0 ? 'd-none' : '' }}">
+                                        <div class="paymentRow py-2 border border-black-300 {{ $payment->amount <= 0 ? 'd-none' : '' }}">
+                                            <div class="row">
                                             <div class="col-1">
                                                 {{ $payment->payment_type == 'CARD' ? 'CREDITCARD': $payment->payment_type  }}
                                                 <input type="hidden" name="paymentType[]" value="{{ $payment->payment_type }}" />
@@ -1099,48 +1079,43 @@ $expectEmails = ['order_pending'];
                                                 @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded')
                                                 <div class="col-3">
                                                     @if($payment->status == 'capture_canceled')
-                                                    <div class="text-danger text-sm">Capture Canceled</div>
-                                                @endif
-
-                                            
+                                                        <div class="text-danger text-sm">Capture Canceled</div>
+                                                    @endif
                                                 </div>
                                                 @else
                                                 <div class="col-2">
                                                 </div>
-                                                @endif
-                                                
+                                                @endif 
                                             @endif
                                             @if($payment->status == 'succeeded' || $payment->status == 'partial_refunded')
                                             
                                                 @if($payment->amount > 0 && $payment->collection_type === 'Inside' )
-                                                <div class="col-1">
+                                                <div class="col-2 text-right">
                                                     @php $refFlaf = 1; @endphp
                                                     
                                                     @if($payment->amount > $payment->refund_amount)
                                                     <button type="button"
-                                                            class="btn btn-sm btn-danger open-payment-refund"
+                                                            class="btn btn-sm open-payment-refund"
                                                             data-order-id="{{ $order->id }}"
                                                             data-payment-id="{{ $payment->id }}"
                                                             data-amount="{{ $payment->amount }}">
                                                         Refund
                                                     </button>
                                                     @endif
-                                                    </div>
+
+                                                    <button type="button" class="btn btn-danger btn-sm removeRow">-</button>
+                                                </div>
                                                 @endif
                                             
                                             @else
                                                 
                                             @endif
-                                            
-
-                                            <div class="col-1 text-right">
-                                                <button type="button" class="btn btn-danger btn-sm removeRow">-</button>
                                             </div>
                                         </div>
                                         @endforeach
                                     </div>
 
-                                    <div id="paymentTemplate">
+                                    <div id="paymentTemplate" class="mt-4">
                                         <div class="field-box">
                                             <div class="field-wrap">
                                                 <select class="form-control" name="paymentType[]">
@@ -1176,9 +1151,6 @@ $expectEmails = ['order_pending'];
 
                                             <div class="field-wrap">
                                                 <div class="input-group">
-                                                    <div class="input-group-append">
-                                                        <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
-                                                    </div>
                                                     <input type="text" class="form-control" name="amount[]" placeholder="0.00" autocomplete="off">
                                                 </div>
                                             </div>
@@ -1190,7 +1162,7 @@ $expectEmails = ['order_pending'];
                                         </div>
                                     </div>
 
-                                    <div id="paymentWrapper"></div>
+                                    <div id="paymentWrapper" class="mt-3"></div>
 
                                 </div>
                             </div>
@@ -1325,162 +1297,143 @@ $expectEmails = ['order_pending'];
                                 <i class="fa fa-angle-right"></i> Recent Actions
                             </button>
                         </div>
-                        <!-- <div> -->
-                            <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions" >
-                                <div class="card-body">
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Subject</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if(!empty($actions) && is_iterable($actions))
-                                                @foreach($actions as $action)
-                                                    <tr>
-                                                        <td>{{ $action->created_at }}</td>
-                                                        <td>{!! $action->notes !!}</td>
-                                                    </tr>
-                                                @endforeach
-                                            @else
+                        <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions" >
+                            <div class="card-body">
+                                <table class="table" style="border: 1px solid #dee2e6;">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Subject</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if(!empty($actions) && is_iterable($actions))
+                                            @foreach($actions as $action)
                                                 <tr>
-                                                    <td colspan="5">No action history found</td>
+                                                    <td>{{ $action->created_at }}</td>
+                                                    <td>{!! $action->notes !!}</td>
                                                 </tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="5">No action history found</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
 
-                                    {{ $actions->links() }}
-                                </div>
+                                {{ $actions->links() }}
                             </div>
-                        <!-- </div> -->
+                        </div>
                     </div>
 
                     <div class="card email-history">
-
-
-                        
-
                         <div class="card-header bg-secondary py-0" id="headingEmailHistory">
                             <button type="button" class="btn btn-link collapsed py-0 px-0" 
                                 data-toggle="collapse" data-target="#collapseEmailHistory">
                                 <i class="fa fa-angle-right"></i> Order Email History
                             </button>
                         </div>
-
-
-
-
-
-                        <!-- <div> -->
-                            <div id="collapseEmailHistory" class="collapse" aria-labelledby="headingEmailHistory" >
-                                <div class="card-body">
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>To</th>
-                                                <th>From</th>
-                                                <th>Subject</th>
-                                                <th>Status</th>
-                                                <th>Content</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if(!empty($emailHistories) && is_iterable($emailHistories))
-                                                @foreach($emailHistories as $email)
-                                                    <tr>
-                                                        <td>{{ $email->created_at }}</td>
-                                                        <td>{{ $email->to_email }}</td>
-                                                        <td>{{ $email->from_email }}</td>
-                                                        <td>{{ $email->subject }}</td>
-                                                        <td>{{ ucwords($email->status) }}</td>
-                                                        <td>
-                                                            <button type="button" class="btn btn-sm btn-primary view-email-btn">
-                                                                View
-                                                            </button>
-
-                                                            <textarea class="d-none email-body">
-                                                                {!! $email->body !!}
-                                                            </textarea>
-
-                                                            <input type="hidden" class="email-to" value="{{ $email->to_email }}">
-                                                            <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
-                                                            <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
-                                                            <input type="hidden" class="email-subject" value="{{ $email->subject }}">
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-                                            @else
+                        <div id="collapseEmailHistory" class="collapse" aria-labelledby="headingEmailHistory">
+                            <div class="card-body">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>To</th>
+                                            <th>From</th>
+                                            <th>Subject</th>
+                                            <th>Status</th>
+                                            <th>Content</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if(!empty($emailHistories) && is_iterable($emailHistories))
+                                            @foreach($emailHistories as $email)
                                                 <tr>
-                                                    <td colspan="5">No email history found</td>
+                                                    <td>{{ $email->created_at }}</td>
+                                                    <td>{{ $email->to_email }}</td>
+                                                    <td>{{ $email->from_email }}</td>
+                                                    <td>{{ $email->subject }}</td>
+                                                    <td>{{ ucwords($email->status) }}</td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-primary view-email-btn">
+                                                            View
+                                                        </button>
+
+                                                        <textarea class="d-none email-body">
+                                                            {!! $email->body !!}
+                                                        </textarea>
+
+                                                        <input type="hidden" class="email-to" value="{{ $email->to_email }}">
+                                                        <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
+                                                        <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
+                                                        <input type="hidden" class="email-subject" value="{{ $email->subject }}">
+                                                    </td>
                                                 </tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                    {{ $emailHistories->links() }}
-                                </div>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="5">No email history found</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                                {{ $emailHistories->links() }}
                             </div>
-                        <!-- </div> -->
+                        </div>
                     </div>
 
                     <div class="card">
-                        
-
                         <div class="card-header bg-secondary py-0" id="headingPaymentLog">
                             <button type="button" class="btn btn-link collapsed py-0 px-0" 
                                 data-toggle="collapse" data-target="#collapsePaymentLog">
                                 <i class="fa fa-angle-right"></i> Payment Logs
                             </button>
                         </div>
-                        <!-- <div> -->
-                            <div id="collapsePaymentLog" class="collapse" aria-labelledby="headingPaymentLog" >
-                                <div class="card-body">
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th style="width:20%; white-space: nowrap;">Date</th>
-                                                <!-- <th>Event ID</th> -->
-                                                <th>Event</th>
-                                                <th>Message</th>
-                                                
-                                                <th>Status</th>
-                                                <!-- <th>Payload</th> -->
-                                            </tr>
-                                        </thead>
-                                        <tbody>
+                        <div id="collapsePaymentLog" class="collapse" aria-labelledby="headingPaymentLog" >
+                            <div class="card-body">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:20%; white-space: nowrap;">Date</th>
+                                            <!-- <th>Event ID</th> -->
+                                            <th>Event</th>
+                                            <th>Message</th>
+                                            <th>Status</th>
+                                            <!-- <th>Payload</th> -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
 
-                                            @if(!empty($paymentLogs) && is_iterable($paymentLogs))
-                                                @foreach($paymentLogs as $paymentLog)
-                                                    <tr>
-                                                        <td>{{ $paymentLog->created_at }}</td>
-                                                        <!-- <td>{{ $paymentLog->event_id }}</td> -->
-
-                                                       @php
-                                                        $raw = $paymentLog->event_type;
-
-                                                        $readable = str_replace('_', ' ', explode('.', $raw)[1]);
-                                                        $readable = ucwords($readable);
-
-                                                        @endphp
-                                                        <td>{{ $readable }}</td>
-                                                        <td>{{ $paymentLog->message }}</td>
-                                                        <td>{{ ucwords($paymentLog->status) }}</td>
-                                                        
-                                                    </tr>
-                                                @endforeach
-                                            @else
+                                        @if(!empty($paymentLogs) && is_iterable($paymentLogs))
+                                            @foreach($paymentLogs as $paymentLog)
                                                 <tr>
-                                                    <td colspan="5">No Payment history found</td>
+                                                    <td>{{ $paymentLog->created_at }}</td>
+
+                                                    @php
+                                                    $raw = $paymentLog->event_type;
+
+                                                    $readable = str_replace('_', ' ', explode('.', $raw)[1]);
+                                                    $readable = ucwords($readable);
+
+                                                    @endphp
+                                                    <td>{{ $readable }}</td>
+                                                    <td>{{ $paymentLog->message }}</td>
+                                                    <td>{{ ucwords($paymentLog->status) }}</td>
+                                                    
                                                 </tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                    {{ $paymentLogs->links() }}
-                                </div>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="5">No Payment history found</td>
+                                            </tr>
+                                        @endif
+                                    </tbody>
+                                </table>
+                                {{ $paymentLogs->links() }}
                             </div>
-                        <!-- </div> -->
+                        </div>
                     </div>
 
                     <div class="card-footer" style="display:block">
@@ -1711,13 +1664,11 @@ $expectEmails = ['order_pending'];
   </div>
 </div>
 
-
-
 <div class="modal fade" id="refundAllModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Refund  Payment</h5>
+        <h5 class="modal-title">Refund Payment</h5>
       </div>
       <div class="modal-body">
         <form id="refundAllForm">
@@ -1851,16 +1802,17 @@ $expectEmails = ['order_pending'];
                     <div class="row">
 
                         <!-- Pickup Type -->
+                        <div class="col-lg-12">
+                            <label><b>Pickup Type</b></label>
+                        </div>
                         <div class="col-lg-12 mb-2">
-                            <label><b>Pickup Type</b></label><br>
-
-                            <label>
+                            <label style="font-weight: 400;">
                                 <input type="radio" name="pickup_type" value="existing"
                                     {{ $order->customer->pickup_id ? 'checked' : '' }}>
                                 Select from list
                             </label>
 
-                            <label class="ml-3">
+                            <label style="font-weight: 400;" class="ml-3">
                                 <input type="radio" name="pickup_type" value="custom"
                                     {{ $order->customer->pickup_name ? 'checked' : '' }}>
                                 Custom pickup
@@ -1868,7 +1820,7 @@ $expectEmails = ['order_pending'];
                         </div>
 
                         <!-- Pickup Dropdown -->
-                        <div class="col-lg-6 mb-2" id="pickup_id_block">
+                        <div class="col-lg-12 mb-2" id="pickup_id_block">
                             <label>Pickup Location</label>
                             <select name="oc_pickup_id" class="form-control">
                                 <option value="">Select pickup</option>
@@ -1882,7 +1834,7 @@ $expectEmails = ['order_pending'];
                         </div>
 
                         <!-- Custom Pickup -->
-                        <div class="col-lg-6 mb-2" id="pickup_name_block">
+                        <div class="col-lg-12 mb-2" id="pickup_name_block">
                             <label>Pickup Name</label>
                             <textarea name="oc_pickup_name" class="form-control">{{ $order->customer->pickup_name }}</textarea>
                         </div>
@@ -1896,13 +1848,11 @@ $expectEmails = ['order_pending'];
                             <label>Innternal Notes</label>
                             <textarea name="internal_notes" class="form-control">{{ $order->internal_notes }}</textarea>
                         </div>
-                        <div class="col-lg-12 mb-3">
-
+                        <div class="col-lg-12 mb-2">
                             <label><b>Send Feedback Email {{$order->send_feeback_email}}</b></label><br>
                             <input type="hidden" name="send_feedback_email" value="0">
                             <label class="switch">
-                                <input type="checkbox" name="send_feedback_email" value="1"
-                                    >
+                                <input type="checkbox" name="send_feedback_email" value="1">
                                 <span class="slider round"></span>
                             </label>
                         </div>
@@ -1913,7 +1863,7 @@ $expectEmails = ['order_pending'];
                 </div>
 
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save mr-2"></i> Save</button>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 </div>
 

@@ -10898,3 +10898,54 @@ table.dataTable {
     font-size: 13px;
     white-space: normal;
 }
+
+#editPickupModal .modal-content .modal-header {
+    background: #343a41;
+    color: #FFF;
+}
+
+#editPickupModal .modal-header .close {
+    color: #FFF;
+}
+
+.payment-details .paymentRow {
+    font-size: 14px;
+    padding: 0 10px;
+}
+
+.payment-details .charge-btn {
+    background: #11ce83;
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #ffffff;
+    width: 100%;
+    display: block;
+    text-align: center;
+}
+
+.payment-details .remove-card-btn {
+    background: #ef486a;
+    padding: 8px;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #ffffff;
+    width: 100%;
+    display: block;
+    text-align: center;
+}
+
+.payment-details .open-payment-refund {
+    background: #848484;
+    color: #FFF;
+}
+
+#collapseRecentActions nav {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+#collapseRecentActions nav ul {
+    margin: 0;
+}
