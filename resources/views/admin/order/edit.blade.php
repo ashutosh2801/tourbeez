@@ -957,7 +957,7 @@ $expectEmails = ['order_pending'];
                                             @endif -->
 
                                             @if($order->payment_intent_id)
-                                                <div class="col-2">
+                                                <div class="col-12 col-md-2">
                                                     @if($latestPayment && $latestPayment->card_last4)
 
                                                         {!! cardSvg($latestPayment->card_brand) !!} 
@@ -974,7 +974,7 @@ $expectEmails = ['order_pending'];
                                                     @endif
                                                 </div>
                                             @endif
-                                            <div class="col-2">
+                                            <div class="col-12 col-md-6">
                                                 @if(str_contains( $order->payment_intent_id, 'pm_') || str_contains( $order->payment_method_id, 'pm_'))
                                                 <a id="chargeSavedCard" type="button" class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
                                                     Charge Now
@@ -989,7 +989,7 @@ $expectEmails = ['order_pending'];
                                                 
                                             </div>
                                             @if($order->payment_intent_id)
-                                                <div class="col-2">
+                                                <div class="col-12 col-md-6">
                                                     <a href="javascript:void(0)" onclick="removeCard({{ $order->id }})" class="remove-card-btn">
                                                        Remove Credit Card
                                                     </a>
@@ -1037,85 +1037,85 @@ $expectEmails = ['order_pending'];
                                         @php
                                         $refFlaf = 0;
                                         @endphp
-                                        @foreach ($order->payments as $payment)
-
-                                          
+                                                                                 
                                         <input type="hidden" name="paymentId[]" value="{{ $payment->id }}" />
-                                        <div class="paymentRow py-2 border border-black-300 {{ $payment->amount <= 0 ? 'd-none' : '' }}">
-                                            <div class="row">
-                                            <div class="col-1">
-                                                {{ $payment->payment_type == 'CARD' ? 'CREDITCARD': $payment->payment_type  }}
-                                                <input type="hidden" name="paymentType[]" value="{{ $payment->payment_type }}" />
-                                            </div>
+                                        <div class="table-responsive">
+                                            <table class="table paymentRow {{ $payment->amount <= 0 ? 'd-none' : '' }}" style="border: 1px solid #dee2e6;">
+                                                <tbody>
+                                                    @foreach ($order->payments as $payment) 
+                                                        <tr>
+                                                            <td>
+                                                                {{ $payment->payment_type == 'CARD' ? 'CREDITCARD': $payment->payment_type  }}
+                                                                <input type="hidden" name="paymentType[]" value="{{ $payment->payment_type }}" />
+                                                            </td>
+                                                            <td>
+                                                                STRIPE: {{ $payment->transaction_id ?? $payment->payment_intent_id }}
+                                                                <input type="hidden" name="transactionId[]" value="{{ $payment->transaction_id }}" />
+                                                            </td>
+                                                            <td>
+                                                                {{ $payment->collection_date?  \Carbon\Carbon::parse($payment->collection_date)->format('M d Y g:i A') : '' }}
+                                                                <input type="hidden" name="collection_date[]" value="{{ $payment->collection_date }}" />
+                                                            </td>
+                                                            <td>
+                                                                {{ price_format_with_currency($payment->amount, strtoupper($payment->currency)) }}
+                                                                @if($payment->refund_amount > 0)
+                                                                <p style="color: red">(Refunded {{ (price_format_with_currency($payment->refund_amount, strtoupper($payment->currency)) )}})</p>
+                                                                @endif
+                                                                <input type="hidden" name="amount[]" value="{{ $payment->amount }}" />
+                                                            </td>
+                                                            @if($payment->status == 'uncaptured')
+                                                            <td>
+                                                                <button class="btn-sm btn-primary capture-btn" data-uncapture-amount="{{ $payment->amount }}" data-order-id="{{ $order->id }}" type="button">
+                                                                    Capture 
+                                                                </button>
+                                                                <button class="btn-sm btn-danger cancel-btn" data-order-id="{{ $order->id }}" type="button">
+                                                                    Cancel
+                                                                </button>
+                                                            </td>
+                                                            
+                                                            @else
+                                                                @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded')
+                                                                    <td>
+                                                                        @if($payment->status == 'capture_canceled')
+                                                                            <div class="text-danger text-sm">Capture Canceled</div>
+                                                                        @endif
+                                                                    </td>
+                                                                @else
+                                                                    <td>
+                                                                    </td>
+                                                                @endif 
+                                                            @endif
+                                                            @if($payment->status == 'succeeded' || $payment->status == 'partial_refunded')
+                                                        
+                                                                @if($payment->amount > 0 && $payment->collection_type === 'Inside' )
+                                                                <td class="text-right">
+                                                                    @php $refFlaf = 1; @endphp
+                                                                    
+                                                                    @if($payment->amount > $payment->refund_amount)
+                                                                    <button type="button"
+                                                                            class="btn btn-sm open-payment-refund"
+                                                                            data-order-id="{{ $order->id }}"
+                                                                            data-payment-id="{{ $payment->id }}"
+                                                                            data-amount="{{ $payment->amount }}">
+                                                                        Refund
+                                                                    </button>
+                                                                    @endif
 
-                                            <div class="col-3">
-                                                STRIPE: {{ $payment->transaction_id ?? $payment->payment_intent_id }}
-                                                <input type="hidden" name="transactionId[]" value="{{ $payment->transaction_id }}" />
-                                            </div>
-
-                                            <div class="col-2">
-                                                {{ $payment->collection_date?  \Carbon\Carbon::parse($payment->collection_date)->format('M d Y g:i A') : '' }}
-                                                <input type="hidden" name="collection_date[]" value="{{ $payment->collection_date }}" />
-                                            </div>
-
-                                            <div class="col-2">
-                                                {{ price_format_with_currency($payment->amount, strtoupper($payment->currency)) }}
-                                                @if($payment->refund_amount > 0)
-                                                <p style="color: red">(Refunded {{ (price_format_with_currency($payment->refund_amount, strtoupper($payment->currency)) )}})</p>
-                                                @endif
-                                                <input type="hidden" name="amount[]" value="{{ $payment->amount }}" />
-                                            </div>
-                                            @if($payment->status == 'uncaptured')
-                                            <div class="col-3">
-                                                <button class="btn-sm btn-primary capture-btn" data-uncapture-amount="{{ $payment->amount }}" data-order-id="{{ $order->id }}" type="button">
-                                                    Capture 
-                                               </button>
-                                                <button class="btn-sm btn-danger cancel-btn" data-order-id="{{ $order->id }}" type="button">
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                            
-                                            @else
-                                                @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded')
-                                                <div class="col-3">
-                                                    @if($payment->status == 'capture_canceled')
-                                                        <div class="text-danger text-sm">Capture Canceled</div>
-                                                    @endif
-                                                </div>
-                                                @else
-                                                <div class="col-2">
-                                                </div>
-                                                @endif 
-                                            @endif
-                                            @if($payment->status == 'succeeded' || $payment->status == 'partial_refunded')
-                                            
-                                                @if($payment->amount > 0 && $payment->collection_type === 'Inside' )
-                                                <div class="col-2 text-right">
-                                                    @php $refFlaf = 1; @endphp
-                                                    
-                                                    @if($payment->amount > $payment->refund_amount)
-                                                    <button type="button"
-                                                            class="btn btn-sm open-payment-refund"
-                                                            data-order-id="{{ $order->id }}"
-                                                            data-payment-id="{{ $payment->id }}"
-                                                            data-amount="{{ $payment->amount }}">
-                                                        Refund
-                                                    </button>
-                                                    @endif
-
-                                                    <button type="button" class="btn btn-danger btn-sm removeRow">-</button>
-                                                </div>
-                                                @endif
-                                            
-                                            @else
-                                                
-                                            @endif
-                                            </div>
+                                                                    <button type="button" class="btn btn-danger btn-sm removeRow">-</button>
+                                                                </td>
+                                                                @endif
+                                                            
+                                                            @else
+                                                                
+                                                            @endif
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
                                         </div>
-                                        @endforeach
                                     </div>
 
-                                    <div id="paymentTemplate" class="mt-4">
+                                    <div id="paymentTemplate">
                                         <div class="field-box">
                                             <div class="field-wrap">
                                                 <select class="form-control" name="paymentType[]">
@@ -1289,8 +1289,6 @@ $expectEmails = ['order_pending'];
 
 
                     <div class="card recent-actions">
-                        
-
                         <div class="card-header bg-secondary py-0" id="headingRecentActions">
                             <button type="button" class="btn btn-link collapsed py-0 px-0" 
                                 data-toggle="collapse" data-target="#collapseRecentActions">
@@ -1299,30 +1297,31 @@ $expectEmails = ['order_pending'];
                         </div>
                         <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions" >
                             <div class="card-body">
-                                <table class="table" style="border: 1px solid #dee2e6;">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Subject</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if(!empty($actions) && is_iterable($actions))
-                                            @foreach($actions as $action)
-                                                <tr>
-                                                    <td>{{ $action->created_at }}</td>
-                                                    <td>{!! $action->notes !!}</td>
-                                                </tr>
-                                            @endforeach
-                                        @else
+                                <div class="table-responsive">
+                                    <table class="table" style="border: 1px solid #dee2e6;">
+                                        <thead>
                                             <tr>
-                                                <td colspan="5">No action history found</td>
+                                                <th>Date</th>
+                                                <th>Subject</th>
                                             </tr>
-                                        @endif
-                                    </tbody>
-                                </table>
-
-                                {{ $actions->links() }}
+                                        </thead>
+                                        <tbody>
+                                            @if(!empty($actions) && is_iterable($actions))
+                                                @foreach($actions as $action)
+                                                    <tr>
+                                                        <td>{{ $action->created_at }}</td>
+                                                        <td>{!! $action->notes !!}</td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5">No action history found</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                    {{ $actions->links() }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1385,7 +1384,7 @@ $expectEmails = ['order_pending'];
                     </div>
 
                     <div class="card">
-                        <div class="card-header bg-secondary py-0" id="headingPaymentLog">
+                        <div class="card-header bg-secondary py-0 PaymentLogs" id="headingPaymentLog">
                             <button type="button" class="btn btn-link collapsed py-0 px-0" 
                                 data-toggle="collapse" data-target="#collapsePaymentLog">
                                 <i class="fa fa-angle-right"></i> Payment Logs
@@ -1393,45 +1392,47 @@ $expectEmails = ['order_pending'];
                         </div>
                         <div id="collapsePaymentLog" class="collapse" aria-labelledby="headingPaymentLog" >
                             <div class="card-body">
-                                <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th style="width:20%; white-space: nowrap;">Date</th>
-                                            <!-- <th>Event ID</th> -->
-                                            <th>Event</th>
-                                            <th>Message</th>
-                                            <th>Status</th>
-                                            <!-- <th>Payload</th> -->
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-
-                                        @if(!empty($paymentLogs) && is_iterable($paymentLogs))
-                                            @foreach($paymentLogs as $paymentLog)
-                                                <tr>
-                                                    <td>{{ $paymentLog->created_at }}</td>
-
-                                                    @php
-                                                    $raw = $paymentLog->event_type;
-
-                                                    $readable = str_replace('_', ' ', explode('.', $raw)[1]);
-                                                    $readable = ucwords($readable);
-
-                                                    @endphp
-                                                    <td>{{ $readable }}</td>
-                                                    <td>{{ $paymentLog->message }}</td>
-                                                    <td>{{ ucwords($paymentLog->status) }}</td>
-                                                    
-                                                </tr>
-                                            @endforeach
-                                        @else
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
                                             <tr>
-                                                <td colspan="5">No Payment history found</td>
+                                                <th style="width:20%; white-space: nowrap;">Date</th>
+                                                <!-- <th>Event ID</th> -->
+                                                <th>Event</th>
+                                                <th>Message</th>
+                                                <th>Status</th>
+                                                <!-- <th>Payload</th> -->
                                             </tr>
-                                        @endif
-                                    </tbody>
-                                </table>
-                                {{ $paymentLogs->links() }}
+                                        </thead>
+                                        <tbody>
+
+                                            @if(!empty($paymentLogs) && is_iterable($paymentLogs))
+                                                @foreach($paymentLogs as $paymentLog)
+                                                    <tr>
+                                                        <td>{{ $paymentLog->created_at }}</td>
+
+                                                        @php
+                                                        $raw = $paymentLog->event_type;
+
+                                                        $readable = str_replace('_', ' ', explode('.', $raw)[1]);
+                                                        $readable = ucwords($readable);
+
+                                                        @endphp
+                                                        <td>{{ $readable }}</td>
+                                                        <td>{{ $paymentLog->message }}</td>
+                                                        <td>{{ ucwords($paymentLog->status) }}</td>
+                                                        
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5">No Payment history found</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                    {{ $paymentLogs->links() }}
+                                </div>
                             </div>
                         </div>
                     </div>

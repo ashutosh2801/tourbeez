@@ -8572,6 +8572,7 @@ a.dropdown-footer:hover {
     gap:15px; 
     align-items:center; 
     flex-wrap:wrap;
+    margin-top: 15px;
 }
 
 .order-edit .payment-details .field-box .field-wrap {
@@ -10948,4 +10949,20 @@ table.dataTable {
 
 #collapseRecentActions nav ul {
     margin: 0;
+}
+
+@media (max-width: 767px) {
+
+    .payment-details .charge-btn {
+        margin: 13px 0;
+    }
+
+    .payment-details .paymentRow td {
+        white-space: nowrap;
+    }
+
+    .payment-details .PaymentLogs td {
+        white-space: nowrap;
+    }
+
 }
