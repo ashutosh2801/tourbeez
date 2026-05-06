@@ -364,13 +364,13 @@ class PaymentController extends Controller
                             'booking' => [],
                         ]); 
                     }
-                    else if($booking->order_status === 5) { // For confirmed case, if user try to pay again with same PI, then show order confirmed message instead of order confirmed message.
-                        return response()->json(data: [
-                            'status'  => 'confirmed',
-                            'message' => 'Your order was already confirmed! Please chceck your email for order details.',
-                            'booking' => [],
-                        ]); 
-                    }
+                    // else if($booking->order_status === 5) { // For confirmed case, if user try to pay again with same PI, then show order confirmed message instead of order confirmed message.
+                    //     return response()->json(data: [
+                    //         'status'  => 'confirmed',
+                    //         'message' => 'Your order was already confirmed! Please chceck your email for order details.',
+                    //         'booking' => [],
+                    //     ]); 
+                    // }
                     // Retrieve PaymentIntent
                     $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
 
@@ -416,6 +416,9 @@ class PaymentController extends Controller
                     $total_amount   = $booking->total_amount;
                     $balance_amount = $total_amount;
                     $booked_amount  = 0;
+                }
+                if($booking->order_status === 5 || $booking->order_status === 6) { // For confirmed case, if user try to pay again with same PI, then show order confirmed message instead of order confirmed message.
+                    $order_status = $booking->order_status;
                 }
 
                 if (!empty($paymentIntent->payment_method)) {

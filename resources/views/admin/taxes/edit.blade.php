@@ -56,8 +56,9 @@
                             <div class="form-group hidden mb-3" id="taxfeeType">
                                 <label for="pickup_time">Value *</label>
                                 <select class="form-control aiz-selectpicker" name="fee_type" id="fee_type" onchange="taxPercent(this.value)">
-                                    <option {{ $taxfee->fee_type == 'PERCENT' ? 'selected' : '' }} value="PERCENT">Percent</option>
+                                    
                                     <option {{ $taxfee->fee_type == 'FIXED_PER_ORDER' ? 'selected' : '' }} value="FIXED_PER_ORDER">Fixed per order item</option>
+                                    <option {{ $taxfee->fee_type == 'PERCENT' ? 'selected' : '' }} value="PERCENT">Percent</option>
                                     <option {{ $taxfee->fee_type == 'FIXED_PER_QUANTITY' ? 'selected' : '' }} value="FIXED_PER_QUANTITY">Fixed per quantity</option>
                                     <option {{ $taxfee->fee_type == 'FIXED_PER_DURATION' ? 'selected' : '' }} value="FIXED_PER_DURATION">Fixed per duration</option>
                                 </select>
@@ -100,7 +101,7 @@ function taxfeeType(value) {
         $('#fee_type').val('PERCENT');
     }
     else if(value === 'FEE') {
-        $('#fee_type_symb').html('$');
+        $('#fee_type_symb').html('CAD');
         $('#taxfeeType').removeClass('hidden');
     }
 }
@@ -111,7 +112,7 @@ function taxPercent(value) {
     }
     else {
         $('#percentTitle').text('Tax Amount *');
-        $('#fee_type_symb').html('$');
+        $('#fee_type_symb').html('CAD');
     }
 }
 

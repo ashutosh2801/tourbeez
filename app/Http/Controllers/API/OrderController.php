@@ -399,7 +399,7 @@ class OrderController extends Controller
             'cartItems.*.label'         => 'required|string|min:1',
             'cartItems.*.quantity'      => 'required|integer|min:1',
             'cartItems.*.price'         => 'required',
-            'cartItems.*.actual_price'  => 'required',
+            'cartItems.*.actual_price'  => 'nullable',
         ]);
 
         if (!$validated) {
@@ -563,9 +563,9 @@ class OrderController extends Controller
             'selectedTime' => 'nullable',
             'cartItems' => 'required|array|min:1',
             'cartItems.*.id' => 'required|integer',
-            'cartItems.*.actual_price' => 'required|numeric',
+            'cartItems.*.actual_price' => 'nullable|numeric',
             'cartItems.*.price' => 'required|numeric',
-            'cartItems.*.discount' => 'required|numeric',
+            'cartItems.*.discount' => 'nullable|numeric',
             'cartItems.*.quantity' => 'required|integer|min:1',
             'cartItems.*.total_price'=> 'required|numeric',
             'cartItems.*.label' => 'required|string',
