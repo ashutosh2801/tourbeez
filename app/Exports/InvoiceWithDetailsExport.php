@@ -3,93 +3,112 @@
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
 
-class InvoiceWithDetailsExport implements FromArray
+class InvoiceWithDetailsExport implements FromArray, WithEvents
 {
     protected $data;
+    protected $addonKeys;
 
     public function __construct($data)
     {
         $this->data = $data;
+
+        $this->addonKeys = collect($data[0] ?? [])
+            ->keys()
+            ->filter(fn($k) => str_ends_with($k, '_desc'))
+            ->map(fn($k) => str_replace('_desc', '', $k))
+            ->values()
+            ->toArray();
     }
 
     public function array(): array
     {
-        return array_merge(
-            $this->headers(),
-            $this->rows()
-        );
-    }
-
-    private function headers()
-    {
-        return [
-            [
-                'No.', 'Order #', 'Customer', 'Order Date', 'Fulfilment',
-                'Customer Total (CAD)', 'Paid', 'Product',
-
-                'Boat Desc','Boat Price','Boat Tax','Boat Fee','Boat Total',
-                'Helicopter Desc','Helicopter Price','Helicopter Tax','Helicopter Fee','Helicopter Total',
-                'Journey Desc','Journey Price','Journey Tax','Journey Fee','Journey Total',
-                'Sheraton Desc','Sheraton Price','Sheraton Tax','Sheraton Fee','Sheraton Total',
-                'Skylon Desc','Skylon Price','Skylon Tax','Skylon Fee','Skylon Total',
-                'Airport Desc','Airport Price','Airport Tax','Airport Fee','Airport Total',
-                'Wine Desc','Wine Price','Wine Tax','Wine Fee','Wine Total',
-                'Jet Desc','Jet Price','Jet Tax','Jet Fee','Jet Total',
-                'Guide Desc','Guide Price','Guide Tax','Guide Fee','Guide Total',
-                'Zipline Desc','Zipline Price','Zipline Tax','Zipline Fee','Zipline Total',
-            ]
-        ];
-    }
-
-    private function rows()
-    {
         $rows = [];
 
+        // Row 2 (sub headers)
+        $subHeader = [
+            'No.', 'Order #', 'Customer', 'Order Date', 'Fulfilment',
+            'Total', 'Paid', 'Product'
+        ];
+
+        foreach ($this->addonKeys as $key) {
+            $subHeader = array_merge($subHeader, [
+                'Desc', 'Price', 'Tax', 'Fee', 'Total'
+            ]);
+        }
+
+        // Empty row 1 (we'll fill via event)
+        $rows[] = array_fill(0, count($subHeader), '');
+        $rows[] = $subHeader;
+
+        // DATA
         foreach ($this->data as $r) {
 
-            $rows[] = [
-                $r['no'],
-                $r['order_number'],
-                $r['customer_name'],
-                $r['order_date'],
-                $r['fulfilment_date'],
-                $r['customer_total'],
-                $r['payment_status'],
-                $r['product_name'],
-
-                // BOAT
-                $r['boat_cruise_desc'], $r['boat_cruise_price'], $r['boat_cruise_tax'], $r['boat_cruise_fee'], $r['boat_cruise_total'],
-
-                // HELI
-                $r['helicopter_desc'], $r['helicopter_price'], $r['helicopter_tax'], $r['helicopter_fee'], $r['helicopter_total'],
-
-                // JOURNEY
-                $r['journey_falls_desc'], $r['journey_falls_price'], $r['journey_falls_tax'], $r['journey_falls_fee'], $r['journey_falls_total'],
-
-                // SHERATON
-                $r['sheraton_desc'], $r['sheraton_price'], $r['sheraton_tax'], $r['sheraton_fee'], $r['sheraton_total'],
-
-                // SKYLON
-                $r['skylon_desc'], $r['skylon_price'], $r['skylon_tax'], $r['skylon_fee'], $r['skylon_total'],
-
-                // AIRPORT
-                $r['airport_desc'], $r['airport_price'], $r['airport_tax'], $r['airport_fee'], $r['airport_total'],
-
-                // WINE
-                $r['wine_desc'], $r['wine_price'], $r['wine_tax'], $r['wine_fee'], $r['wine_total'],
-
-                // JET
-                $r['jet_desc'], $r['jet_price'], $r['jet_tax'], $r['jet_fee'], $r['jet_total'],
-
-                // GUIDE
-                $r['guide_desc'], $r['guide_price'], $r['guide_tax'], $r['guide_fee'], $r['guide_total'],
-
-                // ZIPLINE
-                $r['zipline_desc'], $r['zipline_price'], $r['zipline_tax'], $r['zipline_fee'], $r['zipline_total'],
+            $row = [
+                $r['no'] ?? '',
+                $r['order_number'] ?? '',
+                $r['customer_name'] ?? '',
+                $r['order_date'] ?? '',
+                $r['fulfilment_date'] ?? '',
+                number_format((float) ($r['customer_total'] ?? 0), 2, '.', ''),
+                $r['payment_status'] ?? '',
+                $r['product_name'] ?? '',
             ];
+
+            foreach ($this->addonKeys as $key) {
+                $row[] = $r[$key.'_desc'] ?? '';
+                $row[] = number_format((float) ($r[$key.'_price'] ?? 0), 2, '.', '');
+                $row[] = number_format((float) ($r[$key.'_tax'] ?? 0), 2, '.', '');
+                $row[] = number_format((float) ($r[$key.'_fee'] ?? 0), 2, '.', '');
+                $row[] = number_format((float) ($r[$key.'_total'] ?? 0), 2, '.', '');
+            }
+
+            $rows[] = $row;
         }
 
         return $rows;
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function ($event) {
+
+                $sheet = $event->sheet->getDelegate();
+
+                $col = 1;
+
+                // static columns (merge vertically)
+                $staticHeaders = [
+                    'No.', 'Order #', 'Customer', 'Order Date',
+                    'Fulfilment', 'Total', 'Paid', 'Product'
+                ];
+
+                foreach ($staticHeaders as $header) {
+                    $sheet->setCellValueByColumnAndRow($col, 1, $header);
+                    $sheet->mergeCellsByColumnAndRow($col, 1, $col, 2);
+                    $col++;
+                }
+
+                // addon headers (merge horizontally)
+                foreach ($this->addonKeys as $key) {
+
+                    $label = ucwords(str_replace('_', ' ', $key));
+
+                    $sheet->setCellValueByColumnAndRow($col, 1, $label);
+
+                    // merge across 5 columns ONLY
+                    $sheet->mergeCellsByColumnAndRow($col, 1, $col + 4, 1);
+
+                    $col += 5;
+                }
+
+                // styling
+                $sheet->getStyle('1:2')->getFont()->setBold(true);
+                $sheet->getStyle('1:2')->getAlignment()->setHorizontal('center');
+            }
+        ];
     }
 }
