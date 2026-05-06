@@ -343,7 +343,15 @@
                                 <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "N/A" }}</span>
                                 
                                     @php
-                                        $payment = $order->payments()->where( 'collection_type','Inside')->first();
+                                        $payment = $order->payments()
+                                            ->where('collection_type', 'Inside')
+                                            ->latest()
+                                            ->first();
+                                        
+                                        // fallback if not found
+                                        if (!$payment) {
+                                            $payment = $order->payments()->latest()->first();
+                                        }
                                     @endphp
 
                                     @if($payment)

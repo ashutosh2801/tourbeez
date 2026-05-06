@@ -190,6 +190,9 @@ class PickupController extends Controller
         $orderCustomer->save();
 
         $orderCustomer->order->internal_notes = $request->internal_notes;
+        $orderCustomer->order->send_feedback_email = $request->send_feedback_email;
+
+        
 
         $orderCustomer->order->save();
         

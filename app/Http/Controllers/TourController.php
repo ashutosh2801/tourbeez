@@ -1212,7 +1212,7 @@ $pickupHtml .= '</div>';
 
     public function basic_detail_update(Request $request, $id)
     {
-
+        
         $request->validate([
             'title'                 => 'required|max:255',
             'description'           => 'required',

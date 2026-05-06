@@ -40,12 +40,15 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                               <td>
                                   <a target="_blank" href="{{ route('admin.taxes.edit', encrypt($item->id)) }}" class="text-info">{{ $item->label }}</a>  <br />  
 
-                                  @if($item->tax_fee_type=='FEE')
-                                  {{ price_format_with_currency($item->tax_fee_value, 'USD' ,$data->currency)}} <br>
+                                  @if($item->fee_type=='PERCENT')
+                                  {{ number_format($item->tax_fee_value,2) . ' %' }}
+                                   <br>
 
                                   @else
 
-                                    {{ number_format($item->tax_fee_value,1) . ($item->tax_fee_type=='TAX' ? '%' : '') }}
+                                    {{ price_format_with_currency($item->tax_fee_value, 'CAD' ,$data->currency)}}
+
+                                    
                                   @endif
  
                                   <!-- {{ ($item->tax_fee_type=='FEE' ? '$' : '') . number_format($item->tax_fee_value,1) . ($item->tax_fee_type=='TAX' ? '%' : '') }} -->
