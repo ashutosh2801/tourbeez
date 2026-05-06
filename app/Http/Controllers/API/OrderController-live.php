@@ -399,7 +399,7 @@ class OrderController extends Controller
             'cartItems.*.label'         => 'required|string|min:1',
             'cartItems.*.quantity'      => 'required|integer|min:1',
             'cartItems.*.price'         => 'required',
-            'cartItems.*.actual_price'  => 'required',
+            'cartItems.*.actual_price'  => 'nullable',
         ]);
 
         if (!$validated) {
@@ -561,13 +561,12 @@ class OrderController extends Controller
             'tourId' => 'required|integer|exists:tours,id',
             'selectedDate' => 'required|date_format:Y-m-d',
             'selectedTime' => 'nullable',
-            
             'cartItems' => 'required|array|min:1',
             'cartItems.*.id' => 'required|integer',
-            'cartItems.*.actual_price' => 'required|numeric',
+            'cartItems.*.actual_price' => 'nullable|numeric',
             'cartItems.*.price' => 'required|numeric',
-            'cartItems.*.discount' => 'required|numeric',
-            'cartItems.*.quantity' => 'required|integer',
+            'cartItems.*.discount' => 'nullable|numeric',
+            'cartItems.*.quantity' => 'required|integer|min:1',
             'cartItems.*.total_price'=> 'required|numeric',
             'cartItems.*.label' => 'required|string',
             'cartItems.*.price_type' => 'required|string',
@@ -582,6 +581,7 @@ class OrderController extends Controller
             'formData.adv_deposite' => 'nullable|string|max:255',
             'formData.is_discount' => 'nullable|string|max:255',
             'formData.booking_fee' => 'nullable|numeric|max:255',
+
         ]);
 
         $order = Order::find($id);
@@ -598,6 +598,18 @@ class OrderController extends Controller
                 'status' => false,
                 'message' => 'Tour not found.'
             ], 404);
+        }
+
+        if ($request->filled('promo_code')) {
+            $promo = Promo::where('code', $request->promo_code)
+                ->where('status', 'ISSUED')
+                ->where(function ($q) {
+                    $q->whereNull('expiry_date')
+                      ->orWhere('expiry_date', '>=', now()->toDateString());
+                })
+                ->first();
+            $promo->used_by = $promo->used_by + 1;
+            $promo->save();
         }
         
         try {
@@ -642,7 +654,8 @@ class OrderController extends Controller
             $fees       = [];
             $discount   = [];
             $item_total = 0;
-            $sub_item_total = 0;
+
+            \Log::warning($validated['cartItems']);
 
             // Cart Items
             foreach ($validated['cartItems'] as $item) {
@@ -709,8 +722,6 @@ class OrderController extends Controller
                 }
             }
 
-            $sub_item_total = $item_total;
-
             // Cart Fees
             if (!empty($request->cartFees)) {
                 foreach ($request->cartFees as $fee) {
@@ -728,71 +739,6 @@ class OrderController extends Controller
                 }
             }
 
-            if ($request->filled('promo_code')) {
-
-                $promo = Promo::where('code', $request->promo_code)
-                        ->where('status', 'ISSUED')
-                        ->where(function ($q) {
-                            $q->whereNull('expiry_date')
-                            ->orWhere('expiry_date', '>=', now()->toDateString());
-                        })
-                        ->first();
-    
-                $discount_amount = 0; 
-                if ($promo->value_type === 'VALUE_LIMITPRODUCT') {
-                    $discount_amount = $promo->voucher_value;
-                }
-                else if ($promo->value_type === 'VALUE') {
-                    $discount_amount = $promo->voucher_value;
-                }
-                else if ($promo->value_type === 'VALUE_LIMITCATEGORY') {
-                    $discount_amount = $promo->voucher_value;
-                }
-                else if ($promo->value_type === 'PERCENT_LIMITPRODUCT') {
-                    $discount_amount = ($sub_item_total * $promo->value_percent) / 100;
-                }
-                else if ($promo->value_type === 'PERCENT') {
-                    $discount_amount = ($sub_item_total * $promo->value_percent) / 100;
-                }
-                else if ($promo->value_type === 'PERCENT_LIMITCATEGORY') {
-                    $discount_amount = ($sub_item_total * $promo->value_percent) / 100;
-                } 
-                
-                OrderPayment::create([
-                    'order_id'       => $order->id,
-                    'payment_type'   => 'PROMO_CODE',
-                    'transaction_id' => $request->promo_code,
-                    'collection_date'=> date('Y-m-d'),
-                    'currency'       => strtolower($order->currency),
-                    'amount'         => $discount_amount,
-                    'collection_type'=> 'Outside',
-                    'status'         => 'succeeded',
-                    'created_at'     => now(),
-                    'updated_at'     => now(),
-                ]);
-                $sub_item_total = max(($sub_item_total - $discount_amount), 0);
-
-                $cartFees = $request->cartFees;
-                if(!empty($cartFees) && is_array($cartFees)) {
-                    
-                    $tax_fee = ($cartFees[0]['type'] === "PERCENT") ? ($sub_item_total * $cartFees[0]['value'])/100 : $cartFees[0]['value'];
-
-                    $fees = [];
-                    $fees[] = [
-                        'tour_id'           => $request->tourId,
-                        'tour_taxes_id'     => $cartFees[0]['id'],
-                        'label'             => $cartFees[0]['label'],
-                        'type'              => $cartFees[0]['type'],
-                        'value'             => $cartFees[0]['value'],
-                        'price'             => $tax_fee,
-                    ];
-                    $sub_item_total += $tax_fee;
-                }
-            }
-            else {
-                $sub_item_total = $item_total;
-            }
-
             $order_tour_data = [
                 'tour_id'           => $request->tourId,
                 'order_id'          => $order->id,
@@ -802,11 +748,13 @@ class OrderController extends Controller
                 'tour_fees'         => json_encode($fees ?? []),
                 'discount'          => json_encode($discount ?? []),
                 'number_of_guests'  => $quantity,
-                'total_amount'      => $sub_item_total,
+                'total_amount'      => $item_total,
             ];
 
             OrderTour::updateOrCreate(
-                [ 'order_id' => $order->id ],
+                [
+                    'order_id' => $order->id
+                ],
                 $order_tour_data
             );
 
@@ -824,6 +772,9 @@ class OrderController extends Controller
             }
 
             /* If already partially paid or added discount/promo etc in backend */
+            // $paidAmount = $order->payments()
+            //                 ->where('status', 'succeeded')
+            //                 ->sum('amount');
             $paidAmount = $order->payments()
                         ->where('status', 'succeeded')
                         ->where('payment_type', '<>', 'PROMO_CODE')
@@ -846,8 +797,8 @@ class OrderController extends Controller
             $order->sub_tour_id        = $request->sub_tour_id;
             $order->action_name        = $request->action_name;
             $order->number_of_guests   = $quantity;
-            $order->total_amount       = $sub_item_total ?? 0;
-            $order->balance_amount     = ($adv_deposite == 'deposit') ? $sub_item_total : 0;
+            $order->total_amount       = $item_total ?? 0;
+            $order->balance_amount     = ($adv_deposite == 'deposit') ? $item_total : 0;
             $order->adv_deposite       = $adv_deposite;
             $order->currency           = $request->currency;
             $order->source             = $request->source ? ucwords($request->source) : 'Tourbeez';
@@ -869,6 +820,7 @@ class OrderController extends Controller
                 'source'        => $order->source,
                 'totalAmount'   => $order->total_amount
             ];
+
 
             //dd($order_tour_data);
             if ($adv_deposite === "deposit") {
@@ -908,7 +860,73 @@ class OrderController extends Controller
                     
 
                 } else {
+                    // Deposit not enabled → fallback to full
                     $chargeAmount = $order->total_amount;
+                }
+
+                if ($request->filled('promo_code')) {
+
+                    switch ($promo->value_type) {
+
+                        /* ================= FIXED ================= */
+
+                        case 'VALUE':
+                            $discountAmount = min($promo->voucher_value, $item_total);
+                            break;
+
+                        case 'VALUE_LIMITPRODUCT':
+                            foreach ($pricing as $item) {
+                                if ($item['tour_pricing_id'] == $promo->product_id) {
+                                    $discountAmount = min(
+                                        $promo->voucher_value,
+                                        $item['total_price']
+                                    );
+                                    break;
+                                }
+                            }
+                            break;
+
+                        case 'VALUE_LIMITCATEGORY':
+                            foreach ($pricing as $item) {
+                                $product = TourPricing::find($item['tour_pricing_id']);
+                                if ($product && $product->category_id == $promo->category_id) {
+                                    $discountAmount = min(
+                                        $promo->voucher_value,
+                                        $item['total_price']
+                                    );
+                                }
+                            }
+                            break;
+
+                        /* ================= PERCENT ================= */
+
+                        case 'PERCENT':
+                            $discountAmount = ($item_total * $promo->value_percent) / 100;
+                            break;
+
+                        case 'PERCENT_LIMITPRODUCT':
+                            foreach ($pricing as $item) {
+                                if ($item['tour_pricing_id'] == $promo->product_id) {
+                                    $discountAmount = ($item['total_price'] * $promo->value_percent) / 100;
+                                    break;
+                                }
+                            }
+                            break;
+
+                        case 'PERCENT_LIMITCATEGORY':
+                            foreach ($pricing as $item) {
+                                $product = TourPricing::find($item['tour_pricing_id']);
+                                if ($product && $product->category_id == $promo->category_id) {
+                                    $discountAmount += ($item['total_price'] * $promo->value_percent) / 100;
+                                }
+                            }
+                            break;
+                    }
+
+                    // Safety
+                    $discountAmount = round(min($discountAmount, $item_total), 2);
+
+                    $chargeAmount = $chargeAmount - $discountAmount;
                 }
 
                 // ✅ Update amounts in order
@@ -994,6 +1012,7 @@ class OrderController extends Controller
                     ]);               
                     $order->payment_intent_client_secret = $si->client_secret;
                     $order->payment_intent_id = $si->id;
+
 
                     // $retrievedIntent = \Stripe\PaymentIntent::retrieve($si->id);
                     \Log::warning('SetupIntent uncaptured - ' . $order->order_number . ' - ' . $si->id);

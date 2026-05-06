@@ -2998,18 +2998,15 @@ $pickupHtml .= '</div>';
     }
 
 
-   public function toursList(Request $request)
+    public function toursList(Request $request)
     {
-            $search = $request->get('q');
+        $search = $request->get('q');
 
-            if (!$search || strlen($search) < 4) {
-                return response()->json([]); // ✅ no query for small input
-            }
-
-            return Tour::where('title', 'like', "{$search}%")
-                ->orderBy('title')
-                ->limit(15) // 🔥 keep small
-                ->get(['id', 'title']);
+        return Tour::when($search, function ($query) use ($search) {
+                $query->where('title', 'like', "%{$search}%");
+            })
+            ->orderBy('title')
+            ->get(['id', 'title']);
     }
 
 

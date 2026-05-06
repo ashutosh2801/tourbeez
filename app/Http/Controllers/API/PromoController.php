@@ -62,12 +62,16 @@ class PromoController extends Controller
             $discount = ($request->cart_total * $promo->value_percent) / 100;
         }
 
+        $hst_value = ($request->cart_total - $discount) * 0.13; // Assuming HST is 13%
+        $sub_total = max(0, $request->cart_total - $discount);
+        $final_total = max(0, $sub_total + $hst_value);
+
         return response()->json([
             'success' => true,
             'discount' => round($discount, 2),
-            'hst_value' => round(($request->cart_total - $discount) * 0.13, 2), // Assuming HST is 13%
-            'sub_total' => max(0, $request->cart_total - $discount),
-            'final_total' => max(0, $request->cart_total - $discount),
+            'hst_value' => round($hst_value, 2), // Assuming HST is 13%
+            'sub_total' => round($sub_total, 2),
+            'final_total' => round($final_total, 2),
             'code' => $promo->code,
             'type' => $promo->value_type,
         ]);

@@ -21,6 +21,7 @@ class SendTourCompletedNotification extends Command
         //tourbeez.com+9768a17f10@invite.trustpilot.com
         $orders = Order::with(['order_tour'])
                 ->where('order_status', 5)
+                ->where('order_number', '!=', 'TVCBVVL') // Exclude customer order
                 ->whereHas('order_tour', function ($query) {
                     $query->where('tour_date', '<', date('Y-m-d'))
                     ->where('tour_date', '>=', date('Y-m-d', strtotime('-1 day')));

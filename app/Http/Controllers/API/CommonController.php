@@ -130,7 +130,7 @@ class CommonController extends Controller
                 ->where('p.post_status', 'publish')
                 ->distinct()
                 ->orderBy('p.post_date', 'desc')
-                ->limit(25)
+                ->limit(8)
                 ->get();
         });
 

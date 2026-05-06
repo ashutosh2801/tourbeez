@@ -2185,8 +2185,6 @@ class OrderController extends Controller
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
                 "[[CUSTOMER_PHONE]]"        => $customer->phone ?? '',
 
-
-
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
                 "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
                 "[[TOUR_MAP_FORMATTED]]"    => $tour->location->address ? str_replace(',', ',<br>', $tour->location->address) : '',
