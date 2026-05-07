@@ -882,7 +882,7 @@ $expectEmails = ['order_pending'];
                             </button>                     
                         </div>
 
-                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree" >
+                        <div id="collapseThree" class="collapse show" aria-labelledby="headingThree">
                             @php $totalPaid = 0; 
 
 
@@ -974,7 +974,7 @@ $expectEmails = ['order_pending'];
                                                     @endif
                                                 </div>
                                             @endif
-                                            <div class="col-12 col-md-6">
+                                            <div class="col-12 col-md-2">
                                                 @if(str_contains( $order->payment_intent_id, 'pm_') || str_contains( $order->payment_method_id, 'pm_'))
                                                 <a id="chargeSavedCard" type="button" class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
                                                     Charge Now
@@ -989,7 +989,7 @@ $expectEmails = ['order_pending'];
                                                 
                                             </div>
                                             @if($order->payment_intent_id)
-                                                <div class="col-12 col-md-6">
+                                                <div class="col-12 col-md-2">
                                                     <a href="javascript:void(0)" onclick="removeCard({{ $order->id }})" class="remove-card-btn">
                                                        Remove Credit Card
                                                     </a>
