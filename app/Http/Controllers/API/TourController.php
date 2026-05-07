@@ -42,6 +42,7 @@ class TourController extends Controller
             ])
             ->onlyRoot()
             ->where('status', 1)
+            ->where('id', '<>', 709) // Exclude Voyage The falls
             // ->whereHas('schedules', function ($sq) {
             //     $sq->whereDate('until_date', '>=', now()->toDateString());
             // })
@@ -522,11 +523,9 @@ class TourController extends Controller
         ]);
     }
 
-
-
-
-
-
+    /**
+     * Fetch disabled tour dates for a tour.
+     */
     private function getDisabledTourDates_fromdb(int $tourId): array
     {
         // ✅ Load the precomputed meta row for this tour
@@ -581,7 +580,6 @@ class TourController extends Controller
             'until_date' => $globalEnd->toDateString(),
         ];
     }
-
 
     /**
      * Fetch booking related info for a tour.
@@ -852,6 +850,7 @@ class TourController extends Controller
                 ->onlyRoot()
                 ->select('id', 'title', 'slug', 'unique_code', 'price', 'currency')
                 ->where('status', 1)
+                ->where('id', '<>', 709) // Exclude Voyage The falls
                 ->when($search, function ($query, $search) {
                     $query->where('title', 'LIKE', '%' . $search . '%');
                 })
@@ -859,16 +858,14 @@ class TourController extends Controller
                 ->limit(max(0, $total_tours))
                 ->get();
 
-                $tours->map(function ($tour) {
-
+                /*$tours->map(function ($tour) {
                     $tour->price = currencyConvert(
                         $tour->price,
                         $tour->currency ?? 'USD',
                         'CAD' // 👈 forced CAD
                     );
-
                     return $tour;
-                });
+                });*/
         });
 
         /*
@@ -1236,7 +1233,6 @@ class TourController extends Controller
         return null;
     }
 
-
     private function calculateNextDate($schedule, Carbon $today, $allRepeats = [])
     {
         $interval   = $schedule->repeat_period_unit ?? 1;
@@ -1291,7 +1287,6 @@ class TourController extends Controller
 
         return null;
     }
-
 
     private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationMinutes = 30)
     {

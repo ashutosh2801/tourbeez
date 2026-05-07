@@ -78,13 +78,18 @@
             </div>
 
             {{-- MODEL --}}
+
             <div class="col-xl-2 col-md-2 col-12">
                 <label class="filter-label">Model</label>
                 <select name="model" class="form-control">
                     <option value="">All</option>
-                    <option value="App\Models\Order" {{ request('model')=='App\Models\Order'?'selected':'' }}>Order</option>
-                    <option value="App\Models\User" {{ request('model')=='App\Models\User'?'selected':'' }}>User</option>
-                    <option value="App\Models\Payment" {{ request('model')=='App\Models\Payment'?'selected':'' }}>Payment</option>
+
+                    @foreach(activity_models_list() as $class => $label)
+                        <option value="{{ $class }}"
+                            {{ request('model') == $class ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
 

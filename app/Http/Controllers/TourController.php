@@ -1212,7 +1212,7 @@ $pickupHtml .= '</div>';
 
     public function basic_detail_update(Request $request, $id)
     {
-        
+
         $request->validate([
             'title'                 => 'required|max:255',
             'description'           => 'required',
@@ -2220,8 +2220,9 @@ $pickupHtml .= '</div>';
 
 
         $tourReview = $data->review ?? new \App\Models\TourReview();
+        $tourDetail = TourDetail::where('tour_id', $data->id)->first();
 
-        return view('admin.tours.feature.review', compact( 'data', 'tourReview'));
+        return view('admin.tours.feature.review', compact( 'data', 'tourReview', 'tourDetail'));
     }
 
     public function parentTour($id)
@@ -2292,9 +2293,23 @@ $pickupHtml .= '</div>';
             'review.tag.class' => 'nullable|string|max:50',
             'review.tag.text' => 'nullable|string|max:255',
             'review.tag.custom_text' => 'nullable|string|max:255',
+
+            'review.free_cancellation' => 'nullable|boolean',
+            'review.exceptional_deal'  => 'nullable|boolean',
+            'review.lowest_price'      => 'nullable|boolean',
+            'review.kids_discount'     => 'nullable|boolean',
+            'review.full_refund'       => 'nullable|boolean',
         ]);
 
         $data = $request->review ?? [];
+
+        $features = [
+            'free_cancellation' => $data['free_cancellation'] ?? 0,
+            'exceptional_deal'  => $data['exceptional_deal'] ?? 0,
+            'lowest_price'      => $data['lowest_price'] ?? 0,
+            'kids_discount'     => $data['kids_discount'] ?? 0,
+            'full_refund'       => $data['full_refund'] ?? 0,
+        ];
 
         /*
         |--------------------------------------------------------------------------
@@ -2338,6 +2353,16 @@ $pickupHtml .= '</div>';
                 'created_at' => now(),
             ]
         );
+
+        $tour_detail = TourDetail::where('tour_id', $tour->id)->first();
+
+        $tour_detail->free_cancellation = $features['free_cancellation'];
+        $tour_detail->exceptional_deal  = $features['exceptional_deal'];
+        $tour_detail->lowest_price      = $features['lowest_price'];
+        $tour_detail->kids_discount     = $features['kids_discount'];
+        $tour_detail->full_refund       = $features['full_refund'];
+
+        $tour_detail->save();
 
         return back()->with('success', 'Tour review updated successfully.');
     }
@@ -2998,18 +3023,15 @@ $pickupHtml .= '</div>';
     }
 
 
-   public function toursList(Request $request)
+    public function toursList(Request $request)
     {
-            $search = $request->get('q');
+        $search = $request->get('q');
 
-            if (!$search || strlen($search) < 4) {
-                return response()->json([]); // ✅ no query for small input
-            }
-
-            return Tour::where('title', 'like', "{$search}%")
-                ->orderBy('title')
-                ->limit(15) // 🔥 keep small
-                ->get(['id', 'title']);
+        return Tour::when($search, function ($query) use ($search) {
+                $query->where('title', 'like', "%{$search}%");
+            })
+            ->orderBy('title')
+            ->get(['id', 'title']);
     }
 
 

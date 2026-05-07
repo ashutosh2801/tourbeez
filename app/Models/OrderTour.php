@@ -8,6 +8,7 @@ use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+
 class OrderTour extends Model
 {
     use HasFactory;
@@ -23,7 +24,7 @@ class OrderTour extends Model
     {
         return LogOptions::defaults()
         ->useLogName('OrderTour')
-        ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
+        ->setDescriptionForEvent(fn(string $eventName) => "OrderTour has been {$eventName}")
         ->logOnly(['*'])
         ->logOnlyDirty()
         ->dontSubmitEmptyLogs();

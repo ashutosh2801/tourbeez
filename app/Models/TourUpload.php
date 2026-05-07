@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class TourUpload extends Model
 {
     use HasFactory;
+    use LogsActivity;
 
     protected $table = 'tour_upload';
 
@@ -15,7 +18,7 @@ class TourUpload extends Model
     {
         return LogOptions::defaults()
         ->useLogName('TourUpload')
-        ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
+        ->setDescriptionForEvent(fn(string $eventName) => "TourUpload has been {$eventName}")
         ->logOnly(['*'])
         ->logOnlyDirty()
         ->dontSubmitEmptyLogs();
