@@ -17,8 +17,8 @@ class TourScheduleRepeats extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->useLogName('TourDetail')
-            ->setDescriptionForEvent(fn(string $eventName) => "Tour Detail {$eventName}")
+            ->useLogName('TourScheduleRepeats')
+            ->setDescriptionForEvent(fn(string $eventName) => "TourScheduleRepeats {$eventName}")
             ->logAll(); // 🔥 important
     }
 }

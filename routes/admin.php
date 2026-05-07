@@ -255,6 +255,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/uploaded-files/destroy/{id}', [AizUploadController::class, 'destroy'])->name('uploaded-files.destroy');
 
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity.logs');
+    Route::get('/activity-descriptive', [ActivityLogController::class, 'descriptive'])->name('activity.descriptive');
     Route::get('/banner', [AizUploadController::class, 'showBanner'])->name('banner.index');
   
     Route::get('banners/create', [AizUploadController::class, 'bannerCreate'])->name('banners.create');

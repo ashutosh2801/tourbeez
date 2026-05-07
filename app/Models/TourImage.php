@@ -19,6 +19,14 @@ class TourImage extends Model
         'image',
     ];
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('TourImage')
+            ->setDescriptionForEvent(fn(string $eventName) => "TourImage {$eventName}")
+            ->logAll(); // 🔥 important
+    }
+
     public function tour()
     {
         return $this->belongsTo(Tour::class,'tour_id');
