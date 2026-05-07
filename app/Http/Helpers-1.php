@@ -11,6 +11,7 @@ use App\Models\Translation;
 use App\Models\TourUpload;
 use App\Upload;
 use App\User;
+use Illuminate\Support\Facades\Http;
 
 // use App\Models\EmailTemplate;
 // use App\Models\SmsTemplate;
@@ -33,6 +34,30 @@ if(!function_exists('getFullSql')) {
     }
 }
 
+if(!function_exists('source_list')) {
+    function source_list($item) {
+        switch(strtolower($item)) {
+            case 'toniagara':
+                return 'TN';
+                break;
+            case 'niagarafallstour' :
+                return 'NFT';
+                break;
+            case 'tourbeez' :
+                return 'TB';
+                break;
+            default:
+                return $item;
+        }
+    }
+}
+
+if(!function_exists('remove_last_Tour_word')) {
+    function remove_last_Tour_word($string) {
+        return preg_replace('/\s+(tour|tours)$/i', '', $string);
+    }
+}
+
 if(!function_exists('countThingsToDo')) {
     function countThingsToDo($id, $type) {
         $query = Tour::select(['id'])
@@ -44,7 +69,7 @@ if(!function_exists('countThingsToDo')) {
             ->whereNull('deleted_at');
 
         if ($id) {
-            if($type == 'c3') {
+            if($type === 'c3') {
                 $query->whereHas('categories', fn($q) => $q->where('categories.id', $id));
             }
             else {
@@ -117,7 +142,7 @@ if(!function_exists('price_format')) {
 
 
 if (!function_exists('price_format_with_currency')) {
-    function price_format_with_currency($amount, $currency = 'CAD')
+    function price_format_with_currency($amount, $currency = 'USD', $tourCurrency=NULL)
     {
         // // Define currency symbols (add more as needed)
         // $symbols = [
@@ -131,8 +156,21 @@ if (!function_exists('price_format_with_currency')) {
         // ];
 
         //$symbol = $symbols[$currency] ?? $currency;
+        
+        $from = $currency;
 
-        return $currency . " " . number_format($amount, 2);
+        $currency = $currency;
+
+        if($tourCurrency){
+           $currency = $tourCurrency;
+        }
+        
+        // $converted = currencyConvert($amount, $from, $currency);
+
+
+        $converted = currencyConvertWithoutRound($amount, $from, $currency);
+
+        return $currency . " " . number_format($converted, 2);
     }
 }
 
@@ -184,6 +222,8 @@ if (! function_exists('getTourPricingDetails')) {
                 return [
                     'quantity' => $item->quantity,
                     'price' => $item->price,
+                    'actual_price' => isset($item->actual_price) ? $item->actual_price : $item->price,
+                    'discount'    => isset($item->discount) ? $item->discount : 0
                 ];
             }
         }
@@ -674,28 +714,31 @@ if (! function_exists('order_status')) {
     {
         switch($val) {
             case 1:
-                return '<span class="badge badge-inline badge-warning text-green-800 bg-green-100 px-4 py-2  rounded-full">Abandoned</span>';
+                return '<span class="badge badge-inline badge-abandoned text-red-800 bg-red-100 px-2 py-2  rounded-full">Abandoned</span>';
                 break;
             case 2:
-                return '<span class="badge badge-inline badge-danger text-red-800 bg-red-100 px-4 py-2  rounded-full">On Hold</span>';
+                return '<span class="badge badge-inline badge-onHold text-blue-800 bg-blue-100 px-2 py-2  rounded-full">On Hold</span>';
                 break;
             case 3:
-                return '<span class="badge badge-inline badge-danger text-yellow-800 bg-yellow-100 px-4 py-2  rounded-full">Pending supplier</span>';
+                return '<span class="badge badge-inline badge-pendingSupplier text-yellow-800 bg-red-100 px-2 py-2  rounded-full">Pending supplier</span>';
                 break; 
             case 4:
-                return '<span class="badge badge-inline badge-warning text-yellow-800 bg-yellow-100 px-4 py-2  rounded-full">Pending customer</span>';
+                return '<span class="badge badge-inline badge-pendingCustomer text-yellow-800 bg-red-100 px-2 py-2  rounded-full">Pending customer</span>';
                 break;
             case 5:
-                return '<span class="badge badge-inline badge-warning text-green-800 bg-green-100 px-4 py-2  rounded-full">Confirmed</span>';
+                return '<span class="badge badge-inline badge-confirmed text-green-600 bg-green-100 px-2 py-2  rounded-full">Confirmed</span>';
                 break;
             case 6:
-                return '<span class="badge badge-inline badge-warning text-red-800 bg-red-100 px-4 py-2  rounded-full">Cancelled</span>';   
+                return '<span class="badge badge-inline badge-cancelled text-red-800 bg-red-100 px-2 py-2  rounded-full">Cancelled</span>';   
                 break;  
             case 7:
-                return '<span class="badge badge-inline badge-warning text-red-800 bg-red-100 px-4 py-2  rounded-full">Abandoned cart</span>';   
+                return '<span class="badge badge-inline badge-abandoned text-blue-800 bg-blue-100 px-2 py-2  rounded-full">Requires capture</span>';   
                 break; 
+            case 8:
+                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-2 py-2  rounded-full">Trip completed</span>';
+                break;    
             default:
-                return '<span class="badge badge-inline badge-warning text-gray-800 bg-gray-100 px-4 py-2  rounded-full">Not completed</span>';   
+                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-2 py-2  rounded-full">Abandoned</span>';   
                 break;   
         }
     }
@@ -705,13 +748,14 @@ if (! function_exists('order_status_list')) {
     function order_status_list()
     {
         return [
-            1 => "New",
+            1 => "Abandoned",
             2 => "On Hold",
             3 => "Pending supplier",
             4 => "Pending customer",
             5 => "Confirmed",
             6 => "Cancelled",
-            7 => "Abandoned cart"
+            7 => "Requires capture",
+            8 => "Trip completed",
         ];
     }
 }
@@ -731,7 +775,7 @@ if (! function_exists('membership_type')) {
 if (!function_exists('unique_code')) {
     function unique_code()
     {
-        $id = Tour::withTrashed()->latest('id')->first()->id+1;
+        $id = Tour::withoutGlobalScopes()->withTrashed()->latest('id')->first()->id+1;
         $code = get_setting('tour_code_prifix').date('Ym').$id;
         return $code;
     }
@@ -1279,4 +1323,310 @@ if (!function_exists('emailAlreadySent')) {
         return Cache::has('email_sent_' . $paymentIntentId);
     }
 }
+if (!function_exists('currencyConvert')) {
+    function currencyConvert(?float $amount, string $from, string $to = 'USD')
+    {
+        if ($amount === null) {
+            return 0.0;
+        }
+
+        $from = strtoupper($from);
+        $to   = strtoupper($to);
+
+        $rates = Cache::remember('conversion_rates', 43200, function () {
+            $response = Http::get('https://tourbeez.com/public/data/conversion_rates.json');
+            if ($response->ok()) {
+                return $response->json()['conversion_rates'] ?? [];
+            }
+            return [];
+        });
+
+        if (empty($rates)) {
+            // return round($amount);
+            return (float) number_format($amount, 6, '.', '');
+        }
+
+        $rateFrom = $rates[$from] ?? null;
+        $rateTo   = $rates[$to] ?? null;
+
+        if (!$rateFrom || !$rateTo) {
+            // return round($amount); 
+            return (float) number_format($amount, 6, '.', '');
+
+        }
+        // dd($rateFrom, $rateTo, $amount);
+        // ✅ USD-based conversion (MATCHES FRONTEND)
+        $converted = ($amount / $rateFrom) * $rateTo;
+
+        // return round($converted);
+        return (float) number_format($converted, 6, '.', '');
+
+        // return round($converted, 2);
+    }
+}
+if (!function_exists('cardSvg')) {
+    function cardSvg($brand) {
+
+        $brand = strtolower($brand);
+
+        $svgs = [
+
+        'visa' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#1A1F71"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="12" font-weight="bold">VISA</text>
+        </svg>',
+
+        'mastercard' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <circle cx="20" cy="12" r="8" fill="#EB001B"/>
+        <circle cx="28" cy="12" r="8" fill="#F79E1B"/>
+        </svg>',
+
+        'amex' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#2E77BB"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">AMEX</text>
+        </svg>',
+
+        'discover' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#FF6000"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">DISC</text>
+        </svg>',
+
+        'default' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#6c757d"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10">CARD</text>
+        </svg>'
+        ];
+
+        return $svgs[$brand] ?? $svgs['default'];
+
+    }
+}
+
+
+if (!function_exists('price_with_currency_no_round')) {
+    function price_with_currency_no_round($amount, $currency = 'USD', $tourCurrency=NULL)
+    {
+        $from = $currency;
+
+        $currency = $currency;
+
+        if($tourCurrency){
+           $currency = $tourCurrency;
+        }
+        
+        $converted = currencyConvertWithoutRound($amount, $from, $currency);
+
+        return $currency . " " . number_format($converted, 2);
+    }
+}
+
+if (!function_exists('currencyConvertWithoutRound')) {
+    function currencyConvertWithoutRound(?float $amount, string $from, string $to = 'USD')
+    {
+        if ($amount === null) {
+            return 0.0;
+        }
+
+        $from = strtoupper($from);
+        $to   = strtoupper($to);
+
+        $rates = Cache::remember('conversion_rates', 43200, function () {
+            $response = Http::get('https://tourbeez.com/public/data/conversion_rates.json');
+            if ($response->ok()) {
+                return $response->json()['conversion_rates'] ?? [];
+            }
+            return [];
+        });
+
+        if (empty($rates)) {
+            return number_format($amount, 6, '.', '');
+        }
+
+        $rateFrom = $rates[$from] ?? null;
+        $rateTo   = $rates[$to] ?? null;
+
+        if (!$rateFrom || !$rateTo) {
+            return number_format($amount, 6, '.', '');
+        }
+        // dd($rateFrom, $rateTo, $amount);
+        // ✅ USD-based conversion (MATCHES FRONTEND)
+        $converted = ($amount / $rateFrom) * $rateTo;
+
+        // return round($converted);
+        return (float) number_format($converted, 6, '.', '');
+
+        // return round($converted, 2);
+    }
+}
+    if (!function_exists('isOptionalPricing')) {
+        function isOptionalPricing($label) {
+            $label = strtolower($label);
+            return str_contains($label, 'child') || str_contains($label, 'infant');
+        }
+    }
+
+    if (! function_exists('formatActivityValue')) {
+        function formatActivityValue($key, $value)
+        {
+            // ✅ Order Status
+            if ($key == 'order_status') {
+                return order_status_list()[$value] ?? $value;
+            }
+            if (in_array($key, ['created_at', 'updated_at', 'deleted_at'])) {
+                return humanDate(\Carbon\Carbon::parse($value));
+            }
+
+            // ✅ Numeric values
+            if (is_numeric($value)) {
+                return number_format($value, 2);
+            }
+
+
+
+            return $value;
+        }
+    }
+
+    if (! function_exists('formatActivityKey')) {
+        function formatActivityKey($key)
+        {
+            return ucfirst(str_replace('_', ' ', $key));
+        }
+    }
+    if (! function_exists('humanDate')) {
+        function humanDate($date)
+        {
+            if (!$date) return '-';
+
+            return $date->diffForHumans() . ' (' . $date->format('d M Y, h:i A') . ')';
+        }
+    }
+
+    if (!function_exists('activity_models_list')) {
+        function activity_models_list()
+        {
+            return [
+                'App\Models\Addon' => 'Addon',
+                'App\Models\Category' => 'Category',
+                'App\Models\City' => 'City',
+                'App\Models\Collection' => 'Collection',
+                'App\Models\Country' => 'Country',
+                'App\Models\Contact' => 'Contact',
+                'App\Models\Exclusion' => 'Exclusion',
+                'App\Models\EmailTemplate' => 'Email Template',
+                'App\Models\Faq' => 'FAQ',
+                'App\Models\Feature' => 'Feature',
+                'App\Models\Inclusion' => 'Inclusion',
+                'App\Models\Itinerary' => 'Itinerary',
+                'App\Models\Optional' => 'Optional',
+                'App\Models\OptionalTour' => 'Optional Tour',
+                'App\Models\OrderCustomer' => 'Order Customer',
+                'App\Models\OrderPayment' => 'Order Payment',
+                'App\Models\OrderTour' => 'Order Tour',
+                'App\Models\Partner' => 'Partner',
+                'App\Models\PartnerTour' => 'Partner Tour',
+                'App\Models\Pickup' => 'Pickup',
+                'App\Models\PickupLocation' => 'Pickup Location',
+                'App\Models\ScheduleDeleteSlot' => 'Schedule Delete Slot',
+                'App\Models\State' => 'State',
+                'App\Models\SubCategory' => 'Sub Category',
+                'App\Models\TourImage' => 'Tour Image',
+                'App\Models\TourDetail' => 'Tour Detail',
+                'App\Models\Tour' => 'Tour',
+                'App\Models\TourLocation' => 'Tour Location',
+                'App\Models\TourMeta' => 'Tour Meta',
+                'App\Models\TourPricing' => 'Tour Pricing',
+                'App\Models\TourSchedule' => 'Tour Schedule',
+                'App\Models\TourScheduleRepeats' => 'Tour Schedule Repeats',
+                'App\Models\TourSpecialDeposit' => 'Tour Special Deposit',
+                'App\Models\Tourtype' => 'Tour Type',
+                'App\Models\TourUpload' => 'Tour Upload',
+                'App\Models\UserSupplier' => 'User Supplier',
+            ];
+        }
+    }
+
+if (!function_exists('activity_description')) {
+
+    function activity_sentence_full($log)
+    {
+        $user = optional($log->causer)->first_name 
+            ?? optional($log->causer)->name 
+            ?? 'User';
+
+        $model = class_basename($log->subject_type);
+        $subject = $log->subject;
+
+        $properties = $log->properties ? $log->properties->toArray() : [];
+        $attributes = $properties['attributes'] ?? [];
+        $old = $properties['old'] ?? [];
+
+        $orderNumber = $subject->order_number 
+            ?? ($attributes['order_number'] ?? null);
+
+        $id = $subject->id ?? $log->subject_id;
+
+        // 🎯 Action wording (natural English)
+        if ($log->description === 'created') {
+            $sentence = "<span class='user'>{$user}</span> created a new <b>{$model}</b>";
+        } elseif ($log->description === 'updated') {
+            $sentence = "<span class='user'>{$user}</span> made changes to the <b>{$model}</b>";
+        } elseif ($log->description === 'deleted') {
+            $sentence = "<span class='user'>{$user}</span> removed the <b>{$model}</b>";
+        } else {
+            $sentence = "<span class='user'>{$user}</span> performed <b>{$log->description}</b> on <b>{$model}</b>";
+        }
+
+        // 📦 Entity context
+        if ($orderNumber) {
+            $sentence .= " for order <span class='order'>{$orderNumber}</span>";
+        } else {
+            $sentence .= " (ID: {$id})";
+        }
+
+        // 🔥 Changes (human readable)
+        $changes = [];
+
+        foreach ($attributes as $key => $value) {
+
+            if (is_array($value)) continue;
+
+            $oldValue = $old[$key] ?? null;
+
+            if ($oldValue != $value) {
+
+                $label = formatActivityKey($key);
+
+                $newVal = formatActivityValue($key, $value);
+                $oldVal = $oldValue !== null 
+                    ? formatActivityValue($key, $oldValue) 
+                    : null;
+
+                if ($oldValue !== null) {
+                    $changes[] = "{$label} was updated from <span class='old'>{$oldVal}</span> to <span class='new'>{$newVal}</span>";
+                } else {
+                    $changes[] = "{$label} was set to <span class='new'>{$newVal}</span>";
+                }
+            }
+        }
+
+        // ✨ Add changes nicely
+        if (!empty($changes)) {
+
+            $sentence .= ". ";
+
+            $visible = array_slice($changes, 0, 2);
+
+            $sentence .= implode(', ', $visible);
+
+            if (count($changes) > 2) {
+                $sentence .= ", along with other updates";
+            }
+        }
+
+        return $sentence;
+    }
+    
+}
+
 ?>

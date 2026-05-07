@@ -162,120 +162,55 @@
                     <th>Product</th>
 
                     {{-- ADDON HEADERS --}}
-                    <th colspan="5">Boat Cruise</th>
-                    <th colspan="5">Helicopter</th>
-                    <th colspan="5">Journey Behind Falls</th>
-                    <th colspan="5">Sheraton Lunch</th>
-                    <th colspan="5">Skylon Tower</th>
-                    <th colspan="5">Airport Drop</th>
-                    <th colspan="5">Wine</th>
-                    <th colspan="5">Jet Tour</th>
-                    <th colspan="5">Guide</th>
-                    <th colspan="5">Zipline</th>
+                    @foreach($addonKeys as $key)
+                        <th colspan="5">{{ Str::headline($key) }}</th>
+                    @endforeach
+                                    
                 </tr>
 
                 <tr>
                     <th colspan="8"></th>
 
-                    @for($i=0;$i<10;$i++)
+                    @foreach($addonKeys as $key)
                         <th>Desc</th>
                         <th>Price</th>
                         <th>Tax</th>
                         <th>Fee</th>
                         <th>Total</th>
-                    @endfor
+                    @endforeach
                 </tr>
             </thead>
 
             <tbody>
                 @forelse($rows as $row)
                 <tr>
-                    <td>{{ $row['no'] }}</td>
-                    <td>{{ $row['order_number'] }}</td>
-                    <td>{{ $row['customer_name'] }}</td>
-                    <td>{{ $row['order_date'] }}</td>
-                    <td>{{ $row['fulfilment_date'] }}</td>
-                    <td>{{ number_format($row['customer_total'], 2) }}</td>
-                    <td>{{ $row['payment_status'] }}</td>
-                    <td>{{ $row['product_name'] }}</td>
+                    <td>{{ $row['no'] ?? '' }}</td>
+                    <td>{{ $row['order_number'] ?? '' }}</td>
+                    <td>{{ $row['customer_name'] ?? '' }}</td>
+                    <td>{{ $row['order_date'] ?? '' }}</td>
+                    <td>{{ $row['fulfilment_date'] ?? '' }}</td>
+                    <td>{{ isset($row['customer_total']) ? number_format($row['customer_total'], 2) : '0.00' }}</td>
+                    <td>{{ $row['payment_status'] ?? '' }}</td>
+                    <td>{{ $row['product_name'] ?? '' }}</td>
 
-                    {{-- BOAT --}}
-                    <td>{{ $row['boat_cruise_desc'] }}</td>
-                    <td>{{ $row['boat_cruise_price'] }}</td>
-                    <td>{{ $row['boat_cruise_tax'] }}</td>
-                    <td>{{ $row['boat_cruise_fee'] }}</td>
-                    <td>{{ $row['boat_cruise_total'] }}</td>
-
-                    {{-- HELICOPTER --}}
-                    <td>{{ $row['helicopter_desc'] }}</td>
-                    <td>{{ $row['helicopter_price'] }}</td>
-                    <td>{{ $row['helicopter_tax'] }}</td>
-                    <td>{{ $row['helicopter_fee'] }}</td>
-                    <td>{{ $row['helicopter_total'] }}</td>
-
-                    {{-- JOURNEY --}}
-                    <td>{{ $row['journey_falls_desc'] }}</td>
-                    <td>{{ $row['journey_falls_price'] }}</td>
-                    <td>{{ $row['journey_falls_tax'] }}</td>
-                    <td>{{ $row['journey_falls_fee'] }}</td>
-                    <td>{{ $row['journey_falls_total'] }}</td>
-
-                    {{-- SHERATON --}}
-                    <td>{{ $row['sheraton_desc'] }}</td>
-                    <td>{{ $row['sheraton_price'] }}</td>
-                    <td>{{ $row['sheraton_tax'] }}</td>
-                    <td>{{ $row['sheraton_fee'] }}</td>
-                    <td>{{ $row['sheraton_total'] }}</td>
-
-                    {{-- SKYLON --}}
-                    <td>{{ $row['skylon_desc'] }}</td>
-                    <td>{{ $row['skylon_price'] }}</td>
-                    <td>{{ $row['skylon_tax'] }}</td>
-                    <td>{{ $row['skylon_fee'] }}</td>
-                    <td>{{ $row['skylon_total'] }}</td>
-
-                    {{-- AIRPORT --}}
-                    <td>{{ $row['airport_desc'] }}</td>
-                    <td>{{ $row['airport_price'] }}</td>
-                    <td>{{ $row['airport_tax'] }}</td>
-                    <td>{{ $row['airport_fee'] }}</td>
-                    <td>{{ $row['airport_total'] }}</td>
-
-                    {{-- WINE --}}
-                    <td>{{ $row['wine_desc'] }}</td>
-                    <td>{{ $row['wine_price'] }}</td>
-                    <td>{{ $row['wine_tax'] }}</td>
-                    <td>{{ $row['wine_fee'] }}</td>
-                    <td>{{ $row['wine_total'] }}</td>
-
-                    {{-- JET --}}
-                    <td>{{ $row['jet_desc'] }}</td>
-                    <td>{{ $row['jet_price'] }}</td>
-                    <td>{{ $row['jet_tax'] }}</td>
-                    <td>{{ $row['jet_fee'] }}</td>
-                    <td>{{ $row['jet_total'] }}</td>
-
-                    {{-- GUIDE --}}
-                    <td>{{ $row['guide_desc'] }}</td>
-                    <td>{{ $row['guide_price'] }}</td>
-                    <td>{{ $row['guide_tax'] }}</td>
-                    <td>{{ $row['guide_fee'] }}</td>
-                    <td>{{ $row['guide_total'] }}</td>
-
-                    {{-- ZIPLINE --}}
-                    <td>{{ $row['zipline_desc'] }}</td>
-                    <td>{{ $row['zipline_price'] }}</td>
-                    <td>{{ $row['zipline_tax'] }}</td>
-                    <td>{{ $row['zipline_fee'] }}</td>
-                    <td>{{ $row['zipline_total'] }}</td>
+                    {{-- DYNAMIC ADDONS --}}
+                    @foreach($addonKeys as $key)
+                        <td>{{ $row[$key.'_desc'] ?? '' }}</td>
+                        <td>{{ $row[$key.'_price'] ?? 0 }}</td>
+                        <td>{{ $row[$key.'_tax'] ?? 0 }}</td>
+                        <td>{{ $row[$key.'_fee'] ?? 0 }}</td>
+                        <td>{{ $row[$key.'_total'] ?? 0 }}</td>
+                    @endforeach
 
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="60" class="text-center">No Data Found</td>
+                    <td colspan="{{ 8 + (count($addonKeys) * 5) }}" class="text-center">
+                        No Data Found
+                    </td>
                 </tr>
                 @endforelse
-            </tbody>
+                </tbody>
         </table>
 
         {{-- PAGINATION --}}

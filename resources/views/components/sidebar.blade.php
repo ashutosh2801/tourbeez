@@ -405,13 +405,34 @@
             </a>
         </li>    
         @endcan
-        @can('activity_logs')
-        <li class="nav-item">
-            <a href="{{ route('admin.activity.logs') }}" class="nav-link {{ Route::is('admin.activity.logs') ? 'active' : '' }}">
-                <i class="nav-icon fas fa-cog"></i>
-                <p>Activity Logs</p>
-            </a>
-        </li>    
-        @endcan
+        
+
+        @can('activity_logs') 
+            <li class="nav-item">
+                <a href="javascript:void(0);" class="nav-link">
+                    <i class="nav-icon fas fa-history"></i>
+                    <p>
+                        {{ translate('Activity') }}
+                        <span class="aiz-side-nav-arrow right"></span>
+                    </p>
+                </a>
+                <ul class="aiz-side-nav-list level-2">
+                    <li class="nav-item">
+                        <a href="{{ route('admin.activity.logs') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.activity.logs') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-list-ul"></i>
+                            <p>Activity Logs</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="{{ route('admin.activity.descriptive') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.activity.descriptive') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-file-alt"></i>
+                            <p>Activity Description</p>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            @endcan
+
     </ul>
 </nav>
