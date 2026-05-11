@@ -375,7 +375,17 @@ class OrderController extends Controller
             "cartAdons"     => $cartAdons,
             "deposite_rule" => $order->tour->specialDeposit,
             "action_name"   => $order->action_name,
+            "free_cancellation"   => $order->tour->detail->free_cancellation,
+            "exceptional_deal"    => $order->tour->detail->exceptional_deal,
+            "lowest_price"        => $order->tour->detail->lowest_price,
+            "kids_discount"       => $order->tour->detail->kids_discount,
+            "full_refund"         => $order->tour->detail->full_refund,
+
+
+
         ];
+
+
 
         return response()->json([
             'status' => true,

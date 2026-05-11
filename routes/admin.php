@@ -79,6 +79,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     '/customers-source/{id}/{source}',
     [CustomerController::class, 'updateSource']
 )->name('customers.source.update');
+
+    Route::post('/admin/customer/update_details', [CustomerController::class, 'updateOrderCustomerDetails'])->name('customer.update_details');
     
     Route::resource('/role',RoleController::class);
     Route::resource('/permission',PermissionController::class);
