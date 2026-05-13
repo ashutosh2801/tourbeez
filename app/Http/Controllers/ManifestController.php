@@ -1,0 +1,177 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Exports\DriverManifestExport;
+use App\Models\Order;
+use App\Models\OrderDriver;
+use App\Models\TourPricing;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
+
+
+class ManifestController extends Controller
+{
+    //
+
+    public function driverManifest(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+
+
+        $startOfWeek = Carbon::parse($date)->startOfWeek();
+        $endOfWeek   = Carbon::parse($date)->endOfWeek();
+
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+
+        $orders = Order::with(['customer', 'orderTours.tour', 'driver'])
+            ->where('order_status', 5)
+            ->whereHas('orderTours', function ($q) use ($startOfWeek, $endOfWeek) {
+                $q->whereBetween('tour_date', [$startOfWeek, $endOfWeek]);
+            })
+            ->get();
+
+        $grid = [];
+        $tourTimes = [];
+
+        foreach ($orders as $order) {
+            foreach ($order->orderTours as $ot) {
+                $tourDate = $ot->tour_date;
+                $slotTime = $ot->tour_time ?? '00:00 AM'; // fallback if missing
+                $tourTitle = $ot->tour->title ?? 'Unknown Tour';
+
+                if (!$tourDate) continue;
+
+                // Count guests
+                $guestCount = 0;
+                $pricingItems = json_decode($ot->tour_pricing, true);
+                if (is_array($pricingItems)) {
+                    foreach ($pricingItems as $p) {
+                        $guestCount += $p['quantity'] ?? 0;
+                    }
+                }
+
+                // Get driver for that order/date
+                // $orderDriver = \App\Models\OrderDriver::where('order_id', $order->id)
+                //     ->whereDate('assigned_date', $ot->tour_date)
+                //     ->first();
+
+                $orderDrivers = OrderDriver::with('driver')
+                    ->where('order_id', $order->id)
+                    ->whereDate('assigned_date', $ot->tour_date)
+                    ->get();
+
+                $driverIds = $orderDrivers->pluck('driver_id')->toArray();
+                $driverNames = $orderDrivers->pluck('driver.name')->filter()->toArray();
+
+                $grid[$tourTitle][$tourDate][] = [
+                    'order_id'     => $order->id,
+                    'order_encrypt_id'  => encrypt($order->id),
+                    'order_number' => $order->order_number,
+                    'customer'     => $order->customer?->name,
+                    'guest_count'  => $guestCount,
+                    'driver_ids'   => $driverIds,
+                    'driver_names' => $driverNames,
+                    'tour_time'    => $slotTime,
+                ];
+
+                // Store time for sort reference
+                $tourTimes[$tourTitle] = $slotTime;
+            }
+        }
+
+        // ✅ Convert times for sorting
+        $sortedGrid = collect($grid)->sortBy(function ($dates, $tour) use ($tourTimes) {
+            $time = $tourTimes[$tour] ?? '00:00 AM';
+            try {
+                return Carbon::parse($time)->format('Hi'); // "0930" numeric time
+            } catch (\Exception $e) {
+                return 0;
+            }
+        })->toArray();
+
+        // Generate week range
+        $dateRange = [];
+        $d = $startOfWeek->copy();
+        while ($d->lte($endOfWeek)) {
+            $dateRange[] = $d->copy();
+            $d->addDay();
+        }
+
+        $drivers = User::where('role', 'Driver')->get();
+
+        return view('admin.manifest.driver-1', compact(
+            'sortedGrid',
+            'dateRange',
+            'tourTimes',
+            'drivers',
+            'date'
+        ));
+    }
+
+    public function assignDriver(Request $request)
+    {
+        $request->validate([
+            'order_ids'  => 'required|array',
+            'driver_ids' => 'nullable|array', // allow empty → means remove all
+            'date'       => 'required|date'
+        ]);
+
+        foreach ($request->order_ids as $orderId) {
+
+            // ✅ Existing drivers for this order/date
+            $existingDrivers = OrderDriver::where('order_id', $orderId)
+                ->whereDate('assigned_date', $request->date)
+                ->pluck('driver_id')
+                ->toArray();
+
+            $selectedDrivers = $request->driver_ids ?? [];
+
+            // ✅ 1. ADD NEW DRIVERS (which are selected but not in DB)
+            $toAdd = array_diff($selectedDrivers, $existingDrivers);
+
+            foreach ($toAdd as $driverId) {
+                OrderDriver::create([
+                    'order_id'      => $orderId,
+                    'driver_id'     => $driverId,
+                    'assigned_date' => $request->date
+                ]);
+            }
+
+            // ✅ 2. REMOVE DRIVERS (which are in DB but NOT selected)
+            $toRemove = array_diff($existingDrivers, $selectedDrivers);
+
+            if (!empty($toRemove)) {
+                OrderDriver::where('order_id', $orderId)
+                    ->whereDate('assigned_date', $request->date)
+                    ->whereIn('driver_id', $toRemove)
+                    ->delete();
+            }
+        }
+
+        return response()->json(['success' => true]);
+    }
+    public function removeDriver(Request $request)
+    {
+        OrderDriver::whereIn('order_id', $request->order_ids)
+            ->where('driver_id', $request->driver_id)
+            ->whereDate('assigned_date', $request->date)
+            ->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function exportDriverManifest(Request $request)
+    {
+        $date = $request->input('date') ?? now()->toDateString();
+
+        return Excel::download(
+            new DriverManifestExport($date),
+            'driver-manifest.xlsx'
+        );
+    }
+
+}

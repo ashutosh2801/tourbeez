@@ -1121,11 +1121,13 @@ $expectEmails = ['order_pending'];
                                             </div>
                                             
                                             @else
-                                                @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded')
+                                                @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded' )
                                                 <div class="col-3">
                                                     @if($payment->status == 'capture_canceled')
-                                                    <div class="text-danger text-sm">Capture Canceled</div>
-                                                @endif
+                                                        <div class="text-danger text-sm">Capture Canceled</div>
+                                                    @elseif($payment->status == 'pending')
+                                                        <div class="text-danger text-sm">Pending</div>
+                                                    @endif
 
                                             
                                                 </div>
@@ -1354,7 +1356,7 @@ $expectEmails = ['order_pending'];
                             </button>
                         </div>
                         <!-- <div> -->
-                            <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions" >
+                            <div id="collapseRecentActions" class="collapse show" aria-labelledby="headingRecentActions" >
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1402,7 +1404,7 @@ $expectEmails = ['order_pending'];
 
 
                         <!-- <div> -->
-                            <div id="collapseEmailHistory" class="collapse" aria-labelledby="headingEmailHistory" >
+                            <div id="collapseEmailHistory" class="collapse show" aria-labelledby="headingEmailHistory" >
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1463,7 +1465,7 @@ $expectEmails = ['order_pending'];
                             </button>
                         </div>
                         <!-- <div> -->
-                            <div id="collapsePaymentLog" class="collapse" aria-labelledby="headingPaymentLog" >
+                            <div id="collapsePaymentLog" class="collapse show" aria-labelledby="headingPaymentLog" >
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>

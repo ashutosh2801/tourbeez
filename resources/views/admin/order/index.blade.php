@@ -225,11 +225,11 @@
                                 #
                             </th>
 
-                            <th style="width:9%; white-space: nowrap;">
+                            <th style="width:10%; white-space: nowrap;">
                                 Status
                             </th>
 
-                            <th style="width:25%; white-space: nowrap;">
+                            <th style="width:24%; white-space: nowrap;">
                                 Tour
                             </th>
 
