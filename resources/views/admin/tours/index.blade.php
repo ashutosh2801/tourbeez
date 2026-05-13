@@ -1,7 +1,6 @@
 
 <x-admin>
-
-</style>   
+  
     @section('title','Tours')
     <style>
         .filter-panel {

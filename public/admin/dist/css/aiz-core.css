@@ -7069,14 +7069,10 @@ ul.social.colored [class*="linkedin"] {
 }
 
 /* collapse side bar*/
-
-
-
 .collapse-sidebar-wrap .overlay{
     opacity: 0;
     visibility: hidden;
 }
-
 
 .collapse-sidebar-wrap .overlay{
     opacity: 0;
@@ -7373,8 +7369,6 @@ ul.social.colored [class*="linkedin"] {
     -webkit-transform: translate(-50%, 0px);
     transform: translate(-50%, 0px);
 }
-
-
 
 .iqty-btns {
     display: -webkit-box;
@@ -10381,7 +10375,14 @@ table.dataTable {
 
 .order-list-body .btn-options .btn {
     color: #FFF;
-    margin: 0px 8px 8px 0px;
+    margin: 0px 8px 0 0px;
+}
+
+.order-list-body .btn-options .card-tools {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .order-list-body .btn-options .btn i {
@@ -10429,7 +10430,42 @@ table.dataTable {
    display: flex;
 }
 
+.order-list-body .order-table .table {
+    border-bottom: 1px solid #ebedf2;
+}
+
+.order-list-body .order-table .table-footer {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    padding: 15px;
+}
+
+.order-list-body .order-table .table-footer .pagination {
+    margin: 0;
+}
+
+.order-list-body .order-table .table-footer .total-orders {
+    display: flex;
+    align-items: center;
+}
+
+.order-list-body .order-table .table-footer .total-orders .badge {
+    font-size: 13px;
+    font-weight: 500;
+    background: #01228b;
+    height: auto;
+    padding: 4px 6px;
+    color: #FFF;
+}
+
 @media (max-width: 767px) {
+
+    .order-list-body .btn-options .card-tools {
+        justify-content: space-between;
+        flex-direction: column;
+        align-items: stretch;
+    }
 
     .order-list-body .btn-options .btn {
         margin-bottom: 8px;
@@ -10495,31 +10531,38 @@ table.dataTable {
 
 }
 
-#importPriceModal .modal-content .modal-header {
+#importPriceModal .modal-content .modal-header,
+#importOrderModal .modal-content .modal-header {
     background-color: #343a41;
     color: #FFF;
     padding: 10px 20px;
 }
 
-#importPriceModal .modal-content .modal-header .close {
+#importPriceModal .modal-content .modal-header .close,
+#importOrderModal .modal-content .modal-header .close {
     color: #FFF;
 }
 
-#importPriceModal .modal-title {
+#importPriceModal .modal-title,
+#importOrderModal .modal-title {
     font-weight: bold;
 }
 
-#importPriceModal .modal-footer {
+#importPriceModal .modal-footer,
+#importOrderModal .modal-footer {
     display: flex;
     justify-content: space-between;
+    padding: 10px 15px;
 }
 
-#importPriceModal .modal-footer .btn-ExpoImpo {
+#importPriceModal .modal-footer .btn-ExpoImpo,
+#importOrderModal .modal-footer .btn-ExpoImpo {
     background-color: #a2a2a2;
     color: #FFF;
 }
 
-#importPriceModal .modal-footer .btn-ExpoImpo:hover {
+#importPriceModal .modal-footer .btn-ExpoImpo:hover,
+#importOrderModal .modal-footer .btn-ExpoImpo:hover {
     background-color: #505050;
 }
 
@@ -10711,12 +10754,8 @@ table.dataTable {
 }
 
 .report-filter-box .btn-apply {
-    background-color: #aeadad;
+    background-color: #01228b;
     color: #FFF;
-}
-
-.report-filter-box .btn-apply:hover {
-    background-color: #545b62;
 }
 
 .report-stats .info-stats4:hover h3 {
@@ -10780,6 +10819,11 @@ table.dataTable {
     .report-table .report-table-head .card-tools {
         float: left;
         margin-top: 10px;
+    }
+
+    .order-list-body .order-table .table-footer {
+        flex-wrap: wrap;
+        gap: 20px;
     }
 
 }
@@ -10965,4 +11009,51 @@ table.dataTable {
         white-space: nowrap;
     }
 
+    .table .activity-description {
+        max-width: fit-content;
+        white-space: nowrap;
+    }
+
+}
+
+.activity-log-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.activity-log-head .card-tools {
+    float: right;
+}
+
+.activity-log-head .row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.activity-log-head .btn {
+    padding: 7px 20px;
+}
+
+.timeline-filter-box {
+    padding: 16px 20px;
+}
+
+.timeline-filter-box .form-control {
+    margin-bottom: 15px;
+}
+
+.timeline-filter-box .btn-apply {
+    background: #01228b;
+    color: #FFF;
+}
+
+#chargeModal .modal-content .modal-header {
+    background: #343a41;
+    color: #FFF;
+}
+
+#chargeModal .modal-header .close {
+    color: #FFF;
 }

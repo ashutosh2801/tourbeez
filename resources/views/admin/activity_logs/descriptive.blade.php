@@ -48,15 +48,15 @@
 }
 
 .action-created {
-    color: #28a745; /* green */
+    color: #28a745;
 }
 
 .action-updated {
-    color: #007bff; /* blue */
+    color: #007bff;
 }
 
 .action-deleted {
-    color: #dc3545; /* red */
+    color: #dc3545;
 }
 
 .activity-order {
@@ -96,7 +96,7 @@
     font-weight: 600;
 }
 .activity-table {
-    table-layout: fixed; /* 🔥 prevents layout breaking */
+    table-layout: fixed;
     width: 100%;
 }
 
@@ -106,195 +106,237 @@
 }
 
 .activity-description {
-    word-break: break-word;     /* 🔥 breaks long words */
-    overflow-wrap: anywhere;    /* 🔥 modern fix */
-    white-space: normal;        /* 🔥 allow wrapping */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
     line-height: 1.5;
-    max-width: 600px;           /* optional control */
+    max-width: 600px;
 }
 
 .text-nowrap {
     white-space: nowrap;
 }
+
+.filter-panel {
+    display: none;
+    animation: fadeSlide 0.3s ease-in-out;
+}
+
+@keyframes fadeSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 </style>
 
-
-
-{{-- ✅ FILTER SAME AS BEFORE --}}
-<div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
-    <form method="GET">
-
-        <div class="row">
-
-            {{-- ACTIVITY DATE --}}
-            <div class="col-xl-2 col-md-2 col-12 position-relative">
-                <label class="filter-label">Activity Date</label>
-
-                <input type="text" id="activity_range" class="form-control"
-                    placeholder="Select date range" autocomplete="off">
-
-                @if(request('start_date'))
-                    <span class="clear-btn" onclick="clearActivity()">✕</span>
-                @endif
-
-                <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
-                <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
-            </div>
-
-            {{-- ORDER NUMBER --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Order Number</label>
-                <input type="text" name="order_number"
-                    value="{{ request('order_number') }}"
-                    class="form-control"
-                    placeholder="TUU8XXA">
-            </div>
-
-            {{-- MODEL --}}
-
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Model</label>
-                <select name="model" class="form-control">
-                    <option value="">All</option>
-
-                    @foreach(activity_models_list() as $class => $label)
-                        <option value="{{ $class }}"
-                            {{ request('model') == $class ? 'selected' : '' }}>
-                            {{ $label }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            {{-- ACTION --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Action</label>
-                <select name="action" class="form-control">
-                    <option value="">All</option>
-                    <option value="created" {{ request('action')=='created'?'selected':'' }}>Created</option>
-                    <option value="updated" {{ request('action')=='updated'?'selected':'' }}>Updated</option>
-                    <option value="deleted" {{ request('action')=='deleted'?'selected':'' }}>Deleted</option>
-                </select>
-            </div>
-
-            {{-- USER --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">User</label>
-                <input type="text" name="user_id"
-                    value="{{ request('user_id') }}"
-                    class="form-control"
-                    placeholder="User">
-            </div>
-
-            {{-- SEARCH --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Search</label>
-                <input type="text" name="search"
-                    value="{{ request('search') }}"
-                    class="form-control"
-                    placeholder="Search action...">
-            </div>
-
-            {{-- PROPERTY --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Properties</label>
-                <input type="text" name="property"
-                    value="{{ request('property') }}"
-                    class="form-control"
-                    placeholder="Search JSON...">
-            </div>
-
-            {{-- MODEL ID --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Model ID</label>
-                <input type="text" name="model_id"
-                    value="{{ request('model_id') }}"
-                    class="form-control"
-                    placeholder="ID">
-            </div>
-
-            {{-- BUTTONS --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">&nbsp;</label>
-                <div class="d-flex column-gap-10">
-                    <button class="btn btn-apply flex-fill mt-0" style="
-    height: fit-content;
-">Apply</button>
-                    <a href="{{ url()->current() }}" class="btn btn-secondary flex-fill mt-0" style="
-    height: fit-content;
-">Reset</a>
+    <div class="card-primary mb-3">
+        <div class="card-header activity-log-head">
+            <div class="row">
+                <div class="col-md-8 col-6">
+                    <h3 class="card-title text-white">Activity Timeline</h3>
+                </div>
+                <div class="col-md-4 col-6">
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-secondary" id="toggleFilter">
+                            <i class="fas fa-filter"></i> Filters
+                        </button>
+                    </div>
                 </div>
             </div>
-
         </div>
-    </form>
-</div>
+    </div>
 
-{{-- ✅ TIMELINE --}}
-<div class="card mt-3">
-<div class="card-body">
+    <div class="filter-panel" id="filterPanel">
+        <div class="card card-primary bg-white border rounded-lg-custom timeline-filter-box">
+            <form method="GET">
+                <div class="row">
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th width="120">Date</th>
-            <th width="120">Who/what</th>
-            
-            <th>Description</th>
-        </tr>
-    </thead>
+                    {{-- ACTIVITY DATE --}}
+                    <div class="col-xl-3 col-md-2 col-12 position-relative">
+                        <label class="filter-label">Activity Date</label>
 
-    <tbody>
+                        <input type="text" id="activity_range" class="form-control"
+                            placeholder="Select date range" autocomplete="off">
 
-    @forelse($logs as $log)
+                        @if(request('start_date'))
+                            <span class="clear-btn" onclick="clearActivity()">✕</span>
+                        @endif
 
-    @php
-        $user = optional($log->causer)->first_name 
-            ?? optional($log->causer)->name 
-            ?? 'User #'.$log->causer_id;
+                        <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
+                        <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
+                    </div>
 
-        $model = class_basename($log->subject_type);
-    @endphp
+                    {{-- ORDER NUMBER --}}
+                    <div class="col-xl-3 col-md-2 col-12">
+                        <label class="filter-label">Order Number</label>
+                        <input type="text" name="order_number"
+                            value="{{ request('order_number') }}"
+                            class="form-control"
+                            placeholder="TUU8XXA">
+                    </div>
 
-    <tr>
-        {{-- DATE --}}
-        <td class="text-nowrap">
-            {{ $log->created_at->format('D j M Y, h:i A') }}
-        </td>
+                    {{-- MODEL --}}
+                    <div class="col-xl-2 col-md-2 col-12">
+                        <label class="filter-label">Model</label>
+                        <select name="model" class="form-control">
+                            <option value="">All</option>
 
-        {{-- USER --}}
-        <td class="text-nowrap">
-            <strong>{{ $user }}</strong><br>
-            <small class="text-muted">{{ $model }}</small>
-        </td>
+                            @foreach(activity_models_list() as $class => $label)
+                                <option value="{{ $class }}"
+                                    {{ request('model') == $class ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-        
+                    {{-- ACTION --}}
+                    <div class="col-xl-2 col-md-2 col-12">
+                        <label class="filter-label">Action</label>
+                        <select name="action" class="form-control">
+                            <option value="">All</option>
+                            <option value="created" {{ request('action')=='created'?'selected':'' }}>Created</option>
+                            <option value="updated" {{ request('action')=='updated'?'selected':'' }}>Updated</option>
+                            <option value="deleted" {{ request('action')=='deleted'?'selected':'' }}>Deleted</option>
+                        </select>
+                    </div>
 
-        {{-- DESCRIPTION --}}
-        <td class="activity-description">
-            {!! activity_sentence_full($log) !!}
-        </td>
-    </tr>
+                    {{-- USER --}}
+                    <div class="col-xl-2 col-md-2 col-12">
+                        <label class="filter-label">User</label>
+                        <input type="text" name="user_id"
+                            value="{{ request('user_id') }}"
+                            class="form-control"
+                            placeholder="User">
+                    </div>
 
-    @empty
+                    {{-- SEARCH --}}
+                    <div class="col-xl-3 col-md-2 col-12">
+                        <label class="filter-label">Search</label>
+                        <input type="text" name="search"
+                            value="{{ request('search') }}"
+                            class="form-control"
+                            placeholder="Search action...">
+                    </div>
 
-    <tr>
-        <td colspan="4">No activity logs found</td>
-    </tr>
+                    {{-- PROPERTY --}}
+                    <div class="col-xl-3 col-md-2 col-12">
+                        <label class="filter-label">Properties</label>
+                        <input type="text" name="property"
+                            value="{{ request('property') }}"
+                            class="form-control"
+                            placeholder="Search JSON...">
+                    </div>
 
-    @endforelse
+                    {{-- MODEL ID --}}
+                    <div class="col-xl-3 col-md-2 col-12">
+                        <label class="filter-label">Model ID</label>
+                        <input type="text" name="model_id"
+                            value="{{ request('model_id') }}"
+                            class="form-control"
+                            placeholder="ID">
+                    </div>
 
-    </tbody>
-</table>
+                    {{-- BUTTONS --}}
+                    <div class="col-xl-3 col-md-2 col-12">
+                        <label class="filter-label">&nbsp;</label>
+                        <div class="d-flex column-gap-10">
+                            <button class="btn btn-apply flex-fill mt-0" style="height: fit-content;">Apply</button>
+                            <a href="{{ url()->current() }}" class="btn btn-secondary flex-fill mt-0" style="height: fit-content;">Reset</a>
+                        </div>
+                    </div>
 
-{{ $logs->links() }}
-</div>
-</div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card card-primary bg-white border rounded-lg-custom">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th width="120">Date</th>
+                        <th width="120">Who/what</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @forelse($logs as $log)
+
+                    @php
+                        $user = optional($log->causer)->first_name 
+                            ?? optional($log->causer)->name 
+                            ?? 'User #'.$log->causer_id;
+
+                        $model = class_basename($log->subject_type);
+                    @endphp
+
+                    <tr>
+                        {{-- DATE --}}
+                        <td class="text-nowrap">
+                            {{ $log->created_at->format('D j M Y, h:i A') }}
+                        </td>
+
+                        {{-- USER --}}
+                        <td class="text-nowrap">
+                            <strong>{{ $user }}</strong><br>
+                            <small class="text-muted">{{ $model }}</small>
+                        </td>                    
+
+                        {{-- DESCRIPTION --}}
+                        <td class="activity-description">
+                            {!! activity_sentence_full($log) !!}
+                        </td>
+                    </tr>
+
+                    @empty
+
+                    <tr>
+                        <td colspan="4">No activity logs found</td>
+                    </tr>
+
+                    @endforelse
+
+                </tbody>
+            </table>
+            {{ $logs->links() }}
+        </div>
+    </div>
 
 {{-- DATE SCRIPT --}}
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+
+<script>
+    let filterOpen = false;
+
+    $('#toggleFilter').on('click', function () {
+        $('#filterPanel').slideToggle(250);
+
+        filterOpen = !filterOpen;
+
+        if (filterOpen) {
+            $(this)
+                .removeClass('btn-secondary')
+                .addClass('btn-danger')
+                .html('<i class="fas fa-times"></i> Hide Filters');
+        } else {
+            $(this)
+                .removeClass('btn-danger')
+                .addClass('btn-secondary')
+                .html('<i class="fas fa-filter"></i> Filters');
+        }
+    });
+</script>
 
 <script>
 $('#activity_range').daterangepicker({

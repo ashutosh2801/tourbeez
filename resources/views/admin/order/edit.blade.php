@@ -1295,7 +1295,7 @@ $expectEmails = ['order_pending'];
                                 <i class="fa fa-angle-right"></i> Recent Actions
                             </button>
                         </div>
-                        <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions" >
+                        <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions">
                             <div class="card-body">
                                 <div class="table-responsive">
                                     <table class="table" style="border: 1px solid #dee2e6;">
@@ -1613,18 +1613,14 @@ $expectEmails = ['order_pending'];
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Charge Payment</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
       </div>
-      <div class="modal-body">
-
-        
-        <div class="mb-3">
+      <div class="modal-body">        
+        <div>
           <label>Customer Name:  <span id="customerName"></span> </label>
-          
         </div>
 
         @if($order->payment_status == 31)
-
-
         <!-- <div class="mb-3"> -->
           <!-- <label class="text-danger">Please confirm the order before charging the amount </label> -->
           <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
@@ -1632,34 +1628,31 @@ $expectEmails = ['order_pending'];
         @else
         <form id="chargeForm">
           <input type="hidden" id="chargeOrderId" name="order_id">
-        <!-- Amount field -->
-
-
-        <div class="mb-3">
-            <label>Amount (current order balance: {{ price_format_with_currency($order->balance_amount, $order->currency) }}) </label>
-            <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
-            <div class="input-group">
-                <div class="input-group-append">
-                    <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
-                </div>    
-                <input type="text" class="form-control" id="chargeAmount" name="amount" placeholder="0.00" value="{{ $order->balance_amount }}" required style="width: 100px;">                                            
+            <!-- Amount field -->
+            <div class="mb-3">
+                <label>Amount (current order balance: {{ price_format_with_currency($order->balance_amount, $order->currency) }}) </label>
+                <!-- <input type="text" id="chargeAmount" value="{{ $order->balance_amount }}" class="form-control"  name="amount" required> -->
+                <div class="input-group">
+                    <div class="input-group-append">
+                        <!-- <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span> -->
+                    </div>    
+                    <input type="text" class="form-control" id="chargeAmount" name="amount" placeholder="0.00" value="{{ $order->balance_amount }}" required style="width: 100px;">                                            
+                </div>
             </div>
-        </div>
 
-        <!-- Card details block (will be shown/hidden) -->
-        <div class="mb-3" id="cardDetailsBlock" style="display:none;"></div>
+            <!-- Card details block (will be shown/hidden) -->
+            <div class="mb-3" id="cardDetailsBlock" style="display:none;"></div>
         </form>
         @endif
       </div>
       <div class="modal-footer">
         <!-- <button type="button" class="btn btn-primary" id="confirmCharge">Confirm Charge</button> -->
-        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-
         @if($order->payment_status == 31)
             <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
         @else
-        <button type="submit" form="chargeForm" class="btn btn-primary">Charge</button>
+        <button type="submit" form="chargeForm" class="btn btn-success"><i class="fas fa-save mr-2"></i> Charge</button>
         @endif
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       </div>
     </div>
   </div>
@@ -1873,10 +1866,6 @@ $expectEmails = ['order_pending'];
         </div>
     </div>
 </div>
-
-
-
-
 
 <!-- GLOBAL REUSABLE LOADER -->
 <div id="globalLoader" 
