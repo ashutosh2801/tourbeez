@@ -51,6 +51,13 @@ class CustomerExport implements FromCollection, WithHeadings
         if ($request->filled('partner')) {
             $query->where('orders.source', $request->partner);
         }
+
+        if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
+            $query->whereBetween('order_tours.tour_date', [
+                $request->tour_start_date,
+                $request->tour_end_date,
+            ]);
+        }
         $data = $query->get();
 
         return $data->map(function ($c) {

@@ -49,7 +49,7 @@
             <div class="row">
 
                 {{-- BOOKING DATE --}}
-                <div class="col-xl-2 col-md-2 col-12 position-relative">
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Booking Date</label>
 
                     <input type="text" id="booking_range" class="form-control"
@@ -64,7 +64,7 @@
                 </div>
 
                 {{-- TOUR DATE --}}
-                <div class="col-xl-2 col-md-2 col-12 position-relative">
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Fulfilment Date</label>
 
                     <input type="text" id="tour_range" class="form-control"
@@ -465,6 +465,37 @@
         $('#tour_end_date').val(picker.endDate.format('YYYY-MM-DD'));
         $(this).val(picker.startDate.format('DD MMM YYYY') + ' - ' + picker.endDate.format('DD MMM YYYY'));
     });
+        function clearBooking() {
+            $('#booking_range').val('');
+            $('#start_date').val('');
+            $('#end_date').val('');
+
+            // reset picker UI as well
+            let picker = $('#booking_range').data('daterangepicker');
+            picker.setStartDate(moment());
+            picker.setEndDate(moment());
+            
+
+            
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLEAR TOUR RANGE
+        |--------------------------------------------------------------------------
+        */
+        function clearTour() {
+            $('#tour_range').val('');
+            $('#tour_start_date').val('');
+            $('#tour_end_date').val('');
+
+            // reset picker UI
+            let picker = $('#tour_range').data('daterangepicker');
+            picker.setStartDate(moment());
+            picker.setEndDate(moment());
+            
+
+        }
 </script>
 
 @endsection

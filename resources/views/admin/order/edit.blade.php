@@ -161,6 +161,40 @@
         max-width: 70% !important;
         margin: 10px auto !important;   /* center horizontally */
     }
+    
+    .iti { width: 100%; }
+
+    .iti__flag {
+        background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/img/flags.png");
+    }
+    .iti__flag.iti__flag--2x {
+        background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/img/flags@2x.png");
+    }
+
+    <style>
+.iti__search-box {
+    padding: 10px;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.iti__search-input {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+}
+
+.iti__search-input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
+}
+</style>
+
 </style>
 <style>
 .switch {
@@ -426,25 +460,44 @@ $expectEmails = ['order_pending'];
             <div class="bs-example">
                 <div class="accordion" id="accordionExample">
                     <div class="card customer-details">
-                        <div class="card-header bg-secondary py-0" id="headingOne">
-                            <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne"><i class="fa fa-angle-right"></i>Customer Details</button>
-                        </div>
-                        <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" >
-                            <div class="card-body">
-                                <ul class="flex flex-row">
-                                    <li><a href="{{ route('admin.customers.show', encrypt($order->customer?->id) ) }}" class="alink" target="_blank"><i class="fas fa-user-tie"></i>  {{ $order->customer?->name }}</a></li>
-                                    <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
-                                    <li>
-                                        <i class="fas fa-phone-square-alt"></i>
-                                        <span id="phone">{{ $order->customer?->phone }}</span>
-                                        <span id="country_name"></span>
-                                    </li>
+                    <div class="card-header bg-secondary py-0 d-flex justify-content-between align-items-center" id="headingOne">
+                        <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne">
+                            <i class="fa fa-angle-right"></i> Customer Details
+                        </button>
+
+                        
 
 
-                                </ul>                                
-                            </div>
+                    </div>
+
+                    <div id="collapseOne" class="collapse show">
+                        <div class="card-body">
+                            <ul class="flex flex-row">
+                                <li>
+                                    <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}" class="alink" target="_blank">
+                                        <i class="fas fa-user-tie"></i> {{ $order->customer?->name }}
+                                    </a>
+                                </li>
+                                <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
+                                <li>
+                                    <i class="fas fa-phone-square-alt"></i>
+                                    <span>{{ $order->customer?->phone }}</span>
+                                </li>
+
+                                <li><button type="button"
+                            class="btn btn-sm btn-primary"
+                            data-toggle="modal"
+                            data-target="#editCustomerModal"
+                            data-first_name="{{ $order->customer?->first_name }}"
+                            data-last_name="{{ $order->customer?->last_name }}"
+                            data-email="{{ $order->customer?->email }}"
+                            data-phone="{{ $order->customer?->phone }}">
+                            Edit
+                        </button></li>
+                            </ul>
                         </div>
                     </div>
+                </div>
 
                     <div class="card tour-details">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
@@ -1068,11 +1121,13 @@ $expectEmails = ['order_pending'];
                                             </div>
                                             
                                             @else
-                                                @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded')
+                                                @if($payment->status != 'succeeded' && $payment->status != 'partial_refunded' )
                                                 <div class="col-3">
                                                     @if($payment->status == 'capture_canceled')
-                                                    <div class="text-danger text-sm">Capture Canceled</div>
-                                                @endif
+                                                        <div class="text-danger text-sm">Capture Canceled</div>
+                                                    @elseif($payment->status == 'pending')
+                                                        <div class="text-danger text-sm">Pending</div>
+                                                    @endif
 
                                             
                                                 </div>
@@ -1301,7 +1356,7 @@ $expectEmails = ['order_pending'];
                             </button>
                         </div>
                         <!-- <div> -->
-                            <div id="collapseRecentActions" class="collapse" aria-labelledby="headingRecentActions" >
+                            <div id="collapseRecentActions" class="collapse show" aria-labelledby="headingRecentActions" >
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1349,7 +1404,7 @@ $expectEmails = ['order_pending'];
 
 
                         <!-- <div> -->
-                            <div id="collapseEmailHistory" class="collapse" aria-labelledby="headingEmailHistory" >
+                            <div id="collapseEmailHistory" class="collapse show" aria-labelledby="headingEmailHistory" >
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1410,7 +1465,7 @@ $expectEmails = ['order_pending'];
                             </button>
                         </div>
                         <!-- <div> -->
-                            <div id="collapsePaymentLog" class="collapse" aria-labelledby="headingPaymentLog" >
+                            <div id="collapsePaymentLog" class="collapse show" aria-labelledby="headingPaymentLog" >
                                 <div class="card-body">
                                     <table class="table">
                                         <thead>
@@ -1899,6 +1954,67 @@ $expectEmails = ['order_pending'];
 </div>
 
 
+<div class="modal fade" id="editCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <form id="customerForm">
+                @csrf
+
+                <input type="hidden" name="customer_id" value="{{ $order->customer?->id }}">
+                
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Customer</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row">
+
+                        <div class="col-lg-6">
+                    <label>First Name *</label>
+                    <input type="text" name="first_name" id="oc_first_name" class="form-control">
+                    <small class="text-danger d-none" id="error_first_name"></small>
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Last Name *</label>
+                    <input type="text" name="last_name" id="oc_last_name" class="form-control">
+                    <small class="text-danger d-none" id="error_last_name"></small>
+                </div>
+
+                <div class="col-lg-12">
+                    <label>Email *</label>
+                    <input type="email" name="email" id="oc_email" class="form-control">
+                    <small class="text-danger d-none" id="error_email"></small>
+                </div>
+
+                <div class="col-lg-12">
+                    <label>Phone *</label>
+                    <input id="oc_phone_intel" type="tel" class="form-control">
+                    <input type="hidden" name="phone" id="oc_phone">
+                    <small class="text-danger d-none" id="error_phone"></small>
+                </div>
+
+                    </div>
+
+                    <div id="customer_error" class="text-danger"></div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Save</button>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+
 
 
 
@@ -1940,6 +2056,11 @@ $expectEmails = ['order_pending'];
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js"></script> -->
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js"></script>
 <script>
     const ORDER_CURRENCY = "{{ $order->currency }}";
@@ -4384,6 +4505,211 @@ $('#editPickupModal').on('show.bs.modal', function (e) {
     checkbox.prop('checked', value === 1);
 });
 </script>
+
+<script>
+let iti = null;
+let phoneInput = null;
+
+/* =========================================
+   MODAL OPEN → INIT + PREFILL
+========================================= */
+$('#editCustomerModal').on('shown.bs.modal', function (e) {
+
+    let button = $(e.relatedTarget);
+
+    $('#oc_first_name').val(button.data('first_name'));
+    $('#oc_last_name').val(button.data('last_name'));
+    $('#oc_email').val(button.data('email'));
+
+    /* SAFE PHONE */
+    let phone = button.data('phone');
+    phone = (phone === undefined || phone === null) ? '' : String(phone);
+
+    if (phone && !phone.startsWith('+')) {
+        phone = '+' + phone;
+    }
+
+    phoneInput = document.querySelector("#oc_phone_intel");
+    if (!phoneInput) return;
+
+    /* INIT ONLY ONCE */
+    if (!iti) {
+        iti = window.intlTelInput(phoneInput, {
+            initialCountry: "auto",
+            separateDialCode: true,
+            nationalMode: false,
+            dropdownContainer: document.body,
+            autoPlaceholder: "polite",
+            utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js",
+        });
+
+        /* =========================================
+           SEARCH BOX (WORKING)
+        ========================================== */
+        phoneInput.addEventListener("open:countrydropdown", function () {
+
+            setTimeout(() => {
+
+                const container = document.querySelector(".iti__dropdown-content");
+                const list = document.querySelector(".iti__country-list");
+
+                if (!container || !list) return;
+
+                // remove old
+                const old = container.querySelector(".iti__search-box");
+                if (old) old.remove();
+
+                // create search UI
+                const searchBox = document.createElement("div");
+                searchBox.className = "iti__search-box";
+
+                const input = document.createElement("input");
+                input.type = "text";
+                input.placeholder = "Search country...";
+                input.className = "iti__search-input";
+
+                searchBox.appendChild(input);
+
+                // insert ABOVE list
+                container.insertBefore(searchBox, list);
+
+                const countries = list.querySelectorAll(".iti__country");
+
+                /* 🔥 FIX: allow typing */
+                input.addEventListener("keydown", e => e.stopPropagation());
+                input.addEventListener("keyup", e => e.stopPropagation());
+                input.addEventListener("click", e => e.stopPropagation());
+
+                /* FILTER */
+                input.addEventListener("input", function () {
+                    const val = this.value.toLowerCase();
+
+                    countries.forEach(c => {
+                        c.style.display = c.innerText.toLowerCase().includes(val) ? "" : "none";
+                    });
+                });
+
+                /* FOCUS */
+                setTimeout(() => input.focus(), 50);
+
+            }, 200);
+        });
+    }
+
+    /* SET NUMBER */
+    if (phone) {
+        iti.setNumber(phone);
+    } else {
+        phoneInput.value = '';
+    }
+
+});
+
+
+/* =========================================
+   FORM SUBMIT
+========================================= */
+$('#customerForm').on('submit', function (e) {
+    e.preventDefault();
+
+    // reset errors
+    $('.text-danger').addClass('d-none').text('');
+
+    let isValid = true;
+
+    let firstName = $('#oc_first_name').val().trim();
+    let lastName  = $('#oc_last_name').val().trim();
+    let email     = $('#oc_email').val().trim();
+    let rawPhone  = phoneInput ? phoneInput.value.trim() : '';
+
+    /* =========================
+       FIRST NAME
+    ========================= */
+    if (!firstName) {
+        $('#error_first_name').text('First name is required').removeClass('d-none');
+        isValid = false;
+    }
+
+    /* =========================
+       LAST NAME
+    ========================= */
+    if (!lastName) {
+        $('#error_last_name').text('Last name is required').removeClass('d-none');
+        isValid = false;
+    }
+
+    /* =========================
+       EMAIL
+    ========================= */
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!email) {
+        $('#error_email').text('Email is required').removeClass('d-none');
+        isValid = false;
+    } else if (!emailRegex.test(email)) {
+        $('#error_email').text('Invalid email format').removeClass('d-none');
+        isValid = false;
+    }
+
+    /* =========================
+       PHONE
+    ========================= */
+    let hiddenInput = document.querySelector("#oc_phone");
+
+    if (!rawPhone) {
+        $('#error_phone').text('Phone is required').removeClass('d-none');
+        isValid = false;
+    } 
+    else if (!iti || !iti.isValidNumber()) {
+        $('#error_phone').text('Invalid phone number').removeClass('d-none');
+        isValid = false;
+    } 
+    else {
+        hiddenInput.value = iti.getNumber();
+    }
+
+    if (!isValid) return;
+
+    /* =========================
+       SUBMIT AJAX
+    ========================= */
+    let formData = $(this).serialize();
+
+    $.ajax({
+        url: "{{ route('admin.customer.update_details') }}",
+        type: "POST",
+        data: formData,
+        success: function(response) {
+
+            if(response.status) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Customer updated successfully'
+                }).then(() => location.reload());
+            } else {
+                Swal.fire('Error', 'Something went wrong', 'error');
+            }
+
+        },
+        error: function(xhr) {
+            let errors = xhr.responseJSON?.errors;
+
+            if(errors) {
+                Object.keys(errors).forEach(key => {
+                    $('#error_' + key).text(errors[key][0]).removeClass('d-none');
+                });
+            }
+        }
+    });
+});
+
+$('input').on('input', function () {
+    let id = $(this).attr('id').replace('oc_', '');
+    $('#error_' + id).addClass('d-none').text('');
+});
+</script>
+
 
 
 

@@ -28,7 +28,7 @@
                             </select>
                         </div> -->
                         <div class="col-md-4 col-6">
-                            <select id="productFilter" class="form-control"></select>
+                            <select id="productFilter" name="product" class="form-control"></select>
                         </div>
                         <div class="col-md-2 col-6">
                             <select name="payment_status" class="form-control" >
@@ -225,11 +225,11 @@
                                 #
                             </th>
 
-                            <th style="width:9%; white-space: nowrap;">
+                            <th style="width:10%; white-space: nowrap;">
                                 Status
                             </th>
 
-                            <th style="width:25%; white-space: nowrap;">
+                            <th style="width:24%; white-space: nowrap;">
                                 Tour
                             </th>
 
