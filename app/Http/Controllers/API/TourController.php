@@ -9,6 +9,7 @@ use App\Models\Partner;
 use App\Models\PartnerTour;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\Tour;
+use App\Models\TourDetail;
 use App\Models\TourReview;
 use App\Models\TourSchedule;
 use App\Models\TourScheduleRepeats;
@@ -703,6 +704,17 @@ class TourController extends Controller
             return TourSpecialDeposit::where('tour_id', $id)->first();
         });
 
+        $tourDetail = TourDetail::where('tour_id', $id)->first();
+
+
+        $tourDetails = [
+            "free_cancellation"   => $tourDetail->free_cancellation,
+            "exceptional_deal"    => $tourDetail->exceptional_deal,
+            "lowest_price"        => $tourDetail->lowest_price,
+            "kids_discount"       => $tourDetail->kids_discount,
+            "full_refund"         => $tourDetail->full_refund,
+        ];
+
 
         if($depositRule && $depositRule->is_discount){
 
@@ -746,7 +758,8 @@ class TourController extends Controller
                 'data' => [
                     'deposit_rule' => null,
                     'booking_fees' => $bookingFees,
-                    'discount'     => $discount
+                    'discount'     => $discount,
+                    'tourDetails'  => $tourDetails,
                 ]
             ], 404);
         }
@@ -756,7 +769,8 @@ class TourController extends Controller
             'data'   => [
                 'deposit_rule' => $depositRule,
                 'booking_fees' => $bookingFees,
-                'discount'     => $discount
+                'discount'     => $discount,
+                'tourDetails'  => $tourDetails,
             ]
         ]);
     }

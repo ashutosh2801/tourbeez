@@ -191,6 +191,13 @@
                         <p>{{ translate('Tour Manifest') }}</p>
                     </a>
                 </li>
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.driver.manifest') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.tour.manifest') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tasks"></i>
+                        <p>{{ translate('Driver Manifest') }}</p>
+                    </a>
+                </li>
                 <div class="sidebar-calendar">
                     <div id="calendar"></div>
                 </div>
@@ -274,6 +281,17 @@
                         <i class="nav-icon fas fa-user"></i>
                         <p>{{ translate('Suppliers') }} 
                             <span class="badge badge-warning right">{{ $supplierCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                @endcan
+                @can('show_users') 
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.driver.index') }}"
+                        class="aiz-side-nav-link nav-link {{ areActiveRoutes(['customers.index']) }}">
+                        <i class="nav-icon fas fa-user"></i>
+                        <p>{{ translate('Driver') }} 
+                            <span class="badge badge-warning right">{{ $driverCount }}</span>
                         </p>
                     </a>
                 </li>

@@ -52,7 +52,7 @@
             <div class="row">
 
                 {{-- BOOKING DATE --}}
-                <div class="col-xl-2 col-md-2 col-12 position-relative">
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Booking Date</label>
 
                     <input type="text" id="booking_range" class="form-control"
@@ -67,7 +67,7 @@
                 </div>
 
                 {{-- TOUR DATE --}}
-                <div class="col-xl-2 col-md-2 col-12 position-relative">
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Fulfilment Date</label>
 
                     <input type="text" id="tour_range" class="form-control"
@@ -134,7 +134,7 @@
                 <div class="col-xl-2 col-md-2 col-12">
                     <div class="d-flex column-gap-10">
                         <button class="btn btn-apply flex-fill">Apply</button>
-                        <a href="{{ route('admin.report.revenue') }}" class="btn btn-secondary flex-fill">Reset</a>
+                        <a href="{{ route('admin.report.invoice') }}" class="btn btn-secondary flex-fill">Reset</a>
                     </div>
                 </div>
 
@@ -238,6 +238,9 @@
         $('#end_date').val(picker.endDate.format('YYYY-MM-DD'));
     });
 
+    let tourStart = "{{ request('tour_start_date') }}" ? moment("{{ request('tour_start_date') }}") : null;
+    let tourEnd   = "{{ request('tour_end_date') }}" ? moment("{{ request('tour_end_date') }}") : null;
+
     $('#tour_range').daterangepicker({
         autoUpdateInput: false,
         locale: { format: 'DD MMM YYYY' }
@@ -248,6 +251,44 @@
         $('#tour_end_date').val(picker.endDate.format('YYYY-MM-DD'));
         $(this).val(picker.startDate.format('DD MMM YYYY') + ' - ' + picker.endDate.format('DD MMM YYYY'));
     });
+
+    if (tourStart && tourEnd) {
+        $('#tour_range').data('daterangepicker').setStartDate(tourStart);
+        $('#tour_range').data('daterangepicker').setEndDate(tourEnd);
+        $('#tour_range').val(tourStart.format('DD MMM YYYY') + ' - ' + tourEnd.format('DD MMM YYYY'));
+    }
+
+    function clearBooking() {
+        $('#booking_range').val('');
+        $('#start_date').val('');
+        $('#end_date').val('');
+
+        // reset picker UI as well
+        let picker = $('#booking_range').data('daterangepicker');
+        picker.setStartDate(moment());
+        picker.setEndDate(moment());
+        
+
+        
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLEAR TOUR RANGE
+    |--------------------------------------------------------------------------
+    */
+    function clearTour() {
+        $('#tour_range').val('');
+        $('#tour_start_date').val('');
+        $('#tour_end_date').val('');
+
+        // reset picker UI
+        let picker = $('#tour_range').data('daterangepicker');
+        picker.setStartDate(moment());
+        picker.setEndDate(moment());
+        
+
+    }
 </script>
 @endsection
 

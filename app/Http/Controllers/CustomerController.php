@@ -236,6 +236,21 @@ class CustomerController extends Controller
             ->with('success', 'Customer updated successfully');
     }
 
+
+    public function updateOrderCustomerDetails(Request $request)
+    {
+        $customer = OrderCustomer::findOrFail($request->customer_id);
+
+        $customer->update([
+            'first_name'  => $request->first_name,
+            'last_name'  => $request->last_name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+        ]);
+
+        return response()->json(['status' => true]);
+    }
+
     /**
      * 
      * 

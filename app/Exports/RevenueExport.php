@@ -61,8 +61,8 @@ class RevenueExport implements FromCollection, WithHeadings
 
     if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
         $query->whereBetween('order_tours.tour_date', [
-            Carbon::parse($request->tour_start_date)->startOfDay(),
-            Carbon::parse($request->tour_end_date)->endOfDay(),
+            $request->tour_start_date,
+            $request->tour_end_date,
         ]);
     }
 
