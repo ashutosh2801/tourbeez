@@ -1,62 +1,59 @@
 <x-admin>
     @section('title', 'Show Customer')
-    <div class="card">
-        <div class="card-header d-flex justify-content-between">
-            <div class="">
-                
-            
-            <h3 class="card-title">{{ $user->name }}({{ $user->email }})</h3>
-
-            </div>
-            <div class="card-tools "><a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-dark">Back</a>
-                
-
-
-                <a href="{{ route('admin.customers.edit.source', ['id' => encrypt($user->id),'source' => 'order_customer']) }}" class="btn btn-sm btn-primary"><i class="far fa-edit"></i> Edit</a>
-
-            </div>
-            
-            
-        </div>
-        <div class="card-body">
-            <form action="{{ route('admin.user.update',$user) }}" method="POST">
-                @method('PUT')
-                @csrf
-                <input type="hidden" name="id" value="{{ $user->id }}">
-                <div class="row">
-                    <!-- <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="name" class="form-label">Name:*</label>
-                            <input type="text" class="form-control" name="name" required
-                                value="{{ $user->name }}">
-                                <x-error>name</x-error>
-                        </div>
-                    </div> -->
-                    <!-- <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="Email" class="form-label">Email:*</label>
-                            <input type="email" class="form-control" name="email" required
-                                value="{{ $user->email }}">
-                                <x-error>email</x-error>
-                        </div>
-                    </div> -->
-                    
-                    
-                    <div class="col-lg-12">
-                        <div class="float-right">
-                            <!-- <button class="btn btn-primary" type="submit">Save</button> -->
-                        </div>
+    <div class="card-primary">
+        <div class="card-header cus-order-head">
+            <div class="row">
+                <div class="col-md-8 col-12">            
+                    <h3 class="card-title">{{ $user->name }} ({{ $user->email }})</h3>
+                </div>
+                <div class="col-md-4 col-12">
+                    <div class="card-tools">
+                        <a href="{{ route('admin.orders.index') }}" class="btn btn-sm btn-back">Back</a>
+                        <a href="{{ route('admin.customers.edit.source', ['id' => encrypt($user->id),'source' => 'order_customer']) }}" class="btn btn-sm btn-primary"><i class="far fa-edit"></i> Edit</a>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
+    <div class="card-body">
+        <form action="{{ route('admin.user.update',$user) }}" method="POST">
+            @method('PUT')
+            @csrf
+            <input type="hidden" name="id" value="{{ $user->id }}">
+            <div class="row">
+                <!-- <div class="col-lg-6">
+                    <div class="form-group">
+                        <label for="name" class="form-label">Name:*</label>
+                        <input type="text" class="form-control" name="name" required
+                            value="{{ $user->name }}">
+                            <x-error>name</x-error>
+                    </div>
+                </div> -->
+                <!-- <div class="col-lg-6">
+                    <div class="form-group">
+                        <label for="Email" class="form-label">Email:*</label>
+                        <input type="email" class="form-control" name="email" required
+                            value="{{ $user->email }}">
+                            <x-error>email</x-error>
+                    </div>
+                </div> -->
+                
+                
+                <div class="col-lg-12">
+                    <div class="float-right">
+                        <!-- <button class="btn btn-primary" type="submit">Save</button> -->
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
     @if($orders)
-    <div class="card">
-        <div class="card-header bg-dark">
+    <div class="customer-order-table card rounded-lg-custom border">
+        <div class="top-header">
             <h3 class="card-title">Customer Orders</h3>
-            <h4>Total orders : {{count($orders)}}</h4>
+            <h4 class="card-title">Total orders : {{count($orders)}}</h4>
         </div>
         <div class="card-body p-0 order-table table-responsive">
                 <table class="table table-striped" id="OrderTable">
@@ -65,14 +62,14 @@
                             <!-- <th style="width:5%;">
                                 <input type="checkbox" id="checkAll" style="width:20px; height:20px;">
                             </th> -->
-                            <th style="width:5%; white-space: nowrap;">Order Number</th>
-                            <th style="width:5%; white-space: nowrap;">Status</th>
-                            <th style="width:25%; white-space: nowrap;">Tour</th>
-                            <th style="width:12%; white-space: nowrap;">Tour Date</th>
-                            <th style="width:9%; white-space: nowrap;">Customer</th>
-                            <th style="width:13%; white-space: nowrap;">Amount</th>
-                            <th style="width:12%; white-space: nowrap;">Created</th>
-                            <th style="width:8%; white-space: nowrap;">Source</th>
+                            <th style="width:10%;">Order Number</th>
+                            <th style="width:10%;">Status</th>
+                            <th style="width:20%;">Tour</th>
+                            <th style="width:10%;">Tour Date</th>
+                            <th style="width:10%;">Customer</th>
+                            <th style="width:10%;">Amount</th>
+                            <th style="width:10%;">Created</th>
+                            <th style="width:5%;">Source</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -84,8 +81,6 @@
                                 </td>
                                 <td>{!! order_status($order->order_status) !!}</td>
                                 <td>
-                                    
-
                                     @foreach ($order->orderTours as $order_tour)
 
                                             <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour_id)) }}" class="alink" target="_blank" >
@@ -105,21 +100,16 @@
                                     <span> X {{ $order->orderTours->sum('number_of_guests') }}</span>
                                 </td>
                                 <td>
-
                                     @foreach ($order->orderTours as $order_tour)
                                         {{ \Carbon\Carbon::parse($order_tour->tour_date)->format('M d, Y') }}<br>
 
                                          {{ $order_tour->tour_time }}
                                     @endforeach
-
-
                                 </td>
                                 <td>
                                     <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}" class="alink" target="_blank">
                                         {{ $order->customer?->name }}
                                     </a>
-
-                                    
                                     <br>
                                     {{ $order->customer?->phone }}
                                 </td>
@@ -147,9 +137,9 @@
                                         $amountClass = 'text-secondary'; // grey
                                     } 
                                 @endphp
-                                <td class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}
-                                <!-- </td> -->
-                                <br>
+                                <td class="{{ $amountClass }}">
+                                    {{ price_format_with_currency($order->total_amount, $order->currency) }}
+                                    <br>
                                     @php
                                         $payment = $order->payments->first();
                                     @endphp
@@ -177,7 +167,7 @@
                                     @else
                                         N/A
                                     @endif
-                                    <!-- </td> -->
+                                </td>
                                 <td>{{ date__format($order->created_at) }}</td>
                                 <td>{{ $order->source ?? 'Online' }}</td>
                             </tr>

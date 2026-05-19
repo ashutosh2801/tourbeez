@@ -6351,7 +6351,7 @@ div.footable-loader > span.fooicon:after {
     width: 100%;
 }
 .iti--allow-dropdown input {
-    padding-left: 95px !important;
+    padding-left: 95px;
 }
 .iti--separate-dial-code .iti__selected-flag,
 .iti--allow-dropdown .iti__flag-container:hover .iti__selected-flag{
@@ -8445,8 +8445,9 @@ a.dropdown-footer:hover {
         flex-wrap: wrap;
     }
     .customer-details  ul.flex li {
+        width: 100%;
         margin-right: 0;
-        margin-bottom: 5px;
+        margin-bottom: 10px;
     }
     .customer-details ul.flex li:after {
         display: none;
@@ -8621,6 +8622,31 @@ a.dropdown-footer:hover {
     margin-right: 2px;
 }
 
+.order-edit .cus-edit-btn {
+    color: #FFF;
+}
+
+.cus-order-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.cus-order-head .card-tools {
+    text-align: right;
+}
+
+.customer-order-table .top-header {
+    background-color: #343a41;
+    display: flex;
+    justify-content: space-between;
+    color: #FFF;
+    padding: 12px 25px;
+    border-bottom: 1px solid #ebedf2;
+    min-height: 50px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
 #chargeModal .btn-charge {
     background: #01228b;
     color: #FFF;
@@ -8665,6 +8691,11 @@ a.dropdown-footer:hover {
 
     .order-edit .info-blog .info-stats4 {
         margin-bottom: 1rem;
+    }
+
+    .cus-order-head .card-tools {
+        text-align: left;
+        margin-top: 15px;
     }
 
 }
@@ -10958,6 +10989,10 @@ table.dataTable {
     padding: 0 10px;
 }
 
+.payment-details .paymentRow tr {
+    border-top: 1px solid #dee2e6;
+}
+
 .payment-details .charge-btn {
     background: #11ce83;
     padding: 8px;
@@ -11056,4 +11091,17 @@ table.dataTable {
 
 #chargeModal .modal-header .close {
     color: #FFF;
+}
+
+#editCustomerModal .modal-content .modal-header {
+    background: #343a41;
+    color: #FFF;
+}
+
+#editCustomerModal .modal-header .close {
+    color: #FFF;
+}
+
+#editCustomerModal .modal-body label {
+    margin-bottom: 5px;
 }
