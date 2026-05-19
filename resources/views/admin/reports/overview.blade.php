@@ -1,6 +1,27 @@
 <x-admin>
 @section('title', 'Reports Overview')
 
+<style>
+    .select2-container--default .select2-selection--single {
+    height: 38px !important;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 0 10px;
+}
+
+/* FIX placeholder alignment */
+.select2-container--default .select2-selection__rendered {
+    line-height: 38px !important;  /* match height */
+    padding-left: 0 !important;
+    color: #6c757d; /* placeholder color */
+}
+
+/* arrow alignment */
+.select2-container--default .select2-selection__arrow {
+    height: 38px !important;
+}
+</style>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
 
@@ -34,7 +55,7 @@
 
                 {{-- TOUR DATE --}}
                 <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Fulfilment Date</label>
+                    <label class="filter-label">     Date</label>
 
                     <input type="text" id="tour_range" class="form-control"
                         placeholder="Select date range" autocomplete="off">
@@ -45,6 +66,10 @@
 
                     <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
                     <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
+                </div>
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <label class="filter-label">Products</label>
+                    <select id="productFilter" name="product" class="form-control"></select>
                 </div>
 
                 {{-- ORDER STATUS --}}
@@ -201,6 +226,10 @@
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
 <script>
     const today = moment();
 
@@ -297,6 +326,28 @@
             
 
         }
+
+        $('#productFilter').select2({
+            placeholder: 'Select Tour',
+            minimumInputLength: 4,
+            ajax: {
+                url: '{{ route("admin.tours.tours-list") }}',
+                dataType: 'json',
+                delay: 0,
+                cache: true,
+                data: function (params) {
+                    return { q: params.term };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.map(tour => ({
+                            id: tour.id,
+                            text: tour.title
+                        }))
+                    };
+                }
+            }
+        });
 </script>
 
 @endsection

@@ -35,6 +35,10 @@ class CustomerExport implements FromCollection, WithHeadings
             ->whereNotIn('orders.order_status', $excludedStatuses)
             ->whereBetween('orders.created_at', [$startDate, $endDate])->groupBy('orders.id');
 
+        if ($product = $request->input('product')) {
+            $query->where('order_tours.tour_id', $product);
+        }
+
             
         if ($request->filled('payment_status')) {
             $query->where('orders.payment_status', $request->payment_status);
