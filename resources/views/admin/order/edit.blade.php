@@ -653,7 +653,7 @@ $expectEmails = ['order_pending'];
                                                                 @if ($order_tour->tour)
                                                                 @php
                                                                     $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
-
+                                                                    
                                                                     $addons = $order_tour->tour?->addons->sortBy(function ($extra) use ($tour_extra) {
                                                                             $result = getTourExtraDetails($tour_extra, $extra->id);
                                                                             return isset($result['quantity']) && $result['quantity'] > 0 ? 0 : 1;
