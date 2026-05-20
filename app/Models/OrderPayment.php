@@ -43,7 +43,7 @@ class OrderPayment extends Model
     {
         return LogOptions::defaults()
         ->useLogName('OrderPayment')
-        ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
+        ->setDescriptionForEvent(fn(string $eventName) => "OrderPayment has been {$eventName}")
         ->logOnly(['*'])
         ->logOnlyDirty()
         ->dontSubmitEmptyLogs();

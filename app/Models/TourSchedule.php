@@ -24,8 +24,8 @@ class TourSchedule extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->useLogName('TourImage')
-            ->setDescriptionForEvent(fn(string $eventName) => "TourImage {$eventName}")
+            ->useLogName('TourSchedule')
+            ->setDescriptionForEvent(fn(string $eventName) => "TourSchedule {$eventName}")
             ->logAll(); // 🔥 important
     }
 

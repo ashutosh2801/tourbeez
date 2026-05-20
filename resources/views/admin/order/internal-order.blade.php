@@ -65,12 +65,12 @@
                 </div>
                 
                 <div class="d-flex">
-                    <input type="hidden" name="currency" id="order_currency" value="CAD" />
-                    <!-- <select readonly name="currency" id="order_currency" class="form-control mr-2">
+                    <!-- <input type="hidden" name="currency" id="order_currency" value="CAD" /> -->
+                   <select readonly name="currency" id="order_currency" class="form-control mr-2">
                         @foreach(config('constants.currencies') as $code => $country)
                             <option @if($code === 'CAD') selected @endif value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
                         @endforeach
-                    </select> -->
+                    </select> 
                     <select name="order_status" class="form-control mr-2">
                         <option value="0">New</option> 
                         <option value="4" selected>Pending Customer</option>

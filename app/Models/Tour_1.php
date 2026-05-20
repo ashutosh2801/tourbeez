@@ -22,7 +22,7 @@ class Tour_1 extends Model
     {
         return LogOptions::defaults()
         ->useLogName('Tour')
-        ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
+        ->setDescriptionForEvent(fn(string $eventName) => "Tour has been {$eventName}")
         ->logOnly(['*'])
         ->logOnlyDirty()
         ->dontSubmitEmptyLogs();

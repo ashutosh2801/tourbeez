@@ -28,9 +28,13 @@ class RoleController extends Controller
         ]);
         $role = Role::create(['name' => $request->name]);
 
-        $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
+        if($request->permissions){
+
+            $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
+            $role->syncPermissions($permissions);
+        }
         
-        $role->syncPermissions($permissions);
+        
 
         return redirect()->route('admin.role.index')->with('success','Role created successfully.');
     }
@@ -60,9 +64,13 @@ class RoleController extends Controller
 
         $role->update($input);
 
-        $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
+        if($request->permissions){
+            $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
 
-        $role->syncPermissions($permissions);
+            $role->syncPermissions($permissions);
+        }
+
+        
 
         return redirect()->back()->with('success','Role updated successfully.');
     }

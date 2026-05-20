@@ -35,6 +35,10 @@ class CustomerExport implements FromCollection, WithHeadings
             ->whereNotIn('orders.order_status', $excludedStatuses)
             ->whereBetween('orders.created_at', [$startDate, $endDate])->groupBy('orders.id');
 
+        if ($product = $request->input('product')) {
+            $query->where('order_tours.tour_id', $product);
+        }
+
             
         if ($request->filled('payment_status')) {
             $query->where('orders.payment_status', $request->payment_status);
@@ -50,6 +54,13 @@ class CustomerExport implements FromCollection, WithHeadings
         }
         if ($request->filled('partner')) {
             $query->where('orders.source', $request->partner);
+        }
+
+        if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
+            $query->whereBetween('order_tours.tour_date', [
+                $request->tour_start_date,
+                $request->tour_end_date,
+            ]);
         }
         $data = $query->get();
 

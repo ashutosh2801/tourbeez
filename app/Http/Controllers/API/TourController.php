@@ -9,6 +9,7 @@ use App\Models\Partner;
 use App\Models\PartnerTour;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\Tour;
+use App\Models\TourDetail;
 use App\Models\TourReview;
 use App\Models\TourSchedule;
 use App\Models\TourScheduleRepeats;
@@ -42,6 +43,7 @@ class TourController extends Controller
             ])
             ->onlyRoot()
             ->where('status', 1)
+            ->where('id', '<>', 709) // Exclude Voyage The falls
             // ->whereHas('schedules', function ($sq) {
             //     $sq->whereDate('until_date', '>=', now()->toDateString());
             // })
@@ -522,11 +524,9 @@ class TourController extends Controller
         ]);
     }
 
-
-
-
-
-
+    /**
+     * Fetch disabled tour dates for a tour.
+     */
     private function getDisabledTourDates_fromdb(int $tourId): array
     {
         // ✅ Load the precomputed meta row for this tour
@@ -581,7 +581,6 @@ class TourController extends Controller
             'until_date' => $globalEnd->toDateString(),
         ];
     }
-
 
     /**
      * Fetch booking related info for a tour.
@@ -705,6 +704,17 @@ class TourController extends Controller
             return TourSpecialDeposit::where('tour_id', $id)->first();
         });
 
+        $tourDetail = TourDetail::where('tour_id', $id)->first();
+
+
+        $tourDetails = [
+            "free_cancellation"   => $tourDetail->free_cancellation,
+            "exceptional_deal"    => $tourDetail->exceptional_deal,
+            "lowest_price"        => $tourDetail->lowest_price,
+            "kids_discount"       => $tourDetail->kids_discount,
+            "full_refund"         => $tourDetail->full_refund,
+        ];
+
 
         if($depositRule && $depositRule->is_discount){
 
@@ -748,7 +758,8 @@ class TourController extends Controller
                 'data' => [
                     'deposit_rule' => null,
                     'booking_fees' => $bookingFees,
-                    'discount'     => $discount
+                    'discount'     => $discount,
+                    'tourDetails'  => $tourDetails,
                 ]
             ], 404);
         }
@@ -758,7 +769,8 @@ class TourController extends Controller
             'data'   => [
                 'deposit_rule' => $depositRule,
                 'booking_fees' => $bookingFees,
-                'discount'     => $discount
+                'discount'     => $discount,
+                'tourDetails'  => $tourDetails,
             ]
         ]);
     }
@@ -852,6 +864,7 @@ class TourController extends Controller
                 ->onlyRoot()
                 ->select('id', 'title', 'slug', 'unique_code', 'price', 'currency')
                 ->where('status', 1)
+                ->where('id', '<>', 709) // Exclude Voyage The falls
                 ->when($search, function ($query, $search) {
                     $query->where('title', 'LIKE', '%' . $search . '%');
                 })
@@ -859,16 +872,14 @@ class TourController extends Controller
                 ->limit(max(0, $total_tours))
                 ->get();
 
-                $tours->map(function ($tour) {
-
+                /*$tours->map(function ($tour) {
                     $tour->price = currencyConvert(
                         $tour->price,
                         $tour->currency ?? 'USD',
                         'CAD' // 👈 forced CAD
                     );
-
                     return $tour;
-                });
+                });*/
         });
 
         /*
@@ -1236,7 +1247,6 @@ class TourController extends Controller
         return null;
     }
 
-
     private function calculateNextDate($schedule, Carbon $today, $allRepeats = [])
     {
         $interval   = $schedule->repeat_period_unit ?? 1;
@@ -1291,7 +1301,6 @@ class TourController extends Controller
 
         return null;
     }
-
 
     private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationMinutes = 30)
     {

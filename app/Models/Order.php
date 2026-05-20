@@ -9,6 +9,7 @@ use App\Models\OrderPayment;
 use App\Models\Partner;
 use App\Models\Scopes\SupplierOrderScope;
 use App\Models\StripeWebhookLog;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -219,6 +220,13 @@ class Order extends Model
     public function paymentLogs()
     {
         return $this->hasMany(StripeWebhookLog::class);
+    }
+
+    public function driver()
+    {
+        return $this->belongsToMany(User::class, 'order_drivers', 'order_id', 'driver_id')
+            ->withPivot(['assigned_date', 'pickup_location', 'drop_location', 'driver_amount', 'notes'])
+            ->withTimestamps();
     }
 
     
