@@ -17,7 +17,8 @@ class OrderCustomer extends Model
     use HasFactory;
     use LogsActivity;
 
-    protected $fillable = [
+    
+       protected $fillable = [
         'order_id',
         'user_id',
         'first_name',
@@ -34,7 +35,7 @@ class OrderCustomer extends Model
     {
         return LogOptions::defaults()
         ->useLogName('OrderCustomer')
-        ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
+        ->setDescriptionForEvent(fn(string $eventName) => "OrderCustomer has been {$eventName}")
         ->logOnly(['*'])
         ->logOnlyDirty()
         ->dontSubmitEmptyLogs();

@@ -188,6 +188,13 @@
                         <p>{{ translate('Tour Manifest') }}</p>
                     </a>
                 </li>
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.driver.manifest') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.tour.manifest') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tasks"></i>
+                        <p>{{ translate('Driver Manifest') }}</p>
+                    </a>
+                </li>
             </ul>
             </li>
         @endcan
@@ -268,6 +275,17 @@
                         <i class="nav-icon fas fa-user"></i>
                         <p>{{ translate('Suppliers') }} 
                             <span class="badge badge-warning right">{{ $supplierCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                @endcan
+                @can('show_users') 
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.driver.index') }}"
+                        class="aiz-side-nav-link nav-link {{ areActiveRoutes(['customers.index']) }}">
+                        <i class="nav-icon fas fa-user"></i>
+                        <p>{{ translate('Driver') }} 
+                            <span class="badge badge-warning right">{{ $driverCount }}</span>
                         </p>
                     </a>
                 </li>
@@ -399,13 +417,34 @@
             </a>
         </li>    
         @endcan
-        @can('activity_logs')
-        <li class="nav-item">
-            <a href="{{ route('admin.activity.logs') }}" class="nav-link {{ Route::is('admin.activity.logs') ? 'active' : '' }}">
-                <i class="nav-icon fas fa-cog"></i>
-                <p>Activity Logs</p>
-            </a>
-        </li>    
-        @endcan
+        
+
+        @can('activity_logs') 
+            <li class="nav-item">
+                <a href="javascript:void(0);" class="nav-link">
+                    <i class="nav-icon fas fa-history"></i>
+                    <p>
+                        {{ translate('Activity') }}
+                        <span class="aiz-side-nav-arrow right"></span>
+                    </p>
+                </a>
+                <ul class="aiz-side-nav-list level-2">
+                    <li class="nav-item">
+                        <a href="{{ route('admin.activity.logs') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.activity.logs') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-list-ul"></i>
+                            <p>Activity Logs</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="{{ route('admin.activity.descriptive') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.activity.descriptive') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-file-alt"></i>
+                            <p>Activity Description</p>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            @endcan
+
     </ul>
 </nav>

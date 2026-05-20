@@ -1,7 +1,30 @@
 <x-admin>
 @section('title', 'Reports Overview')
 
+<style>
+    .select2-container--default .select2-selection--single {
+    height: 38px !important;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 0 10px;
+}
+
+/* FIX placeholder alignment */
+.select2-container--default .select2-selection__rendered {
+    line-height: 38px !important;  /* match height */
+    padding-left: 0 !important;
+    color: #6c757d; /* placeholder color */
+}
+
+/* arrow alignment */
+.select2-container--default .select2-selection__arrow {
+    height: 38px !important;
+}
+</style>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+
+
 
     <div class="card-primary mb-3">
         <div class="card-header reports-head">
@@ -16,33 +39,37 @@
             <div class="row">
 
                 {{-- BOOKING DATE --}}
-                <div class="col-xl-2 col-md-2 col-12 position-relative">
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Booking Date</label>
 
                     <input type="text" id="booking_range" class="form-control"
                         placeholder="Select date range" autocomplete="off">
 
-                    @if(request('start_date'))
+                    <!-- @if(request('start_date')) -->
                         <span class="clear-btn" onclick="clearBooking()">✕</span>
-                    @endif
+                    <!-- @endif -->
 
                     <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
                     <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
                 </div>
 
                 {{-- TOUR DATE --}}
-                <div class="col-xl-2 col-md-2 col-12 position-relative">
-                    <label class="filter-label">Fulfilment Date</label>
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <label class="filter-label">     Date</label>
 
                     <input type="text" id="tour_range" class="form-control"
                         placeholder="Select date range" autocomplete="off">
 
-                    @if(request('tour_start_date'))
+                    <!-- @if(request('tour_start_date')) -->
                         <span class="clear-btn" onclick="clearTour()">✕</span>
-                    @endif
+                    <!-- @endif -->
 
                     <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
                     <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
+                </div>
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <label class="filter-label">Products</label>
+                    <select id="productFilter" name="product" class="form-control"></select>
                 </div>
 
                 {{-- ORDER STATUS --}}
@@ -127,7 +154,7 @@
                         <i class="fa fa-dollar-sign"></i>
                     </div>
                     <div class="sale-num">
-                        <h3>{{ number_format($performance['gross_sales'], 2) }}</h3>
+                        <h3>$ {{ number_format($performance['gross_sales'], 2) }}</h3>
                         <div class="stat-title">Gross Sales</div>
                     </div>
                 </div>
@@ -139,7 +166,7 @@
                         <i class="fa fa-undo"></i>
                     </div>
                     <div class="sale-num">
-                        <h3 class="text-red">{{ number_format($performance['refund'], 2) }}</h3>
+                        <h3 class="text-red">$ {{ number_format($performance['refund'], 2) }}</h3>
                         <div class="stat-title">Refund</div>
                     </div>
                 </div>
@@ -158,7 +185,7 @@
                         <i class="fa fa-check-circle"></i>
                     </div>
                     <div class="sale-num">
-                        <h3>{{ $performance['payment_received'] }}</h3>
+                        <h3>$ {{ $performance['payment_received'] }}</h3>
                         <div class="stat-title">Payment Recieved</div>
                     </div>
                 </div>
@@ -170,7 +197,7 @@
                         <i class="fa fa-wallet"></i>
                     </div>
                     <div class="sale-num">
-                        <h3>{{ number_format($performance['pending_amount'], 2) }}</h3>
+                        <h3>$ {{ number_format($performance['pending_amount'], 2) }}</h3>
                         <div class="stat-title">Pending Balance</div>
                     </div>
                 </div>
@@ -183,7 +210,7 @@
                         <i class="fa fa-chart-line"></i>
                     </div>
                     <div class="sale-num">
-                        <h3 class="text-green">{{ number_format($performance['net_sales'], 2) }}</h3>
+                        <h3 class="text-green">$ {{ number_format($performance['net_sales'], 2) }}</h3>
                         <div class="stat-title">Net Sales</div>
                     </div>
                 </div>
@@ -198,6 +225,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 
 <script>
     const today = moment();
@@ -256,6 +287,67 @@
         $('#tour_end_date').val(picker.endDate.format('YYYY-MM-DD'));
         $(this).val(picker.startDate.format('DD MMM YYYY') + ' - ' + picker.endDate.format('DD MMM YYYY'));
     });
+
+    /*
+        |--------------------------------------------------------------------------
+        | CLEAR BOOKING RANGE
+        |--------------------------------------------------------------------------
+        */
+
+        
+        function clearBooking() {
+            $('#booking_range').val('');
+            $('#start_date').val('');
+            $('#end_date').val('');
+
+            // reset picker UI as well
+            let picker = $('#booking_range').data('daterangepicker');
+            picker.setStartDate(moment());
+            picker.setEndDate(moment());
+            
+
+            
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLEAR TOUR RANGE
+        |--------------------------------------------------------------------------
+        */
+        function clearTour() {
+            $('#tour_range').val('');
+            $('#tour_start_date').val('');
+            $('#tour_end_date').val('');
+
+            // reset picker UI
+            let picker = $('#tour_range').data('daterangepicker');
+            picker.setStartDate(moment());
+            picker.setEndDate(moment());
+            
+
+        }
+
+        $('#productFilter').select2({
+            placeholder: 'Select Tour',
+            minimumInputLength: 4,
+            ajax: {
+                url: '{{ route("admin.tours.tours-list") }}',
+                dataType: 'json',
+                delay: 0,
+                cache: true,
+                data: function (params) {
+                    return { q: params.term };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.map(tour => ({
+                            id: tour.id,
+                            text: tour.title
+                        }))
+                    };
+                }
+            }
+        });
 </script>
 
 @endsection

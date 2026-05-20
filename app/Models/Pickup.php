@@ -7,14 +7,25 @@ use App\Models\Tour;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Pickup extends Model
 {
     use HasFactory, SoftDeletes;
+    use LogsActivity;
 
     protected $fillable = [
         'name', 'location', 'address', 'time', 'additional_information', 'user_id'
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('Pickup')
+            ->setDescriptionForEvent(fn(string $eventName) => "Pickup {$eventName}")
+            ->logAll(); // 🔥 important
+    }
     protected static function booted()
     {
         static::addGlobalScope(new SupplierScope('user_id'));

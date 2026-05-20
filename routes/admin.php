@@ -13,12 +13,14 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\ExclusionController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\FeatureController;
 use App\Http\Controllers\InclusionController;
 use App\Http\Controllers\ItineraryController;
+use App\Http\Controllers\ManifestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PartnerController;
@@ -72,6 +74,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::resource('/user',UserController::class);
     Route::get('/user_supplier',[SupplierController::class, 'index'])->name('supplier.index');
+    Route::get('/user_driver',[DriverController::class, 'index'])->name('driver.index');
     Route::resource('/customers',CustomerController::class);
 
     Route::get('/customers/{id}/{source}/edit',[CustomerController::class, 'editFromSource'])->name('customers.edit.source');
@@ -79,6 +82,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     '/customers-source/{id}/{source}',
     [CustomerController::class, 'updateSource']
 )->name('customers.source.update');
+
+    Route::post('/admin/customer/update_details', [CustomerController::class, 'updateOrderCustomerDetails'])->name('customer.update_details');
     
     Route::resource('/role',RoleController::class);
     Route::resource('/permission',PermissionController::class);
@@ -255,6 +260,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/uploaded-files/destroy/{id}', [AizUploadController::class, 'destroy'])->name('uploaded-files.destroy');
 
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity.logs');
+    Route::get('/activity-descriptive', [ActivityLogController::class, 'descriptive'])->name('activity.descriptive');
     Route::get('/banner', [AizUploadController::class, 'showBanner'])->name('banner.index');
   
     Route::get('banners/create', [AizUploadController::class, 'bannerCreate'])->name('banners.create');
@@ -397,6 +403,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::get('reports/customer/export', [ReportController::class, 'exportCustomer'])
     ->name('report.customer.export');
+
+
+    Route::get('/driver-manifest', [ManifestController::class, 'driverManifest'])->name('driver.manifest');
+    Route::get('/driver-manifest/export', [ManifestController::class, 'exportDriverManifest'])
+    ->name('driver.manifest.export');
+
+
+    Route::post('/assign-driver', [ManifestController::class, 'assignDriver'])->name('assign.driver');
+    Route::post('/remove-driver', [ManifestController::class, 'removeDriver'])->name('remove.driver');
 
 
 

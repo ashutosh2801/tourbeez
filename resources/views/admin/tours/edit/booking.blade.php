@@ -62,6 +62,24 @@
  
 
                 </div>
+                <div class="col-lg-8">
+                <div class="form-group">
+                    <label class="form-label">Driver Assignment</label><br>
+
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox"
+                               class="custom-control-input"
+                               id="assign_driver"
+                               name="assign_driver"
+                               value="1"
+                               {{ $data->detail?->assign_driver ?? true ? 'checked' : '' }}>
+
+                        <label class="custom-control-label" for="assign_driver">
+                            Enable Driver Assignment
+                        </label>
+                    </div>
+                </div>
+            </div>
             </div>
             <div class="card-footer" style="display:block">
                 <div class="row">

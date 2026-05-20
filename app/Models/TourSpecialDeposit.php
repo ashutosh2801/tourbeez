@@ -5,10 +5,13 @@ namespace App\Models;
 use App\Models\Tour;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class TourSpecialDeposit extends Model
 {
     use HasFactory;
+    use LogsActivity;
 
     protected $fillable = [
         'tour_id',
@@ -19,6 +22,14 @@ class TourSpecialDeposit extends Model
         'use_minimum_notice',
         'notice_days',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('TourSpecialDeposit')
+            ->setDescriptionForEvent(fn(string $eventName) => "TourSpecialDeposit {$eventName}")
+            ->logAll(); // 🔥 important
+    }
 
     public function tour()
     {
