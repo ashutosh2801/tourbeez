@@ -675,9 +675,7 @@ class CommonController extends Controller
         // Send email using mailable and template
        
         return response()->json(['message' => 'Message sent successfully.']);
-    }
-
-    
+    }  
 
     public function getLocationBanner(Request $request){
 
@@ -687,6 +685,5 @@ class CommonController extends Controller
             return Banner::first();
         }
     }
-
     
 }
