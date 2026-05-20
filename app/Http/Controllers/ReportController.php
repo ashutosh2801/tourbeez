@@ -53,6 +53,9 @@ public function overview(Request $request)
             $request->tour_end_date,
         ]);
     }
+    if ($product = $request->input('product')) {
+        $orderQuery->where('order_tours.tour_id', $product);
+    }
 
     if ($request->filled('order_status')) {
         $orderQuery->where('orders.order_status', $request->order_status);
@@ -270,6 +273,14 @@ public function revenue(Request $request)
     */
 
     // ✅ Order Status
+
+
+
+    if ($product = $request->input('product')) {
+        $query->where('order_tours.tour_id', $product);
+    }
+
+
     if ($request->filled('order_status')) {
         $query->where('orders.order_status', $request->order_status);
     }
@@ -363,6 +374,7 @@ public function revenue(Request $request)
 
     $payments = DB::table('order_payments')
         ->whereIn('order_id', $orderIds)
+        ->whereNull('deleted_at')
         ->get()
         ->groupBy('order_id');
 
@@ -502,6 +514,12 @@ if ($request->filled('payment_status')) {
  if ($request->filled('order_status')) {
         $customers->where('orders.order_status', $request->order_status);
     }
+
+
+
+if ($product = $request->input('product')) {
+    $customers->where('order_tours.tour_id', $product);
+}
 
 if ($request->action_type === 'pay_now') {
     $customers->where('orders.action_name', 'book');
