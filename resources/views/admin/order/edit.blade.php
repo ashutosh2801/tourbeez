@@ -641,7 +641,7 @@ $expectEmails = ['order_pending'];
                                                                 </tbody>
                                                             </table>
                                                         </td>
-                                                        <td>
+                                                        <!-- <td>
                                                             <table class="table">
                                                                 <thead>
                                                                     <tr>
@@ -653,7 +653,7 @@ $expectEmails = ['order_pending'];
                                                                 @if ($order_tour->tour)
                                                                 @php
                                                                     $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
-                                                                    
+
                                                                     $addons = $order_tour->tour?->addons->sortBy(function ($extra) use ($tour_extra) {
                                                                             $result = getTourExtraDetails($tour_extra, $extra->id);
                                                                             return isset($result['quantity']) && $result['quantity'] > 0 ? 0 : 1;
@@ -683,6 +683,68 @@ $expectEmails = ['order_pending'];
                                                                     <td>{{ $extra->name }} ({{ price_with_currency_no_round($price, $order->currency) }})</td>
                                                                 </tr>
                                                                 @endforeach
+                                                                @endif
+                                                            </table>
+                                                        </td> -->
+                                                        <td>
+                                                            <table class="table">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <td colspan="2">
+                                                                            <h5 style="font-size:14px; font-weight:600; margin:0;">Optional extras</h5>
+                                                                        </td>
+                                                                    </tr>
+                                                                </thead>
+
+                                                                @if ($order_tour->tour)
+                                                                    @php
+                                                                        // Get merged extras (helper you added)
+                                                                        $addons = getMergedTourExtrasData($order_tour);
+
+                                                                        // Sort: selected (qty > 0) first
+                                                                        $addons = collect($addons)->sortBy(function ($extra) {
+                                                                            return $extra->quantity > 0 ? 0 : 1;
+                                                                        });
+                                                                    @endphp
+
+                                                                    @foreach($addons as $extra)
+                                                                        @php
+                                                                            $price = $extra->price;
+
+                                                                            if ($extra->quantity > 0) {
+                                                                                $subtotal += ($extra->quantity * $price);
+                                                                                $subtotal2 += ($extra->quantity * $price);
+                                                                            } else {
+                                                                                $price = currencyConvertWithoutRound(
+                                                                                    $price,
+                                                                                    $extra->currency,
+                                                                                    $order->currency
+                                                                                );
+                                                                            }
+                                                                        @endphp
+
+                                                                        <tr>
+                                                                            <td width="60">
+                                                                                <input type="hidden" name="tour_extra_id_{{$_tourId}}[]" value="{{ $extra->id }}" />
+
+                                                                                <input type="number"
+                                                                                       name="tour_extra_qty_{{$_tourId}}[]"
+                                                                                       value="{{ $extra->quantity }}"
+                                                                                       style="width:60px"
+                                                                                       min="0"
+                                                                                       class="form-contorl text-center">
+
+                                                                                <input type="hidden"
+                                                                                       name="tour_extra_price_{{$_tourId}}[]"
+                                                                                       value="{{ $price }}" />
+                                                                            </td>
+
+                                                                            <td>
+                                                                                {{ $extra->name }}
+                                                                                ({{ price_with_currency_no_round($price, $order->currency) }})
+                                                                            </td>
+                                                                        </tr>
+                                                                    @endforeach
                                                                 @endif
                                                             </table>
                                                         </td>
