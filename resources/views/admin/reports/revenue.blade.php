@@ -35,7 +35,27 @@
     .pagination {
         justify-content: center;
     }
+    /* Make Select2 look like Bootstrap input */
+.select2-container--default .select2-selection--single {
+    height: 38px !important;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 0 10px;
+}
+
+/* FIX placeholder alignment */
+.select2-container--default .select2-selection__rendered {
+    line-height: 38px !important;  /* match height */
+    padding-left: 0 !important;
+    color: #6c757d; /* placeholder color */
+}
+
+/* arrow alignment */
+.select2-container--default .select2-selection__arrow {
+    height: 38px !important;
+}
 </style>
+
 
     <div class="card-primary mb-3">
         <div class="card-header reports-head">
@@ -77,6 +97,11 @@
                     <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
                     <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
                 </div>
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <label class="filter-label">Product</label>
+                    <select id="productFilter" name="product" class="form-control"></select>
+                </div>
+
 
                 {{-- ORDER STATUS --}}
                 <div class="col-xl-2 col-md-3 col-12">
@@ -407,6 +432,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
 
 <script>
     const today = moment();
@@ -496,7 +525,36 @@
             
 
         }
+
 </script>
+
+    <script>
+    $(document).ready(function () {
+        // ✅ Select2 (optimized)
+        $('#productFilter').select2({
+            placeholder: 'Select Tour',
+            minimumInputLength: 4,
+            ajax: {
+                url: '{{ route("admin.tours.tours-list") }}',
+                dataType: 'json',
+                delay: 0,
+                cache: true,
+                data: function (params) {
+                    return { q: params.term };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.map(tour => ({
+                            id: tour.id,
+                            text: tour.title
+                        }))
+                    };
+                }
+            }
+        });
+
+    });
+    </script>
 
 @endsection
 

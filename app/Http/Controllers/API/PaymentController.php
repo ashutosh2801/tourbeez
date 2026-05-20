@@ -79,6 +79,7 @@ class PaymentController extends Controller
             if (!$order) {
                 $logData['status'] = 'failed';
                 $logData['message'] = 'Order not found';
+                $logData['order_id']= $order->id;
                 StripeWebhookLog::create($logData);
 
                 return response()->json(['error' => 'Order not found'], 404);
@@ -91,6 +92,7 @@ class PaymentController extends Controller
             ) {
                 $logData['status'] = 'duplicate';
                 $logData['message'] = 'Already processed';
+                $logData['order_id']= $order->id;
                 StripeWebhookLog::create($logData);
 
                 return response()->json(['status' => 'already processed']);
@@ -372,11 +374,18 @@ class PaymentController extends Controller
                     //     ]); 
                     // }
                     // Retrieve PaymentIntent
-                    $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
+                    // $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
 
-                    if($paymentIntent->status == "requires_capture"){
+                    if($paymentIntent->status === "requires_capture"){
                         $payment_status = 3;
                     }
+                    else if ($paymentIntent->status === 'succeeded') {
+                        $payment_status = 1;
+                    }
+                    else {
+                        $payment_status = 0;
+                    }
+                    
                     \Log::warning($paymentIntent->status);
 
                     $payment_method = $paymentIntent->payment_method_types[0] ?? 'card';
@@ -432,7 +441,7 @@ class PaymentController extends Controller
                             'payment_intent_id' => $paymentIntent->id,
                         ],
                         [
-                            'order_id'          => $booking->id,
+                            // 'order_id'          => $booking->id,
                             'payment_intent_id' => $paymentIntent->id,
                             'transaction_id'    => $paymentIntent->latest_charge ?? null,
                             'payment_type'      => strtoupper($paymentMethod->type),
@@ -441,8 +450,8 @@ class PaymentController extends Controller
                             'card_last4'        => $paymentMethod->card->last4 ?? null,
                             'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
                             'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
-                            'amount'            => ($paymentIntent->amount / 100), // convert from cents
-                            'currency'          => $paymentIntent->currency,
+                            // 'amount'            => ($paymentIntent->amount / 100), // convert from cents
+                            // 'currency'          => $paymentIntent->currency,
                             'status'            => $paymentIntent->status === 'requires_capture' ? 'uncaptured' : $paymentIntent->status,
                             'action'            => $action_name,
                             'response_payload'  => json_encode($paymentIntent),

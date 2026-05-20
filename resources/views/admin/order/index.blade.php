@@ -320,7 +320,7 @@
                                         </span>
                                     @endforeach
                                 </td>
-                                <td>
+                                <td style="max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">
                                     <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}" class="alink" target="_blank">
                                         {{ $order->customer?->name }}
                                     </a>
@@ -383,7 +383,7 @@
                                         @elseif(!empty($payment->payment_type))  
                                             {!! $payment->payment_type !!}                                            
                                         @else
-                                            <span class="text-muted">Card info unavailable</span>
+                                            <span class="text-muted">Info unavailable</span>
                                         @endif
 
                                     @else
@@ -391,7 +391,10 @@
                                         N/A
                                     @endif
                                 </td>
-                                <td>{{ date__format($order->created_at) }}</td>
+                                <td>
+                                    {{ optional($order->created_at)->format('Y-m-d') }} <br>
+                                    {{ optional($order->created_at)->format('H:i:s') }}
+                                </td>
                                 <td style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;">
                                     {{ source_list($order->source) }}
                                 </td>

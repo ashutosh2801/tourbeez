@@ -213,6 +213,51 @@ if (! function_exists('getTourExtraDetails')) {
         return null;
     }
 }
+if (! function_exists('getMergedTourExtrasData')) {
+    function getMergedTourExtrasData($order_tour)
+    {
+        $tour_extra = !empty($order_tour->tour_extra)
+            ? json_decode($order_tour->tour_extra)
+            : [];
+
+        // Map for fast lookup
+        $tourExtraMap = collect($tour_extra)->keyBy('tour_extra_id');
+
+        $addons = $order_tour->tour?->addons ?? collect();
+
+        // Step 1: Ensure all tour addons exist (with default qty = 0)
+        $addons = $addons->map(function ($extra) use ($tourExtraMap) {
+
+            $result = $tourExtraMap[$extra->id] ?? null;
+
+            return (object)[
+                'id' => $extra->id,
+                'name' => $extra->name,
+                'price' => $result->price ?? $extra->price,
+                'currency' => $extra->currency,
+                'quantity' => $result->quantity ?? 0,
+            ];
+        });
+
+        // Step 2: Add extras from JSON not present in tour
+        $missingExtras = collect($tour_extra)->filter(function ($item) use ($addons) {
+            return !$addons->contains('id', $item->tour_extra_id);
+        })->map(function ($item) {
+            return (object)[
+                'id' => $item->tour_extra_id,
+                'name' => $item->label ?? 'Custom Extra',
+                'price' => $item->price,
+                'currency' => null,
+                'quantity' => $item->quantity ?? 0,
+            ];
+        });
+
+        // Final merged list
+        $finalExtras = $addons->concat($missingExtras);
+
+        return $finalExtras;
+    }
+}
 
 if (! function_exists('getTourPricingDetails')) {
     function getTourPricingDetails($data, $tour_pricing_id=0)

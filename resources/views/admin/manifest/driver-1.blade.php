@@ -24,10 +24,20 @@
                     <option value="{{ $driver->id }}">{{ $driver->name }}</option>
                 @endforeach
             </select>
-            <a href="{{ route('admin.driver.manifest.export', ['date' => $date]) }}" 
-   class="btn btn-success btn-sm">
-    Export Excel
-</a>
+            <!-- <a href="{{ route('admin.driver.manifest.export', ['date' => $date]) }}" 
+                   class="btn btn-success btn-sm">
+
+
+                    Export Excel
+                </a> -->
+
+                <a href="{{ route('admin.driver.manifest.export', [
+                    'date' => $date,
+                    'driver_id' => request('driver_id')
+                ]) }}" 
+                class="btn btn-success btn-sm">
+                    Export Excel
+                </a>
         </div>
     </div>
 </div>
@@ -52,7 +62,7 @@
                         <td>
                             <strong>{{ $tourTitle }}</strong>
                             @if(isset($tourTimes[$tourTitle]))
-                                <br><small class="text-muted">{{ $tourTimes[$tourTitle] }}</small>
+                                <!-- <br><small class="text-muted">{{ $tourTimes[$tourTitle] }}</small> -->
                             @endif
                         </td>
                         @foreach($dateRange as $d)
@@ -71,18 +81,21 @@
                                 data-tour="{{ $tourTitle }}"
                                 data-date="{{ $dateKey }}"
                                 data-orders='@json($cellOrders)'
+                                data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}"
                                 style="cursor: {{ count($cellOrders) ? 'pointer' : 'default' }};">
                                 @if(count($cellOrders))
                                     <strong>{{ $totalGuests }}</strong>
                                     @if($driverNames)
                                         <br><small class="text-success">{{ $driverNames }}</small>
                                     @else
-                                        <br><small class="text-danger">No Driver</small>
+                                        <!-- <br><small class="text-danger">No Driver</small> -->
                                     @endif
                                 @endif
                             </td>
                         @endforeach
                     </tr>
+                    <tr style="background:#f8f9fa; font-weight:600;">
+
                 @empty
                     <tr>
                         <td colspan="{{ count($dateRange) + 1 }}" class="text-center text-muted">
@@ -90,6 +103,23 @@
                         </td>
                     </tr>
                 @endforelse
+                    <tr style="background:#f8f9fa; font-weight:600;">
+                        <td>Total Pax</td>
+                        @foreach($dateRange as $d)
+                            <td class="text-center total-pax" data-date="{{ $d->toDateString() }}">
+                                {{ $totalPaxPerDay[$d->toDateString()] ?? 0 }}
+                            </td>
+                        @endforeach
+                    </tr>
+
+                    <tr style="font-weight:600;">
+                        <td>Assigned Pax</td>
+                        @foreach($dateRange as $d)
+                            <td class="text-center assigned-pax text-success" data-date="{{ $d->toDateString() }}">
+                                {{ $assignedPaxPerDay[$d->toDateString()] ?? 0 }}
+                            </td>
+                        @endforeach
+                    </tr>
             </tbody>
         </table>
     </div>
@@ -165,7 +195,9 @@
 
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+
 
     
 document.addEventListener('DOMContentLoaded', function() {
@@ -174,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('prev-week').addEventListener('click', function() {
         let dateInput = document.getElementById('filter-date');
         let current = new Date(dateInput.value);
-        current.setDate(current.getDate() - 7);
+        current.setDate(current.getDate() - 1);
         dateInput.value = current.toISOString().split('T')[0];
         window.location.href = "?date=" + dateInput.value;
     });
@@ -182,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('next-week').addEventListener('click', function() {
         let dateInput = document.getElementById('filter-date');
         let current = new Date(dateInput.value);
-        current.setDate(current.getDate() + 7);
+        current.setDate(current.getDate() + 1);
         dateInput.value = current.toISOString().split('T')[0];
         window.location.href = "?date=" + dateInput.value;
     });
@@ -194,6 +226,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cell click → open modal
     document.querySelectorAll('.manifest-cell.has-orders').forEach(function(cell) {
         cell.addEventListener('click', function() {
+
+            let isAssignable = this.dataset.assignable;
+
+            if (isAssignable !== '1') {
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Not Allowed',
+                    text: 'Driver cannot be assigned for this tour.',
+                    confirmButtonColor: '#3085d6'
+                });
+
+                return;
+            }
             let tourTitle = this.dataset.tour;
             let date = this.dataset.date;
             let orders = JSON.parse(this.dataset.orders);
@@ -350,20 +396,52 @@ let selectedDrivers = Array.from(document.getElementById('driver_id').selectedOp
 
     // Driver filter
     document.getElementById('driverFilter').addEventListener('change', function() {
-        let value = this.value;
 
-        document.querySelectorAll('.manifest-cell').forEach(function(cell) {
-            if (!cell.classList.contains('has-orders')) return;
+    let selectedDriver = parseInt(this.value);
 
-            let orders = JSON.parse(cell.dataset.orders);
-            // let visible = !value || orders.some(o => o.driver_id == value);
-            let visible = !value || orders.some(o => 
-                o.driver_ids && o.driver_ids.includes(parseInt(value))
-            );
+    let totalMap = {};
+    let assignedMap = {};
 
-            cell.style.opacity = visible ? '1' : '0.3';
+    document.querySelectorAll('.manifest-cell').forEach(function(cell) {
+
+        if (!cell.classList.contains('has-orders')) return;
+
+        let orders = JSON.parse(cell.dataset.orders);
+        let date = cell.dataset.date;
+
+        let visible = false;
+
+        orders.forEach(o => {
+
+            let matches = !selectedDriver || 
+                (o.driver_ids && o.driver_ids.includes(selectedDriver));
+
+            if (matches) {
+                visible = true;
+
+                totalMap[date] = (totalMap[date] || 0) + o.guest_count;
+
+                if (o.driver_ids && o.driver_ids.length) {
+                    assignedMap[date] = (assignedMap[date] || 0) + o.guest_count;
+                }
+            }
         });
+
+        cell.style.opacity = visible ? '1' : '0.2';
     });
+
+    // UPDATE TOTAL ROW
+    document.querySelectorAll('.total-pax').forEach(td => {
+        let date = td.dataset.date;
+        td.innerText = totalMap[date] || 0;
+    });
+
+    // UPDATE ASSIGNED ROW
+    document.querySelectorAll('.assigned-pax').forEach(td => {
+        let date = td.dataset.date;
+        td.innerText = assignedMap[date] || 0;
+    });
+});
 
 });
 document.getElementById('removeDriver').addEventListener('click', async function(){

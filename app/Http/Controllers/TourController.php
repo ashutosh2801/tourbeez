@@ -1440,6 +1440,7 @@ $pickupHtml .= '</div>';
         $detail->booking_type    = $request->booking_type;
         $detail->booking_link    = $request->booking_link;
         $detail->other_link      = $request->other_link;
+        $detail->assign_driver   = $request->has('assign_driver');
         if($detail->save() ) {
             return back()->withInput()->with('success','Booking info saved successfully.');
         }
