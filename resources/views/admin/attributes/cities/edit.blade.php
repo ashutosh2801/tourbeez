@@ -49,7 +49,7 @@
 
 
                             </div>
-                            <div class="col-md-2 mt-2">
+                            <div class="col-md-2">
                             <button type="button"
                                     id="fetch-latlong-btn"
                                     class="btn btn-outline-primary btn-sm w-100" data-toggle="tooltip"

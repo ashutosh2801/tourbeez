@@ -351,7 +351,7 @@
                                       data-help="Internal staff-only notes. Not shown to customer."></textarea>
                         </div>
 
-                        <button class="btn btn-success"> <i class="fas fa-save"></i> Save Voucher</button>
+                        <button class="btn btn-success btn-block"> <i class="fas fa-save"></i> Save Voucher</button>
                     </form>
                 </div>
 

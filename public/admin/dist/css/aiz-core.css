@@ -8176,7 +8176,7 @@ a.dropdown-footer:hover {
         margin-right: 5px;
     }
 
-    .table-viewport .table td {
+    .category-main-body .table-viewport .table td:nth-child(2) {
         white-space: nowrap;
     }
 
@@ -9750,6 +9750,20 @@ table.dataTable {
     border: 1px solid #aeb0b4 !important;
 }
 
+.city-body .aiz-pagination {
+    display: flex;
+    justify-content: space-between;
+}
+
+.edit-city-body #fetch-latlong-btn {
+    min-height: 42px;
+    margin-top: 16px;
+}
+
+.edit-city-body #fetch-latlong-btn:hover {
+    color: #FFF;
+}
+
 @media (max-width: 767px) {
 
     .countries-body .search-section input,
@@ -9765,6 +9779,21 @@ table.dataTable {
 
     .add-modal .card-body .btn-fetch {
         margin-top: 15px;
+    }
+
+    .city-body .aiz-pagination {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .city-body .aiz-pagination .btn {
+        width: 100%;
+    }
+
+    .edit-city-body #fetch-latlong-btn {
+        margin-top: 0;
+        margin-bottom: 15px;
     }
 
 }
