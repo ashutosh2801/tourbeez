@@ -45,9 +45,9 @@
                             @endphp
                             @foreach ($pickupOptions as $index => $option)  
                                 <div style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
-                                    <div class="form-group">
-                                        <div class="row">
-                                            <div class="col-md-5">
+                                    <div class="row">
+                                        <div class="col-md-5">
+                                            <div class="form-group">
                                                 <label for="pickup_location">Pickup location</label>
                                                 <input type="text" class="form-control" id="pickup_location" name="PickupLocations[{{ $index }}][location]"
                                                     placeholder="Enter pickup location" required value="{{ old('pickup_location') }}">
@@ -55,12 +55,16 @@
                                                     <small class="form-text text-danger">{{ $message }}</small>
                                                 @enderror
                                             </div>
-                                            <div class="col-md-5">
+                                        </div>
+                                        <div class="col-md-5">
+                                            <div class="form-group">
                                                 <label for="pickup_address">Pickup address</label>
                                                 <input type="text"  class="form-control autocomplete" id="pickup_address" name="PickupLocations[{{ $index }}][address]"
-                                                    placeholder="Enter pickup address" required value="{{ old('pickup_address') }}">
+                                                placeholder="Enter pickup address" required value="{{ old('pickup_address') }}">
                                             </div>
-                                            <div class="col-md-2">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group">
                                                 <label for="pickup_time">Pickup time</label>
                                                 <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="PickupLocations[{{ $index }}][time]">
                                                     <option value="">Select one</option>

@@ -24,79 +24,96 @@
                     <input type="hidden" name="id" value="{{ $data->id }}">
 
                     <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="name">Name</label>
+                                    <input type="text" class="form-control" id="name" name="name"
+                                        placeholder="Enter category name" required value="{{ $data->name }}">
+                                </div>
+                                <x-error>name</x-error>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="name">Name</label>
-                            <input type="text" class="form-control" id="name" name="name"
-                                placeholder="Enter category name" required value="{{ $data->name }}">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="slug">Slug</label>
+                                    <input type="text" class="form-control" id="slug" name="slug"
+                                        placeholder="Enter slug" required value="{{ $data->slug }}">
+                                </div>
+                                <x-error>slug</x-error>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea name="description" id="description" rows="3" class="form-control aiz-text-editor">{{ old('description') ?: $data->description }}</textarea>
+                                    <small class="form-text text-right">Max 240 characters</small>
+                                    @error('description')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="tour" class="form-label">Tours *</label>
+                                    <select name="tour[]" id="tour" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
+                                        @foreach ($tours as $tour)
+                                            <option value="{{ $tour->id }}"
+                                            {{ in_array( $tour->id, $tour_category)? 'selected' : '' }}>{{ $tour->title }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('tour')
+                                        <small class="form-text text-danger">{{ $message }}</small>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="meta_title">Meta Title</label>
+                                    <input type="text"
+                                        class="form-control"
+                                        id="meta_title"
+                                        name="meta_title"
+                                        placeholder="Enter meta title"
+                                        value="{{ old('meta_title') ?: $data->meta_title }}">
+                                </div>
+                                <x-error>meta_title</x-error>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="meta_description">Meta Description</label>
+                                    <textarea class="form-control" id="meta_description" name="meta_description"
+                                        placeholder="Enter category Meta Description" required>{{ $data->meta_description }}</textarea>
+                                </div>
+                                <x-error>meta_description</x-error>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="meta_keywords">Meta Keywords</label>
+                                    <input type="text"
+                                    class="form-control"
+                                    name="meta_keywords"
+                                    placeholder="keyword1, keyword2, keyword3"
+                                    value="{{ old('meta_keywords') ?? (is_array($data->meta_keywords ?? null) ? implode(', ', $data->meta_keywords) : ($data->meta_keywords ?? '')) }}">
+                                </div>
+                                <x-error>meta_keywords</x-error>
+                            </div>
+                            
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="canonical_url">Canonical URL</label>
+                                    <input type="text" class="form-control" id="canonical_url" name="canonical_url"
+                                        required value="{{ $data->canonical_url }}">
+                                </div>
+                                <x-error>canonical_url</x-error>
+                            </div>
+
                         </div>
-                        <x-error>name</x-error>
 
-                        <div class="form-group">
-                            <label for="slug">Slug</label>
-                            <input type="text" class="form-control" id="slug" name="slug"
-                                placeholder="Enter slug" required value="{{ $data->slug }}">
-                        </div>
-                        <x-error>slug</x-error>
-
-                        <div class="form-group">
-                            <label for="description" class="form-label">Description</label>
-                            <textarea name="description" id="description" rows="3" class="form-control aiz-text-editor">{{ old('description') ?: $data->description }}</textarea>
-                            <small class="form-text text-right">Max 240 characters</small>
-                            @error('description')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-                        <div class="form-group">
-                            <label for="tour" class="form-label">Tours *</label>
-                            <select name="tour[]" id="tour" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
-                                @foreach ($tours as $tour)
-                                    <option value="{{ $tour->id }}"
-                                    {{ in_array( $tour->id, $tour_category)? 'selected' : '' }}>{{ $tour->title }}</option>
-                                @endforeach
-                            </select>
-                            @error('tour')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-
-
-                        <div class="form-group">
-                            <label for="meta_title">Meta Title</label>
-                            <input type="text"
-                                   class="form-control"
-                                   id="meta_title"
-                                   name="meta_title"
-                                   placeholder="Enter meta title"
-                                   value="{{ old('meta_title') ?: $data->meta_title }}">
-                        </div>
-                        <x-error>meta_title</x-error>
-
-                        <div class="form-group">
-                            <label for="meta_description">Meta Description</label>
-                            <textarea class="form-control" id="meta_description" name="meta_description"
-                                placeholder="Enter category Meta Description" required>{{ $data->meta_description }}</textarea>
-                        </div>
-                        <x-error>meta_description</x-error>
-
-                        <div class="form-group">
-                            <label for="meta_keywords">Meta Keywords</label>
-                            <input type="text"
-                               class="form-control"
-                               name="meta_keywords"
-                               placeholder="keyword1, keyword2, keyword3"
-                               value="{{ old('meta_keywords') ?? (is_array($data->meta_keywords ?? null) ? implode(', ', $data->meta_keywords) : ($data->meta_keywords ?? '')) }}">
-                        </div>
-                        <x-error>meta_keywords</x-error>
-
-                        <div class="form-group">
-                            <label for="canonical_url">Canonical URL</label>
-                            <input type="text" class="form-control" id="canonical_url" name="canonical_url"
-                                required value="{{ $data->canonical_url }}">
-                        </div>
-                        <x-error>canonical_url</x-error>
-
-                        <hr>
                         <h4 class="mb-3">FAQs</h4>
 
                         <div id="faq-wrapper">
@@ -108,13 +125,13 @@
                                     <div class="form-group">
                                         <label>Question</label>
                                         <input type="text" class="form-control"
-                                               name="questions[]" value="{{ $faq->question }}" required>
+                                            name="questions[]" value="{{ $faq->question }}" required>
                                     </div>
 
                                     <div class="form-group">
                                         <label>Answer</label>
                                         <textarea class="form-control"
-                                                  name="answers[]" rows="3" required>{{ $faq->answer }}</textarea>
+                                                name="answers[]" rows="3" required>{{ $faq->answer }}</textarea>
                                     </div>
 
                                     <button type="button" class="btn btn-sm btn-danger remove-faq">
@@ -124,12 +141,11 @@
                             @endforeach
 
                         </div>
-                        
 
                         <button type="button" class="btn btn-sm btn-success" id="add-faq">
                             + Add FAQ
                         </button>
-
+                        
                     </div>
 
                     <div class="card-footer">

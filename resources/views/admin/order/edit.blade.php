@@ -30,12 +30,9 @@
     .highlight {
         animation: fadeHighlight 2s ease;
     }
-
     .text-orange {
         color: #fd7e14;
     }
-
-
     @keyframes fadeHighlight {
         0%   { background-color: #e1a10b; }
         100% { background-color: transparent; }
@@ -49,7 +46,6 @@
         border-radius: 0.25rem;
         font-size: 21px;
     }
-
     /* Payment dropdown styling */
     .dropdown-menu.dropdown-value.payment-details-breakdown--container {
         min-width: 250px;
@@ -58,14 +54,12 @@
         background-color: #ffffff;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-
     .payment-details-breakdown--item {
         display: flex;
         justify-content: space-between;
         padding: 0.25rem 0;
         font-size: 0.95rem;
     }
-
     /* Order status dropdown */
     .dropdown-menu.dropdown-value {
         min-width: 220px;
@@ -91,11 +85,9 @@
         cursor: pointer;
         width: 100%;
     }
-
     .dropdown-menu.dropdown-value li:hover {
         background-color: #f1f1f1;
     }
-
     .dropdown-menu.dropdown-value i.fa-circle {
         font-size: 10px;
         margin-right: 6px;
@@ -108,21 +100,20 @@
         display: inline-block;
     }
     .order-status label, .order-status .btn-group, .order-balance label, .order-balance .btn-group {
-        display: block; text-align: center
+        display: block; 
+        text-align: center
     }
     .order-status label, .order-balance label {
         margin: 0
     }
     /* Balance dropdown always green */
     .payment-status .btn.dropdown-toggle {
-    border-color: #28a745 !important;
-    color: #28a745 !important;
+        border-color: #28a745 !important;
+        color: #28a745 !important;
     }
     .payment-status .btn.dropdown-toggle:hover {
-    background-color: rgba(40,167,69,0.1);
+        background-color: rgba(40,167,69,0.1);
     }
-
-
     /* Due (red) */
     .payment-status.due .btn.dropdown-toggle {
         border-color: #dc3545 !important;
@@ -131,7 +122,6 @@
     .payment-status.due .btn.dropdown-toggle:hover {
         background-color: rgba(220,53,69,0.1);
     }
-
     /* Order‐status color map */
     .status-NEW           { --status-color: #6c757d; } /* gray */
     .status-ON_HOLD       { --status-color: #ffc107; } /* yellow */
@@ -140,55 +130,53 @@
     .status-CONFIRMED     { --status-color: #28a745; } /* green */
     .status-CANCELLED     { --status-color: #dc3545; } /* red */
     .status-ABANDONED_CART{ --status-color: #343a40; } /* dark */
-
     /* Apply the variable to the button */
     .order-status .btn.dropdown-toggle {
-    border-width: 2px;
-    border-style: solid;
-    border-color: var(--status-color);
-    color: var(--status-color);
-    background-color: #fff;
+        border-width: 2px;
+        border-style: solid;
+        border-color: var(--status-color);
+        color: var(--status-color);
+        background-color: #fff;
     }
     .order-status .btn.dropdown-toggle:hover {
-    background-color: rgba(0,0,0,0.03);
+        background-color: rgba(0,0,0,0.03);
     }
     .modal-wide {
         max-width: 70% !important;
         margin: 10px auto !important;   /* center horizontally */
     }
-</style>
-<style>
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 24px;
-}
-.switch input { display:none; }
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  background-color: #ccc;
-  transition: .4s;
-  border-radius: 24px;
-  top: 0; left: 0; right: 0; bottom: 0;
-}
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 18px; width: 18px;
-  left: 3px; bottom: 3px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
-}
-input:checked + .slider {
-  background-color: #28a745;
-}
-input:checked + .slider:before {
-  transform: translateX(26px);
-}
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+    .switch input { 
+        display:none; 
+    }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+        top: 0; left: 0; right: 0; bottom: 0;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px; width: 18px;
+        left: 3px; bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .slider {
+        background-color: #28a745;
+    }
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
 </style>
 @endsection
 
@@ -316,7 +304,6 @@ $expectEmails = ['order_pending'];
                                         </li>
 
                                     @endif
-                                    
 
                                     <!-- Divider -->
                                     <li role="separator" class="divider"></li>
@@ -414,44 +401,33 @@ $expectEmails = ['order_pending'];
             <div class="bs-example">
                 <div class="accordion" id="accordionExample">
                     <div class="card customer-details">
-                    <div class="card-header bg-secondary py-0 d-flex justify-content-between align-items-center" id="headingOne">
-                        <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne">
-                            <i class="fa fa-angle-right"></i> Customer Details
-                        </button>
+                        <div class="card-header bg-secondary py-0 d-flex justify-content-between align-items-center" id="headingOne">
+                            <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne">
+                                <i class="fa fa-angle-right"></i> Customer Details
+                            </button>
+                        </div>
 
-                        
+                        <div id="collapseOne" class="collapse show">
+                            <div class="card-body">
+                                <ul class="flex flex-row">
+                                    <li>
+                                        <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}" class="alink" target="_blank">
+                                            <i class="fas fa-user-tie"></i> {{ $order->customer?->name }}
+                                        </a>
+                                    </li>
+                                    <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
+                                    <li>
+                                        <i class="fas fa-phone-square-alt"></i>
+                                        <span>{{ $order->customer?->phone }}</span>
+                                    </li>
 
-
-                    </div>
-
-                    <div id="collapseOne" class="collapse show">
-                        <div class="card-body">
-                            <ul class="flex flex-row">
-                                <li>
-                                    <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}" class="alink" target="_blank">
-                                        <i class="fas fa-user-tie"></i> {{ $order->customer?->name }}
-                                    </a>
-                                </li>
-                                <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
-                                <li>
-                                    <i class="fas fa-phone-square-alt"></i>
-                                    <span>{{ $order->customer?->phone }}</span>
-                                </li>
-
-                                <li><button type="button"
-                            class="btn btn-sm btn-primary"
-                            data-toggle="modal"
-                            data-target="#editCustomerModal"
-                            data-first_name="{{ $order->customer?->first_name }}"
-                            data-last_name="{{ $order->customer?->last_name }}"
-                            data-email="{{ $order->customer?->email }}"
-                            data-phone="{{ $order->customer?->phone }}">
-                            Edit
-                        </button></li>
-                            </ul>
+                                    <li>
+                                        <button type="button" class="btn btn-sm btn-primary cus-edit-btn" data-toggle="modal" data-target="#editCustomerModal" data-first_name="{{ $order->customer?->first_name }}" data-last_name="{{ $order->customer?->last_name }}" data-email="{{ $order->customer?->email }}" data-phone="{{ $order->customer?->phone }}">Edit</button>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                </div>
 
                     <div class="card tour-details">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
@@ -640,7 +616,7 @@ $expectEmails = ['order_pending'];
                                                                 </tbody>
                                                             </table>
                                                         </td>
-                                                        <!-- <td>
+                                                        <td>
                                                             <table class="table">
                                                                 <thead>
                                                                     <tr>
@@ -682,68 +658,6 @@ $expectEmails = ['order_pending'];
                                                                     <td>{{ $extra->name }} ({{ price_with_currency_no_round($price, $order->currency) }})</td>
                                                                 </tr>
                                                                 @endforeach
-                                                                @endif
-                                                            </table>
-                                                        </td> -->
-                                                        <td>
-                                                            <table class="table">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <td colspan="2">
-                                                                            <h5 style="font-size:14px; font-weight:600; margin:0;">Optional extras</h5>
-                                                                        </td>
-                                                                    </tr>
-                                                                </thead>
-
-                                                                @if ($order_tour->tour)
-                                                                    @php
-                                                                        // Get merged extras (helper you added)
-                                                                        $addons = getMergedTourExtrasData($order_tour);
-
-                                                                        // Sort: selected (qty > 0) first
-                                                                        $addons = collect($addons)->sortBy(function ($extra) {
-                                                                            return $extra->quantity > 0 ? 0 : 1;
-                                                                        });
-                                                                    @endphp
-
-                                                                    @foreach($addons as $extra)
-                                                                        @php
-                                                                            $price = $extra->price;
-
-                                                                            if ($extra->quantity > 0) {
-                                                                                $subtotal += ($extra->quantity * $price);
-                                                                                $subtotal2 += ($extra->quantity * $price);
-                                                                            } else {
-                                                                                $price = currencyConvertWithoutRound(
-                                                                                    $price,
-                                                                                    $extra->currency,
-                                                                                    $order->currency
-                                                                                );
-                                                                            }
-                                                                        @endphp
-
-                                                                        <tr>
-                                                                            <td width="60">
-                                                                                <input type="hidden" name="tour_extra_id_{{$_tourId}}[]" value="{{ $extra->id }}" />
-
-                                                                                <input type="number"
-                                                                                       name="tour_extra_qty_{{$_tourId}}[]"
-                                                                                       value="{{ $extra->quantity }}"
-                                                                                       style="width:60px"
-                                                                                       min="0"
-                                                                                       class="form-contorl text-center">
-
-                                                                                <input type="hidden"
-                                                                                       name="tour_extra_price_{{$_tourId}}[]"
-                                                                                       value="{{ $price }}" />
-                                                                            </td>
-
-                                                                            <td>
-                                                                                {{ $extra->name }}
-                                                                                ({{ price_with_currency_no_round($price, $order->currency) }})
-                                                                            </td>
-                                                                        </tr>
-                                                                    @endforeach
                                                                 @endif
                                                             </table>
                                                         </td>
@@ -978,7 +892,7 @@ $expectEmails = ['order_pending'];
                                 @endphp
                             @endforeach
 
-                            <div class="card-total bg-green p-3 row align-items-end d-flex justify-content-between">
+                            <div class="card-total bg-green p-3 row align-items-end">
 
                                  @php
                                         $paid = $order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount');
@@ -1123,7 +1037,7 @@ $expectEmails = ['order_pending'];
                                         @endphp
                                                                                  
                                         <div class="table-responsive">
-                                            <table class="table  " style="border: 1px solid #dee2e6;">
+                                            <table class="table paymentRow " style="border: 1px solid #dee2e6;">
                                                 <tbody>
                                                     @foreach ($order->payments as $payment) 
                                                         <input type="hidden" name="paymentId[]" value="{{ $payment->id }}" />
@@ -1280,9 +1194,6 @@ $expectEmails = ['order_pending'];
                         </div>
                         
                     </div> 
-
-
-                    
 
                     <?php /*
                     <div class="card payment-details">
@@ -1470,7 +1381,7 @@ $expectEmails = ['order_pending'];
                                                     <td>{{ $email->subject }}</td>
                                                     <td>{{ ucwords($email->status) }}</td>
                                                     <td>
-                                                        <button type="button" class="btn btn-sm view-email-btn">
+                                                        <button type="button" class="btn btn-sm btn-primary view-email-btn">
                                                             View
                                                         </button>
 
@@ -1982,70 +1893,65 @@ $expectEmails = ['order_pending'];
     </div>
 </div>
 
-
 <div class="modal fade" id="editCustomerModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
 
             <form id="customerForm">
                 @csrf
-
                 <input type="hidden" name="customer_id" value="{{ $order->customer?->id }}">
                 
-
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Customer</h5>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
 
                 <div class="modal-body">
-
                     <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label>First Name *</label>
+                                <input type="text" name="first_name" id="oc_first_name" class="form-control">
+                                <small class="text-danger d-none" id="error_first_name"></small>
+                            </div>
+                        </div>
 
                         <div class="col-lg-6">
-                    <label>First Name *</label>
-                    <input type="text" name="first_name" id="oc_first_name" class="form-control">
-                    <small class="text-danger d-none" id="error_first_name"></small>
-                </div>
+                            <div class="form-group">
+                                <label>Last Name *</label>
+                                <input type="text" name="last_name" id="oc_last_name" class="form-control">
+                                <small class="text-danger d-none" id="error_last_name"></small>
+                            </div>
+                        </div>
 
-                <div class="col-lg-6">
-                    <label>Last Name *</label>
-                    <input type="text" name="last_name" id="oc_last_name" class="form-control">
-                    <small class="text-danger d-none" id="error_last_name"></small>
-                </div>
+                        <div class="col-lg-12">
+                            <div class="form-group">
+                                <label>Email *</label>
+                                <input type="email" name="email" id="oc_email" class="form-control">
+                                <small class="text-danger d-none" id="error_email"></small>
+                            </div>
+                        </div>
 
-                <div class="col-lg-12">
-                    <label>Email *</label>
-                    <input type="email" name="email" id="oc_email" class="form-control">
-                    <small class="text-danger d-none" id="error_email"></small>
-                </div>
-
-                <div class="col-lg-12">
-                    <label>Phone *</label>
-                    <input id="oc_phone_intel" type="tel" class="form-control">
-                    <input type="hidden" name="phone" id="oc_phone">
-                    <small class="text-danger d-none" id="error_phone"></small>
-                </div>
-
+                        <div class="col-lg-12">
+                            <div class="form-group">
+                                <label>Phone *</label>
+                                <input id="oc_phone_intel" type="tel" class="form-control">
+                                <input type="hidden" name="phone" id="oc_phone">
+                                <small class="text-danger d-none" id="error_phone"></small>
+                            </div>
+                        </div>
                     </div>
-
                     <div id="customer_error" class="text-danger"></div>
-
                 </div>
 
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save mr-2"></i> Save</button>
                 </div>
-
             </form>
 
         </div>
     </div>
 </div>
-
-
-
-
 
 <!-- GLOBAL REUSABLE LOADER -->
 <div id="globalLoader" 
@@ -4564,7 +4470,7 @@ $('#editCustomerModal').on('shown.bs.modal', function (e) {
     /* INIT ONLY ONCE */
     if (!iti) {
         iti = window.intlTelInput(phoneInput, {
-            initialCountry: "auto",
+            initialCountry: "ca",
             separateDialCode: true,
             nationalMode: false,
             dropdownContainer: document.body,

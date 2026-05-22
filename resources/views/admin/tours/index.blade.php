@@ -1,7 +1,6 @@
 
 <x-admin>
-
-</style>   
+  
     @section('title','Tours')
     <style>
         .filter-panel {
@@ -49,7 +48,7 @@
                                 <input type="text" name="search" class="form-control" placeholder="Search tour" value="{{ request('search') }}" />
                             </div>                        
                             <div class="col-md-2 col-6">
-                                <input placeholder="date range" class="form-control datarange-pickur" type="text" />
+                                <input placeholder="Date range" class="form-control datarange-pickur" type="text" />
                             </div>
                             <div class="col-md-2 col-6">
                                 <select name="city" id="city-select" class="form-control">
@@ -164,8 +163,8 @@
                             <div class="col-md-2 col-6">
                                 <button type="submit" class="btn btn-search mb-2"> <i class="fas fa-search"></i> Search</button>
                             </div>
-                            <div class="col-12">
-                                <a href="{{ route('admin.tour.index')}}" class="btn-clear"> <i class="fas fa-times"></i> Clear Search</a>
+                            <div class="col-md-2 col-6">
+                                <a href="{{ route('admin.tour.index')}}" class="btn btn-clear"> <i class="fas fa-times"></i> Clear Search</a>
                             </div>
                         </div>
                     </div>
@@ -391,7 +390,7 @@
 
 <!-- delete Modal -->
 <div id="delete-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title h6">{{ translate('Delete Confirmation') }}</h4>
@@ -415,7 +414,7 @@
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
             </div>
 
-            <div class="form-group">
+            <div class="form-group m-0">
                 <label class="ml-3 mt-2">{{ translate('Selected Tours') }}</label>
                 <div id="selected_tour_list" class="border p-2 rounded bg-light">
                     <!-- dynamic list will appear here -->
@@ -475,9 +474,13 @@
                 <input type="hidden" name="bulk_status" id="bulk_status">
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
-                    <button type="submit" class="btn btn-success" onclick="$('#bulk_status').val(1)">{{ translate('Enable') }}</button>
-                    <button type="submit" class="btn btn-danger" onclick="$('#bulk_status').val(2)">{{ translate('Disable') }}</button>
+                    <div>
+                        <button type="submit" class="btn btn-success" onclick="$('#bulk_status').val(1)">{{ translate('Enable') }}</button>
+                        <button type="submit" class="btn btn-danger" onclick="$('#bulk_status').val(2)">{{ translate('Disable') }}</button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -495,24 +498,22 @@
 
             <form method="POST" action="{{ route('admin.tours.importPrice') }}" enctype="multipart/form-data">
                 @csrf
-                <div class="modal-body">
-                    
-                    <p>Upload a Excel file with columns: <strong>SKU</strong>, <strong>price</strong></p>
-
-                    <div class="form-group">
-                        <label for="file">Select File</label>
-                        <input type="file" name="file" id="file" class="form-control" required accept=".csv,.xlsx,.xls">
-                    </div>
+                <div class="p-3">                    
+                    <p class="m-0">Upload a Excel file with columns: <strong>SKU</strong>, <strong>price</strong></p>
+                </div>
+                <div  class="border p-3 rounded bg-light">
+                    <label for="file">Select File</label>
+                    <input type="file" name="file" id="file" class="form-control" required accept=".csv,.xlsx,.xls">
                 </div>
                 <div class="modal-footer">
                     <div class="m-0">
+                        <button type="submit" class="btn btn-ExpoImpo"> <i class="fas fa-file-import"></i>  {{ translate('Import') }}</button>
                         <button type="button" class="btn btn-success" id="downloadSample">
                             <i class="fas fa-file-excel"></i> Download Sample Excel
                         </button>
                     </div>
                     <div class="m-0">
                         <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
-                        <button type="submit" class="btn btn-ExpoImpo"> <i class="fas fa-file-import"></i>  {{ translate('Import') }}</button>
                     </div>
                 </div>
             </form>
@@ -547,6 +548,7 @@
   </div>
 </div>
 
+
 <div id="tourMenuModal" class="tour-modal">
     <div class="tour-modal-content">
 
@@ -559,14 +561,6 @@
 
     </div>
 </div>
-
-
-
-
-
-
-
-
 <!-- /.modal -->
 
 @endsection

@@ -6351,7 +6351,7 @@ div.footable-loader > span.fooicon:after {
     width: 100%;
 }
 .iti--allow-dropdown input {
-    padding-left: 95px !important;
+    padding-left: 95px;
 }
 .iti--separate-dial-code .iti__selected-flag,
 .iti--allow-dropdown .iti__flag-container:hover .iti__selected-flag{
@@ -8176,7 +8176,7 @@ a.dropdown-footer:hover {
         margin-right: 5px;
     }
 
-    .table-viewport .table td {
+    .category-main-body .table-viewport .table td:nth-child(2) {
         white-space: nowrap;
     }
 
@@ -8445,8 +8445,9 @@ a.dropdown-footer:hover {
         flex-wrap: wrap;
     }
     .customer-details  ul.flex li {
+        width: 100%;
         margin-right: 0;
-        margin-bottom: 5px;
+        margin-bottom: 10px;
     }
     .customer-details ul.flex li:after {
         display: none;
@@ -8621,6 +8622,31 @@ a.dropdown-footer:hover {
     margin-right: 2px;
 }
 
+.order-edit .cus-edit-btn {
+    color: #FFF;
+}
+
+.cus-order-head {
+    border-radius: 10px;
+    background: #01228b !important;
+}
+
+.cus-order-head .card-tools {
+    text-align: right;
+}
+
+.customer-order-table .top-header {
+    background-color: #343a41;
+    display: flex;
+    justify-content: space-between;
+    color: #FFF;
+    padding: 12px 25px;
+    border-bottom: 1px solid #ebedf2;
+    min-height: 50px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
 #chargeModal .btn-charge {
     background: #01228b;
     color: #FFF;
@@ -8665,6 +8691,11 @@ a.dropdown-footer:hover {
 
     .order-edit .info-blog .info-stats4 {
         margin-bottom: 1rem;
+    }
+
+    .cus-order-head .card-tools {
+        text-align: left;
+        margin-top: 15px;
     }
 
 }
@@ -9719,6 +9750,20 @@ table.dataTable {
     border: 1px solid #aeb0b4 !important;
 }
 
+.city-body .aiz-pagination {
+    display: flex;
+    justify-content: space-between;
+}
+
+.edit-city-body #fetch-latlong-btn {
+    min-height: 42px;
+    margin-top: 16px;
+}
+
+.edit-city-body #fetch-latlong-btn:hover {
+    color: #FFF;
+}
+
 @media (max-width: 767px) {
 
     .countries-body .search-section input,
@@ -9734,6 +9779,21 @@ table.dataTable {
 
     .add-modal .card-body .btn-fetch {
         margin-top: 15px;
+    }
+
+    .city-body .aiz-pagination {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .city-body .aiz-pagination .btn {
+        width: 100%;
+    }
+
+    .edit-city-body #fetch-latlong-btn {
+        margin-top: 0;
+        margin-bottom: 15px;
     }
 
 }
@@ -10531,19 +10591,6 @@ table.dataTable {
 
 }
 
-#importPriceModal .modal-title {
-    font-weight: bold;
-}
-
-#importPriceModal .modal-footer {
-    display: flex;
-    justify-content: space-between;
-}
-
-#importPriceModal .modal-footer div {
-    margin: 0;
-}
-
 #importPriceModal .modal-content .modal-header,
 #importOrderModal .modal-content .modal-header {
     background-color: #343a41;
@@ -10643,16 +10690,6 @@ table.dataTable {
 /* Expand row */
 .tour-expand-row {
     display:none;
-}
-
-/* Expanded panel */
-.tour-actions {
-    background:#f8fafc;
-    padding:16px;
-    border-top:1px solid #e5e7eb;
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-    gap:10px;
 }
 
 .tour-modal {
@@ -10981,6 +11018,10 @@ table.dataTable {
     padding: 0 10px;
 }
 
+.payment-details .paymentRow tr {
+    border-top: 1px solid #dee2e6;
+}
+
 .payment-details .charge-btn {
     background: #11ce83;
     padding: 8px;
@@ -11079,4 +11120,17 @@ table.dataTable {
 
 #chargeModal .modal-header .close {
     color: #FFF;
+}
+
+#editCustomerModal .modal-content .modal-header {
+    background: #343a41;
+    color: #FFF;
+}
+
+#editCustomerModal .modal-header .close {
+    color: #FFF;
+}
+
+#editCustomerModal .modal-body label {
+    margin-bottom: 5px;
 }

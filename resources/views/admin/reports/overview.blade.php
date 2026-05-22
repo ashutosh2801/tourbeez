@@ -73,7 +73,7 @@
                 </div>
 
                 {{-- ORDER STATUS --}}
-                <div class="col-xl-2 col-md-2 col-12">
+                <div class="col-xl-2 col-md-3 col-12">
                     <label class="filter-label">Order Status</label>
                     <select name="order_status" class="form-control">
                         <option value="">All</option>
@@ -136,7 +136,8 @@
     {{-- STATS --}}
     <div class="report-stats">
         <div class="row">
-            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+
+            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-calendar-check"></i>
@@ -148,7 +149,7 @@
                 </div>
             </div>
 
-            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-dollar-sign"></i>
@@ -160,7 +161,7 @@
                 </div>
             </div>
 
-            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-undo"></i>

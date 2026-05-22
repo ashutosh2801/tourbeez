@@ -127,7 +127,7 @@
                 </div>
 
                 {{-- PAY TYPE --}}
-                <div class="col-xl-2 col-md-2 col-12">
+                <div class="col-xl-2 col-md-3 col-12">
                     <label class="filter-label">Pay Type</label>
                     <select name="action_type" class="form-control">
                         <option value="">All</option>

@@ -23,10 +23,10 @@
             <div class="search-section">
                 <form id="sort_cities" action="" method="GET">
                     <div class="row">
-                        <div class="col-md-3 col-6">
+                        <div class="col-md-4 col-6">
                             <input type="text" class="form-control" name="search" value="{{ $sort_search ?? '' }}" placeholder="{{ translate('Search city') }}">
                         </div>
-                        <div class="col-md-2 col-6">
+                        <div class="col-md-4 col-6">
                             <select name="has_image" class="form-control">
                                 <option value="">{{ translate('Image') }}</option>
                                 <option value="1" {{ request('has_image') == '1' ? 'selected' : '' }}>
@@ -34,7 +34,7 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="col-md-2 col-6">
+                        <div class="col-md-4 col-6">
                             <select name="has_tour" class="form-control">
                                 <option value="">{{ translate('Tour') }}</option>
                                 <option value="1" {{ request('has_tour') == '1' ? 'selected' : '' }}>
@@ -42,20 +42,23 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="col-md-3 col-6">
+                        <div class="col-md-4 col-6">
                             <select name="has_latlong" class="form-control">
                                 <option value="">{{ translate('Lat/Long') }}</option>
                                 <option value="1" {{ request('has_latlong') == '1' ? 'selected' : '' }}>
                                     {{ translate('Has Lat/Long') }}
                                 </option>
                             </select>
-                            <select name="has_image" class="form-control col-2 ml-1">
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <select name="has_image" class="form-control">
                                 <option value="">{{ translate('Image') }}</option>
                                 <option value="1" {{ request('has_image') == '1' ? 'selected' : '' }}>
                                     {{ translate('Has Image') }}
                                 </option>
                             </select>
-
+                        </div>
+                        <div class="col-md-3 col-6">
                             <select name="per_page" class="form-control">
                                 @foreach (['All',10, 25, 50, 100] as $number)
                                     <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
@@ -63,16 +66,6 @@
                                     </option>
                                 @endforeach
                             </select>
-                        
-
-                            <div class="input-group-append">
-                                <button class="btn btn-primary ml-1" type="submit">
-                                    {{ translate('Search') }}
-                                </button>
-                            </div>
-
-
-
                         </div>
                         <div class="col-md-2 col-12">
                             <button class="btn btn-search" type="submit">
@@ -85,55 +78,59 @@
             <div class="card-body p-0">
                 <form action="{{ route('admin.cities.updateOrder') }}" method="POST">
                     @csrf
-                <table class="table aiz-table mb-0">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Order</th>
-                            <th>Image</th>
-                            <th>{{translate('City')}}</th>
-                            <th data-breakpoints="md">{{translate('State')}}</th>
-                            <th data-breakpoints="md">{{translate('Country')}}</th>
-                            <th class="text-right" width="20%">{{translate('Options')}}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($cities as $key => $city)
-                            <tr>
-                                <td>{{ ($key+1) + ($cities->currentPage() - 1)*$cities->perPage() }}</td>
-                                <td width="10">
-                                    <input type="number"
-                                           name="orders[{{ $city->id }}]"
-                                           value="{{ $city->order }}"
-                                           class="form-control form-control-sm"
-                                           min="0">
-                                </td>
+                    <div class="table-responsive">
+                        <table class="table aiz-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Order</th>
+                                    <th>Image</th>
+                                    <th>{{translate('City')}}</th>
+                                    <th data-breakpoints="md">{{translate('State')}}</th>
+                                    <th data-breakpoints="md">{{translate('Country')}}</th>
+                                    <th class="text-right" width="20%">{{translate('Options')}}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($cities as $key => $city)
+                                    <tr>
+                                        <td>{{ ($key+1) + ($cities->currentPage() - 1)*$cities->perPage() }}</td>
+                                        <td width="10">
+                                            <input type="number"
+                                                name="orders[{{ $city->id }}]"
+                                                value="{{ $city->order }}"
+                                                class="form-control form-control-sm"
+                                                min="0">
+                                        </td>
 
-                                <td ><img class="img-md" src="{{ uploaded_asset($city->upload_id) }}" height="45px" alt="{{translate('photo')}}" /></td>
-                                <td>{{ucwords($city->name)}}</td>
-                                <td>{{ucwords($city->state->name)}}</td>
-                                <td>{{ucwords($city->state->country->name)}}</td>
-                                <td class="text-right">
-                                    <a href="{{ route('admin.cities.edit', encrypt($city->id)) }}" class="btn btn-circle btn-sm text-black text-lg" title="{{ translate('Edit') }}">
-                                        <i class="las la-edit"></i>
-                                    </a>
-                                    <a href="javascript:void(0);" data-href="{{route('admin.cities.destroy', $city->id)}}" class="btn btn-soft-danger btn-icon btn-circle btn-sm confirm-delete" title="{{ translate('Delete') }}">
-                                        <i class="las la-trash"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-                <div class="text-right p-3">
-                    <button type="submit" class="btn btn-primary">
-                        Save City Order
-                    </button>
-                </div>
+                                        <td ><img class="img-md" src="{{ uploaded_asset($city->upload_id) }}" height="45px" alt="{{translate('photo')}}" /></td>
+                                        <td>{{ucwords($city->name)}}</td>
+                                        <td>{{ucwords($city->state->name)}}</td>
+                                        <td>{{ucwords($city->state->country->name)}}</td>
+                                        <td class="text-right">
+                                            <a href="{{ route('admin.cities.edit', encrypt($city->id)) }}" class="btn btn-circle btn-sm text-black text-lg" title="{{ translate('Edit') }}">
+                                                <i class="las la-edit"></i>
+                                            </a>
+                                            <a href="javascript:void(0);" data-href="{{route('admin.cities.destroy', $city->id)}}" class="btn btn-soft-danger btn-icon btn-circle btn-sm confirm-delete" title="{{ translate('Delete') }}">
+                                                <i class="las la-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="aiz-pagination">
+                        <div class="text-left">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Save City Order
+                            </button>
+                        </div>
+                        <div>
+                            {{ $cities->appends(request()->input())->links() }}
+                        </div>
+                    </div>
                 </form>
-                <div class="aiz-pagination">
-                    {{ $cities->appends(request()->input())->links() }}
-                </div>
             </div>
         </div>
     </div>
@@ -159,7 +156,7 @@
                 
             </div>
             <div class="card-body">
-                <form action="{{ route('admin.cities.store') }}" method="POST" >
+                <form action="{{ route('admin.cities.store') }}" method="POST">
                     @csrf
                     <div class="form-group mb-3">
                         <label for="name">{{translate('Country')}}</label>

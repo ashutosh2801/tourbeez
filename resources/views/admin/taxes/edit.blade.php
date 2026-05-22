@@ -5,10 +5,10 @@
             <div class="card-primary mb-3">
                 <div class="card-header taxes-fee-head">
                     <div class="row">
-                        <div class="col-md-8 col-12">
+                        <div class="col-md-8 col-7">
                             <h3 class="card-title text-white">Update Tax and Fee</h3>
                         </div>
-                        <div class="col-md-4 col-12">
+                        <div class="col-md-4 col-5">
                             <div class="card-tools">
                                 <a href="{{ route('admin.taxes.index') }}" class="btn btn-back btn-sm">Back</a>
                             </div>

@@ -18,12 +18,21 @@
     }
 </style>
 
-<div class="card">
-    <div class="card-header d-flex justify-content-between">
-        <h3 class="card-title">Edit Voucher</h3>
-        <a href="{{ route('admin.vouchers.index') }}" class="btn btn-sm btn-dark">Back</a>
+<!-- HEADER -->
+<div class="voucher-list-header card-primary mb-3">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-md-8 col-6">
+                <h3 class="card-title">Edit Voucher</h3>
+            </div>
+            <div class="col-md-4 col-6 text-right">
+                <a href="{{ route('admin.vouchers.index') }}" class="btn btn-sm btn-back">Back</a>
+            </div>
+        </div>
     </div>
+</div>
 
+<div class="voucher-list-body card bg-white border rounded-lg-custom">
     <div class="card-body">
         <div class="row">
             {{-- FORM --}}
@@ -166,21 +175,21 @@
 
                     {{-- VALUE TYPE --}}
                     
-<div class="form-group">
-    <label for="Voucher_valueType">Value <span class="required">*</span></label>
-    <select class="form-control" name="valueType" id="Voucher_valueType">
-        <option value="">Select...</option>
-        @foreach ([
-            'VALUE_LIMITPRODUCT' => 'Fixed amount for one product',
-            'VALUE' => 'Fixed amount for any product',
-            'VALUE_LIMITCATEGORY' => 'Fixed amount for any product within a category',
-            'PRODUCT' => 'Free product'
-        ] as $key => $label)
-            <option value="{{ $key }}"
-                {{ old('valueType', $voucher->value_type ?? '') === $key ? 'selected' : '' }}>
-                {{ $label }}
-            </option>
-        @endforeach
+                    <div class="form-group">
+                        <label for="Voucher_valueType">Value <span class="required">*</span></label>
+                        <select class="form-control" name="valueType" id="Voucher_valueType">
+                            <option value="">Select...</option>
+                            @foreach ([
+                                'VALUE_LIMITPRODUCT' => 'Fixed amount for one product',
+                                'VALUE' => 'Fixed amount for any product',
+                                'VALUE_LIMITCATEGORY' => 'Fixed amount for any product within a category',
+                                'PRODUCT' => 'Free product'
+                            ] as $key => $label)
+                                <option value="{{ $key }}"
+                                    {{ old('valueType', $voucher->value_type ?? '') === $key ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
 
@@ -251,17 +260,15 @@
 
                     </div>
 
-
                     <hr>
 
                     {{-- NOTES --}}
                     <div class="mb-3">
                         <label>Internal Notes</label>
-                        <textarea name="internalNotes" rows="3"
-                                  class="form-control">{{ old('internalNotes',$voucher->internal_notes) }}</textarea>
+                        <textarea name="internalNotes" rows="3" class="form-control">{{ old('internalNotes',$voucher->internal_notes) }}</textarea>
                     </div>
 
-                    <button class="btn btn-primary btn-block">Update Voucher</button>
+                    <button class="btn btn-success btn-block"><i class="fas fa-save"></i>  Update Voucher</button>
                 </form>
             </div>
 

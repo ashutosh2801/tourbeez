@@ -22,7 +22,7 @@
                 @method('PUT')
                 @csrf
                 <input type="hidden" name="id" value="{{ $data->id }}">
-                <div class="card-body">
+                <div class="card-body create-role-body">
                     <div class="row">
                         <div class="col-lg-12">
                             <div class="form-group">
@@ -69,7 +69,7 @@
 
 
                         </div>
-                        <div class="col-lg-12">
+                        <div class="card-footer">
                             <div class="float-right">
                                 <button type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
                             </div>
