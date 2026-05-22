@@ -2,8 +2,8 @@
     @section('title','Create Permission')
     <section class="content">
         <!-- Default box -->
-        <div class="card card-primary bg-white border rounded-lg-custom">
-                <div class="card card-primary">
+        <div class="card card-primary bg-white border rounded-lg-custom mb-0">
+                <div class="card card-primary mb-0">
                     <div class="card-header create-supplier-head">
                         <div class="row">
                             <div class="col-md-8 col-12">

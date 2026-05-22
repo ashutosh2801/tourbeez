@@ -9854,11 +9854,32 @@ table.dataTable {
     border-color: #5a6268;
 }
 
+.order-manifest-head .driver-filter {
+    width: 200px;
+    height: auto;
+    padding: 0.216rem .51rem;
+    color: #000;
+}
+
+.order-manifest-head .manifest-calendar {
+    display: flex;
+    gap: 10px;
+}
+
 @media (max-width: 767px) {
 
     .order-manifest-head .mb-manifest {
         flex-wrap: wrap;
         gap: 10px;
+    }
+
+    .order-manifest-head .manifest-calendar {
+        flex-direction: column;
+    }
+
+    .order-manifest-head .driver-filter {
+        width: 100%;
+        padding: 6px;
     }
 
 }
@@ -10468,11 +10489,11 @@ table.dataTable {
 .order-table>.table>tfoot>tr>th, 
 .order-table>.table>thead>tr>td, 
 .order-table>.table>thead>tr>th {
-    white-space: nowrap;
+    white-space: normal;
 }
 
 .order-list-body .order-table .tour-name {
-    white-space:normal; 
+    white-space: normal; 
     display: flex; 
     flex-direction: column; 
     width: 350px;
@@ -11133,4 +11154,46 @@ table.dataTable {
 
 #editCustomerModal .modal-body label {
     margin-bottom: 5px;
+}
+
+#driverModal .modal-content .modal-header {
+    background-color: #343a41;
+    color: #FFF;
+    padding: 10px 20px;
+}
+
+#driverModal .modal-content .modal-header .close {
+    color: #FFF;
+}
+
+#driverModal .bootstrap-select.form-control {
+    border: 1px solid #aeb0b4;
+}
+
+#driverModal .order-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+#driverModal .order-list .order-content {
+    border-bottom: 1px solid #dddddd;
+    padding: 15px 15px 0;
+}
+
+#driverModal .order-list .order-content small {
+    font-size: 13px;
+}
+
+@media (min-width: 768px) {
+
+    #driverModal .modal-dialog {
+        max-width: 700px;
+    }
+
+    #driverModal .modal-content .modal-body {
+        max-height: 70vh;
+    }
+
 }

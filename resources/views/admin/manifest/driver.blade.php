@@ -5,78 +5,89 @@
 <style>
     
     .manifest-grid {
-    font-size: 16px; /* base font bigger */
-}
+        font-size: 16px;
+    }
 
-.manifest-grid th {
-    font-size: 14px;
-    font-weight: 600;
-    padding: 10px 8px;
-    background: #f1f5f9;
-}
+    .manifest-grid th {
+        font-size: 14px;
+        font-weight: 600;
+        padding: 10px 8px;
+        background: #f1f5f9;
+    }
 
-.manifest-grid td {
-    font-size: 14px;
-    padding: 10px 8px;
-    vertical-align: middle;
-}
+    .manifest-grid td {
+        font-size: 14px;
+        padding: 10px 8px;
+        vertical-align: middle;
+    }
 
-/* Main pax number */
-.manifest-grid td strong {
-    font-size: 16px;
-    font-weight: 700;
-    color: #111827;
-}
+    .manifest-grid td strong {
+        font-size: 14px;
+        font-weight: 700;
+        color: #111827;
+    }
 
-/* Driver names */
-.manifest-grid small {
-    font-size: 12px;
-    font-weight: 500;
-}
+    .manifest-grid td p {
+        margin: 0;
+    }
 
-/* Hover effect */
-.manifest-cell.has-orders:hover {
-    background-color: #eef6ff;
-    transition: 0.2s;
-}
+    .manifest-grid small {
+        font-size: 12px;
+        font-weight: 500;
+    }
 
-/* Totals row */
-.total-pax {
-    font-size: 15px;
-    font-weight: 700;
-    color: #1f2937;
-}
+    .manifest-cell.has-orders:hover {
+        background-color: #eef6ff;
+        transition: 0.2s;
+    }
 
-/* Assigned row */
-.assigned-pax {
-    font-size: 15px;
-    font-weight: 700;
-    color: #16a34a;
-}
+    .total-pax {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .assigned-pax {
+        font-size: 15px;
+        font-weight: 700;
+        color: #16a34a;
+    }
+
+    .manifest-grid td, .manifest-grid th {
+        vertical-align: middle;
+    }
+
+    .manifest-cell.has-orders:hover {
+        background-color: #f0f7ff;
+    }
 </style>
-
-
 
 <div class="card-primary mb-3">
     <div class="card-header order-manifest-head">
         <div class="d-flex justify-content-between align-items-center w-100 mb-manifest">
-            <h3 class="card-title text-white">Driver Manifest</h3>
-            <div class="d-flex align-items-center gap-1">
-                <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center left-btn" id="prev-week">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <input type="date" name="date" id="filter-date" class="form-control form-control-sm filterDate" 
-                       value="{{ $date }}" style="width: 150px;" />
-                <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center right-btn" id="next-week">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
+            <div class="manifest-calendar">
+                <div class="d-flex column-gap-10">
+                    <button type="button" class="btn btn-sm today-btn" id="today-date">
+                        Today
+                    </button>
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center left-btn" id="prev-week">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <input type="date" name="date" id="filter-date" class="form-control form-control-sm filterDate" 
+                            value="{{ $date }}" style="width: 150px;" />
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center right-btn" id="next-week">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <select id="driverFilter" class="form-control driver-filter">
+                    <option value="">All Drivers</option>
+                    @foreach($drivers as $driver)
+                        <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                    @endforeach
+                </select>
             </div>
-            <select id="driverFilter" class="form-control" style="width: 200px;">
-                <option value="">All Drivers</option>
-                @foreach($drivers as $driver)
-                    <option value="{{ $driver->id }}">{{ $driver->name }}</option>
-                @endforeach
-            </select>
             <!-- <a href="{{ route('admin.driver.manifest.export', ['date' => $date]) }}" 
                    class="btn btn-success btn-sm">
 
@@ -88,17 +99,17 @@
                     'date' => $date,
                     'driver_id' => request('driver_id')
                 ]) }}" 
-                class="btn btn-success btn-sm">
-                    Export Excel
+                class="btn btn-download btn-sm">
+                    <i class="bi bi-download"></i> Download Excel
                 </a>
         </div>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body table-responsive">
+<div class="card-primary bg-white border rounded-lg-custom">
+    <div class="card-body table-responsive p-0">
         <table class="table table-bordered table-sm manifest-grid">
-            <thead class="">
+            <thead>
                 <tr>
                     <th style="min-width: 200px;">Tours</th>
                     @foreach($dateRange as $d)
@@ -113,7 +124,7 @@
                 @forelse($sortedGrid as $tourTitle => $dates)
                     <tr>
                         <td>
-                            <strong>{{ $tourTitle }}</strong>
+                            <p>{{ $tourTitle }}</p>
                             @if(isset($tourTimes[$tourTitle]))
                                 <!-- <br><small class="text-muted">{{ $tourTimes[$tourTitle] }}</small> -->
                             @endif
@@ -184,6 +195,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Assign Driver</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="modal_date">
@@ -192,9 +204,7 @@
                 <div class="mb-3">
                     <label class="form-label"><strong id="modal_tour_title"></strong></label>
                     <div class="text-muted" id="modal_date_display"></div>
-                </div>
-
-                
+                </div>                
 
                 <div class="form-group">
                     <label for="driver_id" class="form-label">Select Drivers *</label>
@@ -217,7 +227,7 @@
                 </div>
 
                 <label class="form-label">Orders</label>
-                <div id="order_list" style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 6px;"></div>
+                <div id="order_list" class="order-list bg-light"></div>
 
                 <div class="mt-2">
                     <label>
@@ -230,21 +240,11 @@
                     Remove Driver
                 </button> -->
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="assignDriver">Assign</button>
-
+                <button type="button" class="btn btn-success" id="assignDriver">Assign</button>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-.manifest-grid td, .manifest-grid th {
-    vertical-align: middle;
-}
-.manifest-cell.has-orders:hover {
-    background-color: #f0f7ff;
-}
-</style>
 
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 orderIds.push(o.order_id);
 
                 container.innerHTML += `
-                <div style="border-bottom: 1px solid #eee; padding: 6px 0;">
+                <div class="order-content">
                     <label style="cursor: pointer; width:100%;">
                         <input type="checkbox" class="order-checkbox" value="${o.order_id}" checked>
 
@@ -492,6 +492,19 @@ document.addEventListener('DOMContentLoaded', function() {
     updateExportUrl();
 
 });
+</script>
+<script>
+    const todayBtn = document.getElementById('today-date');
+    todayBtn.addEventListener('click', () => {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+
+        const formatted = `${yyyy}-${mm}-${dd}`;
+        dateInput.value = formatted;
+        dateInput.form.submit();
+    });
 </script>
 @endsection
 </x-admin>
