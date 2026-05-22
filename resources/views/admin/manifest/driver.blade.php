@@ -67,7 +67,7 @@
         <div class="d-flex justify-content-between align-items-center w-100 mb-manifest">
             <div class="manifest-calendar">
                 <div class="d-flex column-gap-10">
-                    <button type="button" class="btn btn-sm today-btn" id="today-date">
+                    <button type="button" class="btn btn-sm today-btn " id="today-date">
                         Today
                     </button>
                     <div class="d-flex align-items-center">
