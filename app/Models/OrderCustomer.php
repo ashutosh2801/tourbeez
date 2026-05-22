@@ -16,6 +16,7 @@ class OrderCustomer extends Model
 {
     use HasFactory;
     use LogsActivity;
+
     
        protected $fillable = [
         'order_id',

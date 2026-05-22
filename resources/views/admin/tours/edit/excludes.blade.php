@@ -23,19 +23,19 @@
             <div class="card-body">
                 
                 @php
-                $ExclusionOptions = old('ExclusionOptions', $data->exclusions?->map(function ($item) {
+                $ExclusionOptions = old('ExclusionOptions', $data->exclusions?->map(function ($item, $index) {
                                             
                                                 return [
                                                     'id'     => $item->id,
                                                     'name'   => $item->name,
-                                                    
+                                                    'order'  => $item->sort_by ?? ($index + 1),
                                                 ];
                                             
                                         })->filter()->values()->toArray());
                             
                 $count = count($ExclusionOptions);
                 if($count == 0){
-                    $ExclusionOptions = old('ExclusionOptions', [ ['id' => '', 'name' => '', 'type' => ''] ]);
+                    $ExclusionOptions = old('ExclusionOptions', [ ['id' => '', 'name' => '', 'type' => '', 'order' => 1] ]);
                     $count = 1;
                 }
                 @endphp
@@ -48,7 +48,7 @@
 
                     
                     <div class="row">
-                        @if ($count == 1)                        
+                        <?php /* @if ($count == 1)                        
                         <div class="col-lg-12">
                             <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
                                 <label for="exclusion_name" class="form-label">Tour Exclusions</label>
@@ -60,9 +60,17 @@
                                 </select>
                             </div>
                         </div>
-                        @endif
-
-                        <div class="col-lg-12">
+                        @endif */ ?>
+                        <div class="col-lg-1">
+                            <div class="form-group">
+                                <input type="number" name="ExclusionOptions[{{ $index }}][order]" id="exclusion_order_{{ $index }}" value="{{ old("ExclusionOptions.$index.order", $option['order']) }}"
+                                    class="form-control text-center" min="1" placeholder="Enter order">
+                                @error('exclusion_order')
+                                    <small class="form-text text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="col-lg-11">
                             <div class="form-group mb-2">
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
@@ -70,7 +78,9 @@
                                     </div>
                                     <input type="text" name="ExclusionOptions[{{ $index }}][name]" id="exclusion_name_{{ $index }}" value="{{ old("ExclusionOptions.$index.name", $option['name']) }}"
                                         class="form-control  mr-2" placeholder="Enter name">
+                                    @if ( count($ExclusionOptions) == ($index + 1))
                                     <button type="button" class="btn btn-sm btn-success mr-2" onclick="addExclusion()"><i class="fa fa-plus"></i></button>
+                                    @endif  
                                     <button type="button" class="btn btn-sm btn-danger" onclick="removeExclusion({{ $index }})"><i class="fa fa-minus"></i></button>
                                 </div>
                             </div>
@@ -115,7 +125,7 @@ function addExclusion() {
         <div class="col-lg-12">
             <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
                 <label for="exclusion_name" class="form-label">Tour Exclusions</label>
-                <select class="form-control" data-live-search="true" id="exclusion"  onchange="fetchExclusion(this.value, ${exclusionCount})">
+                <select class="form-control aiz-selectpicker" data-live-search="true" id="exclusion"  onchange="fetchExclusion(this.value, ${exclusionCount})">
                     <option value="">Select one</option>
                     @foreach ($data->exclusions as $item)
                     <option value="{{ $item->id }}">{{ $item->name }}</option>
@@ -125,14 +135,19 @@ function addExclusion() {
         </div>
         <input type="hidden" name="ExclusionOptions[${exclusionCount}][type]" id="ExclusionOptions_type_${exclusionCount}" 
                     value="" class="form-control" />
-        <div class="col-lg-12">
+        <div class="col-lg-1">
+            <div class="form-group">
+                <input type="number" name="ExclusionOptions[${exclusionCount}][order]" id="exclusion_order_${exclusionCount}" value="" class="form-control text-center" min="1" placeholder="number">
+            </div>
+        </div>            
+        <div class="col-lg-11">
             <div class="form-group mb-2">
                 <div class="input-group mb-3">
                     <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fa fa-pencil-alt"></i></span>
                     </div>
                     <input type="text" name="ExclusionOptions[${exclusionCount}][name]" id="exclusion_name_${exclusionCount}" value=""
-                        class="form-control mr-2" placeholder="Enter name">
+                        class="form-control mr-2" placeholder="Enter name" required>
                     <button type="button" class="btn btn-sm btn-success mr-2" onclick="addExclusion()"><i class="fa fa-plus"></i></button>
                     <button type="button" class="btn btn-sm btn-danger" onclick="removeExclusion(${exclusionCount})"><i class="fa fa-minus"></i></button>
                 </div>
@@ -141,7 +156,9 @@ function addExclusion() {
     </div>`;
 
     container.appendChild(newRow);
+    $(`#exclusion_order_${exclusionCount}`).val( exclusionCount + 1 );
     exclusionCount++;
+    TB.plugins.bootstrapSelect();
 }
 
 function removeExclusion(id) {

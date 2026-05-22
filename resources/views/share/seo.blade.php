@@ -39,7 +39,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
-    <script>
+    <!-- <script>
 (function(w,d,s,l,i){
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
     console.log("GTM disabled on localhost");
@@ -56,7 +56,7 @@
   f.parentNode.insertBefore(j,f);
 
 })(window,document,'script','dataLayer','GTM-M8WSBSM4');
-</script>
+</script> -->
 
 <!-- TrustBox script -->
 <script type="text/javascript" src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js" async></script>

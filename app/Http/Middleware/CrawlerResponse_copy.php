@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use DB;
 
-class CrawlerResponse
+class CrawlerResponse_copy
 {
     /**
      * Handle an incoming request.
@@ -89,6 +89,118 @@ class CrawlerResponse
 
                 // Home Page
                 if ($path === '' || $path === '/') {
+                    /*
+                    $data = Cache::remember('cities_home_list', 86400, function () {
+                        return DB::table('tour_locations as tl')
+                                ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                                ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                                ->join('uploads as u', 'u.id', '=', 'c.upload_id')
+                                ->select('c.id', 'c.name', 'c.upload_id')
+                                ->groupBy('c.id', 'c.name', 'c.upload_id')
+                                ->orderByRaw('RAND()')
+                                ->where('c.upload_id', '>=', 1)
+                                ->whereExists(function ($query) {
+                                    $query->select(DB::raw(1))
+                                        ->from('tour_schedules as ts')
+                                        ->whereColumn('ts.tour_id', 't.id')
+                                        ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
+                                })
+                                ->limit(10)
+                                ->get();
+                    });
+
+                    $cities = [];
+                    foreach($data as $d) {
+                        $cities[] = [
+                            'id'    => $d->id,
+                            'name'  => ucfirst( $d->name ),
+                            'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
+                            'image' => uploaded_asset( $d->upload_id ),
+                            'extra' => ''
+                        ];
+                    }                    
+
+                    //Tours
+                    $tour_data = Cache::remember('tours_home_list', 86400, function () {
+                        return DB::table(DB::raw("( 
+                            SELECT 
+                                t.id, 
+                                t.title AS name, 
+                                t.slug, 
+                                t.price, 
+                                t.created_at, 
+                                t.unique_code, 
+                                u.upload_id
+                            FROM tours t
+                            JOIN tour_upload u ON u.tour_id = t.id
+                            JOIN tour_locations l ON l.tour_id = t.id
+                            WHERE t.status = 1 
+                            AND t.deleted_at IS NULL
+                            AND l.city_id IS NOT NULL 
+                            AND l.city_id = 10519
+                            AND EXISTS (
+                                SELECT 1 
+                                FROM tour_schedules s 
+                                WHERE s.tour_id = t.id
+                                    AND s.until_date >= CURDATE()
+                            )
+                            GROUP BY t.unique_code
+                            ORDER BY t.sort_order DESC
+                            LIMIT 14
+                        ) as sub"))  // ✅ NO semicolon here
+                        ->get();
+                    });
+
+                    $tours = [];
+                    foreach($tour_data as $d) {
+                        $tours[] = [
+                            'id'    => $d->id,
+                            'name'  => ucfirst( $d->name ),
+                            'url'   => '/tour/'.$d->slug,
+                            'image' => uploaded_asset( $d->upload_id ),
+                            'price' => $d->price,
+                            'sku'   => $d->unique_code,
+                        ];
+                    }  
+                    
+                    //Blog
+                    $blog_data = Cache::remember('blog_home_list', 86400, function () {
+                        return DB::table('tb_posts as p')
+                            ->leftJoin('tb_postmeta as pm', 'pm.post_id', '=', 'p.ID')
+                            ->select('p.ID as id', 'p.post_title as name', 'p.post_name as slug', 'p.post_date', 'p.guid')
+                            ->where('p.post_type', 'post')
+                            ->where('p.post_status', 'publish')
+                            ->distinct()
+                            ->orderBy('p.post_date', 'desc')
+                            ->limit(5)
+                            ->get();
+                    });
+
+                    $blogs = [];
+                    foreach ($blog_data as $b) {
+
+                        // Get the featured image ID from post meta
+                        $image_id = DB::table('tb_postmeta')
+                            ->where('post_id', $b->id)
+                            ->where('meta_key', '_thumbnail_id')
+                            ->value('meta_value');
+
+                        // Get the image URL using the image ID (from tb_posts.guid)
+                        $image_url = null;
+                        if ($image_id) {
+                            $image_url = DB::table('tb_posts')
+                                ->where('ID', $image_id)
+                                ->value('guid');
+                        }
+
+                        $blogs[] = [
+                            'id'    => $b->id,
+                            'title'  => ucfirst($b->name),
+                            'url'   => ('https://tourbeez.com/blog/' . $b->slug), // or $b->guid if using permalink
+                            'image' => $image_url,
+                            'date' => date('d M, Y', strtotime($b->post_date))
+                        ];
+                    } */
 
                     $apiService = new ApiService();
                     $response = $apiService->request(
@@ -100,6 +212,19 @@ class CrawlerResponse
                                         'apiKey' => 'eyJpdiI6Ill5T0I5WGRNcHowVDFvYU51eHRUQkE9PSIsInZhbHVlIjoiT3'
                                     ]
                                 );
+
+                    //echo '<pre>'; print_r($response['home_blogs']); exit;
+
+                    $blogs = [];
+                    foreach($response['home_blogs'] as $d) {
+                        $blogs[] = [
+                            'id'    => $d['id'],
+                            'title'  => $d['name'],
+                            'url'   => $d['url'],
+                            'image' => $d['image'],
+                            'date' => $d['date']
+                        ];
+                    }
     
                     return response()->view('share.seo', [
                         'title' => 'Tours, Activities & Travel Experiences Worldwide | TourBeez',
@@ -110,7 +235,7 @@ class CrawlerResponse
                         'file' => 'home',
                         'tours' => $response['home_tours'], 
                         'cities' => $response['popular_cities'], 
-                        'blogs' => $response['home_blogs']
+                        'blogs' => $blogs
                     ]);
                 }
                 else if ($path === 'destinations') {
@@ -590,7 +715,7 @@ class CrawlerResponse
                     $citySlug = $segments[0];   // things-to-do-in-toronto
                     $slug_id  = explode("-",$segments[1]);   // 10519-c1
                     $id       = $slug_id[0];
-                    $type     = $slug_id[1] ?? null;   // c1
+                    $type     = $slug_id[1];   // c1
 
                     $d = null;
                     if ($type === 'c1') {

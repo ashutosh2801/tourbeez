@@ -73,14 +73,14 @@ class Tour extends Model
     public function addons(): BelongsToMany { return $this->belongsToMany(Addon::class)->withPivot('sort_by')->orderBy('addon_tour.sort_by', 'ASC'); }
     public function addonsAll(): BelongsToMany { return $this->belongsToMany(Addon::class, 'addon_tour', 'tour_id', 'addon_id'); }
     public function pickups(): BelongsToMany { return $this->belongsToMany(Pickup::class); }
-    public function itineraries(): BelongsToMany { return $this->belongsToMany(Itinerary::class)->withPivot('sort_by'); }
+    public function itineraries(): BelongsToMany { return $this->belongsToMany(Itinerary::class)->withPivot('sort_by')->orderBy('itinerary_tour.sort_by', 'ASC'); }
     public function itinerariesAll() { return $this->hasMany(Itinerary::class, 'tour_id'); }
-    public function itineraryAll() { return Itinerary::all(); }
-    public function faqs(): BelongsToMany { return $this->belongsToMany(Faq::class); }
+    public function itineraryAll() { return Itinerary::groupBy('title')->orderBy('title', 'ASC')->get(); }
+    public function faqs(): BelongsToMany { return $this->belongsToMany(Faq::class)->withPivot('sort_by')->orderBy('faq_tour.sort_by', 'ASC'); }
     public function faqAll() { return Faq::all(); }
-    public function inclusions(): BelongsToMany { return $this->belongsToMany(Inclusion::class); }
-    public function optionals(): BelongsToMany { return $this->belongsToMany(Optional::class); }
-    public function exclusions(): BelongsToMany { return $this->belongsToMany(Exclusion::class); }
+    public function inclusions(): BelongsToMany { return $this->belongsToMany(Inclusion::class)->withPivot('sort_by')->orderBy('inclusion_tour.sort_by', 'ASC'); }
+    public function exclusions(): BelongsToMany { return $this->belongsToMany(Exclusion::class)->withPivot('sort_by')->orderBy('exclusion_tour.sort_by', 'ASC'); }
+    public function optionals(): BelongsToMany { return $this->belongsToMany(Optional::class)->withPivot('sort_by')->orderBy('optional_tour.sort_by', 'ASC'); }
     public function features(): BelongsToMany { return $this->belongsToMany(Feature::class); }
     public function taxes_fees(): BelongsToMany { return $this->belongsToMany(TaxesFee::class); }
     public function detail() { return $this->hasOne(TourDetail::class); }
