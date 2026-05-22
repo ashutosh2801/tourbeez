@@ -7,10 +7,13 @@ use App\Models\Scopes\SupplierScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Category extends Model
 {
     use HasFactory;
+    use LogsActivity;
 
 
     protected $fillable = [
@@ -20,6 +23,14 @@ class Category extends Model
     protected $casts = [
         'meta_keywords' => 'array',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('Category')
+            ->setDescriptionForEvent(fn(string $eventName) => "Category {$eventName}")
+            ->logAll(); // 🔥 important
+    }
 
     protected static function booted()
     {

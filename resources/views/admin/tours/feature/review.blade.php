@@ -92,6 +92,78 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                             </div>
 
                                             <div class="card-body">
+                                                
+
+                        {{-- ✅ Feature Toggles Section --}}
+                        
+                            
+
+                            
+
+                                        @php
+                                            $features = old('review.features', $tourReview?->features ?? []);
+                                        @endphp
+
+                                        <div class="row">
+
+                                        {{-- Free cancellation --}}
+                                        <div class="col-md-4 mb-2">
+                                            <input type="hidden" name="review[free_cancellation]" value="0">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input"
+                                                    name="review[free_cancellation]" value="1"
+                                                    {{ old('review.free_cancellation', $tourDetail?->free_cancellation ?? 1) ? 'checked' : '' }}>
+                                                <label class="form-check-label">Free cancellation guaranteed</label>
+                                            </div>
+                                        </div>
+
+                                        {{-- Exceptional deal --}}
+                                        <div class="col-md-4 mb-2">
+                                            <input type="hidden" name="review[exceptional_deal]" value="0">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input"
+                                                    name="review[exceptional_deal]" value="1"
+                                                    {{ old('review.exceptional_deal', $tourDetail?->exceptional_deal ?? 1) ? 'checked' : '' }}>
+                                                <label class="form-check-label">Exceptional deal</label>
+                                            </div>
+                                        </div>
+
+                                        {{-- Lowest price --}}
+                                        <div class="col-md-4 mb-2">
+                                            <input type="hidden" name="review[lowest_price]" value="0">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input"
+                                                    name="review[lowest_price]" value="1"
+                                                    {{ old('review.lowest_price', $tourDetail?->lowest_price ?? 1) ? 'checked' : '' }}>
+                                                <label class="form-check-label">Lowest price guaranteed</label>
+                                            </div>
+                                        </div>
+
+                                        {{-- Kids discount --}}
+                                        <div class="col-md-4 mb-2">
+                                            <input type="hidden" name="review[kids_discount]" value="0">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input"
+                                                    name="review[kids_discount]" value="1"
+                                                    {{ old('review.kids_discount', $tourDetail?->kids_discount ?? 1) ? 'checked' : '' }}>
+                                                <label class="form-check-label">Discounted rate for kids</label>
+                                            </div>
+                                        </div>
+
+                                        {{-- Full refund --}}
+                                        <div class="col-md-4 mb-2">
+                                            <input type="hidden" name="review[full_refund]" value="0">
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input"
+                                                    name="review[full_refund]" value="1"
+                                                    {{ old('review.full_refund', $tourDetail?->full_refund ?? 1) ? 'checked' : '' }}>
+                                                <label class="form-check-label">Full refund</label>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                          
 
                                                 {{-- ✅ Review Section --}}
                                                 <div class="form-group form-check mb-3">

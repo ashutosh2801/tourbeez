@@ -129,7 +129,7 @@
                 @php
                     $supplier = $user->supplier ?? null;
                 @endphp
-                @if($supplier && $user->role == 'Supplier')
+                <div id="supplier-section" style="display:none;">
                     <hr>
                     <h4 class="mt-4 mb-3">Supplier Information</h4>
                     <div class="row">
@@ -216,17 +216,32 @@
                         </div>
 
                         
-                        <div class="col-lg-6">
-                            <label>Payment Method</label>
-                            <select name="payment_method" class="form-control">
-                                <option value="">Select Payment Method</option>
-                                <option value="Bank Transfer" {{ $supplier->payment_method == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                                <option value="PayPal" {{ $supplier->payment_method == 'PayPal'? 'selected' : '' }}>PayPal</option>
-                                <option value="Stripe" {{ $supplier->payment_method == 'Stripe'? 'selected' : '' }}>Stripe</option>
-                                <option value="Other" {{ $supplier->payment_method == 'Other'? 'selected' : '' }}>Other</option>
-                            </select>
-                        </div>
+                       <div class="col-lg-6">
+                        <label>Payment Method</label>
+                        <select name="payment_method" class="form-control">
+                            <option value="">Select Payment Method</option>
 
+                            <option value="Bank Transfer"
+                                {{ old('payment_method', $supplier?->payment_method) == 'Bank Transfer' ? 'selected' : '' }}>
+                                Bank Transfer
+                            </option>
+
+                            <option value="PayPal"
+                                {{ old('payment_method', $supplier?->payment_method) == 'PayPal' ? 'selected' : '' }}>
+                                PayPal
+                            </option>
+
+                            <option value="Stripe"
+                                {{ old('payment_method', $supplier?->payment_method) == 'Stripe' ? 'selected' : '' }}>
+                                Stripe
+                            </option>
+
+                            <option value="Other"
+                                {{ old('payment_method', $supplier?->payment_method) == 'Other' ? 'selected' : '' }}>
+                                Other
+                            </option>
+                        </select>
+                    </div>
 
                         <div class="col-lg-6">
                             <label>Bank Details</label>
@@ -277,12 +292,124 @@
                             <input type="checkbox" name="consent_terms" value="1" {{ !empty($supplier->consent_terms) ? 'checked' : '' }}>
                         </div>
                     </div>
-                @endif
+                </div>
+            
+            @php
+            $driver = $user->driver ?? null;
+        @endphp
+
+        @php
+    $driver = $user->driver ?? null;
+@endphp
+
+        <div id="driver-section" class="col-12 mt-4" style="display:none;">
+            <hr>
+            <h4 class="mb-3">Driver Information</h4>
+
+            <div class="row">
+
+                <div class="col-lg-6">
+                    <label>License Number</label>
+                    <input type="text" name="license_number" class="form-control"
+                        value="{{ old('license_number', $driver->license_number ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>License Expiry</label>
+                    <input type="date" name="license_expiry" class="form-control"
+                        value="{{ old('license_expiry', $driver->license_expiry ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Aadhaar Number</label>
+                    <input type="text" name="aadhaar_number" class="form-control"
+                        value="{{ old('aadhaar_number', $driver->aadhaar_number ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Vehicle Type</label>
+                    <select name="vehicle_type" class="form-control">
+                        <option value="">Select</option>
+                        <option value="Car" {{ old('vehicle_type', $driver->vehicle_type ?? '') == 'Car' ? 'selected' : '' }}>Car</option>
+                        <option value="Tempo" {{ old('vehicle_type', $driver->vehicle_type ?? '') == 'Tempo' ? 'selected' : '' }}>Tempo</option>
+                        <option value="Bus" {{ old('vehicle_type', $driver->vehicle_type ?? '') == 'Bus' ? 'selected' : '' }}>Bus</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Vehicle Number</label>
+                    <input type="text" name="vehicle_number" class="form-control"
+                        value="{{ old('vehicle_number', $driver->vehicle_number ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Vehicle Model</label>
+                    <input type="text" name="vehicle_model" class="form-control"
+                        value="{{ old('vehicle_model', $driver->vehicle_model ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Vehicle Capacity</label>
+                    <input type="number" name="vehicle_capacity" class="form-control"
+                        value="{{ old('vehicle_capacity', $driver->vehicle_capacity ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Per Day Rate</label>
+                    <input type="number" name="per_day_rate" class="form-control"
+                        value="{{ old('per_day_rate', $driver->per_day_rate ?? '') }}">
+                </div>
+
+                <div class="col-lg-6 mt-3">
+                    <label class="form-label d-block mb-2">Availability</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="is_available" value="1"
+                            {{ old('is_available', $driver->is_available ?? 1) ? 'checked' : '' }}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="col-lg-6">
+                    <label>City</label>
+                    <input type="text" name="city" class="form-control"
+                        value="{{ old('city', $driver->city ?? '') }}">
+                </div>
+
+                <div class="col-lg-12">
+                    <label>Address</label>
+                    <textarea name="address" class="form-control">{{ old('address', $driver->address ?? '') }}</textarea>
+                </div>
+
             </div>
+        </div>
+        </div>
 
             <div class="card-footer bg-white justify-flex-end">
                 <button class="btn btn-success m-0" type="submit"><i class="fas fa-save"></i> Save</button>
             </div>
         </form>
     </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    const roleSelect = document.getElementById('role');
+    const supplierSection = document.getElementById('supplier-section');
+    const driverSection = document.getElementById('driver-section');
+
+    function toggleSections() {
+        let role = roleSelect.value.toLowerCase();
+
+        supplierSection.style.display = (role === 'supplier') ? 'block' : 'none';
+        driverSection.style.display   = (role === 'driver') ? 'block' : 'none';
+    }
+
+    roleSelect.addEventListener('change', toggleSections);
+
+    // IMPORTANT → run on load (edit case)
+    toggleSections();
+});
+</script>
+
 </x-admin>

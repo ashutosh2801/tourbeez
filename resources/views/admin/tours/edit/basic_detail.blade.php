@@ -1,4 +1,4 @@
-<style>
+`<style>
     .switch {
         position: relative;
         display: inline-block;
@@ -761,14 +761,14 @@ function addPriceOption() {
     newRow.innerHTML = `
         <div class="col-lg-2"></div>
         <div class="col-lg-2">
-            <input type="text" placeholder="Label" name="PriceOption[${priceOptionCount}][label]" id="PriceOption_${priceOptionCount}_label" class="form-control">
+            <input type="text" placeholder="Label" name="PriceOption[${priceOptionCount}][label]" id="PriceOption_${priceOptionCount}_label" class="form-control" required>
         </div>
         <div class="col-lg-2">
             <div class="input-group">
                 <div class="input-group-prepend">
                     <span class="input-group-text currency-symbol">$</span>
                 </div>
-                <input type="text" placeholder="Price" name="PriceOption[${priceOptionCount}][price]" id="PriceOption_${priceOptionCount}_price" class="form-control">
+                <input type="text" placeholder="Price" name="PriceOption[${priceOptionCount}][price]" id="PriceOption_${priceOptionCount}_price" class="form-control" required>
             </div>
         </div>
         <div class="col-lg-5">

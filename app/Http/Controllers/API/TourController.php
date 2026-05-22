@@ -9,6 +9,7 @@ use App\Models\Partner;
 use App\Models\PartnerTour;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\Tour;
+use App\Models\TourDetail;
 use App\Models\TourReview;
 use App\Models\TourSchedule;
 use App\Models\TourScheduleRepeats;
@@ -42,6 +43,7 @@ class TourController extends Controller
             ])
             ->onlyRoot()
             ->where('status', 1)
+            ->where('id', '<>', 709) // Exclude Voyage The falls
             // ->whereHas('schedules', function ($sq) {
             //     $sq->whereDate('until_date', '>=', now()->toDateString());
             // })
@@ -522,11 +524,9 @@ class TourController extends Controller
         ]);
     }
 
-
-
-
-
-
+    /**
+     * Fetch disabled tour dates for a tour.
+     */
     private function getDisabledTourDates_fromdb(int $tourId): array
     {
         // ✅ Load the precomputed meta row for this tour
@@ -582,7 +582,6 @@ class TourController extends Controller
         ];
     }
 
-
     /**
      * Fetch booking related info for a tour.
      */
@@ -596,17 +595,20 @@ class TourController extends Controller
                             "slug",
                             "unique_code",
                             "price",
-                            "price_type"
+                            "price_type",
+                            "currency"
                         ])
                         ->where('parent_id', $id)
                         ->where('status', 1)
                         ->whereNull('deleted_at')
-                        ->with(['detail:id,tour_id,description', 'pricings'])
+                        ->with(['detail:id,tour_id,description', 'pricings', 'addons', 'specialDeposit'])
                         ->get();
 
         if ($subTours->isEmpty()) {
             return response()->json(['status' => false, 'message' => 'No sub tours found'], 404);
         }
+
+
 
         // 👇 Reuse OrderController@getSessionTimes
         $orderController = app(\App\Http\Controllers\API\OrderController::class);
@@ -632,6 +634,44 @@ class TourController extends Controller
                     return $pricing;
                 });
             }
+            $galleries = [];
+                foreach ($tour->galleries as $item) {
+                    $image      = uploaded_asset($item->id);
+                    $medium_url = str_replace($item->file_name, $item->medium_name, $image);
+                    $thumb_url  = str_replace($item->file_name, $item->thumb_name, $image);
+
+                    $galleries[] = [
+                        'original_url'  => $image,
+                        'medium_url'    => $medium_url,
+                        'thumb_url'     => $thumb_url
+                    ];
+                }
+
+            $addons = [];
+                foreach ($tour->addons as $addon) {
+                    $image      = uploaded_asset($addon->image);
+                    $medium_url = str_replace($item->file_name, $item->medium_name, $image);
+                    $thumb_url  = str_replace($item->file_name, $item->thumb_name, $image);
+                    if (!empty($tour->currency)) {
+                        if($addon->price != 'CAD'){
+                            $addonCurrency = $addon->price ?? 'USD';
+                            $addon->price = currencyConvert($addon->price, $addonCurrency, 'CAD');
+                        }
+                        
+                    }
+                    $addons[] = [
+                        'id'            => $addon->id,
+                        'name'          => $addon->name,
+                        'description'   => $addon->description,
+                        'price'         => $addon->price,
+                        'original_url'  => $image,
+                        'medium_url'    => $medium_url,
+                        'thumb_url'     => $thumb_url,
+                    ];
+                }
+
+            
+            $tour->setRelation('addons', collect($addons));
 
             $req = new \Illuminate\Http\Request([
                 'tour_id' => $tour->id,
@@ -663,6 +703,17 @@ class TourController extends Controller
         $depositRule = Cache::remember($cacheKey, 86400, function () use ($id) {
             return TourSpecialDeposit::where('tour_id', $id)->first();
         });
+
+        $tourDetail = TourDetail::where('tour_id', $id)->first();
+
+
+        $tourDetails = [
+            "free_cancellation"   => $tourDetail->free_cancellation,
+            "exceptional_deal"    => $tourDetail->exceptional_deal,
+            "lowest_price"        => $tourDetail->lowest_price,
+            "kids_discount"       => $tourDetail->kids_discount,
+            "full_refund"         => $tourDetail->full_refund,
+        ];
 
 
         if($depositRule && $depositRule->is_discount){
@@ -707,7 +758,8 @@ class TourController extends Controller
                 'data' => [
                     'deposit_rule' => null,
                     'booking_fees' => $bookingFees,
-                    'discount'     => $discount
+                    'discount'     => $discount,
+                    'tourDetails'  => $tourDetails,
                 ]
             ], 404);
         }
@@ -717,7 +769,8 @@ class TourController extends Controller
             'data'   => [
                 'deposit_rule' => $depositRule,
                 'booking_fees' => $bookingFees,
-                'discount'     => $discount
+                'discount'     => $discount,
+                'tourDetails'  => $tourDetails,
             ]
         ]);
     }
@@ -811,6 +864,7 @@ class TourController extends Controller
                 ->onlyRoot()
                 ->select('id', 'title', 'slug', 'unique_code', 'price', 'currency')
                 ->where('status', 1)
+                ->where('id', '<>', 709) // Exclude Voyage The falls
                 ->when($search, function ($query, $search) {
                     $query->where('title', 'LIKE', '%' . $search . '%');
                 })
@@ -818,16 +872,14 @@ class TourController extends Controller
                 ->limit(max(0, $total_tours))
                 ->get();
 
-                $tours->map(function ($tour) {
-
+                /*$tours->map(function ($tour) {
                     $tour->price = currencyConvert(
                         $tour->price,
                         $tour->currency ?? 'USD',
                         'CAD' // 👈 forced CAD
                     );
-
                     return $tour;
-                });
+                });*/
         });
 
         /*
@@ -1195,7 +1247,6 @@ class TourController extends Controller
         return null;
     }
 
-
     private function calculateNextDate($schedule, Carbon $today, $allRepeats = [])
     {
         $interval   = $schedule->repeat_period_unit ?? 1;
@@ -1250,7 +1301,6 @@ class TourController extends Controller
 
         return null;
     }
-
 
     private function hasValidSlot($schedule, Carbon $date, $repeats = [], $durationMinutes = 30)
     {
@@ -2112,16 +2162,25 @@ public function single(Request $request)
                                         }
 
                                         $minQuantity = 0;
-                                        if($j === 0) {
-                                            $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min; 
-                                            $j++;
+                                        // if($j === 0) {
+                                        //     $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min; 
+                                        //     $j++;
+                                        // }
+                                        // $i++;
+
+                                        $isOptional = isOptionalPricing($pricing->label);
+
+                                        if ($isOptional) {
+                                            $minQuantity = 0;
+                                        } else {
+                                            $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min;
                                         }
                                         $i++;
 
                                         $str .= '<tr>
                                             <td width="60">
                                                 <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
-                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl" min="'.$minQuantity.'" max="'.$maxQuantity.'" >
+                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl text-center" min="0" data-min="'.$minQuantity.'" max="'.$maxQuantity.'" data-optional="'.($isOptional ? 1 : 0).'">
                                                 <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$convertedPricingPrice.'" /> 
                                                 <input type="hidden" name="tour_pricing_type_'.$_tourId.'[]" value="'.$data->price_type.'" /> 
                                                 <input type="hidden" name="tour_pricing_min_'.$_tourId.'[]" value="'.$pricing->quantity_used.'">
@@ -2130,6 +2189,8 @@ public function single(Request $request)
                                             <td>'.$pricing->label.' ('. price_format_with_currency($pricing->price, $data->currency, $orderCurrency) .')</td>
                                         </tr>';
                                     }
+
+                                        
                                 }
                                 
 
@@ -2231,7 +2292,7 @@ public function singleCalendar(Request $request)
 {
     $tour = Tour::find($request->id);
 
-    $orderTour = OrderTour::where('order_id', $request->order_id)->first();
+    $orderTour = OrderTour::where('order_id', $request->order_id)->where('tour_id', $request->id)->first();
 
     if (!$tour) {
         return response()->json(['error' => 'Not found'], 404);

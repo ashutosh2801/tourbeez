@@ -19,7 +19,7 @@ class TourMeta extends Model
     {
         return LogOptions::defaults()
         ->useLogName('TourMeta')
-        ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
+        ->setDescriptionForEvent(fn(string $eventName) => "TourMeta has been {$eventName}")
         ->logOnly(['*'])
         ->logOnlyDirty()
         ->dontSubmitEmptyLogs();

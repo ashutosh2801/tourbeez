@@ -267,6 +267,101 @@
                         </div>
                     </div>
 
+                    {{-- ================= DRIVER INFO SECTION ================= --}}
+                    <div id="driver-section" class="col-12 mt-4" style="display:none;">
+                        <h4 class="mb-3">Driver Information</h4>
+
+                        <div class="row">
+
+                            {{-- ===== PERSONAL INFO ===== --}}
+                            <div class="col-lg-6">
+                                <label>License Number*</label>
+                                <input type="text" name="license_number" class="form-control" value="{{ old('license_number') }}">
+                            </div>
+
+                            <div class="col-lg-6">
+                                <label>License Expiry</label>
+                                <input type="date" name="license_expiry" class="form-control" value="{{ old('license_expiry') }}">
+                            </div>
+
+                            <div class="col-lg-6">
+                                <label>Govt ID</label>
+                                <input type="text" name="govt_id" class="form-control" value="{{ old('govt_id') }}">
+                            </div>
+
+                            {{-- ===== VEHICLE INFO ===== --}}
+                            <div class="col-lg-6">
+                                <label>Vehicle Type</label>
+                                <select name="vehicle_type" class="form-control">
+                                    <option value="" disabled selected>Select Vehicle Type</option>
+                                    <option value="Car">Car</option>
+                                    <option value="Tempo">Tempo</option>
+                                    <option value="Bus">Bus</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <label>Vehicle Number</label>
+                                <input type="text" name="vehicle_number" class="form-control" value="{{ old('vehicle_number') }}">
+                            </div>
+
+                            <div class="col-lg-6">
+                                <label>Vehicle Model</label>
+                                <input type="text" name="vehicle_model" class="form-control" value="{{ old('vehicle_model') }}">
+                            </div>
+
+                            <div class="col-lg-6">
+                                <label>Vehicle Capacity</label>
+                                <input type="number" name="vehicle_capacity" class="form-control" value="{{ old('vehicle_capacity') }}">
+                            </div>
+
+                            {{-- ===== DOCUMENTS ===== --}}
+                            <div class="col-lg-6">
+                                <label>License File</label>
+                                <input type="file" name="license_file" class="form-control">
+                            </div>
+
+                            <div class="col-lg-6">
+                                <label>RC File</label>
+                                <input type="file" name="rc_file" class="form-control">
+                            </div>
+
+                            <div class="col-lg-6">
+                                <label>Insurance File</label>
+                                <input type="file" name="insurance_file" class="form-control">
+                            </div>
+
+                            {{-- ===== WORK INFO ===== --}}
+                            <div class="col-lg-6">
+                                <label>Per Day Rate</label>
+                                <input type="number" name="per_day_rate" class="form-control" value="{{ old('per_day_rate') }}">
+                            </div>
+
+                            <div class="col-lg-6 mt-3">
+                                <div class="form-group">
+                                    <label class="form-label d-block mb-2">Availability:</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="is_available" value="1" {{ old('is_available') ? 'checked' : '' }}>
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {{-- ===== LOCATION ===== --}}
+                            <div class="col-lg-6">
+                                <label>City</label>
+                                <input type="text" name="city" class="form-control" value="{{ old('city') }}">
+                            </div>
+
+                            <div class="col-lg-12 mt-3">
+                                <label>Address</label>
+                                <textarea name="address" class="form-control">{{ old('address') }}</textarea>
+                            </div>
+
+                        </div>
+                    </div>
+
                     {{-- ================= SUBMIT BUTTON ================= --}}
                     <div class="col-lg-12">
                         <div class="float-right">
@@ -279,19 +374,26 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const roleSelect = document.getElementById('role');
-            const supplierSection = document.getElementById('supplier-section');
+        
+            document.addEventListener('DOMContentLoaded', function() {
 
-            function toggleSupplierSection() {
-                if (roleSelect.value === 'Supplier') {
-                    supplierSection.style.display = 'block';
-                } else {
-                    supplierSection.style.display = 'none';
+                const roleSelect = document.getElementById('role');
+                const supplierSection = document.getElementById('supplier-section');
+                const driverSection = document.getElementById('driver-section');
+
+                function toggleSections() {
+                    let role = roleSelect.value;
+
+                    supplierSection.style.display = (role === 'Supplier') ? 'block' : 'none';
+                    driverSection.style.display   = (role === 'Driver') ? 'block' : 'none';
                 }
-            }
 
-            roleSelect.addEventListener('change', toggleSupplierSection);
-        });
+                // Run on change
+                roleSelect.addEventListener('change', toggleSections);
+
+                // Run on page load (IMPORTANT for edit / old values)
+                toggleSections();
+            });
+            
     </script>
 </x-admin>

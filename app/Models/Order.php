@@ -8,6 +8,8 @@ use App\Models\OrderMeta;
 use App\Models\OrderPayment;
 use App\Models\Partner;
 use App\Models\Scopes\SupplierOrderScope;
+use App\Models\StripeWebhookLog;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -65,7 +67,8 @@ class Order extends Model
         'internal_notes',
         'redzy_order_id',
         'is_discount',
-        'source'
+        'source',
+        'failure_message'
     ];
 
     public function tour_detail($id, $label='all') {
@@ -132,7 +135,6 @@ class Order extends Model
 
     public function setOrderStatusAttribute($value)
     {
-        
         $map = [
             'Abandoned' => 1,
             'On Hold' => 2,
@@ -148,7 +150,6 @@ class Order extends Model
 
     public function getStatusAttribute()
     {
-        
         return match ($this->order_status) {
             1 => 'Abandoned',
             2 => 'On Hold',
@@ -215,5 +216,19 @@ class Order extends Model
 
         return $acronym;
     }
+
+    public function paymentLogs()
+    {
+        return $this->hasMany(StripeWebhookLog::class);
+    }
+
+    public function driver()
+    {
+        return $this->belongsToMany(User::class, 'order_drivers', 'order_id', 'driver_id')
+            ->withPivot(['assigned_date', 'pickup_location', 'drop_location', 'driver_amount', 'notes'])
+            ->withTimestamps();
+    }
+
+    
 
 }

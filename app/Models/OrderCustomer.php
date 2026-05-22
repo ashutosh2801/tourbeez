@@ -15,6 +15,8 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class OrderCustomer extends Model
 {
     use HasFactory;
+    use LogsActivity;
+    
        protected $fillable = [
         'order_id',
         'user_id',
@@ -32,7 +34,7 @@ class OrderCustomer extends Model
     {
         return LogOptions::defaults()
         ->useLogName('OrderCustomer')
-        ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
+        ->setDescriptionForEvent(fn(string $eventName) => "OrderCustomer has been {$eventName}")
         ->logOnly(['*'])
         ->logOnlyDirty()
         ->dontSubmitEmptyLogs();

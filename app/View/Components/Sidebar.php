@@ -82,6 +82,10 @@ class Sidebar extends Component
 
         view()->share('supplierCount',$supplierCount);
 
+        $driverCount = User::where('role', 'Driver')->orderBy('id','DESC')->count();
+
+        view()->share('driverCount',$driverCount);
+
         $excludedUsers = User::where('user_type', '!=', 'Member')
             ->where('role', '!=', 'Supplier')->where('role', '<>', 'Super Admin')
             ->count();

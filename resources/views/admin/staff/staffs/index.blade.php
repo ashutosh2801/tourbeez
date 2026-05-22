@@ -53,10 +53,18 @@
 		                            </a>
 								@endcan
 								@can('delete_staffs')
-		                            <a href="#" class="btn btn-soft-danger btn-icon btn-circle btn-sm confirm-delete" data-href="{{route('staffs.destroy', $staff->id)}}" title="{{ translate('Delete') }}">
-		                                <i class="las la-trash"></i>
-		                            </a>
-								@endcan
+		                            
+
+			                            <form action="{{ route('staffs.destroy', $staff->id) }}"
+	                                      method="POST"
+	                                      class="delete-form">
+	                                    @method('DELETE')
+	                                    @csrf
+	                                    <button type="button" class="btn btn-danger delete-btn">
+	                                        <i class="fas fa-trash-alt"></i>
+	                                    </button>
+	                                </form>
+									@endcan
 	                        </td>
                         </tr>
                     @endif
@@ -70,6 +78,34 @@
 </div>
 
 @endsection
+@section('js')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+           
+
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', function () {
+                        let form = this.closest('form');
+
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: "This action cannot be undone!",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Yes, delete it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.submit();
+                            }
+                        });
+                    });
+                });
+            });
+        </script>
+    @endsection
 
 @section('modal')
     @include('modals.delete_modal')

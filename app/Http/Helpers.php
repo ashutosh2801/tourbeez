@@ -213,6 +213,51 @@ if (! function_exists('getTourExtraDetails')) {
         return null;
     }
 }
+if (! function_exists('getMergedTourExtrasData')) {
+    function getMergedTourExtrasData($order_tour)
+    {
+        $tour_extra = !empty($order_tour->tour_extra)
+            ? json_decode($order_tour->tour_extra)
+            : [];
+
+        // Map for fast lookup
+        $tourExtraMap = collect($tour_extra)->keyBy('tour_extra_id');
+
+        $addons = $order_tour->tour?->addons ?? collect();
+
+        // Step 1: Ensure all tour addons exist (with default qty = 0)
+        $addons = $addons->map(function ($extra) use ($tourExtraMap) {
+
+            $result = $tourExtraMap[$extra->id] ?? null;
+
+            return (object)[
+                'id' => $extra->id,
+                'name' => $extra->name,
+                'price' => $result->price ?? $extra->price,
+                'currency' => $extra->currency,
+                'quantity' => $result->quantity ?? 0,
+            ];
+        });
+
+        // Step 2: Add extras from JSON not present in tour
+        $missingExtras = collect($tour_extra)->filter(function ($item) use ($addons) {
+            return !$addons->contains('id', $item->tour_extra_id);
+        })->map(function ($item) {
+            return (object)[
+                'id' => $item->tour_extra_id,
+                'name' => $item->label ?? 'Custom Extra',
+                'price' => $item->price,
+                'currency' => null,
+                'quantity' => $item->quantity ?? 0,
+            ];
+        });
+
+        // Final merged list
+        $finalExtras = $addons->concat($missingExtras);
+
+        return $finalExtras;
+    }
+}
 
 if (! function_exists('getTourPricingDetails')) {
     function getTourPricingDetails($data, $tour_pricing_id=0)
@@ -726,7 +771,7 @@ if (! function_exists('order_status')) {
                 return '<span class="badge badge-inline badge-pendingCustomer text-yellow-800 bg-red-100 px-2 py-2  rounded-full">Pending customer</span>';
                 break;
             case 5:
-                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-2 py-2  rounded-full">Confirmed</span>';
+                return '<span class="badge badge-inline badge-confirmed text-green-600 bg-green-100 px-2 py-2  rounded-full">Confirmed</span>';
                 break;
             case 6:
                 return '<span class="badge badge-inline badge-cancelled text-red-800 bg-red-100 px-2 py-2  rounded-full">Cancelled</span>';   
@@ -734,8 +779,11 @@ if (! function_exists('order_status')) {
             case 7:
                 return '<span class="badge badge-inline badge-abandoned text-blue-800 bg-blue-100 px-2 py-2  rounded-full">Requires capture</span>';   
                 break; 
+            case 8:
+                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-2 py-2  rounded-full">Trip completed</span>';
+                break;    
             default:
-                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-2 py-2  rounded-full">Not completed</span>';   
+                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-2 py-2  rounded-full">Abandoned</span>';   
                 break;   
         }
     }
@@ -752,6 +800,7 @@ if (! function_exists('order_status_list')) {
             5 => "Confirmed",
             6 => "Cancelled",
             7 => "Requires capture",
+            8 => "Trip completed",
         ];
     }
 }
@@ -1453,6 +1502,176 @@ if (!function_exists('currencyConvertWithoutRound')) {
 
         // return round($converted, 2);
     }
+}
+    if (!function_exists('isOptionalPricing')) {
+        function isOptionalPricing($label) {
+            $label = strtolower($label);
+            return str_contains($label, 'child') || str_contains($label, 'infant');
+        }
+    }
+
+    if (! function_exists('formatActivityValue')) {
+        function formatActivityValue($key, $value)
+        {
+            // ✅ Order Status
+            if ($key == 'order_status') {
+                return order_status_list()[$value] ?? $value;
+            }
+            if (in_array($key, ['created_at', 'updated_at', 'deleted_at'])) {
+                return humanDate(\Carbon\Carbon::parse($value));
+            }
+
+            // ✅ Numeric values
+            if (is_numeric($value)) {
+                return number_format($value, 2);
+            }
+
+
+
+            return $value;
+        }
+    }
+
+    if (! function_exists('formatActivityKey')) {
+        function formatActivityKey($key)
+        {
+            return ucfirst(str_replace('_', ' ', $key));
+        }
+    }
+    if (! function_exists('humanDate')) {
+        function humanDate($date)
+        {
+            if (!$date) return '-';
+
+            return $date->diffForHumans() . ' (' . $date->format('d M Y, h:i A') . ')';
+        }
+    }
+
+        if (!function_exists('activity_models_list')) {
+        function activity_models_list()
+        {
+            return [
+                'App\Models\Addon' => 'Addon',
+                'App\Models\Category' => 'Category',
+                'App\Models\City' => 'City',
+                'App\Models\Collection' => 'Collection',
+                'App\Models\Country' => 'Country',
+                'App\Models\Contact' => 'Contact',
+                'App\Models\Exclusion' => 'Exclusion',
+                'App\Models\EmailTemplate' => 'Email Template',
+                'App\Models\Faq' => 'FAQ',
+                'App\Models\Feature' => 'Feature',
+                'App\Models\Inclusion' => 'Inclusion',
+                'App\Models\Itinerary' => 'Itinerary',
+                'App\Models\Optional' => 'Optional',
+                'App\Models\OptionalTour' => 'Optional Tour',
+                'App\Models\OrderCustomer' => 'Order Customer',
+                'App\Models\OrderPayment' => 'Order Payment',
+                'App\Models\OrderTour' => 'Order Tour',
+                'App\Models\Partner' => 'Partner',
+                'App\Models\PartnerTour' => 'Partner Tour',
+                'App\Models\Pickup' => 'Pickup',
+                'App\Models\PickupLocation' => 'Pickup Location',
+                'App\Models\ScheduleDeleteSlot' => 'Schedule Delete Slot',
+                'App\Models\State' => 'State',
+                'App\Models\SubCategory' => 'Sub Category',
+                'App\Models\TourImage' => 'Tour Image',
+                'App\Models\TourDetail' => 'Tour Detail',
+                'App\Models\Tour' => 'Tour',
+                'App\Models\TourLocation' => 'Tour Location',
+                'App\Models\TourMeta' => 'Tour Meta',
+                'App\Models\TourPricing' => 'Tour Pricing',
+                'App\Models\TourSchedule' => 'Tour Schedule',
+                'App\Models\TourScheduleRepeats' => 'Tour Schedule Repeats',
+                'App\Models\TourSpecialDeposit' => 'Tour Special Deposit',
+                'App\Models\Tourtype' => 'Tour Type',
+                'App\Models\TourUpload' => 'Tour Upload',
+                'App\Models\UserSupplier' => 'User Supplier',
+            ];
+        }
+    }
+
+if (!function_exists('activity_description')) {
+
+    function activity_sentence_full($log)
+    {
+        $user = optional($log->causer)->first_name 
+            ?? optional($log->causer)->name 
+            ?? 'User';
+
+        $model = class_basename($log->subject_type);
+        $subject = $log->subject;
+
+        $properties = $log->properties ? $log->properties->toArray() : [];
+        $attributes = $properties['attributes'] ?? [];
+        $old = $properties['old'] ?? [];
+
+        $orderNumber = $subject->order_number 
+            ?? ($attributes['order_number'] ?? null);
+
+        $id = $subject->id ?? $log->subject_id;
+
+        // 🎯 Action wording (natural English)
+        if ($log->description === 'created') {
+            $sentence = "<span class='user'>{$user}</span> created a new <b>{$model}</b>";
+        } elseif ($log->description === 'updated') {
+            $sentence = "<span class='user'>{$user}</span> made changes to the <b>{$model}</b>";
+        } elseif ($log->description === 'deleted') {
+            $sentence = "<span class='user'>{$user}</span> removed the <b>{$model}</b>";
+        } else {
+            $sentence = "<span class='user'>{$user}</span> performed <b>{$log->description}</b> on <b>{$model}</b>";
+        }
+
+        // 📦 Entity context
+        if ($orderNumber) {
+            $sentence .= " for order <span class='order'>{$orderNumber}</span>";
+        } else {
+            $sentence .= " (ID: {$id})";
+        }
+
+        // 🔥 Changes (human readable)
+        $changes = [];
+
+        foreach ($attributes as $key => $value) {
+
+            if (is_array($value)) continue;
+
+            $oldValue = $old[$key] ?? null;
+
+            if ($oldValue != $value) {
+
+                $label = formatActivityKey($key);
+
+                $newVal = formatActivityValue($key, $value);
+                $oldVal = $oldValue !== null 
+                    ? formatActivityValue($key, $oldValue) 
+                    : null;
+
+                if ($oldValue !== null) {
+                    $changes[] = "{$label} was updated from <span class='old'>{$oldVal}</span> to <span class='new'>{$newVal}</span>";
+                } else {
+                    $changes[] = "{$label} was set to <span class='new'>{$newVal}</span>";
+                }
+            }
+        }
+
+        // ✨ Add changes nicely
+        if (!empty($changes)) {
+
+            $sentence .= ". ";
+
+            $visible = array_slice($changes, 0, 2);
+
+            $sentence .= implode(', ', $visible);
+
+            if (count($changes) > 2) {
+                $sentence .= ", along with other updates";
+            }
+        }
+
+        return $sentence;
+    }
+    
 }
 
 ?>
