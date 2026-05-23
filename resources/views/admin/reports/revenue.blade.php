@@ -69,7 +69,7 @@
             <div class="row">
 
                 {{-- BOOKING DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                <div class="col-xl-4 col-md-4 col-12 position-relative">
                     <div class="form-group">
                         <label class="filter-label">Booking Date</label>
 
@@ -86,7 +86,7 @@
                 </div>
 
                 {{-- TOUR DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                <div class="col-xl-4 col-md-4 col-12 position-relative">
                     <div class="form-group">
                         <label class="filter-label">Fulfilment Date</label>
 
@@ -102,7 +102,8 @@
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                {{-- PRODUCTS --}}
+                <div class="col-xl-4 col-md-4 col-12 position-relative">
                     <div class="form-group">
                         <label class="filter-label">Product</label>
                         <select id="productFilter" name="product" class="form-control"></select>
@@ -110,7 +111,7 @@
                 </div>
 
                 {{-- ORDER STATUS --}}
-                <div class="col-xl-2 col-md-3 col-12">
+                <div class="col-xl-3 col-md-3 col-12">
                     <div class="form-group">
                         <label class="filter-label">Order Status</label>
                         <select name="order_status" class="form-control">
@@ -135,7 +136,7 @@
                 </div>
 
                 {{-- PAY TYPE --}}
-                <div class="col-xl-2 col-md-3 col-12">
+                <div class="col-xl-3 col-md-3 col-12">
                     <div class="form-group">
                         <label class="filter-label">Pay Type</label>
                         <select name="action_type" class="form-control">
@@ -146,7 +147,8 @@
                     </div>
                 </div>
 
-                <div class="col-md-2">
+                {{-- SOURCE --}}
+                <div class="col-xl-3 col-md-3 col-12">
                     <div class="form-group">
                         <label class="filter-label">Source</label>
                         <select name="partner" class="form-control">
@@ -166,7 +168,7 @@
                 </div>
 
                 {{-- BUTTONS --}}
-                <div class="col-xl-2 col-md-2 col-12">
+                <div class="col-xl-3 col-md-3 col-12">
                     <div class="d-flex column-gap-10">
                         <button class="btn btn-apply flex-fill">Apply</button>
                         <a href="{{ route('admin.report.revenue') }}" class="btn btn-secondary flex-fill">Reset</a>

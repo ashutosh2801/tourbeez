@@ -3,28 +3,26 @@
 
 <style>
     .select2-container--default .select2-selection--single {
-    height: 38px !important;
-    border: 1px solid #ced4da;
-    border-radius: 0.375rem;
-    padding: 0 10px;
-}
+        height: 38px !important;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        padding: 0 10px;
+    }
 
-/* FIX placeholder alignment */
-.select2-container--default .select2-selection__rendered {
-    line-height: 38px !important;  /* match height */
-    padding-left: 0 !important;
-    color: #6c757d; /* placeholder color */
-}
+    /* FIX placeholder alignment */
+    .select2-container--default .select2-selection__rendered {
+        line-height: 38px !important;  /* match height */
+        padding-left: 0 !important;
+        color: #6c757d; /* placeholder color */
+    }
 
-/* arrow alignment */
-.select2-container--default .select2-selection__arrow {
-    height: 38px !important;
-}
+    /* arrow alignment */
+    .select2-container--default .select2-selection__arrow {
+        height: 38px !important;
+    }
 </style>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-
-
 
     <div class="card-primary mb-3">
         <div class="card-header reports-head">

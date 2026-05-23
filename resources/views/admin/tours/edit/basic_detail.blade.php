@@ -212,7 +212,7 @@
                                 </div>
                                 <div class="col-xl-6">
                                     <div class="input-group quantity_used @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") hidden @endif">
-                                        <div class="input-group-prepend">++9+
+                                        <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">Quantity used</span>
                                         </div>
                                         <select name="PriceOption[{{ $index }}][qty_used]" id="PriceOption_qty_used" class="form-control mr-2">
