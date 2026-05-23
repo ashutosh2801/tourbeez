@@ -1,4 +1,4 @@
-`<style>
+<style>
     .switch {
         position: relative;
         display: inline-block;
@@ -127,6 +127,7 @@
                             @enderror
                         </div>
                     </div>
+
                     <div class="col-xl-7">
                         <div class="form-group">
                             <label for="slug" class="form-label">Slug *</label>
@@ -138,6 +139,7 @@
                             @enderror
                         </div>
                     </div>
+
                     <div class="col-xl-5">
                         <div class="form-group">
                             <label for="slug" class="form-label">Currency *</label>
@@ -212,7 +214,7 @@
                                 </div>
                                 <div class="col-xl-6">
                                     <div class="input-group quantity_used @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") hidden @endif">
-                                        <div class="input-group-prepend">++9+
+                                        <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">Quantity used</span>
                                         </div>
                                         <select name="PriceOption[{{ $index }}][qty_used]" id="PriceOption_qty_used" class="form-control mr-2">
@@ -226,8 +228,6 @@
                                         @endif
                                     </div>
                                 </div>
-
-
                             </div>
 
                             @if ($index > 0) </div> @endif
@@ -263,6 +263,7 @@
                             <!-- </div> -->
                         </div>
                     </div>
+
                     <div class="col-xl-6">
                         <div class="form-group mb-0">
                             <label for="coupon_type" class="form-label">Discount Type & Value</label>
@@ -299,7 +300,6 @@
                         </div>
                     </div>
 
-
                     <div class="col-xl-6">
                         <div class="form-group">
                             <label for="title" class="form-label">Advertised price *</label>
@@ -314,8 +314,8 @@
                                 <small class="form-text text-danger">{{ $message }}</small>
                             @enderror
                         </div>
-
                     </div>
+
                     <div class="col-xl-6">
                         <div class="form-group">
                             <label for="title" class="form-label">Offer Ends In</label>
@@ -330,9 +330,7 @@
                                 <small class="form-text text-danger">{{ $message }}</small>
                             @enderror
                         </div>
-
                     </div>
-                    
 
                     <div class="col-xl-12">
                         <div class="form-group">
@@ -352,18 +350,15 @@
                                             <span class="input-group-text" id="basic-addon1">Max</span>
                                         </div>
                                         <input type="number" placeholder="Max" name="quantity_max" id="quantity_max" value="{{ old('quantity_max') ?? $data->detail?->quantity_max }}" class="form-control" >
-                                        </div>
                                     </div>
                                 </div>
+                            </div>
                         </div>
                     </div>
                     
-
                     
                     <div class="col-xl-6">
                     </div>
-                    
-
                                                     
                     <div class="col-xl-12">
                         <div class="form-group">
@@ -379,6 +374,7 @@
                             @enderror
                         </div>
                     </div>
+
                     <div class="col-xl-12">
                         <div class="form-group">
                             <label for="tour_type" class="form-label">Tour Types *</label>
@@ -455,6 +451,7 @@
                             @enderror
                         </div>
                     </div>
+
                     <div class="col-xl-12">
                         <div class="form-group">
                             <label for="other_description" class="form-label">Other description</label>
@@ -464,8 +461,6 @@
                             @enderror
                         </div>
                     </div>
-
-
 
                     <div class="col-xl-12">
                         <div class="form-group mb-5">
@@ -499,7 +494,6 @@
                             </button>
                         </div>
                     </div>
-
 
                     <div class="col-xl-12">
                         <div class="form-group mb-4">

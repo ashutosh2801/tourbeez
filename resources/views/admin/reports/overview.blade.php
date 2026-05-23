@@ -3,28 +3,26 @@
 
 <style>
     .select2-container--default .select2-selection--single {
-    height: 38px !important;
-    border: 1px solid #ced4da;
-    border-radius: 0.375rem;
-    padding: 0 10px;
-}
+        height: 38px !important;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        padding: 0 10px;
+    }
 
-/* FIX placeholder alignment */
-.select2-container--default .select2-selection__rendered {
-    line-height: 38px !important;  /* match height */
-    padding-left: 0 !important;
-    color: #6c757d; /* placeholder color */
-}
+    /* FIX placeholder alignment */
+    .select2-container--default .select2-selection__rendered {
+        line-height: 38px !important;  /* match height */
+        padding-left: 0 !important;
+        color: #6c757d; /* placeholder color */
+    }
 
-/* arrow alignment */
-.select2-container--default .select2-selection__arrow {
-    height: 38px !important;
-}
+    /* arrow alignment */
+    .select2-container--default .select2-selection__arrow {
+        height: 38px !important;
+    }
 </style>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-
-
 
     <div class="card-primary mb-3">
         <div class="card-header reports-head">
@@ -39,90 +37,106 @@
             <div class="row">
 
                 {{-- BOOKING DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Booking Date</label>
+                <div class="col-xl-4 col-md-4 col-12 position-relative">
+                    <div class="form-group">
+                        <label class="filter-label">Booking Date</label>
 
-                    <input type="text" id="booking_range" class="form-control"
-                        placeholder="Select date range" autocomplete="off">
+                        <input type="text" id="booking_range" class="form-control"
+                            placeholder="Select date range" autocomplete="off">
 
-                    <!-- @if(request('start_date')) -->
-                        <span class="clear-btn" onclick="clearBooking()">✕</span>
-                    <!-- @endif -->
+                        <!-- @if(request('start_date')) -->
+                            <span class="clear-btn" onclick="clearBooking()">✕</span>
+                        <!-- @endif -->
 
-                    <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
-                    <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
+                        <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
+                        <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
+                    </div>
                 </div>
 
                 {{-- TOUR DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">     Date</label>
+                <div class="col-xl-4 col-md-4 col-12 position-relative">
+                    <div class="form-group">
+                        <label class="filter-label">Date</label>
 
-                    <input type="text" id="tour_range" class="form-control"
-                        placeholder="Select date range" autocomplete="off">
+                        <input type="text" id="tour_range" class="form-control"
+                            placeholder="Select date range" autocomplete="off">
 
-                    <!-- @if(request('tour_start_date')) -->
-                        <span class="clear-btn" onclick="clearTour()">✕</span>
-                    <!-- @endif -->
+                        <!-- @if(request('tour_start_date')) -->
+                            <span class="clear-btn" onclick="clearTour()">✕</span>
+                        <!-- @endif -->
 
-                    <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
-                    <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
+                        <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
+                        <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
+                    </div>
                 </div>
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Products</label>
-                    <select id="productFilter" name="product" class="form-control"></select>
+
+                {{-- PRODUCTS --}}
+                <div class="col-xl-4 col-md-4 col-12 position-relative">
+                    <div class="form-group">
+                        <label class="filter-label">Products</label>
+                        <select id="productFilter" name="product" class="form-control"></select>
+                    </div>
                 </div>
 
                 {{-- ORDER STATUS --}}
-                <div class="col-xl-2 col-md-3 col-12">
-                    <label class="filter-label">Order Status</label>
-                    <select name="order_status" class="form-control">
-                        <option value="">All</option>
-                        @php
-                        $status_with_code = [
-                                    
-                                    3 => 'Pending supplier',
-                                    4 => 'Pending customer',
-                                    5 => 'Confirmed',
-                                    
-                            ];
-                        @endphp
-                        @foreach($status_with_code as $key => $val)
-                            <option value="{{ $key }}"
-                                {{ request('order_status') == $key ? 'selected' : '' }}>
-                                {{ $val }}
-                            </option>
-                        @endforeach
-                    </select>
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
+                        <label class="filter-label">Order Status</label>
+                        <select name="order_status" class="form-control">
+                            <option value="">All</option>
+                            @php
+                            $status_with_code = [
+                                        
+                                        3 => 'Pending supplier',
+                                        4 => 'Pending customer',
+                                        5 => 'Confirmed',
+                                        
+                                ];
+                            @endphp
+                            @foreach($status_with_code as $key => $val)
+                                <option value="{{ $key }}"
+                                    {{ request('order_status') == $key ? 'selected' : '' }}>
+                                    {{ $val }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
                 {{-- PAY TYPE --}}
-                <div class="col-xl-2 col-md-3 col-12">
-                    <label class="filter-label">Pay Type</label>
-                    <select name="action_type" class="form-control">
-                        <option value="">All</option>
-                        <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
-                        <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
-                    </select>
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
+                        <label class="filter-label">Pay Type</label>
+                        <select name="action_type" class="form-control">
+                            <option value="">All</option>
+                            <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
+                            <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-2">
-                    <label class="filter-label">Source</label>
-                    <select name="partner" class="form-control">
-                        <option value="">All</option>
-                        @php
-                        
-                        @foreach($partners as $partner)
-                            <option value="{{ ucfirst($partner->slug) }}"
-                                {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
-                                {{ $partner->name }}
-                            </option>
-                        @endforeach
-                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
-                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
-                    </select>
+
+                {{-- SOURCE --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
+                        <label class="filter-label">Source</label>
+                        <select name="partner" class="form-control">
+                            <option value="">All</option>
+                            @php
+                            
+                            @foreach($partners as $partner)
+                                <option value="{{ ucfirst($partner->slug) }}"
+                                    {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
+                                    {{ $partner->name }}
+                                </option>
+                            @endforeach
+                            <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                            <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                        </select>
+                    </div>
                 </div>
 
                 {{-- BUTTONS --}}
-                <div class="col-xl-2 col-md-3 col-12">
+                <div class="col-xl-3 col-md-3 col-12">
                     <div class="d-flex column-gap-10">
                         <button class="btn btn-apply flex-fill">Apply</button>
                         <a href="{{ route('admin.report.overview') }}" class="btn btn-secondary flex-fill">Reset</a>
@@ -136,8 +150,7 @@
     {{-- STATS --}}
     <div class="report-stats">
         <div class="row">
-
-            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-calendar-check"></i>
@@ -149,7 +162,7 @@
                 </div>
             </div>
 
-            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-dollar-sign"></i>
@@ -161,7 +174,7 @@
                 </div>
             </div>
 
-            <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
                         <i class="fa fa-undo"></i>
@@ -171,14 +184,7 @@
                         <div class="stat-title">Refund</div>
                     </div>
                 </div>
-            </div>
-
-
-
-        </div>
-        <div class="row">
-
-            
+            </div>            
 
             <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
@@ -204,7 +210,6 @@
                 </div>
             </div>
 
-
             <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
@@ -216,8 +221,6 @@
                     </div>
                 </div>
             </div>
-
-
         </div>
     </div>
 
