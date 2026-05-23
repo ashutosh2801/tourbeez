@@ -10074,6 +10074,11 @@ table.dataTable {
     padding: 16px;
 }
 
+.internal-order-body .balance-bar .form-control {
+    background-color: #FFF;
+    border: 1px solid #aeb0b4;
+}
+
 .internal-order-body #totalDue {
     font-size: 24px;
     font-weight: 700;
@@ -11097,6 +11102,16 @@ table.dataTable {
     .table .activity-description {
         max-width: fit-content;
         white-space: nowrap;
+    }
+
+    .tour-table .table td:nth-child(4),
+    .tour-table .table td:nth-child(9) {
+        white-space: nowrap;
+    }
+
+    .tour-table .table td:nth-child(8) {
+        width: 250px;
+        display: flex;
     }
 
 }

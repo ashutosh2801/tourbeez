@@ -123,7 +123,7 @@
                                     <input type="checkbox" name="addToCustomer" id="addToCustomer" />
                                     <label for="addToCustomer">Add to Customer</label>
                                 </div>
-                                <div class="form-row">
+                                <div class="form-row"> 
                                     <div class="form-group col-lg-3 col-md-6">
                                         <label for="customer_first_name">First Name *</label>
                                         <input type="text" name="customer_first_name" id="customer_first_name"
