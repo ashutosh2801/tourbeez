@@ -149,9 +149,6 @@
 
                                     <div class="form-group col-lg-3 col-md-6">
                                         <label for="customer_phone">Phone (with country code) *</label>
-
-
-
                                         <input 
                                             id="customer_phone"
                                             name="customer_phone"
@@ -159,7 +156,6 @@
                                             class="form-control"
                                             
                                         />
-
                                         <!-- Hidden field that stores full E.164 number -->
                                         
 
