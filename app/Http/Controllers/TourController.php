@@ -786,7 +786,10 @@ $pickupHtml .= '</div>';
                             </td>
                             <td class="text-right" width="200">
                                 <div class="input-group">
-                                    <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
+                                <select name="tour_starttime[]" class="form-control tour-time tour_starttime">
+                                <option value="">Select Session</option>
+                                </select>
+                                    // <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                     </div>                       

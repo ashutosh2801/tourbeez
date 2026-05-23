@@ -1216,6 +1216,8 @@ class OrderController extends Controller
                 }
 
                 $total += $total_amount;
+
+               
                 // dd($total);
 
 
@@ -1273,13 +1275,11 @@ class OrderController extends Controller
                     $order_tours->tour_extra        = json_encode($extraDetails);
                     $order_tours->number_of_guests  = $nog;
                     $order_tours->total_amount      = $total;
-                    $orderTour = $order_tours->save();
+                    $order_tours->save();
+                    $orderTour = $order_tours;
                 }
 
-                
-
-
-                if($tour) {
+                 if($tour) {
                     $taxesfees = $tour->taxes_fees;
 
                     $subtotal = 0;
@@ -4593,5 +4593,95 @@ class OrderController extends Controller
         }
 
         return Excel::download(new ManifestExport($sessions, $date), "Manifest_{$date}.xlsx");
+    }
+    public function removeOrderTour(Request $request)
+    {
+        $orderId = $request->order_id;
+        $tourId  = $request->order_tour_id;
+
+        // Validate input
+        if (!$orderId || !$tourId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request data.'
+            ], 422);
+        }
+
+        $order = Order::find($orderId);
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.'
+            ], 404);
+        }
+
+        // Lock rows to prevent race condition
+        $orderTours = OrderTour::where('order_id', $orderId)
+            ->lockForUpdate()
+            ->get();
+
+        if ($orderTours->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tours found for this order.'
+            ], 404);
+        }
+
+        // 🚨 Prevent deleting last tour
+        if ($orderTours->count() <= 1) {
+            return response()->json([
+                'success' => true,
+                'message' => 'At least one tour is required in the order.'
+            ], 200);
+        }
+
+        $orderTour = $orderTours->firstWhere('id', $tourId);
+
+        if (!$orderTour) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order tour not found.'
+            ], 404);
+        }
+
+        // Use transaction for safety
+        \DB::beginTransaction();
+
+        try {
+            // Deduct amount
+            $order->total_amount -= $orderTour->total_amount;
+            $order->balance_amount = max(
+                $order->total_amount - ($order->booked_amount ?? 0),
+                0
+            );
+
+            // Delete
+            $orderTour->delete();
+            $order->save();
+
+            // Log
+            OrderActions::create([
+                'order_id'     => $order->id,
+                'performed_by' => Auth::id(),
+                'notes'        => Auth::user()->name . " removed a tour from order #" . $order->order_number,
+            ]);
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tour removed from order successfully.'
+            ], 200);
+
+        } catch (\Exception $e) {
+
+            \DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong. Please try again.'
+            ], 500);
+        }
     }
 }
