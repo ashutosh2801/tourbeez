@@ -461,7 +461,9 @@ $expectEmails = ['order_pending'];
                             <div class="card-body">                               
                                 
                                 <div id="tour_all">
-                                    @php $count = count( $order->orderTours ); $index=0; @endphp
+                                    @php $count = count( $order->order
+
+                                    Tours ); $index=0; @endphp
                                     @foreach ($order->orderTours as $order_tour)
                                     @php
                                         $row_id = $index++;

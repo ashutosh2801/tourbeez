@@ -3032,12 +3032,14 @@ $pickupHtml .= '</div>';
         $search = $request->get('q');
 
         return Tour::when($search, function ($query) use ($search) {
-                $query->where('title', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhere('unique_code', 'like', "%{$search}%");
+                });
             })
             ->orderBy('title')
-            ->get(['id', 'title']);
+            ->get(['id', 'title', 'unique_code']);
     }
-
 
 
 

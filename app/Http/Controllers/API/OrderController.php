@@ -343,52 +343,44 @@ class OrderController extends Controller
 
         $totalAmount    = $order->total_amount ?? 0;
         $totalPaid      = $paidAmount + $promoCode;
-        $balanceAmount  = max($totalAmount - $totalPaid, 0);   
-        
-        $payment_intent_id = false;
-        if(str_contains( $order->payment_intent_id, 'seti_') && str_contains( $order->payment_method_id, 'pm_')){
-            $payment_intent_id = true;
-        }
-        else if(str_contains( $order->payment_intent_id, 'pi_') && str_contains( $order->payment_method_id, 'pm_')){
-            $payment_intent_id = true;
-        }
+        $balanceAmount  = max($totalAmount - $totalPaid, 0);        
 
         $data = [
-            "order_number"      => $order->order_number,
-            "source"            => $order->source,
-            "currency"          => $order->currency,
-            'payment_status'    => $totalPaid > 0 ? 'paid' : 'unpaid',
-            "total_amount"      => $totalPaid > 0 ? $balanceAmount : $totalAmount,
-            "balance_amount"    => $balanceAmount,
-            "promo_code"        => currencyConvert( $promoCode, $order->currency, 'CAD'),
-            "paid_amount"       => currencyConvert( $paidAmount, $order->currency, 'CAD'),
-            "total_paid"        => currencyConvert( $totalPaid, $order->currency, 'CAD'),
-            'payment_by'        => 'customer',
-            "orderId"           => $order->id,
-            "tourId"            => $order->tour_id,
-            "tourTitle"         => $order->tour?->title,
-            "tourSlug"          => $order->tour?->slug,
-            "tourImage"         => $image,
-            "selectedDate"      => $order->order_tour->tour_date,
-            "selectedTime"      => $order->order_tour->tour_time,
-            "tourPrice"         => currencyConvert( $order->total_amount, $order->currency, 'CAD'),
-            "sessionId"         => $order->session_id ?? strtotime('now'),
-            "userId"            => $order->user_id ?? 0,
-            "minQty"            => $order->tour->detail->quantity_min,
-            "maxQty"            => $order->tour->detail->quantity_max,
-            "tourFees"          => $tourFees,
-            "tourPickups"       => $tourPickups,
-            "customer"          => $customer,
-            "cartItems"         => $cartItems,
-            "cartAdons"         => $cartAdons,
-            "deposite_rule"     => $order->tour->specialDeposit,
-            "action_name"       => $order->action_name,
-            "free_cancellation" => $order->tour->detail->free_cancellation,
-            "exceptional_deal"  => $order->tour->detail->exceptional_deal,
-            "lowest_price"      => $order->tour->detail->lowest_price,
-            "kids_discount"     => $order->tour->detail->kids_discount,
-            "full_refund"       => $order->tour->detail->full_refund,
-            "isAlreadyProfile"  => $payment_intent_id,
+            "order_number"  => $order->order_number,
+            "source"        => $order->source,
+            "currency"      => $order->currency,
+            'payment_status'=> $totalPaid > 0 ? 'paid' : 'unpaid',
+            "total_amount"  => $totalPaid > 0 ? $balanceAmount : $totalAmount,
+            "balance_amount"=> $balanceAmount,
+            "promo_code"    => currencyConvert( $promoCode, $order->currency, 'CAD'),
+            "paid_amount"   => currencyConvert( $paidAmount, $order->currency, 'CAD'),
+            "total_paid"    => currencyConvert( $totalPaid, $order->currency, 'CAD'),
+            'payment_by'    => 'customer',
+            "orderId"       => $order->id,
+            "tourId"        => $order->tour_id,
+            "tourTitle"     => $order->tour?->title,
+            "tourSlug"      => $order->tour?->slug,
+            "tourImage"     => $image,
+            "selectedDate"  => $order->order_tour->tour_date,
+            "selectedTime"  => $order->order_tour->tour_time,
+            "tourPrice"     => currencyConvert( $order->total_amount, $order->currency, 'CAD'),
+            "sessionId"     => $order->session_id ?? strtotime('now'),
+            "userId"        => $order->user_id ?? 0,
+            "minQty"        => $order->tour->detail->quantity_min,
+            "maxQty"        => $order->tour->detail->quantity_max,
+            "tourFees"      => $tourFees,
+            "tourPickups"   => $tourPickups,
+            "customer"      => $customer,
+            "cartItems"     => $cartItems,
+            "cartAdons"     => $cartAdons,
+            "deposite_rule" => $order->tour->specialDeposit,
+            "action_name"   => $order->action_name,
+            "free_cancellation"   => $order->tour->detail->free_cancellation,
+            "exceptional_deal"    => $order->tour->detail->exceptional_deal,
+            "lowest_price"        => $order->tour->detail->lowest_price,
+            "kids_discount"       => $order->tour->detail->kids_discount,
+            "full_refund"         => $order->tour->detail->full_refund,
+
 
 
         ];
@@ -448,8 +440,7 @@ class OrderController extends Controller
             'total_amount'  => $request->tourPrice,
             'action_name'   => $request->btnAction,
             'order_status'  => 1,
-            'created_at'    => date('Y-m-d H:i:s'),
-            'updated_at'    => date('Y-m-d H:i:s'),
+
         ]);
 
         if($order) {
@@ -626,12 +617,6 @@ class OrderController extends Controller
                       ->orWhere('expiry_date', '>=', now()->toDateString());
                 })
                 ->first();
-            if (!$promo) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Invalid promo code.'
-                ], 422);
-            }
             $promo->used_by = $promo->used_by + 1;
             $promo->save();
         }
@@ -679,57 +664,32 @@ class OrderController extends Controller
             $discount   = [];
             $item_total = 0;
 
-            $payment_intent_id = null;
-            if(str_contains( $order->payment_intent_id, 'seti_') && str_contains( $order->payment_method_id, 'pm_')){
-                $payment_intent_id = $order->payment_method_id;
-            }
-            else if(str_contains( $order->payment_intent_id, 'pi_') && str_contains( $order->payment_method_id, 'pm_')){
-                $payment_intent_id = $order->payment_method_id;
-            }
-            else if(str_contains( $order->payment_intent_id, 'seti_')){
-                $payment_intent_id = $order->payment_intent_id;
-            }
-
             // Cart Items
             foreach ($validated['cartItems'] as $item) {
                 $qty            = $item['quantity'] ?? 1;
                 $actual_price   = $item['actual_price'] ?? 0;
                 $price          = $item['price'] ?? 0;
-                $discount_price = $item['discount'] && $item['discount'] > 0 && $payment_intent_id === null ? $item['discount'] : 0;
+                $discount_price = $item['discount'] ?? 0;
                 $total          = $item['total_price'] ?? 0;
                 $item_total     += $total;
                 $quantity       += $qty;
 
-                $id = $item['id'];
-                $label = $item['label'];
-
-                if($request->sub_tour_id){
-                    $subTourPricing = TourPricing::where('tour_id', $request->sub_tour_id)->where('label', $item['label'])?->first();
-                    if( $subTourPricing){
-                        $id    =  $subTourPricing->id;
-                        $label =  $subTourPricing->label;
-                    }
-                    
-                }
-
                 $pricing[] = [
-                    'tour_id'           => $request->sub_tour_id ?? $request->tourId,
-                    'tour_pricing_id'   => $id,
-                    'label'             => $label,
+                    'tour_id'           => $request->tourId,
+                    'tour_pricing_id'   => $item['id'],
+                    'label'             => $item['label'],
                     'price_type'        => $item['price_type'],
                     'quantity'          => $qty,
                     'actual_price'      => $actual_price,
                     'price'             => $price,
                     'discount'          => $discount_price,
                     'total_price'       => $total,
-                ];                
+                ];
                 
-                if($payment_intent_id == null 
-                    && $request->action_name === "book" 
+                if($request->action_name === "book" 
                     && $adv_deposite === "deposit" 
                     && (str_contains($item['label'], 'Adult') || str_contains($item['label'], 'Participant') || str_contains($item['label'], 'Group')) 
-                    && $discount_price > 0
-                ) 
+                    && $discount_price>0) 
                 {
                     $depositRule = TourSpecialDeposit::where('use_deposit', 1)
                                     ->where('tour_id', $tour->id)
@@ -741,13 +701,12 @@ class OrderController extends Controller
                     if ($depositRule->is_discount && $depositRule->charge === 'NONE') {
 
                         $discount[] = [
-                            'tour_id'  => $request->sub_tour_id ?? $request->tourId,
+                            'tour_id'  => $request->tourId,
                             'label'    => 'Discount',
                             'type'     => $depositRule->discount_type,
                             'quantity' => $qty,
                             'discount' => $depositRule->discount_value ?? 0,
                             'price'    => $item['price_type'] === 'FIXED' ? round($discount_price, 2) : round($discount_price * $qty, 2),
-                            'tesing'    => $payment_intent_id .'----'.$order->payment_intent_id,
                         ];
                     }
                 }
@@ -758,7 +717,7 @@ class OrderController extends Controller
                 foreach ($request->cartAdons as $addon) {
                     if (isset($addon['id'], $addon['quantity'], $addon['price'], $addon['total_price'], $addon['label']) && $addon['quantity'] != 0) {
                         $extra[] = [
-                            'tour_id'           => $request->sub_tour_id ?? $request->tourId,
+                            'tour_id'           => $request->tourId,
                             'tour_extra_id'     => $addon['id'],
                             'quantity'          => $addon['quantity'],
                             'label'             => $addon['label'],
@@ -775,7 +734,7 @@ class OrderController extends Controller
                 foreach ($request->cartFees as $fee) {
                     if (isset($fee['id'], $fee['value'], $fee['label'])) {
                         $fees[] = [
-                            'tour_id'           => $request->sub_tour_id ?? $request->tourId,
+                            'tour_id'           => $request->tourId,
                             'tour_taxes_id'     => $fee['id'],
                             'label'             => $fee['label'],
                             'type'              => $fee['type'],
@@ -788,7 +747,7 @@ class OrderController extends Controller
             }
 
             $order_tour_data = [
-                'tour_id'           => $request->sub_tour_id ?? $request->tourId,
+                'tour_id'           => $request->tourId,
                 'order_id'          => $order->id,
                 'tour_date'         => $validated['selectedDate'],
                 'tour_pricing'      => json_encode($pricing ?? []),
@@ -857,7 +816,7 @@ class OrderController extends Controller
             $order->adv_deposite       = $adv_deposite;
             $order->currency           = $request->currency;
             $order->source             = $request->source ? ucwords($request->source) : 'Tourbeez';
-            $order->updated_at         = now();
+            // $order->updated_at         = now();
             $order->save();
             // dd(242);
             $metaData = [
@@ -919,8 +878,6 @@ class OrderController extends Controller
                 }
 
                 if ($request->filled('promo_code')) {
-
-                    $discountAmount = 0;
 
                     switch ($promo->value_type) {
 
@@ -995,8 +952,8 @@ class OrderController extends Controller
                 //print_r($order); exit;
                 if ($chargeAmount > 0) {
                     
-                    $pi = isset($order->payment_intent_id) && !$payment_intent_id ? \Stripe\PaymentIntent::retrieve($order->payment_intent_id) : null;
-                    if(!$pi || ($pi->status !== "requires_capture" && $pi->status !== 'succeeded')) {
+                    $pi = isset($order->payment_intent_id) ? \Stripe\PaymentIntent::retrieve($order->payment_intent_id) : null;
+                    if(!$pi || $pi->status !== "requires_capture" || $pi->status !== 'succeeded') {
                         $pi = \Stripe\PaymentIntent::create([
                             'customer'  => $stripeCustomer->id,
                             'amount' => intval(round($chargeAmount * 100)),
@@ -1048,8 +1005,7 @@ class OrderController extends Controller
 
                             \Log::warning('PaymentIntent uncaptured - ' . $order->order_number . ' - ' . $pi->id);
                             
-                            $order_payment = $order_payment ?? OrderPayment::where('payment_intent_id', $pi->id)->first();
-                            OrderPayment::updateOrCreate(['id' => $order_payment?->id], 
+                            OrderPayment::updateOrCreate(['id' => $order_payment->id], 
                             [
                                 'status'            => 'uncaptured',
                                 'payment_method'    => $cardDetails['type'] ?? null,
@@ -1101,7 +1057,7 @@ class OrderController extends Controller
                 // ✅ Fetch and store card details (if available)
                 try {
                     $pi = isset($order->payment_intent_id) ? \Stripe\PaymentIntent::retrieve($order->payment_intent_id) : null;
-                    if(!$pi || ($pi->status !== "requires_capture" && $pi->status !== 'succeeded')) {
+                    if(!$pi || $pi->status !== "requires_capture" || $pi->status !== 'succeeded') {
                         $pi = \Stripe\PaymentIntent::create([
                             'customer'  => $stripeCustomer->id,
                             'amount' => intval(round($order->total_amount * 100)),
@@ -1147,9 +1103,8 @@ class OrderController extends Controller
                         // Store full card details as JSON if you have a field for it
                         $order->card_info = json_encode($cardDetails);
 
-                        $order_payment = $order_payment ?? OrderPayment::where('payment_intent_id', $pi->id)->first();
                         OrderPayment::updateOrCreate(
-                            ['id' => $order_payment?->id], 
+                            ['id' => $order_payment->id], 
                             [
                                 'status'            => 'uncaptured',
                                 'payment_method'    => $cardDetails['type'] ?? null,
@@ -1298,14 +1253,8 @@ class OrderController extends Controller
 
         $order->balance_amount     = $order->total_amount;
         $order->booked_amount       = 0;
-        $order->updated_at         = now();
+        // $order->updated_at         = now();
         $order->save();
-
-        return response()->json([
-            'status'   => true,
-            'message'  => 'Cart balance updated successfully',
-            'data'     => $order,
-        ], 200);
 
         $order_tour = $order->order_tour;
         $pricing = [];
@@ -1313,15 +1262,6 @@ class OrderController extends Controller
         $item_total = 0;
         $quantity = 0;
         // Cart Items
-
-        $payment_intent_id = null;
-        if(str_contains( $order->payment_intent_id, 'seti_') && str_contains( $order->payment_method_id, 'pm_')){
-            $payment_intent_id = $order->payment_method_id;
-        }
-        else if(str_contains( $order->payment_intent_id, 'pi_') && str_contains( $order->payment_method_id, 'pm_')){
-            $payment_intent_id = $order->payment_method_id;
-        }
-
         foreach (json_decode($order_tour->tour_pricing) as $i => $item) {
             $qty            = $item->quantity ?? 1;
             $price          = $item->price ?? 0;
@@ -1343,7 +1283,7 @@ class OrderController extends Controller
                 'total_price'       => $total,
             ];
             
-            if($i === 0 && $payment_intent_id === null) {
+            if($i === 0) {
                 $depositRule = TourSpecialDeposit::where('use_deposit', 1)
                                 ->where('tour_id', $order_tour->tour_id)
                                 ->first();
@@ -1392,9 +1332,13 @@ class OrderController extends Controller
         if(!empty($discounts)) {
             $order_tour->discount = json_encode($discounts);
         }
-        // $order_tour->save();
+        $order_tour->save();
 
-        
+        return response()->json([
+            'status'   => true,
+            'message'  => 'Cart balance updated successfully',
+            'data'     => $order,
+        ], 200);
     }
 
 
