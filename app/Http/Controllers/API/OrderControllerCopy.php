@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Log;
 use Stripe\Customer;
 use Stripe\Stripe;
 
-class OrderController extends Controller
+class OrderControllerCopy extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -346,10 +346,10 @@ class OrderController extends Controller
         $balanceAmount  = max($totalAmount - $totalPaid, 0);   
         
         $payment_intent_id = false;
-        if(!empty($order->payment_intent_id) && str_contains( $order->payment_intent_id, 'seti_') && str_contains( $order->payment_method_id, 'pm_')){
+        if(str_contains( $order->payment_intent_id, 'seti_') && str_contains( $order->payment_method_id, 'pm_')){
             $payment_intent_id = true;
         }
-        else if(!empty($order->payment_intent_id) && str_contains( $order->payment_intent_id, 'pi_') && str_contains( $order->payment_method_id, 'pm_')){
+        else if(str_contains( $order->payment_intent_id, 'pi_') && str_contains( $order->payment_method_id, 'pm_')){
             $payment_intent_id = true;
         }
 
@@ -569,87 +569,29 @@ class OrderController extends Controller
             ], 401);
     }
 
-    private function savePromo($request) {
-        if ($request->filled('promo_code')) {
-            $promo = Promo::where('code', $request->promo_code)
-                ->where('status', 'ISSUED')
-                ->where(function ($q) {
-                    $q->whereNull('expiry_date')
-                      ->orWhere('expiry_date', '>=', now()->toDateString());
-                })
-                ->first();
-            if (!$promo) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Invalid promo code.'
-                ], 422);
-            }
-            $promo->used_by = $promo->used_by + 1;
-            $promo->save();
-
-            return $promo;  
-        }
-        return null;
-    }
-
-    private function saveCustomer($request, $order, $data) {
-        // Save or update customer
-        $customer = OrderCustomer::where('order_id', $order->id)->first() ?? new OrderCustomer();
-
-        $customer->order_id     = $order->id;
-        $customer->user_id      = $request->userId ?? 0;
-        $customer->first_name   = $data['first_name'];
-        $customer->last_name    = $data['last_name'];
-        $customer->email        = $data['email'];
-        $customer->phone        = $data['phone'];
-        $customer->instructions = isset($data['instructions']) ? $data['instructions'] : '';
-        $customer->pickup_id    = isset($data['pickup_id']) ?  $data['pickup_id'] : 0;
-        $customer->pickup_name  = isset($data['pickup_name']) ? ucwords($data['pickup_name']) : '';          
-        $customer->promo_code   = $request->promo_code;          
-        $customer->save();
-
-        return $customer;
-    }
-
-    private function saveStripeCustomer($request, $order, $data) {
-        if (!$order->stripe_customer_id) {
-            $name = $data['first_name'].' '.$data['last_name'];
-
-            $stripeCustomer = Customer::create([
-                'name'  => $name,
-                'email' => $data['email'],
-                'phone' => $data['phone'],
-            ]);
-        }
-        else {
-            $stripeCustomer = Customer::retrieve($order->stripe_customer_id);
-        }
-        return $stripeCustomer;
-    }
-
     /**
      * Update cart
      */
     public function update_cart(Request $request, $id)
     {
         $validated = $request->validate([
-            'tourId'        => 'required|integer|exists:tours,id',
-            'selectedDate'  => 'required|date_format:Y-m-d',
-            'selectedTime'  => 'nullable',
+            // 'orderId' => 'required|integer|exists:orders,id',
+            'tourId' => 'required|integer|exists:tours,id',
+            'selectedDate' => 'required|date_format:Y-m-d',
+            'selectedTime' => 'nullable',
+            'cartItems' => 'required|array|min:1',
+            'cartItems.*.id' => 'required|integer',
+            'cartItems.*.actual_price' => 'nullable|numeric',
+            'cartItems.*.price' => 'required|numeric',
+            'cartItems.*.discount' => 'nullable|numeric',
+            'cartItems.*.quantity' => 'required|integer|min:1',
+            'cartItems.*.total_price'=> 'required|numeric',
+            'cartItems.*.label' => 'required|string',
+            'cartItems.*.price_type' => 'required|string',
 
-            'cartItems'                 => 'required|array|min:1',
-            'cartItems.*.id'            => 'required|integer',
-            'cartItems.*.actual_price'  => 'nullable|numeric',
-            'cartItems.*.price'         => 'required|numeric',
-            'cartItems.*.discount'      => 'nullable|numeric',
-            'cartItems.*.quantity'      => 'required|integer|min:1',
-            'cartItems.*.total_price'   => 'required|numeric',
-            'cartItems.*.label'         => 'required|string',
-            'cartItems.*.price_type'    => 'required|string',
-
-            'formData.first_name'       => 'required|string|max:255',
-            'formData.last_name'        => 'required|string|max:255',
-            'formData.email'            => 'required|email|max:255',
+            'formData.first_name' => 'required|string|max:255',
+            'formData.last_name'  => 'required|string|max:255',
+            'formData.email'      => 'required|email|max:255',
             'formData.phone'      => 'required|string|max:20',
             'formData.instructions' => 'nullable|string|max:500',
             'formData.pickup_id' => 'nullable|numeric',
@@ -676,18 +618,58 @@ class OrderController extends Controller
             ], 404);
         }
 
+        if ($request->filled('promo_code')) {
+            $promo = Promo::where('code', $request->promo_code)
+                ->where('status', 'ISSUED')
+                ->where(function ($q) {
+                    $q->whereNull('expiry_date')
+                      ->orWhere('expiry_date', '>=', now()->toDateString());
+                })
+                ->first();
+            if (!$promo) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid promo code.'
+                ], 422);
+            }
+            $promo->used_by = $promo->used_by + 1;
+            $promo->save();
+        }
         
         try {
 
             $data = $request->input('formData');
-            $adv_deposite = $data['adv_deposite'] ?? 0;
-            $booking_fee = $data['booking_fee'] ?? 0;            
+
+            // Save or update customer
+            $customer = OrderCustomer::where('order_id', $id)->first() ?? new OrderCustomer();
+            $adv_deposite = $data['adv_deposite'];
+
+            $customer->order_id     = $order->id;
+            $customer->user_id      = $request->userId ?? 0;
+            $customer->first_name   = $data['first_name'];
+            $customer->last_name    = $data['last_name'];
+            $customer->email        = $data['email'];
+            $customer->phone        = $data['phone'];
+            $customer->instructions = isset($data['instructions']) ? $data['instructions'] : '';
+            $customer->pickup_id    = isset($data['pickup_id']) ?  $data['pickup_id'] : 0;
+            $customer->pickup_name  = isset($data['pickup_name']) ? ucwords($data['pickup_name']) : '';          
+            $customer->promo_code   = $request->promo_code;          
+            $customer->save();
 
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
-            $promo = $this->savePromo($request);
-            $customer = $this->saveCustomer($request, $order, $data);
-            $stripeCustomer = $this->saveStripeCustomer($request, $order, $data);            
+            if (!$order->stripe_customer_id) {
+                $name = $data['first_name'].' '.$data['last_name'];
+
+                $stripeCustomer = Customer::create([
+                    'name'  => $name,
+                    'email' => $data['email'],
+                    'phone' => $data['phone'],
+                ]);
+            }
+            else {
+                $stripeCustomer = Customer::retrieve($order->stripe_customer_id);
+            }
 
             // Initialize
             $quantity   = 0;
@@ -698,13 +680,13 @@ class OrderController extends Controller
             $item_total = 0;
 
             $payment_intent_id = null;
-            if(!empty($order->payment_intent_id) && str_contains( $order->payment_intent_id, 'seti_') && str_contains( $order->payment_method_id, 'pm_')){
+            if(str_contains( $order->payment_intent_id, 'seti_') && str_contains( $order->payment_method_id, 'pm_')){
                 $payment_intent_id = $order->payment_method_id;
             }
-            else if(!empty($order->payment_intent_id) && str_contains( $order->payment_intent_id, 'pi_') && str_contains( $order->payment_method_id, 'pm_')){
+            else if(str_contains( $order->payment_intent_id, 'pi_') && str_contains( $order->payment_method_id, 'pm_')){
                 $payment_intent_id = $order->payment_method_id;
             }
-            else if(!empty($order->payment_intent_id) && str_contains( $order->payment_intent_id, 'seti_')){
+            else if(str_contains( $order->payment_intent_id, 'seti_')){
                 $payment_intent_id = $order->payment_intent_id;
             }
 
@@ -744,7 +726,7 @@ class OrderController extends Controller
                         $depositRule = TourSpecialDeposit::where('type', 'global')->first();
                     }
 
-                    if ($depositRule && $depositRule->is_discount && $depositRule->charge === 'NONE') {
+                    if ($depositRule->is_discount && $depositRule->charge === 'NONE') {
 
                         $discount[] = [
                             'tour_id'  => $request->tourId,
@@ -924,7 +906,7 @@ class OrderController extends Controller
                     $chargeAmount = $order->total_amount;
                 }
 
-                if ($request->filled('promo_code') && $promo) {
+                if ($request->filled('promo_code')) {
 
                     $discountAmount = 0;
 
@@ -1035,20 +1017,10 @@ class OrderController extends Controller
                     // Retrieve card details from payment method if available
                     try {
                         $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
-                        if (
-                            !empty($retrievedIntent->payment_method) &&
-                            str_contains($retrievedIntent->payment_method, 'pm_')
-                        ) {
-                            $paymentMethod = \Stripe\PaymentMethod::retrieve(
-                                $retrievedIntent->payment_method
-                            );
-                            $cardDetails = [];
-
-                            if (
-                                isset($paymentMethod->card) &&
-                                $paymentMethod->type === 'card'
-                            ) {
-
+                        if (!empty($retrievedIntent->payment_method)) {
+                            $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                            // return $paymentMethod;
+                            if (isset($paymentMethod->card) && $paymentMethod->type === 'card') {
                                 $cardDetails = [
                                     'type'      => $paymentMethod->type ?? null,
                                     'brand'     => $paymentMethod->card->brand ?? null,
@@ -1057,8 +1029,9 @@ class OrderController extends Controller
                                     'exp_year'  => $paymentMethod->card->exp_year ?? null,
                                 ];
 
-                                $order->card_info = json_encode($cardDetails);
-                                $order->save();
+                                // Optional: store in Order table (if fields exist)
+                                // Store full card details as JSON if you have a field for it
+                                $order->card_info = json_encode($cardDetails); 
                             }
 
                             \Log::warning('PaymentIntent uncaptured - ' . $order->order_number . ' - ' . $pi->id);
@@ -1073,9 +1046,7 @@ class OrderController extends Controller
                                 'card_exp_month'    => $cardDetails['exp_month'] ?? null,
                                 'card_exp_year'     => $cardDetails['exp_year'] ?? null,
                             ]);
-                        } else {
-                            \Log::warning( 'Payment method not attached yet for PI: ' . $retrievedIntent->id );
-                        }                        
+                        }
                     } catch (\Exception $cardError) {
                         \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
                     }
@@ -1147,55 +1118,35 @@ class OrderController extends Controller
                             'response_payload'  => json_encode($pi),
                         ]);
                     }
-                    $cardDetails = [];
                     
                     $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
-                    if (
-                        !empty($retrievedIntent->payment_method) &&
-                        str_contains($retrievedIntent->payment_method, 'pm_')
-                    ) {
+                    $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                    if ($paymentMethod->type === 'card') {
 
-                        $paymentMethod = \Stripe\PaymentMethod::retrieve(
-                            $retrievedIntent->payment_method
-                        );
+                        $cardDetails = [
+                            'type'      => $paymentMethod->type ?? null,
+                            'brand'     => $paymentMethod->card->brand ?? null,
+                            'last4'     => $paymentMethod->card->last4 ?? null,
+                            'exp_month' => $paymentMethod->card->exp_month ?? null,
+                            'exp_year'  => $paymentMethod->card->exp_year ?? null,
+                        ];
 
-                        if (
-                            isset($paymentMethod->card) &&
-                            $paymentMethod->type === 'card'
-                        ) {
+                        // Optional: store in Order table (if fields exist)
+                        // Store full card details as JSON if you have a field for it
+                        $order->card_info = json_encode($cardDetails);
 
-                            $cardDetails = [
-                                'type'      => $paymentMethod->type ?? null,
-                                'brand'     => $paymentMethod->card->brand ?? null,
-                                'last4'     => $paymentMethod->card->last4 ?? null,
-                                'exp_month' => $paymentMethod->card->exp_month ?? null,
-                                'exp_year'  => $paymentMethod->card->exp_year ?? null,
-                            ];
-
-                            $order->card_info = json_encode($cardDetails);
-
-                            $order->save();
-                        }
-
-                    } else {
-
-                        \Log::warning(
-                            'Payment method missing for full payment PI: ' .
-                            $retrievedIntent->id
-                        );
+                        $order_payment = $order_payment ?? OrderPayment::where('payment_intent_id', $pi->id)->first();
+                        OrderPayment::updateOrCreate(
+                            ['id' => $order_payment?->id], 
+                            [
+                                'status'            => 'uncaptured',
+                                'payment_method'    => $cardDetails['type'] ?? null,
+                                'card_brand'        => $cardDetails['brand'] ?? null,
+                                'card_last4'        => $cardDetails['last4'] ?? null,
+                                'card_exp_month'    => $cardDetails['exp_month'] ?? null,
+                                'card_exp_year'     => $cardDetails['exp_year'] ?? null,
+                            ]);
                     }
-
-                    $order_payment = $order_payment ?? OrderPayment::where('payment_intent_id', $pi->id)->first();
-                    OrderPayment::updateOrCreate(
-                        ['id' => $order_payment?->id], 
-                        [
-                            'status'            => 'uncaptured',
-                            'payment_method'    => $cardDetails['type'] ?? null,
-                            'card_brand'        => $cardDetails['brand'] ?? null,
-                            'card_last4'        => $cardDetails['last4'] ?? null,
-                            'card_exp_month'    => $cardDetails['exp_month'] ?? null,
-                            'card_exp_year'     => $cardDetails['exp_year'] ?? null,
-                        ]);
                     
                 } catch (\Exception $cardError) {
                     \Log::warning('Unable to retrieve card details: ' . $cardError->getMessage());
@@ -1231,43 +1182,25 @@ class OrderController extends Controller
                 // 3️⃣ Save PI details on order
                 $order->payment_intent_client_secret = $pi->client_secret;
                 $order->payment_intent_id = $pi->id;
-                $cardDetails = [];
 
                 // 4️⃣ Retrieve payment method details
                 $retrievedIntent = \Stripe\PaymentIntent::retrieve($pi->id);
-                if (
-                    !empty($retrievedIntent->payment_method) &&
-                    str_contains($retrievedIntent->payment_method, 'pm_')
-                ) {
+                        
+                $paymentMethod = \Stripe\PaymentMethod::retrieve($retrievedIntent->payment_method);
+                if ($paymentMethod->type === 'card') {
 
-                    $paymentMethod = \Stripe\PaymentMethod::retrieve(
-                        $retrievedIntent->payment_method
-                    );
+                    $cardDetails = [
+                        'type'      => $paymentMethod->type ?? null,
+                        'brand'     => $paymentMethod->card->brand ?? null,
+                        'last4'     => $paymentMethod->card->last4 ?? null,
+                        'exp_month' => $paymentMethod->card->exp_month ?? null,
+                        'exp_year'  => $paymentMethod->card->exp_year ?? null,
+                    ];
 
-                    if (
-                        isset($paymentMethod->card) &&
-                        $paymentMethod->type === 'card'
-                    ) {
-
-                        $cardDetails = [
-                            'type'      => $paymentMethod->type ?? null,
-                            'brand'     => $paymentMethod->card->brand ?? null,
-                            'last4'     => $paymentMethod->card->last4 ?? null,
-                            'exp_month' => $paymentMethod->card->exp_month ?? null,
-                            'exp_year'  => $paymentMethod->card->exp_year ?? null,
-                        ];
-
-                        $order->card_info = json_encode($cardDetails);
-                        $order->save();
-                    }
-
-                } else {
-
-                    \Log::warning(
-                        'Payment method missing for partial payment PI: ' .
-                        $retrievedIntent->id
-                    );
-                }               
+                    // Optional: store in Order table (if fields exist)
+                    // Store full card details as JSON if you have a field for it
+                    $order->card_info = json_encode($cardDetails);
+                }                
 
                 // 5️⃣ Store payment record
                 OrderPayment::create([
@@ -1289,7 +1222,7 @@ class OrderController extends Controller
                 $order_actions_notes = $customer->name." paid the remaining amount {$chargeAmount}";
             }
 
-            $booking_fee = $data['booking_fee'] ?? 0;
+            $booking_fee = $data['booking_fee'];
             if($booking_fee > 0 && get_setting('price_booking_fee')){
                 $bookingFeeType = get_setting('tour_booking_fee_type'); 
 

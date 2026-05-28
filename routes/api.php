@@ -8,8 +8,8 @@ use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\SupplierController;
 use App\Http\Controllers\API\TourController;
 use App\Http\Controllers\API\WishlistController;
-use App\Http\Controllers\API\PromoController;
 use App\Http\Controllers\EmailController;
+use App\Http\Controllers\PromoController;
 use App\Http\Controllers\VoucherController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -25,8 +25,23 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Route::middleware('api.key')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
+
+// Route::get('/tour-sessions', [OrderController::class, 'getSessionTimes']);
+// Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
+// Route::get('/location-banner', [CommonController::class, 'getLocationBanner']);
+
+Route::get('/test', function () {
+    return 'ok';
+});
+
+// Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
+// Route::get('/tour/{slug}/booking', [TourController::class, 'fetch_booking']);
+// Route::get('/home-listing',[CommonController::class,'home_listing']);
+
 Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
-Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
 
 Route::middleware(['api.key'])->group(function () {
     Route::get('/categories',[CategoryController::class,'index'])->name('categories');
@@ -35,6 +50,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/home-listing',[CommonController::class,'home_listing']);
     Route::get('/popular-cities',[CommonController::class,'popular_cities']);
     Route::get('/popular-destinations',[CommonController::class,'popular_destinations']);
+    Route::get('/destinations',[CommonController::class,'destinations']);
     Route::get('/single-city/{id}',[CommonController::class,'single_city']);
     Route::post('/contact',[CommonController::class,'contact']);
     Route::post('/careers',[CommonController::class,'careers']);
@@ -46,6 +62,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/tour/search', [TourController::class, 'search']);
     Route::get('/tour/{slug}', [TourController::class, 'fetch_one']);
     Route::get('/tour/{slug}/booking', [TourController::class, 'fetch_booking']);
+    Route::get('/tour/{id}/addons', [TourController::class, 'fetch_addons']);
     Route::get('/tour/{id}/deposit-rule', [TourController::class, 'fetch_deposit_rule']);
     Route::get('/sub-tours/{id}/date/{date}', [TourController::class, 'getSubTour']);
     Route::get('/subtours/{id}/date/{date}', [TourController::class, 'fetch_sub_tours']);
@@ -71,6 +88,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::put('/password/update/{id}', [AuthController::class, 'password_update']);
 
+    Route::post('/stripe/webhook', [PaymentController::class, 'handleWebhook']);
     Route::post('/verify-payment', [PaymentController::class, 'verifyPayment']);
     Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
     Route::post('/save-card', [PaymentController::class, 'saveCard']);
@@ -80,9 +98,8 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/fetch_coupon/{coupon}', [PromoController::class, 'fetch_coupon']);
     Route::get('/fetch_voucher/{voucher}', [VoucherController::class, 'fetch_voucher']);
 
-    Route::post('/apply-promo-code', [PromoController::class, 'apply']);
-
 });
+
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/profile/update/{id}', [AuthController::class, 'update']);
