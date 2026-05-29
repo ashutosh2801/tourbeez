@@ -476,7 +476,7 @@ class OrderController extends Controller
                     $quantity   += $qty;
 
                     $pricing[] = [
-                        'tour_id'           => $request->tourId,
+                        'tour_id'           => $request->sub_tour_id ?? $request->tourId,
                         'tour_pricing_id'   => $item['id'],
                         'label'             => $item['label'],
                         'price_type'        => $tour->price_type,
@@ -500,7 +500,7 @@ class OrderController extends Controller
                         $item_total  += $extra_price;
 
                         $extra[] = [
-                            'tour_id'           => $request->tourId,
+                            'tour_id'           => $request->sub_tour_id ?? $request->tourId,
                             'tour_extra_id'     => $addon['id'],
                             'quantity'          => $addon['quantity'],
                             'label'             => $addon['label'],
@@ -522,7 +522,7 @@ class OrderController extends Controller
                         $item_total+= $tax_fee;
 
                         $fees[] = [
-                            'tour_id'           => $request->tourId,
+                            'tour_id'           => $request->sub_tour_id ?? $request->tourId,
                             'tour_taxes_id'     => $fee['id'],
                             'label'             => $fee['label'],
                             'type'              => $type,
