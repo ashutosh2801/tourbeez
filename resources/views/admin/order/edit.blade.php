@@ -461,9 +461,7 @@ $expectEmails = ['order_pending'];
                             <div class="card-body">                               
                                 
                                 <div id="tour_all">
-                                    @php $count = count( $order->order
-
-                                    Tours ); $index=0; @endphp
+                                    @php $count = count( $order->orderTours ); $index=0; @endphp
                                     @foreach ($order->orderTours as $order_tour)
                                     @php
                                         $row_id = $index++;
@@ -478,6 +476,18 @@ $expectEmails = ['order_pending'];
                                         <div class="table-viewport">
                                             <table class="table m-0" style="border:none;">
                                                 <thead>
+                                                    @if($order->sub_tour_id && $order->subTour)
+                                                        <tr>
+                                                            <th colspan="5" class="text-center" style="border:none;">
+                                                                <h4 style="font-size:17px; font-weight:600; margin:0;">
+                                                                {{ $order->tour?->title }}
+                                                                </h4>
+                                                            </th>
+
+                                                        </tr>
+                                                    @endif
+                                                     
+
                                                     <tr>
                                                         <th colspan="5" class="text-center" style="border:none;">
                                                             <h4 style="font-size:17px; font-weight:600; margin:0;">
@@ -486,6 +496,8 @@ $expectEmails = ['order_pending'];
                                                         </th>
                                                     </tr>
                                                 </thead>
+
+
                                                 <tbody>
                                                     <tr id="row_{{ $row_id }}">
                                                         <td style="border:none;">
@@ -761,7 +773,11 @@ $expectEmails = ['order_pending'];
                                                 
                                                 $subtotal2 = $subtotal2;
                                                 $i=1;
-                                                $taxesfees = $order_tour->tour->taxes_fees;
+                                                //$taxesfees = $order_tour->tour->taxes_fees; 
+
+                                                $taxesfees = $order_tour->tour->taxes_fees_resolved;
+
+                                                
                                                 $discounts = $order_tour->tour->discount;
                                                 
                                                 //$subtotal = $subtotal2 - $discount; 
@@ -814,6 +830,8 @@ $expectEmails = ['order_pending'];
                                                 @endif
 
                                                 @if( $taxesfees )
+
+                                                
                                                 @foreach ($taxesfees as $key => $item)  
                                                 @php
                                                 $price      = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);

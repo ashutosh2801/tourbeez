@@ -363,17 +363,17 @@
                     <td>{{ $row['customer_name'] ?? '' }}</td>
                     <td>{{ $row['order_date'] ?? '' }}</td>
                     <td>{{ $row['fulfilment_date'] ?? '' }}</td>
-                    <td>{{ isset($row['customer_total']) ? number_format($row['customer_total'], 2) : '0.00' }}</td>
+                    <td>{{ isset($row['customer_total']) ? number_format_with_currency($row['customer_total'], 2) : '0.00' }}</td>
                     <td>{{ $row['payment_status'] ?? '' }}</td>
                     <td>{{ $row['product_name'] ?? '' }}</td>
 
                     {{-- DYNAMIC ADDONS --}}
                     @foreach($addonKeys as $key)
                         <td>{{ $row[$key.'_desc'] ?? '' }}</td>
-                        <td>{{ $row[$key.'_price'] ?? 0 }}</td>
-                        <td>{{ $row[$key.'_tax'] ?? 0 }}</td>
-                        <td>{{ $row[$key.'_fee'] ?? 0 }}</td>
-                        <td>{{ $row[$key.'_total'] ?? 0 }}</td>
+                        <td>{{ number_format_with_currency($row[$key.'_price'], 2) ?? 0 }}</td>
+                        <td>{{ number_format_with_currency($row[$key.'_tax'], 2) ?? 0 }}</td>
+                        <td>{{ number_format_with_currency($row[$key.'_fee'], 2) ?? 0 }}</td>
+                        <td>{{ number_format_with_currency($row[$key.'_total'], 2) ?? 0 }}</td>
                     @endforeach
 
                 </tr>

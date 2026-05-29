@@ -359,8 +359,12 @@
                         <th>Commission</th>
                         <th>Tax</th>
                         <th>Net Sales</th>
+                        <th>Adult</th>
+                        <th>Child</th>
+                        <th>Infant</th>
+                        <th>Other</th>
 
-                        <th>Pax</th>
+                        <th>Total Pax</th>
                         <th>Product Value</th>
                         <th>Adjustment</th>
                         <th>Extra Value</th>
@@ -404,44 +408,48 @@
                             <td>{{ trim(($order->customer_first_name ?? '') . ' ' . ($order->customer_last_name ?? '')) ?: '-' }}</td>
 
                             {{-- ✅ MONEY (FROM FIXED BACKEND LOGIC) --}}
-                            <td>{{ number_format($order->total_amount_converted, 2) }}</td>
-                            <td>{{ number_format($order->paid_amount_converted, 2) }}</td>
-                            <td>{{ $order->balance_converted > 0 ?number_format($order->balance_converted, 2) : 0 }}</td>
+                            <td>{{ number_format_with_currency($order->total_amount_converted, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->paid_amount_converted, 2) }}</td>
+                            <td>{{ $order->balance_converted > 0 ?number_format_with_currency($order->balance_converted, 2) : 0 }}</td>
 
                             {{-- Fees (keep 0 if not calculated yet) --}}
-                            <td>{{ number_format($order->booking_fee ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->booking_fee ?? 0, 2) }}</td>
                             <td>0</td>
                             <td>0</td>
                             <td>0</td>
                             <td>0</td>
 
                             {{-- Commission & Tax (if added later) --}}
-                            <td>{{ number_format($order->commission ?? 0, 2) }}</td>
-                            <td>{{ number_format($order->tax_converted ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->commission ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->tax_converted ?? 0, 2) }}</td>
 
                             {{-- Net Sales --}}
-                            <td>{{ number_format($order->net_sales_converted ?? $order->total_amount_converted, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->net_sales_converted ?? $order->total_amount_converted, 2) }}</td>
 
                             {{-- Pax --}}
+                            <td>{{ $order->adult }}</td>
+                            <td>{{ $order->child }}</td>
+                            <td>{{ $order->infant }}</td>
+                            <td>{{ $order->other }}</td>
                             <td>{{ $order->pax ?? 0 }}</td>
 
                             {{-- Product Value --}}
-                            <td>{{ number_format($order->product_value_converted, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->product_value_converted, 2) }}</td>
 
-                            <td>{{ number_format($order->discount_value_converted, 2) }}</td> {{-- Adjustment --}}
-                            <td>{{ number_format($order->extra_value_converted, 2) }}</td> {{-- Extra Value --}}
+                            <td>{{ number_format_with_currency($order->discount_value_converted, 2) }}</td> {{-- Adjustment --}}
+                            <td>{{ number_format_with_currency($order->extra_value_converted, 2) }}</td> {{-- Extra Value --}}
 
                             {{-- Promo --}}
-                            <td>{{ number_format($order->promo_amount ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->promo_amount ?? 0, 2) }}</td>
 
                             {{-- Payment Split --}}
-                            <td>{{ number_format($order->card_payment ?? 0, 2) }}</td>
-                            <td>{{ number_format($order->cash_payment ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->card_payment ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->cash_payment ?? 0, 2) }}</td>
 
-                            <td>{{ number_format($order->promo_amount ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->promo_amount ?? 0, 2) }}</td>
 
                             <td>0</td> {{-- Free --}}
-                            <td>{{ number_format($order->refunded ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->refunded ?? 0, 2) }}</td>
 
                             {{-- Status --}}
                             <td>{{ config('constants.payment_status')[$order->payment_status] ?? '-' }}</td>

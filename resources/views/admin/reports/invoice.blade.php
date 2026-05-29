@@ -363,13 +363,13 @@
                         <td>{{ \Carbon\Carbon::parse($row['order_date'])->format('Y-m-d') }}</td>
                         <td>{{ \Carbon\Carbon::parse($row['fulfilment_date'])->format('Y-m-d') }}</td>
 
-                        <td>{{ number_format($row['product_price'], 2) }}</td>
-                        <td>{{ number_format($row['extra_amount'], 2) }}</td>
-                        <td>{{ number_format($row['tax_amount'], 2) }}</td>
-                        <td>{{ number_format($row['booking_fee'], 2) }}</td>
-                        <td>{{ number_format($row['customer_total'], 2) }}</td>
+                        <td>{{ number_format_with_currency($row['product_price'], 2) }}</td>
+                        <td>{{ number_format_with_currency($row['extra_amount'], 2) }}</td>
+                        <td>{{ number_format_with_currency($row['tax_amount'], 2) }}</td>
+                        <td>{{ number_format_with_currency($row['booking_fee'], 2) }}</td>
+                        <td>{{ number_format_with_currency($row['customer_total'], 2) }}</td>
 
-                        <td>{{ $row['total_paid'] }}</td>
+                        <td>{{ number_format_with_currency($row['total_paid'], 2) }}</td>
                         <td>{{ $row['product_name'] }}</td>
                     </tr>
                 @empty

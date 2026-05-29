@@ -598,6 +598,39 @@ public function revenue(Request $request)
         */
         $order->category = $categoryMap[$order->tour_id] ?? '-';
 
+        $adult = 0;
+        $child = 0;
+        $infant = 0;
+        $other = 0;
+
+        foreach ($pricing as $p) {
+            $qty = (int) ($p['quantity'] ?? 0);
+            $label = strtolower($p['label'] ?? '');
+            $priceType = $p['price_type'] ?? '';
+
+            // ✅ FIXED → treat as Adults
+            if ($priceType === 'FIXED') {
+                $adult += $qty;
+                continue;
+            }
+
+            if (str_contains($label, 'adult')) {
+                $adult += $qty;
+            } elseif (str_contains($label, 'child')) {
+                $child += $qty;
+            } elseif (str_contains($label, 'infant')) {
+                $infant += $qty;
+            } else {
+                $other += $qty;
+            }
+        }
+
+        // attach to order
+        $order->adult = $adult;
+        $order->child = $child;
+        $order->infant = $infant;
+        $order->other = $other;
+
         return $order;
     });
 

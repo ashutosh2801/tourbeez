@@ -25,6 +25,7 @@ use Stripe\PaymentIntent;
 use Stripe\SetupIntent;
 use Stripe\Stripe;
 use Stripe\Webhook;
+use Stripe\PaymentMethod;
 use Stripe\Exception\SignatureVerificationException;
 
 class PaymentController extends Controller
@@ -51,17 +52,28 @@ class PaymentController extends Controller
             $secret
         );
 
-        $paymentIntent = $event->data->object;
-
-        // ✅ Metadata
-        $orderId  = $paymentIntent->metadata->orderId ?? null;
-        $orderNum = $paymentIntent->metadata->orderNumber ?? null;
-
         try {
             
+            $eventObject = $event->data->object;
+
+            // ✅ Metadata
+            if ($event->type === 'charge.refunded') {
+                $paymentIntentId = $eventObject->payment_intent ?? null;
+                if ($paymentIntentId) {
+                    $paymentIntent = PaymentIntent::retrieve(
+                        $paymentIntentId
+                    );
+                    $orderId  = $paymentIntent->metadata->orderId ?? null;
+                    $orderNum = $paymentIntent->metadata->orderNumber ?? null;
+                }
+            } else {
+                $orderId  = $eventObject->metadata->orderId ?? null;
+                $orderNum = $eventObject->metadata->orderNumber ?? null;
+            }
+
             $logData['event_id'] = $event->id;
             $logData['event_type'] = $event->type;
-            $logData['payment_intent_id'] = $paymentIntent->id ?? null;
+            $logData['payment_intent_id'] = $eventObject->id ?? null;
 
             if (!$orderId || !$orderNum) {
                 $logData['status'] = 'failed';
@@ -79,81 +91,64 @@ class PaymentController extends Controller
             if (!$order) {
                 $logData['status'] = 'failed';
                 $logData['message'] = 'Order not found';
-                $logData['order_id']= $order->id;
+                $logData['order_id']= $orderId;
                 StripeWebhookLog::create($logData);
 
                 return response()->json(['error' => 'Order not found'], 404);
             }
 
-            // Idempotency check
-            if (
-                $order->transaction_id === $paymentIntent->id &&
-                $order->payment_status == 1
-            ) {
-                $logData['status'] = 'duplicate';
-                $logData['message'] = 'Already processed';
-                $logData['order_id']= $order->id;
-                StripeWebhookLog::create($logData);
-
-                return response()->json(['status' => 'already processed']);
-            }
-
-            // $previousOrderStatus = $order->order_status;
-
             // Handle events
             switch ($event->type) {
+                case 'charge.refunded':
+
+                    $order->failure_message = 'Payment refunded';
+                    $logData['status']  = 'refunded';
+                    $logData['message'] = 'Payment refunded';
+                    break;
+
                 case 'payment_intent.created':
-                    // $order->payment_status = 0;
-                    // $order->order_status   = 1;
 
                     $logData['status'] = 'created';
                     $logData['message'] = 'Payment created';
                     break;
 
                 case 'payment_intent.succeeded':
-                    // $order->payment_status = 1;
-                    // $order->order_status   = 3;
+
+                    $this->saveCardDetails( $eventObject );
 
                     $logData['status'] = 'success';
                     $logData['message'] = 'Payment successful';
                     break;
 
                 case 'payment_intent.payment_failed':
-                    // $order->payment_status  = 0;
-                    // $order->order_status    = 1;
-                    $order->failure_message = $paymentIntent->last_payment_error->message ?? 'Payment failed';
+
+                    $order->failure_message = $eventObject->last_payment_error->message ?? 'Payment failed';
 
                     $logData['status']  = 'failed';
                     $logData['message'] = $order->failure_message;
                     break;
 
                 case 'payment_intent.canceled':
-                    // $order->payment_status = 0;
-                    // $order->order_status   = 6;
 
                     $logData['status']  = 'cancelled';
                     $logData['message'] = 'Payment cancelled';
                     break;
 
                 case 'payment_intent.requires_action':
-                    // $order->payment_status = 3;
-                    // $order->order_status   = 3;
 
                     $logData['status']  = 'requires_action';
                     $logData['message'] = 'Payment requires additional action';
                     break;  
 
                 case 'payment_intent.processing':
-                    // $order->payment_status = 3;
-                    // $order->order_status   = 3;
 
                     $logData['status']  = 'pending';
                     $logData['message'] = 'Payment pending';
                     break;  
                     
                 case 'payment_intent.amount_capturable_updated':
-                    // $order->payment_status = 3; // Not paid yet, but authorized
-                    // $order->order_status   = 3;
+
+                    $this->saveCardDetails( $eventObject );
 
                     $logData['status'] = 'authorized';
                     $logData['message'] = 'Payment authorized, awaiting capture';
@@ -169,13 +164,7 @@ class PaymentController extends Controller
                     return response()->json(['status' => 'ignored']);
             }
 
-            // if($previousOrderStatus == 5){
-            //     $order->order_status   = 5;
-            // }
-
-            // Save order
-            $order->transaction_id = $paymentIntent->id;
-            // $order->stripe_response = json_encode($paymentIntent);
+            $order->transaction_id = $eventObject->id;
             $order->save();
 
             $logData['order_id'] = $order->id;
@@ -189,7 +178,7 @@ class PaymentController extends Controller
 
             $logData['status'] = 'failed';
             $logData['message'] = 'Invalid signature';
-            $logData['order_id'] = $order->id;
+            $logData['order_id'] = $order->id ?? $orderId;
 
             StripeWebhookLog::create($logData);
 
@@ -199,7 +188,7 @@ class PaymentController extends Controller
 
             $logData['status'] = 'error';
             $logData['message'] = $e->getMessage();
-            $logData['order_id'] = $order->id;
+            $logData['order_id'] = $order->id ?? $orderId;
 
             StripeWebhookLog::create($logData);
 
@@ -430,7 +419,7 @@ class PaymentController extends Controller
                     $order_status = $booking->order_status;
                 }
 
-                if (!empty($paymentIntent->payment_method)) {
+                if (isset($paymentIntent) && !empty($paymentIntent->payment_method)) {
 
                     $paymentMethod = \Stripe\PaymentMethod::retrieve(
                         $paymentIntent->payment_method
@@ -463,7 +452,7 @@ class PaymentController extends Controller
                 }
             } catch (\Exception $e) {
                 \Log::warning(
-                    'Card details not saved for PI ' . $paymentIntent->id . ' : ' . $e->getMessage()
+                    'Card details not saved for PI ' . ($paymentIntent->id ?? 'N/A') . ' : ' . $e->getMessage()
                 );
             }
             // ========================================================================
@@ -717,7 +706,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    //this function need name should should change
     public static function sendOrderDetailMail($detail, $action_name = 'book')
     {
         Log::info('sendOrderDetailMail start');
@@ -1254,6 +1242,129 @@ class PaymentController extends Controller
             }
         }
        
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE CARD DETAILS
+    |--------------------------------------------------------------------------
+    */
+
+    private function saveCardDetails($intent)
+    {
+        try {
+
+            if (empty($intent->payment_method)) {
+
+                Log::warning(
+                    'Payment method missing for PI: ' .
+                    $intent->id
+                );
+
+                return;
+            }
+
+            $paymentMethod = PaymentMethod::retrieve(
+                $intent->payment_method
+            );
+
+            if (
+                !isset($paymentMethod->card) ||
+                $paymentMethod->type !== 'card'
+            ) {
+                return;
+            }
+
+            $cardDetails = [
+
+                'type' => $paymentMethod->type ?? null,
+
+                'brand' => $paymentMethod->card->brand ?? null,
+
+                'last4' => $paymentMethod->card->last4 ?? null,
+
+                'exp_month' =>
+                    $paymentMethod->card->exp_month ?? null,
+
+                'exp_year' =>
+                    $paymentMethod->card->exp_year ?? null,
+            ];
+
+            /*
+            |--------------------------------------------------------------------------
+            | FIND ORDER
+            |--------------------------------------------------------------------------
+            */
+
+            $orderPayment = OrderPayment::where(
+                'payment_intent_id',
+                $intent->id
+            )->first();
+
+            if (!$orderPayment) {
+
+                Log::warning(
+                    'OrderPayment not found for PI: ' .
+                    $intent->id
+                );
+
+                return;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE PAYMENT
+            |--------------------------------------------------------------------------
+            */
+
+            $orderPayment->update([
+
+                'payment_method' =>
+                    $cardDetails['type'] ?? null,
+
+                'card_brand' =>
+                    $cardDetails['brand'] ?? null,
+
+                'card_last4' =>
+                    $cardDetails['last4'] ?? null,
+
+                'card_exp_month' =>
+                    $cardDetails['exp_month'] ?? null,
+
+                'card_exp_year' =>
+                    $cardDetails['exp_year'] ?? null,
+
+                // 'status' => 'uncaptured',
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE ORDER
+            |--------------------------------------------------------------------------
+            */
+
+            $order = Order::find($orderPayment->order_id);
+
+            if ($order) {
+
+                $order->card_info =
+                    json_encode($cardDetails);
+
+                $order->save();
+            }
+
+            Log::info(
+                'Card details saved successfully for PI: ' .
+                $intent->id
+            );
+
+        } catch (\Exception $e) {
+
+            Log::error(
+                'Webhook card save error: ' .
+                $e->getMessage()
+            );
+        }
     }
     
 }
