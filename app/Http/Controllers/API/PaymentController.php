@@ -55,6 +55,7 @@ class PaymentController extends Controller
         try {
             
             $eventObject = $event->data->object;
+            Stripe::setApiKey(env('STRIPE_SECRET'));
 
             // ✅ Metadata
             if ($event->type === 'charge.refunded') {
@@ -355,15 +356,6 @@ class PaymentController extends Controller
                             'booking' => [],
                         ]); 
                     }
-                    // else if($booking->order_status === 5) { // For confirmed case, if user try to pay again with same PI, then show order confirmed message instead of order confirmed message.
-                    //     return response()->json(data: [
-                    //         'status'  => 'confirmed',
-                    //         'message' => 'Your order was already confirmed! Please chceck your email for order details.',
-                    //         'booking' => [],
-                    //     ]); 
-                    // }
-                    // Retrieve PaymentIntent
-                    // $payment_status = $paymentIntent->status === 'succeeded' ? 1 : 0;
 
                     if($paymentIntent->status === "requires_capture"){
                         $payment_status = 3;
@@ -382,7 +374,6 @@ class PaymentController extends Controller
                         $payment_method = $paymentIntent->last_payment_error->payment_method->type;
                     }                    
 
-                    //echo '<pre>'; print_r($paymentIntent); exit;
                     $total_amount   = $booking->total_amount;
                     if($paymentIntent->status === 'succeeded' || $paymentIntent->status === 'requires_capture') {
                         $balance_amount = $booking->balance_amount;
@@ -421,7 +412,7 @@ class PaymentController extends Controller
 
                 if (isset($paymentIntent) && !empty($paymentIntent->payment_method)) {
 
-                    $paymentMethod = \Stripe\PaymentMethod::retrieve(
+                    $paymentMethod = PaymentMethod::retrieve(
                         $paymentIntent->payment_method
                     );
 
@@ -430,7 +421,6 @@ class PaymentController extends Controller
                             'payment_intent_id' => $paymentIntent->id,
                         ],
                         [
-                            // 'order_id'          => $booking->id,
                             'payment_intent_id' => $paymentIntent->id,
                             'transaction_id'    => $paymentIntent->latest_charge ?? null,
                             'payment_type'      => strtoupper($paymentMethod->type),
@@ -439,16 +429,12 @@ class PaymentController extends Controller
                             'card_last4'        => $paymentMethod->card->last4 ?? null,
                             'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
                             'card_exp_year'     => $paymentMethod->card->exp_year ?? null,
-                            // 'amount'            => ($paymentIntent->amount / 100), // convert from cents
-                            // 'currency'          => $paymentIntent->currency,
                             'status'            => $paymentIntent->status === 'requires_capture' ? 'uncaptured' : $paymentIntent->status,
                             'action'            => $action_name,
                             'response_payload'  => json_encode($paymentIntent),
                             'collection_date'   => now(),
                         ]
                     );
-                        
-                    // $booking->save();
                 }
             } catch (\Exception $e) {
                 \Log::warning(
@@ -1254,6 +1240,8 @@ class PaymentController extends Controller
     {
         try {
 
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+
             if (empty($intent->payment_method)) {
 
                 Log::warning(
@@ -1276,18 +1264,11 @@ class PaymentController extends Controller
             }
 
             $cardDetails = [
-
                 'type' => $paymentMethod->type ?? null,
-
                 'brand' => $paymentMethod->card->brand ?? null,
-
                 'last4' => $paymentMethod->card->last4 ?? null,
-
-                'exp_month' =>
-                    $paymentMethod->card->exp_month ?? null,
-
-                'exp_year' =>
-                    $paymentMethod->card->exp_year ?? null,
+                'exp_month' => $paymentMethod->card->exp_month ?? null,
+                'exp_year' => $paymentMethod->card->exp_year ?? null,
             ];
 
             /*
@@ -1316,25 +1297,22 @@ class PaymentController extends Controller
             | UPDATE PAYMENT
             |--------------------------------------------------------------------------
             */
+            // 'pending','succeeded','failed','refunded','partial_refunded','uncaptured','reserve','capture_canceled'
+
+            $status = match ($intent->status) {
+                'requires_capture' => 'uncaptured',
+                'succeeded'        => 'succeeded',
+                'canceled'         => 'capture_canceled',
+                default            => $intent->status,
+            };
 
             $orderPayment->update([
-
-                'payment_method' =>
-                    $cardDetails['type'] ?? null,
-
-                'card_brand' =>
-                    $cardDetails['brand'] ?? null,
-
-                'card_last4' =>
-                    $cardDetails['last4'] ?? null,
-
-                'card_exp_month' =>
-                    $cardDetails['exp_month'] ?? null,
-
-                'card_exp_year' =>
-                    $cardDetails['exp_year'] ?? null,
-
-                // 'status' => 'uncaptured',
+                'payment_method' => $cardDetails['type'] ?? null,
+                'card_brand' => $cardDetails['brand'] ?? null,
+                'card_last4' => $cardDetails['last4'] ?? null,
+                'card_exp_month' => $cardDetails['exp_month'] ?? null,
+                'card_exp_year' => $cardDetails['exp_year'] ?? null,
+                'status' => $status,
             ]);
 
             /*
@@ -1346,7 +1324,6 @@ class PaymentController extends Controller
             $order = Order::find($orderPayment->order_id);
 
             if ($order) {
-
                 $order->card_info =
                     json_encode($cardDetails);
 
@@ -1359,7 +1336,6 @@ class PaymentController extends Controller
             );
 
         } catch (\Exception $e) {
-
             Log::error(
                 'Webhook card save error: ' .
                 $e->getMessage()

@@ -525,59 +525,6 @@ class TourController extends Controller
     }
 
     /**
-     * Fetch a single tour.
-     */
-    public function fetch_addons(Request $request, $id)
-    {
-        //$slug = $request->input('slug');
-        $cacheKey = 'tour_detail_' . $id;
-
-        $tour = Cache::remember($cacheKey, 86400, function () use ($id) {
-            return Tour::where('id', $id)
-                ->where('status', 1)
-                ->whereNull('deleted_at')
-                ->with([
-                    'addons',
-                ])
-                ->first();
-        });
-
-        if (!$tour) {
-            return response()->json(['status' => false, 'message' => 'Tour not found'], 404);
-        }         
-
-        $addons = [];
-        foreach ($tour->addons as $addon) {
-            $image      = uploaded_asset($addon->image);
-            $medium_url = str_replace($addon->file_name, $addon->medium_name, $image);
-            $thumb_url  = str_replace($addon->file_name, $addon->thumb_name, $image);
-            if (!empty($tour->currency)) {
-                if($addon->price != 'CAD'){
-                    $addonCurrency = $addon->price ?? 'USD';
-                    $addon->price = currencyConvert($addon->price, $addonCurrency, 'CAD');
-                }
-            }
-            $addons[] = [
-                'id'            => $addon->id,
-                'name'          => $addon->name,
-                'description'   => $addon->description,
-                'price'         => $addon->price,
-                'original_url'  => $image,
-                'medium_url'    => $medium_url,
-                'thumb_url'     => $thumb_url,
-            ];
-        }      
-        
-        if ($tour) {
-            return response()->json([
-                'status' => true,
-                'addons'   => $addons
-            ]);
-        }
-    }
-
-
-    /**
      * Fetch disabled tour dates for a tour.
      */
     private function getDisabledTourDates_fromdb(int $tourId): array
@@ -2050,7 +1997,7 @@ public function single(Request $request)
     $data  = Tour::find($request->id);
     $str = '';
     $subtotal = 0;
-    $orderCurrency = $request->order_currency ?? 'USD';
+    $orderCurrency = $request->order_currency ?? 'CAD';
 
 
     if($data) {
@@ -2173,7 +2120,9 @@ public function single(Request $request)
 
                         <td class="text-right" width="200">
                             <div class="input-group">
-                                <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
+
+                                <select name="tour_starttime[]" class="form-control tour_starttime"><option value="">Select Session</option></select>
+                                <!-- <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> -->
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="fas fa-clock"></i></span>
                                 </div>                       
@@ -2370,6 +2319,8 @@ public function singleCalendar(Request $request)
         'disabled_dates' => $disabled_dates,
     ]);
 }
+
+
 
 
 
