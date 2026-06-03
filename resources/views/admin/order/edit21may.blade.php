@@ -30,9 +30,12 @@
     .highlight {
         animation: fadeHighlight 2s ease;
     }
+
     .text-orange {
         color: #fd7e14;
     }
+
+
     @keyframes fadeHighlight {
         0%   { background-color: #e1a10b; }
         100% { background-color: transparent; }
@@ -46,6 +49,7 @@
         border-radius: 0.25rem;
         font-size: 21px;
     }
+
     /* Payment dropdown styling */
     .dropdown-menu.dropdown-value.payment-details-breakdown--container {
         min-width: 250px;
@@ -54,12 +58,14 @@
         background-color: #ffffff;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
+
     .payment-details-breakdown--item {
         display: flex;
         justify-content: space-between;
         padding: 0.25rem 0;
         font-size: 0.95rem;
     }
+
     /* Order status dropdown */
     .dropdown-menu.dropdown-value {
         min-width: 220px;
@@ -85,9 +91,11 @@
         cursor: pointer;
         width: 100%;
     }
+
     .dropdown-menu.dropdown-value li:hover {
         background-color: #f1f1f1;
     }
+
     .dropdown-menu.dropdown-value i.fa-circle {
         font-size: 10px;
         margin-right: 6px;
@@ -100,20 +108,21 @@
         display: inline-block;
     }
     .order-status label, .order-status .btn-group, .order-balance label, .order-balance .btn-group {
-        display: block; 
-        text-align: center
+        display: block; text-align: center
     }
     .order-status label, .order-balance label {
         margin: 0
     }
     /* Balance dropdown always green */
     .payment-status .btn.dropdown-toggle {
-        border-color: #28a745 !important;
-        color: #28a745 !important;
+    border-color: #28a745 !important;
+    color: #28a745 !important;
     }
     .payment-status .btn.dropdown-toggle:hover {
-        background-color: rgba(40,167,69,0.1);
+    background-color: rgba(40,167,69,0.1);
     }
+
+
     /* Due (red) */
     .payment-status.due .btn.dropdown-toggle {
         border-color: #dc3545 !important;
@@ -122,6 +131,7 @@
     .payment-status.due .btn.dropdown-toggle:hover {
         background-color: rgba(220,53,69,0.1);
     }
+
     /* Order‐status color map */
     .status-NEW           { --status-color: #6c757d; } /* gray */
     .status-ON_HOLD       { --status-color: #ffc107; } /* yellow */
@@ -130,53 +140,55 @@
     .status-CONFIRMED     { --status-color: #28a745; } /* green */
     .status-CANCELLED     { --status-color: #dc3545; } /* red */
     .status-ABANDONED_CART{ --status-color: #343a40; } /* dark */
+
     /* Apply the variable to the button */
     .order-status .btn.dropdown-toggle {
-        border-width: 2px;
-        border-style: solid;
-        border-color: var(--status-color);
-        color: var(--status-color);
-        background-color: #fff;
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--status-color);
+    color: var(--status-color);
+    background-color: #fff;
     }
     .order-status .btn.dropdown-toggle:hover {
-        background-color: rgba(0,0,0,0.03);
+    background-color: rgba(0,0,0,0.03);
     }
     .modal-wide {
         max-width: 70% !important;
         margin: 10px auto !important;   /* center horizontally */
     }
-    .switch {
-        position: relative;
-        display: inline-block;
-        width: 50px;
-        height: 24px;
-    }
-    .switch input { 
-        display:none; 
-    }
-    .slider {
-        position: absolute;
-        cursor: pointer;
-        background-color: #ccc;
-        transition: .4s;
-        border-radius: 24px;
-        top: 0; left: 0; right: 0; bottom: 0;
-    }
-    .slider:before {
-        position: absolute;
-        content: "";
-        height: 18px; width: 18px;
-        left: 3px; bottom: 3px;
-        background-color: white;
-        transition: .4s;
-        border-radius: 50%;
-    }
-    input:checked + .slider {
-        background-color: #28a745;
-    }
-    input:checked + .slider:before {
-        transform: translateX(26px);
-    }
+</style>
+<style>
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+.switch input { display:none; }
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+  top: 0; left: 0; right: 0; bottom: 0;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px; width: 18px;
+  left: 3px; bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: #28a745;
+}
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
 </style>
 @endsection
 
@@ -304,6 +316,7 @@ $expectEmails = ['order_pending'];
                                         </li>
 
                                     @endif
+                                    
 
                                     <!-- Divider -->
                                     <li role="separator" class="divider"></li>
@@ -401,33 +414,44 @@ $expectEmails = ['order_pending'];
             <div class="bs-example">
                 <div class="accordion" id="accordionExample">
                     <div class="card customer-details">
-                        <div class="card-header bg-secondary py-0 d-flex justify-content-between align-items-center" id="headingOne">
-                            <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne">
-                                <i class="fa fa-angle-right"></i> Customer Details
-                            </button>
-                        </div>
+                    <div class="card-header bg-secondary py-0 d-flex justify-content-between align-items-center" id="headingOne">
+                        <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne">
+                            <i class="fa fa-angle-right"></i> Customer Details
+                        </button>
 
-                        <div id="collapseOne" class="collapse show">
-                            <div class="card-body">
-                                <ul class="flex flex-row">
-                                    <li>
-                                        <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}" class="alink" target="_blank">
-                                            <i class="fas fa-user-tie"></i> {{ $order->customer?->name }}
-                                        </a>
-                                    </li>
-                                    <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
-                                    <li>
-                                        <i class="fas fa-phone-square-alt"></i>
-                                        <span>{{ $order->customer?->phone }}</span>
-                                    </li>
+                        
 
-                                    <li>
-                                        <button type="button" class="btn btn-sm btn-primary cus-edit-btn" data-toggle="modal" data-target="#editCustomerModal" data-first_name="{{ $order->customer?->first_name }}" data-last_name="{{ $order->customer?->last_name }}" data-email="{{ $order->customer?->email }}" data-phone="{{ $order->customer?->phone }}">Edit</button>
-                                    </li>
-                                </ul>
-                            </div>
+
+                    </div>
+
+                    <div id="collapseOne" class="collapse show">
+                        <div class="card-body">
+                            <ul class="flex flex-row">
+                                <li>
+                                    <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}" class="alink" target="_blank">
+                                        <i class="fas fa-user-tie"></i> {{ $order->customer?->name }}
+                                    </a>
+                                </li>
+                                <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
+                                <li>
+                                    <i class="fas fa-phone-square-alt"></i>
+                                    <span>{{ $order->customer?->phone }}</span>
+                                </li>
+
+                                <li><button type="button"
+                            class="btn btn-sm btn-primary"
+                            data-toggle="modal"
+                            data-target="#editCustomerModal"
+                            data-first_name="{{ $order->customer?->first_name }}"
+                            data-last_name="{{ $order->customer?->last_name }}"
+                            data-email="{{ $order->customer?->email }}"
+                            data-phone="{{ $order->customer?->phone }}">
+                            Edit
+                        </button></li>
+                            </ul>
                         </div>
                     </div>
+                </div>
 
                     <div class="card tour-details">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
@@ -452,18 +476,6 @@ $expectEmails = ['order_pending'];
                                         <div class="table-viewport">
                                             <table class="table m-0" style="border:none;">
                                                 <thead>
-                                                    @if($order->sub_tour_id && $order->subTour)
-                                                        <tr>
-                                                            <th colspan="5" class="text-center" style="border:none;">
-                                                                <h4 style="font-size:17px; font-weight:600; margin:0;">
-                                                                {{ $order->tour?->title }}
-                                                                </h4>
-                                                            </th>
-
-                                                        </tr>
-                                                    @endif
-                                                     
-
                                                     <tr>
                                                         <th colspan="5" class="text-center" style="border:none;">
                                                             <h4 style="font-size:17px; font-weight:600; margin:0;">
@@ -472,12 +484,11 @@ $expectEmails = ['order_pending'];
                                                         </th>
                                                     </tr>
                                                 </thead>
-
-
                                                 <tbody>
                                                     <tr id="row_{{ $row_id }}">
                                                         <td style="border:none;">
                                                             <div style="background:#f9f9f9; padding:15px; border-radius:10px; display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+
 
                                                                 <div style="flex:1; min-width:200px;">
                                                                     <div class="input-group">
@@ -511,7 +522,7 @@ $expectEmails = ['order_pending'];
 
                                                                 <div style="display:flex; gap:10px;">
                                                                     <button type="button" onClick="addTour()" class="btn btn-success btn-sm px-3" style="border-radius:6px;font-size: 22px;">+</button>
-                                                                    <button type="button" onClick="removeTour('{{ $order_tour->id }}')" class="btn btn-danger btn-sm px-3" style="border-radius:6px;font-size: 22px;">-</button>
+                                                                    <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-danger btn-sm px-3" style="border-radius:6px;font-size: 22px;">-</button>
                                                                 </div>
 
                                                                 <div class="w-100">
@@ -630,7 +641,7 @@ $expectEmails = ['order_pending'];
                                                                 </tbody>
                                                             </table>
                                                         </td>
-                                                        <td>
+                                                        <!-- <td>
                                                             <table class="table">
                                                                 <thead>
                                                                     <tr>
@@ -674,6 +685,68 @@ $expectEmails = ['order_pending'];
                                                                 @endforeach
                                                                 @endif
                                                             </table>
+                                                        </td> -->
+                                                        <td>
+                                                            <table class="table">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <td colspan="2">
+                                                                            <h5 style="font-size:14px; font-weight:600; margin:0;">Optional extras</h5>
+                                                                        </td>
+                                                                    </tr>
+                                                                </thead>
+
+                                                                @if ($order_tour->tour)
+                                                                    @php
+                                                                        // Get merged extras (helper you added)
+                                                                        $addons = getMergedTourExtrasData($order_tour);
+
+                                                                        // Sort: selected (qty > 0) first
+                                                                        $addons = collect($addons)->sortBy(function ($extra) {
+                                                                            return $extra->quantity > 0 ? 0 : 1;
+                                                                        });
+                                                                    @endphp
+
+                                                                    @foreach($addons as $extra)
+                                                                        @php
+                                                                            $price = $extra->price;
+
+                                                                            if ($extra->quantity > 0) {
+                                                                                $subtotal += ($extra->quantity * $price);
+                                                                                $subtotal2 += ($extra->quantity * $price);
+                                                                            } else {
+                                                                                $price = currencyConvertWithoutRound(
+                                                                                    $price,
+                                                                                    $extra->currency,
+                                                                                    $order->currency
+                                                                                );
+                                                                            }
+                                                                        @endphp
+
+                                                                        <tr>
+                                                                            <td width="60">
+                                                                                <input type="hidden" name="tour_extra_id_{{$_tourId}}[]" value="{{ $extra->id }}" />
+
+                                                                                <input type="number"
+                                                                                       name="tour_extra_qty_{{$_tourId}}[]"
+                                                                                       value="{{ $extra->quantity }}"
+                                                                                       style="width:60px"
+                                                                                       min="0"
+                                                                                       class="form-contorl text-center">
+
+                                                                                <input type="hidden"
+                                                                                       name="tour_extra_price_{{$_tourId}}[]"
+                                                                                       value="{{ $price }}" />
+                                                                            </td>
+
+                                                                            <td>
+                                                                                {{ $extra->name }}
+                                                                                ({{ price_with_currency_no_round($price, $order->currency) }})
+                                                                            </td>
+                                                                        </tr>
+                                                                    @endforeach
+                                                                @endif
+                                                            </table>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -686,11 +759,7 @@ $expectEmails = ['order_pending'];
                                                 
                                                 $subtotal2 = $subtotal2;
                                                 $i=1;
-                                                //$taxesfees = $order_tour->tour->taxes_fees; 
-
-                                                $taxesfees = $order_tour->tour->taxes_fees_resolved;
-
-                                                
+                                                $taxesfees = $order_tour->tour->taxes_fees;
                                                 $discounts = $order_tour->tour->discount;
                                                 
                                                 //$subtotal = $subtotal2 - $discount; 
@@ -743,8 +812,6 @@ $expectEmails = ['order_pending'];
                                                 @endif
 
                                                 @if( $taxesfees )
-
-                                                
                                                 @foreach ($taxesfees as $key => $item)  
                                                 @php
                                                 $price      = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
@@ -912,7 +979,7 @@ $expectEmails = ['order_pending'];
                                 @endphp
                             @endforeach
 
-                            <div class="card-total bg-green p-3 row align-items-end">
+                            <div class="card-total bg-green p-3 row align-items-end d-flex justify-content-between">
 
                                  @php
                                         $paid = $order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount');
@@ -1057,7 +1124,7 @@ $expectEmails = ['order_pending'];
                                         @endphp
                                                                                  
                                         <div class="table-responsive">
-                                            <table class="table paymentRow " style="border: 1px solid #dee2e6;">
+                                            <table class="table  " style="border: 1px solid #dee2e6;">
                                                 <tbody>
                                                     @foreach ($order->payments as $payment) 
                                                         <input type="hidden" name="paymentId[]" value="{{ $payment->id }}" />
@@ -1214,6 +1281,9 @@ $expectEmails = ['order_pending'];
                         </div>
                         
                     </div> 
+
+
+                    
 
                     <?php /*
                     <div class="card payment-details">
@@ -1913,65 +1983,70 @@ $expectEmails = ['order_pending'];
     </div>
 </div>
 
+
 <div class="modal fade" id="editCustomerModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
 
             <form id="customerForm">
                 @csrf
+
                 <input type="hidden" name="customer_id" value="{{ $order->customer?->id }}">
                 
+
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Customer</h5>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
 
                 <div class="modal-body">
+
                     <div class="row">
-                        <div class="col-lg-6">
-                            <div class="form-group">
-                                <label>First Name *</label>
-                                <input type="text" name="first_name" id="oc_first_name" class="form-control">
-                                <small class="text-danger d-none" id="error_first_name"></small>
-                            </div>
-                        </div>
 
                         <div class="col-lg-6">
-                            <div class="form-group">
-                                <label>Last Name *</label>
-                                <input type="text" name="last_name" id="oc_last_name" class="form-control">
-                                <small class="text-danger d-none" id="error_last_name"></small>
-                            </div>
-                        </div>
+                    <label>First Name *</label>
+                    <input type="text" name="first_name" id="oc_first_name" class="form-control">
+                    <small class="text-danger d-none" id="error_first_name"></small>
+                </div>
 
-                        <div class="col-lg-12">
-                            <div class="form-group">
-                                <label>Email *</label>
-                                <input type="email" name="email" id="oc_email" class="form-control">
-                                <small class="text-danger d-none" id="error_email"></small>
-                            </div>
-                        </div>
+                <div class="col-lg-6">
+                    <label>Last Name *</label>
+                    <input type="text" name="last_name" id="oc_last_name" class="form-control">
+                    <small class="text-danger d-none" id="error_last_name"></small>
+                </div>
 
-                        <div class="col-lg-12">
-                            <div class="form-group">
-                                <label>Phone *</label>
-                                <input id="oc_phone_intel" type="tel" class="form-control">
-                                <input type="hidden" name="phone" id="oc_phone">
-                                <small class="text-danger d-none" id="error_phone"></small>
-                            </div>
-                        </div>
+                <div class="col-lg-12">
+                    <label>Email *</label>
+                    <input type="email" name="email" id="oc_email" class="form-control">
+                    <small class="text-danger d-none" id="error_email"></small>
+                </div>
+
+                <div class="col-lg-12">
+                    <label>Phone *</label>
+                    <input id="oc_phone_intel" type="tel" class="form-control">
+                    <input type="hidden" name="phone" id="oc_phone">
+                    <small class="text-danger d-none" id="error_phone"></small>
+                </div>
+
                     </div>
+
                     <div id="customer_error" class="text-danger"></div>
+
                 </div>
 
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-success"><i class="fas fa-save mr-2"></i> Save</button>
+                    <button type="submit" class="btn btn-success">Save</button>
                 </div>
+
             </form>
 
         </div>
     </div>
 </div>
+
+
+
+
 
 <!-- GLOBAL REUSABLE LOADER -->
 <div id="globalLoader" 
@@ -3737,19 +3812,15 @@ function refreshCalendarAndSession234234(tourId, count, order_id) {
 }
 
 
-function fetchTourSessions234324(tourId, selectedDate, count, selectedTime =null ) {
-    alert(3242343);
+function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
+    
     showLoader("Loading… Please wait");
 
     // const $row = $("#row_" + count);
 
     const $row = $("#" + count);
 
-    // const $timeField = $row.find(".tour_starttime, select[name='tour_starttime[]']").first();
-
-    const $timeField = $row.find(".tour_starttime").first();
-
-    console.log($timeField);
+    const $timeField = $row.find(".tour_starttime, select[name='tour_starttime[]']").first();
     
     if(!tourId || !selectedDate) return;  
 
@@ -3781,52 +3852,6 @@ function fetchTourSessions234324(tourId, selectedDate, count, selectedTime =null
         },
         error: function(xhr){
             console.error("Failed to fetch sessions:", xhr.responseText);
-        }
-    });
-}
-
-function fetchTourSessions(tourId, selectedDate, count, selectedTime = null) {
-
-    const $row = $("#row_" + count);
-    const $timeField = $row.find(".tour_starttime").first();
-
-    console.log("row:", $row.length);
-    console.log("timeField:", $timeField.length);
-
-    if (!tourId || !selectedDate) return;
-
-    $.ajax({
-        url: "{{ route('admin.tour.sessions') }}",
-        type: "GET",
-        data: { tour_id: tourId, date: selectedDate },
-        dataType: "json",
-        success: function(resp) {
-
-            let options = `<option value="">Select Session</option>`;
-
-            if (resp.data && resp.data.length > 0) {
-                $.each(resp.data, function(i, session) {
-                    options += `<option value="${session}">${session}</option>`;
-                });
-            } else {
-                options = '<option value="">No sessions available</option>';
-            }
-
-            const newSelect = $(`
-                <select name="tour_starttime[]" class="form-control tour_starttime">
-                    ${options}
-                </select>
-            `);
-
-            if ($timeField.length) {
-                $timeField.replaceWith(newSelect);
-            } else {
-                console.warn("Time field not found");
-            }
-
-            if (selectedTime) {
-                newSelect.val(selectedTime);
-            }
         }
     });
 }
@@ -4540,7 +4565,7 @@ $('#editCustomerModal').on('shown.bs.modal', function (e) {
     /* INIT ONLY ONCE */
     if (!iti) {
         iti = window.intlTelInput(phoneInput, {
-            initialCountry: "ca",
+            initialCountry: "auto",
             separateDialCode: true,
             nationalMode: false,
             dropdownContainer: document.body,

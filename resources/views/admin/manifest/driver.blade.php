@@ -277,14 +277,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // =========================
     document.getElementById('prev-week').addEventListener('click', function() {
         let current = new Date(dateInput.value);
-        current.setDate(current.getDate() - 1);
+        current.setDate(current.getDate() - 6);
         dateInput.value = current.toISOString().split('T')[0];
         window.location.href = "?date=" + dateInput.value;
     });
 
     document.getElementById('next-week').addEventListener('click', function() {
         let current = new Date(dateInput.value);
-        current.setDate(current.getDate() + 1);
+        current.setDate(current.getDate() + 6);
         dateInput.value = current.toISOString().split('T')[0];
         window.location.href = "?date=" + dateInput.value;
     });

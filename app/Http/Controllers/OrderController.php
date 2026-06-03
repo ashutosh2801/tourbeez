@@ -58,7 +58,8 @@ class OrderController extends Controller
                 $q->where('order_number', 'like', "%{$search}%")
                   ->orWhereHas('customer', function ($q2) use ($search) {
                       $q2->where('first_name', 'like', "%{$search}%")
-                         ->orWhere('last_name', 'like', "%{$search}%");
+                         ->orWhere('last_name', 'like', "%{$search}%")
+                         ->orWhere('email', 'like', "%{$search}%");
                   });
             });
         }
@@ -1216,6 +1217,8 @@ class OrderController extends Controller
                 }
 
                 $total += $total_amount;
+
+               
                 // dd($total);
 
 
@@ -1273,13 +1276,11 @@ class OrderController extends Controller
                     $order_tours->tour_extra        = json_encode($extraDetails);
                     $order_tours->number_of_guests  = $nog;
                     $order_tours->total_amount      = $total;
-                    $orderTour = $order_tours->save();
+                    $order_tours->save();
+                    $orderTour = $order_tours;
                 }
 
-                
-
-
-                if($tour) {
+                 if($tour) {
                     $taxesfees = $tour->taxes_fees;
 
                     $subtotal = 0;
@@ -2101,7 +2102,9 @@ class OrderController extends Controller
 
                 
                 
-                $paid = $order->total_amount - $order->balance_amount;
+                // $paid = $order->total_amount - $order->balance_amount;
+
+                $paid = $order->payments()->where('status', 'succeeded')->sum('amount');
 
 
                 $promoPayment = $order->payments()->where('collection_type', 'Outside')->where('payment_type', 'PROMO_CODE')->sum('amount');
@@ -2137,7 +2140,8 @@ class OrderController extends Controller
                         </td>
                     </tr>'; 
                 }  
-                if ($order->balance_amount > 0) {
+                $balance_amount = $order->total_amount - $paid; 
+                if ($balance_amount > 0) {
                     // balance amount
                     $TOUR_ITEM_SUMMARY .= '
                     <tr>
@@ -2147,7 +2151,7 @@ class OrderController extends Controller
                             <h3 style="color:red; margin:0; font-size:15px"><strong>Balance</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($order->balance_amount, $order->currency) . '</strong></h3>
+                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($balance_amount, $order->currency) . '</strong></h3>
                         </td>
                     </tr>'; 
                 }  
@@ -2173,7 +2177,7 @@ class OrderController extends Controller
 
             $to_address = $tour->location->destination ?? '';
             $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
-            $order_paid = $order->total_amount - $order->balance_amount;
+            $order_paid = $order->total_amount - $balance_amount;
 
             $token = encrypt($order->id);
 
@@ -2211,8 +2215,10 @@ class OrderController extends Controller
                 "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($orderTour->tour_date)),
                 "[[ORDER_TOUR_TIME]]"       => $orderTour->tour_time,
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
-                "[[ORDER_BALANCE]]"         => ($order->payment_status === 3) ? price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) : price_format_with_currency($order->balance_amount, $order->currency),
-                "[[ORDER_BALANCE_COLOR]]"   => (abs($order->payment_status === 3? $order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'): $order->balance_amount) < 0.01) ? '008000' : 'f64747',
+                // "[[ORDER_BALANCE]]"         => ($order->payment_status === 3) ? price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) : price_format_with_currency($order->balance_amount, $order->currency),
+                "[[ORDER_BALANCE]]"         => price_format_with_currency($balance_amount, $order->currency),
+                // "[[ORDER_BALANCE_COLOR]]"   => (abs($order->payment_status === 3? $order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'): $order->balance_amount) < 0.01) ? '008000' : 'f64747',
+                "[[ORDER_BALANCE_COLOR]]"   => ($balance_amount < 0.01) ? '008000' : 'f64747',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
                 "[[YEAR]]"                  => date('Y'),
@@ -4593,5 +4599,95 @@ class OrderController extends Controller
         }
 
         return Excel::download(new ManifestExport($sessions, $date), "Manifest_{$date}.xlsx");
+    }
+    public function removeOrderTour(Request $request)
+    {
+        $orderId = $request->order_id;
+        $tourId  = $request->order_tour_id;
+
+        // Validate input
+        if (!$orderId || !$tourId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request data.'
+            ], 422);
+        }
+
+        $order = Order::find($orderId);
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.'
+            ], 404);
+        }
+
+        // Lock rows to prevent race condition
+        $orderTours = OrderTour::where('order_id', $orderId)
+            ->lockForUpdate()
+            ->get();
+
+        if ($orderTours->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tours found for this order.'
+            ], 404);
+        }
+
+        // 🚨 Prevent deleting last tour
+        if ($orderTours->count() <= 1) {
+            return response()->json([
+                'success' => true,
+                'message' => 'At least one tour is required in the order.'
+            ], 200);
+        }
+
+        $orderTour = $orderTours->firstWhere('id', $tourId);
+
+        if (!$orderTour) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order tour not found.'
+            ], 404);
+        }
+
+        // Use transaction for safety
+        \DB::beginTransaction();
+
+        try {
+            // Deduct amount
+            $order->total_amount -= $orderTour->total_amount;
+            $order->balance_amount = max(
+                $order->total_amount - ($order->booked_amount ?? 0),
+                0
+            );
+
+            // Delete
+            $orderTour->delete();
+            $order->save();
+
+            // Log
+            OrderActions::create([
+                'order_id'     => $order->id,
+                'performed_by' => Auth::id(),
+                'notes'        => Auth::user()->name . " removed a tour from order #" . $order->order_number,
+            ]);
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tour removed from order successfully.'
+            ], 200);
+
+        } catch (\Exception $e) {
+
+            \DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong. Please try again.'
+            ], 500);
+        }
     }
 }

@@ -21,19 +21,53 @@ class CustomerExport implements FromCollection, WithHeadings
         $excludedStatuses = [1, 2, 6, 7];
         $request = $this->request;
 
-        $startDate = $request->start_date
-            ? Carbon::parse($request->start_date)->startOfDay()
-            : Carbon::today()->startOfDay();
+       
+        $hasFilter = $request->filled('booking_date')
+            || $request->filled('tour_date')
+            || $request->filled('product')
+            || $request->filled('order_status')
+            || $request->filled('payment_status')
+            || $request->filled('partner')
+            || $request->filled('action_type');
 
-        $endDate = $request->end_date
-            ? Carbon::parse($request->end_date)->endOfDay()
-            : Carbon::today()->endOfDay();
+            /*
+            |--------------------------------------------------------------------------
+            | DEFAULT BOOKING DATE (LAST 7 DAYS)
+            |--------------------------------------------------------------------------
+            */
+            if (!$hasFilter) {
+                return collect();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | PARSE BOOKING DATE
+            |--------------------------------------------------------------------------
+            */
+            $startDate = null;
+            $endDate = null;
+
+            if ($request->filled('booking_date')) {
+                try {
+                    [$start, $end] = explode(' - ', $request->booking_date);
+
+                    $startDate = Carbon::parse($start)->startOfDay();
+                    $endDate   = Carbon::parse($end)->endOfDay();
+                } catch (\Exception $e) {}
+            }
 
         $query = DB::table('orders')
             ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
             ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
-            ->whereNotIn('orders.order_status', $excludedStatuses)
-            ->whereBetween('orders.created_at', [$startDate, $endDate])->groupBy('orders.id');
+            ->whereNull('orders.deleted_at')
+            ->whereNotIn('orders.order_status', $excludedStatuses)->groupBy('orders.id');
+
+
+
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('orders.created_at', [$startDate, $endDate]);
+        }
 
         if ($product = $request->input('product')) {
             $query->where('order_tours.tour_id', $product);
@@ -62,7 +96,7 @@ class CustomerExport implements FromCollection, WithHeadings
                 $request->tour_end_date,
             ]);
         }
-        $data = $query->get();
+        $data = $query->orderByDesc('orders.id')->get();
 
         return $data->map(function ($c) {
             return [

@@ -21,39 +21,92 @@ class RevenueExport implements FromCollection, WithHeadings
     $excludedStatuses = [1, 2, 6, 7];
     $request = $this->request;
 
-    $startDate = $request->start_date
-        ? Carbon::parse($request->start_date)->startOfDay()
-        : Carbon::today()->startOfDay();
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK IF ANY FILTER IS APPLIED
+    |--------------------------------------------------------------------------
+    */
+    $hasFilter = $request->filled('booking_date')
+        || $request->filled('tour_date')
+        || $request->filled('product')
+        || $request->filled('order_status')
+        || $request->filled('payment_status')
+        || $request->filled('partner')
+        || $request->filled('action_type');
 
-    $endDate = $request->end_date
-        ? Carbon::parse($request->end_date)->endOfDay()
-        : Carbon::today()->endOfDay();
+    /*
+    |--------------------------------------------------------------------------
+    | DEFAULT BOOKING DATE (LAST 7 DAYS)
+    |--------------------------------------------------------------------------
+    */
+    if (!$hasFilter) {
+        return collect();
+    }
 
+    /*
+    |--------------------------------------------------------------------------
+    | PARSE BOOKING DATE
+    |--------------------------------------------------------------------------
+    */
+    $startDate = null;
+    $endDate = null;
+
+    if ($request->filled('booking_date')) {
+        try {
+            [$start, $end] = explode(' - ', $request->booking_date);
+
+            $startDate = Carbon::parse($start)->startOfDay();
+            $endDate   = Carbon::parse($end)->endOfDay();
+        } catch (\Exception $e) {}
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | BASE QUERY
+    |--------------------------------------------------------------------------
+    */
     $query = DB::table('orders')
         ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
         ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
         ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
         ->whereNull('orders.deleted_at')
         ->whereNotIn('orders.order_status', $excludedStatuses)
-        ->whereBetween('orders.created_at', [$startDate, $endDate])->groupBy('orders.id');
-        
+        ->groupBy('orders.id');
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | APPLY FILTERS
+    |--------------------------------------------------------------------------
+    */
+
+    // ✅ Booking Date
+    if ($startDate && $endDate) {
+        $query->whereBetween('orders.created_at', [$startDate, $endDate]);
+    }
+
+    // ✅ Product
     if ($product = $request->input('product')) {
         $query->where('order_tours.tour_id', $product);
     }
 
-    // Filters
+    // ✅ Order Status
     if ($request->filled('order_status')) {
         $query->where('orders.order_status', $request->order_status);
     }
 
+    // ✅ Payment Status
     if ($request->filled('payment_status')) {
         $query->where('orders.payment_status', $request->payment_status);
     }
 
+    // ✅ Partner
     if ($request->filled('partner')) {
         $query->where('orders.source', $request->partner);
     }
 
+    // ✅ Pay Type
     if ($request->action_type === 'pay_now') {
         $query->where('orders.action_name', 'book');
     } elseif ($request->action_type === 'pay_later') {
@@ -63,11 +116,13 @@ class RevenueExport implements FromCollection, WithHeadings
         });
     }
 
-    if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
-        $query->whereBetween('order_tours.tour_date', [
-            $request->tour_start_date,
-            $request->tour_end_date,
-        ]);
+    // ✅ Tour Date
+    if ($request->filled('tour_date')) {
+        try {
+            [$start, $end] = explode(' - ', $request->tour_date);
+
+            $query->whereBetween('order_tours.tour_date', [$start, $end]);
+        } catch (\Exception $e) {}
     }
 
     $orders = $query->select(
@@ -154,6 +209,33 @@ class RevenueExport implements FromCollection, WithHeadings
             }
         }
 
+        $adult = 0;
+        $child = 0;
+        $infant = 0;
+        $other = 0;
+
+        foreach ($pricing as $p) {
+            $qty = (int) ($p['quantity'] ?? 0);
+            $label = strtolower($p['label'] ?? '');
+            $priceType = $p['price_type'] ?? '';
+
+            // ✅ FIXED → treat as Adults
+            if ($priceType === 'FIXED') {
+                $adult += $qty;
+                continue;
+            }
+
+            if (str_contains($label, 'adult')) {
+                $adult += $qty;
+            } elseif (str_contains($label, 'child')) {
+                $child += $qty;
+            } elseif (str_contains($label, 'infant')) {
+                $infant += $qty;
+            } else {
+                $other += $qty;
+            }
+        }
+
         $subtotal2 += $productValue;
 
         // ✅ Extras
@@ -226,9 +308,9 @@ class RevenueExport implements FromCollection, WithHeadings
 
             trim(($order->first_name ?? '') . ' ' . ($order->last_name ?? '')),
 
-            $totalCAD,
-            $paidCAD,
-            $balanceCAD,
+            number_format_with_currency($totalCAD, 2),
+            number_format_with_currency($paidCAD, 2),
+            number_format_with_currency($balanceCAD, 2),
 
             0,
             0,
@@ -237,20 +319,25 @@ class RevenueExport implements FromCollection, WithHeadings
             0,
 
             0, // commission (not calculated yet)
-            $taxCAD,
+            number_format_with_currency($taxCAD, 2),
 
-            $totalCAD - $taxCAD,
+            number_format_with_currency($totalCAD - $taxCAD, 2),
+
+            $adult,
+            $child,
+            $infant,
+            $other,
 
             $order->pax,
-            $productCAD,
+            number_format_with_currency($productCAD, 2),
             0,
-            $extraCAD,
+            number_format_with_currency($extraCAD, 2),
 
-            $discountCAD,
+            number_format_with_currency($discountCAD, 2),
 
             0,
             0,
-            $discountCAD,
+            number_format_with_currency($discountCAD, 2),
 
             0,
             0,
@@ -297,6 +384,11 @@ class RevenueExport implements FromCollection, WithHeadings
             'Tax',
             'Net Sales',
 
+
+            'Adult',
+            'Child',
+            'Infant',
+            'Other',
             'Pax',
             'Product Value',
             'Adjustment',

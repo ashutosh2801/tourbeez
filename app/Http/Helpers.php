@@ -1591,87 +1591,94 @@ if (!function_exists('currencyConvertWithoutRound')) {
         }
     }
 
-if (!function_exists('activity_description')) {
+    if (!function_exists('activity_description')) {
 
-    function activity_sentence_full($log)
-    {
-        $user = optional($log->causer)->first_name 
-            ?? optional($log->causer)->name 
-            ?? 'User';
+        function activity_sentence_full($log)
+        {
+            $user = optional($log->causer)->first_name 
+                ?? optional($log->causer)->name 
+                ?? 'User';
 
-        $model = class_basename($log->subject_type);
-        $subject = $log->subject;
+            $model = class_basename($log->subject_type);
+            $subject = $log->subject;
 
-        $properties = $log->properties ? $log->properties->toArray() : [];
-        $attributes = $properties['attributes'] ?? [];
-        $old = $properties['old'] ?? [];
+            $properties = $log->properties ? $log->properties->toArray() : [];
+            $attributes = $properties['attributes'] ?? [];
+            $old = $properties['old'] ?? [];
 
-        $orderNumber = $subject->order_number 
-            ?? ($attributes['order_number'] ?? null);
+            $orderNumber = $subject->order_number 
+                ?? ($attributes['order_number'] ?? null);
 
-        $id = $subject->id ?? $log->subject_id;
+            $id = $subject->id ?? $log->subject_id;
 
-        // 🎯 Action wording (natural English)
-        if ($log->description === 'created') {
-            $sentence = "<span class='user'>{$user}</span> created a new <b>{$model}</b>";
-        } elseif ($log->description === 'updated') {
-            $sentence = "<span class='user'>{$user}</span> made changes to the <b>{$model}</b>";
-        } elseif ($log->description === 'deleted') {
-            $sentence = "<span class='user'>{$user}</span> removed the <b>{$model}</b>";
-        } else {
-            $sentence = "<span class='user'>{$user}</span> performed <b>{$log->description}</b> on <b>{$model}</b>";
-        }
+            // 🎯 Action wording (natural English)
+            if ($log->description === 'created') {
+                $sentence = "<span class='user'>{$user}</span> created a new <b>{$model}</b>";
+            } elseif ($log->description === 'updated') {
+                $sentence = "<span class='user'>{$user}</span> made changes to the <b>{$model}</b>";
+            } elseif ($log->description === 'deleted') {
+                $sentence = "<span class='user'>{$user}</span> removed the <b>{$model}</b>";
+            } else {
+                $sentence = "<span class='user'>{$user}</span> performed <b>{$log->description}</b> on <b>{$model}</b>";
+            }
 
-        // 📦 Entity context
-        if ($orderNumber) {
-            $sentence .= " for order <span class='order'>{$orderNumber}</span>";
-        } else {
-            $sentence .= " (ID: {$id})";
-        }
+            // 📦 Entity context
+            if ($orderNumber) {
+                $sentence .= " for order <span class='order'>{$orderNumber}</span>";
+            } else {
+                $sentence .= " (ID: {$id})";
+            }
 
-        // 🔥 Changes (human readable)
-        $changes = [];
+            // 🔥 Changes (human readable)
+            $changes = [];
 
-        foreach ($attributes as $key => $value) {
+            foreach ($attributes as $key => $value) {
 
-            if (is_array($value)) continue;
+                if (is_array($value)) continue;
 
-            $oldValue = $old[$key] ?? null;
+                $oldValue = $old[$key] ?? null;
 
-            if ($oldValue != $value) {
+                if ($oldValue != $value) {
 
-                $label = formatActivityKey($key);
+                    $label = formatActivityKey($key);
 
-                $newVal = formatActivityValue($key, $value);
-                $oldVal = $oldValue !== null 
-                    ? formatActivityValue($key, $oldValue) 
-                    : null;
+                    $newVal = formatActivityValue($key, $value);
+                    $oldVal = $oldValue !== null 
+                        ? formatActivityValue($key, $oldValue) 
+                        : null;
 
-                if ($oldValue !== null) {
-                    $changes[] = "{$label} was updated from <span class='old'>{$oldVal}</span> to <span class='new'>{$newVal}</span>";
-                } else {
-                    $changes[] = "{$label} was set to <span class='new'>{$newVal}</span>";
+                    if ($oldValue !== null) {
+                        $changes[] = "{$label} was updated from <span class='old'>{$oldVal}</span> to <span class='new'>{$newVal}</span>";
+                    } else {
+                        $changes[] = "{$label} was set to <span class='new'>{$newVal}</span>";
+                    }
                 }
             }
-        }
 
-        // ✨ Add changes nicely
-        if (!empty($changes)) {
+            // ✨ Add changes nicely
+            if (!empty($changes)) {
 
-            $sentence .= ". ";
+                $sentence .= ". ";
 
-            $visible = array_slice($changes, 0, 2);
+                $visible = array_slice($changes, 0, 2);
 
-            $sentence .= implode(', ', $visible);
+                $sentence .= implode(', ', $visible);
 
-            if (count($changes) > 2) {
-                $sentence .= ", along with other updates";
+                if (count($changes) > 2) {
+                    $sentence .= ", along with other updates";
+                }
             }
-        }
 
-        return $sentence;
+            return $sentence;
+        }
+        
     }
-    
-}
+
+    if (!function_exists('number_format_with_currency')){
+        function number_format_with_currency($amount)
+        {
+            return 'C$ ' . number_format((float)$amount, 2);
+        }
+    }
 
 ?>

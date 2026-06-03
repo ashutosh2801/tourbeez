@@ -130,7 +130,7 @@ class CommonController extends Controller
                 ->where('p.post_status', 'publish')
                 ->distinct()
                 ->orderBy('p.post_date', 'desc')
-                ->limit(25)
+                ->limit(8)
                 ->get();
         });
 
@@ -675,9 +675,7 @@ class CommonController extends Controller
         // Send email using mailable and template
        
         return response()->json(['message' => 'Message sent successfully.']);
-    }
-
-    
+    }  
 
     public function getLocationBanner(Request $request){
 
@@ -687,6 +685,5 @@ class CommonController extends Controller
             return Banner::first();
         }
     }
-
     
 }
