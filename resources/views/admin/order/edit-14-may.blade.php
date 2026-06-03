@@ -476,18 +476,6 @@ $expectEmails = ['order_pending'];
                                         <div class="table-viewport">
                                             <table class="table m-0" style="border:none;">
                                                 <thead>
-                                                    @if($order->sub_tour_id && $order->subTour)
-                                                        <tr>
-                                                            <th colspan="5" class="text-center" style="border:none;">
-                                                                <h4 style="font-size:17px; font-weight:600; margin:0;">
-                                                                {{ $order->tour?->title }}
-                                                                </h4>
-                                                            </th>
-
-                                                        </tr>
-                                                    @endif
-                                                     
-
                                                     <tr>
                                                         <th colspan="5" class="text-center" style="border:none;">
                                                             <h4 style="font-size:17px; font-weight:600; margin:0;">
@@ -496,8 +484,6 @@ $expectEmails = ['order_pending'];
                                                         </th>
                                                     </tr>
                                                 </thead>
-
-
                                                 <tbody>
                                                     <tr id="row_{{ $row_id }}">
                                                         <td style="border:none;">
@@ -536,7 +522,7 @@ $expectEmails = ['order_pending'];
 
                                                                 <div style="display:flex; gap:10px;">
                                                                     <button type="button" onClick="addTour()" class="btn btn-success btn-sm px-3" style="border-radius:6px;font-size: 22px;">+</button>
-                                                                    <button type="button" onClick="removeTour('{{ $order_tour->id }}')" class="btn btn-danger btn-sm px-3" style="border-radius:6px;font-size: 22px;">-</button>
+                                                                    <button type="button" onClick="removeTour('{{ $row_id }}')" class="btn btn-danger btn-sm px-3" style="border-radius:6px;font-size: 22px;">-</button>
                                                                 </div>
 
                                                                 <div class="w-100">
@@ -773,11 +759,7 @@ $expectEmails = ['order_pending'];
                                                 
                                                 $subtotal2 = $subtotal2;
                                                 $i=1;
-                                                //$taxesfees = $order_tour->tour->taxes_fees; 
-
-                                                $taxesfees = $order_tour->tour->taxes_fees_resolved;
-
-                                                
+                                                $taxesfees = $order_tour->tour->taxes_fees;
                                                 $discounts = $order_tour->tour->discount;
                                                 
                                                 //$subtotal = $subtotal2 - $discount; 
@@ -830,8 +812,6 @@ $expectEmails = ['order_pending'];
                                                 @endif
 
                                                 @if( $taxesfees )
-
-                                                
                                                 @foreach ($taxesfees as $key => $item)  
                                                 @php
                                                 $price      = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
@@ -3832,19 +3812,15 @@ function refreshCalendarAndSession234234(tourId, count, order_id) {
 }
 
 
-function fetchTourSessions234324(tourId, selectedDate, count, selectedTime =null ) {
-    alert(3242343);
+function fetchTourSessions(tourId, selectedDate, count, selectedTime =null ) {
+    
     showLoader("Loading… Please wait");
 
     // const $row = $("#row_" + count);
 
     const $row = $("#" + count);
 
-    // const $timeField = $row.find(".tour_starttime, select[name='tour_starttime[]']").first();
-
-    const $timeField = $row.find(".tour_starttime").first();
-
-    console.log($timeField);
+    const $timeField = $row.find(".tour_starttime, select[name='tour_starttime[]']").first();
     
     if(!tourId || !selectedDate) return;  
 
@@ -3876,52 +3852,6 @@ function fetchTourSessions234324(tourId, selectedDate, count, selectedTime =null
         },
         error: function(xhr){
             console.error("Failed to fetch sessions:", xhr.responseText);
-        }
-    });
-}
-
-function fetchTourSessions(tourId, selectedDate, count, selectedTime = null) {
-
-    const $row = $("#row_" + count);
-    const $timeField = $row.find(".tour_starttime").first();
-
-    console.log("row:", $row.length);
-    console.log("timeField:", $timeField.length);
-
-    if (!tourId || !selectedDate) return;
-
-    $.ajax({
-        url: "{{ route('admin.tour.sessions') }}",
-        type: "GET",
-        data: { tour_id: tourId, date: selectedDate },
-        dataType: "json",
-        success: function(resp) {
-
-            let options = `<option value="">Select Session</option>`;
-
-            if (resp.data && resp.data.length > 0) {
-                $.each(resp.data, function(i, session) {
-                    options += `<option value="${session}">${session}</option>`;
-                });
-            } else {
-                options = '<option value="">No sessions available</option>';
-            }
-
-            const newSelect = $(`
-                <select name="tour_starttime[]" class="form-control tour_starttime">
-                    ${options}
-                </select>
-            `);
-
-            if ($timeField.length) {
-                $timeField.replaceWith(newSelect);
-            } else {
-                console.warn("Time field not found");
-            }
-
-            if (selectedTime) {
-                newSelect.val(selectedTime);
-            }
         }
     });
 }
