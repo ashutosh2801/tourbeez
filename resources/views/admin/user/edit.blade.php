@@ -142,18 +142,17 @@
                             <label>Supplier Type</label>
                             <!-- <input type="text" name="supplier_type" class="form-control" value="{{ $supplier->supplier_type ?? '' }}"> -->
 
-
                             <select name="supplier_type" id="supplier_type" class="form-control" required>
                                 <option value="" disabled>Supplier Type</option>
-                                    @foreach (['Tour Operator','Transportation', 'Hotel', 'Attraction','Restaurant', 'Other' ] as $type)
-                                        @if($role->name != 'Super Admin')
-                                            <option value="{{ $type }}" {{ $type == $supplier?->supplier_type ? 'selected' : '' }}>
-                                                {{ $type }}
-                                            </option>
-                                        @endif
-                                    @endforeach
-                                </select>
-                            </div>
+                                @foreach (['Tour Operator','Transportation', 'Hotel', 'Attraction','Restaurant', 'Other' ] as $type)
+                                    @if($role->name != 'Super Admin')
+                                        <option value="{{ $type }}" {{ $type == $supplier?->supplier_type ? 'selected' : '' }}>
+                                            {{ $type }}
+                                        </option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
 
                         <!-- <select class="w-full border border-gray-300 rounded-lg p-3 outline-none text-gray-700 text-base"><option value="">- Select -</option><option value="Tour Operator">Tour Operator</option><option value="Transportation">Transportation</option><option value="Hotel">Hotel</option><option value="Attraction">Attraction</option><option value="Restaurant">Restaurant</option><option value="Other">Other</option></select> -->
 
@@ -204,9 +203,9 @@
 
                         <div class="col-lg-6">
                             <label>License File</label>
-                            <input type="file" name="license_file" class="form-control">
+                            <input type="file" name="license_file" class="form-control mb-0">
                             @if(!empty($supplier->license_file))
-                                <small class="text-muted">Current: {{ $supplier->license_file }}</small>
+                                <small class="text-muted mt-1 mb-3 display-block">Current: {{ $supplier->license_file }}</small>
                             @endif
                         </div>
 
@@ -215,33 +214,32 @@
                             <textarea name="certifications" class="form-control">{{ $supplier->certifications ?? '' }}</textarea>
                         </div>
 
-                        
-                       <div class="col-lg-6">
-                        <label>Payment Method</label>
-                        <select name="payment_method" class="form-control">
-                            <option value="">Select Payment Method</option>
+                        <div class="col-lg-6">
+                            <label>Payment Method</label>
+                            <select name="payment_method" class="form-control">
+                                <option value="">Select Payment Method</option>
 
-                            <option value="Bank Transfer"
-                                {{ old('payment_method', $supplier?->payment_method) == 'Bank Transfer' ? 'selected' : '' }}>
-                                Bank Transfer
-                            </option>
+                                <option value="Bank Transfer"
+                                    {{ old('payment_method', $supplier?->payment_method) == 'Bank Transfer' ? 'selected' : '' }}>
+                                    Bank Transfer
+                                </option>
 
-                            <option value="PayPal"
-                                {{ old('payment_method', $supplier?->payment_method) == 'PayPal' ? 'selected' : '' }}>
-                                PayPal
-                            </option>
+                                <option value="PayPal"
+                                    {{ old('payment_method', $supplier?->payment_method) == 'PayPal' ? 'selected' : '' }}>
+                                    PayPal
+                                </option>
 
-                            <option value="Stripe"
-                                {{ old('payment_method', $supplier?->payment_method) == 'Stripe' ? 'selected' : '' }}>
-                                Stripe
-                            </option>
+                                <option value="Stripe"
+                                    {{ old('payment_method', $supplier?->payment_method) == 'Stripe' ? 'selected' : '' }}>
+                                    Stripe
+                                </option>
 
-                            <option value="Other"
-                                {{ old('payment_method', $supplier?->payment_method) == 'Other' ? 'selected' : '' }}>
-                                Other
-                            </option>
-                        </select>
-                    </div>
+                                <option value="Other"
+                                    {{ old('payment_method', $supplier?->payment_method) == 'Other' ? 'selected' : '' }}>
+                                    Other
+                                </option>
+                            </select>
+                        </div>
 
                         <div class="col-lg-6">
                             <label>Bank Details</label>
@@ -255,9 +253,9 @@
 
                         <div class="col-lg-6">
                             <label>Company Logo</label>
-                            <input type="file" name="company_logo" class="form-control">
+                            <input type="file" name="company_logo" class="form-control mb-0">
                             @if(!empty($supplier->company_logo))
-                                <small class="text-muted">Current: {{ $supplier->company_logo }}</small>
+                                <small class="text-muted mt-1 mb-3 display-block">Current: {{ $supplier->company_logo }}</small>
                             @endif
                         </div>
 
@@ -269,9 +267,7 @@
                         <div class="col-lg-6">
                             <label>Promotional Offers</label>
                             <textarea name="promotional_offers" class="form-control">{{ $supplier->promotional_offers ?? '' }}</textarea>
-                        </div>
-
-                        
+                        </div>                        
 
                         <div class="col-lg-6">
                             <label>Digital Signature</label>
@@ -282,6 +278,7 @@
                             <label>Submitted Date</label>
                             <input type="date" name="submitted_date" class="form-control" value="{{ $supplier->submitted_date ?? '' }}">
                         </div>
+
                         <div class="col-lg-3 mt-3">
                             <label>Consent Info</label>
                             <input type="checkbox" name="consent_info" value="1" {{ !empty($supplier->consent_info) ? 'checked' : '' }}>

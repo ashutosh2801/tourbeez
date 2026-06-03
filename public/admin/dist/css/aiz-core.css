@@ -159,6 +159,10 @@ pre {
     box-shadow: none !important;
 }
 
+.display-block {
+    display: block !important;
+}
+
 .img-fit {
     max-height: 100%;
     width: 100%;
@@ -9982,8 +9986,7 @@ table.dataTable {
         margin-top: 5px;
     }
 
-    .edit-supplier-head .card-tools,
-    .create-supplier-head .card-tools {
+    .edit-supplier-head .card-tools {
         float: left;
         margin-top: 10px;
     }
@@ -11112,6 +11115,16 @@ table.dataTable {
     .tour-table .table td:nth-child(8) {
         width: 250px;
         display: flex;
+    }
+
+    #include_fee .form-row {
+        gap: 15px;
+    }
+
+    .tour-table .table td.action-td {
+        width: auto;
+        display: table-cell;
+        white-space: nowrap;
     }
 
 }

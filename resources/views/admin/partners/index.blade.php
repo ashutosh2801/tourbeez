@@ -20,45 +20,46 @@
 
         <div class="card-primary bg-white border rounded-lg-custom">
             <div class="card-body p-0">
-                <table class="table aiz-table mb-0">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Logo</th>
-                            <th>Name</th>
-                            <th>Slug</th>
-                            <th class="text-right">Options</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($partners as $key => $partner)
+                <div class="table-responsive">
+                    <table class="table aiz-table mb-0">
+                        <thead>
                             <tr>
-                                <td>{{ $key+1 }}</td>
-                                <td>
-                                    @if($partner->upload_id)
-                                        <img src="{{ uploaded_asset($partner->upload_id) }}" height="45">
-                                    @elseif($partner->logo_url)
-                                        <img src="{{ $partner->logo_url }}" height="45">
-                                    @endif
-                                </td>
-                                <td>{{ $partner->name }}</td>
-                                <td>{{ $partner->slug }}</td>
-                                <td class="text-right">
-                                    <a href="{{ route('admin.partners.edit',$partner->id) }}"
-                                       class="btn btn-circle btn-sm text-black text-lg">
-                                        <i class="las la-edit"></i>
-                                    </a>
-                                    <button type="button"
-                                            class="btn btn-soft-danger btn-icon btn-circle btn-sm delete-partner"
-                                            data-id="{{ $partner->id }}">
-                                        <i class="las la-trash"></i>
-                                    </button>
-                                </td>
+                                <th>#</th>
+                                <th>Logo</th>
+                                <th>Name</th>
+                                <th>Slug</th>
+                                <th class="text-right">Options</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-
+                        </thead>
+                        <tbody>
+                            @foreach($partners as $key => $partner)
+                                <tr>
+                                    <td>{{ $key+1 }}</td>
+                                    <td>
+                                        @if($partner->upload_id)
+                                            <img src="{{ uploaded_asset($partner->upload_id) }}" height="45">
+                                        @elseif($partner->logo_url)
+                                            <img src="{{ $partner->logo_url }}" height="45">
+                                        @endif
+                                    </td>
+                                    <td>{{ $partner->name }}</td>
+                                    <td>{{ $partner->slug }}</td>
+                                    <td class="text-right">
+                                        <a href="{{ route('admin.partners.edit',$partner->id) }}"
+                                        class="btn btn-circle btn-sm text-black text-lg">
+                                            <i class="las la-edit"></i>
+                                        </a>
+                                        <button type="button"
+                                                class="btn btn-soft-danger btn-icon btn-circle btn-sm delete-partner"
+                                                data-id="{{ $partner->id }}">
+                                            <i class="las la-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
                 <div class="aiz-pagination">
                     {{ $partners->links() }}
                 </div>

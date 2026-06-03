@@ -6,10 +6,10 @@
                 <div class="card card-primary mb-0">
                     <div class="card-header create-supplier-head">
                         <div class="row">
-                            <div class="col-md-8 col-12">
+                            <div class="col-md-8 col-9">
                                 <h3 class="card-title">Create New Permission</h3>
                             </div>
-                            <div class="col-md-4 col-12">
+                            <div class="col-md-4 col-3">
                                 <div class="card-tools">
                                     <a href="{{ route('admin.permission.index') }}" class="btn btn-sm btn-back">Back</a>
                                 </div>

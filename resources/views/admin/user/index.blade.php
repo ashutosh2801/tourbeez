@@ -44,46 +44,46 @@
             </div>
         </form>
         <div class="card-body p-0">
-            <table class="table table-striped" id="userTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Created</th>
-                        <th>Action</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($data as $user)
+            <div class="table-responsive">
+                <table class="table table-striped" id="userTable">
+                    <thead>
                         <tr>
-                            <td>{{ $user->id }}</td>
-                            <td>{{ $user->name }}</td>
-                            <td>{{ $user->email }}</td>
-                            <td>{{ $user->role }}</td>
-                            <td>{{ $user->created_at }}</td>
-                            <td>
-                                <a href="{{ route('admin.user.edit', encrypt($user->id)) }}" class="btn btn-sm btn-edit"><i class="far fa-edit"></i></a>
-                            </td>
-                            <td>
-                                
-
-                                <form action="{{ route('admin.user.destroy', encrypt($user->id)) }}"
-                                          method="POST"
-                                          class="delete-form">
-                                        @method('DELETE')
-                                        @csrf
-                                        <button type="button" class="btn btn-danger delete-btn">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </form>
-                            </td>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Created</th>
+                            <th>Action</th>
+                            <th></th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach ($data as $user)
+                            <tr>
+                                <td>{{ $user->id }}</td>
+                                <td>{{ $user->name }}</td>
+                                <td>{{ $user->email }}</td>
+                                <td>{{ $user->role }}</td>
+                                <td>{{ $user->created_at }}</td>
+                                <td>
+                                    <a href="{{ route('admin.user.edit', encrypt($user->id)) }}" class="btn btn-sm btn-edit"><i class="far fa-edit"></i></a>
+                                </td>
+                                <td>
+                                    <form action="{{ route('admin.user.destroy', encrypt($user->id)) }}"
+                                            method="POST"
+                                            class="delete-form">
+                                            @method('DELETE')
+                                            @csrf
+                                            <button type="button" class="btn btn-danger delete-btn">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
             <div class="card-footer">
                 {{ $data->links() }}
             </div>

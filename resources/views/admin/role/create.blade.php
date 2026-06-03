@@ -3,10 +3,10 @@
     <div class="card card-primary bg-white border rounded-lg-custom">
         <div class="card-header create-supplier-head">
             <div class="row">
-                <div class="col-md-8 col-6">
+                <div class="col-md-8 col-8">
                     <h3 class="card-title">Create New Role</h3>
                 </div>
-                <div class="col-md-4 col-6">
+                <div class="col-md-4 col-4">
                     <div class="card-tools">
                         <a href="{{ route('admin.role.index') }}" class="btn btn-sm btn-back">Back</a>
                     </div>

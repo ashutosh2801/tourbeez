@@ -143,9 +143,7 @@
                                         <input type="email" name="customer_email" id="customer_email"
                                             class="form-control" >
                                         <small class="text-danger d-none" id="error_email">Enter a valid email</small>
-                                    </div>
-
-                                    
+                                    </div>                                    
 
                                     <div class="form-group col-lg-3 col-md-6">
                                         <label for="customer_phone">Phone (with country code) *</label>
@@ -157,19 +155,11 @@
                                             
                                         />
                                         <!-- Hidden field that stores full E.164 number -->
-                                        
-
                                         <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
                                         <input type="hidden" name="full_phone" id="full_phone">
                                     </div>
-
-
-
-
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
                 </div>
@@ -248,7 +238,6 @@
                         <div class="card-total p-3 mb-3" style="background: #edf3ff;">
                             Total: <b id="totalPayment">0.00</b>
                             <input type="text" id="total_amount" class="form-control" readonly placeholder="0.00">
-
                         </div>
                         <div class="card-body pt-0">
 
@@ -328,7 +317,6 @@
                                 </div>
 
                                 <div id="paymentWrapper"></div>
-
 
                             </div>
 
