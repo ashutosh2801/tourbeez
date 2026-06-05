@@ -1066,7 +1066,7 @@ class OrderController extends Controller
                             $order_payment = $order_payment ?? OrderPayment::where('payment_intent_id', $pi->id)->first();
                             OrderPayment::updateOrCreate(['id' => $order_payment?->id], 
                             [
-                                'status'            => 'uncaptured',
+                                'status'            => 'pending',
                                 'payment_method'    => $cardDetails['type'] ?? null,
                                 'card_brand'        => $cardDetails['brand'] ?? null,
                                 'card_last4'        => $cardDetails['last4'] ?? null,
@@ -1189,7 +1189,7 @@ class OrderController extends Controller
                     OrderPayment::updateOrCreate(
                         ['id' => $order_payment?->id], 
                         [
-                            'status'            => 'uncaptured',
+                            'status'            => 'pending',
                             'payment_method'    => $cardDetails['type'] ?? null,
                             'card_brand'        => $cardDetails['brand'] ?? null,
                             'card_last4'        => $cardDetails['last4'] ?? null,
