@@ -359,12 +359,14 @@
                         <th>Commission</th>
                         <th>Tax</th>
                         <th>Net Sales</th>
+
+                        <th>Total Pax</th>
                         <th>Adult</th>
                         <th>Child</th>
                         <th>Infant</th>
-                        <th>Other</th>
+                        <th>Senior Citizen</th>
 
-                        <th>Total Pax</th>
+                        
                         <th>Product Value</th>
                         <th>Adjustment</th>
                         <th>Extra Value</th>
@@ -427,11 +429,12 @@
                             <td>{{ number_format_with_currency($order->net_sales_converted ?? $order->total_amount_converted, 2) }}</td>
 
                             {{-- Pax --}}
+                            <td>{{ $order->pax ?? 0 }}</td>
                             <td>{{ $order->adult }}</td>
                             <td>{{ $order->child }}</td>
                             <td>{{ $order->infant }}</td>
                             <td>{{ $order->other }}</td>
-                            <td>{{ $order->pax ?? 0 }}</td>
+                            
 
                             {{-- Product Value --}}
                             <td>{{ number_format_with_currency($order->product_value_converted, 2) }}</td>

@@ -302,7 +302,7 @@
 
                                         @if($order->sub_tour_id && $order->subTour)
                                             <div style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                                <a href="{{ route('admin.tour.edit', encrypt($order->subTour->tour_id)) }}"
+                                                <a href="{{ route('admin.tour.edit', encrypt($order->subTour->id)) }}"
                                                    class="alink text-small"
                                                    target="_blank"
                                                    style="font-size:small;">

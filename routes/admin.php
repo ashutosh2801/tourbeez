@@ -261,6 +261,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity.logs');
     Route::get('/activity-descriptive', [ActivityLogController::class, 'descriptive'])->name('activity.descriptive');
+    Route::get('/order-logs', [ActivityLogController::class, 'orderLog'])->name('activity.orderLog');
     Route::get('/banner', [AizUploadController::class, 'showBanner'])->name('banner.index');
   
     Route::get('banners/create', [AizUploadController::class, 'bannerCreate'])->name('banners.create');

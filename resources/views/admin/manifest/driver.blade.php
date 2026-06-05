@@ -5,78 +5,89 @@
 <style>
     
     .manifest-grid {
-    font-size: 16px; /* base font bigger */
-}
+        font-size: 16px;
+    }
 
-.manifest-grid th {
-    font-size: 14px;
-    font-weight: 600;
-    padding: 10px 8px;
-    background: #f1f5f9;
-}
+    .manifest-grid th {
+        font-size: 14px;
+        font-weight: 600;
+        padding: 10px 8px;
+        background: #f1f5f9;
+    }
 
-.manifest-grid td {
-    font-size: 14px;
-    padding: 10px 8px;
-    vertical-align: middle;
-}
+    .manifest-grid td {
+        font-size: 14px;
+        padding: 10px 8px;
+        vertical-align: middle;
+    }
 
-/* Main pax number */
-.manifest-grid td strong {
-    font-size: 16px;
-    font-weight: 700;
-    color: #111827;
-}
+    .manifest-grid td strong {
+        font-size: 14px;
+        font-weight: 700;
+        color: #111827;
+    }
 
-/* Driver names */
-.manifest-grid small {
-    font-size: 12px;
-    font-weight: 500;
-}
+    .manifest-grid td p {
+        margin: 0;
+    }
 
-/* Hover effect */
-.manifest-cell.has-orders:hover {
-    background-color: #eef6ff;
-    transition: 0.2s;
-}
+    .manifest-grid small {
+        font-size: 12px;
+        font-weight: 500;
+    }
 
-/* Totals row */
-.total-pax {
-    font-size: 15px;
-    font-weight: 700;
-    color: #1f2937;
-}
+    .manifest-cell.has-orders:hover {
+        background-color: #eef6ff;
+        transition: 0.2s;
+    }
 
-/* Assigned row */
-.assigned-pax {
-    font-size: 15px;
-    font-weight: 700;
-    color: #16a34a;
-}
+    .total-pax {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .assigned-pax {
+        font-size: 15px;
+        font-weight: 700;
+        color: #16a34a;
+    }
+
+    .manifest-grid td, .manifest-grid th {
+        vertical-align: middle;
+    }
+
+    .manifest-cell.has-orders:hover {
+        background-color: #f0f7ff;
+    }
 </style>
-
-
 
 <div class="card-primary mb-3">
     <div class="card-header order-manifest-head">
         <div class="d-flex justify-content-between align-items-center w-100 mb-manifest">
-            <h3 class="card-title text-white">Driver Manifest</h3>
-            <div class="d-flex align-items-center gap-1">
-                <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center left-btn" id="prev-week">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <input type="date" name="date" id="filter-date" class="form-control form-control-sm filterDate" 
-                       value="{{ $date }}" style="width: 150px;" />
-                <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center right-btn" id="next-week">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
+            <div class="manifest-calendar">
+                <div class="d-flex column-gap-10">
+                    <button type="button" class="btn btn-sm today-btn " id="today-date">
+                        Today
+                    </button>
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center left-btn" id="prev-week">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <input type="date" name="date" id="filter-date" class="form-control form-control-sm filterDate" 
+                            value="{{ $date }}" style="width: 150px;" />
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center right-btn" id="next-week">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <select id="driverFilter" class="form-control driver-filter">
+                    <option value="">All Drivers</option>
+                    @foreach($drivers as $driver)
+                        <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                    @endforeach
+                </select>
             </div>
-            <select id="driverFilter" class="form-control" style="width: 200px;">
-                <option value="">All Drivers</option>
-                @foreach($drivers as $driver)
-                    <option value="{{ $driver->id }}">{{ $driver->name }}</option>
-                @endforeach
-            </select>
             <!-- <a href="{{ route('admin.driver.manifest.export', ['date' => $date]) }}" 
                    class="btn btn-success btn-sm">
 
@@ -88,17 +99,17 @@
                     'date' => $date,
                     'driver_id' => request('driver_id')
                 ]) }}" 
-                class="btn btn-success btn-sm">
-                    Export Excel
+                class="btn btn-download btn-sm">
+                    <i class="bi bi-download"></i> Download Excel
                 </a>
         </div>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body table-responsive">
+<div class="card-primary bg-white border rounded-lg-custom">
+    <div class="card-body table-responsive p-0">
         <table class="table table-bordered table-sm manifest-grid">
-            <thead class="">
+            <thead>
                 <tr>
                     <th style="min-width: 200px;">Tours</th>
                     @foreach($dateRange as $d)
@@ -113,7 +124,7 @@
                 @forelse($sortedGrid as $tourTitle => $dates)
                     <tr>
                         <td>
-                            <strong>{{ $tourTitle }}</strong>
+                            <p>{{ $tourTitle }}</p>
                             @if(isset($tourTimes[$tourTitle]))
                                 <!-- <br><small class="text-muted">{{ $tourTimes[$tourTitle] }}</small> -->
                             @endif
@@ -184,40 +195,18 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Assign Driver</h5>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="modal_date">
-                <input type="hidden" id="modal_order_ids">
 
                 <div class="mb-3">
                     <label class="form-label"><strong id="modal_tour_title"></strong></label>
                     <div class="text-muted" id="modal_date_display"></div>
-                </div>
-
-                
-
-                <div class="form-group">
-                    <label for="driver_id" class="form-label">Select Drivers *</label>
-
-                    <select name="driver_ids[]" 
-                            id="driver_id" 
-                            class="form-control aiz-selectpicker" 
-                            data-live-search="true" 
-                            multiple>
-
-                        @foreach ($drivers as $driver)
-                            <option value="{{ $driver->id }}">
-                                {{ $driver->name }}
-                            </option>
-                        @endforeach
-
-                    </select>
-
-                    <small class="text-muted">You can select multiple drivers</small>
-                </div>
+                </div>                
 
                 <label class="form-label">Orders</label>
-                <div id="order_list" style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 6px;"></div>
+                <div id="order_list" class="order-list bg-light"></div>
 
                 <div class="mt-2">
                     <label>
@@ -230,44 +219,52 @@
                     Remove Driver
                 </button> -->
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="assignDriver">Assign</button>
-
+                <button type="button" class="btn btn-success" id="assignDriver">Assign</button>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-.manifest-grid td, .manifest-grid th {
-    vertical-align: middle;
-}
-.manifest-cell.has-orders:hover {
-    background-color: #f0f7ff;
-}
-</style>
-
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+window.allDrivers = @json($drivers);
+let driversList = @json($drivers);
+</script>
+
+<script>
 document.addEventListener('DOMContentLoaded', function() {
 
     let driverFilter = document.getElementById('driverFilter');
-    let exportBtn = document.querySelector('a.btn-success');
+    let exportBtn = document.querySelector('.btn-download');
     let dateInput = document.getElementById('filter-date');
 
     // =========================
-    // ✅ UPDATE EXPORT URL
+    // OPEN CALENDAR
+    // =========================
+    dateInput.addEventListener('click', function() {
+        if (this.showPicker) this.showPicker();
+    });
+
+    // =========================
+    // TODAY BUTTON
+    // =========================
+    document.getElementById('today-date').addEventListener('click', function() {
+        let today = new Date();
+        let formatted = today.toISOString().split('T')[0];
+        window.location.href = "?date=" + formatted;
+    });
+
+    // =========================
+    // EXPORT URL
     // =========================
     function updateExportUrl() {
         let selectedDriver = driverFilter.value;
         let date = dateInput.value;
 
         let url = `?date=${date}`;
-
-        if (selectedDriver) {
-            url += `&driver_id=${selectedDriver}`;
-        }
+        if (selectedDriver) url += `&driver_id=${selectedDriver}`;
 
         exportBtn.href = "{{ route('admin.driver.manifest.export') }}" + url;
     }
@@ -275,174 +272,172 @@ document.addEventListener('DOMContentLoaded', function() {
     // =========================
     // WEEK NAVIGATION
     // =========================
-    document.getElementById('prev-week').addEventListener('click', function() {
-        let current = new Date(dateInput.value);
-        current.setDate(current.getDate() - 6);
-        dateInput.value = current.toISOString().split('T')[0];
-        window.location.href = "?date=" + dateInput.value;
-    });
+    document.getElementById('prev-week').onclick = function() {
+        let d = new Date(dateInput.value);
+        d.setDate(d.getDate() - 6);
+        window.location.href = "?date=" + d.toISOString().split('T')[0];
+    };
 
-    document.getElementById('next-week').addEventListener('click', function() {
-        let current = new Date(dateInput.value);
-        current.setDate(current.getDate() + 6);
-        dateInput.value = current.toISOString().split('T')[0];
-        window.location.href = "?date=" + dateInput.value;
-    });
+    document.getElementById('next-week').onclick = function() {
+        let d = new Date(dateInput.value);
+        d.setDate(d.getDate() + 6);
+        window.location.href = "?date=" + d.toISOString().split('T')[0];
+    };
 
-    dateInput.addEventListener('change', function() {
+    dateInput.onchange = function() {
         window.location.href = "?date=" + this.value;
-    });
+    };
 
     // =========================
     // CELL CLICK → MODAL
     // =========================
-    document.querySelectorAll('.manifest-cell.has-orders').forEach(function(cell) {
+    document.querySelectorAll('.manifest-cell.has-orders').forEach(cell => {
+
         cell.addEventListener('click', function() {
 
-            let isAssignable = this.dataset.assignable;
-
-            if (isAssignable !== '1') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Not Allowed',
-                    text: 'Driver cannot be assigned for this tour.',
-                    confirmButtonColor: '#3085d6'
-                });
+            if (this.dataset.assignable !== '1') {
+                Swal.fire('Not Allowed', 'Driver cannot be assigned', 'warning');
                 return;
             }
 
-            let tourTitle = this.dataset.tour;
-            let date = this.dataset.date;
             let orders = JSON.parse(this.dataset.orders);
+            let date = this.dataset.date;
 
-            document.getElementById('modal_tour_title').textContent = tourTitle;
-            document.getElementById('modal_date_display').textContent = date;
             document.getElementById('modal_date').value = date;
+            document.getElementById('modal_tour_title').innerText = this.dataset.tour;
+            document.getElementById('modal_date_display').innerText = date;
 
             let container = document.getElementById('order_list');
             container.innerHTML = '';
 
-            let orderIds = [];
-            let driverIds = [];
+            // build driver options
+            let driversHtml = '';
+            driversList.forEach(d => {
+                driversHtml += `<option value="${d.id}">${d.name}</option>`;
+            });
 
-            orders.forEach(function(o) {
-                orderIds.push(o.order_id);
+            // render orders
+            orders.forEach(o => {
 
                 container.innerHTML += `
-                <div style="border-bottom: 1px solid #eee; padding: 6px 0;">
-                    <label style="cursor: pointer; width:100%;">
-                        <input type="checkbox" class="order-checkbox" value="${o.order_id}" checked>
+                <div class="order-content mb-2 p-2 border rounded">
+                    <div class="d-flex justify-content-between">
 
-                        <a href="/admin/orders/${o.order_encrypt_id}/edit" target="_blank" style="font-weight:600;">
-                            #${o.order_number}
-                        </a>
+                        <div style="width:50%">
+                            <input type="checkbox" class="order-checkbox" value="${o.order_id}" checked>
+                            <strong>#${o.order_number}</strong><br>
+                            <small>${o.customer || ''}</small><br>
+                            <small>👥 ${o.guest_count}</small>
+                        </div>
 
-                        - ${o.customer || 'N/A'}
+                        <div style="width:50%">
+                            <select 
+                                class="form-control aiz-selectpicker order-driver-select"
+                                multiple
+                                data-live-search="true"
+                                data-order-id="${o.order_id}">
+                                ${driversHtml}
+                            </select>
+                        </div>
 
-                        <br>
-                        <small>
-                            👥 ${o.guest_count} pax |
-                            🚗 ${o.driver_names?.length ? o.driver_names.join(', ') : ''}
-                        </small>
-                    </label>
-                </div>
-                `;
-
-                if (o.driver_ids && o.driver_ids.length) {
-                    driverIds.push(...o.driver_ids);
-                }
+                    </div>
+                </div>`;
             });
 
-            document.getElementById('modal_order_ids').value = JSON.stringify(orderIds);
+            // ✅ INIT AIZ SELECT PROPERLY
+            TB.plugins.bootstrapSelect();
 
-            let driverSelect = document.getElementById('driver_id');
+            // ✅ PRESELECT EXISTING DRIVERS
+            orders.forEach(o => {
+                let select = document.querySelector(
+                    `.order-driver-select[data-order-id="${o.order_id}"]`
+                );
 
-            // reset
-            Array.from(driverSelect.options).forEach(opt => opt.selected = false);
+                if (!select) return;
 
-            let uniqueDrivers = [...new Set(driverIds)];
+                let selected = o.driver_ids || [];
 
-            Array.from(driverSelect.options).forEach(opt => {
-                if (uniqueDrivers.includes(parseInt(opt.value))) {
-                    opt.selected = true;
-                }
+                Array.from(select.options).forEach(opt => {
+                    opt.selected = selected.includes(parseInt(opt.value));
+                });
             });
 
-            $('.aiz-selectpicker').selectpicker('refresh');
+            // ✅ REFRESH AFTER SETTING VALUES
+            TB.plugins.bootstrapSelect('refresh');
 
-            let modal = new bootstrap.Modal(document.getElementById('driverModal'));
-            modal.show();
+            new bootstrap.Modal(document.getElementById('driverModal')).show();
         });
     });
 
     // =========================
-    // SELECT ALL ORDERS
+    // ASSIGN DRIVER (FIXED)
     // =========================
-    document.getElementById('select_all_orders').addEventListener('change', function() {
-        document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = this.checked);
-    });
+document.getElementById('assignDriver').addEventListener('click', async function() {
 
-    // =========================
-    // ASSIGN DRIVER
-    // =========================
-    document.getElementById('assignDriver').addEventListener('click', async function() {
+    let btn = this;
+    let date = document.getElementById('modal_date').value;
 
-        let btn = this;
-        let date = document.getElementById('modal_date').value;
+    let ordersPayload = [];
 
-        let selectedDrivers = Array.from(document.getElementById('driver_id').selectedOptions)
-            .map(o => parseInt(o.value));
+    document.querySelectorAll('.order-content').forEach(function(row) {
 
-        let selectedOrders = [];
-        document.querySelectorAll('.order-checkbox:checked').forEach(cb => {
-            selectedOrders.push(parseInt(cb.value));
+        let orderId = parseInt(row.querySelector('.order-checkbox').value);
+
+        let $select = $(row).find('.order-driver-select');
+
+        let selectedDrivers = [];
+
+        // ✅ READ FROM SELECTED OPTIONS (REAL FIX)
+        $select.find('option:selected').each(function () {
+            selectedDrivers.push(parseInt($(this).val()));
         });
 
-        try {
-            btn.disabled = true;
-            btn.innerText = 'Assigning...';
+        console.log('FIXED:', orderId, selectedDrivers);
 
-            let response = await fetch("{{ route('admin.assign.driver') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    order_ids: selectedOrders,
-                    driver_ids: selectedDrivers,
-                    date: date
-                })
-            });
-
-            if (!response.ok) throw new Error();
-
-            let modalEl = document.getElementById('driverModal');
-            let instance = bootstrap.Modal.getInstance(modalEl);
-            if (instance) instance.hide();
-
-            setTimeout(() => location.reload(), 300);
-
-        } catch (e) {
-            alert('Something went wrong');
-        } finally {
-            btn.disabled = false;
-            btn.innerText = 'Assign';
-        }
+        ordersPayload.push({
+            order_id: orderId,
+            driver_ids: selectedDrivers
+        });
     });
 
+    try {
+        btn.disabled = true;
+        btn.innerText = 'Saving...';
+
+        let res = await fetch("{{ route('admin.assign.driver') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                orders: ordersPayload,
+                date: date
+            })
+        });
+
+        if (!res.ok) throw new Error();
+
+        location.reload();
+
+    } catch (e) {
+        alert('Error saving');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Assign';
+    }
+});
+
     // =========================
-    // DRIVER FILTER + TOTAL UPDATE
+    // DRIVER FILTER
     // =========================
     driverFilter.addEventListener('change', function() {
 
         let selectedDriver = parseInt(this.value);
-
         let totalMap = {};
         let assignedMap = {};
 
-        document.querySelectorAll('.manifest-cell').forEach(function(cell) {
+        document.querySelectorAll('.manifest-cell').forEach(cell => {
 
             if (!cell.classList.contains('has-orders')) return;
 
@@ -453,15 +448,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
             orders.forEach(o => {
 
-                let matches = !selectedDriver ||
+                let match = !selectedDriver ||
                     (o.driver_ids && o.driver_ids.includes(selectedDriver));
 
-                if (matches) {
+                if (match) {
                     visible = true;
 
                     totalMap[date] = (totalMap[date] || 0) + o.guest_count;
 
-                    if (o.driver_ids && o.driver_ids.length) {
+                    if (o.driver_ids?.length) {
                         assignedMap[date] = (assignedMap[date] || 0) + o.guest_count;
                     }
                 }
@@ -470,28 +465,37 @@ document.addEventListener('DOMContentLoaded', function() {
             cell.style.opacity = visible ? '1' : '0.2';
         });
 
-        // UPDATE TOTAL ROW
         document.querySelectorAll('.total-pax').forEach(td => {
-            let date = td.dataset.date;
-            td.innerText = totalMap[date] || 0;
+            td.innerText = totalMap[td.dataset.date] || 0;
         });
 
-        // UPDATE ASSIGNED ROW
         document.querySelectorAll('.assigned-pax').forEach(td => {
-            let date = td.dataset.date;
-            td.innerText = assignedMap[date] || 0;
+            td.innerText = assignedMap[td.dataset.date] || 0;
         });
 
-        // ✅ UPDATE EXPORT URL
         updateExportUrl();
     });
 
-    // =========================
-    // INITIAL EXPORT URL SET
-    // =========================
     updateExportUrl();
-
 });
+</script>
+<script>
+    document.getElementById('today-date').addEventListener('click', function() {
+        let dateInput = document.getElementById('filter-date'); // ✅ define it here
+
+        let today = new Date();
+        let yyyy = today.getFullYear();
+        let mm = String(today.getMonth() + 1).padStart(2, '0');
+        let dd = String(today.getDate()).padStart(2, '0');
+
+        let formatted = `${yyyy}-${mm}-${dd}`;
+
+        // set value
+        dateInput.value = formatted;
+
+        // redirect like your other filters
+        window.location.href = "?date=" + formatted;
+    });
 </script>
 @endsection
 </x-admin>

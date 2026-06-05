@@ -4,21 +4,18 @@ use App\Models\Addon;
 use App\Models\Currency;
 use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Models\OrderLog;
 use App\Models\Setting;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
-use App\Models\Translation;
 use App\Models\TourUpload;
+use App\Models\Translation;
 use App\Upload;
 use App\User;
-use Illuminate\Support\Facades\Http;
-
-// use App\Models\EmailTemplate;
-// use App\Models\SmsTemplate;
-// use App\Models\Notification;
 use Ashutosh2801\Colorcodeconverter\Colorcodeconverter;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 //use Illuminate\Support\Facades\Storage;
 
@@ -1678,6 +1675,34 @@ if (!function_exists('currencyConvertWithoutRound')) {
         function number_format_with_currency($amount)
         {
             return 'C$ ' . number_format((float)$amount, 2);
+        }
+    }
+
+    if (!function_exists('orderLogAdvanced')){
+        function orderLogAdvanced($order = null, $stage, $step, $status, $message = null, $extra = [])
+        {
+            try {
+
+                $context = array_merge([
+                    'order_status'   => $order->order_status ?? null,
+                    'payment_status' => $order->payment_status ?? null,
+                ], $extra);
+
+                OrderLog::create([
+                    'order_id'          => $order->id ?? null,
+                    'stage'             => $stage,
+                    'step'              => $step,
+                    'status'            => $status,
+                    'message'           => $message,
+                    'context'           => $context,
+                    'payment_status'    => $context['payment_status'] ?? null,
+                    'event_id'          => $context['event_id'] ?? null,
+                    'payment_intent_id' => $context['payment_intent_id'] ?? null,
+                ]);
+
+            } catch (\Exception $e) {
+                \Log::error('OrderLog failed: ' . $e->getMessage());
+            }
         }
     }
 

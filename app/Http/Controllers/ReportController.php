@@ -723,7 +723,7 @@ public function invoiceExport(Request $request)
 
     return \Maatwebsite\Excel\Facades\Excel::download(
         new \App\Exports\InvoiceExport($data),
-        'invoice-report.xlsx'
+        'invoice-report' . now()->format('Ymd_His') . '.xlsx'
     );
 }
 
@@ -795,6 +795,10 @@ private function getInvoiceData($request, $paginate = false)
             $q->where('orders.action_name', '!=', 'book')
               ->orWhereNull('orders.action_name');
         });
+    }
+
+    if ($product = $request->input('product')) {
+        $query->where('order_tours.tour_id', $product);
     }
 
 
@@ -889,8 +893,42 @@ private function getInvoiceData($request, $paginate = false)
         $extras  = json_decode($order->tour_extra, true) ?? [];
         $discounts = json_decode($order->discount, true) ?? [];
 
+        // foreach ($pricing as $p) {
+        //     $qty = $p['quantity'] ?? 0;
+        //     $price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+        //     if ($qty > 0) {
+        //         $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
+        //             ? $price
+        //             : $price * $qty;
+        //     }
+        // }
+
+        $adult = 0;
+        $child = 0;
+        $infant = 0;
+        $other = 0;
+
         foreach ($pricing as $p) {
-            $qty = $p['quantity'] ?? 0;
+            $qty = (int) ($p['quantity'] ?? 0);
+            $label = strtolower($p['label'] ?? '');
+            $priceType = $p['price_type'] ?? '';
+
+            // FIXED → treat as Adults
+            if ($priceType === 'FIXED') {
+                $adult += $qty;
+                continue;
+            }
+
+            if (str_contains($label, 'adult')) {
+                $adult += $qty;
+            } elseif (str_contains($label, 'child')) {
+                $child += $qty;
+            } elseif (str_contains($label, 'infant')) {
+                $infant += $qty;
+            } else {
+                $other += $qty;
+            }
             $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
             if ($qty > 0) {
@@ -973,6 +1011,10 @@ private function getInvoiceData($request, $paginate = false)
             // 'paid' => config('constants.payment_status')[$order->payment_status] ?? '-',
 
             'product_name' => $order->product_name,
+            'adult' => $adult,
+            'child' => $child,
+            'infant' => $infant,
+            'other' => $other,
         ];
     }
 
@@ -1009,7 +1051,7 @@ public function invoiceWithDetailsExport(Request $request)
 
     return Excel::download(
         new \App\Exports\InvoiceWithDetailsExport($data),
-        'invoice-details.xlsx'
+        'invoice-details' . now()->format('Ymd_His') . '.xlsx'
     );
 }
 
@@ -1106,6 +1148,9 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
               ->orWhereNull('orders.action_name');
         });
     }
+    if ($product = $request->input('product')) {
+        $query->where('order_tours.tour_id', $product);
+    }
 
     if ($request->filled('tour_date')) {
 
@@ -1132,6 +1177,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
         'order_tours.tour_date',
         'order_tours.tour_extra',
         'order_tours.tour_fees',
+        'order_tours.tour_pricing',
 
         'order_customers.first_name',
         'order_customers.last_name',
@@ -1149,6 +1195,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
     $index = $paginate
         ? ($orders->currentPage() - 1) * $orders->perPage() + 1
         : 1;
+
 
     foreach ($collection as $order) {
 
@@ -1168,6 +1215,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
                 'tax' => 0,
                 'fee' => 0,
                 'total' => 0,
+                'quantity' => 0,
             ];
         }
 
@@ -1198,6 +1246,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
 
             $extraColumns[$key] = [
                 'description' => $e['label'] ?? '',
+                'quantity' => $qty,
                 'price' => round(currencyConvertWithoutRound($price, $order->currency, 'CAD'), 2),
                 'tax' => 0,
                 'fee' => 0,
@@ -1226,6 +1275,36 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
 
         $customerTotal = $extraValue + $taxValue;
 
+
+            $pricing = json_decode($order->tour_pricing, true) ?? [];
+
+        $adult = 0;
+        $child = 0;
+        $infant = 0;
+        $other = 0;
+
+        foreach ($pricing as $p) {
+            $qty = (int) ($p['quantity'] ?? 0);
+            $label = strtolower($p['label'] ?? '');
+            $priceType = $p['price_type'] ?? '';
+
+            // FIXED → treat as Adults
+            if ($priceType === 'FIXED') {
+                $adult += $qty;
+                continue;
+            }
+
+            if (str_contains($label, 'adult')) {
+                $adult += $qty;
+            } elseif (str_contains($label, 'child')) {
+                $child += $qty;
+            } elseif (str_contains($label, 'infant')) {
+                $infant += $qty;
+            } else {
+                $other += $qty;
+            }
+        }
+
         /*
         |--------------------------------------------------------------------------
         | FINAL ROW (DYNAMIC SAFE)
@@ -1240,11 +1319,16 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
             'customer_total' => round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
             'payment_status' => $order->payment_status == 2 ? 'Yes' : 'No',
             'product_name' => $order->product_name,
+            'adult' => $adult,
+            'child' => $child,
+            'infant' => $infant,
+            'other' => $other,
         ];
 
         // attach all addon columns consistently
         foreach ($allAddonKeys as $key) {
             $row[$key.'_desc']  = $extraColumns[$key]['description'];
+            $row[$key.'_quant'] = $extraColumns[$key]['quantity'];
             $row[$key.'_price'] = $extraColumns[$key]['price'];
             $row[$key.'_tax']   = $extraColumns[$key]['tax'];
             $row[$key.'_fee']   = $extraColumns[$key]['fee'];

@@ -25,6 +25,10 @@ class InvoiceExport implements FromArray
                 number_format_with_currency($item['customer_total'], 2, '.', ''),
                 number_format_with_currency($item['total_paid'], 2, '.', ''),
                 $item['product_name'],
+                $item['adult'],
+                $item['child'],
+                $item['infant'],
+                $item['other'],
             ];
         })->toArray();
     }
@@ -44,7 +48,11 @@ class InvoiceExport implements FromArray
                 'Booking Fee (CAD)',
                 'Customer Total (CAD)',
                 'Paid',
-                'Product Name'
+                'Product Name',
+                'Adults',
+                'Childs',
+                'Infants',
+                'Senior Citizen',
             ]
         ], $this->data);
     }

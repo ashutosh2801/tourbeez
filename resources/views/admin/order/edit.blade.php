@@ -485,16 +485,27 @@ $expectEmails = ['order_pending'];
                                                             </th>
 
                                                         </tr>
+
+                                                        <tr>
+                                                            <th colspan="5" class="text-center" style="border:none;">
+                                                                <h4 style="font-size:17px; font-weight:600; margin:0;">
+                                                                {{ $order->subTour?->title }}
+                                                                </h4>
+                                                            </th>
+                                                        </tr>
+                                                        @else
+                                                        <tr>
+                                                            <th colspan="5" class="text-center" style="border:none;">
+                                                                <h4 style="font-size:17px; font-weight:600; margin:0;">
+                                                                {{ $order->tour?->title }}
+                                                                </h4>
+                                                            </th>
+
+                                                        </tr>
                                                     @endif
                                                      
 
-                                                    <tr>
-                                                        <th colspan="5" class="text-center" style="border:none;">
-                                                            <h4 style="font-size:17px; font-weight:600; margin:0;">
-                                                            {{ $order_tour->tour?->title }}
-                                                            </h4>
-                                                        </th>
-                                                    </tr>
+                                                    
                                                 </thead>
 
 
