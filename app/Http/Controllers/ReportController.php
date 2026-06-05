@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ReportController extends Controller
 {
@@ -27,34 +28,95 @@ public function overview(Request $request)
     | DATE FILTER
     |--------------------------------------------------------------------------
     */
-    $startDate = $request->start_date 
-        ? Carbon::parse($request->start_date)->startOfDay()
-        : Carbon::today()->startOfDay();
-
-    $endDate = $request->end_date 
-        ? Carbon::parse($request->end_date)->endOfDay()
-        : Carbon::today()->endOfDay();
-
     /*
     |--------------------------------------------------------------------------
-    | BASE QUERY (FILTERED ORDERS)
+    | BASE QUERY
     |--------------------------------------------------------------------------
     */
     $orderQuery = DB::table('orders')
         ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
         ->whereNull('orders.deleted_at')
-        ->whereNotIn('orders.order_status', $excludedStatuses)
-        ->whereBetween('orders.created_at', [$startDate, $endDate]);
+        ->whereNotIn('orders.order_status', $excludedStatuses);
 
-    // Filters
-    if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
-        $orderQuery->whereBetween('order_tours.tour_date', [
-            $request->tour_start_date,
-            $request->tour_end_date,
-        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK IF ANY FILTER IS APPLIED
+    |--------------------------------------------------------------------------
+    */
+    $hasFilter = $request->filled('booking_date')
+        || $request->filled('tour_date')
+        || $request->filled('product')
+        || $request->filled('order_status')
+        || $request->filled('payment_status')
+        || $request->filled('partner')
+        || $request->filled('action_type');
+
+     if (!$hasFilter) {
+        return view('admin.reports.overview', [
+                'performance' => [
+                    'total_orders' => 0,
+                    'gross_sales' => 0,
+                    'payment_received' => 0,
+                    'pending_amount' => 0,
+                    'refund' => 0,
+                    'net_sales' => 0,
+                ],
+                'partners' => Partner::get(),
+            ]);
     }
-    if ($product = $request->input('product')) {
-        $orderQuery->where('order_tours.tour_id', $product);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | BOOKING DATE FILTER (DEFAULT = LAST 7 DAYS)
+    |--------------------------------------------------------------------------
+    */
+    if ($request->filled('booking_date')) {
+
+        try {
+            [$start, $end] = explode(' - ', $request->booking_date);
+
+            $orderQuery->whereBetween('orders.created_at', [
+                Carbon::parse($start)->startOfDay(),
+                Carbon::parse($end)->endOfDay(),
+            ]);
+
+        } catch (\Exception $e) {
+            // fail silently
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | TOUR DATE FILTER
+    |--------------------------------------------------------------------------
+    */
+    if ($request->filled('tour_date')) {
+
+        try {
+            [$start, $end] = explode(' - ', $request->tour_date);
+
+            $orderQuery->whereBetween('order_tours.tour_date', [
+                $start,
+                $end,
+            ]);
+
+        } catch (\Exception $e) {
+            // fail silently
+        }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | OTHER FILTERS
+    |--------------------------------------------------------------------------
+    */
+    if ($request->filled('product')) {
+        $orderQuery->where('order_tours.tour_id', $request->product);
     }
 
     if ($request->filled('order_status')) {
@@ -140,7 +202,7 @@ public function overview(Request $request)
                 $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
                 if ($qty > 0) {
-                    $productValue += ($p['price_type'] == 'FIXED')
+                    $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
                         ? $price
                         : $price * $qty;
                 }
@@ -172,11 +234,13 @@ public function overview(Request $request)
                 $taxes = is_string($tour->tour_fees)
                     ? json_decode($tour->tour_fees, true)
                     : $tour->tour_fees;
-
-                foreach ($taxes as $tax) {
-                    $taxAmount = get_tax($subtotal, $tax['type'], 13);
-                    $subtotal += $taxAmount;
+                if($taxes){
+                    foreach ($taxes as $tax) {
+                        $taxAmount = get_tax($subtotal, $tax['type'], 13);
+                        $subtotal += $taxAmount;
+                    }
                 }
+                
             }
 
             $finalTotal += $subtotal;
@@ -240,13 +304,54 @@ public function revenue(Request $request)
     */
 
     $excludedStatuses = [1, 2, 6, 7];
-    $startDate = $request->start_date
-        ? Carbon::parse($request->start_date)->startOfDay()
-        : Carbon::today()->startOfDay();
+    /*
+|--------------------------------------------------------------------------
+| CHECK IF ANY FILTER IS APPLIED
+|--------------------------------------------------------------------------
+    */
+    $hasFilter = $request->filled('booking_date')
+        || $request->filled('tour_date')
+        || $request->filled('product')
+        || $request->filled('order_status')
+        || $request->filled('payment_status')
+        || $request->filled('partner')
+        || $request->filled('action_type');
 
-    $endDate = $request->end_date
-        ? Carbon::parse($request->end_date)->endOfDay()
-        : Carbon::today()->endOfDay();
+    /*
+    |--------------------------------------------------------------------------
+    | DEFAULT BOOKING DATE (LAST 7 DAYS)
+    |--------------------------------------------------------------------------
+    */
+    if (!$hasFilter) {
+
+        // if (!$hasFilter) {
+        $orders = new LengthAwarePaginator([], 0, 8);
+        $customers = new LengthAwarePaginator([], 0, 8);
+        $partners = Partner::get();
+
+            return view('admin.reports.revenue', compact('orders', 'customers', 'partners'));
+        // }
+        $request->merge([
+            'booking_date' => now()->subDays(7)->format('Y-m-d') . ' - ' . now()->format('Y-m-d')
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PARSE BOOKING DATE
+    |--------------------------------------------------------------------------
+    */
+    $startDate = null;
+    $endDate = null;
+
+    if ($request->filled('booking_date')) {
+        try {
+            [$start, $end] = explode(' - ', $request->booking_date);
+
+            $startDate = Carbon::parse($start)->startOfDay();
+            $endDate   = Carbon::parse($end)->endOfDay();
+        } catch (\Exception $e) {}
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -263,8 +368,7 @@ public function revenue(Request $request)
         ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
         ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
         ->whereNull('orders.deleted_at')
-        ->whereNotIn('orders.order_status', $excludedStatuses)
-        ->whereBetween('orders.created_at', [$startDate, $endDate])->groupBy('orders.id');
+        ->whereNotIn('orders.order_status', $excludedStatuses)->groupBy('orders.id');
 
     /*
     |--------------------------------------------------------------------------
@@ -274,7 +378,9 @@ public function revenue(Request $request)
 
     // ✅ Order Status
 
-
+    if ($startDate && $endDate) {
+        $query->whereBetween('orders.created_at', [$startDate, $endDate]);
+    }
 
     if ($product = $request->input('product')) {
         $query->where('order_tours.tour_id', $product);
@@ -304,11 +410,12 @@ public function revenue(Request $request)
     }
 
     // ✅ Tour Date Filter (IMPORTANT FIX)
-    if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
-        $query->whereBetween('order_tours.tour_date', [
-            $request->tour_start_date,
-            $request->tour_end_date,
-        ]);
+    if ($request->filled('tour_date')) {
+        try {
+            [$start, $end] = explode(' - ', $request->tour_date);
+
+            $query->whereBetween('order_tours.tour_date', [$start, $end]);
+        } catch (\Exception $e) {}
     }
 
     // dd( $request->tour_start_date, Carbon::parse($request->tour_start_date)->startOfDay());
@@ -355,7 +462,7 @@ public function revenue(Request $request)
              'tours.title as product_name'
         )
         ->orderByDesc('orders.id')
-        ->paginate(8)
+        ->paginate(20)
         ->withQueryString();
 
     /*
@@ -402,7 +509,7 @@ public function revenue(Request $request)
             $actual_price = $p['actual_price'] ?? $p['price'] ?? 0;
 
             if ($qty > 0) {
-                $productValue += ($p['price_type'] == 'FIXED')
+                $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
                     ? $actual_price
                     : $actual_price * $qty;
             }
@@ -491,6 +598,39 @@ public function revenue(Request $request)
         */
         $order->category = $categoryMap[$order->tour_id] ?? '-';
 
+        $adult = 0;
+        $child = 0;
+        $infant = 0;
+        $other = 0;
+
+        foreach ($pricing as $p) {
+            $qty = (int) ($p['quantity'] ?? 0);
+            $label = strtolower($p['label'] ?? '');
+            $priceType = $p['price_type'] ?? '';
+
+            // ✅ FIXED → treat as Adults
+            if ($priceType === 'FIXED') {
+                $adult += $qty;
+                continue;
+            }
+
+            if (str_contains($label, 'adult')) {
+                $adult += $qty;
+            } elseif (str_contains($label, 'child')) {
+                $child += $qty;
+            } elseif (str_contains($label, 'infant')) {
+                $infant += $qty;
+            } else {
+                $other += $qty;
+            }
+        }
+
+        // attach to order
+        $order->adult = $adult;
+        $order->child = $child;
+        $order->infant = $infant;
+        $order->other = $other;
+
         return $order;
     });
 
@@ -504,9 +644,11 @@ $customers = DB::table('orders')
     ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
     ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
     ->whereNull('orders.deleted_at')
-    ->whereNotIn('orders.order_status', $excludedStatuses)
-    ->whereBetween('orders.created_at', [$startDate, $endDate])->groupBy('orders.id');
+    ->whereNotIn('orders.order_status', $excludedStatuses)->groupBy('orders.id');
 
+if ($startDate && $endDate) {
+    $customers->whereBetween('orders.created_at', [$startDate, $endDate]);
+}
 // SAME FILTERS (IMPORTANT)
 if ($request->filled('payment_status')) {
     $customers->where('orders.payment_status', $request->payment_status);
@@ -533,12 +675,13 @@ if ($request->action_type === 'pay_now') {
 if ($request->filled('partner')) {
         $customers->where('orders.source', $request->partner);
     }
- if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
-        $customers->whereBetween('order_tours.tour_date', [
-            $request->tour_start_date,
-            $request->tour_end_date,
-        ]);
-    }
+ if ($request->filled('tour_date')) {
+    try {
+        [$start, $end] = explode(' - ', $request->tour_date);
+
+        $customers->whereBetween('order_tours.tour_date', [$start, $end]);
+    } catch (\Exception $e) {}
+}
 
 $customers = $customers->select(
         'orders.order_number',
@@ -555,7 +698,7 @@ $customers = $customers->select(
         'order_customers.promo_code'
     )
     ->orderByDesc('orders.id')
-    ->paginate(8, ['*'], 'customer_page') // IMPORTANT (separate pagination)
+    ->paginate(20, ['*'], 'customer_page') // IMPORTANT (separate pagination)
     ->withQueryString();
 
     $partners = Partner::get();
@@ -580,7 +723,7 @@ public function invoiceExport(Request $request)
 
     return \Maatwebsite\Excel\Facades\Excel::download(
         new \App\Exports\InvoiceExport($data),
-        'invoice-report.xlsx'
+        'invoice-report' . now()->format('Ymd_His') . '.xlsx'
     );
 }
 
@@ -589,13 +732,22 @@ private function getInvoiceData($request, $paginate = false)
 {
     $excludedStatuses = [1, 2, 6, 7];
 
-    $startDate = $request->start_date
-        ? Carbon::parse($request->start_date)->startOfDay()
-        : Carbon::today()->startOfDay();
+    $hasFilter = $request->filled('booking_date')
+    || $request->filled('tour_date')
+    || $request->filled('product')
+    || $request->filled('order_status')
+    || $request->filled('payment_status')
+    || $request->filled('partner')
+    || $request->filled('action_type');
 
-    $endDate = $request->end_date
-        ? Carbon::parse($request->end_date)->endOfDay()
-        : Carbon::today()->endOfDay();
+    if (!$hasFilter) {
+        return $paginate
+            ? [
+                'rows' => [],
+                'pagination' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20)
+            ]
+            : [];
+    }
 
     $query = DB::table('orders')
         ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
@@ -604,10 +756,26 @@ private function getInvoiceData($request, $paginate = false)
         ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
         ->whereNull('orders.deleted_at')
         ->whereNotIn('orders.order_status', $excludedStatuses)
-        ->whereBetween('orders.created_at', [$startDate, $endDate])
         ->groupBy('orders.id');
 
     // Filters
+
+    $startDate = null;
+    $endDate = null;
+
+    if ($request->filled('booking_date')) {
+        try {
+            [$start, $end] = explode(' - ', $request->booking_date);
+
+            $startDate = Carbon::parse($start)->startOfDay();
+            $endDate   = Carbon::parse($end)->endOfDay();
+            if ($startDate && $endDate) {
+                $query->whereBetween('orders.created_at', [$startDate, $endDate]);
+            }
+        } catch (\Exception $e) {}
+
+    }
+
     if ($request->filled('order_status')) {
         $query->where('orders.order_status', $request->order_status);
     }
@@ -629,13 +797,32 @@ private function getInvoiceData($request, $paginate = false)
         });
     }
 
+    if ($product = $request->input('product')) {
+        $query->where('order_tours.tour_id', $product);
+    }
 
 
-    if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
-        $query->whereBetween('order_tours.tour_date', [
-            $request->tour_start_date,
-            $request->tour_end_dates,
-        ]);
+
+    // if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
+    //     $query->whereBetween('order_tours.tour_date', [
+    //         $request->tour_start_date,
+    //         $request->tour_end_dates,
+    //     ]);
+    // }
+
+    if ($request->filled('tour_date')) {
+
+        try {
+            [$start, $end] = explode(' - ', $request->tour_date);
+
+            $query->whereBetween('order_tours.tour_date', [
+                $start,
+                $end,
+            ]);
+
+        } catch (\Exception $e) {
+            // fail silently
+        }
     }
 
     $query->select(
@@ -666,7 +853,7 @@ private function getInvoiceData($request, $paginate = false)
 
 
     $orders = $paginate
-        ? $query->paginate(8)->withQueryString()
+        ? $query->paginate(20)->withQueryString()
         : $query->get();
 
     $orderCollection = $paginate ? $orders->getCollection() : $orders;
@@ -706,12 +893,46 @@ private function getInvoiceData($request, $paginate = false)
         $extras  = json_decode($order->tour_extra, true) ?? [];
         $discounts = json_decode($order->discount, true) ?? [];
 
+        // foreach ($pricing as $p) {
+        //     $qty = $p['quantity'] ?? 0;
+        //     $price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+        //     if ($qty > 0) {
+        //         $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
+        //             ? $price
+        //             : $price * $qty;
+        //     }
+        // }
+
+        $adult = 0;
+        $child = 0;
+        $infant = 0;
+        $other = 0;
+
         foreach ($pricing as $p) {
-            $qty = $p['quantity'] ?? 0;
+            $qty = (int) ($p['quantity'] ?? 0);
+            $label = strtolower($p['label'] ?? '');
+            $priceType = $p['price_type'] ?? '';
+
+            // FIXED → treat as Adults
+            if ($priceType === 'FIXED') {
+                $adult += $qty;
+                continue;
+            }
+
+            if (str_contains($label, 'adult')) {
+                $adult += $qty;
+            } elseif (str_contains($label, 'child')) {
+                $child += $qty;
+            } elseif (str_contains($label, 'infant')) {
+                $infant += $qty;
+            } else {
+                $other += $qty;
+            }
             $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
             if ($qty > 0) {
-                $productValue += ($p['price_type'] == 'FIXED')
+                $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
                     ? $price
                     : $price * $qty;
             }
@@ -790,6 +1011,10 @@ private function getInvoiceData($request, $paginate = false)
             // 'paid' => config('constants.payment_status')[$order->payment_status] ?? '-',
 
             'product_name' => $order->product_name,
+            'adult' => $adult,
+            'child' => $child,
+            'infant' => $infant,
+            'other' => $other,
         ];
     }
 
@@ -826,7 +1051,7 @@ public function invoiceWithDetailsExport(Request $request)
 
     return Excel::download(
         new \App\Exports\InvoiceWithDetailsExport($data),
-        'invoice-details.xlsx'
+        'invoice-details' . now()->format('Ymd_His') . '.xlsx'
     );
 }
 
@@ -836,13 +1061,22 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
 {
     $excludedStatuses = [1, 2, 6, 7];
 
-    $startDate = $request->start_date
-        ? Carbon::parse($request->start_date)->startOfDay()
-        : Carbon::today()->startOfDay();
+    $hasFilter = $request->filled('booking_date')
+    || $request->filled('tour_date')
+    || $request->filled('product')
+    || $request->filled('order_status')
+    || $request->filled('payment_status')
+    || $request->filled('partner')
+    || $request->filled('action_type');
 
-    $endDate = $request->end_date
-        ? Carbon::parse($request->end_date)->endOfDay()
-        : Carbon::today()->endOfDay();
+    if (!$hasFilter) {
+        return $paginate
+            ? [
+                'rows' => [],
+                'pagination' => new LengthAwarePaginator([], 0, 20)
+            ]
+            : [];
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -879,8 +1113,20 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
         ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
         ->whereNull('orders.deleted_at')
         ->whereNotIn('orders.order_status', $excludedStatuses)
-        ->whereBetween('orders.created_at', [$startDate, $endDate])
         ->groupBy('orders.id');
+
+    if ($request->filled('booking_date')) {
+        try {
+            [$start, $end] = explode(' - ', $request->booking_date);
+
+            $startDate = Carbon::parse($start)->startOfDay();
+            $endDate   = Carbon::parse($end)->endOfDay();
+            if ($startDate && $endDate) {
+                $query->whereBetween('orders.created_at', [$startDate, $endDate]);
+            }
+        } catch (\Exception $e) {}
+
+    }
 
     if ($request->filled('order_status')) {
         $query->where('orders.order_status', $request->order_status);
@@ -902,12 +1148,23 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
               ->orWhereNull('orders.action_name');
         });
     }
+    if ($product = $request->input('product')) {
+        $query->where('order_tours.tour_id', $product);
+    }
 
-    if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
-        $query->whereBetween('order_tours.tour_date', [
-            $request->tour_start_date,
-            $request->tour_end_date,
-        ]);
+    if ($request->filled('tour_date')) {
+
+        try {
+            [$start, $end] = explode(' - ', $request->tour_date);
+
+            $query->whereBetween('order_tours.tour_date', [
+                $start,
+                $end,
+            ]);
+
+        } catch (\Exception $e) {
+            // fail silently
+        }
     }
 
     $query->select(
@@ -920,6 +1177,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
         'order_tours.tour_date',
         'order_tours.tour_extra',
         'order_tours.tour_fees',
+        'order_tours.tour_pricing',
 
         'order_customers.first_name',
         'order_customers.last_name',
@@ -928,7 +1186,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
     )->orderByDesc('orders.id');
 
     $orders = $paginate
-        ? $query->paginate(8)->withQueryString()
+        ? $query->paginate(20)->withQueryString()
         : $query->get();
 
     $collection = $paginate ? $orders->getCollection() : $orders;
@@ -937,6 +1195,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
     $index = $paginate
         ? ($orders->currentPage() - 1) * $orders->perPage() + 1
         : 1;
+
 
     foreach ($collection as $order) {
 
@@ -956,6 +1215,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
                 'tax' => 0,
                 'fee' => 0,
                 'total' => 0,
+                'quantity' => 0,
             ];
         }
 
@@ -986,6 +1246,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
 
             $extraColumns[$key] = [
                 'description' => $e['label'] ?? '',
+                'quantity' => $qty,
                 'price' => round(currencyConvertWithoutRound($price, $order->currency, 'CAD'), 2),
                 'tax' => 0,
                 'fee' => 0,
@@ -1014,6 +1275,36 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
 
         $customerTotal = $extraValue + $taxValue;
 
+
+            $pricing = json_decode($order->tour_pricing, true) ?? [];
+
+        $adult = 0;
+        $child = 0;
+        $infant = 0;
+        $other = 0;
+
+        foreach ($pricing as $p) {
+            $qty = (int) ($p['quantity'] ?? 0);
+            $label = strtolower($p['label'] ?? '');
+            $priceType = $p['price_type'] ?? '';
+
+            // FIXED → treat as Adults
+            if ($priceType === 'FIXED') {
+                $adult += $qty;
+                continue;
+            }
+
+            if (str_contains($label, 'adult')) {
+                $adult += $qty;
+            } elseif (str_contains($label, 'child')) {
+                $child += $qty;
+            } elseif (str_contains($label, 'infant')) {
+                $infant += $qty;
+            } else {
+                $other += $qty;
+            }
+        }
+
         /*
         |--------------------------------------------------------------------------
         | FINAL ROW (DYNAMIC SAFE)
@@ -1028,11 +1319,16 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
             'customer_total' => round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
             'payment_status' => $order->payment_status == 2 ? 'Yes' : 'No',
             'product_name' => $order->product_name,
+            'adult' => $adult,
+            'child' => $child,
+            'infant' => $infant,
+            'other' => $other,
         ];
 
         // attach all addon columns consistently
         foreach ($allAddonKeys as $key) {
             $row[$key.'_desc']  = $extraColumns[$key]['description'];
+            $row[$key.'_quant'] = $extraColumns[$key]['quantity'];
             $row[$key.'_price'] = $extraColumns[$key]['price'];
             $row[$key.'_tax']   = $extraColumns[$key]['tax'];
             $row[$key.'_fee']   = $extraColumns[$key]['fee'];

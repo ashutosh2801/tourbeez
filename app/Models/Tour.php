@@ -168,4 +168,17 @@ class Tour extends Model
             $this->schedule->estimated_duration_num . ' ' . ucfirst($this->schedule->estimated_duration_unit)
         ));
     }
+
+    public function getTaxesFeesResolvedAttribute()
+    {
+        if ($this->taxes_fees->isNotEmpty()) {
+            return $this->taxes_fees;
+        }
+
+        if ($this->parent_id && $this->parent) {
+            return $this->parent->taxes_fees;
+        }
+
+        return collect();
+    }
 }

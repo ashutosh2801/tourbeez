@@ -35,25 +35,44 @@
     .pagination {
         justify-content: center;
     }
-    /* Make Select2 look like Bootstrap input */
-.select2-container--default .select2-selection--single {
-    height: 38px !important;
-    border: 1px solid #ced4da;
-    border-radius: 0.375rem;
-    padding: 0 10px;
-}
+   
+    /* FULL FIX FOR SELECT2 HEIGHT */
+    .select2-container .select2-selection--single {
+        height: 42px !important;
+        border: 1px solid #ced4da !important;
+        border-radius: 0.375rem !important;
+        display: flex !important;
+        align-items: center !important;
+    }
 
-/* FIX placeholder alignment */
-.select2-container--default .select2-selection__rendered {
-    line-height: 38px !important;  /* match height */
-    padding-left: 0 !important;
-    color: #6c757d; /* placeholder color */
-}
+    /* TEXT FIX */
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: normal !important;
+        padding-left: 10px !important;
+        color: #495057 !important;
+    }
 
-/* arrow alignment */
-.select2-container--default .select2-selection__arrow {
-    height: 38px !important;
-}
+    /* PLACEHOLDER COLOR */
+    .select2-container--default .select2-selection__placeholder {
+        color: #6c757d !important;
+    }
+
+    /* ARROW ALIGNMENT */
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 100% !important;
+        right: 10px !important;
+    }
+
+    /* FIX WHEN SELECTED (THIS IS YOUR BUG) */
+    .select2-container--default.select2-container--open .select2-selection--single,
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        height: 38px !important;
+    }
+
+    /* FORCE CONSISTENT HEIGHT ALWAYS */
+    .select2-container {
+        width: 100% !important;
+    }
 </style>
 
 
@@ -63,48 +82,118 @@
         </div>
     </div>
 
+        {{-- FILTER --}}
     <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
         <form method="GET">
 
             <div class="row">
 
                 {{-- BOOKING DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
+
+                {{-- BOOKING DATE --}}
+
+    @php
+        $hasFilter = request()->hasAny([
+            'booking_date',
+            'tour_date',
+            'product',
+            'order_status',
+            'payment_status',
+            'partner',
+            'action_type'
+        ]);
+    @endphp
+    <div class="col-xl-3 col-md-3 col-12 position-relative">
+        <label class="filter-label">Booking Date</label>
+
+        <input 
+            type="text" 
+            name="booking_date"
+            
+            class="form-control aiz-date-range"
+            data-advanced-range="true"
+            data-separator=" - "
+            data-show-dropdown="true"
+            placeholder="Select date range"
+            autocomplete="off"
+            value="{{ request('booking_date') }}"
+        >
+
+        @if(request('booking_date'))
+            <span class="clear-btn" onclick="clearBooking()">✕</span>
+        @endif
+    </div>
+
+
+    {{-- TOUR DATE --}}
+    <div class="col-xl-3 col-md-3 col-12 position-relative">
+        <label class="filter-label">Tour Date</label>
+
+        <input 
+            type="text" 
+            name="tour_date"
+            
+            class="form-control aiz-date-range"
+            data-advanced-range="true"
+            data-separator=" - "
+            data-show-dropdown="true"
+            placeholder="Select date range"
+            autocomplete="off"
+            value="{{ request('tour_date') }}"
+        >
+
+        @if(request('tour_date'))
+            <span class="clear-btn" onclick="clearTour()">✕</span>
+        @endif
+    </div>
+                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Booking Date</label>
 
                     <input type="text" id="booking_range" class="form-control"
                         placeholder="Select date range" autocomplete="off">
 
-                    @if(request('start_date'))
+                    
                         <span class="clear-btn" onclick="clearBooking()">✕</span>
-                    @endif
+                    
 
                     <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
                     <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
-                </div>
+                </div> -->
+
 
                 {{-- TOUR DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Fulfilment Date</label>
+                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <label class="filter-label">     Date</label>
 
                     <input type="text" id="tour_range" class="form-control"
                         placeholder="Select date range" autocomplete="off">
 
-                    @if(request('tour_start_date'))
+                   
                         <span class="clear-btn" onclick="clearTour()">✕</span>
-                    @endif
+                   
 
                     <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
                     <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
-                </div>
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Product</label>
+                </div> -->
+            <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <label class="filter-label">Products</label>
                     <select id="productFilter" name="product" class="form-control"></select>
-                </div>
+                </div>  -->
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <label class="filter-label">Products</label>
+                <select id="productFilter" name="product" class="form-control">
+                    @if(request('product') && request('product_text'))
+                        <option value="{{ request('product') }}" selected>
+                            {{ request('product_text') }}
+                        </option>
+                    @endif
+                </select>
 
+                <input type="hidden" id="product_text" name="product_text" value="{{ request('product_text') }}">
+                 </div> 
 
                 {{-- ORDER STATUS --}}
-                <div class="col-xl-2 col-md-3 col-12">
+                <div class="col-xl-2 col-md-2 col-12">
                     <label class="filter-label">Order Status</label>
                     <select name="order_status" class="form-control">
                         <option value="">All</option>
@@ -127,7 +216,7 @@
                 </div>
 
                 {{-- PAY TYPE --}}
-                <div class="col-xl-2 col-md-2 col-12">
+                <div class="col-xl-2 col-md-3 col-12">
                     <label class="filter-label">Pay Type</label>
                     <select name="action_type" class="form-control">
                         <option value="">All</option>
@@ -153,15 +242,81 @@
                 </div>
 
                 {{-- BUTTONS --}}
-                <div class="col-xl-2 col-md-2 col-12">
+                <div class="col-xl-2 col-md-3 col-12">
                     <div class="d-flex column-gap-10">
                         <button class="btn btn-apply flex-fill">Apply</button>
-                        <a href="{{ route('admin.report.revenue') }}" class="btn btn-secondary flex-fill">Reset</a>
+                        <a href="{{ route('admin.report.overview') }}" class="btn btn-secondary flex-fill">Reset</a>
                     </div>
                 </div>
 
             </div>
         </form>
+    </div>
+
+
+    @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
+        <div class="alert alert-info">
+            Please apply filters to view report data.
+        </div>
+    @endif
+    <div class="active-filters mb-3">
+        @if(request()->hasAny([
+            'booking_date','tour_date','product',
+            'order_status','action_type','partner'
+        ]))
+
+
+
+            <div class="d-flex flex-wrap gap-2">
+
+                {{-- BOOKING DATE --}}
+                @if(request('booking_date'))
+                    <span class="badge bg-dark">
+                        Booking: {{ request('booking_date') }}
+                        <a href="{{ request()->fullUrlWithQuery(['booking_date' => null]) }}" ><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+
+                {{-- TOUR DATE --}}
+                @if(request('tour_date'))
+                    <span class="badge bg-dark ml-2">
+                        Tour: {{ request('tour_date') }}
+                        <a href="{{ request()->fullUrlWithQuery(['tour_date' => null]) }}"><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+
+                {{-- PRODUCT --}}
+                @if(request('product'))
+                    <span class="badge bg-dark ml-2">
+                        Product: {{ request('product_text') ?? request('product') }}
+                        <a href="{{ request()->fullUrlWithQuery(['product' => null, 'product_text' => null]) }}"><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+
+                {{-- STATUS --}}
+                @if(request('order_status'))
+                    <span class="badge bg-dark ml-2">
+                        Status: {{ $status_with_code[request('order_status')] ?? request('order_status') }}
+                        <a href="{{ request()->fullUrlWithQuery(['order_status' => null]) }}" ><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+
+                {{-- PAY TYPE --}}
+                @if(request('action_type'))
+                    <span class="badge bg-dark ml-2">
+                        Pay: {{ request('action_type') }}
+                        <a href="{{ request()->fullUrlWithQuery(['action_type' => null]) }}" ><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+                 @if(request('partner'))
+                    <span class="badge bg-dark ml-2">
+                        Pay: {{ request('partner') }}
+                        <a href="{{ request()->fullUrlWithQuery(['partner' => null]) }}" ><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+
+            </div>
+        @endif
     </div>
 
     <div class="card card-primary bg-white border rounded-lg-custom report-table">
@@ -205,7 +360,13 @@
                         <th>Tax</th>
                         <th>Net Sales</th>
 
-                        <th>Pax</th>
+                        <th>Total Pax</th>
+                        <th>Adult</th>
+                        <th>Child</th>
+                        <th>Infant</th>
+                        <th>Senior Citizen</th>
+
+                        
                         <th>Product Value</th>
                         <th>Adjustment</th>
                         <th>Extra Value</th>
@@ -249,44 +410,49 @@
                             <td>{{ trim(($order->customer_first_name ?? '') . ' ' . ($order->customer_last_name ?? '')) ?: '-' }}</td>
 
                             {{-- ✅ MONEY (FROM FIXED BACKEND LOGIC) --}}
-                            <td>{{ number_format($order->total_amount_converted, 2) }}</td>
-                            <td>{{ number_format($order->paid_amount_converted, 2) }}</td>
-                            <td>{{ $order->balance_converted > 0 ?number_format($order->balance_converted, 2) : 0 }}</td>
+                            <td>{{ number_format_with_currency($order->total_amount_converted, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->paid_amount_converted, 2) }}</td>
+                            <td>{{ $order->balance_converted > 0 ?number_format_with_currency($order->balance_converted, 2) : 0 }}</td>
 
                             {{-- Fees (keep 0 if not calculated yet) --}}
-                            <td>{{ number_format($order->booking_fee ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->booking_fee ?? 0, 2) }}</td>
                             <td>0</td>
                             <td>0</td>
                             <td>0</td>
                             <td>0</td>
 
                             {{-- Commission & Tax (if added later) --}}
-                            <td>{{ number_format($order->commission ?? 0, 2) }}</td>
-                            <td>{{ number_format($order->tax_converted ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->commission ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->tax_converted ?? 0, 2) }}</td>
 
                             {{-- Net Sales --}}
-                            <td>{{ number_format($order->net_sales_converted ?? $order->total_amount_converted, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->net_sales_converted ?? $order->total_amount_converted, 2) }}</td>
 
                             {{-- Pax --}}
                             <td>{{ $order->pax ?? 0 }}</td>
+                            <td>{{ $order->adult }}</td>
+                            <td>{{ $order->child }}</td>
+                            <td>{{ $order->infant }}</td>
+                            <td>{{ $order->other }}</td>
+                            
 
                             {{-- Product Value --}}
-                            <td>{{ number_format($order->product_value_converted, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->product_value_converted, 2) }}</td>
 
-                            <td>{{ number_format($order->discount_value_converted, 2) }}</td> {{-- Adjustment --}}
-                            <td>{{ number_format($order->extra_value_converted, 2) }}</td> {{-- Extra Value --}}
+                            <td>{{ number_format_with_currency($order->discount_value_converted, 2) }}</td> {{-- Adjustment --}}
+                            <td>{{ number_format_with_currency($order->extra_value_converted, 2) }}</td> {{-- Extra Value --}}
 
                             {{-- Promo --}}
-                            <td>{{ number_format($order->promo_amount ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->promo_amount ?? 0, 2) }}</td>
 
                             {{-- Payment Split --}}
-                            <td>{{ number_format($order->card_payment ?? 0, 2) }}</td>
-                            <td>{{ number_format($order->cash_payment ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->card_payment ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->cash_payment ?? 0, 2) }}</td>
 
-                            <td>{{ number_format($order->promo_amount ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->promo_amount ?? 0, 2) }}</td>
 
                             <td>0</td> {{-- Free --}}
-                            <td>{{ number_format($order->refunded ?? 0, 2) }}</td>
+                            <td>{{ number_format_with_currency($order->refunded ?? 0, 2) }}</td>
 
                             {{-- Status --}}
                             <td>{{ config('constants.payment_status')[$order->payment_status] ?? '-' }}</td>
@@ -435,6 +601,7 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 
 <script>
@@ -445,86 +612,88 @@
     | BOOKING RANGE (DEFAULT = TODAY)
     |--------------------------------------------------------------------------
     */
-    let bookingStart = "{{ request('start_date') }}" ? moment("{{ request('start_date') }}") : today;
-    let bookingEnd   = "{{ request('end_date') }}" ? moment("{{ request('end_date') }}") : today;
+    // let bookingStart = "{{ request('start_date') }}" ? moment("{{ request('start_date') }}") : today;
+    // let bookingEnd   = "{{ request('end_date') }}" ? moment("{{ request('end_date') }}") : today;
 
-    $('#booking_range').daterangepicker({
-        startDate: bookingStart,
-        endDate: bookingEnd,
-        autoUpdateInput: true,
-        opens: 'left',
-        locale: {
-            format: 'DD MMM YYYY',
-            cancelLabel: 'Clear'
-        }
-    });
+    // $('#booking_range').daterangepicker({
+    //     startDate: bookingStart,
+    //     endDate: bookingEnd,
+    //     autoUpdateInput: true,
+    //     opens: 'left',
+    //     locale: {
+    //         format: 'DD MMM YYYY',
+    //         cancelLabel: 'Clear'
+    //     }
+    // });
 
-    // Set hidden fields initially
-    $('#start_date').val(bookingStart.format('YYYY-MM-DD'));
-    $('#end_date').val(bookingEnd.format('YYYY-MM-DD'));
+    // // Set hidden fields initially
+    // $('#start_date').val(bookingStart.format('YYYY-MM-DD'));
+    // $('#end_date').val(bookingEnd.format('YYYY-MM-DD'));
 
-    // Update on apply
-    $('#booking_range').on('apply.daterangepicker', function(ev, picker) {
-        $('#start_date').val(picker.startDate.format('YYYY-MM-DD'));
-        $('#end_date').val(picker.endDate.format('YYYY-MM-DD'));
-    });
+    // // Update on apply
+    // $('#booking_range').on('apply.daterangepicker', function(ev, picker) {
+    //     $('#start_date').val(picker.startDate.format('YYYY-MM-DD'));
+    //     $('#end_date').val(picker.endDate.format('YYYY-MM-DD'));
+    // });
 
-    /*
-    |--------------------------------------------------------------------------
-    | TOUR RANGE
-    |--------------------------------------------------------------------------
-    */
-    let tourStart = "{{ request('tour_start_date') }}" ? moment("{{ request('tour_start_date') }}") : null;
-    let tourEnd   = "{{ request('tour_end_date') }}" ? moment("{{ request('tour_end_date') }}") : null;
+    // /*
+    // |--------------------------------------------------------------------------
+    // | TOUR RANGE
+    // |--------------------------------------------------------------------------
+    // */
+    // let tourStart = "{{ request('tour_start_date') }}" ? moment("{{ request('tour_start_date') }}") : null;
+    // let tourEnd   = "{{ request('tour_end_date') }}" ? moment("{{ request('tour_end_date') }}") : null;
 
-    $('#tour_range').daterangepicker({
-        autoUpdateInput: false,
-        opens: 'left',
-        locale: { format: 'DD MMM YYYY' }
-    });
+    // $('#tour_range').daterangepicker({
+    //     autoUpdateInput: false,
+    //     opens: 'left',
+    //     locale: { format: 'DD MMM YYYY' }
+    // });
 
-    if (tourStart && tourEnd) {
-        $('#tour_range').data('daterangepicker').setStartDate(tourStart);
-        $('#tour_range').data('daterangepicker').setEndDate(tourEnd);
-        $('#tour_range').val(tourStart.format('DD MMM YYYY') + ' - ' + tourEnd.format('DD MMM YYYY'));
-    }
+    // if (tourStart && tourEnd) {
+    //     $('#tour_range').data('daterangepicker').setStartDate(tourStart);
+    //     $('#tour_range').data('daterangepicker').setEndDate(tourEnd);
+    //     $('#tour_range').val(tourStart.format('DD MMM YYYY') + ' - ' + tourEnd.format('DD MMM YYYY'));
+    // }
 
-    $('#tour_range').on('apply.daterangepicker', function(ev, picker) {
-        $('#tour_start_date').val(picker.startDate.format('YYYY-MM-DD'));
-        $('#tour_end_date').val(picker.endDate.format('YYYY-MM-DD'));
-        $(this).val(picker.startDate.format('DD MMM YYYY') + ' - ' + picker.endDate.format('DD MMM YYYY'));
-    });
-        function clearBooking() {
-            $('#booking_range').val('');
-            $('#start_date').val('');
-            $('#end_date').val('');
+    // $('#tour_range').on('apply.daterangepicker', function(ev, picker) {
+    //     $('#tour_start_date').val(picker.startDate.format('YYYY-MM-DD'));
+    //     $('#tour_end_date').val(picker.endDate.format('YYYY-MM-DD'));
+    //     $(this).val(picker.startDate.format('DD MMM YYYY') + ' - ' + picker.endDate.format('DD MMM YYYY'));
+    // });
+    //     function clearBooking() {
+    //         $('#booking_range').val('');
+    //         $('#start_date').val('');
+    //         $('#end_date').val('');
 
-            // reset picker UI as well
-            let picker = $('#booking_range').data('daterangepicker');
-            picker.setStartDate(moment());
-            picker.setEndDate(moment());
+    //         // reset picker UI as well
+    //         let picker = $('#booking_range').data('daterangepicker');
+    //         picker.setStartDate(moment());
+    //         picker.setEndDate(moment());
             
 
             
-        }
+    //     }
 
-        /*
-        |--------------------------------------------------------------------------
-        | CLEAR TOUR RANGE
-        |--------------------------------------------------------------------------
-        */
-        function clearTour() {
-            $('#tour_range').val('');
-            $('#tour_start_date').val('');
-            $('#tour_end_date').val('');
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | CLEAR TOUR RANGE
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     function clearTour() {
+    //         $('#tour_range').val('');
+    //         $('#tour_start_date').val('');
+    //         $('#tour_end_date').val('');
 
-            // reset picker UI
-            let picker = $('#tour_range').data('daterangepicker');
-            picker.setStartDate(moment());
-            picker.setEndDate(moment());
+    //         // reset picker UI
+    //         let picker = $('#tour_range').data('daterangepicker');
+    //         picker.setStartDate(moment());
+    //         picker.setEndDate(moment());
             
 
-        }
+    //     }
+
+
 
 </script>
 
@@ -533,7 +702,7 @@
         // ✅ Select2 (optimized)
         $('#productFilter').select2({
             placeholder: 'Select Tour',
-            minimumInputLength: 4,
+            minimumInputLength: 3,
             ajax: {
                 url: '{{ route("admin.tours.tours-list") }}',
                 dataType: 'json',
@@ -546,7 +715,7 @@
                     return {
                         results: data.map(tour => ({
                             id: tour.id,
-                            text: tour.title
+                            text: `${tour.title} (${tour.unique_code ?? 'N/A'})`
                         }))
                     };
                 }
@@ -554,7 +723,36 @@
         });
 
     });
-    </script>
+    
+        
+        $('#productFilter').on('select2:select', function (e) {
+    let data = e.params.data;
+
+    $('#product_text').val(data.text);
+});
+
+        function clearBooking() {
+    $('#booking_range').val('');
+
+    // remove from URL (important UX)
+    let url = new URL(window.location.href);
+    url.searchParams.delete('booking_date');
+    window.location.href = url.toString();
+}
+
+function clearTour() {
+    $('input[name="tour_date"]').val('');
+
+    let url = new URL(window.location.href);
+    url.searchParams.delete('tour_date');
+    window.location.href = url.toString();
+}
+
+        if ($('#productFilter').val() && !$('#product_text').val()) {
+    let selectedText = $('#productFilter option:selected').text();
+    $('#product_text').val(selectedText);
+}
+</script>
 
 @endsection
 

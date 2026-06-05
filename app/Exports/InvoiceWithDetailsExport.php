@@ -30,12 +30,12 @@ class InvoiceWithDetailsExport implements FromArray, WithEvents
         // Row 2 (sub headers)
         $subHeader = [
             'No.', 'Order #', 'Customer', 'Order Date', 'Fulfilment',
-            'Total', 'Paid', 'Product'
+            'Total', 'Paid', 'Product', 'Adults', 'Childs', 'Infants', 'Senior Citizen'
         ];
 
         foreach ($this->addonKeys as $key) {
             $subHeader = array_merge($subHeader, [
-                'Desc', 'Price', 'Tax', 'Fee', 'Total'
+                'Desc','Quantity', 'Price', 'Tax', 'Fee', 'Total'
             ]);
         }
 
@@ -52,17 +52,22 @@ class InvoiceWithDetailsExport implements FromArray, WithEvents
                 $r['customer_name'] ?? '',
                 $r['order_date'] ?? '',
                 $r['fulfilment_date'] ?? '',
-                number_format((float) ($r['customer_total'] ?? 0), 2, '.', ''),
+                number_format_with_currency((float) ($r['customer_total'] ?? 0), 2, '.', ''),
                 $r['payment_status'] ?? '',
                 $r['product_name'] ?? '',
+                $r['adult'] ?? '',
+                $r['child'] ?? '',
+                $r['infant'] ?? '',
+                $r['other'] ?? '',
             ];
 
             foreach ($this->addonKeys as $key) {
                 $row[] = $r[$key.'_desc'] ?? '';
-                $row[] = number_format((float) ($r[$key.'_price'] ?? 0), 2, '.', '');
-                $row[] = number_format((float) ($r[$key.'_tax'] ?? 0), 2, '.', '');
-                $row[] = number_format((float) ($r[$key.'_fee'] ?? 0), 2, '.', '');
-                $row[] = number_format((float) ($r[$key.'_total'] ?? 0), 2, '.', '');
+                $row[] = $r[$key.'_quant'] ?? '';
+                $row[] = number_format_with_currency((float) ($r[$key.'_price'] ?? 0), 2, '.', '');
+                $row[] = number_format_with_currency((float) ($r[$key.'_tax'] ?? 0), 2, '.', '');
+                $row[] = number_format_with_currency((float) ($r[$key.'_fee'] ?? 0), 2, '.', '');
+                $row[] = number_format_with_currency((float) ($r[$key.'_total'] ?? 0), 2, '.', '');
             }
 
             $rows[] = $row;
@@ -83,7 +88,7 @@ class InvoiceWithDetailsExport implements FromArray, WithEvents
                 // static columns (merge vertically)
                 $staticHeaders = [
                     'No.', 'Order #', 'Customer', 'Order Date',
-                    'Fulfilment', 'Total', 'Paid', 'Product'
+                    'Fulfilment', 'Total', 'Paid', 'Product', 'Adults', 'Childs', 'Infants', 'Senior Citizen'
                 ];
 
                 foreach ($staticHeaders as $header) {
@@ -100,9 +105,9 @@ class InvoiceWithDetailsExport implements FromArray, WithEvents
                     $sheet->setCellValueByColumnAndRow($col, 1, $label);
 
                     // merge across 5 columns ONLY
-                    $sheet->mergeCellsByColumnAndRow($col, 1, $col + 4, 1);
+                    $sheet->mergeCellsByColumnAndRow($col, 1, $col + 5, 1);
 
-                    $col += 5;
+                    $col += 6;
                 }
 
                 // styling

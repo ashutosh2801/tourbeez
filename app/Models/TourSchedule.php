@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TourSchedule extends Model
 {
     use HasFactory;
     use LogsActivity;
+    use SoftDeletes;
 
     public function repeats() {
         return $this->hasMany(TourScheduleRepeats::class, 'tour_schedule_id');

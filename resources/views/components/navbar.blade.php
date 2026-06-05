@@ -1,130 +1,170 @@
-<nav class="main-header navbar navbar-expand navbar-light">
-    <ul class="navbar-nav">
-        <li class="nav-item">
-            <a class="nav-link menu-bar" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-        </li>
-    </ul>
+<nav class="main-header navbar navbar-expand-md navbar-light">
+    <div class="sub-nav-header">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link menu-bar" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+        </ul>
+        <div class="sidenav-mobile">
+            <li class="nav-item dropdown item-currency">
+                <a class="nav-link dropdown-toggle nav-currency"
+                href="#"
+                id="currencyDropdown"
+                role="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+                title="Change Currency">
+                    <i class="fas fa-coins fa-lg mr-2"></i> {{ session('currency', 'Default (Currency)') }}
+                </a>
 
-    <ul class="navbar-nav ml-auto">
+                <div class="dropdown-menu dropdown-menu-right nav-currency-dropdown" aria-labelledby="currencyDropdown">
 
-    {{-- Notifications Dropdown --}}
-    @php
-        use App\Models\Notification;
+                    {{-- Default / Auto --}}
+                    <a href="#"
+                    class="dropdown-item currency-option {{ !session()->has('currency') ? 'active' : '' }}"
+                    data-currency="">
+                        Default (Currency)
+                    </a>
 
-        $user = auth()->user();
+                    <div class="dropdown-divider"></div>
 
-        // Supplier sees only their own notifications
-        if ($user->role === 'Supplier') {
+                    @foreach(config('constants.currencies') as $code => $country)
+                        <a href="#"
+                        class="dropdown-item currency-option {{ session('currency') === $code ? 'active' : '' }}"
+                        data-currency="{{ $code }}">
+                            {{ $code }} - {{ $country }}
+                        </a>
+                    @endforeach
+                </div>
+            </li>
+
+            <a class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse">
+                <i class="fas fa-th"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+        <ul class="navbar-nav ml-auto" id="mainNavbarActions">
+
+            {{-- Notifications Dropdown --}}
+            @php
+                use App\Models\Notification;
+
+                $user = auth()->user();
+
+                // Supplier sees only their own notifications
+                if ($user->role === 'Supplier') {
+                    
+                    $notificationsQuery = Notification::where('notifiable_id', $user->id)
+                        ->where('notifiable_type', get_class($user));
+                } else {
+                    // Admins or other roles see all notifications
+                    $notificationsQuery = Notification::query();
+                }
+
+                $unreadNotifications = $notificationsQuery->whereNull('read_at')->latest()->take(5)->get();
+                $unreadCount = $notificationsQuery->whereNull('read_at')->count();
+            @endphp
+
+            <!-- <li class="nav-item dropdown currency-dropdown">
+                <a class="nav-link dropdown-toggle nav-currency"
+                href="#"
+                id="currencyDropdown"
+                role="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+                title="Change Currency">
+                    <i class="fas fa-coins fa-lg mr-2"></i> {{ session('currency', 'Default (Currency)') }}
+                </a>
+
+                <div class="dropdown-menu dropdown-menu-right nav-currency-dropdown" aria-labelledby="currencyDropdown">
+
+                    {{-- Default / Auto --}}
+                    <a href="#"
+                    class="dropdown-item currency-option {{ !session()->has('currency') ? 'active' : '' }}"
+                    data-currency="">
+                        Default (Currency)
+                    </a>
+
+                    <div class="dropdown-divider"></div>
+
+                    @foreach(config('constants.currencies') as $code => $country)
+                        <a href="#"
+                        class="dropdown-item currency-option {{ session('currency') === $code ? 'active' : '' }}"
+                        data-currency="{{ $code }}">
+                            {{ $code }} - {{ $country }}
+                        </a>
+                    @endforeach
+                </div>
+            </li> -->
             
-            $notificationsQuery = Notification::where('notifiable_id', $user->id)
-                ->where('notifiable_type', get_class($user));
-        } else {
-            // Admins or other roles see all notifications
-            $notificationsQuery = Notification::query();
-        }
-
-        $unreadNotifications = $notificationsQuery->whereNull('read_at')->latest()->take(5)->get();
-        $unreadCount = $notificationsQuery->whereNull('read_at')->count();
-    @endphp
-
-    <li>
-      <button id="openCurrencyModal" class="btn nav-currency"  title="Convert currency to USD">
-        <i class="fas fa-calculator fa-lg"></i>
-      </button>
-    </li>
-    <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle nav-currency"
-           href="#"
-           id="currencyDropdown"
-           role="button"
-           data-toggle="dropdown"
-           aria-haspopup="true"
-           aria-expanded="false"
-           title="Change Currency">
-            {{ session('currency', 'Default (Currency)') }}
-        </a>
-
-        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="currencyDropdown">
-
-            {{-- Default / Auto --}}
-            <a href="#"
-               class="dropdown-item currency-option {{ !session()->has('currency') ? 'active' : '' }}"
-               data-currency="">
-                Default (Currency)
-            </a>
-
-            <div class="dropdown-divider"></div>
-
-            @foreach(config('constants.currencies') as $code => $country)
-                <a href="#"
-                   class="dropdown-item currency-option {{ session('currency') === $code ? 'active' : '' }}"
-                   data-currency="{{ $code }}">
-                    {{ $code }} - {{ $country }}
+            <li>
+                <button id="openCurrencyModal" class="btn nav-currency"  title="Convert currency to USD">
+                    <i class="fas fa-calculator fa-lg"></i>
+                </button>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link nav-notify" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
+                    <i class="far fa-bell fa-lg"></i>
+                    @if($unreadCount > 0)
+                        <span class="badge badge-danger navbar-badge">{{ $unreadCount }}</span>
+                    @endif
                 </a>
-            @endforeach
-        </div>
 
-    </li>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right notify-dropdown" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                    <span class="dropdown-item dropdown-header">Unread Notifications ({{ $unreadCount }})</span>
+                    <div class="dropdown-divider"></div>
 
+                    @forelse($unreadNotifications as $notification)
+                        <a href="{{ route('admin.notifications.read', $notification->id) }}" target="_blank" class="dropdown-item unread">
+                            <strong>{{ $notification->data['title'] ?? 'Notification' }}</strong><br>
+                            <small class="text-wrap">{{ $notification->data['message'] ?? '' }}</small><br>
+                            <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+                        </a>
+                    @empty
+                        <span class="dropdown-item text-muted">No new notifications</span>
+                    @endforelse
 
-    <li class="nav-item dropdown">
-        <a class="nav-link nav-notify" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
-            <i class="far fa-bell fa-lg"></i>
-            @if($unreadCount > 0)
-                <span class="badge badge-danger navbar-badge">{{ $unreadCount }}</span>
-            @endif
-        </a>
+                    <a href="#" data-toggle="modal" data-target="#allNotificationsModal" class="dropdown-item dropdown-footer text-center">
+                        View All Notifications
+                    </a>
+                </div>
+            </li>
 
-        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right" style="width: 350px; max-height: 400px; overflow-y: auto;">
-            <span class="dropdown-item dropdown-header">Unread Notifications ({{ $unreadCount }})</span>
-            <div class="dropdown-divider"></div>
-
-            @forelse($unreadNotifications as $notification)
-                <a href="{{ route('admin.notifications.read', $notification->id) }}" target="_blank" class="dropdown-item unread">
-                    <strong>{{ $notification->data['title'] ?? 'Notification' }}</strong><br>
-                    <small class="text-wrap">{{ $notification->data['message'] ?? '' }}</small><br>
-                    <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+            {{-- Clear Cache --}}
+            <li class="nav-item tooltip">
+                <a href="{{ route('admin.clear.cache') }}" class="nav-link nav-clear">
+                    <i class="fas fa-wrench fa-lg"></i>
                 </a>
-            @empty
-                <span class="dropdown-item text-muted">No new notifications</span>
-            @endforelse
+                <span class="tooltip-text">Clear Cache</span>
+            </li>
 
-            <a href="#" data-toggle="modal" data-target="#allNotificationsModal" class="dropdown-item dropdown-footer text-center">
-                View All Notifications
-            </a>
-        </div>
-    </li>
-
-    {{-- Clear Cache --}}
-    <li class="nav-item tooltip">
-        <a href="{{ route('admin.clear.cache') }}" class="nav-link nav-clear">
-            <i class="fas fa-wrench fa-lg"></i>
-        </a>
-        <span class="tooltip-text">Clear Cache</span>
-    </li>
-
-    <li class="nav-item dropdown">
-        <a class="nav-link nav-profile" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
-            <span class="profile-name">{{ Auth::user()->name }}</span> <img src="{{ asset('admin/dist/img/avatar4.png') }}" class="img-circle elevation-2" width="40" height="40">
-        </a>
-        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right profile-dropdown">
-            <a href="{{ route('admin.profile.edit') }}" class="{{ Route::is('admin.profile.edit') ? 'active' : '' }} text-center">
-                <img src="{{ asset('admin/dist/img/avatar4.png') }}" class="img-circle elevation-2" width="40" height="40">
-                <b>{{ Auth::user()->name }}</b>
-                Admin
-            </a>
-            <a href="{{ route('admin.profile.edit') }}" class="{{ Route::is('admin.profile.edit') ? 'active' : '' }} link">
-                <i class="nav-icon fas fa-user"></i> My Profile
-            </a>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" name="submit" class="link">
-                    <i class="fas fa-sign-out-alt"></i> Sign out
-                </button>    
-            </form>
-        </div>
-    </li>
-</ul>
+            <li class="nav-item dropdown">
+                <a class="nav-link nav-profile" data-toggle="dropdown" href="#" role="button" aria-expanded="false">
+                    <span class="profile-name">{{ Auth::user()->name }}</span> <img src="{{ asset('admin/dist/img/avatar4.png') }}" class="img-circle elevation-2" width="40" height="40">
+                </a>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right profile-dropdown">
+                    <a href="{{ route('admin.profile.edit') }}" class="{{ Route::is('admin.profile.edit') ? 'active' : '' }} text-center">
+                        <img src="{{ asset('admin/dist/img/avatar4.png') }}" class="img-circle elevation-2" width="40" height="40">
+                        <b>{{ Auth::user()->name }}</b>
+                        Admin
+                    </a>
+                    <a href="{{ route('admin.profile.edit') }}" class="{{ Route::is('admin.profile.edit') ? 'active' : '' }} link">
+                        <i class="nav-icon fas fa-user"></i> My Profile
+                    </a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" name="submit" class="link">
+                            <i class="fas fa-sign-out-alt"></i> Sign out
+                        </button>    
+                    </form>
+                </div>
+            </li>
+        </ul>
+    </div>
 </nav>
 
 {{-- MODAL --}}
@@ -151,14 +191,15 @@
 </div>
 
 <!-- Live Currency Conversion Modal -->
-<!-- Live Currency Conversion Modal -->
 <div class="modal fade" id="currencyModal" tabindex="-1" aria-labelledby="currencyModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <form id="currencyForm">
         <div class="modal-header">
           <h5 class="modal-title" id="currencyModalLabel">Convert to USD</h5>
-          <!-- <button type="button" id="closeCurrencyModalTop" class="btn-close" aria-label="Close"></button> -->
+          <button type="button" data-dismiss="modal" class="btn btn-close" aria-label="Close">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
 
         <div class="modal-body">
@@ -444,4 +485,3 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
-
