@@ -381,7 +381,7 @@ gap:10px;
                                     @can('delete_tour')  
                                     <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.tour.destroy', encrypt($tour->id)) }}"><i class="fas fa-trash-alt"></i></a>
                                     @endcan
-                                    <button class="btn btn-sm btn-primary tour-menu-btn mt-1" onclick="openTourMenu({{ $tour->id }})">
+                                    <button class="btn btn-sm btn-primary tour-menu-btn mt-1" onclick="openTourMenu({{ $tour->id }}, '{{ addslashes($tour->title) }}')">
                                         <i class="fas fa-layer-group"></i> Tour Menu
                                     </button>
                                     
@@ -467,7 +467,9 @@ gap:10px;
                                 <a target="_blank" href="{{ route('admin.tour.edit.parent', encrypt($tour->id)) }}">
                                 <i class="fas fa-layer-group"></i> Parent
                                 </a>
-
+                                <a target="_blank" href="{{ route('admin.tour.edit.schedule-pricing', encrypt($tour->id)) }}">
+                                <i class="fas fa-dollar-sign"></i> Price Scheduling
+                                </a>
                                 
                                 </div>
                             
@@ -658,7 +660,7 @@ gap:10px;
     <div class="tour-modal-content">
 
     <div class="tour-modal-header">
-    <span>Tour Menu</span>
+    <span id="tourMenuTitle">Tour Menu</span>
     <button onclick="closeTourMenu()">✕</button>
     </div>
 
@@ -1026,20 +1028,20 @@ function toggleTourMenu(id){
 
 <script>
 
-function openTourMenu(id){
+function openTourMenu(id, title){
 
-let content = document.getElementById("tour-menu-"+id).innerHTML;
+    let content = document.getElementById("tour-menu-" + id).innerHTML;
 
-document.getElementById("tourMenuContent").innerHTML = content;
+    document.getElementById("tourMenuContent").innerHTML = content;
 
-document.getElementById("tourMenuModal").style.display = "flex";
+    // ✅ set title
+    document.getElementById("tourMenuTitle").innerText = "Tour Menu :    " + title;
 
+    document.getElementById("tourMenuModal").style.display = "flex";
 }
 
 function closeTourMenu(){
-
-document.getElementById("tourMenuModal").style.display = "none";
-
+    document.getElementById("tourMenuModal").style.display = "none";
 }
 
 </script>

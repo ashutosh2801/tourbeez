@@ -1069,6 +1069,14 @@ $pickupHtml .= '</div>';
         return view('admin.tours.feature.schedule_calendar', compact( 'data', 'detail', 'metaData', 'selectedDate'));
     }
 
+    public function schedulePricing($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        return view('admin.tours.feature.schedule-pricing', compact( 'data', 'detail', 'metaData'));
+    }
+
     public function scheduleCalendarEvent($id)
     {
         $selectedDate = request()->query('selectedDate', now()->toDateString());
@@ -1366,6 +1374,32 @@ $pickupHtml .= '</div>';
             'active_tab' => '#basic_information'
         ]);
     }
+
+    public function schedulePricingUpdate(Request $request, $id){
+
+        $request->validate([
+            'PriceOption'           => 'required|array',
+            'PriceOption.*.selling_price'   => 'required|numeric|min:0',
+
+        ]);
+
+         foreach ($request->PriceOption as $option) {
+
+            if (!empty($option['id'])) {
+                $pricing = TourPricing::find($option['id']);
+                if ($pricing && $pricing->tour_id) {
+                    $pricing->selling_price = $option['selling_price'] ?? 0;
+                    $pricing->save();
+                }
+            }
+        }
+
+        return redirect()->back()->with([
+            'success' => 'Selling Price Updated successfully',
+            'active_tab' => '#basic_information'
+        ]);
+    }
+
 
     public function addon_update(Request $request, $id) {
         $tour  = Tour::findOrFail($id);

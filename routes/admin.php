@@ -163,6 +163,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit.special.deposit');
     Route::get('/tour/{id}/edit/review', [TourController::class, 'review'])->name('tour.edit.review');
     Route::get('/tour/{id}/edit/schedule-calendar', [TourController::class, 'scheduleCalendar'])->name('tour.edit.schedule-calendar');
+    Route::get('/tour/{id}/edit/shedule-pricing', [TourController::class, 'schedulePricing'])->name('tour.edit.schedule-pricing');
     Route::get('/tour/{id}/edit/schedule-calendar-event', [TourController::class, 'scheduleCalendarEvent'])->name('tour.edit.schedule-calendar-event');
     Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
     Route::get('/admin/category-search', [TourController::class, 'categorySearch'])->name('category.search');
@@ -217,6 +218,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Route::post('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit..special.deposit');
     Route::put('/tour/special-deposit/{id}', [TourController::class, 'specialDepositUpdate'])->name('tour.special-deposit');
+    Route::post('/tour/shedule-pricing/{id}', [TourController::class, 'schedulePricingUpdate'])->name('tour.shedule-pricing');
+
     Route::put('/tour/review/{id}', [TourController::class, 'reviewUpdate'])->name('tour.review');
 
     Route::put('/tour/parent-tour/{id}', [TourController::class, 'parentUpdate'])
