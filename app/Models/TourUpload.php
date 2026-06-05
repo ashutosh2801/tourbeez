@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TourUpload extends Model
 {
     use HasFactory;
     use LogsActivity;
+    use SoftDeletes;
 
     protected $table = 'tour_upload';
 

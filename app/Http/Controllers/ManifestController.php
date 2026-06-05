@@ -276,7 +276,7 @@ class ManifestController extends Controller
         ));
     }
 
-    public function assignDriver(Request $request)
+    public function assignDriver4june(Request $request)
     {
         $request->validate([
             'order_ids'  => 'required|array',
@@ -318,6 +318,52 @@ class ManifestController extends Controller
 
         return response()->json(['success' => true]);
     }
+    public function assignDriver(Request $request)
+{
+    $request->validate([
+        'orders' => 'required|array',
+        'date'   => 'required|date'
+    ]);
+
+    foreach ($request->orders as $item) {
+
+        $orderId = $item['order_id'];
+        $selectedDrivers = $item['driver_ids'] ?? [];
+
+        // ✅ Existing drivers
+        $existingDrivers = OrderDriver::where('order_id', $orderId)
+            ->whereDate('assigned_date', $request->date)
+            ->pluck('driver_id')
+            ->toArray();
+
+        // =========================
+        // ✅ ADD NEW DRIVERS
+        // =========================
+        $toAdd = array_diff($selectedDrivers, $existingDrivers);
+
+        foreach ($toAdd as $driverId) {
+            OrderDriver::create([
+                'order_id'      => $orderId,
+                'driver_id'     => $driverId,
+                'assigned_date' => $request->date
+            ]);
+        }
+
+        // =========================
+        // ✅ REMOVE DRIVERS
+        // =========================
+        $toRemove = array_diff($existingDrivers, $selectedDrivers);
+
+        if (!empty($toRemove)) {
+            OrderDriver::where('order_id', $orderId)
+                ->whereDate('assigned_date', $request->date)
+                ->whereIn('driver_id', $toRemove)
+                ->delete();
+        }
+    }
+
+    return response()->json(['success' => true]);
+}
     public function removeDriver(Request $request)
     {
         OrderDriver::whereIn('order_id', $request->order_ids)

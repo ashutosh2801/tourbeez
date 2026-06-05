@@ -442,6 +442,14 @@
                             <p>Activity Description</p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.activity.orderLog') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.activity.orderLog') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-file-alt"></i>
+                            <p>Order Logs</p>
+                        </a>
+                    </li>
+
+                    
                 </ul>
             </li>
             @endcan

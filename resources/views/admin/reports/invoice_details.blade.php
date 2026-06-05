@@ -230,7 +230,7 @@
                 <div class="col-xl-2 col-md-3 col-12">
                     <div class="d-flex column-gap-10">
                         <button class="btn btn-apply flex-fill">Apply</button>
-                        <a href="{{ route('admin.report.overview') }}" class="btn btn-secondary flex-fill">Reset</a>
+                        <a href="{{ route('admin.report.invoice.details') }}" class="btn btn-secondary flex-fill">Reset</a>
                     </div>
                 </div>
 
@@ -334,19 +334,24 @@
                     <th>Total</th>
                     <th>Paid</th>
                     <th>Product</th>
+                    <th>Adult</th>
+                    <th>Child</th>
+                    <th>Infant</th>
+                    <th>Senior Citizen</th>
 
                     {{-- ADDON HEADERS --}}
                     @foreach($addonKeys as $key)
-                        <th colspan="5">{{ Str::headline($key) }}</th>
+                        <th colspan="6">{{ Str::headline($key) }}</th>
                     @endforeach
                                     
                 </tr>
 
                 <tr>
-                    <th colspan="8"></th>
+                    <th colspan="12"></th>
 
                     @foreach($addonKeys as $key)
                         <th>Desc</th>
+                        <th>Quantity</th>
                         <th>Price</th>
                         <th>Tax</th>
                         <th>Fee</th>
@@ -366,10 +371,15 @@
                     <td>{{ isset($row['customer_total']) ? number_format_with_currency($row['customer_total'], 2) : '0.00' }}</td>
                     <td>{{ $row['payment_status'] ?? '' }}</td>
                     <td>{{ $row['product_name'] ?? '' }}</td>
+                    <td>{{ $row['adult'] }}</td>
+                    <td>{{ $row['child'] }}</td>
+                    <td>{{ $row['infant'] }}</td>
+                    <td>{{ $row['other'] }}</td>
 
                     {{-- DYNAMIC ADDONS --}}
                     @foreach($addonKeys as $key)
                         <td>{{ $row[$key.'_desc'] ?? '' }}</td>
+                        <td>{{ $row[$key.'_quant'] ?? '' }}</td>
                         <td>{{ number_format_with_currency($row[$key.'_price'], 2) ?? 0 }}</td>
                         <td>{{ number_format_with_currency($row[$key.'_tax'], 2) ?? 0 }}</td>
                         <td>{{ number_format_with_currency($row[$key.'_fee'], 2) ?? 0 }}</td>

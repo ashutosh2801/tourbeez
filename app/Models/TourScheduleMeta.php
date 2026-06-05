@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TourScheduleMeta extends Model
 {
+    use SoftDeletes;
     protected $table = 'tour_schedule_meta';
 
     protected $casts = [

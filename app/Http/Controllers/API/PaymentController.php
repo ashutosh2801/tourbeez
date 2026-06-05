@@ -32,9 +32,15 @@ class PaymentController extends Controller
 {
     public function handleWebhook(Request $request)
     {
+        Log::info('handleWebhook');
+
         $payload    = $request->getContent();
         $sigHeader  = $request->header('Stripe-Signature');
         $secret     = env('STRIPE_WEBHOOK_SECRET');
+
+        orderLogAdvanced(null, 'webhook', 'entry', 'info', 'Webhook received', [
+            'payload' => $payload
+        ]);
 
         $logData = [
             'event_id' => null,
@@ -57,6 +63,11 @@ class PaymentController extends Controller
             $eventObject = $event->data->object;
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
+            orderLogAdvanced(null, 'webhook', 'signature_verified', 'success', 'Signature verified', [
+                'event_id' => $event->id ?? null,
+                'type' => $event->type ?? null
+            ]);
+
             // ✅ Metadata
             if ($event->type === 'charge.refunded') {
                 $paymentIntentId = $eventObject->payment_intent ?? null;
@@ -77,6 +88,12 @@ class PaymentController extends Controller
             $logData['payment_intent_id'] = $eventObject->id ?? null;
 
             if (!$orderId || !$orderNum) {
+
+                orderLogAdvanced(null, 'webhook', 'metadata_invalid', 'failed', 'Invalid metadata', [
+                    'order_id' => $orderId,
+                    'order_number' => $orderNum
+                ]);
+
                 $logData['status'] = 'failed';
                 $logData['message'] = "Invalid metadata for order ID: $orderId, Order Number: $orderNum";
                 StripeWebhookLog::create($logData);
@@ -90,6 +107,11 @@ class PaymentController extends Controller
                 ->first();
 
             if (!$order) {
+
+                orderLogAdvanced(null, 'webhook', 'order_not_found', 'failed', 'Order not found', [
+                    'order_id' => $orderId
+                ]);
+
                 $logData['status'] = 'failed';
                 $logData['message'] = 'Order not found';
                 $logData['order_id']= $orderId;
@@ -97,6 +119,11 @@ class PaymentController extends Controller
 
                 return response()->json(['error' => 'Order not found'], 404);
             }
+
+            orderLogAdvanced($order, 'payment', 'webhook_event', 'info', 'Webhook event received', [
+                'event_type' => $event->type,
+                'payment_intent_id' => $eventObject->id ?? null
+            ]);
 
             // Handle events
             switch ($event->type) {
@@ -168,14 +195,18 @@ class PaymentController extends Controller
             $order->transaction_id = $eventObject->id;
             $order->save();
 
-            $logData['order_id'] = $order->id;
+            orderLogAdvanced($order, 'payment', 'webhook_processed', 'success', 'Webhook processed', [
+                'event_type' => $event->type
+            ]);
 
-            // Save webhook log
+            $logData['order_id'] = $order->id;
             StripeWebhookLog::create($logData);
 
             return response()->json(['status' => 'success']);
 
         } catch (SignatureVerificationException $e) {
+
+            orderLogAdvanced(null, 'webhook', 'signature_failed', 'failed', 'Invalid signature');
 
             $logData['status'] = 'failed';
             $logData['message'] = 'Invalid signature';
@@ -186,6 +217,8 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Invalid signature'], 400);
 
         } catch (\Exception $e) {
+
+            orderLogAdvanced(null, 'webhook', 'exception', 'error', $e->getMessage());
 
             $logData['status'] = 'error';
             $logData['message'] = $e->getMessage();
@@ -199,6 +232,8 @@ class PaymentController extends Controller
 
     public function createSetupIntent($action = 'paynow')
     {
+        Log::info('createSetupIntent');
+
         try {
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
@@ -228,6 +263,8 @@ class PaymentController extends Controller
 
     public function createOrUpdate(Request $request)
     {
+        Log::info('createOrUpdate');
+
         return $this->createSetupIntent($request->action);
         
         try {
@@ -314,6 +351,8 @@ class PaymentController extends Controller
 
     public function verifyPayment(Request $request)
     {
+        Log::info('verifyPayment');
+
         $request->validate([
             'client_secret' => 'required|string',
         ]);
@@ -639,6 +678,13 @@ class PaymentController extends Controller
 
     public function saveCard(Request $request)
     {
+        Log::info('saveCard');
+
+        orderLogAdvanced($request->order_id, 'payment', 'save_card_start', 'info', 'Saving card from frontend', [
+            'order_id' => $request->order_id,
+            'payment_method_id' => $request->payment_method_id
+        ]);
+
         Stripe::setApiKey(env('STRIPE_SECRET'));
 
         $order_id = $request->order_id;
@@ -681,6 +727,16 @@ class PaymentController extends Controller
             $order =  $payment->order;
             $order->payment_method_id =  $request->payment_method_id;
             $order->save();
+
+            orderLogAdvanced($order, 'payment', 'card_saved', 'success', 'Card saved successfully', [
+                'brand' => $brand,
+                'last4' => $last4,
+                'payment_method_id' => $request->payment_method_id
+            ]);
+        } else {
+            orderLogAdvanced($order_id, 'payment', 'payment_missing', 'failed', 'OrderPayment not found', [
+                'order_id' => $order_id
+            ]);
         }
         
 
@@ -698,6 +754,11 @@ class PaymentController extends Controller
         try{
             $order_id = $detail['order_number'];
             $order = Order::where('order_number',$order_id)->first();
+
+            orderLogAdvanced($order?->id, 'email', 'start', 'info', 'Send order email started', [
+                'action' => $action_name,
+                'order_number' => $order_id
+            ]);
             if($action_name === 'admin'){
                 $identifier = 'admin_order_booking';
             } else{
@@ -705,6 +766,10 @@ class PaymentController extends Controller
             }
             
             $email_template = EmailTemplate::where('identifier', $identifier)->first();
+
+            orderLogAdvanced($order?->id, 'email', 'template_loaded', 'success', 'Email template loaded', [
+                'identifier' => $identifier
+            ]);
             $template = $email_template->body;
             $template_footer = $email_template->footer;
             $template_subject = $email_template->subject;
@@ -717,17 +782,22 @@ class PaymentController extends Controller
             $customer = $detail['customer'];
             // dd($customer );
             if(!$customer){
+                
                 $customer = $order->orderUser;
             }
  
             if(!$customer){
                 // $customer = User::find(4);
-
+                orderLogAdvanced($order?->id, 'email', 'customer_missing', 'error', 'Customer not found');
                 return response()->json([
                     'success' => false,
                     'message' => "customer not found"
                 ], 404);
             }
+
+            orderLogAdvanced($order?->id, 'email', 'customer_loaded', 'success', 'Customer resolved', [
+                'email' => $customer->email ?? null
+            ]);
             Log::info('sendOrderDetailMail identifier');
             $orderTour  = $order->orderTours()->first();
 
@@ -736,7 +806,9 @@ class PaymentController extends Controller
             //echo '<pre>'; print_r($orderTour->tour); exit;
             $payment = $detail['payment_method'];
 
-
+            orderLogAdvanced($order?->id, 'email', 'tour_loaded', 'success', 'Tour data loaded', [
+                'tour_id' => $orderTour->tour_id ?? null
+            ]);
             $TOUR_PAYMENT_HISTORY =    '
             <style>
             @media only screen and (max-width: 640px) {
@@ -1026,7 +1098,7 @@ class PaymentController extends Controller
                 $TOUR_ITEM_SUMMARY .=  '</tbody>
                 </table>';
             }
-            
+            orderLogAdvanced($order?->id, 'email', 'summary_built', 'success', 'Tour summary generated');
             $pickup_address = '';
             if( $order->customer->pickup_name ) {
                 $pickup_address = $order->customer->pickup_name;
@@ -1108,7 +1180,9 @@ class PaymentController extends Controller
 
             Log::info('order_mail_send 676' . env('MAIL_FROM_ADDRESS'));
             Log::info('order_mail_send 676' . env('MAIL_FROM_ADMIN_ADDRESS'));
-
+            orderLogAdvanced($order?->id, 'email', 'mail_sending', 'info', 'Sending email now', [
+                'to' => $action_name == 'admin' ? 'admin' : $customer->email
+            ]);
           
             if($action_name == 'admin'){
 
@@ -1130,12 +1204,14 @@ class PaymentController extends Controller
             // Merge both lists and remove duplicates
             $recipients = array_unique(array_merge($defaultEmails, $notifiableAdmins));
 
-                $mailSend = self::order_mail_send($recipients,$subject, $header,  $body, $footer, $event, 'admin');
+                $mailSend = self::order_mail_send($recipients,$subject, $header,  $body, $footer, $event, 'admin', $order?->id);
             } else{
-                $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event);
+                $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event, $order?->id);
             }
             
-
+            orderLogAdvanced($order?->id, 'email', 'mail_sent', 'success', 'Email sent successfully', [
+                'message_id' => $mailSend
+            ]);
             Log::info('OrderEmailHistorythishere' . $mailSend);
             if(true){
                 Log::info('OrderEmailHistory' . $mailSend);
@@ -1147,6 +1223,7 @@ class PaymentController extends Controller
                     'body'      => $header.$body.$footer,
                     'message_id' => $mailSend
                 ]);
+                orderLogAdvanced($order?->id, 'email', 'history_saved', 'success', 'Email history stored');
 
             }
             return response()->json([
@@ -1162,8 +1239,12 @@ class PaymentController extends Controller
             }
         }
         catch(\Exception $e){
-            Log::info('order_email_sentqwwqdwq' . 498);
+            
             Log::info($e);
+
+            orderLogAdvanced($order?->id ?? null, 'email', 'failed', 'error', 'Email sending failed', [
+                'error' => $e->getMessage()
+            ]);
             return response()->json([
                     'success' => false,
                     'message' => $e->getMessage()
@@ -1172,9 +1253,15 @@ class PaymentController extends Controller
  
     }
 
-    public static function order_mail_send($email,$subject, $header,  $body, $footer, $event = null, $recipient = 'customer' )
+    public static function order_mail_send($email,$subject, $header,  $body, $footer, $event = null, $recipient = 'customer', $orderId =  null)
     {
          Log::info('order_mail_send' . 718);
+
+         orderLogAdvanced($orderId, 'mail', 'start', 'info', 'Email sending started', [
+            'email' => $email,
+            'recipient' => $recipient,
+            'subject' => $subject,
+        ]);
         if (env('MAIL_FROM_ADDRESS') != null) {
             
             $array['view'] = 'emails.newsletter';
@@ -1200,8 +1287,14 @@ class PaymentController extends Controller
 
                 if($recipient == 'admin'){
                     Log::info('Admin recipients:', $email);
+                    orderLogAdvanced($orderId, 'mail', 'admin_mail', 'info', 'Sending admin email', [
+                        'bcc' => $email
+                    ]);
                      $sentMessage = $mailer->to(env('MAIL_FROM_ADDRESS'))->bcc($email)->send(new AdminBookingMail($array, $event['uid']));
                 } else{
+                    orderLogAdvanced($orderId, 'mail', 'customer_mail', 'info', 'Sending customer email', [
+                        'to' => $email
+                    ]);
                         $sentMessage = $mailer->to($email)->send(new EmailManager($array));
                         
                         
@@ -1215,7 +1308,9 @@ class PaymentController extends Controller
                         $messageId = trim($messageId, '<>');
                     }
                 }
-
+                 orderLogAdvanced($orderId, 'mail', 'sent', 'success', 'Email sent successfully', [
+                    'message_id' => $messageId
+                ]);
                 return $messageId;
                 
                  
@@ -1226,6 +1321,8 @@ class PaymentController extends Controller
                 ], 404);
                 dd($e);
             }
+        } else {
+            orderLogAdvanced($orderId, 'mail', 'config_missing', 'error', 'MAIL_FROM_ADDRESS missing');
         }
        
     }
@@ -1238,11 +1335,22 @@ class PaymentController extends Controller
 
     private function saveCardDetails($intent)
     {
+
+        orderLogAdvanced(null, 'webhook', 'card_save_start', 'info', 'Webhook card save started', [
+            'payment_intent_id' => $intent->id ?? null
+        ]);
+        Log::info('saveCardDetails');
+
+
         try {
 
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
             if (empty($intent->payment_method)) {
+
+                 orderLogAdvanced(null, 'webhook', 'missing_payment_method', 'failed', 'Payment method missing in intent', [
+                    'payment_intent_id' => $intent->id
+                ]);
 
                 Log::warning(
                     'Payment method missing for PI: ' .
@@ -1260,6 +1368,9 @@ class PaymentController extends Controller
                 !isset($paymentMethod->card) ||
                 $paymentMethod->type !== 'card'
             ) {
+                orderLogAdvanced(null, 'webhook', 'non_card_payment', 'info', 'Non-card payment method', [
+                    'type' => $paymentMethod->type ?? null
+                ]);
                 return;
             }
 
@@ -1283,6 +1394,10 @@ class PaymentController extends Controller
             )->first();
 
             if (!$orderPayment) {
+
+                orderLogAdvanced(null, 'webhook', 'order_payment_missing', 'failed', 'OrderPayment not found for intent', [
+                    'payment_intent_id' => $intent->id
+                ]);
 
                 Log::warning(
                     'OrderPayment not found for PI: ' .
@@ -1329,6 +1444,12 @@ class PaymentController extends Controller
 
                 $order->save();
             }
+            orderLogAdvanced($order, 'webhook', 'card_saved', 'success', 'Card details saved via webhook', [
+                'payment_intent_id' => $intent->id,
+                'status' => $status,
+                'brand' => $cardDetails['brand'],
+                'last4' => $cardDetails['last4']
+            ]);
 
             Log::info(
                 'Card details saved successfully for PI: ' .
@@ -1336,6 +1457,10 @@ class PaymentController extends Controller
             );
 
         } catch (\Exception $e) {
+
+             orderLogAdvanced(null, 'webhook', 'card_save_error', 'error', $e->getMessage(), [
+                'payment_intent_id' => $intent->id ?? null
+            ]);
             Log::error(
                 'Webhook card save error: ' .
                 $e->getMessage()
