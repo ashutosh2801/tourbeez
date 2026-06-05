@@ -286,6 +286,17 @@
                                 <td class="">
                                     @foreach ($order->orderTours as $order_tour)
 
+                                    @if($order->sub_tour_id && $order->subTour)
+                                            <div style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                                <a href="{{ route('admin.tour.edit', encrypt($order->tour->id)) }}"
+                                                   class="alink text-small"
+                                                   target="_blank"
+                                                   style="font-size:small;">
+                                                    {{ $order->tour?->title }} 
+                                                </a>
+                                            </div>
+                                        @endif
+
                                         <div style="display:flex; justify-content:space-start; align-items:center;">
                                             <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour_id)) }}"
                                                class="alink"
@@ -300,16 +311,7 @@
                                             @endif
                                         </div>
 
-                                        @if($order->sub_tour_id && $order->subTour)
-                                            <div style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                                <a href="{{ route('admin.tour.edit', encrypt($order->subTour->id)) }}"
-                                                   class="alink text-small"
-                                                   target="_blank"
-                                                   style="font-size:small;">
-                                                    {{ $order->subTour?->title }}
-                                                </a>
-                                            </div>
-                                        @endif
+                                        
 
                                     @endforeach
                                 </td>
@@ -331,8 +333,6 @@
                                     
                                     <br>
                                     {{ str_contains($order->customer?->phone, '+') || ($order->customer?->phone == 'N/A') ? '' : '+' }}{{ $order->customer?->phone }}
-                                    <br>
-                                    {{ $order->customer?->email }}
                                 </td>
                                 @php
                                     $total = round($order->total_amount);
@@ -402,7 +402,7 @@
                                         $created = \Carbon\Carbon::parse($order->created_at);
                                     @endphp
 
-                                    {{ $created->format('M d, Y') }} <br>
+                                    {{ $created->format('M  , Y') }} <br>
                                     {{ $created->format('h:i A') }}
                                     <!-- {{ optional($order->created_at)->format('M d, Y') }} <br>
                                     {{ optional($order->created_at)->format('h:i A') }} -->

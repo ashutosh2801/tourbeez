@@ -407,7 +407,10 @@ class OrderController extends Controller
      */
     public function add_to_cart(Request $request) 
     {
-        //dd($request->all());
+        Log::info('add_to_cart');
+
+        // orderLogAdvanced(null, 'cart', 'entry', 'info', 'Add to cart started');
+
         $validated = $request->validate([
             'tourId'                    => 'required|integer|exists:tours,id',
             'selectedDate'              => 'required|date_format:Y-m-d',
@@ -429,7 +432,13 @@ class OrderController extends Controller
         }
 
         $tour = Tour::with(['pricings'])->where('id', $request->tourId)->first();
+
         if(!$tour) {
+
+            // orderLogAdvanced(null, 'cart', 'tour_not_found', 'failed', 'Tour not found', [
+            //     'tour_id' => $request->tourId
+            // ]);
+
             return response()->json([
             'status' => false,
             'message' => 'Tour not found.'
@@ -453,6 +462,8 @@ class OrderController extends Controller
         ]);
 
         if($order) {
+            orderLogAdvanced($order, 'cart', 'entry', 'info', 'Add to cart started');
+            orderLogAdvanced($order, 'cart', 'order_created', 'success', 'Order created/updated');
 
             $orderId = $order->id;
             $quantity = 0;
@@ -533,6 +544,11 @@ class OrderController extends Controller
                 }
             }
 
+            orderLogAdvanced($order, 'cart', 'calculation_done', 'info', 'Cart calculated', [
+                'total' => $item_total,
+                'guests' => $quantity
+            ]);
+
             OrderTour::updateOrCreate(
                 [
                     'order_id' => $orderId
@@ -554,6 +570,8 @@ class OrderController extends Controller
             $order->total_amount = round($item_total, 2);
             $order->save();
 
+            orderLogAdvanced($order, 'cart', 'completed', 'success', 'Cart updated');
+
             return response()->json([
                 'status'        => true,
                 'message'       => 'Item added in cart',
@@ -563,6 +581,8 @@ class OrderController extends Controller
             ], 200);
         }
 
+        orderLogAdvanced(null, 'cart', 'failed', 'error', 'Order not created');
+
         return response()->json([
                 'status'    => false,
                 'message'   => 'Item not added in cart',
@@ -570,6 +590,10 @@ class OrderController extends Controller
     }
 
     private function savePromo($request) {
+        Log::info('savePromo');
+        orderLogAdvanced(null, 'promo', 'start', 'info', 'Promo validation started', [
+            'promo_code' => $request->promo_code
+        ]);
         if ($request->filled('promo_code')) {
             $promo = Promo::where('code', $request->promo_code)
                 ->where('status', 'ISSUED')
@@ -579,6 +603,9 @@ class OrderController extends Controller
                 })
                 ->first();
             if (!$promo) {
+                orderLogAdvanced(null, 'promo', 'invalid', 'failed', 'Invalid promo code', [
+                    'promo_code' => $request->promo_code
+                ]);
                 return response()->json([
                     'status' => false,
                     'message' => 'Invalid promo code.'
@@ -586,6 +613,10 @@ class OrderController extends Controller
             }
             $promo->used_by = $promo->used_by + 1;
             $promo->save();
+            orderLogAdvanced(null, 'promo', 'applied', 'success', 'Promo applied', [
+                'promo_id' => $promo->id,
+                'promo_code' => $promo->code
+            ]);
 
             return $promo;  
         }
@@ -593,25 +624,40 @@ class OrderController extends Controller
     }
 
     private function saveCustomer($request, $order, $data) {
-        // Save or update customer
-        $customer = OrderCustomer::where('order_id', $order->id)->first() ?? new OrderCustomer();
 
-        $customer->order_id     = $order->id;
-        $customer->user_id      = $request->userId ?? 0;
-        $customer->first_name   = $data['first_name'];
-        $customer->last_name    = $data['last_name'];
-        $customer->email        = $data['email'];
-        $customer->phone        = $data['phone'];
-        $customer->instructions = isset($data['instructions']) ? $data['instructions'] : '';
-        $customer->pickup_id    = isset($data['pickup_id']) ?  $data['pickup_id'] : 0;
-        $customer->pickup_name  = isset($data['pickup_name']) ? ucwords($data['pickup_name']) : '';          
-        $customer->promo_code   = $request->promo_code;          
-        $customer->save();
+        orderLogAdvanced($order, 'customer', 'start', 'info', 'Saving customer', [
+            'email' => $data['email'] ?? null
+        ]);
+        try {
+            // Save or update customer
+            $customer = OrderCustomer::where('order_id', $order->id)->first() ?? new OrderCustomer();
 
-        return $customer;
+            $customer->order_id     = $order->id;
+            $customer->user_id      = $request->userId ?? 0;
+            $customer->first_name   = $data['first_name'];
+            $customer->last_name    = $data['last_name'];
+            $customer->email        = $data['email'];
+            $customer->phone        = $data['phone'];
+            $customer->instructions = isset($data['instructions']) ? $data['instructions'] : '';
+            $customer->pickup_id    = isset($data['pickup_id']) ?  $data['pickup_id'] : 0;
+            $customer->pickup_name  = isset($data['pickup_name']) ? ucwords($data['pickup_name']) : '';          
+            $customer->promo_code   = $request->promo_code;          
+            $customer->save();
+            orderLogAdvanced($order, 'customer', 'saved', 'success', 'Customer saved', [
+                'customer_id' => $customer->id
+            ]);
+
+            return $customer;
+            } catch (\Exception $e) {
+
+            orderLogAdvanced($order, 'customer', 'error', 'error', $e->getMessage());
+
+            throw $e; // don't swallow — important
+        }
     }
 
     private function saveStripeCustomer($request, $order, $data) {
+        Log::info('saveStripeCustomer');
         if (!$order->stripe_customer_id) {
             $name = $data['first_name'].' '.$data['last_name'];
 
@@ -632,6 +678,12 @@ class OrderController extends Controller
      */
     public function update_cart(Request $request, $id)
     {
+        Log::info('update_cart');
+
+        orderLogAdvanced(null, 'cart', 'entry', 'info', 'Update cart started', [
+            'order_id' => $id
+        ]);
+
         $validated = $request->validate([
             'tourId'        => 'required|integer|exists:tours,id',
             'selectedDate'  => 'required|date_format:Y-m-d',
@@ -660,8 +712,13 @@ class OrderController extends Controller
 
         ]);
 
+        orderLogAdvanced(null, 'cart', 'validation', 'success', 'Validation passed');
+
         $order = Order::find($id);
         if (!$order) {
+            orderLogAdvanced(null, 'cart', 'order_fetch', 'failed', 'Order not found', [
+                'order_id' => $id
+            ]);
             return response()->json([
                 'status' => false,
                 'message' => 'Order not found.'
@@ -670,12 +727,15 @@ class OrderController extends Controller
 
         $tour = Tour::with(['pricings'])->find($request->tourId);
         if (!$tour) {
+            orderLogAdvanced($order, 'cart', 'tour_fetch', 'failed', 'Tour not found', [
+                'tour_id' => $request->tourId
+            ]);
             return response()->json([
                 'status' => false,
                 'message' => 'Tour not found.'
             ], 404);
         }
-
+        orderLogAdvanced($order, 'cart', 'init', 'success', 'Order & Tour loaded');
         
         try {
 
@@ -685,10 +745,15 @@ class OrderController extends Controller
 
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
+            orderLogAdvanced($order, 'payment', 'stripe_init', 'success', 'Stripe initialized');
+
             $promo = $this->savePromo($request);
             $customer = $this->saveCustomer($request, $order, $data);
             $stripeCustomer = $this->saveStripeCustomer($request, $order, $data);            
 
+            orderLogAdvanced($order, 'cart', 'customer_ready', 'success', 'Customer & Stripe customer ready', [
+                'stripe_customer_id' => $stripeCustomer->id ?? null
+            ]);
             // Initialize
             $quantity   = 0;
             $pricing    = [];
@@ -707,6 +772,10 @@ class OrderController extends Controller
             else if(!empty($order->payment_intent_id) && str_contains( $order->payment_intent_id, 'seti_')){
                 $payment_intent_id = $order->payment_intent_id;
             }
+
+            orderLogAdvanced($order, 'payment', 'pi_detect', 'info', 'Existing PI checked', [
+                'payment_intent_id' => $payment_intent_id
+            ]);
 
             // Cart Items
             foreach ($validated['cartItems'] as $item) {
@@ -806,6 +875,9 @@ class OrderController extends Controller
             ];
 
             if ($order->payment_status === 1) {
+                orderLogAdvanced($order, 'payment', 'pi_detect', 'info', 'Existing PI checked', [
+                    'payment_intent_id' => $payment_intent_id
+                ]);
                 return response()->json([
                     'status'            => true,
                     'message'           => 'Cart already updated successfully',
@@ -816,7 +888,9 @@ class OrderController extends Controller
                     'payment_intent_client_secret' => $order->payment_intent_client_secret,
                 ], 200);
             }
-
+             orderLogAdvanced($order, 'cart', 'before_payment_logic', 'info', 'Starting payment logic', [
+                'action' => $request->action_name
+            ]);
             OrderTour::updateOrCreate(
                 ['order_id' => $order->id],
                 $order_tour_data
@@ -884,6 +958,7 @@ class OrderController extends Controller
 
             //dd($order_tour_data);
             if ($adv_deposite === "deposit") {
+                orderLogAdvanced($order, 'payment', 'deposit_mode', 'info', 'Deposit flow started');
                 
                 $chargeAmount = 0;              
 
@@ -1000,6 +1075,10 @@ class OrderController extends Controller
 
                 //print_r($order); exit;
                 if ($chargeAmount > 0) {
+
+                    orderLogAdvanced($order, 'payment', 'pi_create', 'info', 'Creating PaymentIntent', [
+                        'amount' => $chargeAmount
+                    ]);
                     
                     $pi = isset($order->payment_intent_id) && !$payment_intent_id ? \Stripe\PaymentIntent::retrieve($order->payment_intent_id) : null;
                     if(!$pi || ($pi->status !== "requires_capture" && $pi->status !== 'succeeded')) {
@@ -1014,6 +1093,9 @@ class OrderController extends Controller
                             'capture_method' => 'manual',
                             'automatic_payment_methods' => ['enabled' => true],
                             'setup_future_usage'=> 'off_session',
+                        ]);
+                        orderLogAdvanced($order, 'payment', 'pi_created', 'success', 'PaymentIntent created', [
+                            'pi' => $pi->id
                         ]);
 
                         $order->payment_intent_client_secret = $pi->client_secret;
@@ -1030,6 +1112,8 @@ class OrderController extends Controller
                             'transaction_id'    => null, // no charge yet until capture
                             'response_payload'  => json_encode($pi),
                         ]);
+
+
                     }
                     
                     // Retrieve card details from payment method if available
@@ -1082,12 +1166,17 @@ class OrderController extends Controller
 
                 } else {
                     // No charge needed
+
+                    orderLogAdvanced($order, 'payment', 'setup_intent', 'info', 'Creating SetupIntent');
                     $si = \Stripe\SetupIntent::create([
                         'customer'  => $stripeCustomer->id,
                         'automatic_payment_methods' => [
                             'enabled' => true,
                         ],                        // 'usage'     => 'off_session',
                         'metadata'  => $metaData
+                    ]);
+                    orderLogAdvanced($order, 'payment', 'setup_created', 'success', 'SetupIntent created', [
+                        'si' => $si->id
                     ]);               
                     $order->payment_intent_client_secret = $si->client_secret;
                     $order->payment_intent_id = $si->id;
@@ -1110,6 +1199,8 @@ class OrderController extends Controller
                     ]);
                 }
             } else if($adv_deposite === "full") {
+
+                orderLogAdvanced($order, 'payment', 'full_mode', 'info', 'Full payment flow');
                 
                 \Log::warning('full - ' . $order->order_number . ' - Stripe Customer: ' . $stripeCustomer->id);
                 $order->booked_amount  = $order->total_amount;
@@ -1130,6 +1221,9 @@ class OrderController extends Controller
                             'automatic_payment_methods' => ['enabled' => true],
                             'capture_method' => 'manual',
                             'setup_future_usage'=> 'off_session',
+                        ]);
+                        orderLogAdvanced($order, 'payment', 'pi_created', 'success', 'Full payment PI created', [
+                            'pi' => $pi->id
                         ]);
 
                         $order->payment_intent_client_secret = $pi->client_secret;
@@ -1202,6 +1296,8 @@ class OrderController extends Controller
                 }
             } else if ($adv_deposite === "partial") {
 
+                orderLogAdvanced($order, 'payment', 'partial_mode', 'info', 'Partial payment flow');
+
                 \Log::warning('partial - ' . $order->order_number . ' - Stripe Customer: ' . $stripeCustomer->id);
                 $paidAmount = $order->payments()
                     ->where('status', 'succeeded')
@@ -1226,6 +1322,10 @@ class OrderController extends Controller
                     'automatic_payment_methods' => ['enabled' => true],
                     'capture_method' => 'manual',
                     'setup_future_usage'=> 'off_session',
+                ]);
+
+                orderLogAdvanced($order, 'payment', 'pi_created', 'success', 'Partial PI created', [
+                    'pi' => $pi->id
                 ]);
 
                 // 3️⃣ Save PI details on order
@@ -1311,7 +1411,9 @@ class OrderController extends Controller
                 'created_at'       => now(),
                 'updated_at'       => now()
             ];
-            OrderActions::insert($order_actions);           
+            OrderActions::insert($order_actions);
+
+            orderLogAdvanced($order, 'cart', 'completed', 'success', 'Cart updated successfully');           
 
             return response()->json([
                 'status'            => true,
@@ -1323,6 +1425,10 @@ class OrderController extends Controller
                 'payment_intent_client_secret' => $order->payment_intent_client_secret,
             ], 200);
         } catch (\Exception $e) {
+
+            orderLogAdvanced($order ?? null, 'cart', 'error', 'failed', $e->getMessage(), [
+                'line' => $e->getLine()
+            ]);
             Log::error('Cart Update Error: ' . $e->getMessage());
 
             return response()->json([
@@ -1338,6 +1444,10 @@ class OrderController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function update_error(Request $request) {
+        Log::info('update_error');
+         orderLogAdvanced(null, 'payment', 'update_error_start', 'info', 'Update error triggered', [
+            'order_id' => $request->order_id
+        ]);
         $validated = $request->validate([
             'order_id' => 'required|integer|exists:orders,id',
             'payment_intent_id' => 'required'
@@ -1345,6 +1455,9 @@ class OrderController extends Controller
 
         $order = Order::find($request->order_id);
         if (!$order) {
+             orderLogAdvanced(null, 'payment', 'order_missing', 'failed', 'Order not found', [
+                'order_id' => $request->order_id
+            ]);
             return response()->json([
                 'status' => false,
                 'message' => 'Order not found.'
@@ -1355,6 +1468,9 @@ class OrderController extends Controller
         $order->booked_amount       = 0;
         $order->updated_at         = now();
         $order->save();
+        orderLogAdvanced($order, 'payment', 'reset', 'success', 'Payment reset after failure', [
+            'payment_intent_id' => $request->payment_intent_id
+        ]);
 
         return response()->json([
             'status'   => true,
@@ -1458,6 +1574,7 @@ class OrderController extends Controller
      */
     public function getSessionTimes(Request $request)
     {
+        Log::info('getSessionTimes');
         $carbonDate = Carbon::parse($request->date);
 
         $date = $request->date;
@@ -1836,6 +1953,7 @@ class OrderController extends Controller
      */
     public function getLastMinuteCharge(Request $request, Tour $tour)
     {
+        Log::info('add_to_cart');
         $request->validate([
             'tour_date' => 'required|date',
             'tour_time' => 'required'
@@ -1881,6 +1999,7 @@ class OrderController extends Controller
      */
     public function fetchDepositRule($id)
     {
+        Log::info('add_to_cart');
         $cacheKey = 'depositRule_' . $id;
         $discount = [];
         $depositRule = Cache::remember($cacheKey, 86400, function () use ($id) {

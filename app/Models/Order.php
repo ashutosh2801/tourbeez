@@ -21,6 +21,8 @@ class Order extends Model
     use HasFactory, SoftDeletes;
     use LogsActivity;
 
+    public $timestamps = true;
+
     protected static function booted()
     {
         static::addGlobalScope(new SupplierOrderScope);
