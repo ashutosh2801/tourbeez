@@ -336,7 +336,7 @@ gap:10px;
 
                     <th style="width:12%;">{{ translate('SKU') }}</th>
 
-                    <th style="width:2%; text-align:center;">{{ translate('Reviews') }}</th>
+                    <!-- <th style="width:2%; text-align:center;">{{ translate('Reviews') }}</th> -->
 
                     <th style="width:14%;">{{ translate('Category') }}</th>
 
@@ -372,7 +372,7 @@ gap:10px;
                                 
                                 <td>{{ price_format_with_currency($tour->price, $tour->currency) }}</td>
                                 <td>{{ $tour->unique_code }}</td>
-                                <td class="text-center">{{ $tour->trustpilot_review ? 'Yes' : 'No' }}</td>
+                                <!-- <td class="text-center">{{ $tour->trustpilot_review ? 'Yes' : 'No' }}</td> -->
                                 <td>{{ $tour->category_names ?: 'No categories' }}</td>
                                 <td>
                                     @can('clone_tour')   

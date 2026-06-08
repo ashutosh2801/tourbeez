@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\CustomerExport;
 use App\Exports\InvoiceWithDetailsExport;
+use App\Exports\PriceScheduleExport;
 use App\Exports\RevenueExport;
 use App\Models\Category;
 use App\Models\Order;
@@ -12,9 +13,9 @@ use App\Models\Tour;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class ReportController extends Controller
 {
@@ -1359,4 +1360,181 @@ public function exportCustomer(Request $request)
         'customer_report_' . now()->format('Ymd_His') . '.xlsx'
     );
 }
-}
+
+//     public function schedulePricingReport(Request $request)
+// {
+//     $rows = $this->getSchedulePricingReportData($request);
+
+//     $partners = Partner::get();
+
+//     return view('admin.reports.schedule-pricing', compact('rows', 'partners'));
+// }
+
+    public function schedulePricingReport(Request $request)
+    {
+        $rows = $this->getSchedulePricingReportData($request, false);
+
+        $partners = Partner::get();
+
+        return view('admin.reports.schedule-pricing', compact('rows', 'partners'));
+    }
+
+    private function getSchedulePricingReportData($request, $export = false)
+    {
+        $query = Tour::query()
+            ->onlyRoot()
+            ->with(['categories', 'location', 'schedules', 'subTours'])
+            ->join('tour_pricings as tp', 'tp.tour_id', '=', 'tours.id')
+            ->whereNull('tp.deleted_at')
+            ->select(
+                'tours.*',
+                'tp.label',
+                'tp.price',
+                'tp.selling_price'
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | SAME FILTERS (UNCHANGED)
+        |--------------------------------------------------------------------------
+        */
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('tours.title', 'like', "%{$search}%")
+                  ->orWhere('tours.unique_code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('category')) {
+            $query->whereHas('categories', fn($q) => $q->where('category_id', $request->category));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('tours.status', $request->status);
+        }
+
+        if ($request->filled('author')) {
+            $query->where('tours.user_id', $request->author);
+        }
+
+        if ($request->filled('city')) {
+            $query->whereHas('location', fn($q) => $q->where('city_id', $request->city));
+        }
+
+        if ($request->filled('schedule')) {
+            $request->schedule === 'active'
+                ? $query->whereHas('schedules')
+                : $query->whereDoesntHave('schedules');
+        }
+
+        if ($request->filled('has_sub_tour')) {
+            $request->has_sub_tour === 'yes'
+                ? $query->whereHas('subTours')
+                : $query->whereDoesntHave('subTours');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAGINATION
+        |--------------------------------------------------------------------------
+        */
+        $perPage = $request->per_page == 'All'
+            ? $query->count()
+            : ($request->per_page ?? 20);
+
+        $data = $export
+            ? $query->get()
+            : $query->paginate($perPage)->withQueryString();
+
+        $collection = $export ? $data : $data->getCollection();
+
+        /*
+        |--------------------------------------------------------------------------
+        | PRELOAD TAXES (IMPORTANT 🔥)
+        |--------------------------------------------------------------------------
+        */
+        $tourIds = $collection->pluck('id')->unique();
+
+        $taxes = DB::table('taxes_fee_tour as tft')
+            ->join('taxes_fees as tf', 'tft.taxes_fee_id', '=', 'tf.id')
+            ->whereIn('tft.tour_id', $tourIds)
+            ->whereNull('tft.deleted_at')
+            ->select(
+                'tft.tour_id',
+                'tf.tax_fee_type',
+                'tf.tax_fee_value',
+                'tf.fee_type'
+            )
+            ->get()
+            ->groupBy('tour_id');
+        
+        /*
+        |--------------------------------------------------------------------------
+        | TRANSFORM (CORRECT TAX LOGIC)
+        |--------------------------------------------------------------------------
+        */
+        $rows = $collection->map(function ($item) use ($taxes) {
+
+            $currency = $item->currency ?? 'CAD';
+
+            $revenue = round(currencyConvertWithoutRound($item->selling_price, $currency, 'CAD'), 2);
+            $cost = round(currencyConvertWithoutRound($item->price, $currency, 'CAD'), 2);
+
+            /*
+            |--------------------------------------------------------------------------
+            | APPLY TAX EXACTLY LIKE YOUR SYSTEM
+            |--------------------------------------------------------------------------
+            */
+            $revenueTotal = $revenue;
+            $costTotal = $cost;
+
+            if (isset($taxes[$item->id])) {
+
+                foreach ($taxes[$item->id] as $tax) {
+
+                    $taxValue = $tax->fee_type == 'FIXED_PER_ORDER'
+                        ? currencyConvertWithoutRound($tax->tax_fee_value, $currency, 'CAD')
+                        : $tax->tax_fee_value;
+
+                    $revTax = get_tax($revenueTotal, $tax->fee_type, $taxValue);
+                    $costTax = get_tax($costTotal, $tax->fee_type, $taxValue);
+
+                    $revenueTotal += $revTax;
+                    $costTotal += $costTax;
+                }
+            }
+
+            return [
+                'tour_name' => $item->title,
+                'label' => $item->label,
+
+                'revenue_price' => $revenue ?? 0,
+                'revenue_tax' => ($revenueTotal - $revenue)?? 0,
+                'revenue_total' => $revenueTotal ?? 0,
+
+                'cost_price' => $cost ?? 0,
+                'cost_tax' => ($costTotal - $cost)?? 0,
+                'cost_total' => $costTotal?? 0,
+
+                'profit' => ($costTotal - $revenueTotal)?? 0,
+            ];
+        });
+
+        if ($export) {
+            return $rows;
+        }
+
+        $data->setCollection($rows);
+
+        return $data;
+    }
+    public function schedulePricingExport(Request $request)
+    {
+        $rows = $this->getSchedulePricingReportData($request, true);
+
+        return Excel::download(new PriceScheduleExport($rows), 'price_schedule_report.xlsx');
+    }
+
+
+    }
