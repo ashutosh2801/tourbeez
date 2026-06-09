@@ -336,7 +336,7 @@ gap:10px;
 
                     <th style="width:12%;">{{ translate('SKU') }}</th>
 
-                    <th style="width:2%; text-align:center;">{{ translate('Reviews') }}</th>
+                    <!-- <th style="width:2%; text-align:center;">{{ translate('Reviews') }}</th> -->
 
                     <th style="width:14%;">{{ translate('Category') }}</th>
 
@@ -372,7 +372,7 @@ gap:10px;
                                 
                                 <td>{{ price_format_with_currency($tour->price, $tour->currency) }}</td>
                                 <td>{{ $tour->unique_code }}</td>
-                                <td class="text-center">{{ $tour->trustpilot_review ? 'Yes' : 'No' }}</td>
+                                <!-- <td class="text-center">{{ $tour->trustpilot_review ? 'Yes' : 'No' }}</td> -->
                                 <td>{{ $tour->category_names ?: 'No categories' }}</td>
                                 <td>
                                     @can('clone_tour')   
@@ -381,7 +381,7 @@ gap:10px;
                                     @can('delete_tour')  
                                     <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.tour.destroy', encrypt($tour->id)) }}"><i class="fas fa-trash-alt"></i></a>
                                     @endcan
-                                    <button class="btn btn-sm btn-primary tour-menu-btn mt-1" onclick="openTourMenu({{ $tour->id }})">
+                                    <button class="btn btn-sm btn-primary tour-menu-btn mt-1" onclick="openTourMenu({{ $tour->id }}, '{{ addslashes($tour->title) }}')">
                                         <i class="fas fa-layer-group"></i> Tour Menu
                                     </button>
                                     
@@ -467,7 +467,9 @@ gap:10px;
                                 <a target="_blank" href="{{ route('admin.tour.edit.parent', encrypt($tour->id)) }}">
                                 <i class="fas fa-layer-group"></i> Parent
                                 </a>
-
+                                <a target="_blank" href="{{ route('admin.tour.edit.schedule-pricing', encrypt($tour->id)) }}">
+                                <i class="fas fa-dollar-sign"></i> Price Scheduling
+                                </a>
                                 
                                 </div>
                             
@@ -608,7 +610,15 @@ gap:10px;
                 @csrf
                 <div class="modal-body">
                     
-                    <p>Upload a Excel file with columns: <strong>SKU</strong>, <strong>price</strong></p>
+                    <!-- <p>Upload a Excel file with columns: <strong>SKU</strong>, <strong>price</strong></p> -->
+                    <div class="form-group">
+                        <label>Import Type</label>
+                        <select name="type" class="form-control" required>
+                            <option value="">Select Type</option>
+                            <option value="tour_pricing">Tour Pricing</option>
+                            <option value="addon">Addon Pricing</option>
+                        </select>
+                    </div>
 
                     <div class="form-group">
                         <label for="file">Select File</label>
@@ -658,7 +668,7 @@ gap:10px;
     <div class="tour-modal-content">
 
     <div class="tour-modal-header">
-    <span>Tour Menu</span>
+    <span id="tourMenuTitle">Tour Menu</span>
     <button onclick="closeTourMenu()">✕</button>
     </div>
 
@@ -684,6 +694,7 @@ gap:10px;
 
 {{-- Include Select2 JS --}}
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 
 <script>
@@ -1026,23 +1037,42 @@ function toggleTourMenu(id){
 
 <script>
 
-function openTourMenu(id){
+function openTourMenu(id, title){
 
-let content = document.getElementById("tour-menu-"+id).innerHTML;
+    let content = document.getElementById("tour-menu-" + id).innerHTML;
 
-document.getElementById("tourMenuContent").innerHTML = content;
+    document.getElementById("tourMenuContent").innerHTML = content;
 
-document.getElementById("tourMenuModal").style.display = "flex";
+    // ✅ set title
+    document.getElementById("tourMenuTitle").innerText = "Tour Menu :    " + title;
 
+    document.getElementById("tourMenuModal").style.display = "flex";
 }
 
 function closeTourMenu(){
-
-document.getElementById("tourMenuModal").style.display = "none";
-
+    document.getElementById("tourMenuModal").style.display = "none";
 }
 
+
+
 </script>
+<!-- <script>
+$('form').on('submit', function(e) {
+    e.preventDefault();
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This will update ALL prices and selling prices!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, import it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            e.target.submit();
+        }
+    });
+});
+</script> -->
 
 @endsection
 </x-admin>
