@@ -1800,12 +1800,18 @@ class OrderController extends Controller
 
 
             $pickup_address = '';
+
+
             if( $order->customer->pickup_name ) {
                 $pickup_address = $order->customer->pickup_name;
             }
             else if($order->customer->pickup_id) {
+
+
                 $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
+
+
             if($pickup_address) {
                 $pickup_address = '
                   <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
@@ -1924,12 +1930,23 @@ class OrderController extends Controller
                 //        $totalFixedDiscount = $discountFixed->price;
                 //     }
                 // }
+
+                // dd($order_tour);
+
+                if($order->tour && $order->sub_tour_id){
+                    $tourTitle = $order->tour->title . "<br>" . $order_tour->tour->title;
+                    $tourTitleFormatted = $order->tour->title . "<br> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;" . $order_tour->tour->title;
+                   
+                } else{
+                    $tourTitle = $order_tour->tour->title;
+                    $tourTitleFormatted = $order_tour->tour->title;
+                }
                 $TOUR_ITEM_SUMMARY .= '
                 <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table">
                     <tbody>
                     <tr>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
-                            <h3 style="font-size:19px"><strong>' . $order_tour->tour->title . '</strong></h3>
+                            <h3 style="font-size:19px"><strong>' . $tourTitle . '</strong></h3>
                         </td>
                     </tr>
                     </tbody>
@@ -2050,8 +2067,10 @@ class OrderController extends Controller
 
                 // Taxes
                 $taxRows = '';
-                if ($order_tour->tour->taxes_fees) {
-                    foreach ($order_tour->tour->taxes_fees as $tax) {
+
+
+                if ($order_tour->tour->taxes_fees_resolved) {
+                    foreach ($order_tour->tour->taxes_fees_resolved as $tax) {
                         $taxAmount = get_tax($subtotal2, $tax->fee_type, $tax->tax_fee_value);
                         $subtotal += $taxAmount;
                         $subtotal2 += $taxAmount;
@@ -2161,12 +2180,16 @@ class OrderController extends Controller
             }
             
             $pickup_address = '';
+
+
             if( $order->customer->pickup_name ) {
                 $pickup_address = $order->customer->pickup_name;
             }
             else if($order->customer->pickup_id) {
                 $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
+
+
             // if($pickup_address) {
             //     $pickup_address = '
             //       <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
@@ -2174,9 +2197,21 @@ class OrderController extends Controller
             //         <strong>' . $pickup_address . '</strong>
             //       </h3>';
             //                 }
+            
 
-            $to_address = $tour->location->destination ?? '';
-            $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
+            if($order->tour && $order->sub_tour_id){
+                $to_address = $order->tour->location->destination ?? '';
+                $to_address.= $order->tour->location->address ? ' ('.$order->tour->location->address.')' : '';
+
+                $tourLocationAddress = $order->tour->location->address;
+            }else{
+                
+                $to_address = $tour->location->destination ?? '';
+                $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
+                $tourLocationAddress = $tour->location->address;
+
+            }
+            
             $order_paid = $order->total_amount - $balance_amount;
 
             $token = encrypt($order->id);
@@ -2188,12 +2223,12 @@ class OrderController extends Controller
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
                 "[[CUSTOMER_PHONE]]"        => $customer->phone ?? '',
-
-                "[[TOUR_TITLE]]"            => $tour->title ?? '',
+                "[[TOUR_TITLE]]"            => $tourTitleFormatted,
+                "[[PARENT_TOUR_TITLE]]"     => ($order->sub_tour_id) ? $order->tour->title : '',
                 "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
-                "[[TOUR_MAP_FORMATTED]]"    => $tour->location->address ? str_replace(',', ',<br>', $tour->location->address) : '',
+                "[[TOUR_MAP_FORMATTED]]"    => $tourLocationAddress ? str_replace(',', ',<br>', $tourLocationAddress) : '',
                 "[[TOUR_MAP]]"              => $pickup_address,
-                "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
+                "[[TOUR_ADDRESS]]"          => $tourLocationAddress ?? '',
                 "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
                 "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
                 "[[TOUR_TERMS_CONDITIONS]]"  => $tour->terms_and_conditions,
@@ -2248,7 +2283,7 @@ class OrderController extends Controller
                         ),
                         'title' => $tour->title,
                         'description' => $finalsubject,
-                        'location' => $tour->location->address,
+                        'location' => $tourLocationAddress,
                     ],
                 ]);
             } else {
@@ -2308,6 +2343,20 @@ class OrderController extends Controller
             $logo = uploaded_asset($system_logo);
 
 
+            if($order->tour && $order->sub_tour_id){
+                $to_address = $order->tour->location->destination ?? '';
+                $to_address.= $order->tour->location->address ? ' ('.$order->tour->location->address.')' : '';
+
+                $tourLocationAddress = $order->tour->location->address;
+            }else{
+                
+                $to_address = $tour->location->destination ?? '';
+                $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
+                $tourLocationAddress = $tour->location->address;
+
+            }
+
+
             $replacements = [
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
@@ -2317,8 +2366,8 @@ class OrderController extends Controller
 
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
                 "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
-                "[[TOUR_MAP]]"              => $tour->location->address ?? '',
-                "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
+                "[[TOUR_MAP]]"              => $tourLocationAddress ?? '',
+                "[[TOUR_ADDRESS]]"          => $tourLocationAddress ?? '',
                 // "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
                 // "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
                 "[[TOUR_TERMS_CONDITIONS]]"  => $tour->terms_and_conditions,
