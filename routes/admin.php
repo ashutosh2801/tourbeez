@@ -411,6 +411,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('report/schedule-pricing-report', [ReportController::class, 'schedulePricingReport'])->name('report.schedule-pricing-report');
     Route::get('/schedule-pricing-export', [ReportController::class, 'schedulePricingExport'])
     ->name('report.schedule.export');
+    Route::get('report/price_schedule', [ReportController::class, 'reportPriceSchedule'])->name('report.price_schedule');
 
 
     

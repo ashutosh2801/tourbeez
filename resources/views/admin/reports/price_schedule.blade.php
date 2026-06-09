@@ -342,13 +342,14 @@
                         <th>Customer Total</th>
                         <th>Order Balance</th>
                         
-                        <th>Transport Cost</th>
+                        
                         <th>Transport Cost - Tax</th>
                         <th>Product Price (Supplier Cost)</th>
                         <th>Tax</th>
                         <th>Other Fee</th>
                         <th>Net Total</th>
-
+                        <th>Profit</th>
+                        <th>Product</th>
                         {{-- ADDON HEADERS --}}
                         @foreach($addonKeys as $key)
                           <th colspan="6">{{ Str::headline($key) }}</th>
@@ -357,9 +358,9 @@
 
 											                
                     </tr>
-<?php /*
+
                     <tr>
-                        <th colspan="26"></th>
+                        <th colspan="23"></th>
                         @foreach($addonKeys as $key)
                           <th>Desc</th>
                           <th>Quantity</th>
@@ -369,14 +370,12 @@
                           <th>Total</th>
                         @endforeach
                     </tr>
-*/ ?>
+
                 </thead>
 
                 <tbody>
                     @forelse($rows as $row) 
-                    @php
-                    // echo '<pre>'; print_r($row); exit;
-                    @endphp
+                    
                     <tr>
                         <td>{{ $row['no'] ?? '' }}</td>
                         <td><a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">{{ $row['order_number'] ?? '' }}</a></td>
@@ -398,8 +397,15 @@
                         <td align="right">${{ number_format($row['discount_amount'], 2) }}</td>
                         <td align="right">${{ number_format($row['customer_total'], 2) }}</td>
                         <td align="right">${{ number_format($row['balance_amount'], 2) }}</td>
+                        <td align="right">${{ number_format($row['transport_cost'], 2) }}</td>
+                        
+                        
+                        <td>{{ $row['tour_selling_price'] ?? '' }}</td>
+                        <td>{{ $row['tour_selling_tax'] ?? '' }}</td>
+                        <td>0</td>
+                        <td>{{ ($row['tour_selling_total']+$row['transport_cost'] ) ?? '' }}</td>
+                        <td>{{ number_format($row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost'], 2)  }}</td>
                         <td>{{ $row['product_name'] ?? '' }}</td>
-
                         {{-- DYNAMIC ADDONS --}}
                         @foreach($addonKeys as $key)
                             <td>{{ $row[$key.'_desc'] ?? '' }}</td>

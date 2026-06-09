@@ -1378,6 +1378,7 @@ $pickupHtml .= '</div>';
     public function schedulePricingUpdate(Request $request, $id){
 
         $request->validate([
+            'transport_cost'           => 'required|numeric|min:0',
             'PriceOption'           => 'required|array',
             'PriceOption.*.selling_price'   => 'required|numeric|min:0',
 
@@ -1393,6 +1394,9 @@ $pickupHtml .= '</div>';
                 }
             }
         }
+        $pricing->tour->transport_cost = $request->transport_cost;
+
+        $pricing->tour->save();
 
         return redirect()->back()->with([
             'success' => 'Selling Price Updated successfully',
@@ -3033,17 +3037,17 @@ $pickupHtml .= '</div>';
 
     public function importPrice(Request $request)
     {
+        $request->validate([
+            'file' => 'required|mimes:csv,xlsx,xls',
+            'type' => 'required|in:tour_pricing,addon'
+        ]);
 
-            $request->validate([
-                'file' => 'required|mimes:csv,xlsx,xls',
-            ]);
+        Excel::import(new ToursImport($request->type), $request->file('file'));
 
-            Excel::import(new ToursImport, $request->file('file'));
-
-            return back()->with('success', 'Tour prices updated successfully!');
-
-        return back()->with('success', "$updatedCount tour prices have been updated successfully.");
+        return back()->with('success', 'Prices updated successfully!');
     }
+
+    
 
     public function markReview(Request $request)
     {

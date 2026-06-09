@@ -610,7 +610,15 @@ gap:10px;
                 @csrf
                 <div class="modal-body">
                     
-                    <p>Upload a Excel file with columns: <strong>SKU</strong>, <strong>price</strong></p>
+                    <!-- <p>Upload a Excel file with columns: <strong>SKU</strong>, <strong>price</strong></p> -->
+                    <div class="form-group">
+                        <label>Import Type</label>
+                        <select name="type" class="form-control" required>
+                            <option value="">Select Type</option>
+                            <option value="tour_pricing">Tour Pricing</option>
+                            <option value="addon">Addon Pricing</option>
+                        </select>
+                    </div>
 
                     <div class="form-group">
                         <label for="file">Select File</label>
@@ -686,6 +694,7 @@ gap:10px;
 
 {{-- Include Select2 JS --}}
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 
 <script>
@@ -1044,7 +1053,26 @@ function closeTourMenu(){
     document.getElementById("tourMenuModal").style.display = "none";
 }
 
+
+
 </script>
+<!-- <script>
+$('form').on('submit', function(e) {
+    e.preventDefault();
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This will update ALL prices and selling prices!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, import it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            e.target.submit();
+        }
+    });
+});
+</script> -->
 
 @endsection
 </x-admin>

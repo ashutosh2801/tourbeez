@@ -248,6 +248,13 @@
                         <p>{{ translate('Schedule Pricing') }}</p>
                     </a>
                 </li>
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.report.price_schedule') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.price_schedule') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                        <p>{{ translate('Schedule Order Pricing') }}</p>
+                    </a>
+                </li>
 
 
                 

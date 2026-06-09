@@ -38,9 +38,21 @@
                     </div>
 
                     {{-- PRODUCT PRICING --}}
+                    <div class="col-xl-7">
+                        <div class="form-group">
+                            <label>Transport Cost</label>
+                            <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                            <input  class="form-control" type=""
+                                       name="transport_cost"
+                                       value="{{ $data->transport_cost }}">
+                                   </div>
+                        </div>
+                    </div>
+
                     <div class="col-xl-12">
                         <div class="form-group">
-                            <label>Product pricing *</label>
+                            <label>Product pricing</label>
 
                             @php
                                 $priceOptions = old('PriceOption', $data->pricings->map(function ($item) {
