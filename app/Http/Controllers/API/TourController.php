@@ -2050,7 +2050,7 @@ public function single(Request $request)
     $data  = Tour::find($request->id);
     $str = '';
     $subtotal = 0;
-    $orderCurrency = $request->order_currency ?? 'CAD';
+    $orderCurrency = $request->order_currency ?? 'USD';
 
 
     if($data) {
@@ -2173,9 +2173,7 @@ public function single(Request $request)
 
                         <td class="text-right" width="200">
                             <div class="input-group">
-
-                                <select name="tour_starttime[]" class="form-control tour_starttime"><option value="">Select Session</option></select>
-                                <!-- <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> -->
+                                <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="fas fa-clock"></i></span>
                                 </div>                       
@@ -2372,8 +2370,6 @@ public function singleCalendar(Request $request)
         'disabled_dates' => $disabled_dates,
     ]);
 }
-
-
 
 
 

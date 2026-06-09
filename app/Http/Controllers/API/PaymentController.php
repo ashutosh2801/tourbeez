@@ -570,14 +570,19 @@ class PaymentController extends Controller
                 }
             }
 
+            \Log::warning("A====================================");
+
+
             $image = uploaded_asset($booking->tour?->main_image->id ?? 0, 'medium');
             $pickName = '';
             if($booking->customer && $booking->customer->pickup_name){
                 $pickName = $booking->customer->pickup_name;
             } elseif($booking->customer && $booking->customer->pickup_id) {
                 $pickLocation = PickupLocation::find($booking->customer->pickup_id);
-                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                $pickName = $pickLocation?->location . " - " . $pickLocation?->address . " - " . $pickLocation?->time;
             }
+
+            \Log::warning("B====================================");
 
             /* If already partially paid or added discount/promo etc in backend */
             $paidAmount = $booking->payments()
@@ -612,7 +617,7 @@ class PaymentController extends Controller
                 'tour'      => [
                     'image'         => $image,
                     'title'         => $booking->tour?->title,
-                    'address'       => $booking->tour?->location->address,
+                    'address'       => $booking->tour?->location?->address,
                     'pricing'       => $pricing,
                     'extra'         => $extra,
                     'fees'          => $fees,
@@ -621,7 +626,7 @@ class PaymentController extends Controller
                     'order_email'   => $booking->tour?->order_email,
                 ],
             ];
-            
+            \Log::warning("C====================================");
             
             if ($booking && !$booking->tour?->order_email && !$booking->email_sent) {                    
                 $mailsent = self::sendOrderDetailMail($detail, $action_name);

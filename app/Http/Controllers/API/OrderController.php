@@ -431,18 +431,23 @@ class OrderController extends Controller
             ], 422);
         }
 
-        $tour = Tour::with(['pricings'])->where('id', $request->tourId)->first();
-
-        if(!$tour) {
-
-            // orderLogAdvanced(null, 'cart', 'tour_not_found', 'failed', 'Tour not found', [
-            //     'tour_id' => $request->tourId
-            // ]);
-
-            return response()->json([
-            'status' => false,
-            'message' => 'Tour not found.'
-            ], 404);
+        if($request->subTourId === null) {
+            $tour = Tour::with(['pricings'])->where('id', $request->tourId)->first();
+            if(!$tour) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tour not found.'
+                ], 404);
+            }
+        }
+        else if($request->tourId && $request->subTourId) {
+            $tour = Tour::with(['pricings'])->where('id', $request->subTourId)->first();
+            if(!$tour) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Sub tour not found.'
+                ], 404);
+            }
         }
 
         $order = Order::updateOrCreate(
@@ -450,6 +455,7 @@ class OrderController extends Controller
             'id' => $request->orderId ?? null, // condition: check if orderId exists
         ],[
             'tour_id'       => $request->tourId,
+            'sub_tour_id'   => $request->subTourId ?? 0,
             'user_id'       => $request->userId ?? 0,
             'session_id'    => $request->sessionId, // optional if using guest carts
             'order_number'  => unique_order(),
@@ -487,7 +493,7 @@ class OrderController extends Controller
                     $quantity   += $qty;
 
                     $pricing[] = [
-                        'tour_id'           => $request->tourId,
+                        'tour_id'           => $request->subTourId ?? $request->tourId,
                         'tour_pricing_id'   => $item['id'],
                         'label'             => $item['label'],
                         'price_type'        => $tour->price_type,
@@ -511,7 +517,7 @@ class OrderController extends Controller
                         $item_total  += $extra_price;
 
                         $extra[] = [
-                            'tour_id'           => $request->tourId,
+                            'tour_id'           => $request->subTourId ?? $request->tourId,
                             'tour_extra_id'     => $addon['id'],
                             'quantity'          => $addon['quantity'],
                             'label'             => $addon['label'],
@@ -533,7 +539,7 @@ class OrderController extends Controller
                         $item_total+= $tax_fee;
 
                         $fees[] = [
-                            'tour_id'           => $request->tourId,
+                            'tour_id'           => $request->subTourId ?? $request->tourId,
                             'tour_taxes_id'     => $fee['id'],
                             'label'             => $fee['label'],
                             'type'              => $type,
@@ -555,7 +561,7 @@ class OrderController extends Controller
                 ],
                 [
                     'order_id'          => $orderId,
-                    'tour_id'           => $request->tourId, // mandatory
+                    'tour_id'           => $request->subTourId ?? $request->tourId, // mandatory
                     'tour_date'         => $validated['selectedDate'],
                     'tour_time'         => $validated['selectedTime'] ?? null,
                     'tour_pricing'      => json_encode($pricing),
@@ -702,13 +708,13 @@ class OrderController extends Controller
             'formData.first_name'       => 'required|string|max:255',
             'formData.last_name'        => 'required|string|max:255',
             'formData.email'            => 'required|email|max:255',
-            'formData.phone'      => 'required|string|max:20',
-            'formData.instructions' => 'nullable|string|max:500',
-            'formData.pickup_id' => 'nullable|numeric',
-            'formData.pickup_name' => 'nullable|string|max:255',
-            'formData.adv_deposite' => 'nullable|string|max:255',
-            'formData.is_discount' => 'nullable|string|max:255',
-            'formData.booking_fee' => 'nullable|numeric|max:255',
+            'formData.phone'            => 'required|string|max:20',
+            'formData.instructions'     => 'nullable|string|max:500',
+            'formData.pickup_id'        => 'nullable|numeric',
+            'formData.pickup_name'      => 'nullable|string|max:255',
+            'formData.adv_deposite'     => 'nullable|string|max:255',
+            'formData.is_discount'      => 'nullable|string|max:255',
+            'formData.booking_fee'      => 'nullable|numeric|max:255',
 
         ]);
 
@@ -788,7 +794,7 @@ class OrderController extends Controller
                 $quantity       += $qty;
 
                 $pricing[] = [
-                    'tour_id'           => $request->tourId,
+                    'tour_id'           => $request->subTourId ?? $request->tourId,
                     'tour_pricing_id'   => $item['id'],
                     'label'             => $item['label'],
                     'price_type'        => $item['price_type'],
@@ -816,7 +822,7 @@ class OrderController extends Controller
                     if ($depositRule && $depositRule->is_discount && $depositRule->charge === 'NONE') {
 
                         $discount[] = [
-                            'tour_id'  => $request->tourId,
+                            'tour_id'  => $request->subTourId ?? $request->tourId,
                             'label'    => 'Discount',
                             'type'     => $depositRule->discount_type,
                             'quantity' => $qty,
@@ -833,7 +839,7 @@ class OrderController extends Controller
                 foreach ($request->cartAdons as $addon) {
                     if (isset($addon['id'], $addon['quantity'], $addon['price'], $addon['total_price'], $addon['label']) && $addon['quantity'] != 0) {
                         $extra[] = [
-                            'tour_id'           => $request->tourId,
+                            'tour_id'           => $request->subTourId ?? $request->tourId,
                             'tour_extra_id'     => $addon['id'],
                             'quantity'          => $addon['quantity'],
                             'label'             => $addon['label'],
@@ -850,7 +856,7 @@ class OrderController extends Controller
                 foreach ($request->cartFees as $fee) {
                     if (isset($fee['id'], $fee['value'], $fee['label'])) {
                         $fees[] = [
-                            'tour_id'           => $request->tourId,
+                            'tour_id'           => $request->subTourId ?? $request->tourId,
                             'tour_taxes_id'     => $fee['id'],
                             'label'             => $fee['label'],
                             'type'              => $fee['type'],
@@ -863,7 +869,7 @@ class OrderController extends Controller
             }
 
             $order_tour_data = [
-                'tour_id'           => $request->tourId,
+                'tour_id'           => $request->subTourId ?? $request->tourId,
                 'order_id'          => $order->id,
                 'tour_date'         => $validated['selectedDate'],
                 'tour_pricing'      => json_encode($pricing ?? []),
@@ -929,7 +935,7 @@ class OrderController extends Controller
             $previousOrderTotalAmount = $order->total_amount;
 
             $order_actions_notes       = NULL;
-            $order->sub_tour_id        = $request->sub_tour_id;
+            //$order->sub_tour_id        = $request->sub_tour_id;
             $order->action_name        = $request->action_name;
             $order->number_of_guests   = $quantity;
             $order->total_amount       = $item_total ?? 0;
@@ -1548,7 +1554,7 @@ class OrderController extends Controller
                     ];
 
                     $discounts[] = [
-                        'tour_id'  => $request->tourId,
+                        'tour_id'  => $request->subTourId ?? $request->tourId,
                         'discount' => $depositRule->discount_value ?? 0,
                         'label'    => 'Discount',
                         'type'     => $depositRule->discount_type,
