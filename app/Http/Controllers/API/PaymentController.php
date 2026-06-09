@@ -888,13 +888,23 @@ class PaymentController extends Controller
                 $tour_pricing = !empty($order_tour->tour_pricing) ? json_decode($order_tour->tour_pricing, true) : [];
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
                 $tour_discount = !empty($order_tour->discount) ? json_decode($order_tour->discount, true) : [];
+
+                if($order->tour && $order->sub_tour_id){
+                    
+                    $tourTitle = $order->tour->title . "<br>" . $order_tour->tour->title;
+                    $tourTitleFormatted = $order->tour->title . "<br> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;" . $order_tour->tour->title;
+                   
+                } else{
+                    $tourTitle = $order_tour->tour->title;
+                    $tourTitleFormatted = $order_tour->tour->title;
+                }
                 
                 $TOUR_ITEM_SUMMARY .= '
                 <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table">
                     <tbody>
                     <tr>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
-                            <h3 style="font-size:19px"><strong>' . $order_tour->tour->title . '</strong></h3>
+                            <h3 style="font-size:19px"><strong>' . $tourTitle . '</strong></h3>
                         </td>
                     </tr>
                     </tbody>
@@ -1017,8 +1027,8 @@ class PaymentController extends Controller
 
                 // Taxes
                 $taxRows = '';
-                if ($order_tour->tour->taxes_fees) {
-                    foreach ($order_tour->tour->taxes_fees as $tax) {
+                if ($order_tour->tour->taxes_fees_resolved) {
+                    foreach ($order_tour->tour->taxes_fees_resolved as $tax) {
                         $taxAmount = get_tax($subtotal, $tax->fee_type, $tax->tax_fee_value);
                         $subtotal += $taxAmount;
                         $taxRows .= '
@@ -1119,15 +1129,29 @@ class PaymentController extends Controller
             //       </h3>';
             // }
 
-            $to_address = $tour->location->destination ?? '';
-            $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
+            // $to_address = $tour->location->destination ?? '';
+            // $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
+
+            if($order->tour && $order->sub_tour_id){
+                
+                $to_address = $order->tour->location->destination ?? '';
+                $to_address.= $order->tour->location->address ? ' ('.$order->tour->location->address.')' : '';
+
+                $tourLocationAddress = $order->tour->location->address;
+            }else{
+                
+                $to_address = $tour->location->destination ?? '';
+                $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
+                $tourLocationAddress = $tour->location->address;
+
+            }
             $order_paid = $order->total_amount - $order->balance_amount;
             $replacements = [   
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
                 "[[CUSTOMER_PHONE]]"        => '+'.$customer->phone ?? '',
 
-                "[[TOUR_TITLE]]"            => $tour->title ?? '',
+                "[[TOUR_TITLE]]"            => $tourTitleFormatted,
                 // "[[TOUR_MAP]]"              => $to_address,
                 "[[TOUR_ADDRESS]]"          => $to_address,
                 "[[TOUR_MAP]]"              => $pickup_address,

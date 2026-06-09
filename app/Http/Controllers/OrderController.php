@@ -2223,9 +2223,6 @@ class OrderController extends Controller
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
                 "[[CUSTOMER_PHONE]]"        => $customer->phone ?? '',
-
-
-
                 "[[TOUR_TITLE]]"            => $tourTitleFormatted,
                 "[[PARENT_TOUR_TITLE]]"     => ($order->sub_tour_id) ? $order->tour->title : '',
                 "[[TOUR_SKU]]"              => $tour->unique_code ?? '',

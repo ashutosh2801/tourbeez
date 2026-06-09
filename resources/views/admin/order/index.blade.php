@@ -291,7 +291,7 @@
                                                class="alink"
                                                target="_blank"
                                                style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">
-                                                {{ $order_tour->tour?->title }}
+                                                {{ $order->tour?->title }}
                                             </a>
                                             @if($loop->iteration == 1)
                                             <span class="font-bold ml-1">
@@ -302,11 +302,11 @@
 
                                         @if($order->sub_tour_id && $order->subTour)
                                             <div style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                                <a href="{{ route('admin.tour.edit', encrypt($order->subTour->id)) }}"
+                                                <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour->id)) }}"
                                                    class="alink text-small"
                                                    target="_blank"
                                                    style="font-size:small;">
-                                                    {{ $order->subTour?->title }}
+                                                    {{ $order_tour->tour?->title }}
                                                 </a>
                                             </div>
                                         @endif

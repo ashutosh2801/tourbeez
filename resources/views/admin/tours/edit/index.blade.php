@@ -57,6 +57,7 @@
                     <a class="nav-link" href="{{ route('admin.tour.edit.special.deposit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate(' Special Deposit')}}</a>
                     <a class="nav-link" href="{{ route('admin.tour.edit.review', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Review')}}</a>
                     <a class="nav-link" href="{{ route('admin.tour.edit.parent', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Parent Tour')}}</a>
+                    <a class="nav-link" href="{{ route('admin.tour.edit.schedule-pricing', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Schedule Pricing')}}</a> 
                 </div>
             </div>
             <!-- mobile menu end -->
@@ -83,7 +84,8 @@
                                 <a class="nav-link" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('SEO')}}</a> 
                                 <a class="nav-link" href="{{ route('admin.tour.edit.special.deposit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate(' Special Deposit')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.review', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Review')}}</a>
-                                <a class="nav-link" href="{{ route('admin.tour.edit.parent', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Parent Tour')}}</a>  
+                                <a class="nav-link" href="{{ route('admin.tour.edit.parent', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Parent Tour')}}</a> 
+                                <a class="nav-link" href="{{ route('admin.tour.edit.schedule-pricing', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Schedule Pricing')}}</a> 
                             </div>
                             
                         </div>
