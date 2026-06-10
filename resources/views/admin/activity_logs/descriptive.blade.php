@@ -127,7 +127,27 @@
         <div class="row">
 
             {{-- ACTIVITY DATE --}}
-            <div class="col-xl-2 col-md-2 col-12 position-relative">
+            <div class="col-xl-3 col-md-3 col-12 position-relative">
+                <label class="filter-label">Activity Date</label>
+
+                <input 
+                    type="text" 
+                    name="activity_date"
+                    
+                    class="form-control aiz-date-range"
+                    data-advanced-range="true"
+                    data-separator=" - "
+                    data-show-dropdown="true"
+                    placeholder="Select date range"
+                    autocomplete="off"
+                    value="{{ request('activity_date') }}"
+                >
+
+                @if(request('activity_date'))
+                    <span class="clear-btn" onclick="clearBooking()">✕</span>
+                @endif
+            </div>
+            <!-- <div class="col-xl-2 col-md-2 col-12 position-relative">
                 <label class="filter-label">Activity Date</label>
 
                 <input type="text" id="activity_range" class="form-control"
@@ -139,7 +159,7 @@
 
                 <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
                 <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
-            </div>
+            </div> -->
 
             {{-- ORDER NUMBER --}}
             <div class="col-xl-2 col-md-2 col-12">
@@ -147,7 +167,7 @@
                 <input type="text" name="order_number"
                     value="{{ request('order_number') }}"
                     class="form-control"
-                    placeholder="TUU8XXA">
+                    placeholder="Order Numbers">
             </div>
 
             {{-- MODEL --}}

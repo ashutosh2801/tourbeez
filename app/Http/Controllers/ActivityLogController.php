@@ -6,6 +6,7 @@ use App\Models\OrderLog;
 use Illuminate\Http\Request;
 use Spatie\Activitylog\Models\Activity;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ActivityLogController extends Controller
 {
@@ -81,6 +82,19 @@ class ActivityLogController extends Controller
             $query->whereDate('created_at', '<=', $request->end_date);
         }
 
+        if ($request->filled('activity_date')) {
+            try {
+                [$start, $end] = explode(' - ', $request->activity_date);
+
+                $startDate = Carbon::parse($start)->startOfDay();
+                $endDate   = Carbon::parse($end)->endOfDay();
+                if ($startDate && $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                }
+            } catch (\Exception $e) {}
+
+        }
+
         $logs = $query->with('subject')->latest()
             ->paginate(20)
             ->appends($request->all());
@@ -123,6 +137,18 @@ class ActivityLogController extends Controller
 
         if ($request->filled('end_date')) {
             $query->whereDate('created_at', '<=', $request->end_date);
+        }
+        if ($request->filled('activity_date')) {
+            try {
+                [$start, $end] = explode(' - ', $request->activity_date);
+
+                $startDate = Carbon::parse($start)->startOfDay();
+                $endDate   = Carbon::parse($end)->endOfDay();
+                if ($startDate && $endDate) {
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                }
+            } catch (\Exception $e) {}
+
         }
 
         $logs = $query->latest()
