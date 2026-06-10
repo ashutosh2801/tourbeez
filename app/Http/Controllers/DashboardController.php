@@ -410,5 +410,52 @@ public function dashboard(Request $request)
 
     ));
 }
+public function comparisonView(Request $request)
+{
+    $partners = Partner::get();
+    return view('admin.reports.comparison', compact('partners'));
+}
+public function comparisonData(Request $request)
+{
+    $date1 = $request->date1;
+    $date2 = $request->date2;
+
+    if (!$date1 || !$date2) {
+        return response()->json([]);
+    }
+
+    $req1 = clone $request;
+    $req2 = clone $request;
+
+    $req1->merge(['booking_date' => $date1 . ' - ' . $date1]);
+    $req2->merge(['booking_date' => $date2 . ' - ' . $date2]);
+
+    $rows1 = $this->getInvoiceData($req1);
+    $rows2 = $this->getInvoiceData($req2);
+
+    $calc = function ($rows) {
+
+        $revenue = collect($rows)->sum('customer_total');
+        $bookings = count($rows);
+        $passengers = collect($rows)->sum(fn($r) => $r['adult'] + $r['child'] + $r['infant']);
+
+        $avg = $passengers > 0 ? $revenue / $passengers : 0;
+
+        return [
+            'revenue' => round($revenue, 2),
+            'bookings' => $bookings,
+            'passengers' => $passengers,
+            'avg' => round($avg, 2),
+        ];
+    };
+
+    $d1 = $calc($rows1);
+    $d2 = $calc($rows2);
+
+    return response()->json([
+        'date1' => $d1,
+        'date2' => $d2,
+    ]);
+}
 
 }
