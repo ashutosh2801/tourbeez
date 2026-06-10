@@ -391,29 +391,66 @@
                         <td>{{ $row['child'] }}</td>
                         <td>{{ $row['infant'] }}</td>
                         <td>{{ $row['other'] }}</td>
-                        <td align="right">${{ number_format($row['product_price'], 2) }}</td>
-                        <td align="right">${{ number_format($row['extra_amount'], 2) }}</td>
-                        <td align="right">${{ number_format($row['tax_amount'], 2) }}</td>
-                        <td align="right">${{ number_format($row['discount_amount'], 2) }}</td>
-                        <td align="right">${{ number_format($row['customer_total'], 2) }}</td>
-                        <td align="right">${{ number_format($row['balance_amount'], 2) }}</td>
-                        <td align="right">${{ number_format($row['transport_cost'], 2) }}</td>
+                        <td align="right">{{ number_format_with_currency($row['product_price'], 2) }}</td>
+                        <td align="right">{{ number_format_with_currency($row['extra_amount'], 2) }}</td>
+                        <td align="right">{{ number_format_with_currency($row['tax_amount'], 2) }}</td>
+                        <td align="right">{{ number_format_with_currency($row['discount_amount'], 2) }}</td>
+                        <td align="right">{{ number_format_with_currency($row['customer_total'], 2) }}</td>
+                        <td align="right">{{ number_format_with_currency($row['balance_amount'], 2) }}</td>
+                        <td align="right">{{ number_format_with_currency($row['transport_cost'], 2) }}</td>
                         
                         
-                        <td>{{ $row['tour_selling_price'] ?? '' }}</td>
-                        <td>{{ $row['tour_selling_tax'] ?? '' }}</td>
-                        <td>0</td>
-                        <td>{{ ($row['tour_selling_total']+$row['transport_cost'] ) ?? '' }}</td>
-                        <td>{{ number_format($row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost'], 2)  }}</td>
-                        <td>{{ $row['product_name'] ?? '' }}</td>
+                        <td align="right">{{ number_format_with_currency($row['tour_selling_price'], 2) }}</td>
+                        <td align="right">{{ number_format_with_currency($row['tour_selling_tax'], 2) }}</td>
+                        <td align="right">0</td>
+                        <td align="right">{{ number_format_with_currency(($row['tour_selling_total']+$row['transport_cost'] ) , 2) }}</td>
+                        <td align="right">{{ number_format_with_currency(($row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost']), 2)  }}</td>
+                        <td align="right">{{ $row['product_name'] ?? '' }}</td>
                         {{-- DYNAMIC ADDONS --}}
                         @foreach($addonKeys as $key)
-                            <td>{{ $row[$key.'_desc'] ?? '' }}</td>
-                            <td>{{ $row[$key.'_quant'] ?? '' }}</td>
-                            <td>{{ number_format_with_currency($row[$key.'_price'], 2) ?? 0 }}</td>
-                            <td>{{ number_format_with_currency($row[$key.'_tax'], 2) ?? 0 }}</td>
-                            <td>{{ number_format_with_currency($row[$key.'_fee'], 2) ?? 0 }}</td>
-                            <td>{{ number_format_with_currency($row[$key.'_total'], 2) ?? 0 }}</td>
+                            <td align="right">
+                                @if(!empty($row[$key.'_desc']))
+                                    <strong>{{ $row[$key.'_desc'] }}</strong>
+                                @endif
+                            </td>
+
+                            <td align="right">
+                                @if(!empty($row[$key.'_quant']))
+                                    <strong>{{ $row[$key.'_quant'] }}</strong>
+                                @endif
+                            </td>
+
+                            <td align="right">
+                                @if(!empty($row[$key.'_price']))
+                                    <strong>{{ number_format_with_currency($row[$key.'_price'], 2) }}</strong>
+                                @else
+                                    0
+                                @endif
+                            </td>
+
+                            <td align="right">
+                                @if(!empty($row[$key.'_tax']))
+                                    <strong>{{ number_format_with_currency($row[$key.'_tax'], 2) }}</strong>
+                                @else
+                                    0
+                                @endif
+                            </td>
+
+                            <td align="right">
+                                @if(!empty($row[$key.'_fee']))
+                                    <strong>{{ number_format_with_currency($row[$key.'_fee'], 2) }}</strong>
+                                @else
+                                    0
+                                @endif
+                            </td>
+
+                            <td>
+                                @if(!empty($row[$key.'_total']))
+                                    <strong>{{ number_format_with_currency($row[$key.'_total'], 2) }}</strong>
+                                @else
+                                    0
+                                @endif
+                            </td>
                         @endforeach
 
                     </tr>
