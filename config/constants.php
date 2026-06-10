@@ -102,5 +102,65 @@ return [
         'ZAR' => 'R',
     ],
 
+    'stages' => [
+
+        'cart' => [
+            'entry',
+            'validation',
+            'order_created',
+            'calculation_done',
+            'completed',
+        ],
+
+        'customer' => [
+            'start',
+            'saved',
+        ],
+
+        'promo' => [
+            'start',
+            'validated',
+            'applied',
+        ],
+
+        'payment' => [
+            'stripe_init',
+            'pi_detect',
+            'pi_create',
+            'pi_created',
+            'deposit_mode',
+            'success',
+            'failed',
+        ],
+
+        'email' => [
+            'start',
+            'template_loaded',
+            'customer_loaded',
+            'tour_loaded',
+            'summary_built',
+            'mail_sending',
+            'mail_sent',
+            'history_saved',
+        ],
+
+        'mail' => [
+            'start',
+            'sent',
+            'failed',
+        ]
+
+    ],
+
+    // Order flow sequence (VERY IMPORTANT)
+    'flow' => [
+        'cart',
+        'customer',
+        'promo',
+        'payment',
+        'email',
+    ],
+
+
 
 ];

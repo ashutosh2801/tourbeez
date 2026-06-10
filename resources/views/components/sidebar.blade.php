@@ -247,6 +247,21 @@
                     </a>
                 </li>
 
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.report.schedule-pricing-report') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.schedule-pricing-report') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                        <p>{{ translate('Schedule Pricing') }}</p>
+                    </a>
+                </li>
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.report.price_schedule') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.price_schedule') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                        <p>{{ translate('Schedule Order Pricing') }}</p>
+                    </a>
+                </li>
+
 
                 
             </ul>
@@ -448,6 +463,14 @@
                             <p>Activity Description</p>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.activity.orderLog') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.activity.orderLog') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-file-alt"></i>
+                            <p>Order Logs</p>
+                        </a>
+                    </li>
+
+                    
                 </ul>
             </li>
             @endcan

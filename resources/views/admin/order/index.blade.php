@@ -289,8 +289,8 @@
                                             <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour_id)) }}"
                                                class="alink"
                                                target="_blank"
-                                            >
-                                                {{ $order_tour->tour?->title }}
+                                               style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">
+                                                {{ $order->tour?->title }}
                                             </a>
                                         </div>
                                         @if($loop->iteration == 1)
@@ -300,12 +300,12 @@
                                         @endif
 
                                         @if($order->sub_tour_id && $order->subTour)
-                                            <div>
-                                                <a href="{{ route('admin.tour.edit', encrypt($order->subTour->tour_id)) }}"
+                                            <div style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                                <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour->id)) }}"
                                                    class="alink text-small"
                                                    target="_blank"
                                                    style="font-size:small;">
-                                                    {{ $order->subTour?->title }}
+                                                    {{ $order_tour->tour?->title }}
                                                 </a>
                                             </div>
                                         @endif

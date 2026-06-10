@@ -14,7 +14,7 @@ class Addon extends Model
     use LogsActivity;
 
     protected $fillable = [
-        'name', 'price', 'description', 'customer_choice', 'availability', 'image', 'currency'
+        'name', 'price', 'description', 'customer_choice', 'availability', 'image', 'currency', 'selling_price'
     ];
 
     public function getActivitylogOptions(): LogOptions

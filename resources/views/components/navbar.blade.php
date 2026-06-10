@@ -68,7 +68,7 @@
                 $unreadCount = $notificationsQuery->whereNull('read_at')->count();
             @endphp
 
-            <li class="nav-item dropdown currency-dropdown">
+            <!-- <li class="nav-item dropdown currency-dropdown">
                 <a class="nav-link dropdown-toggle nav-currency"
                 href="#"
                 id="currencyDropdown"
@@ -99,7 +99,7 @@
                         </a>
                     @endforeach
                 </div>
-            </li>
+            </li> -->
             
             <li>
                 <button id="openCurrencyModal" class="btn nav-currency"  title="Convert currency to USD">

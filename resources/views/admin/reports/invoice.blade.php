@@ -236,7 +236,7 @@
                         <div class="col-xl-2 col-md-3 col-12">
                             <div class="d-flex column-gap-10">
                                 <button class="btn btn-apply flex-fill">Apply</button>
-                                <a href="{{ route('admin.report.overview') }}" class="btn btn-secondary flex-fill">Reset</a>
+                                <a href="{{ route('admin.report.invoice') }}" class="btn btn-secondary flex-fill">Reset</a>
                             </div>
                         </div>
 
@@ -342,6 +342,10 @@
                     <th>Total</th>
                     <th>Total Paid</th>
                     <th>Product Name</th>
+                    <th>Adult</th>
+                    <th>Child</th>
+                    <th>Infant</th>
+                    <th>Senior Citizen</th>
                 </tr>
             </thead>
 
@@ -362,6 +366,11 @@
 
                         <td>{{ number_format_with_currency($row['total_paid'], 2) }}</td>
                         <td>{{ $row['product_name'] }}</td>
+
+                        <td>{{ $row['adult'] }}</td>
+                        <td>{{ $row['child'] }}</td>
+                        <td>{{ $row['infant'] }}</td>
+                        <td>{{ $row['other'] }}</td>
                     </tr>
                 @empty
                     <tr>
