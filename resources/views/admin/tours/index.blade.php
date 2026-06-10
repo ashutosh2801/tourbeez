@@ -373,7 +373,7 @@
 @section('modal')
 <!-- clone modal -->
 <div id="clone-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title h6">{{ translate('Clone Confirmation') }}</h4>

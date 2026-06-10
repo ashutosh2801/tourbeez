@@ -10937,6 +10937,16 @@ table.dataTable {
     color: #FFF;
 }
 
+#clone-modal .modal-content .modal-header {
+    background: #4c4a48;
+    color: #FFF;
+    padding: 10px 20px;
+}
+
+#clone-modal .modal-content .modal-header .close {
+    color: #FFF;
+}
+
 .quantity_used .btn-success,
 .quantity_used .btn-danger {
     padding: 10px 15px;

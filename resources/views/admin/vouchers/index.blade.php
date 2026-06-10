@@ -107,11 +107,11 @@
                                     <td>{{ $voucher->agent_name }}</td>
                                     <td>{{ $voucher->internalReference }}</td>
                                     <td>
-                                        <a href="{{ route('admin.vouchers.edit', $voucher->id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                        <a href="{{ route('admin.vouchers.edit', $voucher->id) }}" class="btn btn-edit"><i class="far fa-edit"></i></a>
                                         <form action="{{ route('admin.vouchers.destroy', $voucher->id) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')"><i class="fas fa-trash-alt"></i></button>
                                         </form>
                                     </td>
                                 </tr>

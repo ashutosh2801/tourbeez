@@ -68,7 +68,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <a href="{{ route('admin.promos.edit', $promo->id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                        <a href="{{ route('admin.promos.edit', $promo->id) }}" class="btn btn-edit"><i class="far fa-edit"></i></a>
                                         <form action="{{ route('admin.promos.destroy', $promo->id) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')

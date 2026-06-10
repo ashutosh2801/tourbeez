@@ -220,7 +220,7 @@
 @section('modal')
 <!-- clone modal -->
 <div id="clone-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title h6">{{ translate('Clone Confirmation') }}</h4>
@@ -237,7 +237,7 @@
 
 <!-- delete Modal -->
 <div id="delete-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title h6">{{ translate('Delete Confirmation') }}</h4>
@@ -252,7 +252,6 @@
     </div>
 </div>
 
-<!-- Tour Coupon Modal -->
 <!-- Tour Coupon Modal -->
 <div id="tour-coupon-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
@@ -299,7 +298,7 @@
         </div>
     </div>
 </div>
-<!-- Enable/Disable Tour Modal -->
+
 <!-- Enable/Disable Tour Modal -->
 <div id="enable-disable-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
@@ -322,22 +321,18 @@
                 <input type="hidden" name="bulk_status" id="bulk_status">
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
-                    <button type="submit" class="btn btn-success" onclick="$('#bulk_status').val(1)">{{ translate('Enable') }}</button>
-                    <button type="submit" class="btn btn-danger" onclick="$('#bulk_status').val(2)">{{ translate('Disable') }}</button>
+                    <div>
+                        <button type="submit" class="btn btn-success" onclick="$('#bulk_status').val(1)">{{ translate('Enable') }}</button>
+                        <button type="submit" class="btn btn-danger" onclick="$('#bulk_status').val(2)">{{ translate('Disable') }}</button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-
-
-
-
-
-
-
 <!-- /.modal -->
 
 @endsection

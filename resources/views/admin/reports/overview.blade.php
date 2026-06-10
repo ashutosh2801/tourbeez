@@ -5,7 +5,7 @@
 /* FULL FIX FOR SELECT2 HEIGHT */
 .select2-container .select2-selection--single {
     height: 42px !important;
-    border: 1px solid #ced4da !important;
+    border: 1px solid #aeb0b4 !important;
     border-radius: 0.375rem !important;
     display: flex !important;
     align-items: center !important;
@@ -56,63 +56,61 @@
             <div class="row">
 
                 {{-- BOOKING DATE --}}
+                @php
+                    $hasFilter = request()->hasAny([
+                        'booking_date',
+                        'tour_date',
+                        'product',
+                        'order_status',
+                        'payment_status',
+                        'partner',
+                        'action_type'
+                    ]);
+                @endphp
+                <div class="col-xl-4 col-md-3 col-12 position-relative">
+                    <div class="form-group">
+                        <label class="filter-label">Booking Date</label>
+                        <input 
+                            type="text" 
+                            name="booking_date"
+                            id="booking_range"
+                            class="form-control aiz-date-range"
+                            data-advanced-range="true"
+                            data-separator=" - "
+                            data-show-dropdown="true"
+                            placeholder="Select date range"
+                            autocomplete="off"
+                            value="{{ request('booking_date') }}"
+                        >
 
-                {{-- BOOKING DATE --}}
+                        @if(request('booking_date'))
+                            <span class="clear-btn" onclick="clearBooking()">✕</span>
+                        @endif
+                    </div>
+                </div>
 
-    @php
-        $hasFilter = request()->hasAny([
-            'booking_date',
-            'tour_date',
-            'product',
-            'order_status',
-            'payment_status',
-            'partner',
-            'action_type'
-        ]);
-    @endphp
-    <div class="col-xl-3 col-md-3 col-12 position-relative">
-        <label class="filter-label">Booking Date</label>
+                {{-- TOUR DATE --}}
+                <div class="col-xl-4 col-md-3 col-12 position-relative">
+                    <div class="form-group">
+                        <label class="filter-label">Tour Date</label>
+                        <input 
+                            type="text" 
+                            name="tour_date"
+                            
+                            class="form-control aiz-date-range"
+                            data-advanced-range="true"
+                            data-separator=" - "
+                            data-show-dropdown="true"
+                            placeholder="Select date range"
+                            autocomplete="off"
+                            value="{{ request('tour_date') }}"
+                        >
+                        @if(request('tour_date'))
+                            <span class="clear-btn" onclick="clearTour()">✕</span>
+                        @endif
+                    </div>
+                </div>
 
-        <input 
-            type="text" 
-            name="booking_date"
-            id="booking_range"
-            class="form-control aiz-date-range"
-            data-advanced-range="true"
-            data-separator=" - "
-            data-show-dropdown="true"
-            placeholder="Select date range"
-            autocomplete="off"
-            value="{{ request('booking_date') }}"
-        >
-
-        @if(request('booking_date'))
-            <span class="clear-btn" onclick="clearBooking()">✕</span>
-        @endif
-    </div>
-
-
-    {{-- TOUR DATE --}}
-    <div class="col-xl-3 col-md-3 col-12 position-relative">
-        <label class="filter-label">Tour Date</label>
-
-        <input 
-            type="text" 
-            name="tour_date"
-            
-            class="form-control aiz-date-range"
-            data-advanced-range="true"
-            data-separator=" - "
-            data-show-dropdown="true"
-            placeholder="Select date range"
-            autocomplete="off"
-            value="{{ request('tour_date') }}"
-        >
-
-        @if(request('tour_date'))
-            <span class="clear-btn" onclick="clearTour()">✕</span>
-        @endif
-    </div>
                 <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Booking Date</label>
 
@@ -126,7 +124,6 @@
                     <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
                     <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
                 </div> -->
-
 
                 {{-- TOUR DATE --}}
                 <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
@@ -142,22 +139,25 @@
                     <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
                     <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
                 </div> -->
-            <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
+                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Products</label>
                     <select id="productFilter" name="product" class="form-control"></select>
                 </div>  -->
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Products</label>
-                <select id="productFilter" name="product" class="form-control">
-                    @if(request('product') && request('product_text'))
-                        <option value="{{ request('product') }}" selected>
-                            {{ request('product_text') }}
-                        </option>
-                    @endif
-                </select>
 
-                <input type="hidden" id="product_text" name="product_text" value="{{ request('product_text') }}">
-                 </div> 
+                {{-- PRODUCTS --}}
+                <div class="col-xl-4 col-md-3 col-12 position-relative">
+                    <div class="form-group">
+                        <label class="filter-label">Products</label>
+                        <select id="productFilter" name="product" class="form-control">
+                            @if(request('product') && request('product_text'))
+                                <option value="{{ request('product') }}" selected>
+                                    {{ request('product_text') }}
+                                </option>
+                            @endif
+                        </select>
+                        <input type="hidden" id="product_text" name="product_text" value="{{ request('product_text') }}">
+                    </div>
+                </div> 
 
                 {{-- ORDER STATUS --}}
                 <div class="col-xl-3 col-md-3 col-12">
@@ -232,8 +232,6 @@
             'booking_date','tour_date','product',
             'order_status','action_type','partner'
         ]))
-
-
 
             <div class="d-flex flex-wrap gap-2">
 
