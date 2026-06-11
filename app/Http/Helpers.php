@@ -1679,7 +1679,14 @@ if (!function_exists('currencyConvertWithoutRound')) {
     }
 
     if (!function_exists('orderLogAdvanced')){
-        function orderLogAdvanced($order = null, $stage, $step, $status, $message = null, $extra = [])
+        function orderLogAdvanced(
+                $order = [],
+                $stage = '',
+                $step = '',
+                $status = '',
+                $message = '',
+                $extra = []
+            )
         {
             try {
 

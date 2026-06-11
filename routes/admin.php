@@ -13,6 +13,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\ExclusionController;
@@ -52,7 +53,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour-sessions', [APIOrderController::class, 'getSessionTimes'])->name('tour.sessions');
     Route::get('/tour/{slug}/booking', [APITourController::class, 'fetch_booking'])->name('tour.fetch_booking');
 
-    Route::get('/dashboard',[ProfileController::class,'dashboard'])->name('dashboard');
+    Route::get('/dashboard',[DashboardController::class,'dashboard'])->name('dashboard');
+    Route::get('/dashboard-product-wise',[DashboardController::class,'dashboardProductWise'])->name('dashboard.product-wise');
+    Route::get('/dashboard-date-wise',[DashboardController::class,'dashboardDateWise'])->name('dashboard.date-wise');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/suplier_update', [ProfileController::class, 'suplierUpdate'])->name('profile.suplier_update');
@@ -78,10 +82,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/customers',CustomerController::class);
 
     Route::get('/customers/{id}/{source}/edit',[CustomerController::class, 'editFromSource'])->name('customers.edit.source');
-    Route::put(
-    '/customers-source/{id}/{source}',
-    [CustomerController::class, 'updateSource']
-)->name('customers.source.update');
+    Route::put('/customers-source/{id}/{source}',[CustomerController::class, 'updateSource'])->name('customers.source.update');
 
     Route::post('/admin/customer/update_details', [CustomerController::class, 'updateOrderCustomerDetails'])->name('customer.update_details');
     
@@ -89,8 +90,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/permission',PermissionController::class);
     Route::resource('/category',CategoryController::class);
 
-    Route::post('/category/{id}/clone', [CategoryController::class, 'clone'])
-    ->name('category.clone');
+    Route::post('/category/{id}/clone', [CategoryController::class, 'clone'])->name('category.clone');
     
     Route::resource('/tour_type',TourTypeController::class);
     Route::resource('/collection',CollectionController::class);
@@ -106,7 +106,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('toursmanifest/download', [OrderController::class, 'downloadTourManifest'])->name('orders.tour.manifest.download');
 
     Route::delete('/order/destroy/{id}', [OrderController::class, 'destroy'])->name('order.destroy');
-
     
     // Country
     Route::resource('/countries', CountryController::class);
