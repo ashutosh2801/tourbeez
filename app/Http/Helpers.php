@@ -1674,19 +1674,12 @@ if (!function_exists('currencyConvertWithoutRound')) {
     if (!function_exists('number_format_with_currency')){
         function number_format_with_currency($amount)
         {
-            return 'C$ ' . number_format((float)$amount, 2);
+            return '$ ' . number_format((float)$amount, 2);
         }
     }
 
     if (!function_exists('orderLogAdvanced')){
-        function orderLogAdvanced(
-                $order = [],
-                $stage = '',
-                $step = '',
-                $status = '',
-                $message = '',
-                $extra = []
-            )
+        function orderLogAdvanced($order = null, $stage = null, $step = null, $status = null, $message = null, $extra = [])
         {
             try {
 

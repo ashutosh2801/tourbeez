@@ -54,8 +54,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{slug}/booking', [APITourController::class, 'fetch_booking'])->name('tour.fetch_booking');
 
     Route::get('/dashboard',[DashboardController::class,'dashboard'])->name('dashboard');
-    Route::get('/dashboard-product-wise',[DashboardController::class,'dashboardProductWise'])->name('dashboard.product-wise');
-    Route::get('/dashboard-date-wise',[DashboardController::class,'dashboardDateWise'])->name('dashboard.date-wise');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
