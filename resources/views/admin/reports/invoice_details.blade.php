@@ -364,7 +364,7 @@
                 @forelse($rows as $row)
                 <tr>
                     <td>{{ $row['no'] ?? '' }}</td>
-                    <td>{{ $row['order_number'] ?? '' }}</td>
+                    <td><a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">{{ $row['order_number'] ?? '' }}</a></td>
                     <td>{{ $row['customer_name'] ?? '' }}</td>
                     <td>{{ $row['order_date'] ?? '' }}</td>
                     <td>{{ $row['fulfilment_date'] ?? '' }}</td>
@@ -374,17 +374,54 @@
                     <td>{{ $row['adult'] }}</td>
                     <td>{{ $row['child'] }}</td>
                     <td>{{ $row['infant'] }}</td>
-                    <td>{{ $row['other'] }}</td>
+                    <td>{{ $row['senior'] }}</td>
 
                     {{-- DYNAMIC ADDONS --}}
                     @foreach($addonKeys as $key)
-                        <td>{{ $row[$key.'_desc'] ?? '' }}</td>
-                        <td>{{ $row[$key.'_quant'] ?? '' }}</td>
-                        <td>{{ number_format_with_currency($row[$key.'_price'], 2) ?? 0 }}</td>
-                        <td>{{ number_format_with_currency($row[$key.'_tax'], 2) ?? 0 }}</td>
-                        <td>{{ number_format_with_currency($row[$key.'_fee'], 2) ?? 0 }}</td>
-                        <td>{{ number_format_with_currency($row[$key.'_total'], 2) ?? 0 }}</td>
-                    @endforeach
+                            <td align="right">
+                                @if(!empty($row[$key.'_desc']))
+                                    <strong>{{ $row[$key.'_desc'] }}</strong>
+                                @endif
+                            </td>
+
+                            <td align="right">
+                                @if(!empty($row[$key.'_quant']))
+                                    <strong>{{ $row[$key.'_quant'] }}</strong>
+                                @endif
+                            </td>
+
+                            <td align="right">
+                                @if(!empty($row[$key.'_price']))
+                                    <strong>{{ number_format_with_currency($row[$key.'_price'], 2) }}</strong>
+                                @else
+                                    0
+                                @endif
+                            </td>
+
+                            <td align="right">
+                                @if(!empty($row[$key.'_tax']))
+                                    <strong>{{ number_format_with_currency($row[$key.'_tax'], 2) }}</strong>
+                                @else
+                                    0
+                                @endif
+                            </td>
+
+                            <td align="right">
+                                @if(!empty($row[$key.'_fee']))
+                                    <strong>{{ number_format_with_currency($row[$key.'_fee'], 2) }}</strong>
+                                @else
+                                    0
+                                @endif
+                            </td>
+
+                            <td>
+                                @if(!empty($row[$key.'_total']))
+                                    <strong>{{ number_format_with_currency($row[$key.'_total'], 2) }}</strong>
+                                @else
+                                    0
+                                @endif
+                            </td>
+                        @endforeach
 
                 </tr>
                 @empty

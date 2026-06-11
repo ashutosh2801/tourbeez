@@ -310,9 +310,15 @@
                 </div>
                 <div class="col-md-4 col-12">
                     <div class="card-tools">
-                        <a href="{{ route('admin.report.invoice.details.export', request()->all()) }}"
+                        <!-- <a href="{{ route('admin.report.invoice.details.export', request()->all()) }}"
                            class="btn btn-success btn-sm">
                             Download Excel
+                        </a> -->
+                        <a 
+                            href="{{ route('admin.report.price_schedule.export', request()->query()) }}" 
+                            class="btn btn-success"
+                        >
+                            <i class="fas fa-download"></i> Download Excel
                         </a>
                     </div>
                 </div>
@@ -338,7 +344,7 @@
                         <th>Product Price</th>
                         <th>Extra Amount</th>
                         <th>Tax Amount</th>
-                        <th>Promo/Voucher</th>
+                        <th>Discount</th>
                         <th>Customer Total</th>
                         <th>Order Balance</th>
                         
@@ -369,7 +375,7 @@
                           <th>Fee</th>
                           <th>Total</th>
                         @endforeach
-                    </tr>
+                    </tr>   
 
                 </thead>
 
@@ -386,11 +392,11 @@
                         <td>{{ $row['payment_status'] ?? '' }}</td> 
                         */ ?>
                         
-                        <td>{{ $row['adult'] + $row['child'] + $row['infant'] + $row['other'] }}</td>
+                        <td>{{ $row['adult'] + $row['child'] + $row['infant'] + $row['other'] + $row['senior'] }}</td>
                         <td>{{ $row['adult'] }}</td>
                         <td>{{ $row['child'] }}</td>
                         <td>{{ $row['infant'] }}</td>
-                        <td>{{ $row['other'] }}</td>
+                        <td>{{ $row['senior'] }}</td>
                         <td align="right">{{ number_format_with_currency($row['product_price'], 2) }}</td>
                         <td align="right">{{ number_format_with_currency($row['extra_amount'], 2) }}</td>
                         <td align="right">{{ number_format_with_currency($row['tax_amount'], 2) }}</td>
