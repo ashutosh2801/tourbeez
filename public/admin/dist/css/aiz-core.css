@@ -5418,9 +5418,11 @@ input[type="number"] {
     background-color: var(--soft-primary);
 }
 .daterangepicker td.active,
-.daterangepicker td.active:hover,
-.daterangepicker .ranges li.active {
+.daterangepicker td.active:hover {
     background-color: var(--primary);
+}
+.daterangepicker .ranges li.active {
+    background-color: #a4a4a4;
 }
 .daterangepicker .drp-buttons .btn {
     font-weight: 500;
@@ -7831,23 +7833,26 @@ a.dropdown-footer:hover {
     color: #000;
 }
 
-.dash-perform select {
-    padding: 10px 15px 10px 0;
-    border: 0;
-    background: none;
+.dash-perform input {
     color: #555;
     height: auto;
     cursor: pointer;
+    width: 220px;
+    display: inline-block;
 }
 
-.dash-perform .btn {
+.dash-perform input:focus {
+    border-color: #aeb0b4;
+}
+
+.dash-perform .btn-apply {
     background: #01228b;
     color: #FFF;
 }
 
-.dash-perform .btn:hover {
-    background: #225de4;
-    color: #FFF;
+.dash-perform .active-filters .badge {
+    margin-top: 5px;
+    background: #a8a8a8 !important;
 }
 
 .info-stats4 {
@@ -10937,6 +10942,16 @@ table.dataTable {
     color: #FFF;
 }
 
+#clone-modal .modal-content .modal-header {
+    background: #4c4a48;
+    color: #FFF;
+    padding: 10px 20px;
+}
+
+#clone-modal .modal-content .modal-header .close {
+    color: #FFF;
+}
+
 .quantity_used .btn-success,
 .quantity_used .btn-danger {
     padding: 10px 15px;
@@ -11224,4 +11239,205 @@ table.dataTable {
         max-height: 70vh;
     }
 
+}
+
+/* Dashboard */
+
+.dashboard-body .dashboard-wrapper .cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+    margin-bottom:15px;
+}
+
+.dashboard-body .dashboard-wrapper .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.dashboard-body .dashboard-wrapper .dashboard-grid h3,
+.dashboard-body .performance-wrapper h3 {
+    font-size: 15px;
+    font-weight: 600;
+}
+ 
+.dashboard-body .dashboard-wrapper .dashboard-grid .apexcharts-legend-series {
+    align-items: flex-start;
+    gap: 8px;
+}
+
+/* KPI CARD */
+
+.dashboard-body .metric-card{
+    background:#fff;
+    border:1px solid #edf0f2;
+    border-radius:12px;
+    padding:22px 24px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    min-height:115px;
+    box-shadow:0 1px 4px rgba(0,0,0,.04);
+}
+
+/* ICON */
+
+.dashboard-body .metric-icon{
+    width:58px;
+    height:58px;
+    min-width:58px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+}
+
+.dashboard-body .metric-icon i{
+    font-size:22px;
+}
+
+/* EXACT COLORS */
+
+.dashboard-body .metric-icon.purple{
+    background:#8b5cf6;
+}
+
+.dashboard-body .metric-icon.green{
+    background:#22c55e;
+}
+
+.dashboard-body .metric-icon.blue{
+    background:#2563eb;
+}
+
+.dashboard-body .metric-icon.orange{
+    background:#ff8a00;
+}
+
+/* CONTENT */
+
+.dashboard-body .metric-content{
+    flex:1;
+}
+
+.dashboard-body .metric-label{
+    font-size:14px;
+    color:#6b7280;
+    margin-bottom:6px;
+}
+
+.dashboard-body .metric-value{
+    font-size:22px;
+    font-weight:700;
+    color:#111827;
+    line-height:1.2;
+    margin-bottom:6px;
+}
+
+.dashboard-body .metric-growth i{
+    font-size:11px;
+    margin-right:4px;
+}
+
+.dashboard-body .metric-subtitle{
+    color:#6b7280;
+    font-size:13px;
+}
+
+/* MOBILE */
+
+@media(max-width:1200px){
+    .dashboard-body .dashboard-wrapper .cards{
+        grid-template-columns:repeat(2,1fr);
+    }
+}
+
+@media(max-width:768px){
+    .dashboard-body .dashboard-wrapper .cards {
+        grid-template-columns:1fr;
+    }
+}
+
+.dashboard-body .performance-wrapper {
+    display: grid;
+    align-items: flex-start;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.dashboard-body .performance-table-card,
+.dashboard-body .performance-chart-card{
+    background:#fff;
+    border-radius:12px;
+    padding: 20px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.dashboard-body .performance-table-card .table-responsive {
+    height: 480px;
+}
+
+.dashboard-body .performance-table-card .table-responsive::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dashboard-body .performance-chart-card #trendChart{
+    min-height:500px;
+}
+
+.dashboard-body .performance-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size: 14px;
+    border: 1px solid #eee;
+}
+
+.dashboard-body .performance-table th{
+    font-size:13px;
+    color:#6b7280;
+    font-weight:600;
+    padding:12px;
+    text-align:left;
+    border-bottom:1px solid #ececec;
+}
+
+.dashboard-body .performance-table td{
+    padding:14px 12px;
+    border-bottom:1px solid #f1f1f1;
+    vertical-align:middle;
+}
+
+.dashboard-body .performance-table tfoot td{
+    font-weight:700;
+    background:#fafafa;
+}
+
+.dashboard-body .revenue-bar{
+    width:80px;
+    height:8px;
+    border-radius:30px;
+}
+
+@media(max-width:1200px){
+
+    .dashboard-body .performance-wrapper{
+        flex-direction:column;
+    }
+
+    .dashboard-body .performance-table-card,
+    .dashboard-body .performance-chart-card{
+        width:100%;
+    }
+
+    .dashboard-body .performance-table{
+        display:block;
+        overflow-x:auto;
+    }
+
+    .dashboard-body .performance-wrapper {
+        grid-template-columns: 1fr;
+    }
 }
