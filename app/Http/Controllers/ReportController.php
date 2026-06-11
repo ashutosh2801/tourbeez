@@ -730,7 +730,7 @@ public function invoiceExport(Request $request)
 }
 
 
-private function getInvoiceData($request, $paginate = false)
+public function getInvoiceData($request, $paginate = false)
 {
     $excludedStatuses = [1, 2, 6, 7];
 

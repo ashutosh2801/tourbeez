@@ -430,15 +430,51 @@ public function comparisonData(Request $request)
     $req1->merge(['booking_date' => $date1 . ' - ' . $date1]);
     $req2->merge(['booking_date' => $date2 . ' - ' . $date2]);
 
-    $rows1 = $this->getInvoiceData($req1);
-    $rows2 = $this->getInvoiceData($req2);
+    $reportController = app(\App\Http\Controllers\ReportController::class);
 
+    $rows1 = $reportController->getInvoiceData($req1);
+    $rows2 = $reportController->getInvoiceData($req2);
+
+    // 🔥 GROUP BY PRODUCT
+    $groupByProduct = function ($rows) {
+        return collect($rows)
+            ->groupBy('product_name')
+            ->map(function ($items) {
+                return [
+                    'revenue' => $items->sum('customer_total'),
+                    'passengers' => $items->sum(fn($r) => $r['adult'] + $r['child'] + $r['infant']),
+                ];
+            });
+    };
+
+    $p1 = $groupByProduct($rows1);
+    $p2 = $groupByProduct($rows2);
+
+    $allProducts = $p1->keys()->merge($p2->keys())->unique();
+
+    $products = [];
+
+    foreach ($allProducts as $product) {
+
+        $v1 = $p1[$product]['revenue'] ?? 0;
+        $v2 = $p2[$product]['revenue'] ?? 0;
+
+        $change = $v2 - $v1;
+        $percent = $v1 ? ($change / $v1) * 100 : 0;
+
+        $products[] = [
+            'product' => $product,
+            'date1' => round($v1, 2),
+            'date2' => round($v2, 2),
+            'change' => round($percent, 1),
+        ];
+    }
+
+    // 🔥 SUMMARY
     $calc = function ($rows) {
-
         $revenue = collect($rows)->sum('customer_total');
         $bookings = count($rows);
         $passengers = collect($rows)->sum(fn($r) => $r['adult'] + $r['child'] + $r['infant']);
-
         $avg = $passengers > 0 ? $revenue / $passengers : 0;
 
         return [
@@ -449,12 +485,10 @@ public function comparisonData(Request $request)
         ];
     };
 
-    $d1 = $calc($rows1);
-    $d2 = $calc($rows2);
-
     return response()->json([
-        'date1' => $d1,
-        'date2' => $d2,
+        'date1' => $calc($rows1),
+        'date2' => $calc($rows2),
+        'products' => $products, // 🔥 IMPORTANT
     ]);
 }
 
