@@ -455,7 +455,7 @@ function renderDashboard(data) {
     {
         chart:{
             type:'line',
-            height:320,
+            height:480,
             toolbar:{
                 show:false
             }

@@ -11376,6 +11376,14 @@ table.dataTable {
     box-shadow:0 2px 8px rgba(0,0,0,.08);
 }
 
+.dashboard-body .performance-table-card .table-responsive {
+    height: 480px;
+}
+
+.dashboard-body .performance-table-card .table-responsive::-webkit-scrollbar {
+    width: 6px;
+}
+
 .dashboard-body .performance-chart-card #trendChart{
     min-height:500px;
 }
