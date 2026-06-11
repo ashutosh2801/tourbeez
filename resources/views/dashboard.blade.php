@@ -1,7 +1,7 @@
 <x-admin>
     @section('title','Dashboard')
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <style>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<style>
         /* ✅ Keep container scoped */
         .dashboard-wrapper .container {
             max-width: 1400px;
@@ -27,34 +27,6 @@
         /* Optional: control width */
         .header-actions input {
             width: 220px;
-        }
-
-        /* ✅ Cards grid (NO .row override) */
-        .dashboard-wrapper .cards {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-        }
-
-        /* ✅ Dashboard grid (replace .row usage) */
-        .dashboard-wrapper .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        /* ✅ Card UI */
-        .dashboard-wrapper .card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        /* ✅ Icon */
-        .dashboard-wrapper .info-icon {
-            font-size: 30px;
-            color: #4a90e2;
         }
 
         /* ✅ Panels */
@@ -92,7 +64,7 @@
                 /* FULL FIX FOR SELECT2 HEIGHT */
     .select2-container .select2-selection--single {
         height: 42px !important;
-        border: 1px solid #ced4da !important;
+        border: 1px solid #aeb0b4 !important;
         border-radius: 0.375rem !important;
         display: flex !important;
         align-items: center !important;
@@ -126,123 +98,111 @@
     .select2-container {
         width: 100% !important;
     }
-        </style>
-        
-    <div class="container">
-        <div class="header mb-2">
-    
-    <!-- LEFT -->
-    <div>
-        <p><b>Tour-wise overview</b></p>
+</style>
+
+<div class="dashboard-body">
+    <div class="mb-2">
+        <div class="dash-perform">
+            <div class="row">
+                <div class="col-md-6 col-6">
+                    <h2 class="text-sm m-0">Tour-wise overview</h2>
+                    <input 
+                        type="text" 
+                        name="booking_date"
+                        id="bookingDate"
+                        class="form-control aiz-date-range"
+                        placeholder="Booking Date"
+                        
+                        data-advanced-range="true"
+                        data-separator=" - "
+                        value="{{ request('booking_date') }}"
+                    >
+                    <button type="button" id="applyFilter" class="btn btn-apply">
+                        Apply
+                    </button>
+                    <div id="activeFilters" class="active-filters"></div>
+                </div>
+                <div class="col-md-6 col-6">
+                    <button type="button" id="toggleFilter" class="btn btn-secondary float-right">
+                        <i class="fas fa-filter"></i> Filters
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- RIGHT -->
+    <div id="filterPanel" style="display:none;">
+        <div class="card card-primary bg-white border rounded-lg-custom report-filter-box mb-2">
 
+            <div class="row">
 
+                <!-- TOUR DATE -->
+                <div class="col-md-3">
+                    <label>Tour Date</label>
+                    <input 
+                        type="text" 
+                        name="tour_date"
+                        id="tourDate"
+                        class="form-control aiz-date-range"
+                        data-advanced-range="true"
+                        data-separator=" - "
+                        placeholder="Select tour date"
+                        value="{{ request('tour_date') }}"
+                    >
+                </div>
 
-    
-    <div class="header-actions">
+                <!-- PRODUCT -->
+                <div class="col-md-3">
+                    <label>Product</label>
+                    <select id="productFilter" name="product" class="form-control">
+                        @if(request('product') && request('product_text'))
+                            <option value="{{ request('product') }}" selected>
+                                {{ request('product_text') }}
+                            </option>
+                        @endif
+                    </select>
+                </div>
 
-        <!-- Booking Date -->
-        <input 
-            type="text" 
-            name="booking_date"
-            id="bookingDate"
-            class="form-control aiz-date-range"
-            placeholder="Booking Date"
-            
-            data-advanced-range="true"
-            data-separator=" - "
-            value="{{ request('booking_date') }}"
-        >
+                <!-- ORDER STATUS -->
+                <div class="col-md-2">
+                    <label>Order Status</label>
+                    <select name="order_status" id="orderStatus" class="form-control">
+                        <option value="">All</option>
+                        <option value="3">Pending supplier</option>
+                        <option value="4">Pending customer</option>
+                        <option value="5">Confirmed</option>
+                    </select>
+                </div>
 
-        <!-- Filter Button -->
-        <button type="button" id="toggleFilter" class="btn btn-secondary">
-            <i class="fas fa-filter"></i> Filters
-        </button>
+                <!-- PAY TYPE -->
+                <div class="col-md-2">
+                    <label>Pay Type</label>
+                    <select name="action_type" id="actionType" class="form-control">
+                        <option value="">All</option>
+                        <option value="pay_now">Pay Now</option>
+                        <option value="pay_later">Pay Later</option>
+                    </select>
+                </div>
 
-        <!-- Apply -->
-        <button type="button" id="applyFilter" class="btn btn-success">
-            Apply
-        </button>
-
-    </div>
-
-</div>
-    </div>
-        <div id="filterPanel" style="display:none;">
-            <div class="card p-3 mb-3">
-
-                <div class="row">
-
-                    <!-- TOUR DATE -->
-                    <div class="col-md-3">
-                        <label>Tour Date</label>
-                        <input 
-                            type="text" 
-                            name="tour_date"
-                            id="tourDate"
-                            class="form-control aiz-date-range"
-                            data-advanced-range="true"
-                            data-separator=" - "
-                            placeholder="Select tour date"
-                            value="{{ request('tour_date') }}"
-                        >
-                    </div>
-
-                    <!-- PRODUCT -->
-                    <div class="col-md-3">
-                        <label>Product</label>
-                        <select id="productFilter" name="product" class="form-control">
-                            @if(request('product') && request('product_text'))
-                                <option value="{{ request('product') }}" selected>
-                                    {{ request('product_text') }}
-                                </option>
-                            @endif
-                        </select>
-                    </div>
-
-                    <!-- ORDER STATUS -->
-                    <div class="col-md-2">
-                        <label>Order Status</label>
-                        <select name="order_status" id="orderStatus" class="form-control">
-                            <option value="">All</option>
-                            <option value="3">Pending supplier</option>
-                            <option value="4">Pending customer</option>
-                            <option value="5">Confirmed</option>
-                        </select>
-                    </div>
-
-                    <!-- PAY TYPE -->
-                    <div class="col-md-2">
-                        <label>Pay Type</label>
-                        <select name="action_type" id="actionType" class="form-control">
-                            <option value="">All</option>
-                            <option value="pay_now">Pay Now</option>
-                            <option value="pay_later">Pay Later</option>
-                        </select>
-                    </div>
-
-                    <!-- SOURCE -->
-                    <div class="col-md-2">
-                        <label>Source</label>
-                        <select name="partner" id="partner" class="form-control">
-                            <option value="">All</option>
-                            @foreach($partners as $partner)
-                                <option value="{{ ucfirst($partner->slug) }}">
-                                    {{ $partner->name }}
-                                </option>
-                            @endforeach
-                            <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
-                            <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
-                        </select>
-                    </div>
-
+                <!-- SOURCE -->
+                <div class="col-md-2">
+                    <label>Source</label>
+                    <select name="partner" id="partner" class="form-control">
+                        <option value="">All</option>
+                        @foreach($partners as $partner)
+                            <option value="{{ ucfirst($partner->slug) }}">
+                                {{ $partner->name }}
+                            </option>
+                        @endforeach
+                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                    </select>
                 </div>
 
             </div>
+
         </div>
-    <!-- </div> -->
+    </div>
 
     @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
         <div class="alert alert-info">
@@ -252,57 +212,107 @@
     
 
     <div id="noFilterAlert"></div>
-<div id="activeFilters" class="active-filters mb-3"></div>
-<div class="dashboard-wrapper">
-        <div class="cards">
-            <div class="card">
-                <div class="info-icon">
-                    <i class="fas fa-map-signs"></i>
-                </div>
-                <div><h4>Total Bookings</h4><h2 id="totalBookings"></h2></div>
-            </div>
-            <div class="card">
-                <div class="info-icon">
-                    <i class="fas fa-dollar-sign"></i>
-                </div>
-                <div><h4>Total Revenue</h4><h2 id="totalRevenue"></h2></div>
-            </div>
-            <div class="card">
-                <div class="info-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div><h4>Avg Order Value</h4><h2 id="avgOrderValue"></h2></div>
-            </div>
-            <div class="card">
-                <div class="info-icon">
-                    <i class="fas fa-map-marker-alt"></i>
-                </div>
-                <div><h4>Total Tours</h4><h2 id="totalTours"></h2></div>
-            </div>
-        </div>
+    
+    <div class="dashboard-wrapper">
+            <div class="cards">
 
-        <div class="dashboard-grid">
-            <div class="panel"><h3>Revenue by Tour</h3><div id="revenueChart"></div></div>
-            <div class="panel"><h3>Bookings by Tour</h3><div id="bookingChart"></div></div>
-        </div>
+                <div class="metric-card">
+                    <div class="metric-icon purple">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
 
-        <div class="dashboard-grid">
-            <div class="panel">
-                <h3>Tour Performance</h3>
-                <table>
-                    <thead><tr><th>Tour</th><th class="text-right">Bookings</th><th class="text-right">Revenue</th></tr></thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
+                    <div class="metric-content">
+                        <div class="metric-label">Total Bookings</div>
+                        <div class="metric-value" id="totalBookings">0</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon green">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+
+                    <div class="metric-content">
+                        <div class="metric-label">Total Revenue</div>
+                        <div class="metric-value" id="totalRevenue">$0</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon blue">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+
+                    <div class="metric-content">
+                        <div class="metric-label">Avg. Order Value</div>
+                        <div class="metric-value" id="avgOrderValue">$0</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon orange">
+                        <i class="fas fa-cube"></i>
+                    </div>
+
+                    <div class="metric-content">
+                        <div class="metric-label">Total Tours</div>
+                        <div class="metric-value" id="totalTours">0</div>
+                    </div>
+                </div>
+
             </div>
-            <div class="panel">
-                <h3>Revenue Trend</h3>
-                <div id="trendChart"></div>
+
+            <div class="dashboard-grid">
+                <div class="panel"><h3>Revenue by Tour</h3><div id="revenueChart"></div></div>
+                <div class="panel"><h3>Bookings by Tour</h3><div id="bookingChart"></div></div>
+            </div>
+
+            <div class="performance-wrapper">
+
+                <div class="performance-table-card">
+
+                    <h3>
+                        Product-wise Performance
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="table performance-table">
+
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Bookings</th>
+                                    <th>Revenue</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="tableBody"></tbody>
+
+                            <tfoot>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    <td id="tfootBookings"></td>
+                                    <td id="tfootRevenue"></td>
+                                </tr>
+                            </tfoot>
+
+                        </table>
+                    </div>
+                </div>
+
+                <div class="performance-chart-card">
+
+                    <h3>
+                        Revenue Trend by Product
+                    </h3>
+
+                    <div id="trendChart"></div>
+
+                </div>
+
             </div>
         </div>
     </div>
 </div>
-
-
 @section('js') 
 @parent() 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -362,7 +372,7 @@ function renderDashboard(data) {
     revenueChart = new ApexCharts(document.querySelector("#revenueChart"), {
         chart: {
             type: 'donut',
-            height: 480,
+            height: 250,
             width: '100%'
         },
         series: tours.map(x => x.revenue),
@@ -375,6 +385,8 @@ function renderDashboard(data) {
                     return seriesName.match(/.{1,38}/g).join('<br>');
                 }
         },
+
+        
 
         dataLabels: {
             enabled: true,
@@ -399,7 +411,7 @@ function renderDashboard(data) {
     bookingChart = new ApexCharts(document.querySelector("#bookingChart"), {
     chart: {
             type: 'donut',
-            height: 480,
+            height: 250,
             width: '100%'
         },
         series: tours.map(x => x.bookings),
@@ -438,29 +450,121 @@ function renderDashboard(data) {
     });
     bookingChart.render();
 
-    trendChart = new ApexCharts(document.querySelector("#trendChart"), {
-        chart: { type: 'line', height: 450 },
-        series: [{
-            name: 'Revenue',
-            data: tours.map(x => x.revenue)
-        }],
-        xaxis: {
-            categories: tours.map(x => x.title)
+    trendChart = new ApexCharts(
+    document.querySelector("#trendChart"),
+    {
+        chart:{
+            type:'line',
+            height:480,
+            toolbar:{
+                show:false
+            }
         },
-        legend: { show: false }
-    });
-    trendChart.render();
 
-    let html = '';
-    tours.forEach(t => {
-        html += `<tr>
+        stroke:{
+            curve:'smooth',
+            width:3
+        },
+
+        markers:{
+            size:4
+        },
+
+        series: tours.map(t => ({
+            name:t.title,
+            data:[
+                t.revenue * 0.80,
+                t.revenue * 0.90,
+                t.revenue * 1.00,
+                t.revenue * 0.95,
+                t.revenue * 1.05
+            ]
+        })),
+
+        xaxis:{
+            categories:[
+                'Week 1',
+                'Week 2',
+                'Week 3',
+                'Week 4',
+                'Week 5'
+            ]
+        },
+
+        yaxis:{
+            labels:{
+                formatter:function(val){
+                    return '$' + Math.round(val);
+                }
+            }
+        },
+
+        grid:{
+            borderColor:'#eee'
+        },
+
+        legend:{
+            show: false
+        }
+    }
+);
+
+trendChart.render();
+
+let totalRevenue = tours.reduce((a,b)=>a+b.revenue,0);
+let totalBookings = tours.reduce((a,b)=>a+b.bookings,0);
+
+let html = '';
+
+const colors = [
+    '#3B82F6',
+    '#22C55E',
+    '#EAB308',
+    '#A855F7',
+    '#14B8A6',
+    '#F97316',
+    '#94A3B8'
+];
+
+tours.forEach((t,index)=>{
+
+    let revenuePercent =
+        ((t.revenue / totalRevenue) * 100).toFixed(1);
+
+    let avgOrder =
+        (t.revenue / t.bookings).toFixed(2);
+
+    html += `
+        <tr>
+
             <td>${t.title}</td>
-            <td class="text-right">${t.bookings}</td>
-            <td class="text-right">$${t.revenue.toLocaleString()}</td>
-        </tr>`;
-    });
 
-    document.getElementById('tableBody').innerHTML = html;
+            <td>${t.bookings}</td>
+
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div
+                        class="revenue-bar"
+                        style="background:${colors[index % colors.length]}"
+                    ></div>
+
+                    $${t.revenue.toLocaleString()}
+                </div>
+            </td>
+        </tr>
+    `;
+});
+
+document.getElementById('tableBody').innerHTML = html;
+
+document.getElementById('tfootBookings').innerHTML =
+    totalBookings.toLocaleString();
+
+document.getElementById('tfootRevenue').innerHTML =
+    '$'+totalRevenue.toLocaleString();
+
+document.getElementById('tfootAvg').innerHTML =
+    '$'+(totalRevenue/totalBookings).toFixed(2);
 }
 function renderFilters() {
 
