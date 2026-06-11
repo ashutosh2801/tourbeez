@@ -100,6 +100,7 @@
     }
 </style>
 
+<div class="dashboard-body">
     <div class="mb-2">
         <div class="dash-perform">
             <div class="row">
@@ -311,8 +312,7 @@
             </div>
         </div>
     </div>
-
-
+</div>
 @section('js') 
 @parent() 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
