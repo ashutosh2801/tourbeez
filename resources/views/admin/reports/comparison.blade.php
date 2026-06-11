@@ -221,7 +221,7 @@ document.getElementById('applyBtn').onclick = async function() {
         partner: document.getElementById('partner').value,
     });
 
-    const res = await fetch(`/admin/reports/comparison-data?${params}`);
+    const res = await fetch(`/staging/admin/admin/reports/comparison-data?${params}`);
     const data = await res.json();
 
     render(data);
