@@ -53,7 +53,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour-sessions', [APIOrderController::class, 'getSessionTimes'])->name('tour.sessions');
     Route::get('/tour/{slug}/booking', [APITourController::class, 'fetch_booking'])->name('tour.fetch_booking');
 
-    Route::get('/dashboard',[DashboardController::class,'dashboard'])->name('dashboard');
+    Route::get('/dashboard',[ProfileController::class,'dashboard'])->name('dashboard');
+    Route::get('/reports/tour-wise',[DashboardController::class,'dashboard'])->name('report.tour-wise');
     Route::get('/reports/comparison', [DashboardController::class, 'comparisonView'])->name('report.comparison');
     Route::get('/reports/comparison-data', [DashboardController::class, 'comparisonData'])->name('report.comparison.data');
 

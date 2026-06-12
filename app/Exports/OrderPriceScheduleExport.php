@@ -69,20 +69,20 @@ class OrderPriceScheduleExport implements FromArray, WithEvents
                 $r['infant'] ?? 0,
                 $r['senior'] ?? 0,
 
-                number_format_with_currency($r['product_price'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['extra_amount'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['tax_amount'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['discount_amount'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['customer_total'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['balance_amount'] ?? 0, 2, '.', ''),
+                number_format($r['product_price'] ?? 0, 2, '.', ''),
+                number_format($r['extra_amount'] ?? 0, 2, '.', ''),
+                number_format($r['tax_amount'] ?? 0, 2, '.', ''),
+                number_format($r['discount_amount'] ?? 0, 2, '.', ''),
+                number_format($r['customer_total'] ?? 0, 2, '.', ''),
+                number_format($r['balance_amount'] ?? 0, 2, '.', ''),
 
-                number_format_with_currency($r['transport_cost'] ?? 0, 2, '.', ''),
+                number_format($r['transport_cost'] ?? 0, 2, '.', ''),
 
-                number_format_with_currency($r['tour_selling_price'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['tour_selling_tax'] ?? 0, 2, '.', ''),
+                number_format($r['tour_selling_price'] ?? 0, 2, '.', ''),
+                number_format($r['tour_selling_tax'] ?? 0, 2, '.', ''),
                 0,
-                number_format_with_currency(($r['tour_selling_total'] + $r['transport_cost']), 2, '.', ''),
-                number_format_with_currency(($r['customer_total'] - $r['tour_selling_total'] - $r['transport_cost']), 2, '.', ''),
+                number_format(($r['tour_selling_total'] + $r['transport_cost']), 2, '.', ''),
+                number_format(($r['customer_total'] - $r['tour_selling_total'] - $r['transport_cost']), 2, '.', ''),
 
                 $r['product_name'] ?? '',
             ];
@@ -91,10 +91,10 @@ class OrderPriceScheduleExport implements FromArray, WithEvents
             foreach ($this->addonKeys as $key) {
                 $row[] = $r[$key.'_desc'] ?? '';
                 $row[] = $r[$key.'_quant'] ?? 0;
-                $row[] = number_format_with_currency($r[$key.'_price'] ?? 0, 2, '.', '');
-                $row[] = number_format_with_currency($r[$key.'_tax'] ?? 0, 2, '.', '');
-                $row[] = number_format_with_currency($r[$key.'_fee'] ?? 0, 2, '.', '');
-                $row[] = number_format_with_currency($r[$key.'_total'] ?? 0, 2, '.', '');
+                $row[] = number_format($r[$key.'_price'] ?? 0, 2, '.', '');
+                $row[] = number_format($r[$key.'_tax'] ?? 0, 2, '.', '');
+                $row[] = number_format($r[$key.'_fee'] ?? 0, 2, '.', '');
+                $row[] = number_format($r[$key.'_total'] ?? 0, 2, '.', '');
             }
 
             $data[] = $row;

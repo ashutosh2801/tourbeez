@@ -721,6 +721,7 @@ public function invoice(Request $request)
 
 public function invoiceExport(Request $request)
 {
+    ini_set('memory_limit', '1024M');
     $data = $this->getInvoiceData($request);
 
     return \Maatwebsite\Excel\Facades\Excel::download(
@@ -1049,6 +1050,7 @@ public function invoiceWithDetails(Request $request)
 
 public function invoiceWithDetailsExport(Request $request)
 {
+    ini_set('memory_limit', '1024M');
     $data = $this->getInvoiceWithDetailsData($request, false);
 
     return Excel::download(
@@ -1058,7 +1060,7 @@ public function invoiceWithDetailsExport(Request $request)
 }
 
 
-private function getInvoiceWithDetailsData($request, $paginate = false)
+public function getInvoiceWithDetailsData($request, $paginate = false)
     {
         $excludedStatuses = [1, 2, 6, 7];
 
@@ -1877,6 +1879,7 @@ private function getInvoiceWithDetailsData34342($request, $paginate = false)
 
 public function exportRevenue(Request $request)
 {
+    ini_set('memory_limit', '1024M');
     return Excel::download(
         new RevenueExport($request),
         'revenue_report_' . now()->format('Ymd_His') . '.xlsx'
@@ -1885,6 +1888,7 @@ public function exportRevenue(Request $request)
 
 public function exportCustomer(Request $request)
 {
+    ini_set('memory_limit', '1024M');
     return Excel::download(
         new CustomerExport($request),
         'customer_report_' . now()->format('Ymd_His') . '.xlsx'
@@ -2008,8 +2012,8 @@ public function exportCustomer(Request $request)
 
             $currency = $item->currency ?? 'CAD';
 
-            $revenue = round(currencyConvertWithoutRound($item->selling_price, $currency, 'CAD'), 2);
-            $cost = round(currencyConvertWithoutRound($item->price, $currency, 'CAD'), 2);
+            $revenue = round(currencyConvertWithoutRound($item->price, $currency, 'CAD'), 2);
+            $cost = round(currencyConvertWithoutRound($item->selling_price, $currency, 'CAD'), 2);
 
             /*
             |--------------------------------------------------------------------------
@@ -2047,7 +2051,7 @@ public function exportCustomer(Request $request)
                 'cost_tax' => ($costTotal - $cost)?? 0,
                 'cost_total' => $costTotal?? 0,
 
-                'profit' => ($costTotal - $revenueTotal)?? 0,
+                'profit' => ($revenueTotal - $costTotal)?? 0,
             ];
         });
 
@@ -2061,6 +2065,7 @@ public function exportCustomer(Request $request)
     }
     public function schedulePricingExport(Request $request)
     {
+        ini_set('memory_limit', '1024M');
         $rows = $this->getSchedulePricingReportData($request, true);
 
         return Excel::download(new PriceScheduleExport($rows), 'price_schedule_report.xlsx');
@@ -2084,6 +2089,8 @@ public function exportCustomer(Request $request)
     public function exportPriceSchedule(Request $request)
     {
         // 🔥 SAME FILTER LOGIC
+
+        ini_set('memory_limit', '1024M');
         $data = $this->getInvoiceWithDetailsData($request, false);
 
         return Excel::download(
@@ -2091,6 +2098,165 @@ public function exportCustomer(Request $request)
             'price_schedule_' . now()->format('Ymd_His') . '.xlsx'
         );
     }
+
+    public function exportPriceSchedule324(Request $request)
+    {
+        return Excel::download(
+            new OrderPriceScheduleExport($request), // 🔥 pass request instead of full data
+            'price_schedule_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+    public function transformInvoiceRow($order, $payments = [])
+{
+    $productValue = 0;
+    $extraValue = 0;
+    $taxValue = 0;
+    $discountAmount = 0;
+    $subtotal = 0;
+
+    $pricing = json_decode($order->tour_pricing, true) ?? [];
+    $extras  = json_decode($order->tour_extra, true) ?? [];
+    $discounts = json_decode($order->discount, true) ?? [];
+
+    $adult = $child = $infant = $other = $senior = 0;
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔥 PRICING
+    |--------------------------------------------------------------------------
+    */
+    foreach ($pricing as $p) {
+
+        $qty = (int) ($p['quantity'] ?? 0);
+        $label = strtolower($p['label'] ?? '');
+        $price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+        if (str_contains($label, 'adult')) $adult += $qty;
+        elseif (str_contains($label, 'child')) $child += $qty;
+        elseif (str_contains($label, 'infant')) $infant += $qty;
+        elseif (str_contains($label, 'senior')) $senior += $qty;
+        else $other += $qty;
+
+        if ($qty > 0) {
+            $productValue += $price * $qty;
+        }
+    }
+
+    $subtotal += $productValue;
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔥 EXTRAS
+    |--------------------------------------------------------------------------
+    */
+    foreach ($extras as $e) {
+        $extraValue += $e['total_price'] ?? (($e['quantity'] ?? 0) * ($e['price'] ?? 0));
+    }
+
+    $subtotal += $extraValue;
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔥 DISCOUNT
+    |--------------------------------------------------------------------------
+    */
+    foreach ($discounts as $d) {
+        $discountAmount += $d['price'] ?? 0;
+    }
+
+    $subtotal -= $discountAmount;
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔥 TAX
+    |--------------------------------------------------------------------------
+    */
+    if (!empty($order->tour_fees)) {
+
+        $taxes = is_string($order->tour_fees)
+            ? json_decode($order->tour_fees, true)
+            : $order->tour_fees;
+
+        foreach ($taxes as $tax) {
+            $taxAmount = get_tax($subtotal, $tax['type'], 13);
+            $subtotal += $taxAmount;
+            $taxValue += $taxAmount;
+        }
+    }
+
+    $finalTotal = $subtotal;
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔥 PAYMENTS
+    |--------------------------------------------------------------------------
+    */
+    $orderPayments = collect($payments);
+
+    $totalPaid = $orderPayments
+        ->where('status', 'succeeded')
+        ->sum('amount');
+
+    $refunded = $orderPayments
+        ->where('status', 'refunded')
+        ->sum('amount');
+
+    $totalPaid = $totalPaid - $refunded;
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔥 CONVERT TO CAD (NO ROUND FIRST)
+    |--------------------------------------------------------------------------
+    */
+    $productCAD = currencyConvertWithoutRound($productValue, $order->currency, 'CAD');
+    $extraCAD   = currencyConvertWithoutRound($extraValue, $order->currency, 'CAD');
+    $taxCAD     = currencyConvertWithoutRound($taxValue, $order->currency, 'CAD');
+    $discountCAD= currencyConvertWithoutRound($discountAmount, $order->currency, 'CAD');
+    $totalCAD   = currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD');
+    $paidCAD    = currencyConvertWithoutRound($totalPaid, $order->currency, 'CAD');
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔥 RETURN (EXPORT SAFE STRUCTURE)
+    |--------------------------------------------------------------------------
+    */
+    return [
+
+        'order_number' => $order->order_number,
+        'customer_name' => $order->first_name . ' ' . $order->last_name,
+        'order_date' => $order->created_at,
+        'fulfilment_date' => $order->tour_date,
+
+        // 🔥 PASSENGERS
+        'adult' => $adult,
+        'child' => $child,
+        'infant' => $infant,
+        'other' => $other,
+        'senior' => $senior,
+
+        // 🔥 REVENUE SIDE
+        'product_price' => round($productCAD, 2),
+        'extra_amount' => round($extraCAD, 2),
+        'tax_amount' => round($taxCAD, 2),
+        'discount_amount' => round($discountCAD, 2),
+        'customer_total' => round($totalCAD, 2),
+
+        // 🔥 PAYMENT
+        'total_paid' => round($paidCAD, 2),
+        'balance_amount' => round($totalCAD - $paidCAD, 2),
+
+        // 🔥 COST SIDE (MANDATORY FOR EXPORT)
+        'tour_selling_price' => round($productCAD, 2),
+        'tour_selling_tax' => round($taxCAD, 2),
+        'tour_selling_total' => round($productCAD + $taxCAD, 2),
+
+        // 🔥 EXTRA COST (SAFE DEFAULT)
+        'transport_cost' => 0,
+
+        // 🔥 PRODUCT
+        'product_name' => $order->product_name,
+    ];
+}
 
 
     }

@@ -331,16 +331,16 @@
                         <strong>{{ $row['tour_name'] }}</strong><br>
                         {{ $row['label'] }}
                     </td>
-                    {{-- COST --}}
-                    <td>{{ number_format_with_currency($row['cost_price'], 2) }}</td>
-                    <td>{{ number_format_with_currency($row['cost_tax'], 2) }}</td>
-                    <td>{{ number_format_with_currency($row['cost_total'], 2) }}</td>
+                    
 
                     {{-- REVENUE --}}
                     <td>{{ number_format_with_currency($row['revenue_price'], 2) }}</td>
                     <td>{{ number_format_with_currency($row['revenue_tax'], 2) }}</td>
                     <td>{{ number_format_with_currency($row['revenue_total'], 2) }}</td>
-
+                    {{-- COST --}}
+                    <td>{{ number_format_with_currency($row['cost_price'], 2) }}</td>
+                    <td>{{ number_format_with_currency($row['cost_tax'], 2) }}</td>
+                    <td>{{ number_format_with_currency($row['cost_total'], 2) }}</td>
                     
 
                     {{-- PROFIT --}}
