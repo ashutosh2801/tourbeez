@@ -226,7 +226,7 @@ public function dashboard(Request $request)
             ]);
         }
 
-        return view('dashboard', [
+        return view('dashboard-tour-wise', [
             'tourAnalytics' => [],
             'tours' => [],
             'totalRevenue' => 0,
@@ -399,7 +399,7 @@ public function dashboard(Request $request)
         ]);
     }
 
-    return view('dashboard', compact(
+    return view('dashboard-tour-wise', compact(
         'tourAnalytics',
         'tours',
         'totalRevenue',

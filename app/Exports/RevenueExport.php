@@ -308,9 +308,9 @@ class RevenueExport implements FromCollection, WithHeadings
 
             trim(($order->first_name ?? '') . ' ' . ($order->last_name ?? '')),
 
-            number_format_with_currency($totalCAD, 2),
-            number_format_with_currency($paidCAD, 2),
-            number_format_with_currency($balanceCAD, 2),
+            number_format($totalCAD, 2),
+            number_format($paidCAD, 2),
+            number_format($balanceCAD, 2),
 
             0,
             0,
@@ -319,9 +319,9 @@ class RevenueExport implements FromCollection, WithHeadings
             0,
 
             0, // commission (not calculated yet)
-            number_format_with_currency($taxCAD, 2),
+            number_format($taxCAD, 2),
 
-            number_format_with_currency($totalCAD - $taxCAD, 2),
+            number_format($totalCAD - $taxCAD, 2),
 
             $adult,
             $child,
@@ -329,15 +329,15 @@ class RevenueExport implements FromCollection, WithHeadings
             $other,
 
             $order->pax,
-            number_format_with_currency($productCAD, 2),
+            number_format($productCAD, 2),
             0,
-            number_format_with_currency($extraCAD, 2),
+            number_format($extraCAD, 2),
 
-            number_format_with_currency($discountCAD, 2),
+            number_format($discountCAD, 2),
 
             0,
             0,
-            number_format_with_currency($discountCAD, 2),
+            number_format($discountCAD, 2),
 
             0,
             0,

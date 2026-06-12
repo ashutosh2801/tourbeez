@@ -2,150 +2,54 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Events\AfterSheet;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class OrderPriceScheduleExport implements FromArray, WithEvents
+class PriceScheduleExport implements FromCollection, WithHeadings
 {
     protected $rows;
-    protected $addonKeys = [];
 
     public function __construct($rows)
     {
         $this->rows = $rows;
-
-        // 🔥 detect addons dynamically
-        if (!empty($rows)) {
-            $this->addonKeys = collect($rows[0])
-                ->keys()
-                ->filter(fn($k) => str_ends_with($k, '_desc'))
-                ->map(fn($k) => str_replace('_desc', '', $k))
-                ->values()
-                ->toArray();
-        }
     }
 
-    public function array(): array
+    public function collection()
     {
-        $data = [];
+        return collect($this->rows)->map(function ($row) {
+            return [
+                'Tour' => $row['tour_name'],
+                'Label' => $row['label'],
 
-        // 🔥 ROW 1 (empty → merged later)
-        $totalColumns = 23 + (count($this->addonKeys) * 6);
-        $data[] = array_fill(0, $totalColumns, '');
+                'Revenue Price (CAD)' => number_format($row['revenue_price']),
+                'Revenue Tax (CAD)' => number_format($row['revenue_tax']),
+                'Revenue Total (CAD)' => number_format($row['revenue_total']),
+            
+                'Cost Price (CAD)' => number_format($row['cost_price']),
+                'Cost Tax (CAD)' => number_format($row['cost_tax']),
+                'Cost Total (CAD)' => number_format($row['cost_total']),
 
-        // 🔥 ROW 2 (sub headers)
-        $headers = [
-            'No.', 'Order #', 'Customer', 'Order Date', 'Fulfilment',
-            'Quantity', 'Adult', 'Child', 'Infant', 'Senior',
-            'Product Price', 'Extra Amount', 'Tax Amount', 'Discount',
-            'Customer Total', 'Order Balance',
-            'Transport Cost',
-            'Product Price (Supplier Cost)', 'Tax', 'Other Fee',
-            'Net Total', 'Profit', 'Product'
-        ];
-
-        foreach ($this->addonKeys as $key) {
-            $headers = array_merge($headers, [
-                'Desc', 'Quantity', 'Price', 'Tax', 'Fee', 'Total'
-            ]);
-        }
-
-        $data[] = $headers;
-
-        // 🔥 DATA ROWS
-        foreach ($this->rows as $r) {
-
-            $row = [
-                $r['no'] ?? '',
-                $r['order_number'] ?? '',
-                $r['customer_name'] ?? '',
-                $r['order_date'] ?? '',
-                $r['fulfilment_date'] ?? '',
-
-                ($r['adult'] + $r['child'] + $r['infant'] + $r['other'] + $r['senior']),
-                $r['adult'] ?? 0,
-                $r['child'] ?? 0,
-                $r['infant'] ?? 0,
-                $r['senior'] ?? 0,
-
-                number_format_with_currency($r['product_price'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['extra_amount'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['tax_amount'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['discount_amount'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['customer_total'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['balance_amount'] ?? 0, 2, '.', ''),
-
-                number_format_with_currency($r['transport_cost'] ?? 0, 2, '.', ''),
-
-                number_format_with_currency($r['tour_selling_price'] ?? 0, 2, '.', ''),
-                number_format_with_currency($r['tour_selling_tax'] ?? 0, 2, '.', ''),
-                0,
-                number_format_with_currency(($r['tour_selling_total'] + $r['transport_cost']), 2, '.', ''),
-                number_format_with_currency(($r['customer_total'] - $r['tour_selling_total'] - $r['transport_cost']), 2, '.', ''),
-
-                $r['product_name'] ?? '',
+                'Profit (CAD)' => number_format($row['profit']),
             ];
-
-            // 🔥 ADDONS
-            foreach ($this->addonKeys as $key) {
-                $row[] = $r[$key.'_desc'] ?? '';
-                $row[] = $r[$key.'_quant'] ?? 0;
-                $row[] = number_format_with_currency($r[$key.'_price'] ?? 0, 2, '.', '');
-                $row[] = number_format_with_currency($r[$key.'_tax'] ?? 0, 2, '.', '');
-                $row[] = number_format_with_currency($r[$key.'_fee'] ?? 0, 2, '.', '');
-                $row[] = number_format_with_currency($r[$key.'_total'] ?? 0, 2, '.', '');
-            }
-
-            $data[] = $row;
-        }
-
-        return $data;
+        });
     }
 
-    public function registerEvents(): array
+    public function headings(): array
     {
         return [
-            AfterSheet::class => function ($event) {
+            'Tour',
+            'Label',
 
-                $sheet = $event->sheet->getDelegate();
+            'Revenue Price (CAD)',
+            'Revenue Tax (CAD)',
+            'Revenue Total (CAD)',
 
-                $col = 1;
+            'Cost Price (CAD)',
+            'Cost Tax (CAD)',
+            'Cost Total (CAD)',
 
-                // 🔥 STATIC HEADERS (VERTICAL MERGE)
-                $staticHeaders = [
-                    'No.', 'Order #', 'Customer', 'Order Date', 'Fulfilment',
-                    'Quantity', 'Adult', 'Child', 'Infant', 'Senior',
-                    'Product Price', 'Extra Amount', 'Tax Amount', 'Discount',
-                    'Customer Total', 'Order Balance',
-                    'Transport Cost',
-                    'Product Price (Supplier Cost)', 'Tax', 'Other Fee',
-                    'Net Total', 'Profit', 'Product'
-                ];
-
-                foreach ($staticHeaders as $header) {
-                    $sheet->setCellValueByColumnAndRow($col, 1, $header);
-                    $sheet->mergeCellsByColumnAndRow($col, 1, $col, 2);
-                    $col++;
-                }
-
-                // 🔥 ADDON GROUP HEADERS
-                foreach ($this->addonKeys as $key) {
-
-                    $label = ucwords(str_replace('_', ' ', $key));
-
-                    $sheet->setCellValueByColumnAndRow($col, 1, $label);
-
-                    // 🔥 6 columns per addon
-                    $sheet->mergeCellsByColumnAndRow($col, 1, $col + 5, 1);
-
-                    $col += 6;
-                }
-
-                // 🔥 STYLE
-                $sheet->getStyle('1:2')->getFont()->setBold(true);
-                $sheet->getStyle('1:2')->getAlignment()->setHorizontal('center');
-            }
+            'Profit (CAD)',
         ];
     }
 }

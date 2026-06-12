@@ -52,7 +52,7 @@ class InvoiceWithDetailsExport implements FromArray, WithEvents
                 $r['customer_name'] ?? '',
                 $r['order_date'] ?? '',
                 $r['fulfilment_date'] ?? '',
-                number_format_with_currency((float) ($r['customer_total'] ?? 0), 2, '.', ''),
+                number_format((float) ($r['customer_total'] ?? 0), 2, '.', ''),
                 $r['payment_status'] ?? '',
                 $r['product_name'] ?? '',
                 $r['adult'] ?? '',
@@ -64,10 +64,10 @@ class InvoiceWithDetailsExport implements FromArray, WithEvents
             foreach ($this->addonKeys as $key) {
                 $row[] = $r[$key.'_desc'] ?? '';
                 $row[] = $r[$key.'_quant'] ?? '';
-                $row[] = number_format_with_currency((float) ($r[$key.'_price'] ?? 0), 2, '.', '');
-                $row[] = number_format_with_currency((float) ($r[$key.'_tax'] ?? 0), 2, '.', '');
-                $row[] = number_format_with_currency((float) ($r[$key.'_fee'] ?? 0), 2, '.', '');
-                $row[] = number_format_with_currency((float) ($r[$key.'_total'] ?? 0), 2, '.', '');
+                $row[] = number_format((float) ($r[$key.'_price'] ?? 0), 2, '.', '');
+                $row[] = number_format((float) ($r[$key.'_tax'] ?? 0), 2, '.', '');
+                $row[] = number_format((float) ($r[$key.'_fee'] ?? 0), 2, '.', '');
+                $row[] = number_format((float) ($r[$key.'_total'] ?? 0), 2, '.', '');
             }
 
             $rows[] = $row;
