@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\CustomerExport;
 use App\Exports\InvoiceWithDetailsExport;
+use App\Exports\OrderPriceScheduleExport;
 use App\Exports\PriceScheduleExport;
 use App\Exports\RevenueExport;
 use App\Models\Category;
@@ -729,7 +730,7 @@ public function invoiceExport(Request $request)
 }
 
 
-private function getInvoiceData($request, $paginate = false)
+public function getInvoiceData($request, $paginate = false)
 {
     $excludedStatuses = [1, 2, 6, 7];
 
@@ -1086,9 +1087,9 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
 
         // tour_extra_id → addon_id
         $tourExtraMap = DB::table('addon_tour')
-            ->pluck('addon_id', 'id')
+            ->pluck('addon_id','id')
             ->toArray();
-
+        // dd(DB::table('addon_tour')->get(), $tourExtraMap);
         // addon_id → safe_key (dynamic)
         $addonColumnMap = DB::table('addons')
             ->get()
@@ -1177,7 +1178,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
             'orders.created_at',
             'orders.currency',
             'orders.balance_amount',
-
+            'orders.booked_amount',
             'order_tours.tour_date',
             'order_tours.tour_extra',
             'order_tours.tour_fees',
@@ -1234,7 +1235,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
             ->groupBy('tour_id');
 
         foreach ($collection as $order) {
-
+            
             $extras = json_decode($order->tour_extra, true) ?? [];
 
             /*
@@ -1261,28 +1262,32 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
             |--------------------------------------------------------------------------
             */
             $extra_amount = 0;
+            // dd($extras);
             foreach ($extras as $e) {
 
                 $tourExtraId = $e['tour_extra_id'] ?? null;
+                
+                // if (!$tourExtraId || !isset($tourExtraMap[$tourExtraId])) {
+                //     dd(3432, $tourExtraId, $tourExtraMap);
+                //     continue;
+                // }
 
-                if (!$tourExtraId || !isset($tourExtraMap[$tourExtraId])) {
-                    continue;
-                }
+                // $addonId = $tourExtraMap[$tourExtraId];
 
-                $addonId = $tourExtraMap[$tourExtraId];
+                // if (!isset($addonColumnMap[$addonId])) {
+                //     dd(23432);
+                //     continue;
+                // }
 
-                if (!isset($addonColumnMap[$addonId])) {
-                    continue;
-                }
-
-                $key = $addonColumnMap[$addonId];
-
+                $key = $addonColumnMap[$tourExtraId];
+                // dd($e, $addonColumnMap,$tourExtraId, $key,$addonColumnMap[$addonId], $addonId, $tourExtraMap[$tourExtraId] ,$tourExtraId, $tourExtraMap);
                 $price = $e['price'] ?? 0;
                 $qty   = $e['quantity'] ?? 1;
                 $total = $e['total_price'] ?? ($price * $qty);
                 $extra_amount += $total;
 
                 $extraColumns[$key] = [
+                    // 'con' => $key,
                     'description' => $e['label'] ?? '',
                     'quantity' => $qty,
                     'price' => round(currencyConvertWithoutRound($price, $order->currency, 'CAD'), 2),
@@ -1291,7 +1296,7 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
                     'total' => round(currencyConvertWithoutRound($total, $order->currency, 'CAD'), 2),
                 ];
             }
-
+            // dd($extraColumns);
             /*
             |--------------------------------------------------------------------------
             | CALCULATION
@@ -1392,7 +1397,29 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
                 $discount_amount += $d['price'] ?? 0;
             }
 
-            $customerTotal = ($product_price + $extraValue + $taxValue) - $discount_amount;
+            // dd($order->tour_fees);
+            // $taxesfees = $order_tour->tour->taxes_fees_resolved;
+
+            $taxesfees = json_decode($order->tour_fees, true) ?? [];
+
+
+            $subtotal = ($product_price + $extraValue) - $discount_amount;
+            if( $taxesfees ){
+
+                                                
+            foreach ($taxesfees as $key => $item)  {
+
+                $price      = get_tax($subtotal, $item['type'], $item['value']);
+                $tax        = $price ?? 0;
+                $subtotal   = $subtotal + $tax; 
+                $tax_amount = $tax;
+                }
+            }
+
+
+
+
+            $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
             /*
             |--------------------------------------------------------------------------
             | FINAL ROW (DYNAMIC SAFE)
@@ -1475,7 +1502,12 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
                 'customer_name' => trim($order->first_name . ' ' . $order->last_name),
                 'order_date' => $order->created_at,
                 'fulfilment_date' => $order->tour_date,
-                'payment_status' => $order->payment_status == 2 ? 'Yes' : 'No',
+                'payment_status' => 
+                    ((int) round($order->booked_amount * 100) === 0) ? 'No' : (
+                        ((int) round($order->booked_amount * 100) === (int) round($customerTotal * 100)) ? 'Yes' : (
+                            ((int) round($order->booked_amount * 100) < (int) round($customerTotal * 100)) ? 'Partial Paid' : 'Over Paid'
+                        )
+                    ), //$order->payment_status == 2 ? 'Yes' : 'No',
                 'product_name' => $order->product_name,
 
                 'adult' => $adult,
@@ -1486,10 +1518,10 @@ private function getInvoiceWithDetailsData($request, $paginate = false)
 
                 'product_price' => round(currencyConvertWithoutRound($product_price, $order->currency, 'CAD'), 2),
                 'extra_amount' => round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2),
-                'tax_amount' => round(currencyConvertWithoutRound($taxValue, $order->currency, 'CAD'), 2),
+                'tax_amount' => round(currencyConvertWithoutRound($tax_amount, $order->currency, 'CAD'), 2),
                 'discount_amount' => round(currencyConvertWithoutRound($discount_amount, $order->currency, 'CAD'), 2),
                 'customer_total' => round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
-                'balance_amount' => round(currencyConvertWithoutRound($order->balance_amount, $order->currency, 'CAD'), 2),
+                'balance_amount' => round(currencyConvertWithoutRound($customerTotal - $order->booked_amount, $order->currency, 'CAD'), 2),
 
                 /*
                 |--------------------------------------------------------------------------
@@ -2037,7 +2069,7 @@ public function exportCustomer(Request $request)
         public function reportPriceSchedule(Request $request)
     {
         $data = $this->getInvoiceWithDetailsData($request, true);
-        // dd($data);
+        
         return view('admin.reports.price_schedule', [
             'rows' => $data['rows'],
             'orders' => $data['pagination'],
@@ -2048,6 +2080,16 @@ public function exportCustomer(Request $request)
             ->map(fn($key) => str_replace('_desc', '', $key))
             ->values()
         ]);
+    }
+    public function exportPriceSchedule(Request $request)
+    {
+        // 🔥 SAME FILTER LOGIC
+        $data = $this->getInvoiceWithDetailsData($request, false);
+
+        return Excel::download(
+            new OrderPriceScheduleExport($data),
+            'price_schedule_' . now()->format('Ymd_His') . '.xlsx'
+        );
     }
 
 

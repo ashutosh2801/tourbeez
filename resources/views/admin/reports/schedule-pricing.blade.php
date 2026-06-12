@@ -1,4 +1,4 @@
-<x-admin>
+,<x-admin>
 @section('title', 'Schedule Pricing')
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
@@ -329,7 +329,7 @@
                 <tr>
                     <td>
                         <strong>{{ $row['tour_name'] }}</strong><br>
-                        <small>{{ $row['label'] }}</small>
+                        {{ $row['label'] }}
                     </td>
                     {{-- COST --}}
                     <td>{{ number_format_with_currency($row['cost_price'], 2) }}</td>

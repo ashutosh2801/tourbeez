@@ -58,7 +58,7 @@ class InvoiceWithDetailsExport implements FromArray, WithEvents
                 $r['adult'] ?? '',
                 $r['child'] ?? '',
                 $r['infant'] ?? '',
-                $r['other'] ?? '',
+                $r['senior'] ?? '',
             ];
 
             foreach ($this->addonKeys as $key) {

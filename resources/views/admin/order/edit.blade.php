@@ -758,6 +758,7 @@ $expectEmails = ['order_pending'];
                                                 
                                                 @foreach ($taxesfees as $key => $item)  
                                                 @php
+                                                
                                                 $price      = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
                                                 $tax        = $price ?? 0;
                                                 $subtotal   = $subtotal + $tax; 
