@@ -53,7 +53,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour-sessions', [APIOrderController::class, 'getSessionTimes'])->name('tour.sessions');
     Route::get('/tour/{slug}/booking', [APITourController::class, 'fetch_booking'])->name('tour.fetch_booking');
 
-    Route::get('/dashboard',[DashboardController::class,'dashboard'])->name('dashboard');
+    Route::get('/dashboard',[ProfileController::class,'dashboard'])->name('dashboard');
+    Route::get('/reports/tour-wise',[DashboardController::class,'dashboard'])->name('report.tour-wise');
+    Route::get('/reports/comparison', [DashboardController::class, 'comparisonView'])->name('report.comparison');
+    Route::get('/reports/comparison-data', [DashboardController::class, 'comparisonData'])->name('report.comparison.data');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -409,6 +412,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/schedule-pricing-export', [ReportController::class, 'schedulePricingExport'])
     ->name('report.schedule.export');
     Route::get('report/price_schedule', [ReportController::class, 'reportPriceSchedule'])->name('report.price_schedule');
+    Route::get('/reports/price-schedule/export', [ReportController::class, 'exportPriceSchedule'])
+    ->name('report.price_schedule.export');
 
 
     

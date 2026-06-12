@@ -22,15 +22,15 @@ class PriceScheduleExport implements FromCollection, WithHeadings
                 'Tour' => $row['tour_name'],
                 'Label' => $row['label'],
 
-                'Revenue Price (CAD)' => number_format_with_currency($row['revenue_price']),
-                'Revenue Tax (CAD)' => number_format_with_currency($row['revenue_tax']),
-                'Revenue Total (CAD)' => number_format_with_currency($row['revenue_total']),
+                'Revenue Price (CAD)' => number_format($row['revenue_price']),
+                'Revenue Tax (CAD)' => number_format($row['revenue_tax']),
+                'Revenue Total (CAD)' => number_format($row['revenue_total']),
+            
+                'Cost Price (CAD)' => number_format($row['cost_price']),
+                'Cost Tax (CAD)' => number_format($row['cost_tax']),
+                'Cost Total (CAD)' => number_format($row['cost_total']),
 
-                'Cost Price (CAD)' => number_format_with_currency($row['cost_price']),
-                'Cost Tax (CAD)' => number_format_with_currency($row['cost_tax']),
-                'Cost Total (CAD)' => number_format_with_currency($row['cost_total']),
-
-                'Profit (CAD)' => number_format_with_currency($row['profit']),
+                'Profit (CAD)' => number_format($row['profit']),
             ];
         });
     }

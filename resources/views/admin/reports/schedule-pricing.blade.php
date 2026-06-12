@@ -1,4 +1,4 @@
-<x-admin>
+,<x-admin>
 @section('title', 'Schedule Pricing')
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
@@ -329,18 +329,18 @@
                 <tr>
                     <td>
                         <strong>{{ $row['tour_name'] }}</strong><br>
-                        <small>{{ $row['label'] }}</small>
+                        {{ $row['label'] }}
                     </td>
-                    {{-- COST --}}
-                    <td>{{ number_format_with_currency($row['cost_price'], 2) }}</td>
-                    <td>{{ number_format_with_currency($row['cost_tax'], 2) }}</td>
-                    <td>{{ number_format_with_currency($row['cost_total'], 2) }}</td>
+                    
 
                     {{-- REVENUE --}}
                     <td>{{ number_format_with_currency($row['revenue_price'], 2) }}</td>
                     <td>{{ number_format_with_currency($row['revenue_tax'], 2) }}</td>
                     <td>{{ number_format_with_currency($row['revenue_total'], 2) }}</td>
-
+                    {{-- COST --}}
+                    <td>{{ number_format_with_currency($row['cost_price'], 2) }}</td>
+                    <td>{{ number_format_with_currency($row['cost_tax'], 2) }}</td>
+                    <td>{{ number_format_with_currency($row['cost_total'], 2) }}</td>
                     
 
                     {{-- PROFIT --}}
