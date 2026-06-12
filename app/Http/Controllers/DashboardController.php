@@ -484,7 +484,7 @@ public function comparisonData(Request $request)
             'avg' => round($avg, 2),
         ];
     };
-
+    
     return response()->json([
         'date1' => $calc($rows1),
         'date2' => $calc($rows2),

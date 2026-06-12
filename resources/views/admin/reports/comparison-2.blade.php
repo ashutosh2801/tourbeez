@@ -5,38 +5,18 @@
 
 <style>
 .container{max-width:1400px;margin:auto}
-.topbar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:20px;
-    flex-wrap:wrap;
-    gap:10px
-}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
 .topbar-right{display:flex;gap:10px;align-items:center}
 
 .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-.card{
-    background:#fff;
-    padding:20px;
-    border-radius:10px;
-    box-shadow:0 1px 6px rgba(0,0,0,.1)
-}
+.card{background:#fff;padding:20px;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.1)}
 .card h3{font-size:16px;margin-bottom:15px}
 
-.metric-row{
-    display:flex;
-    justify-content:space-between;
-    margin-bottom:10px
-}
-
+.metric-row{display:flex;justify-content:space-between;margin-bottom:10px}
 .metric-label{font-size:12px;color:#777}
 .metric-value{font-weight:bold;font-size:18px}
 
-.diff{
-    margin-top:10px;
-    font-size:14px
-}
+.diff{margin-top:10px;font-size:14px}
 .green{color:#28a745}
 .red{color:#dc3545}
 
@@ -49,12 +29,7 @@
 .badge-green{color:#28a745;font-weight:bold}
 .badge-red{color:#dc3545;font-weight:bold}
 
-.insights div{
-    padding:10px;
-    border-radius:8px;
-    margin-bottom:10px;
-    font-size:14px
-}
+.insights div{padding:10px;border-radius:8px;margin-bottom:10px;font-size:14px}
 .insight-green{background:#eaf7ef}
 .insight-purple{background:#f3ecff}
 .insight-blue{background:#eef5ff}
@@ -75,9 +50,12 @@
             <input type="date" id="date1" class="form-control">
             <input type="date" id="date2" class="form-control">
 
-            <select id="productFilter" class="form-control">
+            <!-- <select id="productFilter" class="form-control">
                 <option value="">All Products</option>
-            </select>
+                @foreach($products ?? [] as $p)
+                    <option value="{{ $p->id }}">{{ $p->title }}</option>
+                @endforeach
+            </select> -->
 
             <select id="partner" class="form-control">
                 <option value="">All Channels</option>
@@ -93,75 +71,63 @@
     <!-- 🔥 CARDS -->
     <div class="cards">
 
-        <!-- Revenue -->
         <div class="card">
             <h3>Total Revenue</h3>
-
             <div class="metric-row">
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label">Date 1</div>
                     <div class="metric-value" id="rev1"></div>
                 </div>
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label">Date 2</div>
                     <div class="metric-value green" id="rev2"></div>
                 </div>
             </div>
-
             <div class="diff" id="revDiff"></div>
         </div>
 
-        <!-- Passenger -->
         <div class="card">
             <h3>Passenger Count</h3>
-
             <div class="metric-row">
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label">Date 1</div>
                     <div class="metric-value" id="pass1"></div>
                 </div>
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label">Date 2</div>
                     <div class="metric-value green" id="pass2"></div>
                 </div>
             </div>
-
             <div class="diff" id="passDiff"></div>
         </div>
 
-        <!-- Bookings -->
         <div class="card">
             <h3>Total Bookings</h3>
-
             <div class="metric-row">
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label">Date 1</div>
                     <div class="metric-value" id="book1"></div>
                 </div>
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label">Date 2</div>
                     <div class="metric-value green" id="book2"></div>
                 </div>
             </div>
-
             <div class="diff" id="bookDiff"></div>
         </div>
 
-        <!-- Avg -->
         <div class="card">
             <h3>Avg Revenue / Passenger</h3>
-
             <div class="metric-row">
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label">Date 1</div>
                     <div class="metric-value" id="avg1"></div>
                 </div>
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label">Date 2</div>
                     <div class="metric-value red" id="avg2"></div>
                 </div>
             </div>
-
             <div class="diff" id="avgDiff"></div>
         </div>
 
@@ -169,7 +135,6 @@
 
     <!-- 🔥 CHARTS -->
     <div class="row">
-
         <div class="panel">
             <h4>Revenue Comparison</h4>
             <div id="revChart"></div>
@@ -179,32 +144,6 @@
             <h4>Passenger Count Comparison</h4>
             <div id="passChart"></div>
         </div>
-
-    </div>
-
-    <!-- 🔥 TABLE + INSIGHTS -->
-    <div class="row">
-
-        <div class="panel">
-            <h4>Product-wise Comparison</h4>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th>Yesterday</th>
-                        <th>Today</th>
-                        <th>Change</th>
-                    </tr>
-                </thead>
-                <tbody id="productTable"></tbody>
-            </table>
-        </div>
-
-        <div class="panel">
-            <h4>Key Insights</h4>
-            <div class="insights" id="insights"></div>
-        </div>
-
     </div>
 
 </div>
@@ -212,21 +151,32 @@
 <script>
 let revChart, passChart;
 
-document.getElementById('applyBtn').onclick = async function() {
+// 🔥 APPLY FILTER
+document.getElementById('applyBtn').onclick = function () {
 
     const params = new URLSearchParams({
         date1: document.getElementById('date1').value,
         date2: document.getElementById('date2').value,
-        product: document.getElementById('productFilter').value,
+        // product: document.getElementById('productFilter').value,
         partner: document.getElementById('partner').value,
     });
 
-    const res = await fetch(`http://127.0.0.1:8000/admin/reports/comparison-data?${params}`);
+    const url = `{{ route('admin.report.comparison') }}?${params.toString()}`;
+    window.history.pushState({}, '', url);
+
+    fetchData(params);
+};
+
+// 🔥 FETCH
+async function fetchData(params) {
+
+    const res = await fetch(`{{ route('admin.report.comparison.data') }}?${params}`);
     const data = await res.json();
 
     render(data);
-};
+}
 
+// 🔥 RENDER
 function render(data) {
 
     const d1 = data.date1;
@@ -249,35 +199,14 @@ function render(data) {
     diff('bookDiff', d1.bookings, d2.bookings);
     diff('avgDiff', d1.avg, d2.avg);
 
-    // 🔥 CHARTS
     if(revChart) revChart.destroy();
     if(passChart) passChart.destroy();
-
-    let tableHTML = '';
-
-    data.products.forEach(p => {
-
-        let cls = p.change >= 0 ? 'badge-green' : 'badge-red';
-
-        tableHTML += `
-            <tr>
-                <td>${p.product}</td>
-                <td>$${p.date1.toLocaleString()}</td>
-                <td>$${p.date2.toLocaleString()}</td>
-                <td class="${cls}">
-                    ${p.change >= 0 ? '+' : ''}${p.change}%
-                </td>
-            </tr>
-        `;
-    });
-
-document.getElementById('productTable').innerHTML = tableHTML;
 
     revChart = new ApexCharts(document.querySelector("#revChart"), {
         chart: { type: 'bar', height: 300 },
         series: [{ data: [d1.revenue, d2.revenue] }],
         colors: ['#007bff','#28a745'],
-        xaxis: { categories: ['Yesterday','Today'] }
+        xaxis: { categories: ['Date 1','Date 2'] }
     });
     revChart.render();
 
@@ -285,22 +214,12 @@ document.getElementById('productTable').innerHTML = tableHTML;
         chart: { type: 'bar', height: 300 },
         series: [{ data: [d1.passengers, d2.passengers] }],
         colors: ['#007bff','#28a745'],
-        xaxis: { categories: ['Yesterday','Today'] }
+        xaxis: { categories: ['Date 1','Date 2'] }
     });
     passChart.render();
-
-    // 🔥 INSIGHTS
-    document.getElementById('insights').innerHTML = `
-        <div class="insight-green">Revenue change: ${calcText(d1.revenue,d2.revenue)}</div>
-        <div class="insight-purple">Passenger change: ${calcText(d1.passengers,d2.passengers)}</div>
-        <div class="insight-blue">Booking change: ${calcText(d1.bookings,d2.bookings)}</div>
-        <div class="insight-orange">Avg change: ${calcText(d1.avg,d2.avg)}</div>
-    `;
 }
 
-function set(id,val){
-    document.getElementById(id).innerHTML = '$' + Number(val).toLocaleString();
-}
+// 🔥 HELPERS
 function setMoney(id,val){
     document.getElementById(id).innerHTML = '$' + Number(val).toLocaleString();
 }
@@ -320,11 +239,21 @@ function diff(id,v1,v2){
         </span>`;
 }
 
-function calcText(v1,v2){
-    let change = v2 - v1;
-    let percent = v1 ? ((change/v1)*100).toFixed(1) : 0;
-    return `${change>=0?'+':''}${change.toFixed(2)} (${percent}%)`;
-}
+// 🔥 INITIAL LOAD FROM URL
+window.onload = function () {
+
+    const params = new URLSearchParams(window.location.search);
+
+    document.getElementById('date1').value = params.get('date1') || '';
+    document.getElementById('date2').value = params.get('date2') || '';
+    // document.getElementById('productFilter').value = params.get('product') || '';
+    document.getElementById('partner').value = params.get('partner') || '';
+
+    if (params.get('date1') && params.get('date2')) {
+        fetchData(params);
+    }
+};
 </script>
+
 
 </x-admin>

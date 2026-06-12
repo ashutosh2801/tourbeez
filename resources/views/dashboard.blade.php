@@ -112,7 +112,7 @@
                         id="bookingDate"
                         class="form-control aiz-date-range"
                         placeholder="Booking Date"
-                        
+                        autocomplete="off"
                         data-advanced-range="true"
                         data-separator=" - "
                         value="{{ request('booking_date') }}"
@@ -143,6 +143,7 @@
                         type="text" 
                         name="tour_date"
                         id="tourDate"
+                        autocomplete="off"
                         class="form-control aiz-date-range"
                         data-advanced-range="true"
                         data-separator=" - "
