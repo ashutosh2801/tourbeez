@@ -104,7 +104,7 @@
     <div class="mb-2">
         <div class="dash-perform">
             <div class="row">
-                <div class="col-md-6 col-6">
+                <div class="col-md-6 col-12">
                     <h2 class="text-sm m-0">Tour-wise overview</h2>
                     <input 
                         type="text" 
@@ -122,7 +122,7 @@
                     </button>
                     <div id="activeFilters" class="active-filters"></div>
                 </div>
-                <div class="col-md-6 col-6">
+                <div class="col-md-6 col-12">
                     <button type="button" id="toggleFilter" class="btn btn-secondary float-right">
                         <i class="fas fa-filter"></i> Filters
                     </button>

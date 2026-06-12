@@ -11441,3 +11441,17 @@ table.dataTable {
         grid-template-columns: 1fr;
     }
 }
+
+@media(max-width:767px) {
+
+    .dash-perform input {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+
+    .dash-perform .btn {
+        width: 100%;
+        margin: 4px 0;
+    }
+
+}
