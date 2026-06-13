@@ -1378,8 +1378,8 @@ $pickupHtml .= '</div>';
     public function schedulePricingUpdate(Request $request, $id){
 
         $request->validate([
-            'transport_cost'           => 'required|numeric|min:0',
-            'PriceOption'           => 'required|array',
+            'transport_cost'                => 'required|numeric|min:0',
+            'PriceOption'                   => 'required|array',
             'PriceOption.*.selling_price'   => 'required|numeric|min:0',
 
         ]);
@@ -1395,7 +1395,7 @@ $pickupHtml .= '</div>';
             }
         }
         $pricing->tour->transport_cost = $request->transport_cost;
-
+        $pricing->tour->report_group = $request->report_group;
         $pricing->tour->save();
 
         return redirect()->back()->with([
