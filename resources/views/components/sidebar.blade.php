@@ -5,10 +5,36 @@
 
     <ul class="nav nav-pills nav-sidebar flex-column aiz-side-nav-list" data-toggle="aiz-side-menu" data-widget="treeview" role="menu" data-accordion="false">
         <li class="nav-item">
-            <a href="{{ route('admin.dashboard') }}" class="nav-link {{ Route::is('admin.dashboard') ? 'active' : '' }}">
+            
+            <a href="javascript:void(0);" class="nav-link">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
-                <p>Dashboard</p>
+                <p>{{  translate('Dashboard') }}
+                    <span class="aiz-side-nav-arrow right"></span>
+                </p>
+                
             </a>
+            <ul class="aiz-side-nav-list level-2">
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.dashboard') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.dashboard') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <p>Main</p>
+                    </a>
+                </li>
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.report.tour-wise') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.report.tour-wise') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <p>Tour Wise</p>
+                    </a>
+                </li>
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.report.comparison') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.report.comparison') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <p>Date Wise</p>
+                    </a>
+                </li>
+            </ul>
+            
+
         </li>
         @can('show_tours')       
         <li class="nav-item">

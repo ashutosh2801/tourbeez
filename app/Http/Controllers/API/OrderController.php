@@ -1663,6 +1663,9 @@ class OrderController extends Controller
             }
             // dd(3534);
             $valid = false;
+            $flag = false;
+            $start_time = '';
+            $sesion_instruction = '';
             // dd($repeatType );
             if ($repeatType === 'NONE') {
                 $valid = $carbonDate->isSameDay(Carbon::parse($schedule->session_start_date));
@@ -1752,30 +1755,26 @@ class OrderController extends Controller
                     $slots = [];
                 } else{
                     $startDate = Carbon::parse($schedule->session_start_date);
-                // dd($minimumNoticePeriod);
-                // Match same day and same month
-                if (
-                    (int)$carbonDate->format('d') === (int)$startDate->format('d') &&
-                    (int)$carbonDate->format('m') === (int)$startDate->format('m')
-                ) {
-                    $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
-                    $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
-         
-                    $slots = array_merge(
-                        $slots,
+                    // dd($minimumNoticePeriod);
+                    // Match same day and same month
+                    if (
+                        (int)$carbonDate->format('d') === (int)$startDate->format('d') &&
+                        (int)$carbonDate->format('m') === (int)$startDate->format('m')
+                    ) {
+                        $start = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+                        $end = Carbon::parse($carbonDate->toDateString() . ' ' . $schedule->session_start_time);
+            
+                        $slots = array_merge(
+                            $slots,
 
 
-                        $this->generateSlots($start, $end, 24*60, $minimumNoticePeriod)
-                    );
-                    
-                    // $slots = array_slice($slots, 0, 1);
+                            $this->generateSlots($start, $end, 24*60, $minimumNoticePeriod)
+                        );
+                        
+                        // $slots = array_slice($slots, 0, 1);
+                    }
                 }
-    
-                
-
-
-                }
-            }elseif ($repeatType === 'MINUTELY') {
+            } elseif ($repeatType === 'MINUTELY') {
                 // dd(324);
 
                 $interval = $schedule->repeat_period_unit ?? 1; // e.g., every 15 minutes
@@ -1832,6 +1831,13 @@ class OrderController extends Controller
 
                     }
                 }
+
+                if ($schedule->sesion_time_between) {
+                    $flag = true;
+                    $start_time = date('h:i A', strtotime($slotStart));
+                    $sesion_instruction = $schedule->sesion_instruction;
+                }
+
             }
         }
 
@@ -1894,9 +1900,6 @@ class OrderController extends Controller
                     'weekly', 'weekly' => $schedule->estimated_duration_num * 60,
                     'monthly', 'monthly' => $schedule->estimated_duration_num * 60 * 24 * 30,
                     'yearly', 'yearly' => $schedule->estimated_duration_num * 60,
-     
-
-                     
                     default => 0
                 };
 
@@ -1920,13 +1923,6 @@ class OrderController extends Controller
                 }
             }
 
-            // $nextAvailable = $this->getNextAvailableSessions($schedules, $carbonDate, 1); // default only 1
-            // return response()->json([
-            //     'slots' => [],
-            //     'next_available' => $nextAvailable
-            // ]);
-
-
             // dd($nextAvailable);
             return response()->json([
                 'status' => 'warning',
@@ -1947,10 +1943,11 @@ class OrderController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => array_unique($slots),
+            'data' => $start_time && $flag ? array_unique([$start_time . ' - ' . end($slots)]) : array_unique($slots),
             'last_minute' => $lastMinuts,
             'deposit_rule' => $fetchDepositRule,
-            'schedule_set' => true
+            'schedule_set' => true,
+            'sesion_instruction' => $sesion_instruction
         ]);
     }
 

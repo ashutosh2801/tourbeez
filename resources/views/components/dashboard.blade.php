@@ -75,16 +75,12 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-12">
-            <div class="bg-white border rounded-lg-custom p-3 mb-3">
-                <div id="mountainChart"></div>
-            </div>
-        </div>
+        
     </div>
 </div>
 
 <div>
-    <div class="row">
+     <div class="row">
         <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12">
             <a href="{{ route('admin.customers.index') }}" class="info-stats4">
                 <div class="info-icon">
@@ -130,6 +126,12 @@
             </a>
         </div>
     </div>
+    <div class="col-md-12">
+            <div class="bg-white border rounded-lg-custom p-3 mb-3">
+                <div id="mountainChart"></div>
+            </div>
+        </div>
+   
 </div>
 
 
