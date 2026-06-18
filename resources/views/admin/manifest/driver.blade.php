@@ -84,7 +84,7 @@
                 <select id="driverFilter" class="form-control driver-filter">
                     <option value="">All Drivers</option>
                     @foreach($drivers as $driver)
-                        <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                        <option value="{{ $driver->id }}" {{request()->input('driver_id') == $driver->id ? 'Selected' : ''}}>{{ $driver->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -132,14 +132,42 @@
                         @foreach($dateRange as $d)
                             @php
                                 $dateKey = $d->toDateString();
-                                $cellOrders = $dates[$dateKey] ?? [];
-                                $totalGuests = collect($cellOrders)->sum('guest_count');
-                                $driverNames = collect($cellOrders)
-                                    ->pluck('driver_names')   // array of arrays
-                                    ->flatten()
-                                    ->filter()
-                                    ->unique()
-                                    ->implode(', ');
+                                //$cellOrders = $dates[$dateKey] ?? [];
+                                $cellOrders = collect($dates[$dateKey] ?? [])
+                                ->filter(function ($o) use ($selectedDriver) {
+
+                                    if (!$selectedDriver) return true;
+
+                                    return in_array($selectedDriver, $o['driver_ids'] ?? []);
+                                })
+                                ->values();
+
+                               $totalGuests = collect($cellOrders)->sum('guest_count');
+                                //$driverNames = collect($cellOrders)
+                                //    ->pluck('driver_names')   // array of //arrays
+                                 //   ->flatten()
+                                 //   ->filter()
+                                 //   ->unique()
+                                 //   ->implode(', ');
+
+                                    $driverNames = collect($cellOrders)
+                                        ->flatMap(function ($o) use ($selectedDriver) {
+
+                                            // no filter → show all
+                                            if (!$selectedDriver) {
+                                                return $o['driver_ids'] ?? [];
+                                            }
+
+                                            // filter → only matching driver
+                                            return collect($o['driver_ids'] ?? [])
+                                                ->filter(fn ($id) => $id == $selectedDriver);
+                                        })
+                                        ->unique()
+                                        ->map(function ($driverId) use ($driverNameMap) {
+                                            return $driverNameMap[$driverId] ?? null;
+                                        })
+                                        ->filter()
+                                        ->implode(', ');
                             @endphp
                             <td class="text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
                                 data-tour="{{ $tourTitle }}"
@@ -176,14 +204,7 @@
                         @endforeach
                     </tr>
 
-                    <!-- <tr style="font-weight:600;">
-                        <td>Assigned Pax</td>
-                        @foreach($dateRange as $d)
-                            <td class="text-center assigned-pax text-success" data-date="{{ $d->toDateString() }}">
-                                {{ $assignedPaxPerDay[$d->toDateString()] ?? 0 }}
-                            </td>
-                        @endforeach
-                    </tr> -->
+                   
                     <tr style="font-weight:600;">
                         <td>Assigned Pax</td>
                         @foreach($dateRange as $d)
@@ -232,7 +253,7 @@
                 </div>                
 
                 <label class="form-label">Orders</label>
-                <div id="order_list" class="order-list bg-light"></div>
+                <div id="order_list" class="order-list bg-light" style="min-height: 300px;"></div>
 
                 <div class="mt-2">
                     <label>
@@ -362,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div style="width:50%">
                             <select 
                                 class="form-control aiz-selectpicker order-driver-select"
-                                
+                                multiple
                                 data-live-search="true"
                                 data-order-id="${o.order_id}">
                                 ${driversHtml}
@@ -460,84 +481,100 @@ document.getElementById('assignDriver').addEventListener('click', async function
     // =========================
     // DRIVER FILTER
     // =========================
-    driverFilter.addEventListener('change', function() {
 
-    let selectedDriver = parseInt(this.value);
-    let totalMap = {};
-    let assignedMap = {};
-    let driverWiseMap = {}; // NEW
+driverFilter.addEventListener('change', function () {
 
-    document.querySelectorAll('.manifest-cell').forEach(cell => {
+    let selectedDriver = this.value;
+    
+    let date = dateInput.value;
 
-        if (!cell.classList.contains('has-orders')) return;
+    let url = `?date=${date}`;
 
-        let orders = JSON.parse(cell.dataset.orders);
-        let date = cell.dataset.date;
+    if (selectedDriver) {
+        url += `&driver_id=${selectedDriver}`;
+    }
 
-        let visible = false;
-
-        orders.forEach(o => {
-
-            let match = !selectedDriver ||
-                (o.driver_ids && o.driver_ids.includes(selectedDriver));
-
-            if (match) {
-                visible = true;
-
-                totalMap[date] = (totalMap[date] || 0) + o.guest_count;
-
-                if (o.driver_ids?.length) {
-                    assignedMap[date] = (assignedMap[date] || 0) + o.guest_count;
-
-                    // driver-wise
-                    o.driver_ids.forEach(dId => {
-
-                        if (selectedDriver && dId !== selectedDriver) return;
-
-                        if (!driverWiseMap[date]) driverWiseMap[date] = {};
-                        driverWiseMap[date][dId] =
-                            (driverWiseMap[date][dId] || 0) + o.guest_count;
-                    });
-                }
-            }
-        });
-
-        cell.style.opacity = visible ? '1' : '0.2';
-    });
-
-    // update totals
-    document.querySelectorAll('.total-pax').forEach(td => {
-        td.innerText = totalMap[td.dataset.date] || 0;
-    });
-
-    document.querySelectorAll('.assigned-pax').forEach(td => {
-
-        let date = td.dataset.date;
-        let html = `<strong>${assignedMap[date] || 0}</strong>`;
-
-        if (driverWiseMap[date]) {
-
-            html += `<div style="margin-top:5px;">`;
-
-            Object.entries(driverWiseMap[date]).forEach(([driverId, pax]) => {
-
-                let driver = driversList.find(d => d.id == driverId);
-
-                html += `
-                    <div style="font-size:12px; color:#374151;">
-                        ${driver?.name || 'Unknown'}: <strong>${pax}</strong>
-                    </div>
-                `;
-            });
-
-            html += `</div>`;
-        }
-
-        td.innerHTML = html;
-    });
-
-    updateExportUrl();
+    window.location.href = url;
 });
+//     driverFilter.addEventListener('change', function() {
+
+//     let selectedDriver = parseInt(this.value);
+
+//     let totalMap = {};
+//     let assignedMap = {};
+//     let driverWiseMap = {}; // NEW
+
+//     document.querySelectorAll('.manifest-cell').forEach(cell => {
+
+//         if (!cell.classList.contains('has-orders')) return;
+
+//         let orders = JSON.parse(cell.dataset.orders);
+//         let date = cell.dataset.date;
+
+//         let visible = false;
+
+//         orders.forEach(o => {
+
+//             let match = !selectedDriver ||
+//                 (o.driver_ids && o.driver_ids.includes(selectedDriver));
+
+//             if (match) {
+//                 visible = true;
+
+//                 totalMap[date] = (totalMap[date] || 0) + o.guest_count;
+
+//                 if (o.driver_ids?.length) {
+//                     assignedMap[date] = (assignedMap[date] || 0) + o.guest_count;
+
+//                     // driver-wise
+//                     o.driver_ids.forEach(dId => {
+
+//                         if (selectedDriver && dId !== selectedDriver) return;
+
+//                         if (!driverWiseMap[date]) driverWiseMap[date] = {};
+//                         driverWiseMap[date][dId] =
+//                             (driverWiseMap[date][dId] || 0) + o.guest_count;
+//                     });
+//                 }
+//             }
+//         });
+
+//         cell.style.opacity = visible ? '1' : '0.2';
+//     });
+
+//     // update totals
+//     document.querySelectorAll('.total-pax').forEach(td => {
+//         td.innerText = totalMap[td.dataset.date] || 0;
+//     });
+
+//     document.querySelectorAll('.assigned-pax').forEach(td => {
+
+//         let date = td.dataset.date;
+//         let html = `<strong>${assignedMap[date] || 0}</strong>`;
+
+//         if (driverWiseMap[date]) {
+
+//             html += `<div style="margin-top:5px;">`;
+
+//             Object.entries(driverWiseMap[date]).forEach(([driverId, pax]) => {
+
+//                 let driver = driversList.find(d => d.id == driverId);
+
+//                 html += `
+//                     <div style="font-size:12px; color:#374151;">
+//                         ${driver?.name || 'Unknown'}: <strong>${pax}</strong>
+//                     </div>
+//                 `;
+//             });
+
+//             html += `</div>`;
+//         }
+
+//         td.innerHTML = html;
+//     });
+
+//     updateExportUrl();
+// });
 
     updateExportUrl();
 });

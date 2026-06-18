@@ -954,7 +954,7 @@ $expectEmails = ['order_pending'];
                                                 $instruction = $order->customer->instructions;
                                             } elseif($order->customer && $order->customer->pickup_id) {
                                                 $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
-                                                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                                                $pickName = $pickLocation?->location . " - " . $pickLocation?->address . " - " . $pickLocation?->time;
                                                 $instruction = $order->customer->instructions;
                                             }
                                         @endphp
@@ -974,6 +974,10 @@ $expectEmails = ['order_pending'];
                                             <td class="text-right">{{ $order->internal_notes }}</td>
                                         </tr>
 
+                                        <tr>
+                                            <td><b>Source</b></td>
+                                            <td class="text-right">{{ source_list($order->source) }}</td>
+                                        </tr>
                                         
                                         <tr>
                                             <td><b>Feedback Email</b></td>
@@ -1989,6 +1993,20 @@ $expectEmails = ['order_pending'];
                             <label>Innternal Notes</label>
                             <textarea name="internal_notes" class="form-control">{{ $order->internal_notes }}</textarea>
                         </div>
+                        <div class="col-lg-12 mb-2" id="pickup_id_block">
+                            <label>Select Source</label>
+                            @php
+                            $sources = source_list_db();
+                            @endphp
+                            <select 
+                                name="source" 
+                                class="form-control">
+                                @foreach($sources as $source)
+                                    <option @if($order->source == $source->key) selected @endif value="{{ $source->key }}">{{ $source->name }}</option>  
+                                @endforeach
+                            </select>
+                        </div>
+
                         <div class="col-lg-12 mb-2">
                             <label><b>Send Feedback Email {{$order->send_feeback_email}}</b></label><br>
                             <input type="hidden" name="send_feedback_email" value="0">
@@ -2023,7 +2041,6 @@ $expectEmails = ['order_pending'];
                 @csrf
 
                 <input type="hidden" name="customer_id" value="{{ $order->customer?->id }}">
-                
 
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Customer</h5>
@@ -2035,29 +2052,29 @@ $expectEmails = ['order_pending'];
                     <div class="row">
 
                         <div class="col-lg-6">
-                    <label>First Name *</label>
-                    <input type="text" name="first_name" id="oc_first_name" class="form-control">
-                    <small class="text-danger d-none" id="error_first_name"></small>
-                </div>
+                            <label>First Name *</label>
+                            <input type="text" name="first_name" id="oc_first_name" class="form-control">
+                            <small class="text-danger d-none" id="error_first_name"></small>
+                        </div>
 
-                <div class="col-lg-6">
-                    <label>Last Name *</label>
-                    <input type="text" name="last_name" id="oc_last_name" class="form-control">
-                    <small class="text-danger d-none" id="error_last_name"></small>
-                </div>
+                        <div class="col-lg-6">
+                            <label>Last Name *</label>
+                            <input type="text" name="last_name" id="oc_last_name" class="form-control">
+                            <small class="text-danger d-none" id="error_last_name"></small>
+                        </div>
 
-                <div class="col-lg-12">
-                    <label>Email *</label>
-                    <input type="email" name="email" id="oc_email" class="form-control">
-                    <small class="text-danger d-none" id="error_email"></small>
-                </div>
+                        <div class="col-lg-12">
+                            <label>Email *</label>
+                            <input type="email" name="email" id="oc_email" class="form-control">
+                            <small class="text-danger d-none" id="error_email"></small>
+                        </div>
 
-                <div class="col-lg-12">
-                    <label>Phone *</label>
-                    <input id="oc_phone_intel" type="tel" class="form-control">
-                    <input type="hidden" name="phone" id="oc_phone">
-                    <small class="text-danger d-none" id="error_phone"></small>
-                </div>
+                        <div class="col-lg-12">
+                            <label>Phone *</label>
+                            <input id="oc_phone_intel" type="tel" class="form-control">
+                            <input type="hidden" name="phone" id="oc_phone">
+                            <small class="text-danger d-none" id="error_phone"></small>
+                        </div>
 
                     </div>
 

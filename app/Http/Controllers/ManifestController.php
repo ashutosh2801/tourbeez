@@ -149,6 +149,7 @@ class ManifestController extends Controller
     public function driverManifest(Request $request)
 {
     $date = $request->input('date') ?? Carbon::today()->toDateString();
+    $selectedDriver = $request->input('driver_id');
 
     $startOfWeek = Carbon::parse($date);
     $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
@@ -238,33 +239,48 @@ class ManifestController extends Controller
 
             // Totals
             $totalPaxPerDay[$tourDate] += $guestCount;
+            // if (!$selectedDriver || in_array($selectedDriver, $driverIds)) {
+            //     $totalPaxPerDay[$tourDate] += $guestCount;
+            // }
 
             // if (!empty($driverIds)) {
             //     $assignedPaxPerDay[$tourDate] += $guestCount;
             // }
 
-            foreach ($orderDrivers as $driver) {
+            if (!$selectedDriver || in_array($selectedDriver, $driverIds)) {
 
-                $driverId = $driver->driver_id;
-                $driverName = $driver->driver?->name;
+                foreach ($orderDrivers as $driver) {
 
-                if (!$driverId) continue;
+                    if ($selectedDriver && $driver->driver_id != $selectedDriver) {
+                        continue;
+                    }
 
-                // Store name
-                $driverNameMap[$driverId] = $driverName;
+                    $driverId = $driver->driver_id;
+                    $driverName = $driver->driver?->name;
 
-                // Init
-                if (!isset($driverPaxPerDay[$tourDate][$driverId])) {
-                    $driverPaxPerDay[$tourDate][$driverId] = 0;
+                    $driverNameMap[$driverId] = $driverName;
+
+                    if (!isset($driverPaxPerDay[$tourDate][$driverId])) {
+                        $driverPaxPerDay[$tourDate][$driverId] = 0;
+                    }
+
+                    $driverPaxPerDay[$tourDate][$driverId] += $guestCount;
                 }
-
-                // Add pax
-                $driverPaxPerDay[$tourDate][$driverId] += $guestCount;
             }
 
             // Keep your existing total logic
-            if (!empty($driverIds)) {
-                $assignedPaxPerDay[$tourDate] += $guestCount;
+            // if (!empty($driverIds)) {
+            //     $assignedPaxPerDay[$tourDate] += $guestCount;
+            // }
+
+            if (!$selectedDriver) {
+                if (!empty($driverIds)) {
+                    $assignedPaxPerDay[$tourDate] += $guestCount;
+                }
+            } else {
+                if (in_array($selectedDriver, $driverIds)) {
+                    $assignedPaxPerDay[$tourDate] += $guestCount;
+                }
             }
 
             $tourDetail = $ot->tour?->detail;
@@ -329,7 +345,8 @@ class ManifestController extends Controller
         })
         ->toArray();
 
-    $drivers = User::where('role', 'Driver')->get();
+    $drivers = User::where('role', 'Driver')->orderBy('name')->get();
+    
 
     return view('admin.manifest.driver', compact(
         'sortedGrid',
@@ -340,7 +357,8 @@ class ManifestController extends Controller
         'totalPaxPerDay',
         'assignedPaxPerDay',
         'driverPaxPerDay',
-        'driverNameMap'
+        'driverNameMap',
+        'selectedDriver'
     ));
 }
 
