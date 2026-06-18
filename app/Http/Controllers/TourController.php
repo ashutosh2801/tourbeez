@@ -926,7 +926,7 @@ $pickupHtml .= '</div>';
         $data       = Tour::findOrFail(decrypt($id));
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedules   = $data->schedules ? $data->schedules :  new TourSchedule();
-        // dd($schedule);
+        
         return view('admin.tours.feature.scheduling', compact( 'data', 'detail', 'schedules'));
     }
 
@@ -1378,8 +1378,8 @@ $pickupHtml .= '</div>';
     public function schedulePricingUpdate(Request $request, $id){
 
         $request->validate([
-            'transport_cost'           => 'required|numeric|min:0',
-            'PriceOption'           => 'required|array',
+            'transport_cost'                => 'required|numeric|min:0',
+            'PriceOption'                   => 'required|array',
             'PriceOption.*.selling_price'   => 'required|numeric|min:0',
 
         ]);
@@ -1395,7 +1395,7 @@ $pickupHtml .= '</div>';
             }
         }
         $pricing->tour->transport_cost = $request->transport_cost;
-
+        $pricing->tour->report_group = $request->report_group;
         $pricing->tour->save();
 
         return redirect()->back()->with([
@@ -1573,7 +1573,6 @@ $pickupHtml .= '</div>';
     public function schedule_update(Request $request, $id)
     {
     $tour = Tour::findOrFail($id);
-
     // ✅ Validate all schedules
 
     if(!$request->schedules){

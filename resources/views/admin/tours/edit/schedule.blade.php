@@ -189,7 +189,7 @@
                                         @endif
                                     </div>
                                 </div>
-                                <div class="row mb-5">
+                                <div class="row">
                                     <label for="session_start_date_{{ $index }}" class="form-label col-lg-2"></label>
                                     <div class="col-lg-2">
                                         <label>
@@ -201,9 +201,16 @@
                                             <input type="checkbox" class="sesion_time_between" name="schedules[{{ $index }}][sesion_time_between]" id="sesion_time_between_{{ $index }}" value="1" {{ old("schedules.$index.sesion_time_between", $schedule?->sesion_time_between) ? 'checked' : '' }} style="width:17px;height:17px"> Is show time between?
                                         </label>
                                     </div> 
+                                                    
+                                </div>
+                                <div class="row mb-5">
+                                    <div class="col-lg-2">
+                                    </div>
                                     <div class="col-lg-5 not-all-date sesion_time_between_show">
+
+                                            
                                             <input type="text" class="form-control" name="schedules[{{ $index }}][sesion_instruction]" id="sesion_instruction_{{ $index }}" value="{{ old("schedules.$index.sesion_instruction", $schedule?->sesion_instruction) }}" placeholder="Instruction for session">
-                                    </div>                
+                                    </div>
                                 </div>
                             </div>
 
@@ -440,7 +447,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="row mb-5">
+                    <div class="row">
                         <label class="form-label col-lg-2"></label>
                         <div class="col-lg-2">
                             <label><input type="checkbox" class="sesion_all_day" name="schedules[__INDEX__][sesion_all_day]" id="sesion_all_day___INDEX__" value="1" style="width:17px;height:17px"> All day</label>
@@ -448,8 +455,13 @@
                         <div class="col-lg-3">
                             <label><input type="checkbox" class="sesion_time_between" name="schedules[__INDEX__][sesion_time_between]" id="sesion_time_between___INDEX__" value="1" style="width:17px;height:17px"> Is show time between?</label>
                         </div>
+                        
+                    </div>
+                    <div class="row mb-5">
+                        <div class="col-lg-2">
+                        </div>
                         <div class="col-lg-5 not-all-date sesion_time_between_show">
-                            <input type="text" class="form-control" name="schedules[___INDEX__][sesion_instruction]" id="sesion_instruction____INDEX__" value="" placeholder="Instruction for session">
+                            <input type="text" class="form-control" name="schedules[__INDEX__][sesion_instruction]" id="sesion_instruction____INDEX__" value="" placeholder="Instruction for session">
                         </div>
                     </div>
                 </div>

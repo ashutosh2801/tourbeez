@@ -31,6 +31,44 @@ if(!function_exists('getFullSql')) {
     }
 }
 
+// group tour status
+if(!function_exists('group_tour_status')) {
+    function report_group_tours() {
+        return [
+            1 => 'Day Tour',
+            2 => 'Evening Tour',
+            3 => 'Helicopter Tour',
+            4 => 'Private Tour',
+            5 => 'Group Tour',
+            99=> 'Unknown'
+        ];
+    }
+}
+if(!function_exists('group_tour_status')) {
+    function report_group_tour_status($number) {
+        switch ($number) {
+            case 1:
+                return 'Day Tour';
+                break;
+            case 2:
+                return 'Evening Tour';
+                break;
+            case 3:
+                return 'Helicopter Tour';
+                break;
+            case 4:
+                return 'Private Tour';
+                break;
+            case 5:
+                return 'Group Tour';
+                break;
+            default:
+                return 'Unknown';
+                break;
+        }
+    }
+}
+
 if(!function_exists('source_list')) {
     function source_list($item) {
         switch(strtolower($item)) {

@@ -2918,10 +2918,6 @@ class OrderController extends Controller
                     
             }
 
-            // $chargeAmount = 6883.1740398;
-            $chargeAmount = round($chargeAmount, 2);
-            $stripeAmount = (int) round($chargeAmount * 100);
-
             $metaData = [
                 'bookedDate'    => $order->created_at,
                 'orderId'       => $order->id,
@@ -2940,7 +2936,7 @@ class OrderController extends Controller
             // Create a new PaymentIntent for off-session charge
             $newIntent = \Stripe\PaymentIntent::create([
                 'customer'             => $customerId,
-                'amount'               => $stripeAmount,
+                'amount'               => intval($chargeAmount * 100),
                 'currency'             => $order->currency ?? 'eur',
                 'payment_method'       => $paymentMethodId,
                 // 'payment_method_types' => ['card', 'link'], // card and link allowed
@@ -2966,7 +2962,7 @@ class OrderController extends Controller
                 $balanceAmount = $balanceAmount - $order->payments->where('status', 'uncaptured')->first()?->amount;
             
             }
-            $order->balance_amount = round($balanceAmount, 2);
+            $order->balance_amount = $balanceAmount;
             $order->save();
 
             // Save payment record

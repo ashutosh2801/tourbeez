@@ -497,7 +497,7 @@ $expectEmails = ['order_pending'];
                                                         <tr>
                                                             <th colspan="5" class="text-center" style="border:none;">
                                                                 <h4 style="font-size:17px; font-weight:600; margin:0;">
-                                                                {{ $order->tour?->title }}
+                                                                {{ $order_tour->tour?->title }}
                                                                 </h4>
                                                             </th>
 
@@ -845,7 +845,6 @@ $expectEmails = ['order_pending'];
                                                 
                                                 @foreach ($taxesfees as $key => $item)  
                                                 @php
-                                                
                                                 $price      = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
                                                 $tax        = $price ?? 0;
                                                 $subtotal   = $subtotal + $tax; 
@@ -2452,10 +2451,13 @@ document.addEventListener("click", function(e) {
                     $dateInput.val() ||
                     '';
 
-                const initialDate = serverDate
-                    ? serverDate
-                    : moment().format("YYYY-MM-DD");
+                // const initialDate = serverDate
+                //     ? serverDate
+                //     : moment().format("YYYY-MM-DD");
 
+                const initialDate = moment().format("YYYY-MM-DD");
+                    
+                    // console.log(moment().format("YYYY-MM-DD"));
                 $dateInput.val(initialDate);
 
                 $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {

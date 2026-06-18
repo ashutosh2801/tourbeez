@@ -320,6 +320,11 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 let revenueChart, bookingChart, trendChart;
+const statusMap = {
+        3: 'Pending supplier',
+        4: 'Pending customer',
+        5: 'Confirmed'
+    };
 
 async function fetchDashboard() {
 
@@ -615,7 +620,7 @@ function renderFilters() {
     }
 
     if (filters.order_status) {
-        html += badge('Status', filters.order_status, 'order_status');
+        html += badge('Status', statusMap[filters.order_status], 'order_status');
     }
 
     if (filters.action_type) {
