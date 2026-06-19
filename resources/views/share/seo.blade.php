@@ -102,10 +102,10 @@
   "email": "info@tourbeez.com",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "1 Dundas Street West, Suite 2500",
+    "streetAddress": "16 Arnold St",
     "addressLocality": "Toronto",
     "addressRegion": "Ontario",
-    "postalCode": "M5G 1Z3",
+    "postalCode": "M8Z 5A6",
     "addressCountry": "CA"
   },
   "openingHoursSpecification": [

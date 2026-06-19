@@ -74,9 +74,7 @@ class CrawlerResponse
             
             if (strpos($ua, $bot) !== false) {
 
-                logger()->info('bot', ['bot' => $bot, 'ip'  => $ip, 'url' => $url ]);
-
-                
+                // logger()->info('bot', ['bot' => $bot, 'ip'  => $ip, 'url' => $url ]);
 
                 // ----- Adjust for /tbadmin/ subfolder -----
                 $path = $request->path();
@@ -105,7 +103,7 @@ class CrawlerResponse
                         'title' => 'Tours, Activities & Travel Experiences Worldwide | TourBeez',
                         'description' => 'Discover unforgettable travel experiences with TourBeez. Book tours, activities, and tickets to top global destinations with ease and confidence. Explore, adventure, and enjoy every moment',
                         'keywords' => 'International Tour Packages, Best Travel Deals Worldwide, World Tours And Trips, Customizable Holiday Packages,  Budget-friendly Travel',
-                        'image' => 'https://tourbeez.com/logo.jpg',
+                        'image' => 'https://tourbeez.com/public/slides/02.jpg',
                         // 'page' => 'home',
                         'file' => 'home',
                         'tours' => $response['home_tours'], 
@@ -170,7 +168,7 @@ class CrawlerResponse
                         'title' => 'Top Travel Destinations, Tours & Activities Worldwide | TourBeez',
                         'description' => 'Browse top travel destinations, tours and activities with TourBeez. Find and book great experiences now with easy booking and best ticket deals.',
                         'keywords' => 'Top Travel Destinations, City Tours and Activities, Travel Experiences, Adventure Tours and Activities',
-                        'image' => asset('public/images/destination.jpg'),
+                        'image' => "https://tourbeez.com/public/slides/01.jpg",
                         // 'page' => 'destinations',
                         'file' => 'destinations',
                         'cities' => $cities, 
@@ -226,7 +224,7 @@ class CrawlerResponse
                         'title' => 'Book Tickets for Tours & Experiences, Fast Online Booking | TourBeez',
                         'description' => 'Get tickets for tours, attractions and activities with TourBeez. Book now with easy booking and great deals on top experiences.',
                         'keywords' => 'TourBeez Tickets, Book Tickets for Tours & Experiences',
-                        'image' => asset('public/images/tickets.jpg'),
+                        'image' => "https://tourbeez.com/public/slides/03.jpg",
                         'page' => 'tickets',
                         'tours' => $tours, 
                     ]);
@@ -692,13 +690,30 @@ class CrawlerResponse
                             'offer_ends_in'   => $d->offer_ends_in,    
                         ]);
 
+                        // $items2 = $paginated->map(fn($d) => [
+                        //     'galleries' => $d->galleries->map(fn($img) => [
+                        //         'thumb_url'   => str_replace($img->file_name, $img->thumb_name, uploaded_asset($img->id))
+                        //     ])
+                        // ]);
+                        $thumbUrl = optional( optional($items->first())['galleries'] ?? collect() )->first()['thumb_url'] ?? null;
+
                         $name = ucfirst( $d->name );
+                        if($d->upload_id) {
+                            $image = uploaded_asset( $d->upload_id );
+                        }
+                        elseif ($thumbUrl) {
+                            $image = $thumbUrl;
+                        }
+                        else {
+                            $image = asset('tourbeez-logo.jpg');
+                        }
+
 
                         return response()->view('share.seo', [
                             'title' => 'Top Things to Do in '.$name.' Tours & Attractions | TourBeez' ,
                             'description' => 'Enjoy unforgettable experiences in '.$name.'. Explore tours, attractions & activities with TourBeez. Reserve your perfect '.$name.' trip today.',
                             'keywords' => 'Things To Do In '.$name,
-                            'image' => uploaded_asset( $d->upload_id ) ?? asset('public/tourbeez-logo.jpg'),
+                            'image' => $image,
                             'url' => url()->current(),
                             'items' => $items,
                             'city' => $d,

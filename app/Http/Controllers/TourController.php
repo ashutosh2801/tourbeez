@@ -2191,7 +2191,7 @@ $pickupHtml .= '</div>';
                         $country = $city->state && $city->state->country ? ucwords($city->state->country->name) : null;
                         return [
                             'id' => $city->id,
-                            'text' => ucwords($city->name) . " " .  ucwords($state) . " "  . ucwords($country),
+                            'text' => ucwords($city->name) . ", " .  ucwords($state) . ", "  . ucwords($country),
                         ];
                     });
  

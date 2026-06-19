@@ -153,6 +153,9 @@ class ManifestController extends Controller
     $startOfWeek = Carbon::parse($date);
     $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
 
+    $driverPaxPerDay = [];   // [date][driver_id] => pax
+    $driverNameMap = [];     // [driver_id] => name
+
     $orders = Order::with([
         'customer',
         'orderTours.tour.detail'
@@ -236,6 +239,30 @@ class ManifestController extends Controller
             // Totals
             $totalPaxPerDay[$tourDate] += $guestCount;
 
+            // if (!empty($driverIds)) {
+            //     $assignedPaxPerDay[$tourDate] += $guestCount;
+            // }
+
+            foreach ($orderDrivers as $driver) {
+
+                $driverId = $driver->driver_id;
+                $driverName = $driver->driver?->name;
+
+                if (!$driverId) continue;
+
+                // Store name
+                $driverNameMap[$driverId] = $driverName;
+
+                // Init
+                if (!isset($driverPaxPerDay[$tourDate][$driverId])) {
+                    $driverPaxPerDay[$tourDate][$driverId] = 0;
+                }
+
+                // Add pax
+                $driverPaxPerDay[$tourDate][$driverId] += $guestCount;
+            }
+
+            // Keep your existing total logic
             if (!empty($driverIds)) {
                 $assignedPaxPerDay[$tourDate] += $guestCount;
             }
@@ -311,7 +338,9 @@ class ManifestController extends Controller
         'drivers',
         'date',
         'totalPaxPerDay',
-        'assignedPaxPerDay'
+        'assignedPaxPerDay',
+        'driverPaxPerDay',
+        'driverNameMap'
     ));
 }
 

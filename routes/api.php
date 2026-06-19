@@ -98,6 +98,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/fetch_coupon/{coupon}', [PromoController::class, 'fetch_coupon']);
     Route::get('/fetch_voucher/{voucher}', [VoucherController::class, 'fetch_voucher']);
 
+    Route::post('/apply-promo-code', [PromoController::class, 'apply']);
 });
 
 

@@ -69,6 +69,21 @@ if(!function_exists('group_tour_status')) {
     }
 }
 
+if(!function_exists('source_list_db')) {
+    function source_list_db() {
+        return [
+            (object)['key'=> 'internal', 'name' => 'Internal'],
+            (object)['key'=> 'getyourguide', 'name' => 'GetYourGuide (Excluding payment)'],
+            (object)['key'=> 'niagarafallstour', 'name' => 'Niagara Falls Tour'],
+            (object)['key'=> 'rezdy', 'name' => 'Rezdy (Excluding payment)'],
+            (object)['key'=> 'toniagara', 'name' => 'Toniagara'],
+            (object)['key'=> 'tourbeez', 'name' => 'Tourbeez'],
+            (object)['key'=> 'tripadvisor', 'name' => 'TripAdvisor (Excluding payment)'],
+            (object)['key'=> 'viator', 'name' => 'Viator (Excluding payment)'],
+        ];
+    }
+}
+
 if(!function_exists('source_list')) {
     function source_list($item) {
         switch(strtolower($item)) {
@@ -80,6 +95,21 @@ if(!function_exists('source_list')) {
                 break;
             case 'tourbeez' :
                 return 'TB';
+                break;
+            case 'internal' :
+                return 'Internal';
+                break;
+            case 'getyourguide' :
+                return 'GYG';
+                break;
+            case 'viator' :
+                return 'Viator';
+                break;
+            case 'tripadvisor' :
+                return 'TripAdvisor';
+                break;
+            case 'rezdy' :
+                return 'Rezdy';
                 break;
             default:
                 return $item;
@@ -248,6 +278,7 @@ if (! function_exists('getTourExtraDetails')) {
         return null;
     }
 }
+
 if (! function_exists('getMergedTourExtrasData')) {
     function getMergedTourExtrasData($order_tour)
     {

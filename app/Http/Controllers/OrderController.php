@@ -445,7 +445,7 @@ class OrderController extends Controller
                 'additional_info'   => $request->additional_info ?? '',
                 'internal_notes'    => $request->internal_notes ?? '',
                 'created_by'        => auth()->user()->id,
-                'source'            => "Internal",
+                'source'            => $request->source ?? "internal",
             ]);
 
             // ===== Customer =====
@@ -1122,13 +1122,9 @@ class OrderController extends Controller
                 $pricingActualPrice = $request->input("tour_pricing_actual_price_{$tourId}", []);
                 $pricingDiscount = $request->input("tour_pricing_discount_{$tourId}", []);
 
-
-
-
                 $pricingDetails = [];
                 $total_amount = 0;
                 $nog = 0;
-
 
                 foreach ($pricingIds as $key => $pricingId) {
                     $qty    = isset($pricingQtys[$key]) ? (int)$pricingQtys[$key] : 0;
@@ -1434,6 +1430,7 @@ class OrderController extends Controller
         $order->balance_amount  = $balanceAmount;
         $order->booked_amount  = $totalPaymentAmount;
         
+
         if( $order->save() ) {
 
             // ===== Stripe Payment Handling =====
@@ -2130,7 +2127,7 @@ class OrderController extends Controller
 
 
                 if ($promoPayment > 0) {   
-                   $paid = $paid - $promoPayment;                 
+                   //$paid = floatval($paid) - floatval($promoPayment);                 
                     // paid amount
                     $TOUR_ITEM_SUMMARY .= '
                     <tr>
@@ -2159,7 +2156,7 @@ class OrderController extends Controller
                         </td>
                     </tr>'; 
                 }  
-                $balance_amount = $order->total_amount - $paid; 
+                $balance_amount = $order->total_amount - $paid - $promoPayment; 
                 if ($balance_amount > 0) {
                     // balance amount
                     $TOUR_ITEM_SUMMARY .= '
@@ -2170,7 +2167,7 @@ class OrderController extends Controller
                             <h3 style="color:red; margin:0; font-size:15px"><strong>Balance</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($balance_amount, $order->currency) . '</strong></h3>
+                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($balance_amount, $order->currency)  . '</strong></h3>
                         </td>
                     </tr>'; 
                 }  
@@ -2223,6 +2220,9 @@ class OrderController extends Controller
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
                 "[[CUSTOMER_PHONE]]"        => $customer->phone ?? '',
+
+
+
                 "[[TOUR_TITLE]]"            => $tourTitleFormatted,
                 "[[PARENT_TOUR_TITLE]]"     => ($order->sub_tour_id) ? $order->tour->title : '',
                 "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
