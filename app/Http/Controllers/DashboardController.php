@@ -199,6 +199,7 @@ public function dashboard(Request $request)
 {
 
     $excludedStatuses = [1, 2, 6, 7];
+    $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
 
     /*
     |--------------------------------------------------------------------------
@@ -319,6 +320,7 @@ public function dashboard(Request $request)
             'orders.id',
             'orders.currency',
             'orders.total_amount',
+            'orders.source',
             'tours.id as tour_id',
             'tours.title'
         )
@@ -329,13 +331,25 @@ public function dashboard(Request $request)
     | 🔥 GROUP BY TOUR + CONVERT TO CAD
     |--------------------------------------------------------------------------
     */
+
+
+
     $tourAnalytics = $orders
         ->groupBy('tour_id')
-        ->map(function ($items) {
+        ->map(function ($items) use ($excludedPaymentSources) {
 
             $revenue = 0;
 
             foreach ($items as $order) {
+
+                $isExcluded = in_array(
+                    strtolower($order->source ?? ''),
+                    $excludedPaymentSources
+                );
+
+                if ($isExcluded) {
+                    continue;
+                }
                 $revenue += currencyConvertWithoutRound(
                     $order->total_amount,
                     $order->currency,
@@ -359,7 +373,16 @@ public function dashboard(Request $request)
     | 🔥 TOTALS
     |--------------------------------------------------------------------------
     */
-    $totalRevenue = $orders->sum(function ($order) {
+    $totalRevenue = $orders->sum(function ($order) use ($excludedPaymentSources) {
+
+        $isExcluded = in_array(
+            strtolower($order->source ?? ''),
+            $excludedPaymentSources
+        );
+
+        if ($isExcluded) {
+            return 0;
+        }
         return currencyConvertWithoutRound(
             $order->total_amount,
             $order->currency,
@@ -369,8 +392,21 @@ public function dashboard(Request $request)
 
     $totalBookings = $orders->count();
 
-    $avgBookingValue = $totalBookings > 0
-        ? round($totalRevenue / $totalBookings, 2)
+    // $avgBookingValue = $totalBookings > 0
+    //     ? round($totalRevenue / $totalBookings, 2)
+    //     : 0;
+
+    $validBookings = $orders->filter(function ($order) use ($excludedPaymentSources) {
+        return !in_array(
+            strtolower($order->source ?? ''),
+            $excludedPaymentSources
+        );
+    });
+
+    $validRevenue = $totalRevenue;
+
+    $avgBookingValue = $validBookings->count() > 0
+        ? round($validRevenue / $validBookings->count(), 2)
         : 0;
 
     $totalTours = $orders->pluck('tour_id')->unique()->count();
@@ -417,6 +453,7 @@ public function comparisonView(Request $request)
 }
 public function comparisonData(Request $request)
 {
+    $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
     $date1 = $request->date1;
     $date2 = $request->date2;
 
@@ -436,12 +473,24 @@ public function comparisonData(Request $request)
     $rows2 = $reportController->getInvoiceData($req2);
 
     // 🔥 GROUP BY PRODUCT
-    $groupByProduct = function ($rows) {
+    $groupByProduct = function ($rows) use ($excludedPaymentSources) {
         return collect($rows)
             ->groupBy('product_name')
-            ->map(function ($items) {
+            ->map(function ($items) use ($excludedPaymentSources) {
                 return [
-                    'revenue' => $items->sum('customer_total'),
+                    'revenue' => $items->sum(function ($r) use ($excludedPaymentSources) {
+
+                                $isExcluded = in_array(
+                                    strtolower($r['source'] ?? ''),
+                                    $excludedPaymentSources
+                                );
+
+                                if ($isExcluded) {
+                                    return 0;
+                                }
+
+                                return $r['customer_total'] ?? 0;
+                            }),
                     'passengers' => $items->sum(fn($r) => $r['adult'] + $r['child'] + $r['infant']),
                 ];
             });
@@ -471,8 +520,20 @@ public function comparisonData(Request $request)
     }
 
     // 🔥 SUMMARY
-    $calc = function ($rows) {
-        $revenue = collect($rows)->sum('customer_total');
+    $calc = function ($rows) use ($excludedPaymentSources) {
+        $revenue = collect($rows)->sum(function ($r) use ($excludedPaymentSources) {
+
+            $isExcluded = in_array(
+                strtolower($r['source'] ?? ''),
+                $excludedPaymentSources
+            );
+
+            if ($isExcluded) {
+                return 0;
+            }
+
+            return $r['customer_total'] ?? 0;
+        });
         $bookings = count($rows);
         $passengers = collect($rows)->sum(fn($r) => $r['adult'] + $r['child'] + $r['infant']);
         $avg = $passengers > 0 ? $revenue / $passengers : 0;

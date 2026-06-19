@@ -69,6 +69,21 @@ if(!function_exists('group_tour_status')) {
     }
 }
 
+if(!function_exists('source_list_db')) {
+    function source_list_db() {
+        return [
+            (object)['key'=> 'internal', 'name' => 'Internal', 'exclude_payment' => false],
+            (object)['key'=> 'getyourguide', 'name' => 'GetYourGuide (Excluding payment)', 'exclude_payment' => true],
+            (object)['key'=> 'niagarafallstour', 'name' => 'Niagara Falls Tour', 'exclude_payment' => false],
+            (object)['key'=> 'rezdy', 'name' => 'Rezdy (Excluding payment)', 'exclude_payment' => true],
+            (object)['key'=> 'toniagara', 'name' => 'Toniagara', 'exclude_payment' => false],
+            (object)['key'=> 'tourbeez', 'name' => 'Tourbeez', 'exclude_payment' => false],
+            (object)['key'=> 'tripadvisor', 'name' => 'TripAdvisor (Excluding payment)', 'exclude_payment' => true],
+            (object)['key'=> 'viator', 'name' => 'Viator (Excluding payment)', 'exclude_payment' => true],
+        ];
+    }
+}
+
 if(!function_exists('source_list')) {
     function source_list($item) {
         switch(strtolower($item)) {
@@ -81,10 +96,31 @@ if(!function_exists('source_list')) {
             case 'tourbeez' :
                 return 'TB';
                 break;
+            case 'internal' :
+                return 'Internal';
+                break;
+            case 'getyourguide' :
+                return 'GYG';
+                break;
+            case 'viator' :
+                return 'Viator';
+                break;
+            case 'tripadvisor' :
+                return 'TripAdvisor';
+                break;
+            case 'rezdy' :
+                return 'Rezdy';
+                break;
             default:
                 return $item;
         }
     }
+}
+function excluded_payment_sources() {
+    return collect(source_list_db())
+        ->where('exclude_payment', true)
+        ->pluck('key')
+        ->toArray();
 }
 
 if(!function_exists('remove_last_Tour_word')) {
@@ -248,6 +284,7 @@ if (! function_exists('getTourExtraDetails')) {
         return null;
     }
 }
+
 if (! function_exists('getMergedTourExtrasData')) {
     function getMergedTourExtrasData($order_tour)
     {
