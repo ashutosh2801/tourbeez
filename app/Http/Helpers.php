@@ -5,6 +5,7 @@ use App\Models\Currency;
 use App\Models\EmailTemplate;
 use App\Models\Order;
 use App\Models\OrderLog;
+use App\Models\Partner;
 use App\Models\Setting;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
@@ -71,16 +72,12 @@ if(!function_exists('group_tour_status')) {
 
 if(!function_exists('source_list_db')) {
     function source_list_db() {
-        return [
-            (object)['key'=> 'internal', 'name' => 'Internal'],
-            (object)['key'=> 'getyourguide', 'name' => 'GetYourGuide (Excluding payment)'],
-            (object)['key'=> 'niagarafallstour', 'name' => 'Niagara Falls Tour'],
-            (object)['key'=> 'rezdy', 'name' => 'Rezdy (Excluding payment)'],
-            (object)['key'=> 'toniagara', 'name' => 'Toniagara'],
-            (object)['key'=> 'tourbeez', 'name' => 'Tourbeez'],
-            (object)['key'=> 'tripadvisor', 'name' => 'TripAdvisor (Excluding payment)'],
-            (object)['key'=> 'viator', 'name' => 'Viator (Excluding payment)'],
-        ];
+        $partners = Partner::select('id', 'slug', 'name')->orderBy('name', 'ASC')->get();
+        $p = $partners->map(function($item) {
+            return (object)['key' => $item->slug, 'name' => $item->name];
+        })->toArray();
+
+        return $p;
     }
 }
 
