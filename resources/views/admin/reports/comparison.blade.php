@@ -210,7 +210,7 @@
         <div class="panel">
             <h4>Passenger Count Comparison</h4>
             <div id="passChart"></div>
-        </div> 
+        </div>
 
     </div>
 
@@ -265,17 +265,17 @@ function render(data) {
     const d1 = data.date1;
     const d2 = data.date2;
 
-    setMoney('rev1', d1.revenue);
-    setMoney('rev2', d2.revenue);
+    set('rev1', d1.revenue);
+    set('rev2', d2.revenue);
 
-    setNumber('pass1', d1.passengers);
-    setNumber('pass2', d2.passengers);
+    set('pass1', d1.passengers);
+    set('pass2', d2.passengers);
 
-    setNumber('book1', d1.bookings);
-    setNumber('book2', d2.bookings);
+    set('book1', d1.bookings);
+    set('book2', d2.bookings);
 
-    setMoney('avg1', d1.avg);
-    setMoney('avg2', d2.avg);
+    set('avg1', d1.avg);
+    set('avg2', d2.avg);
 
     diff('revDiff', d1.revenue, d2.revenue);
     diff('passDiff', d1.passengers, d2.passengers);
@@ -395,13 +395,6 @@ passChart.render();
 
 function set(id,val){
     document.getElementById(id).innerHTML = '$' + Number(val).toLocaleString();
-}
-function setMoney(id,val){
-    document.getElementById(id).innerHTML = '$' + Number(val).toLocaleString();
-}
-
-function setNumber(id,val){
-    document.getElementById(id).innerHTML = Number(val).toLocaleString();
 }
 
 function diff(id,v1,v2){
