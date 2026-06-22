@@ -341,16 +341,8 @@ function render(data) {
     const d1 = data.date1;
     const d2 = data.date2;
 
-<<<<<<< HEAD
     set('rev1', d1.revenue);
     set('rev2', d2.revenue);
-=======
-    if (!d1 || !d2) return;
-
-    // 🔥 METRICS
-    setMoney('rev1', d1.revenue);
-    setMoney('rev2', d2.revenue);
->>>>>>> ff019162244913c344ec57648a6b4260cc0afc36
 
     set('pass1', d1.passengers);
     set('pass2', d2.passengers);
@@ -374,7 +366,6 @@ function render(data) {
     const date1Label = formatDate(document.getElementById('date1').value) || 'Date 1';
     const date2Label = formatDate(document.getElementById('date2').value) || 'Date 2';
 
-<<<<<<< HEAD
 revChart = new ApexCharts(
 document.querySelector("#revChart"),
 {
@@ -452,33 +443,6 @@ document.querySelector("#passChart"),
 });
 
 passChart.render();
-=======
-    // 🔥 REVENUE CHART
-    revChart = new ApexCharts(document.querySelector("#revChart"), {
-        chart: { type: 'bar', height: 350 },
-        series: [{
-            name: 'Revenue',
-            data: [d1.revenue, d2.revenue]
-        }],
-        xaxis: {
-            categories: [date1Label, date2Label]
-        }
-    });
-    revChart.render();
-
-    // 🔥 PASSENGER CHART
-    passChart = new ApexCharts(document.querySelector("#passChart"), {
-        chart: { type: 'bar', height: 350 },
-        series: [{
-            name: 'Passengers',
-            data: [d1.passengers, d2.passengers]
-        }],
-        xaxis: {
-            categories: [date1Label, date2Label]
-        }
-    });
-    passChart.render();
->>>>>>> ff019162244913c344ec57648a6b4260cc0afc36
 
     // ============================================================
     // 🔥 PRODUCT TABLE (FIXED — THIS WAS MISSING)
@@ -730,17 +694,6 @@ function showAlert(msg) {
     document.getElementById('filterAlert').innerHTML =
         `<div class="alert alert-warning">${msg}</div>`;
 }
-<<<<<<< HEAD
-=======
-
-function setMoney(id,val){
-    document.getElementById(id).innerHTML = '$' + Number(val).toLocaleString();
-}
-
-function setNumber(id,val){
-    document.getElementById(id).innerHTML = Number(val).toLocaleString();
-}
->>>>>>> ff019162244913c344ec57648a6b4260cc0afc36
 
 function formatDate(dateStr){
     if(!dateStr) return '';
