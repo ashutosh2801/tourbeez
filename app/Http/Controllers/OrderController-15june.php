@@ -64,10 +64,6 @@ class OrderController extends Controller
             });
         }
 
-       if ($source = $request->input('source')) {
-            $query->whereRaw('LOWER(source) = ?', [strtolower($source)]);
-        }
-
         // Filter by tour product
         if ($product = $request->input('product')) {
             $query->whereHas('orderTours', function ($q) use ($product) {
@@ -449,7 +445,7 @@ class OrderController extends Controller
                 'additional_info'   => $request->additional_info ?? '',
                 'internal_notes'    => $request->internal_notes ?? '',
                 'created_by'        => auth()->user()->id,
-                'source'            => $request->source ?? "internal",
+                'source'            => "Internal",
             ]);
 
             // ===== Customer =====
@@ -1020,9 +1016,6 @@ class OrderController extends Controller
         $actions = $order->actions()
             ->orderByDesc('created_at')
             ->paginate(7, ['*'], 'actions_page');
-        if (request()->ajax()) {
-            return view('admin.partials.order.recent-actions-table', compact('actions'))->render();
-        }
 
         $emailHistories = $order->emailHistories()
             ->orderByDesc('created_at')
@@ -1441,7 +1434,6 @@ class OrderController extends Controller
         $order->balance_amount  = $balanceAmount;
         $order->booked_amount  = $totalPaymentAmount;
         
-
         if( $order->save() ) {
 
             // ===== Stripe Payment Handling =====
@@ -1773,6 +1765,7 @@ class OrderController extends Controller
 
     public function order_template_details(Request $request)
     {
+
         try{
             $order_id = $request->order_id;
             $order_template_id = $request->order_template_id;
@@ -2137,7 +2130,7 @@ class OrderController extends Controller
 
 
                 if ($promoPayment > 0) {   
-                   $paid = floatval($paid) - floatval($promoPayment);                 
+                   $paid = $paid - $promoPayment;                 
                     // paid amount
                     $TOUR_ITEM_SUMMARY .= '
                     <tr>
@@ -2166,7 +2159,7 @@ class OrderController extends Controller
                         </td>
                     </tr>'; 
                 }  
-                $balance_amount = $order->total_amount - $paid - $promoPayment; 
+                $balance_amount = $order->total_amount - $paid; 
                 if ($balance_amount > 0) {
                     // balance amount
                     $TOUR_ITEM_SUMMARY .= '
@@ -2177,7 +2170,7 @@ class OrderController extends Controller
                             <h3 style="color:red; margin:0; font-size:15px"><strong>Balance</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($balance_amount, $order->currency)  . '</strong></h3>
+                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($balance_amount, $order->currency) . '</strong></h3>
                         </td>
                     </tr>'; 
                 }  
@@ -2925,10 +2918,6 @@ class OrderController extends Controller
                     
             }
 
-            // $chargeAmount = 6883.1740398;
-            $chargeAmount = round($chargeAmount, 2);
-            $stripeAmount = (int) round($chargeAmount * 100);
-
             $metaData = [
                 'bookedDate'    => $order->created_at,
                 'orderId'       => $order->id,
@@ -2947,7 +2936,7 @@ class OrderController extends Controller
             // Create a new PaymentIntent for off-session charge
             $newIntent = \Stripe\PaymentIntent::create([
                 'customer'             => $customerId,
-                'amount'               => $stripeAmount,
+                'amount'               => intval($chargeAmount * 100),
                 'currency'             => $order->currency ?? 'eur',
                 'payment_method'       => $paymentMethodId,
                 // 'payment_method_types' => ['card', 'link'], // card and link allowed
@@ -2973,7 +2962,7 @@ class OrderController extends Controller
                 $balanceAmount = $balanceAmount - $order->payments->where('status', 'uncaptured')->first()?->amount;
             
             }
-            $order->balance_amount = round($balanceAmount, 2);
+            $order->balance_amount = $balanceAmount;
             $order->save();
 
             // Save payment record
