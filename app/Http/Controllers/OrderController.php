@@ -64,6 +64,10 @@ class OrderController extends Controller
             });
         }
 
+       if ($source = $request->input('source')) {
+            $query->whereRaw('LOWER(source) = ?', [strtolower($source)]);
+        }
+
         // Filter by tour product
         if ($product = $request->input('product')) {
             $query->whereHas('orderTours', function ($q) use ($product) {
@@ -1016,6 +1020,9 @@ class OrderController extends Controller
         $actions = $order->actions()
             ->orderByDesc('created_at')
             ->paginate(7, ['*'], 'actions_page');
+        if (request()->ajax()) {
+            return view('admin.partials.order.recent-actions-table', compact('actions'))->render();
+        }
 
         $emailHistories = $order->emailHistories()
             ->orderByDesc('created_at')
@@ -1766,7 +1773,6 @@ class OrderController extends Controller
 
     public function order_template_details(Request $request)
     {
-
         try{
             $order_id = $request->order_id;
             $order_template_id = $request->order_template_id;
@@ -2131,7 +2137,7 @@ class OrderController extends Controller
 
 
                 if ($promoPayment > 0) {   
-                   //$paid = floatval($paid) - floatval($promoPayment);                 
+                   $paid = floatval($paid) - floatval($promoPayment);                 
                     // paid amount
                     $TOUR_ITEM_SUMMARY .= '
                     <tr>

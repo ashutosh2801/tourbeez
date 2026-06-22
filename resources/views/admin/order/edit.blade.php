@@ -1447,30 +1447,32 @@ $expectEmails = ['order_pending'];
                         </div>
                         <div id="collapseRecentActions" class="collapse show" aria-labelledby="headingRecentActions">
                             <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table" style="border: 1px solid #dee2e6;">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Subject</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if(!empty($actions) && is_iterable($actions))
-                                                @foreach($actions as $action)
-                                                    <tr>
-                                                        <td>{{ $action->created_at }}</td>
-                                                        <td>{!! $action->notes !!}</td>
-                                                    </tr>
-                                                @endforeach
-                                            @else
+                                <div id="recent-actions-container">
+                                    <div class="table-responsive">
+                                        <table class="table" style="border: 1px solid #dee2e6;">
+                                            <thead>
                                                 <tr>
-                                                    <td colspan="5">No action history found</td>
+                                                    <th>Date</th>
+                                                    <th>Subject</th>
                                                 </tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                    {{ $actions->links() }}
+                                            </thead>
+                                            <tbody>
+                                                @if(!empty($actions) && is_iterable($actions))
+                                                    @foreach($actions as $action)
+                                                        <tr>
+                                                            <td>{{ $action->created_at }}</td>
+                                                            <td>{!! $action->notes !!}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                @else
+                                                    <tr>
+                                                        <td colspan="5">No action history found</td>
+                                                    </tr>
+                                                @endif
+                                            </tbody>
+                                        </table>
+                                        {{ $actions->links() }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -4838,6 +4840,23 @@ $('#customerForm').on('submit', function (e) {
 $('input').on('input', function () {
     let id = $(this).attr('id').replace('oc_', '');
     $('#error_' + id).addClass('d-none').text('');
+});
+
+$(document).on('click', '#recent-actions-container .pagination a', function(e) {
+    e.preventDefault();
+
+    let url = $(this).attr('href');
+
+    $.ajax({
+        url: url,
+        type: "GET",
+        success: function(data) {
+            $('#recent-actions-container').html(data);
+        },
+        error: function() {
+            alert('Something went wrong');
+        }
+    });
 });
 </script>
 

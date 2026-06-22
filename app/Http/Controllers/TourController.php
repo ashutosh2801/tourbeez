@@ -30,8 +30,10 @@ use App\Models\Tourtype;
 use App\Models\User;
 use App\Services\ImageService;
 use App\Traits\TourScheduleHelper;
+use App\Upload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Maatwebsite\Excel\Facades\Excel;
 use Redirect;
@@ -271,7 +273,51 @@ class TourController extends Controller
 
 
 
-        $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
+        // $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
+
+        // 👉 APPLY SORTING BEFORE PAGINATION
+
+        if ($request->category || $request->city) {
+
+            $query->leftJoin('category_tour as ct', function ($join) use ($request) {
+                $join->on('tours.id', '=', 'ct.tour_id');
+
+                if ($request->category) {
+                    $join->where('ct.category_id', $request->category);
+                }
+            });
+
+            $query->leftJoin('tour_locations as tl', function ($join) use ($request) {
+                $join->on('tours.id', '=', 'tl.tour_id');
+
+                if ($request->city) {
+                    $join->where('tl.city_id', $request->city);
+                }
+            });
+
+            $query->select('tours.*')->distinct();
+
+            // 🚨 IMPORTANT: CLEAR DEFAULT ORDERING
+            $query->reorder();
+
+            // 🎯 APPLY ONLY NEW ORDER
+            if ($request->category && $request->city) {
+                
+                $query->orderByRaw('COALESCE(ct.sort_order, 9999)')
+                      ->orderByRaw('COALESCE(tl.sort_order, 9999)');
+            } elseif ($request->category) {
+                $query->orderByRaw('COALESCE(ct.sort_order, 9999)');
+            } elseif ($request->city) {
+                $query->orderByRaw('COALESCE(tl.sort_order, 9999)');
+            }
+
+        } else {
+
+            // fallback (only when NO filter)
+            $query->reorder()
+                  ->orderByRaw('sort_order = 0')
+                  ->orderBy('sort_order', 'ASC');
+        }
 
 
         // Set items per page
@@ -349,10 +395,43 @@ class TourController extends Controller
         return view('admin.tours.sub-tour.index', compact(['parentTour','tours', 'categories', 'cities']));
     }
 
+    // public function reorder(Request $request)
+    // {
+    //     foreach ($request->order as $index => $id) {
+    //         Tour::where('id', $id)->update(['sort_order' => $index]);
+    //     }
+
+    //     return response()->json(['success' => true]);
+    // }
+
     public function reorder(Request $request)
     {
-        foreach ($request->order as $index => $id) {
-            Tour::where('id', $id)->update(['sort_order' => $index]);
+        $categoryId = $request->category;
+        $cityId     = $request->city;
+
+        foreach ($request->order as $index => $tourId) {
+
+            // Save in category pivot
+            if ($categoryId) {
+                DB::table('category_tour')
+                    ->where('tour_id', $tourId)
+                    ->where('category_id', $categoryId)
+                    ->update(['sort_order' => $index]);
+            }
+
+            // Save in city table
+            if ($cityId) {
+                DB::table('tour_locations')
+                    ->where('tour_id', $tourId)
+                    ->where('city_id', $cityId)
+                    ->update(['sort_order' => $index]);
+            }
+
+            // fallback (optional)
+            if (!$categoryId && !$cityId) {
+                Tour::where('id', $tourId)
+                    ->update(['sort_order' => $index]);
+            }
         }
 
         return response()->json(['success' => true]);
@@ -1224,6 +1303,7 @@ $pickupHtml .= '</div>';
     public function basic_detail_update(Request $request, $id)
     {
 
+
         $request->validate([
             'title'                 => 'required|max:255',
             'description'           => 'required',
@@ -1916,7 +1996,7 @@ $pickupHtml .= '</div>';
         return back()->withInput()->with('error','OOPs! something went wrong!');
     }
 
-    public function gallery_update(Request $request, $id) {
+    public function gallery_update342(Request $request, $id) {
         $tour  = Tour::findOrFail($id);
         // Save tour types
         if ($request->has('gallery') && is_array($request->gallery)) {
@@ -1937,6 +2017,159 @@ $pickupHtml .= '</div>';
 
         return back()->withInput()->with('error','OOPs! something went wrong!');
     }
+
+    public function gallery_update34(Request $request, $id)
+    {
+        $tour = Tour::findOrFail($id);
+
+        $gallery = [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | EXISTING IMAGES
+        |--------------------------------------------------------------------------
+        */
+        $nextOrder = $tour->galleries()->max('sort_order') + 1;
+        if ($request->has('gallery') && is_array($request->gallery)) {
+            $gallery = array_filter($request->gallery, function ($value) {
+                return !empty($value);
+            });
+
+            
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | YOUTUBE VIDEOS (SAVE EXACTLY LIKE YOUR FORMAT)
+        |--------------------------------------------------------------------------
+        */
+        if($request->has('video_urls')){
+
+
+           foreach ($request->video_urls as $url) {
+
+                if (empty($url)) continue;
+
+                // ✅ CLEAN extraction (handles ?si= and all params)
+                preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^?&]+)/', $url, $match);
+
+                $videoId = $match[1] ?? null;
+
+                if (!$videoId) continue;
+
+                // ✅ CREATE PROPER RECORD (exact like your working one)
+                $upload = Upload::create([
+                    'file_original_name' => $url,
+                    'file_name'          => $videoId,
+                    'medium_name'        => "https://img.youtube.com/vi/{$videoId}/maxresdefault.jpg",
+                    'thumb_name'         => "https://img.youtube.com/vi/{$videoId}/mqdefault.jpg",
+                    'type'               => 'youtube',
+                    'user_id'            => auth()->id() ?? 1,
+                ]);
+
+                $gallery[] = $upload->id;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FINAL SYNC (IMAGES + VIDEOS)
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->has('order')) {
+
+            foreach ($request->order as $index => $uploadId) {
+                $tour->galleries()->updateExistingPivot($uploadId, [
+                    'sort_order' => $index
+                ]);
+            }
+        }
+
+        if (!empty($gallery)) {
+            $tour->galleries()->sync($gallery);
+
+        }
+
+        return redirect()->back()->with('success', 'Gallery saved successfully.');
+    }
+
+    public function gallery_update(Request $request, $id)
+{
+    $tour = Tour::findOrFail($id);
+
+    $finalIds = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 1: EXISTING ORDER FROM FRONTEND
+    |--------------------------------------------------------------------------
+    */
+    if ($request->has('order')) {
+        $finalIds = array_values(array_filter($request->order));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 2: CREATE VIDEO UPLOADS + APPEND IF NOT IN ORDER
+    |--------------------------------------------------------------------------
+    */
+    if ($request->has('video_urls')) {
+
+        foreach ($request->video_urls as $url) {
+
+            if (!$url) continue;
+
+            preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^?&]+)/', $url, $match);
+            $videoId = $match[1] ?? null;
+
+            if (!$videoId) continue;
+
+            $upload = Upload::create([
+                'file_original_name' => $url,
+                'file_name'          => $videoId,
+                'medium_name'        => "https://img.youtube.com/vi/{$videoId}/maxresdefault.jpg",
+                'thumb_name'         => "https://img.youtube.com/vi/{$videoId}/mqdefault.jpg",
+                'type'               => 'youtube',
+                'user_id'            => auth()->id() ?? 1,
+            ]);
+
+            $finalIds[] = $upload->id; // 🔥 FORCE ADD
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 3: CLEAN ARRAY
+    |--------------------------------------------------------------------------
+    */
+    $finalIds = array_values(array_filter($finalIds));
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 4: BUILD SYNC DATA
+    |--------------------------------------------------------------------------
+    */
+    $syncData = [];
+
+    foreach ($finalIds as $index => $uploadId) {
+
+        $syncData[$uploadId] = [
+            'sort_order' => $index,
+            'is_main' => ($request->main_image == $uploadId) ? 1 : 0
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 5: SINGLE SOURCE SYNC
+    |--------------------------------------------------------------------------
+    */
+    $tour->galleries()->sync($syncData);
+
+    return back()->with('success', 'Gallery updated successfully.');
+}
 
     public function notification_update(Request $request, $id) 
     {
