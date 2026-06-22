@@ -711,60 +711,71 @@ $(document).ready(function () {
 
 <script>
     $(function () {
-        $("#sortable-tours").sortable({
-            handle: "td", // You can change this to a specific handle like ".handle"
-            update: function () {
-                let order = [];
-                $("#sortable-tours tr").each(function () {
-                    order.push($(this).data("id"));
-                });
-                console.log(order);
-                $.ajax({
-                    url: "{{ route('admin.tour.reorder') }}",
-                    method: "POST",
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                        order: order
-                    },
-                    success: function () {
-                        alert('Sort order updated!');
-                        console.log('Order updated');
-                        location.reload();
-                    },
-                    error: function () {
-                        alert('Failed to update tour order.');
-                    }
-                });
-            }
-        });
+    $("#sortable-tours").sortable({
+        handle: "td"
     });
+});
+
+$('#saveSortOrder').click(function () {
+    let sortedData = [];
+
+    $('#sortable-tours tr').each(function () {
+        const tourId = $(this).data('id');
+        sortedData.push(tourId);
+    });
+
+    let filters = $('#filterForm').serializeArray();
+
+    let data = {
+        _token: '{{ csrf_token() }}',
+        order: sortedData
+    };
+
+    filters.forEach(f => {
+        data[f.name] = f.value;
+    });
+
+    $.ajax({
+        url: "{{ route('admin.tour.reorder') }}",
+        type: "POST",
+        data: data,
+        success: function () {
+            location.reload(); // better than alert
+        },
+        error: function () {
+            alert('Error saving sort order');
+        }
+    });
+});
 </script>
 
 <script>
-    $('#saveSortOrder').click(function () {
+   $('#saveSortOrder').click(function () {
         let sortedData = [];
 
-        $('#sortable-tours tr').each(function () {
+        $('#sortable-tours tr').each(function (index) {
             const tourId = $(this).data('id');
-            const sortOrder = $(this).find('input[name^="sort_order"]').val();
-            sortedData[sortOrder] = tourId;
-
+            sortedData.push(tourId); // FIXED (important)
         });
 
+        let filters = $('#filterForm').serializeArray();
+
+        let data = {
+            _token: '{{ csrf_token() }}',
+            order: sortedData
+        };
+
+        // attach filters dynamically
+        filters.forEach(f => {
+            data[f.name] = f.value;
+        });
 
         $.ajax({
             url: "{{ route('admin.tour.reorder') }}",
             type: "POST",
-            data: {
-                _token: '{{ csrf_token() }}',
-                order: sortedData
-            },
-            success: function (response) {
+            data: data,
+            success: function () {
                 alert('Sort order updated!');
-            },
-            error: function (xhr) {
-                console.error(xhr.responseText);
-                alert('Error saving sort order.');
             }
         });
     });

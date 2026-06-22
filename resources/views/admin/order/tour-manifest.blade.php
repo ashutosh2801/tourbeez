@@ -93,7 +93,7 @@
                                                         $instruction = $order->customer->instructions;
                                                     } elseif($order->customer && $order->customer->pickup_id) {
                                                         $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
-                                                        $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                                                        $pickName = $pickLocation?->location . " - " . $pickLocation?->address . " - " . $pickLocation?->time;
                                                         $instruction = $order->customer->instructions;
                                                     }
                                                 @endphp

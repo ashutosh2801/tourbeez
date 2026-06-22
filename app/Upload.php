@@ -13,7 +13,7 @@ class Upload extends Model
 
     
     protected $fillable = [
-        'file_original_name', 'file_name', 'user_id', 'extension', 'type', 'file_size',
+        'file_original_name', 'file_name', 'user_id', 'extension', 'type', 'file_size','medium_name', 'thumb_name', 'caption', 'description',
     ];
 
     protected static function booted()

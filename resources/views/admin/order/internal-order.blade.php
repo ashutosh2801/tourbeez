@@ -1,11 +1,9 @@
 <x-admin>
 @section('title', 'Internal Orders Create')
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css"/>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/css/intlTelInput.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/intlTelInput.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.1.1/js/utils.js"></script>
-
 <style>
 .iti { width: 100%; }
 
@@ -30,15 +28,15 @@
 }
 </style>
 
-    @if ($errors->any())
-    <div class="alert alert-danger mb-4 p-3 rounded">
-        <ul class="mb-0 pl-4">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-    @endif
+@if ($errors->any())
+<div class="alert alert-danger mb-4 p-3 rounded">
+    <ul class="mb-0 pl-4">
+        @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
 
 
     <div class="internal-order-body">
@@ -107,13 +105,14 @@
                                             <option value="{{ $customer->id }}">{{ ucwords($customer->name) }} - {{ $customer->email }} - {{ $customer->phone ?? 'NA' }}</option>
                                         @endforeach
                                     </select>
-                                    <div class="form-group text-center font-thin text-md mt-3">  OR</div>
-                                    <div class="text-center">
+                                    </div> 
+                                    <div class="form-group col-md-2 text-center font-thin text-md mt-3">  OR</div>
+                                    <div class="text-center col-md-5 mt-3">
                                         <button type="button" id="addNewCustomerBtn" class="btn btn-md btn-success">
                                             <i class="fa fa-user-plus mr-1"></i> Add New Customer
                                         </button>
                                     </div>
-                                </div>                            
+                                                           
                             </div>
 
                             {{-- New Customer Fields (hidden by default) --}}
@@ -217,6 +216,25 @@
                             <div class="col-12 col-md-6">
                                 <textarea class="form-control" name="internal_notes" rows="2" placeholder="Add  Internal Notes"></textarea>
                                 <p style="color:#777;font-size:14px">Internal Notes only visible by supplier</p>
+                            </div>
+                        </div>
+
+                        <div class="card-body row">
+                            <div class="col-12 col-md-6">
+                                <div><label for="customer">Select Source</label></div>
+                                @php
+                                $sources = source_list_db();
+                                @endphp
+                                <select 
+                                    name="source" 
+                                    class="form-control col-12 col-md-6 aiz-selectpicker border">
+                                    @foreach($sources as $source)
+                                        <option value="{{ $source->key }}">{{ $source->name }}</option>  
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                
                             </div>
                         </div>
                     </div>

@@ -1110,7 +1110,7 @@ class OrderController extends Controller
 
                         $order_payment = OrderPayment::create([
                             'order_id'          => $order->id,
-                            'amount'            => ($adv_deposite == 'deposit') ? $chargeAmount : $order->total_amount,
+                            'amount'            => $chargeAmount, // ($adv_deposite == 'deposit') ? $chargeAmount : $order->total_amount,
                             'currency'          => $order->currency,
                             'status'            => 'pending', // manual capture pending
                             'action'            => $adv_deposite,
@@ -1385,7 +1385,7 @@ class OrderController extends Controller
                     'card_last4'        => $cardDetails['last4'] ?? null,
                     'card_exp_month'    => $cardDetails['exp_month'] ?? null,
                     'card_exp_year'     => $cardDetails['exp_year'] ?? null,
-                    'amount'            => $order->total_amount,
+                    'amount'            => $chargeAmount,
                     'currency'          => $order->currency,
                     'status'            => 'pending', // manual capture pending
                     'action'            => $adv_deposite,

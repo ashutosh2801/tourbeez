@@ -473,7 +473,7 @@ $expectEmails = ['order_pending'];
                                                         <tr>
                                                             <th colspan="5" class="text-center" style="border:none;">
                                                                 <h4 style="font-size:17px; font-weight:600; margin:0;">
-                                                                {{ $order->tour?->title }}
+                                                                {{ $order_tour->tour?->title }}
                                                                 </h4>
                                                             </th>
 
@@ -758,7 +758,6 @@ $expectEmails = ['order_pending'];
                                                 
                                                 @foreach ($taxesfees as $key => $item)  
                                                 @php
-                                                
                                                 $price      = get_tax($subtotal, $item->fee_type, $item->tax_fee_value);
                                                 $tax        = $price ?? 0;
                                                 $subtotal   = $subtotal + $tax; 
@@ -868,7 +867,7 @@ $expectEmails = ['order_pending'];
                                                 $instruction = $order->customer->instructions;
                                             } elseif($order->customer && $order->customer->pickup_id) {
                                                 $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
-                                                $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                                                $pickName = $pickLocation?->location . " - " . $pickLocation?->address . " - " . $pickLocation?->time;
                                                 $instruction = $order->customer->instructions;
                                             }
                                         @endphp
@@ -888,6 +887,10 @@ $expectEmails = ['order_pending'];
                                             <td class="text-right">{{ $order->internal_notes }}</td>
                                         </tr>
 
+                                        <tr>
+                                            <td><b>Source</b></td>
+                                            <td class="text-right">{{ source_list($order->source) }}</td>
+                                        </tr>
                                         
                                         <tr>
                                             <td><b>Feedback Email</b></td>
@@ -1354,30 +1357,32 @@ $expectEmails = ['order_pending'];
                         </div>
                         <div id="collapseRecentActions" class="collapse show" aria-labelledby="headingRecentActions">
                             <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table" style="border: 1px solid #dee2e6;">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Subject</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if(!empty($actions) && is_iterable($actions))
-                                                @foreach($actions as $action)
-                                                    <tr>
-                                                        <td>{{ $action->created_at }}</td>
-                                                        <td>{!! $action->notes !!}</td>
-                                                    </tr>
-                                                @endforeach
-                                            @else
+                                <div id="recent-actions-container">
+                                    <div class="table-responsive">
+                                        <table class="table" style="border: 1px solid #dee2e6;">
+                                            <thead>
                                                 <tr>
-                                                    <td colspan="5">No action history found</td>
+                                                    <th>Date</th>
+                                                    <th>Subject</th>
                                                 </tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                    {{ $actions->links() }}
+                                            </thead>
+                                            <tbody>
+                                                @if(!empty($actions) && is_iterable($actions))
+                                                    @foreach($actions as $action)
+                                                        <tr>
+                                                            <td>{{ $action->created_at }}</td>
+                                                            <td>{!! $action->notes !!}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                @else
+                                                    <tr>
+                                                        <td colspan="5">No action history found</td>
+                                                    </tr>
+                                                @endif
+                                            </tbody>
+                                        </table>
+                                        {{ $actions->links() }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1900,6 +1905,20 @@ $expectEmails = ['order_pending'];
                             <label>Innternal Notes</label>
                             <textarea name="internal_notes" class="form-control">{{ $order->internal_notes }}</textarea>
                         </div>
+                        <div class="col-lg-12 mb-2" id="pickup_id_block">
+                            <label>Select Source</label>
+                            @php
+                            $sources = source_list_db();
+                            @endphp
+                            <select 
+                                name="source" 
+                                class="form-control">
+                                @foreach($sources as $source)
+                                    <option @if($order->source == $source->key) selected @endif value="{{ $source->key }}">{{ $source->name }}</option>  
+                                @endforeach
+                            </select>
+                        </div>
+
                         <div class="col-lg-12 mb-2">
                             <label><b>Send Feedback Email {{$order->send_feeback_email}}</b></label><br>
                             <input type="hidden" name="send_feedback_email" value="0">
@@ -1932,7 +1951,6 @@ $expectEmails = ['order_pending'];
             <form id="customerForm">
                 @csrf
                 <input type="hidden" name="customer_id" value="{{ $order->customer?->id }}">
-                
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Customer</h5>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
@@ -1949,19 +1967,28 @@ $expectEmails = ['order_pending'];
                         </div>
 
                         <div class="col-lg-6">
-                            <div class="form-group">
-                                <label>Last Name *</label>
-                                <input type="text" name="last_name" id="oc_last_name" class="form-control">
-                                <small class="text-danger d-none" id="error_last_name"></small>
-                            </div>
+                            <label>First Name *</label>
+                            <input type="text" name="first_name" id="oc_first_name" class="form-control">
+                            <small class="text-danger d-none" id="error_first_name"></small>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <label>Last Name *</label>
+                            <input type="text" name="last_name" id="oc_last_name" class="form-control">
+                            <small class="text-danger d-none" id="error_last_name"></small>
                         </div>
 
                         <div class="col-lg-12">
-                            <div class="form-group">
-                                <label>Email *</label>
-                                <input type="email" name="email" id="oc_email" class="form-control">
-                                <small class="text-danger d-none" id="error_email"></small>
-                            </div>
+                            <label>Email *</label>
+                            <input type="email" name="email" id="oc_email" class="form-control">
+                            <small class="text-danger d-none" id="error_email"></small>
+                        </div>
+
+                        <div class="col-lg-12">
+                            <label>Phone *</label>
+                            <input id="oc_phone_intel" type="tel" class="form-control">
+                            <input type="hidden" name="phone" id="oc_phone">
+                            <small class="text-danger d-none" id="error_phone"></small>
                         </div>
 
                         <div class="col-lg-12">
@@ -2357,10 +2384,13 @@ document.addEventListener("click", function(e) {
                     $dateInput.val() ||
                     '';
 
-                const initialDate = serverDate
-                    ? serverDate
-                    : moment().format("YYYY-MM-DD");
+                // const initialDate = serverDate
+                //     ? serverDate
+                //     : moment().format("YYYY-MM-DD");
 
+                const initialDate = moment().format("YYYY-MM-DD");
+                    
+                    // console.log(moment().format("YYYY-MM-DD"));
                 $dateInput.val(initialDate);
 
                 $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {
@@ -4724,6 +4754,23 @@ $('#customerForm').on('submit', function (e) {
 $('input').on('input', function () {
     let id = $(this).attr('id').replace('oc_', '');
     $('#error_' + id).addClass('d-none').text('');
+});
+
+$(document).on('click', '#recent-actions-container .pagination a', function(e) {
+    e.preventDefault();
+
+    let url = $(this).attr('href');
+
+    $.ajax({
+        url: url,
+        type: "GET",
+        success: function(data) {
+            $('#recent-actions-container').html(data);
+        },
+        error: function() {
+            alert('Something went wrong');
+        }
+    });
 });
 </script>
 

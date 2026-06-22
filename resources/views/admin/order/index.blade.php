@@ -137,6 +137,20 @@
                             </div> */ ?>
 
                             <div class="col-md-2 col-6">
+                                <select name="source" class="form-control">
+                                    <option value="">Source</option>
+
+                                    @foreach (source_list_db() as $source)
+                                        <option value="{{ $source->key }}"
+                                            {{ request('source') == $source->key ? 'selected' : '' }}>
+                                            {{ $source->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+
+                            <div class="col-md-2 col-6">
                                 <select name="per_page" class="form-control">
                                     @foreach ([10, 25, 50, 100, 500] as $number)
                                         <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>

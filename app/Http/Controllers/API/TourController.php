@@ -2173,7 +2173,7 @@ public function single(Request $request)
 
                         <td class="text-right" width="200">
                             <div class="input-group">
-                                <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
+                                <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker tour_starttime" data-minute-step="1"> 
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="fas fa-clock"></i></span>
                                 </div>                       

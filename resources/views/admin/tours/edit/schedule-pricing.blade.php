@@ -37,6 +37,21 @@
                         </div>
                     </div>
 
+                    <div class="col-xl-7">
+                        <div class="form-group">
+                            <label>Report Group</label>
+                            <div>
+                                <select class="form-control" name="report_group">
+                                    @foreach(report_group_tours() as $groupId => $groupName)
+                                        <option value="{{ $groupId }}" {{ $data->report_group == $groupId ? 'selected' : '' }}>
+                                            {{ $groupName }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- PRODUCT PRICING --}}
                     <div class="col-xl-7">
                         <div class="form-group">
