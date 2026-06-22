@@ -250,13 +250,40 @@ class DriverManifestExport implements FromCollection, WithColumnWidths
 
                 // ✅ TOTAL PAX PER DAY
                 // TOTAL (after filter)
-                if (isset($totalPaxPerDay[$tourDate])) {
-                    $totalPaxPerDay[$tourDate] += $guestCount;
-                }
+                // if (isset($totalPaxPerDay[$tourDate])) {
+                //     $totalPaxPerDay[$tourDate] += $guestCount;
+                // }
 
-                // ASSIGNED (only if driver exists after filter)
-                if ($orderDrivers->count() && isset($assignedPaxPerDay[$tourDate])) {
-                    $assignedPaxPerDay[$tourDate] += $guestCount;
+                // // ASSIGNED (only if driver exists after filter)
+                // if ($orderDrivers->count() && isset($assignedPaxPerDay[$tourDate])) {
+                //     $assignedPaxPerDay[$tourDate] += $guestCount;
+                // }
+
+                // ==========================
+                // TOTAL PAX (ALWAYS ALL ORDERS)
+                // ==========================
+                $totalPaxPerDay[$tourDate] =
+                    ($totalPaxPerDay[$tourDate] ?? 0) + $guestCount;
+
+
+                // ==========================
+                // ASSIGNED PAX (RESPECT FILTER)
+                // ==========================
+                if ($this->driverId) {
+
+                    // only count if this driver exists in assignment
+                    if (in_array($this->driverId, $driverIds)) {
+                        $assignedPaxPerDay[$tourDate] =
+                            ($assignedPaxPerDay[$tourDate] ?? 0) + $guestCount;
+                    }
+
+                } else {
+
+                    // no filter → original behavior
+                    if (!empty($driverIds)) {
+                        $assignedPaxPerDay[$tourDate] =
+                            ($assignedPaxPerDay[$tourDate] ?? 0) + $guestCount;
+                    }
                 }
 
                 $grid[$tourTitle][$tourDate][] = [

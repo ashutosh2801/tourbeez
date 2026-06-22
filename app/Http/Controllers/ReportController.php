@@ -24,6 +24,7 @@ class ReportController extends Controller
 public function overview(Request $request)
 {
     $excludedStatuses = [1, 2, 6, 7];
+    $excludedPaymentSources = excluded_payment_sources(); 
 
     /*
     |--------------------------------------------------------------------------
@@ -36,6 +37,7 @@ public function overview(Request $request)
     |--------------------------------------------------------------------------
     */
     $orderQuery = DB::table('orders')
+        
         ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
         ->whereNull('orders.deleted_at')
         ->whereNotIn('orders.order_status', $excludedStatuses);
@@ -148,7 +150,7 @@ public function overview(Request $request)
     |--------------------------------------------------------------------------
     */
     $orders = $orderQuery
-        ->select('orders.id', 'orders.currency')
+        ->select('orders.id', 'orders.currency', 'orders.source')
         ->distinct()
         ->get();
 
@@ -181,6 +183,20 @@ public function overview(Request $request)
     $refund = 0;
 
     foreach ($orders as $order) {
+
+        $isExcludedFromPayment = in_array(
+            strtolower($order->source),
+            array_map('strtolower', $excludedPaymentSources)
+        );
+
+         if ($isExcludedFromPayment) {
+
+            $finalTotal = 0;
+            $paid = 0;
+            $balance = 0;
+            $refundAmount = 0;
+
+        } else {
 
         $tours = $orderTours[$order->id] ?? collect();
         $orderPayments = $payments[$order->id] ?? collect();
@@ -263,6 +279,7 @@ public function overview(Request $request)
 
         // Refund
         $refundAmount = $orderPayments->sum('refund_amount');
+    }
 
         // Convert to CAD
         $gross += currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD');
@@ -306,6 +323,7 @@ public function revenue(Request $request)
     */
 
     $excludedStatuses = [1, 2, 6, 7];
+    $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
     /*
 |--------------------------------------------------------------------------
 | CHECK IF ANY FILTER IS APPLIED
@@ -492,87 +510,107 @@ public function revenue(Request $request)
     | FINAL FORMAT + CURRENCY CONVERSION (CAD)
     |--------------------------------------------------------------------------
     */
-    $orders->getCollection()->transform(function ($order) use ($payments, $categoryMap) {
+    $orders->getCollection()->transform(function ($order) use ($payments, $categoryMap, $excludedPaymentSources) {
+
+        $isExcludedFromPayment = in_array(
+            strtolower($order->source),
+            $excludedPaymentSources
+        );
+
+        // $finalTotal = 0;
+        // $totalTax = 0;
+        // $productValue = 0;
+        // $extraValue = 0;
+
+        
+        
+        // $subtotal2 = 0;
 
         $finalTotal = 0;
         $totalTax = 0;
         $productValue = 0;
         $extraValue = 0;
-
+        $discountAmount = 0;
+        $paid = 0;
+        $balance = 0;
+        $subtotal2 = 0;
         $pricing = json_decode($order->tour_pricing, true) ?? [];
         $extras  = json_decode($order->tour_extra, true) ?? [];
         $discounts = json_decode($order->discount, true) ?? [];
-        
-        $subtotal2 = 0;
 
-        // ✅ Pricing
-        foreach ($pricing as $p) {
-            $qty = $p['quantity'] ?? 0;
-            $actual_price = $p['actual_price'] ?? $p['price'] ?? 0;
-
-            if ($qty > 0) {
-                $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                    ? $actual_price
-                    : $actual_price * $qty;
-            }
-        }
-
-        $subtotal2 +=$productValue;
-
-        // ✅ Extras
-        foreach ($extras as $e) {
-            $qty = $e['quantity'] ?? 0;
-            $price = $e['price'] ?? 0;
-
-            if ($qty > 0) {
-                $extraValue += ($e['total_price'] ?? ($qty * $price));
-            }
-        }
-
-        $subtotal2 +=$extraValue;
-
-        // ✅ Discount
-        $discountAmount = 0;
-        if (!empty($discounts)) {
-            foreach ($discounts as $d) {
-                $discountAmount = $d['price'] ?? 0;
-            }
-        }
-
-        $subtotal2 -= $discountAmount;
-        // ✅ Taxes (if JSON)
-
-        // dd($order->taxes_fees);
-        if (!empty($order->tour_fees)) {
-            $taxes = is_string($order->tour_fees)
-                ? json_decode($order->tour_fees, true)
-                : $order->tour_fees;
+        if (!$isExcludedFromPayment) {
             
-            foreach ($taxes as $tax) {
-                $taxAmount = get_tax($subtotal2, $tax['type'], 13);
-                $subtotal2 += $taxAmount;
-                $totalTax += $taxAmount;
+
+            // ✅ Pricing
+            foreach ($pricing as $p) {
+                $qty = $p['quantity'] ?? 0;
+                $actual_price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+                if ($qty > 0) {
+                    $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
+                        ? $actual_price
+                        : $actual_price * $qty;
+                }
             }
+
+            $subtotal2 +=$productValue;
+
+            // ✅ Extras
+            foreach ($extras as $e) {
+                $qty = $e['quantity'] ?? 0;
+                $price = $e['price'] ?? 0;
+
+                if ($qty > 0) {
+                    $extraValue += ($e['total_price'] ?? ($qty * $price));
+                }
+            }
+
+            $subtotal2 +=$extraValue;
+
+            // ✅ Discount
+            $discountAmount = 0;
+            if (!empty($discounts)) {
+                foreach ($discounts as $d) {
+                    $discountAmount = $d['price'] ?? 0;
+                }
+            }
+
+            $subtotal2 -= $discountAmount;
+            // ✅ Taxes (if JSON)
+
+            // dd($order->taxes_fees);
+            if (!empty($order->tour_fees)) {
+                $taxes = is_string($order->tour_fees)
+                    ? json_decode($order->tour_fees, true)
+                    : $order->tour_fees;
+                
+                foreach ($taxes as $tax) {
+                    $taxAmount = get_tax($subtotal2, $tax['type'], 13);
+                    $subtotal2 += $taxAmount;
+                    $totalTax += $taxAmount;
+                }
+            }
+
+            $finalTotal = $subtotal2;
+
+            // dd($check,$taxes, $taxAmount, $finalTotal, $subtotal2, $discountAmount, $extraValue, $productValue);
+
+            // ✅ Payments
+            $orderPayments = $payments[$order->id] ?? collect();
+
+            $totalPaid = $orderPayments->where('status', 'succeeded')->sum('amount')
+                - $orderPayments->where('status', 'refunded')->sum('amount');
+
+            $promoPayment = $orderPayments
+                ->where('collection_type', 'Outside')
+                ->where('payment_type', 'PROMO_CODE')
+                ->sum('amount');
+
+            $paid = $totalPaid - $promoPayment;
+
+            $balance = $finalTotal - $paid;
+
         }
-
-        $finalTotal = $subtotal2;
-
-        // dd($check,$taxes, $taxAmount, $finalTotal, $subtotal2, $discountAmount, $extraValue, $productValue);
-
-        // ✅ Payments
-        $orderPayments = $payments[$order->id] ?? collect();
-
-        $totalPaid = $orderPayments->where('status', 'succeeded')->sum('amount')
-            - $orderPayments->where('status', 'refunded')->sum('amount');
-
-        $promoPayment = $orderPayments
-            ->where('collection_type', 'Outside')
-            ->where('payment_type', 'PROMO_CODE')
-            ->sum('amount');
-
-        $paid = $totalPaid - $promoPayment;
-
-        $balance = $finalTotal - $paid;
 
         // ✅ Convert to CAD
         $order->total_amount_converted = round(currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD'), 2);
@@ -734,6 +772,7 @@ public function invoiceExport(Request $request)
 public function getInvoiceData($request, $paginate = false)
 {
     $excludedStatuses = [1, 2, 6, 7];
+    $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
 
     $hasFilter = $request->filled('booking_date')
     || $request->filled('tour_date')
@@ -835,6 +874,7 @@ public function getInvoiceData($request, $paginate = false)
         'orders.created_at',
         'orders.currency',
         'orders.booking_fee',
+        'orders.source',
 
         'order_tours.tour_date',
         'order_tours.tour_pricing',
@@ -886,15 +926,23 @@ public function getInvoiceData($request, $paginate = false)
 
     foreach ($collection as $order) {
 
+        $isExcludedFromPayment = in_array(
+            strtolower($order->source ?? ''),
+            $excludedPaymentSources
+        );
+
         $productValue = 0;
         $extraValue = 0;
         $taxValue = 0;
         $discountAmount = 0;
         $subtotal = 0;
+        $totalPaid = 0;
+        $finalTotal = 0;
 
         $pricing = json_decode($order->tour_pricing, true) ?? [];
         $extras  = json_decode($order->tour_extra, true) ?? [];
         $discounts = json_decode($order->discount, true) ?? [];
+
 
         // foreach ($pricing as $p) {
         //     $qty = $p['quantity'] ?? 0;
@@ -906,95 +954,107 @@ public function getInvoiceData($request, $paginate = false)
         //             : $price * $qty;
         //     }
         // }
-
         $adult = 0;
         $child = 0;
         $infant = 0;
         $other = 0;
-
-        foreach ($pricing as $p) {
-            $qty = (int) ($p['quantity'] ?? 0);
-            $label = strtolower($p['label'] ?? '');
-            $priceType = $p['price_type'] ?? '';
-
-            // FIXED → treat as Adults
-            if ($priceType === 'FIXED') {
-                $adult += $qty;
-                continue;
-            }
-
-            if (str_contains($label, 'adult')) {
-                $adult += $qty;
-            } elseif (str_contains($label, 'child')) {
-                $child += $qty;
-            } elseif (str_contains($label, 'infant')) {
-                $infant += $qty;
-            } else {
-                $other += $qty;
-            }
-            $price = $p['actual_price'] ?? $p['price'] ?? 0;
-
-            if ($qty > 0) {
-                $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                    ? $price
-                    : $price * $qty;
-            }
-        }
-
-        $subtotal += $productValue;
-
-        foreach ($extras as $e) {
-            $qty = $e['quantity'] ?? 0;
-            $price = $e['price'] ?? 0;
-
-            if ($qty > 0) {
-                $extraValue += ($e['total_price'] ?? ($qty * $price));
-            }
-        }
-
-        $subtotal += $extraValue;
-
-        foreach ($discounts as $d) {
-            $discountAmount += $d['price'] ?? 0;
-        }
-
-        $subtotal -= $discountAmount;
-
-        if (!empty($order->tour_fees)) {
-            $taxes = is_string($order->tour_fees)
-                ? json_decode($order->tour_fees, true)
-                : $order->tour_fees;
-
-            foreach ($taxes as $tax) {
-                $taxAmount = get_tax($subtotal, $tax['type'], 13);
-                $subtotal += $taxAmount;
-                $taxValue += $taxAmount;
-            }
-        }
-
-        $finalTotal = $subtotal;
-
-
-
-        $orderPayments = $payments[$order->id] ?? collect();
-
-
-        // total successful payments
-        $totalPaid = $orderPayments
-            ->where('status', 'succeeded')
-            ->sum('amount');
-        $refunded = $orderPayments
-            ->where('status', 'refunded')
-            ->sum('amount');
-
-        // remove promo payments (if applicable)
-        $promoPayment = $orderPayments
-            ->where('collection_type', 'Outside')
-            ->where('payment_type', 'PROMO_CODE')
-            ->sum('amount');
-
+        // if (!$isExcludedFromPayment) {
         
-        $totalPaid = $totalPaid - $refunded;
+
+            foreach ($pricing as $p) {
+                $qty = (int) ($p['quantity'] ?? 0);
+                $label = strtolower($p['label'] ?? '');
+                $priceType = $p['price_type'] ?? '';
+
+                // FIXED → treat as Adults
+                if ($priceType === 'FIXED') {
+                    $adult += $qty;
+                    continue;
+                }
+
+                if (str_contains($label, 'adult')) {
+                    $adult += $qty;
+                } elseif (str_contains($label, 'child')) {
+                    $child += $qty;
+                } elseif (str_contains($label, 'infant')) {
+                    $infant += $qty;
+                } else {
+                    $other += $qty;
+                }
+                $price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+                if ($qty > 0) {
+                    $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
+                        ? $price
+                        : $price * $qty;
+                }
+            }
+
+            $subtotal += $productValue;
+
+            foreach ($extras as $e) {
+                $qty = $e['quantity'] ?? 0;
+                $price = $e['price'] ?? 0;
+
+                if ($qty > 0) {
+                    $extraValue += ($e['total_price'] ?? ($qty * $price));
+                }
+            }
+
+            $subtotal += $extraValue;
+
+            foreach ($discounts as $d) {
+                $discountAmount += $d['price'] ?? 0;
+            }
+
+            $subtotal -= $discountAmount;
+
+            if (!empty($order->tour_fees)) {
+                $taxes = is_string($order->tour_fees)
+                    ? json_decode($order->tour_fees, true)
+                    : $order->tour_fees;
+
+                foreach ($taxes as $tax) {
+                    $taxAmount = get_tax($subtotal, $tax['type'], 13);
+                    $subtotal += $taxAmount;
+                    $taxValue += $taxAmount;
+                }
+            }
+
+            $finalTotal = $subtotal;
+
+
+
+            $orderPayments = $payments[$order->id] ?? collect();
+
+
+            // total successful payments
+            $totalPaid = $orderPayments
+                ->where('status', 'succeeded')
+                ->sum('amount');
+            $refunded = $orderPayments
+                ->where('status', 'refunded')
+                ->sum('amount');
+
+            // remove promo payments (if applicable)
+            $promoPayment = $orderPayments
+                ->where('collection_type', 'Outside')
+                ->where('payment_type', 'PROMO_CODE')
+                ->sum('amount');
+
+            
+            $totalPaid = $totalPaid - $refunded;
+        // }
+        if ($isExcludedFromPayment) {
+            $productValue = 0;
+            $extraValue = 0;
+            $taxValue = 0;
+            $discountAmount = 0;
+            $subtotal = 0;
+            $totalPaid = 0;
+            $finalTotal = 0;
+
+        }
 
         $rows[] = [
             'id' => $order->id,
@@ -1018,6 +1078,7 @@ public function getInvoiceData($request, $paginate = false)
             'child' => $child,
             'infant' => $infant,
             'other' => $other,
+            'source' => $order->source ?? null,
         ];
     }
 
@@ -1063,6 +1124,7 @@ public function invoiceWithDetailsExport(Request $request)
 public function getInvoiceWithDetailsData($request, $paginate = false)
     {
         $excludedStatuses = [1, 2, 6, 7];
+        $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
 
         $hasFilter = $request->filled('booking_date')
         || $request->filled('tour_date')
@@ -1179,6 +1241,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
             'orders.payment_status',
             'orders.created_at',
             'orders.currency',
+            'orders.source',
             'orders.balance_amount',
             'orders.booked_amount',
             'order_tours.tour_date',
@@ -1237,8 +1300,15 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
             ->groupBy('tour_id');
 
         foreach ($collection as $order) {
+
+            $isExcludedFromPayment = in_array(
+                strtolower($order->source ?? ''),
+                $excludedPaymentSources
+            );
             
             $extras = json_decode($order->tour_extra, true) ?? [];
+
+            
 
             /*
             |--------------------------------------------------------------------------
@@ -1421,7 +1491,26 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
 
 
 
-            $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
+            // $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
+
+            if ($isExcludedFromPayment) {
+
+                $customerTotal = 0;
+                $tax_amount = 0;
+                $discount_amount = 0;
+
+                $costTotal = 0;
+                $costBase = 0;
+
+                $sellingTotal = 0;
+                $sellingPriceBase = 0;
+
+                $profit = 0;
+
+            } else {
+
+                $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
+            }
             /*
             |--------------------------------------------------------------------------
             | FINAL ROW (DYNAMIC SAFE)
@@ -1496,6 +1585,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                                     $currency,
                                     'CAD'
                                 );
+
             
             $row = [
                 'no' => $index++,
@@ -1504,12 +1594,15 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 'customer_name' => trim($order->first_name . ' ' . $order->last_name),
                 'order_date' => $order->created_at,
                 'fulfilment_date' => $order->tour_date,
-                'payment_status' => 
-                    ((int) round($order->booked_amount * 100) === 0) ? 'No' : (
-                        ((int) round($order->booked_amount * 100) === (int) round($customerTotal * 100)) ? 'Yes' : (
-                            ((int) round($order->booked_amount * 100) < (int) round($customerTotal * 100)) ? 'Partial Paid' : 'Over Paid'
+                'payment_status' => $isExcludedFromPayment
+                    ? '-'
+                    : (
+                        ((int) round($order->booked_amount * 100) === 0) ? 'No' : (
+                            ((int) round($order->booked_amount * 100) === (int) round($customerTotal * 100)) ? 'Yes' : (
+                                ((int) round($order->booked_amount * 100) < (int) round($customerTotal * 100)) ? 'Partial Paid' : 'Over Paid'
+                            )
                         )
-                    ), //$order->payment_status == 2 ? 'Yes' : 'No',
+                    ),//$order->payment_status == 2 ? 'Yes' : 'No',
                 'product_name' => $order->product_name,
 
                 'adult' => $adult,
@@ -1518,12 +1611,12 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 'senior' => $senior,
                 'other' => $other,
 
-                'product_price' => round(currencyConvertWithoutRound($product_price, $order->currency, 'CAD'), 2),
-                'extra_amount' => round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2),
-                'tax_amount' => round(currencyConvertWithoutRound($tax_amount, $order->currency, 'CAD'), 2),
-                'discount_amount' => round(currencyConvertWithoutRound($discount_amount, $order->currency, 'CAD'), 2),
-                'customer_total' => round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
-                'balance_amount' => round(currencyConvertWithoutRound($customerTotal - $order->booked_amount, $order->currency, 'CAD'), 2),
+                'product_price' => $isExcludedFromPayment ? 0 :  round(currencyConvertWithoutRound($product_price, $order->currency, 'CAD'), 2),
+                'extra_amount' => $isExcludedFromPayment ? 0 :  round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2),
+                'tax_amount' => $isExcludedFromPayment ? 0 :  round(currencyConvertWithoutRound($tax_amount, $order->currency, 'CAD'), 2),
+                'discount_amount' => $isExcludedFromPayment ? 0 :  round(currencyConvertWithoutRound($discount_amount, $order->currency, 'CAD'), 2),
+                'customer_total' =>  $isExcludedFromPayment ? 0 : round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
+                'balance_amount' => $isExcludedFromPayment ? 0 : round(currencyConvertWithoutRound($customerTotal - $order->booked_amount, $order->currency, 'CAD'), 2),
 
                 /*
                 |--------------------------------------------------------------------------
@@ -1531,14 +1624,14 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 |--------------------------------------------------------------------------
                 */
 
-                'tour_cost_price' => round($costBase, 2),
-                'tour_cost_tax' => round($costTotal - $costBase, 2),
-                'tour_cost_total' => round($costTotal, 2),
+                'tour_cost_price' => $isExcludedFromPayment ? 0 :  round($costBase, 2),
+                'tour_cost_tax' => $isExcludedFromPayment ? 0 :  round($costTotal - $costBase, 2),
+                'tour_cost_total' => $isExcludedFromPayment ? 0 :  round($costTotal, 2),
 
-                'tour_selling_price' => round($sellingPriceBase, 2),
-                'tour_selling_tax' => round($sellingTotal - $sellingPriceBase, 2),
-                'tour_selling_total' => round($sellingTotal, 2),
-                'transport_cost'    => round($transportCost, 2),
+                'tour_selling_price' => $isExcludedFromPayment ? 0 :  round($sellingPriceBase, 2),
+                'tour_selling_tax' => $isExcludedFromPayment ? 0 :  round($sellingTotal - $sellingPriceBase, 2),
+                'tour_selling_total' => $isExcludedFromPayment ? 0 :  round($sellingTotal, 2),
+                'transport_cost'    => $isExcludedFromPayment ? 0 :  round($transportCost, 2),
 
                 /*
                 |--------------------------------------------------------------------------
@@ -1546,7 +1639,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 |--------------------------------------------------------------------------
                 */
 
-                'profit' => round($sellingTotal - $costTotal, 2),
+                'profit' => $isExcludedFromPayment ? 0 : round($sellingTotal - $costTotal, 2),
             ];
 
             // attach all addon columns consistently

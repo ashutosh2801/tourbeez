@@ -147,134 +147,220 @@ class ManifestController extends Controller
     }
 
     public function driverManifest(Request $request)
-    {
-        $date = $request->input('date') ?? Carbon::today()->toDateString();
+{
+    $date = $request->input('date') ?? Carbon::today()->toDateString();
+    $selectedDriver = $request->input('driver_id');
 
-        $startOfWeek = Carbon::parse($date);
-        $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
+    $startOfWeek = Carbon::parse($date);
+    $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
 
-        $orders = Order::with(['customer', 'orderTours.tour'])
-            ->where('order_status', 5)
-            ->whereHas('orderTours', function ($q) use ($startOfWeek, $endOfWeek) {
-                $q->whereBetween('tour_date', [
-                    $startOfWeek->toDateString(),
-                    $endOfWeek->toDateString()
-                ]);
-            })
-            ->get();
+    $driverPaxPerDay = [];   // [date][driver_id] => pax
+    $driverNameMap = [];     // [driver_id] => name
 
-        $grid = [];
-        $tourTimes = [];
-        $tourAssignableMap = [];
-        $tourPaxMap = [];
+    $orders = Order::with([
+        'customer',
+        'orderTours.tour.detail'
+    ])
+        ->where('order_status', 5)
+        ->whereHas('orderTours', function ($q) use ($startOfWeek, $endOfWeek) {
+            $q->whereBetween('tour_date', [
+                $startOfWeek->toDateString(),
+                $endOfWeek->toDateString()
+            ]);
+        })
+        ->get();
 
-        // ✅ TOTAL ARRAYS
-        $totalPaxPerDay = [];
-        $assignedPaxPerDay = [];
+    // Preload all drivers for the week
+    $orderDriverMap = OrderDriver::with('driver')
+        ->whereBetween('assigned_date', [
+            $startOfWeek->toDateString(),
+            $endOfWeek->toDateString()
+        ])
+        ->get()
+        ->groupBy(function ($item) {
+            return $item->order_id . '_' . $item->assigned_date;
+        });
 
-        // INIT DATE RANGE + TOTALS
-        $dateRange = [];
-        $d = $startOfWeek->copy();
+    $grid = [];
 
-        while ($d->lte($endOfWeek)) {
-            $key = $d->toDateString();
+    $tourTimes = [];
+    $tourAssignableMap = [];
+    $tourReportGroupMap = [];
+    $tourPaxMap = [];
 
-            $dateRange[] = $d->copy();
-            $totalPaxPerDay[$key] = 0;
-            $assignedPaxPerDay[$key] = 0;
+    $totalPaxPerDay = [];
+    $assignedPaxPerDay = [];
+    $dateRange = [];
 
-            $d->addDay();
-        }
+    $d = $startOfWeek->copy();
 
-        foreach ($orders as $order) {
-            foreach ($order->orderTours as $ot) {
+    while ($d->lte($endOfWeek)) {
 
-                $tourDate = $ot->tour_date;
-                $slotTime = $ot->tour_time ?? '00:00 AM';
-                $tourTitle = $ot->tour->title ?? 'Unknown Tour';
+        $day = $d->toDateString();
 
-                if (!$tourDate) continue;
+        $dateRange[] = $d->copy();
 
-                // ✅ GUEST COUNT
-                $guestCount = 0;
-                $pricingItems = json_decode($ot->tour_pricing, true);
-                if (is_array($pricingItems)) {
-                    foreach ($pricingItems as $p) {
-                        $guestCount += $p['quantity'] ?? 0;
+        $totalPaxPerDay[$day] = 0;
+        $assignedPaxPerDay[$day] = 0;
+
+        $d->addDay();
+    }
+
+    foreach ($orders as $order) {
+
+        $encryptedOrderId = encrypt($order->id);
+
+        foreach ($order->orderTours as $ot) {
+
+            $tourDate = $ot->tour_date;
+
+            if (!$tourDate) {
+                continue;
+            }
+
+            $tourTitle = $ot->tour->title ?? 'Unknown Tour';
+            $slotTime  = $ot->tour_time ?? '00:00 AM';
+
+            $guestCount = collect(
+                json_decode($ot->tour_pricing, true) ?? []
+            )->sum('quantity');
+
+            $driverKey = $order->id . '_' . $tourDate;
+
+            $orderDrivers = $orderDriverMap[$driverKey] ?? collect();
+
+            $driverIds = $orderDrivers->pluck('driver_id')->toArray();
+
+            $driverNames = $orderDrivers
+                ->pluck('driver.name')
+                ->filter()
+                ->values()
+                ->toArray();
+
+            // Totals
+            $totalPaxPerDay[$tourDate] += $guestCount;
+            // if (!$selectedDriver || in_array($selectedDriver, $driverIds)) {
+            //     $totalPaxPerDay[$tourDate] += $guestCount;
+            // }
+
+            // if (!empty($driverIds)) {
+            //     $assignedPaxPerDay[$tourDate] += $guestCount;
+            // }
+
+            if (!$selectedDriver || in_array($selectedDriver, $driverIds)) {
+
+                foreach ($orderDrivers as $driver) {
+
+                    if ($selectedDriver && $driver->driver_id != $selectedDriver) {
+                        continue;
                     }
+
+                    $driverId = $driver->driver_id;
+                    $driverName = $driver->driver?->name;
+
+                    $driverNameMap[$driverId] = $driverName;
+
+                    if (!isset($driverPaxPerDay[$tourDate][$driverId])) {
+                        $driverPaxPerDay[$tourDate][$driverId] = 0;
+                    }
+
+                    $driverPaxPerDay[$tourDate][$driverId] += $guestCount;
                 }
+            }
 
-                // ✅ DRIVERS
-                $orderDrivers = OrderDriver::with('driver')
-                    ->where('order_id', $order->id)
-                    ->whereDate('assigned_date', $tourDate)
-                    ->get();
+            // Keep your existing total logic
+            // if (!empty($driverIds)) {
+            //     $assignedPaxPerDay[$tourDate] += $guestCount;
+            // }
 
-                $driverIds = $orderDrivers->pluck('driver_id')->toArray();
-                $driverNames = $orderDrivers->pluck('driver.name')->filter()->toArray();
-
-                // ✅ TOTAL PAX
-                if (isset($totalPaxPerDay[$tourDate])) {
-                    $totalPaxPerDay[$tourDate] += $guestCount;
-                }
-
-                // ✅ ASSIGNED PAX (ONLY IF DRIVER EXISTS)
-                if (!empty($driverIds) && isset($assignedPaxPerDay[$tourDate])) {
+            if (!$selectedDriver) {
+                if (!empty($driverIds)) {
                     $assignedPaxPerDay[$tourDate] += $guestCount;
                 }
-
-                $tourDetail = $ot->tour?->detail;
-
-                $grid[$tourTitle][$tourDate][] = [
-                    'order_id'     => $order->id,
-                    'order_encrypt_id' => encrypt($order->id),
-                    'order_number' => $order->order_number,
-                    'customer'     => $order->customer?->name,
-                    'guest_count'  => $guestCount,
-                    'driver_ids'   => $driverIds,
-                    'driver_names' => $driverNames,
-                    'tour_assignable' => $tourDetail?->assign_driver ?? false,
-                ];
-
-                // SORTING HELPERS
-                if ($tourDate === $date) {
-                    $tourPaxMap[$tourTitle] = ($tourPaxMap[$tourTitle] ?? 0) + $guestCount;
+            } else {
+                if (in_array($selectedDriver, $driverIds)) {
+                    $assignedPaxPerDay[$tourDate] += $guestCount;
                 }
-
-                $tourTimes[$tourTitle] = $slotTime;
-                $tourAssignableMap[$tourTitle] = $tourDetail?->assign_driver ?? false;
             }
+
+            $tourDetail = $ot->tour?->detail;
+
+            $grid[$tourTitle][$tourDate][] = [
+                'order_id'           => $order->id,
+                'order_encrypt_id'   => $encryptedOrderId,
+                'order_number'       => $order->order_number,
+                'customer'           => $order->customer?->name,
+                'guest_count'        => $guestCount,
+                'driver_ids'         => $driverIds,
+                'driver_names'       => $driverNames,
+                'tour_assignable'    => $tourDetail?->assign_driver ?? false,
+            ];
+
+            // Maps for sorting
+            $tourTimes[$tourTitle] = $slotTime;
+
+            $tourAssignableMap[$tourTitle] =
+                $tourDetail?->assign_driver ?? false;
+
+            $tourReportGroupMap[$tourTitle] =
+                $ot->tour->report_group ?? 999;
+
+            $tourPaxMap[$tourTitle] =
+                ($tourPaxMap[$tourTitle] ?? 0) + $guestCount;
         }
-
-        // SORT
-        $sortedGrid = collect($grid)
-            ->sortBy(function ($dates, $tour) use ($tourTimes, $tourAssignableMap, $tourPaxMap) {
-
-                $assignableSort = ($tourAssignableMap[$tour] ?? false) ? 0 : 1;
-                $hasPax = ($tourPaxMap[$tour] ?? 0) > 0 ? 0 : 1;
-
-                try {
-                    $timeSort = Carbon::parse($tourTimes[$tour] ?? '00:00 AM')->format('Hi');
-                } catch (\Exception $e) {
-                    $timeSort = 0;
-                }
-
-                return $assignableSort . '_' . $hasPax . '_' . $timeSort;
-            })
-            ->toArray();
-
-        $drivers = User::where('role', 'Driver')->get();
-
-        return view('admin.manifest.driver', compact(
-            'sortedGrid',
-            'dateRange',
-            'tourTimes',
-            'drivers',
-            'date',
-            'totalPaxPerDay',
-            'assignedPaxPerDay'
-        ));
     }
+
+    // Sort by report_group ASC first
+    $sortedGrid = collect($grid)
+        ->sortBy(function ($dates, $tour) use (
+            $tourReportGroupMap,
+            $tourAssignableMap,
+            $tourPaxMap,
+            $tourTimes
+        ) {
+
+            $reportGroup = $tourReportGroupMap[$tour] ?? 999;
+
+            $assignableSort =
+                ($tourAssignableMap[$tour] ?? false) ? 0 : 1;
+
+            $hasPax =
+                ($tourPaxMap[$tour] ?? 0) > 0 ? 0 : 1;
+
+            try {
+                $timeSort = Carbon::parse(
+                    $tourTimes[$tour] ?? '00:00 AM'
+                )->format('Hi');
+            } catch (\Exception $e) {
+                $timeSort = 9999;
+            }
+
+            return sprintf(
+                '%04d_%d_%d_%s',
+                $reportGroup,
+                $assignableSort,
+                $hasPax,
+                $timeSort
+            );
+        })
+        ->toArray();
+
+    $drivers = User::where('role', 'Driver')->orderBy('name')->get();
+    
+
+    return view('admin.manifest.driver', compact(
+        'sortedGrid',
+        'dateRange',
+        'tourTimes',
+        'drivers',
+        'date',
+        'totalPaxPerDay',
+        'assignedPaxPerDay',
+        'driverPaxPerDay',
+        'driverNameMap',
+        'selectedDriver'
+    ));
+}
 
     public function assignDriver4june(Request $request)
     {

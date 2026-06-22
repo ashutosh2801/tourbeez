@@ -181,7 +181,6 @@ class PickupController extends Controller
 
     public function orderPickupUpdate(Request $request)
     {
-
         $orderCustomer = OrderCustomer::findOrFail($request->customer_id);
         
         $orderCustomer->pickup_id =  $request->pickup_type == "existing" ? $request->oc_pickup_id : NULL;
@@ -191,11 +190,9 @@ class PickupController extends Controller
 
         $orderCustomer->order->internal_notes = $request->internal_notes;
         $orderCustomer->order->send_feedback_email = $request->send_feedback_email;
+        $orderCustomer->order->source         = $request->source ?? "internal";
 
-        
-
-        $orderCustomer->order->save();
-        
+        $orderCustomer->order->save();        
 
         return response()->json(['status' => 'success']);
     }    
