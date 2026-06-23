@@ -329,12 +329,6 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 let revChart, passChart;
-const statusMap = {
-        3: 'Pending supplier',
-        4: 'Pending customer',
-        5: 'Confirmed'
-    };
-
 
 function render(data) {
 
@@ -578,7 +572,6 @@ function renderFilters() {
         return;
     }
 
-
     alertBox.innerHTML = '';
 
     let html = '<div class="d-flex flex-wrap gap-2">';
@@ -594,9 +587,9 @@ function renderFilters() {
         html += badge('Channel', filters.partner, 'partner');
     }
     if (filters.order_status && filters.order_status !== 'null') {
-        html += badge('Status', statusMap[filters.order_status], 'order_status');
+        html += badge('Status', filters.order_status, 'order_status');
     }
-
+    
     if (filters.action_type && filters.action_type !== 'null') {
         html += badge('Pay', filters.action_type, 'action_type');
     }

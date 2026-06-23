@@ -126,11 +126,11 @@
             </a>
         </div>
     </div>
-    <div class="col-md-12">
+    <!-- <div class="col-md-12">
             <div class="bg-white border rounded-lg-custom p-3 mb-3">
                 <div id="mountainChart"></div>
             </div>
-        </div>
+        </div> -->
    
 </div>
 
@@ -271,7 +271,6 @@
             }
         };
 
-        var chart = new ApexCharts(document.querySelector("#mountainChart"), options);
-        chart.render();
+         // 
     });
 </script>
