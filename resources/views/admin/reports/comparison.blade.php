@@ -31,9 +31,9 @@
 .insight-blue{background:#eef5ff}
 .insight-orange{background:#fff4ea}
 .insight-red{background:#fdeeee}
- .select2-container .select2-selection--single {
+    .select2-container .select2-selection--single {
         height: 42px !important;
-        border: 1px solid #ced4da !important;
+        border: 1px solid #aeb0b4 !important;
         border-radius: 0.375rem !important;
         display: flex !important;
         align-items: center !important;
@@ -72,60 +72,72 @@
 <div class="comparison-body">
     <div class="card card-primary bg-white border rounded-lg-custom mb-3 top-search-bar">
         <div class="row">
-            <div class="col-sm-12">
+            <div class="col-xl-12 col-12">
                 <b class="text-sm">Compare performance between two selected dates</b>
             </div>
-            <div class="col-sm-3">
-                <input type="date" id="date1" class="form-control" required>
-            </div>
-            <div class="col-sm-3">
-                <input type="date" id="date2" class="form-control" required>
-            </div>
-            <!-- <div class="col-sm-2">
-                <select id="productFilter" class="form-control">
-                    <option value="">All Products</option>
-                </select>
-            </div> -->
-            <div class="col-md-3">
-            <!-- <label>Product</label> -->
-            <select id="productFilter" name="product" class="form-control">
-                @if(request('product') && request('product_text'))
-                    <option value="{{ request('product') }}" selected>
-                        {{ request('product_text') }}
-                    </option>
-                @endif
-            </select>
-        </div>
-         <!-- ORDER STATUS -->
-        <div class="col-md-2">
-            <!-- <label>Order Status</label> -->
-            <select name="order_status" id="order_status" class="form-control">
-                <option value="">All</option>
-                <option value="3">Pending supplier</option>
-                <option value="4">Pending customer</option>
-                <option value="5">Confirmed</option>
-            </select>
-        </div>
 
-        <!-- PAY TYPE -->
-        <div class="col-md-2 mt-2">
-            <!-- <label>Pay Type</label> -->
-            <select name="action_type" id="action_type" class="form-control">
-                <option value="">All</option>
-                <option value="pay_now">Pay Now</option>
-                <option value="pay_later">Pay Later</option>
-            </select>
-        </div>
-            <div class="col-sm-2 mt-2">
-                <select id="partner" class="form-control">
-                    <option value="">All Channels</option>
-                    @foreach($partners as $p)
-                        <option value="{{ $p->name }}">{{ $p->name }}</option>
-                    @endforeach
-                </select>
+            <div class="col-xl-4 col-md-3 col-12">
+                <div class="form-group">
+                    <input type="date" id="date1" class="form-control" required>
+                </div>
             </div>
-            <div class="col-sm-2 mt-2">
+
+            <div class="col-xl-4 col-md-3 col-12">
+                <div class="form-group">
+                    <input type="date" id="date2" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-md-3 col-12">
+                <div class="form-group">
+                    <select id="productFilter" name="product" class="form-control">
+                        @if(request('product') && request('product_text'))
+                            <option value="{{ request('product') }}" selected>
+                                {{ request('product_text') }}
+                            </option>
+                        @endif
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-3 col-12">
+                <div class="form-group">
+                    <select name="order_status" id="order_status" class="form-control">
+                        <option value="">All</option>
+                        <option value="3">Pending supplier</option>
+                        <option value="4">Pending customer</option>
+                        <option value="5">Confirmed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-3 col-12">
+                <div class="form-group">
+                    <select name="action_type" id="action_type" class="form-control">
+                        <option value="">All</option>
+                        <option value="pay_now">Pay Now</option>
+                        <option value="pay_later">Pay Later</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-3 col-12">
+                <div class="form-group">
+                    <select id="partner" class="form-control">
+                        <option value="">All Channels</option>
+                        @foreach($partners as $p)
+                            <option value="{{ $p->name }}">{{ $p->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-12 col-12">
                 <button id="applyBtn" class="btn btn-search">Apply</button>
+            </div>
+
+            <div class="col-12">
+                <div id="activeFilters" class="mb-2"></div>
             </div>
         </div>
     </div>
@@ -140,11 +152,8 @@
     <div id="noFilterAlert"></div>
     <!-- <div id="activeFilters" class="mb-3"></div> -->
 
-    <!-- 🔥 FILTER ALERT -->
-<div id="filterAlert" class="mb-2"></div>
-
-<!-- 🔥 ACTIVE FILTER TAGS -->
-<div id="activeFilters" class="mb-3"></div>
+    <!-- FILTER ALERT -->
+    <div id="filterAlert" class="mb-2"></div>
 
     <div class="stats-cards">
 

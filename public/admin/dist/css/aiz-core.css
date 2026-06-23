@@ -11477,6 +11477,10 @@ table.dataTable {
     width: 100%;
 }
 
+.comparison-body .top-search-bar .badge {
+    background: #a8a8a8 !important;
+}
+
 .comparison-body .stats-cards{
     display: grid;
     grid-template-columns: repeat(4,1fr);
@@ -11672,5 +11676,9 @@ table.dataTable {
     
     .comparison-body .comparison-chart .panel {
         margin-bottom: 20px;
+    }
+
+    .comparison-body .top-search-bar .badge {
+        margin-top: 10px;
     }
 }
