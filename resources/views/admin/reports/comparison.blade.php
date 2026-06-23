@@ -309,7 +309,7 @@
 
         <div class="panel">
             <h4>Product-wise Comparison</h4>
-            <div class="table-responsive">
+            <div class="table-responsive productComparison">
                 <table class="table">
                     <thead>
                         <tr>
@@ -551,6 +551,18 @@ document.getElementById('applyBtn').onclick = function () {
     window.location.href = `{{ route('admin.report.comparison') }}?${params.toString()}`;
 };
 
+function set(id, value) {
+    const el = document.getElementById(id);
+
+    if (!el) return;
+
+    if (typeof value === 'number') {
+        el.innerHTML = value.toLocaleString();
+    } else {
+        el.innerHTML = value ?? 0;
+    }
+}
+
 
 /*
 |--------------------------------------------------------------------------
@@ -563,8 +575,15 @@ async function fetchData() {
 
     if (!params.toString()) return;
 
+    console.log('Params:', params.toString());
+
     const res = await fetch(`{{ route('admin.report.comparison.data') }}?${params}`);
+
+    console.log('Response Status:', res.status);
+
     const data = await res.json();
+
+    console.log('API Data:', data);
 
     render(data);
 }

@@ -7833,6 +7833,12 @@ a.dropdown-footer:hover {
     color: #000;
 }
 
+.dash-perform .form-control-sm {
+    border: 0;
+    padding: 7px 0;
+    cursor: pointer;
+}
+
 .dash-perform input {
     color: #555;
     height: auto;
@@ -11624,6 +11630,11 @@ table.dataTable {
     grid-template-columns:1fr 1fr;
     gap: 15px;
     margin-top: 20px;
+}
+
+.comparison-body .comparison-chart .productComparison {
+    overflow-y: scroll;
+    height: 320px;
 }
 
 .comparison-body .comparison-chart .panel {

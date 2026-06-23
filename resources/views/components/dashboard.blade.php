@@ -13,7 +13,7 @@
                 </form>
             </div>
             <div class="col-md-6 col-6">
-                <button class="btn float-right">View Sales Reports</button>
+                <button class="btn btn-apply float-right">View Sales Reports</button>
             </div>
         </div>
     </div>
