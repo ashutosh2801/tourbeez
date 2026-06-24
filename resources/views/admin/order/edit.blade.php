@@ -731,13 +731,13 @@ $expectEmails = ['order_pending'];
                                                         @endphp
                                                         @if($discountAmount > 0)
                                                             <tr class="discount-row">
-                                                                <td class="text-danger">
+                                                                <td class="text-success">
                                                                     Discount 
                                                                     @if($item->type === 'PERCENT')
                                                                         ({{ $item->discount }}%)
                                                                     @endif
                                                                 </td>
-                                                                <td class="text-right text-danger">
+                                                                <td class="text-right text-success">
                                                                      {{ price_format_with_currency($discountAmount, $order->currency) }}
                                                                 </td>
                                                             </tr>
@@ -828,8 +828,8 @@ $expectEmails = ['order_pending'];
                                         @endif
                                         
                                         
-                                        <tr class="cummulative-total" style="color: red">
-                                            <td><b>Balance</b></td>
+                                        <tr class="cummulative-total">
+                                            <td class="text-danger"><b>Balance</b></td>
 
                                             @if($order->payment_status ==3)
 
@@ -1109,10 +1109,10 @@ $expectEmails = ['order_pending'];
                                                         @switch($payment->status)
 
                                                             @case('uncaptured')
-                                                                <button class="btn-sm btn-primary capture-btn" data-uncapture-amount="{{ $payment->amount }}" data-order-id="{{ $order->id }}" type="button">
+                                                                <button class="btn btn-sm btn-primary capture-btn" data-uncapture-amount="{{ $payment->amount }}" data-order-id="{{ $order->id }}" type="button">
                                                                     Capture 
                                                                </button>
-                                                                <button class="btn-sm btn-danger cancel-btn" data-order-id="{{ $order->id }}" type="button">
+                                                                <button class="btn btn-sm btn-danger cancel-btn" data-order-id="{{ $order->id }}" type="button">
                                                                     Cancel
                                                                 </button>
                                                             @break
