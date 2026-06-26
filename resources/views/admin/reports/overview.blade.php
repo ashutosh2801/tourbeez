@@ -73,7 +73,7 @@
         ]);
     @endphp
     <div class="col-xl-3 col-md-3 col-12 position-relative">
-        <label class="filter-label">Booking Date</label>
+        <label class="filter-label">Order Date</label>
 
         <input 
             type="text" 
@@ -96,7 +96,7 @@
 
     {{-- TOUR DATE --}}
     <div class="col-xl-3 col-md-3 col-12 position-relative">
-        <label class="filter-label">Tour Date</label>
+        <label class="filter-label">Fulfilment Date</label>
 
         <input 
             type="text" 
@@ -339,7 +339,7 @@
                         <i class="fa fa-check-circle"></i>
                     </div>
                     <div class="sale-num">
-                        <h3>$ {{ $performance['payment_received'] }}</h3>
+                        <h3>$ {{ number_format($performance['payment_received']) }}</h3>
                         <div class="stat-title">Payment Recieved</div>
                     </div>
                 </div>

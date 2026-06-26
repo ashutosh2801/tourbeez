@@ -163,6 +163,7 @@ public function overview(Request $request)
     */
     $orderTours = DB::table('order_tours')
         ->whereIn('order_id', $orderIds)
+        ->whereNull('deleted_at')
         ->get()
         ->groupBy('order_id');
 
@@ -384,11 +385,16 @@ public function revenue(Request $request)
 
 
     $query = DB::table('orders')
-        ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
+         ->leftJoin('order_tours', function ($join) {
+            $join->on('orders.id', '=', 'order_tours.order_id')
+                 ->whereNull('order_tours.deleted_at');
+        })
         ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
         ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
         ->whereNull('orders.deleted_at')
-        ->whereNotIn('orders.order_status', $excludedStatuses)->groupBy('orders.id');
+        ->whereNotIn('orders.order_status', $excludedStatuses);
+
+
 
     /*
     |--------------------------------------------------------------------------
@@ -406,7 +412,6 @@ public function revenue(Request $request)
         $query->where('order_tours.tour_id', $product);
     }
 
-
     if ($request->filled('order_status')) {
         $query->where('orders.order_status', $request->order_status);
     }
@@ -418,6 +423,7 @@ public function revenue(Request $request)
     if ($request->filled('payment_status')) {
         $query->where('orders.payment_status', $request->payment_status);
     }
+
 
     // ✅ Pay Type
     if ($request->action_type === 'pay_now') {
@@ -438,6 +444,7 @@ public function revenue(Request $request)
         } catch (\Exception $e) {}
     }
 
+    
     // dd( $request->tour_start_date, Carbon::parse($request->tour_start_date)->startOfDay());
 
     /*
@@ -445,6 +452,8 @@ public function revenue(Request $request)
     | FETCH DATA (PAGINATED)
     |--------------------------------------------------------------------------
     */
+
+    apply_report_sorting($query, $request); 
     $orders = $query
         ->select(
             'orders.id',
@@ -453,7 +462,7 @@ public function revenue(Request $request)
             'orders.payment_status',
             'orders.source',
             'orders.created_by',
-            'orders.created_at as booking_date',
+            DB::raw('DATE(orders.created_at) as booking_date'),
             'order_tours.tour_date as fulfilment_date',
             'order_tours.tour_id',
 
@@ -461,6 +470,7 @@ public function revenue(Request $request)
             'order_tours.tour_pricing',
             'order_tours.tour_extra',
             'order_tours.discount',
+            'order_tours.deleted_at',
 
             'order_tours.tour_fees',
 
@@ -481,7 +491,7 @@ public function revenue(Request $request)
             'orders.payment_method',
              'tours.title as product_name'
         )
-        ->orderByDesc('orders.id')
+        // ->orderByDesc('order_tours.tour_date')
         ->paginate(20)
         ->withQueryString();
 
@@ -722,10 +732,10 @@ if ($request->filled('partner')) {
         $customers->whereBetween('order_tours.tour_date', [$start, $end]);
     } catch (\Exception $e) {}
 }
-
+apply_report_sorting($customers, $request); 
 $customers = $customers->select(
         'orders.order_number',
-        'orders.created_at as booking_date',
+        DB::raw('DATE(orders.created_at) as booking_date'),
         'order_tours.tour_date as fulfilment_date',
 
         'order_customers.id',
@@ -737,7 +747,7 @@ $customers = $customers->select(
 
         'order_customers.promo_code'
     )
-    ->orderByDesc('orders.id')
+    // ->orderByDesc('orders.id')
     ->paginate(20, ['*'], 'customer_page') // IMPORTANT (separate pagination)
     ->withQueryString();
 
@@ -792,7 +802,10 @@ public function getInvoiceData($request, $paginate = false)
     }
 
     $query = DB::table('orders')
-        ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
+         ->leftJoin('order_tours', function ($join) {
+            $join->on('orders.id', '=', 'order_tours.order_id')
+                 ->whereNull('order_tours.deleted_at');
+        })
         ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
         ->leftJoin('order_payments', 'orders.id', '=', 'order_payments.order_id')
         ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
@@ -866,6 +879,7 @@ public function getInvoiceData($request, $paginate = false)
             // fail silently
         }
     }
+    apply_report_sorting($query, $request); 
 
     $query->select(
         'orders.id',
@@ -886,7 +900,7 @@ public function getInvoiceData($request, $paginate = false)
         'order_customers.last_name',
 
         'tours.title as product_name'
-    )->orderByDesc('orders.id');
+    );
 
     /*
     |--------------------------------------------------------------------------
@@ -1233,6 +1247,8 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 // fail silently
             }
         }
+        apply_report_sorting($query, $request); 
+
 
         $query->select(
             'orders.id',
@@ -1255,7 +1271,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
 
             'tours.title as product_name',
             'tours.transport_cost as transport_cost',
-        )->orderByDesc('orders.id');
+        );
 
         $orders = $paginate
             ? $query->paginate(20)->withQueryString()
@@ -1545,7 +1561,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                     if (!$matched) continue;
 
                     $baseCost = currencyConvertWithoutRound($matched->price, $currency, 'CAD');
-                    $baseSelling = currencyConvertWithoutRound($matched->selling_price, $currency, 'CAD');
+                    $baseSelling = currencyConvertWithoutRound($matched->selling_price, 'CAD', 'CAD');
 
                     /*
                     |--------------------------------------------------------------------------
@@ -1769,6 +1785,7 @@ private function getInvoiceWithDetailsData34342($request, $paginate = false)
             // fail silently
         }
     }
+    apply_report_sorting($query, $request); 
 
     $query->select(
         'orders.id',
@@ -1786,7 +1803,7 @@ private function getInvoiceWithDetailsData34342($request, $paginate = false)
         'order_customers.last_name',
 
         'tours.title as product_name'
-    )->orderByDesc('orders.id');
+    );
 
     $orders = $paginate
         ? $query->paginate(20)->withQueryString()
@@ -2185,7 +2202,7 @@ public function exportCustomer(Request $request)
 
         ini_set('memory_limit', '1024M');
         $data = $this->getInvoiceWithDetailsData($request, false);
-
+        
         return Excel::download(
             new OrderPriceScheduleExport($data),
             'price_schedule_' . now()->format('Ymd_His') . '.xlsx'

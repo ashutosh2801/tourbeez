@@ -89,7 +89,7 @@
         ]);
     @endphp
     <div class="col-xl-3 col-md-3 col-12 position-relative">
-        <label class="filter-label">Booking Date</label>
+        <label class="filter-label">Order Date</label>
 
         <input 
             type="text" 
@@ -112,7 +112,7 @@
 
     {{-- TOUR DATE --}}
     <div class="col-xl-3 col-md-3 col-12 position-relative">
-        <label class="filter-label">Tour Date</label>
+        <label class="filter-label">Fulfilment Date</label>
 
         <input 
             type="text" 
@@ -225,6 +225,42 @@
                         <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
                     </select>
                 </div>
+                <div class="col-md-2">
+                            <label class="filter-label">Sort By</label>
+                            <select name="order_by" id="order_by" class="form-control">
+                                <option value="">Sort By</option>
+
+                                <option value="tour_date_desc"
+                                    {{ request('order_by') == 'tour_date_desc' ? 'selected' : '' }}>
+                                    Tour Date (Newest First)
+                                </option>
+
+                                <option value="tour_date_asc"
+                                    {{ request('order_by') == 'tour_date_asc' ? 'selected' : '' }}>
+                                    Tour Date (Oldest First)
+                                </option>
+
+                                <option value="booking_date_desc"
+                                    {{ request('order_by') == 'booking_date_desc' ? 'selected' : '' }}>
+                                    Booking Date (Newest First)
+                                </option>
+
+                                <option value="booking_date_asc"
+                                    {{ request('order_by') == 'booking_date_asc' ? 'selected' : '' }}>
+                                    Booking Date (Oldest First)
+                                </option>
+
+                                <!-- <option value="revenue_desc"
+                                    {{ request('order_by') == 'revenue_desc' ? 'selected' : '' }}>
+                                    Revenue (High → Low)
+                                </option>
+
+                                <option value="revenue_asc"
+                                    {{ request('order_by') == 'revenue_asc' ? 'selected' : '' }}>
+                                    Revenue (Low → High)
+                                </option> -->
+                            </select>
+                        </div>
 
                 {{-- BUTTONS --}}
                 <div class="col-xl-2 col-md-3 col-12">
@@ -366,7 +402,7 @@
                     <td>{{ $row['no'] ?? '' }}</td>
                     <td><a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">{{ $row['order_number'] ?? '' }}</a></td>
                     <td>{{ $row['customer_name'] ?? '' }}</td>
-                    <td>{{ $row['order_date'] ?? '' }}</td>
+                    <td>{{ \Carbon\Carbon::parse($row['order_date'])->format('Y-m-d') }}</td>
                     <td>{{ $row['fulfilment_date'] ?? '' }}</td>
                     <td>{{ isset($row['customer_total']) ? number_format_with_currency($row['customer_total'], 2) : '0.00' }}</td>
                     <td>{{ $row['payment_status'] ?? '' }}</td>

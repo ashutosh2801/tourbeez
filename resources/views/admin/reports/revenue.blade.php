@@ -104,7 +104,7 @@
         ]);
     @endphp
     <div class="col-xl-3 col-md-3 col-12 position-relative">
-        <label class="filter-label">Booking Date</label>
+        <label class="filter-label">Order Date</label>
 
         <input 
             type="text" 
@@ -127,7 +127,7 @@
 
     {{-- TOUR DATE --}}
     <div class="col-xl-3 col-md-3 col-12 position-relative">
-        <label class="filter-label">Tour Date</label>
+        <label class="filter-label">Fulfilment Date</label>
 
         <input 
             type="text" 
@@ -238,6 +238,42 @@
                         @endforeach
                         <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
                         <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="filter-label">Sort By</label>
+                    <select name="order_by" id="order_by" class="form-control">
+                        <option value="">Sort By</option>
+
+                        <option value="tour_date_desc"
+                            {{ request('order_by') == 'tour_date_desc' ? 'selected' : '' }}>
+                            Tour Date (Newest First)
+                        </option>
+
+                        <option value="tour_date_asc"
+                            {{ request('order_by') == 'tour_date_asc' ? 'selected' : '' }}>
+                            Tour Date (Oldest First)
+                        </option>
+
+                        <option value="booking_date_desc"
+                            {{ request('order_by') == 'booking_date_desc' ? 'selected' : '' }}>
+                            Booking Date (Newest First)
+                        </option>
+
+                        <option value="booking_date_asc"
+                            {{ request('order_by') == 'booking_date_asc' ? 'selected' : '' }}>
+                            Booking Date (Oldest First)
+                        </option>
+
+                        <!-- <option value="revenue_desc"
+                            {{ request('order_by') == 'revenue_desc' ? 'selected' : '' }}>
+                            Revenue (High → Low)
+                        </option>
+
+                        <option value="revenue_asc"
+                            {{ request('order_by') == 'revenue_asc' ? 'selected' : '' }}>
+                            Revenue (Low → High)
+                        </option> -->
                     </select>
                 </div>
 
@@ -404,7 +440,7 @@
                             <td>{{ $order->source ?? '-' }}</td>
                             <td>{{ $order->agent_name ?? 'NA' }}</td>
 
-                            <td>{{ \Carbon\Carbon::parse($order->booking_date)->format('Y-m-d H:i') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($order->booking_date)->format('Y-m-d') }}</td>
                             <td>{{ \Carbon\Carbon::parse($order->fulfilment_date)->format('Y-m-d') }}</td>
 
                             <td>{{ trim(($order->customer_first_name ?? '') . ' ' . ($order->customer_last_name ?? '')) ?: '-' }}</td>
@@ -412,7 +448,7 @@
                             {{-- ✅ MONEY (FROM FIXED BACKEND LOGIC) --}}
                             <td>{{ number_format_with_currency($order->total_amount_converted, 2) }}</td>
                             <td>{{ number_format_with_currency($order->paid_amount_converted, 2) }}</td>
-                            <td>{{ $order->balance_converted > 0 ?number_format_with_currency($order->balance_converted, 2) : 0 }}</td>
+                            <td>{{  number_format_with_currency($order->balance_converted, 2)  }}</td>
 
                             {{-- Fees (keep 0 if not calculated yet) --}}
                             <td>{{ number_format_with_currency($order->booking_fee ?? 0, 2) }}</td>
