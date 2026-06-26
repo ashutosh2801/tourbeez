@@ -113,7 +113,7 @@
 
                 {{-- BOOKING DATE --}}
                 <div class="col-md-3 position-relative">
-                    <label class="filter-label">Order Date</label>
+                    <label class="filter-label">Booking Date</label>
 
                     <input type="text" id="booking_range" class="form-control"
                         placeholder="Select date range">
