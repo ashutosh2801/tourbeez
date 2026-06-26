@@ -124,7 +124,7 @@ class RevenueExport implements FromCollection, WithHeadings
             $query->whereBetween('order_tours.tour_date', [$start, $end]);
         } catch (\Exception $e) {}
     }
-
+    apply_report_sorting($query, $request); 
     $orders = $query->select(
         'orders.id',
         'orders.order_number',
@@ -155,7 +155,7 @@ class RevenueExport implements FromCollection, WithHeadings
 
         'orders.payment_method',
         'tours.title as product_name'
-    )->orderByDesc('orders.id')->get();
+    )->get();
 
     /*
     |--------------------------------------------------------------------------

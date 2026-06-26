@@ -39,7 +39,7 @@
     /* FULL FIX FOR SELECT2 HEIGHT */
     .select2-container .select2-selection--single {
         height: 42px !important;
-        border: 1px solid #ced4da !important;
+        border: 1px solid #aeb0b4 !important;
         border-radius: 0.375rem !important;
         display: flex !important;
         align-items: center !important;
@@ -63,12 +63,6 @@
         right: 10px !important;
     }
 
-    /* FIX WHEN SELECTED (THIS IS YOUR BUG) */
-    .select2-container--default.select2-container--open .select2-selection--single,
-    .select2-container--default.select2-container--focus .select2-selection--single {
-        height: 38px !important;
-    }
-
     /* FORCE CONSISTENT HEIGHT ALWAYS */
     .select2-container {
         width: 100% !important;
@@ -82,75 +76,71 @@
         </div>
     </div>
 
-        {{-- FILTER --}}
+    {{-- FILTER --}}
     <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
         <form method="GET">
 
             <div class="row">
 
                 {{-- BOOKING DATE --}}
+                @php
+                    $hasFilter = request()->hasAny([
+                        'booking_date',
+                        'tour_date',
+                        'product',
+                        'order_status',
+                        'payment_status',
+                        'partner',
+                        'action_type'
+                    ]);
+                @endphp
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <div class="form-group">
+                        <label class="filter-label">Order Date</label>
+                        <input 
+                            type="text" 
+                            name="booking_date"
+                            
+                            class="form-control aiz-date-range"
+                            data-advanced-range="true"
+                            data-separator=" - "
+                            data-show-dropdown="true"
+                            placeholder="Select date range"
+                            autocomplete="off"
+                            value="{{ request('booking_date') }}"
+                        >
+                        @if(request('booking_date'))
+                            <span class="clear-btn" onclick="clearBooking()">✕</span>
+                        @endif
+                    </div>
+                </div>
 
-                {{-- BOOKING DATE --}}
+                {{-- TOUR DATE --}}
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <div class="form-group">
+                        <label class="filter-label">Tour Date</label>
+                        <input 
+                            type="text" 
+                            name="tour_date"
+                            class="form-control aiz-date-range"
+                            data-advanced-range="true"
+                            data-separator=" - "
+                            data-show-dropdown="true"
+                            placeholder="Select date range"
+                            autocomplete="off"
+                            value="{{ request('tour_date') }}"
+                        >
+                        @if(request('tour_date'))
+                            <span class="clear-btn" onclick="clearTour()">✕</span>
+                        @endif
+                    </div>
+                </div>
 
-    @php
-        $hasFilter = request()->hasAny([
-            'booking_date',
-            'tour_date',
-            'product',
-            'order_status',
-            'payment_status',
-            'partner',
-            'action_type'
-        ]);
-    @endphp
-    <div class="col-xl-3 col-md-3 col-12 position-relative">
-        <label class="filter-label">Booking Date</label>
-
-        <input 
-            type="text" 
-            name="booking_date"
-            
-            class="form-control aiz-date-range"
-            data-advanced-range="true"
-            data-separator=" - "
-            data-show-dropdown="true"
-            placeholder="Select date range"
-            autocomplete="off"
-            value="{{ request('booking_date') }}"
-        >
-
-        @if(request('booking_date'))
-            <span class="clear-btn" onclick="clearBooking()">✕</span>
-        @endif
-    </div>
-
-
-    {{-- TOUR DATE --}}
-    <div class="col-xl-3 col-md-3 col-12 position-relative">
-        <label class="filter-label">Tour Date</label>
-
-        <input 
-            type="text" 
-            name="tour_date"
-            
-            class="form-control aiz-date-range"
-            data-advanced-range="true"
-            data-separator=" - "
-            data-show-dropdown="true"
-            placeholder="Select date range"
-            autocomplete="off"
-            value="{{ request('tour_date') }}"
-        >
-
-        @if(request('tour_date'))
-            <span class="clear-btn" onclick="clearTour()">✕</span>
-        @endif
-    </div>
                 <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Booking Date</label>
 
-                    <input type="text" id="booking_range" class="form-control"
-                        placeholder="Select date range" autocomplete="off">
+                        <input type="text" id="booking_range" class="form-control"
+                            placeholder="Select date range" autocomplete="off">
 
                     
                         <span class="clear-btn" onclick="clearBooking()">✕</span>
@@ -160,13 +150,12 @@
                     <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
                 </div> -->
 
-
                 {{-- TOUR DATE --}}
                 <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">     Date</label>
 
-                    <input type="text" id="tour_range" class="form-control"
-                        placeholder="Select date range" autocomplete="off">
+                        <input type="text" id="tour_range" class="form-control"
+                            placeholder="Select date range" autocomplete="off">
 
                    
                         <span class="clear-btn" onclick="clearTour()">✕</span>
@@ -174,78 +163,128 @@
 
                     <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
                     <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
-                </div> -->
-            <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    </div> -->
+                    <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Products</label>
                     <select id="productFilter" name="product" class="form-control"></select>
                 </div>  -->
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Products</label>
-                <select id="productFilter" name="product" class="form-control">
-                    @if(request('product') && request('product_text'))
-                        <option value="{{ request('product') }}" selected>
-                            {{ request('product_text') }}
-                        </option>
-                    @endif
-                </select>
 
-                <input type="hidden" id="product_text" name="product_text" value="{{ request('product_text') }}">
-                 </div> 
+                {{-- PRODUCTS --}}
+                <div class="col-xl-3 col-md-3 col-12 position-relative"> 
+                    <div class="form-group">
+                        <label class="filter-label">Products</label>
+                        <select id="productFilter" name="product" class="form-control">
+                            @if(request('product') && request('product_text'))
+                                <option value="{{ request('product') }}" selected>
+                                    {{ request('product_text') }}
+                                </option>
+                            @endif
+                        </select>
+                        <input type="hidden" id="product_text" name="product_text" value="{{ request('product_text') }}">
+                    </div>
+                </div>
 
                 {{-- ORDER STATUS --}}
-                <div class="col-xl-2 col-md-2 col-12">
-                    <label class="filter-label">Order Status</label>
-                    <select name="order_status" class="form-control">
-                        <option value="">All</option>
-                        @php
-                        $status_with_code = [
-                                    
-                                    3 => 'Pending supplier',
-                                    4 => 'Pending customer',
-                                    5 => 'Confirmed',
-                                    
-                            ];
-                        @endphp
-                        @foreach($status_with_code as $key => $val)
-                            <option value="{{ $key }}"
-                                {{ request('order_status') == $key ? 'selected' : '' }}>
-                                {{ $val }}
-                            </option>
-                        @endforeach
-                    </select>
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
+                        <label class="filter-label">Order Status</label>
+                        <select name="order_status" class="form-control">
+                            <option value="">All</option>
+                            @php
+                            $status_with_code = [
+                                        
+                                        3 => 'Pending supplier',
+                                        4 => 'Pending customer',
+                                        5 => 'Confirmed',
+                                        
+                                ];
+                            @endphp
+                            @foreach($status_with_code as $key => $val)
+                                <option value="{{ $key }}"
+                                    {{ request('order_status') == $key ? 'selected' : '' }}>
+                                    {{ $val }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
                 {{-- PAY TYPE --}}
-                <div class="col-xl-2 col-md-3 col-12">
-                    <label class="filter-label">Pay Type</label>
-                    <select name="action_type" class="form-control">
-                        <option value="">All</option>
-                        <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
-                        <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="filter-label">Source</label>
-                    <select name="partner" class="form-control">
-                        <option value="">All</option>
-                        @php
-                        
-                        @foreach($partners as $partner)
-                            <option value="{{ ucfirst($partner->slug) }}"
-                                {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
-                                {{ $partner->name }}
-                            </option>
-                        @endforeach
-                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
-                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
-                    </select>
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
+                        <label class="filter-label">Pay Type</label>
+                        <select name="action_type" class="form-control">
+                            <option value="">All</option>
+                            <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
+                            <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
+                        </select>
+                    </div>
                 </div>
 
+                {{-- SOURCE --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
+                        <label class="filter-label">Source</label>
+                        <select name="partner" class="form-control">
+                            <option value="">All</option>
+                            @php
+                            
+                            @foreach($partners as $partner)
+                                <option value="{{ ucfirst($partner->slug) }}"
+                                    {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
+                                    {{ $partner->name }}
+                                </option>
+                            @endforeach
+                            <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                            <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
+                            <label class="filter-label">Sort By</label>
+                            <select name="order_by" id="order_by" class="form-control">
+                                <option value="">Sort By</option>
+
+                                <option value="tour_date_desc"
+                                    {{ request('order_by') == 'tour_date_desc' ? 'selected' : '' }}>
+                                    Tour Date (Newest First)
+                                </option>
+
+                                <option value="tour_date_asc"
+                                    {{ request('order_by') == 'tour_date_asc' ? 'selected' : '' }}>
+                                    Tour Date (Oldest First)
+                                </option>
+
+                                <option value="booking_date_desc"
+                                    {{ request('order_by') == 'booking_date_desc' ? 'selected' : '' }}>
+                                    Booking Date (Newest First)
+                                </option>
+
+                                <option value="booking_date_asc"
+                                    {{ request('order_by') == 'booking_date_asc' ? 'selected' : '' }}>
+                                    Booking Date (Oldest First)
+                                </option>
+
+                                <!-- <option value="revenue_desc"
+                                    {{ request('order_by') == 'revenue_desc' ? 'selected' : '' }}>
+                                    Revenue (High → Low)
+                                </option>
+
+                                <option value="revenue_asc"
+                                    {{ request('order_by') == 'revenue_asc' ? 'selected' : '' }}>
+                                    Revenue (Low → High)
+                                </option> -->
+                            </select>
+                        </div>
+                    </div>
+
+
                 {{-- BUTTONS --}}
-                <div class="col-xl-2 col-md-3 col-12">
+                <div class="col-xl-3 col-md-3 col-12">
                     <div class="d-flex column-gap-10">
                         <button class="btn btn-apply flex-fill">Apply</button>
-                        <a href="{{ route('admin.report.overview') }}" class="btn btn-secondary flex-fill">Reset</a>
+                        <a href="{{ route('admin.report.revenue') }}" class="btn btn-secondary flex-fill">Reset</a>
                     </div>
                 </div>
 
@@ -404,7 +443,7 @@
                             <td>{{ $order->source ?? '-' }}</td>
                             <td>{{ $order->agent_name ?? 'NA' }}</td>
 
-                            <td>{{ \Carbon\Carbon::parse($order->booking_date)->format('Y-m-d H:i') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($order->booking_date)->format('Y-m-d') }}</td>
                             <td>{{ \Carbon\Carbon::parse($order->fulfilment_date)->format('Y-m-d') }}</td>
 
                             <td>{{ trim(($order->customer_first_name ?? '') . ' ' . ($order->customer_last_name ?? '')) ?: '-' }}</td>
