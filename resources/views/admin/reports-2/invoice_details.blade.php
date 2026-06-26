@@ -1,5 +1,5 @@
 <x-admin>
-@section('title', 'Price Schedule')
+@section('title', 'Invoice With Details')
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
@@ -25,7 +25,7 @@
         /* FULL FIX FOR SELECT2 HEIGHT */
     .select2-container .select2-selection--single {
         height: 42px !important;
-        border: 1px solid #aeb0b4 !important;
+        border: 1px solid #ced4da !important;
         border-radius: 0.375rem !important;
         display: flex !important;
         align-items: center !important;
@@ -63,7 +63,7 @@
 
 <div class="card-primary mb-3">
     <div class="card-header reports-head">
-        <h3 class="card-title">Price Schedule Filters</h3>
+        <h3 class="card-title">Invoice With Details</h3>
     </div>
 </div>
 
@@ -74,65 +74,63 @@
            <div class="row">
 
                 {{-- BOOKING DATE --}}
-                @php
-                    $hasFilter = request()->hasAny([
-                        'booking_date',
-                        'tour_date',
-                        'product',
-                        'order_status',
-                        'payment_status',
-                        'partner',
-                        'action_type'
-                    ]);
-                @endphp
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <div class="form-group">
-                        <label class="filter-label">Order Date</label>
 
-                        <input 
-                            type="text" 
-                            name="booking_date"
-                            
-                            class="form-control aiz-date-range"
-                            data-advanced-range="true"
-                            data-separator=" - "
-                            data-show-dropdown="true"
-                            placeholder="Select date range"
-                            autocomplete="off"
-                            value="{{ request('booking_date') }}"
-                        >
+                {{-- BOOKING DATE --}}
 
-                        @if(request('booking_date'))
-                            <span class="clear-btn" onclick="clearBooking()">✕</span>
-                        @endif
-                    </div>
-                </div>
+    @php
+        $hasFilter = request()->hasAny([
+            'booking_date',
+            'tour_date',
+            'product',
+            'order_status',
+            'payment_status',
+            'partner',
+            'action_type'
+        ]);
+    @endphp
+    <div class="col-xl-3 col-md-3 col-12 position-relative">
+        <label class="filter-label">Order Date</label>
+
+        <input 
+            type="text" 
+            name="booking_date"
+            
+            class="form-control aiz-date-range"
+            data-advanced-range="true"
+            data-separator=" - "
+            data-show-dropdown="true"
+            placeholder="Select date range"
+            autocomplete="off"
+            value="{{ request('booking_date') }}"
+        >
+
+        @if(request('booking_date'))
+            <span class="clear-btn" onclick="clearBooking()">✕</span>
+        @endif
+    </div>
 
 
-                {{-- TOUR DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <div class="form-group">
-                        <label class="filter-label">Tour Date</label>
+    {{-- TOUR DATE --}}
+    <div class="col-xl-3 col-md-3 col-12 position-relative">
+        <label class="filter-label">Fulfilment Date</label>
 
-                        <input 
-                            type="text" 
-                            name="tour_date"
-                            
-                            class="form-control aiz-date-range"
-                            data-advanced-range="true"
-                            data-separator=" - "
-                            data-show-dropdown="true"
-                            placeholder="Select date range"
-                            autocomplete="off"
-                            value="{{ request('tour_date') }}"
-                        >
+        <input 
+            type="text" 
+            name="tour_date"
+            
+            class="form-control aiz-date-range"
+            data-advanced-range="true"
+            data-separator=" - "
+            data-show-dropdown="true"
+            placeholder="Select date range"
+            autocomplete="off"
+            value="{{ request('tour_date') }}"
+        >
 
-                        @if(request('tour_date'))
-                            <span class="clear-btn" onclick="clearTour()">✕</span>
-                        @endif
-                    </div>
-                </div>
-
+        @if(request('tour_date'))
+            <span class="clear-btn" onclick="clearTour()">✕</span>
+        @endif
+    </div>
                 <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Booking Date</label>
 
@@ -162,29 +160,25 @@
                     <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
                     <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
                 </div> -->
-
-                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
+            <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <label class="filter-label">Products</label>
                     <select id="productFilter" name="product" class="form-control"></select>
                 </div>  -->
-
-                {{-- PRODUCTS --}}
                 <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <div class="form-group">
-                        <label class="filter-label">Products</label>
-                        <select id="productFilter" name="product" class="form-control">
-                            @if(request('product') && request('product_text'))
-                                <option value="{{ request('product') }}" selected>
-                                    {{ request('product_text') }}
-                                </option>
-                            @endif
-                        </select>
-                        <input type="hidden" id="product_text" name="product_text" value="{{ request('product_text') }}">
-                    </div>
-                </div> 
+                    <label class="filter-label">Products</label>
+                <select id="productFilter" name="product" class="form-control">
+                    @if(request('product') && request('product_text'))
+                        <option value="{{ request('product') }}" selected>
+                            {{ request('product_text') }}
+                        </option>
+                    @endif
+                </select>
+
+                <input type="hidden" id="product_text" name="product_text" value="{{ request('product_text') }}">
+                 </div> 
 
                 {{-- ORDER STATUS --}}
-                <div class="col-xl-3 col-md-3 col-12">
+                <div class="col-xl-2 col-md-2 col-12">
                     <label class="filter-label">Order Status</label>
                     <select name="order_status" class="form-control">
                         <option value="">All</option>
@@ -207,7 +201,7 @@
                 </div>
 
                 {{-- PAY TYPE --}}
-                <div class="col-xl-3 col-md-3 col-12">
+                <div class="col-xl-2 col-md-3 col-12">
                     <label class="filter-label">Pay Type</label>
                     <select name="action_type" class="form-control">
                         <option value="">All</option>
@@ -215,12 +209,12 @@
                         <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
                     </select>
                 </div>
-
-                {{-- SOURCE --}}
-                <div class="col-xl-3 col-md-3 col-12">
+                <div class="col-md-2">
                     <label class="filter-label">Source</label>
                     <select name="partner" class="form-control">
                         <option value="">All</option>
+                        @php
+                        
                         @foreach($partners as $partner)
                             <option value="{{ ucfirst($partner->slug) }}"
                                 {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
@@ -231,8 +225,7 @@
                         <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
                     </select>
                 </div>
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="form-group">
+                <div class="col-md-2">
                             <label class="filter-label">Sort By</label>
                             <select name="order_by" id="order_by" class="form-control">
                                 <option value="">Sort By</option>
@@ -268,14 +261,12 @@
                                 </option> -->
                             </select>
                         </div>
-                    </div>
-
 
                 {{-- BUTTONS --}}
-                <div class="col-xl-3 col-md-3 col-12">
+                <div class="col-xl-2 col-md-3 col-12">
                     <div class="d-flex column-gap-10">
                         <button class="btn btn-apply flex-fill">Apply</button>
-                        <a href="{{ route('admin.report.price_schedule') }}" class="btn btn-secondary flex-fill">Reset</a>
+                        <a href="{{ route('admin.report.invoice.details') }}" class="btn btn-secondary flex-fill">Reset</a>
                     </div>
                 </div>
 
@@ -350,117 +341,79 @@
 
     <div class="card card-primary bg-white border rounded-lg-custom report-table">
 
-        <div class="card-header report-table-head">
+    <div class="card-header report-table-head">
             <div class="row">
                 <div class="col-md-8 col-12">
-                    <h3 class="card-title">Price Schedule List</h3>
+                    <h3 class="card-title">Invoice Report Details</h3>
                 </div>
                 <div class="col-md-4 col-12">
                     <div class="card-tools">
-                        <!-- <a href="{{ route('admin.report.invoice.details.export', request()->all()) }}"
+                        <a href="{{ route('admin.report.invoice.details.export', request()->all()) }}"
                            class="btn btn-success btn-sm">
                             Download Excel
-                        </a> -->
-                        <a 
-                            href="{{ route('admin.report.price_schedule.export', request()->query()) }}" 
-                            class="btn btn-success"
-                        >
-                            <i class="fas fa-download"></i> Download Excel
                         </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="table-wrapper">
-          <table class="table table-bordered" style="min-width: 2500px; margin: 15px 20px;">
+    <div class="table-wrapper">
+        <table class="table table-bordered" style="min-width: 2500px; margin: 15px 20px;">
 
-                <thead>
-                    <tr>
-                        <th>No.</th>
-                        <th>Order #</th>
-                        <th>Customer</th>
-                        <th>Order Date</th>
-                        <th>Fulfilment</th>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Order Date</th>
+                    <th>Fulfilment</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Product</th>
+                    <th>Adult</th>
+                    <th>Child</th>
+                    <th>Infant</th>
+                    <th>Senior Citizen</th>
+
+                    {{-- ADDON HEADERS --}}
+                    @foreach($addonKeys as $key)
+                        <th colspan="6">{{ Str::headline($key) }}</th>
+                    @endforeach
+                                    
+                </tr>
+
+                <tr>
+                    <th colspan="12"></th>
+
+                    @foreach($addonKeys as $key)
+                        <th>Desc</th>
                         <th>Quantity</th>
-                        <th>Adult (13+)</th>
-                        <th>Child (3-12)</th>
-                        <th>Infant (2 and under)</th>
-                        <th>Senior (60+ years)</th>
-                        
-                        <th>Product Price</th>
-                        <th>Extra Amount</th>
-                        <th>Tax Amount</th>
-                        <th>Discount</th>
-                        <th>Customer Total</th>
-                        <th>Order Balance</th>
-                        
-                        
-                        <th>Transport Cost - Tax</th>
-                        <th>Product Price (Supplier Cost)</th>
+                        <th>Price</th>
                         <th>Tax</th>
-                        <th>Other Fee</th>
-                        <th>Net Total</th>
-                        <th>Profit</th>
-                        <th>Product</th>
-                        {{-- ADDON HEADERS --}}
-                        @foreach($addonKeys as $key)
-                          <th colspan="6">{{ Str::headline($key) }}</th>
-                        @endforeach
+                        <th>Fee</th>
+                        <th>Total</th>
+                    @endforeach
+                </tr>
+            </thead>
 
+            <tbody>
+                @forelse($rows as $row)
+                <tr>
+                    <td>{{ $row['no'] ?? '' }}</td>
+                    <td><a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">{{ $row['order_number'] ?? '' }}</a></td>
+                    <td>{{ $row['customer_name'] ?? '' }}</td>
+                    <td>{{ \Carbon\Carbon::parse($row['order_date'])->format('Y-m-d') }}</td>
+                    <td>{{ $row['fulfilment_date'] ?? '' }}</td>
+                    <td>{{ isset($row['customer_total']) ? number_format_with_currency($row['customer_total'], 2) : '0.00' }}</td>
+                    <td>{{ $row['payment_status'] ?? '' }}</td>
+                    <td>{{ $row['product_name'] ?? '' }}</td>
+                    <td>{{ $row['adult'] }}</td>
+                    <td>{{ $row['child'] }}</td>
+                    <td>{{ $row['infant'] }}</td>
+                    <td>{{ $row['senior'] }}</td>
 
-											                
-                    </tr>
-
-                    <tr>
-                        <th colspan="23"></th>
-                        @foreach($addonKeys as $key)
-                          <th>Desc</th>
-                          <th>Quantity</th>
-                          <th>Price</th>
-                          <th>Tax</th>
-                          <th>Fee</th>
-                          <th>Total</th>
-                        @endforeach
-                    </tr>   
-
-                </thead>
-
-                <tbody>
-                    @forelse($rows as $row) 
-                    
-                    <tr>
-                        <td>{{ $row['no'] ?? '' }}</td>
-                        <td><a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">{{ $row['order_number'] ?? '' }}</a></td>
-                        <td>{{ $row['customer_name'] ?? '' }}</td>
-                        <td>{{ \Carbon\Carbon::parse($row['order_date'])->format('Y-m-d') }}</td>
-                        <td>{{ $row['fulfilment_date'] ?? '' }}</td>
-                        <?php /*                         
-                        <td>{{ $row['payment_status'] ?? '' }}</td> 
-                        */ ?>
-                        
-                        <td>{{ $row['adult'] + $row['child'] + $row['infant'] + $row['other'] + $row['senior'] }}</td>
-                        <td>{{ $row['adult'] }}</td>
-                        <td>{{ $row['child'] }}</td>
-                        <td>{{ $row['infant'] }}</td>
-                        <td>{{ $row['senior'] }}</td>
-                        <td align="right">{{ number_format_with_currency($row['product_price'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['extra_amount'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['tax_amount'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['discount_amount'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['customer_total'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['balance_amount'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['transport_cost'], 2) }}</td>
-                        
-                        
-                        <td align="right">{{ number_format_with_currency($row['tour_selling_price'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['tour_selling_tax'], 2) }}</td>
-                        <td align="right">0</td>
-                        <td align="right">{{ number_format_with_currency(($row['tour_selling_total']+$row['transport_cost'] ) , 2) }}</td>
-                        <td align="right">{{ number_format_with_currency(($row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost']), 2)  }}</td>
-                        <td align="right">{{ $row['product_name'] ?? '' }}</td>
-                        {{-- DYNAMIC ADDONS --}}
-                        @foreach($addonKeys as $key)
+                    {{-- DYNAMIC ADDONS --}}
+                    @foreach($addonKeys as $key)
                             <td align="right">
                                 @if(!empty($row[$key.'_desc']))
                                     <strong>{{ $row[$key.'_desc'] }}</strong>
@@ -506,24 +459,24 @@
                             </td>
                         @endforeach
 
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="{{ 8 + (count($addonKeys) * 5) }}" class="text-center">
-                            No Data Found
-                        </td>
-                    </tr>
-                    @endforelse
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="{{ 8 + (count($addonKeys) * 5) }}" class="text-center">
+                        No Data Found
+                    </td>
+                </tr>
+                @endforelse
                 </tbody>
-          </table>
+        </table>
 
-          {{-- PAGINATION --}}
-          <div class="text-center">
-              {{ $orders->links() }}
-          </div>
-
+        {{-- PAGINATION --}}
+        <div class="text-center">
+            {{ $orders->links() }}
         </div>
-  </div>
+
+    </div>
+</div>
 
 
 
@@ -536,7 +489,74 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-  let today = moment();
+let today = moment();
+
+// let bookingStart = "{{ request('start_date') }}" ? moment("{{ request('start_date') }}") : today;
+// let bookingEnd   = "{{ request('end_date') }}" ? moment("{{ request('end_date') }}") : today;
+
+// $('#booking_range').daterangepicker({
+//     startDate: bookingStart,
+//     endDate: bookingEnd,
+//     locale: { format: 'DD MMM YYYY' }
+// }).on('apply.daterangepicker', function(ev, picker) {
+//     $('#start_date').val(picker.startDate.format('YYYY-MM-DD'));
+//     $('#end_date').val(picker.endDate.format('YYYY-MM-DD'));
+// });
+
+// $('#start_date').val(bookingStart.format('YYYY-MM-DD'));
+// $('#end_date').val(bookingEnd.format('YYYY-MM-DD'));
+
+
+// $('#tour_range').daterangepicker({
+//     autoUpdateInput: false,
+//     locale: { format: 'DD MMM YYYY' }
+// }).on('apply.daterangepicker', function(ev, picker) {
+//     $('#tour_start_date').val(picker.startDate.format('YYYY-MM-DD'));
+//     $('#tour_end_date').val(picker.endDate.format('YYYY-MM-DD'));
+// });
+// let tourStart = "{{ request('tour_start_date') }}" ? moment("{{ request('tour_start_date') }}") : null;
+// let tourEnd   = "{{ request('tour_end_date') }}" ? moment("{{ request('tour_end_date') }}") : null;
+
+
+//     if (tourStart && tourEnd) {
+//         $('#tour_range').data('daterangepicker').setStartDate(tourStart);
+//         $('#tour_range').data('daterangepicker').setEndDate(tourEnd);
+//         $('#tour_range').val(tourStart.format('DD MMM YYYY') + ' - ' + tourEnd.format('DD MMM YYYY'));
+//     }
+
+//     function clearBooking() {
+//         $('#booking_range').val('');
+//         $('#start_date').val('');
+//         $('#end_date').val('');
+
+//         // reset picker UI as well
+//         let picker = $('#booking_range').data('daterangepicker');
+//         picker.setStartDate(moment());
+//         picker.setEndDate(moment());
+        
+
+        
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | CLEAR TOUR RANGE
+//     |--------------------------------------------------------------------------
+//     */
+//     function clearTour() {
+//         $('#tour_range').val('');
+//         $('#tour_start_date').val('');
+//         $('#tour_end_date').val('');
+
+//         // reset picker UI
+//         let picker = $('#tour_range').data('daterangepicker');
+//         picker.setStartDate(moment());
+//         picker.setEndDate(moment());
+        
+
+//     }
+</script>
+    <script>
             
     $(document).ready(function () {
         // ✅ Select2 (optimized)
@@ -565,28 +585,30 @@
     });
     
         
-  $('#productFilter').on('select2:select', function (e) {
-      let data = e.params.data;
-      $('#product_text').val(data.text);
-  });
+        $('#productFilter').on('select2:select', function (e) {
+    let data = e.params.data;
 
-  function clearBooking() {
-      $('#booking_range').val('');
+    $('#product_text').val(data.text);
+});
 
-      // remove from URL (important UX)
-      let url = new URL(window.location.href);
-      url.searchParams.delete('booking_date');
-      window.location.href = url.toString();
-  }
+        function clearBooking() {
+    $('#booking_range').val('');
+
+    // remove from URL (important UX)
+    let url = new URL(window.location.href);
+    url.searchParams.delete('booking_date');
+    window.location.href = url.toString();
+}
 
 function clearTour() {
     $('input[name="tour_date"]').val('');
+
     let url = new URL(window.location.href);
     url.searchParams.delete('tour_date');
     window.location.href = url.toString();
 }
 
-if ($('#productFilter').val() && !$('#product_text').val()) {
+        if ($('#productFilter').val() && !$('#product_text').val()) {
     let selectedText = $('#productFilter option:selected').text();
     $('#product_text').val(selectedText);
 }
