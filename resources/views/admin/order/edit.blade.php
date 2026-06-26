@@ -141,10 +141,6 @@
     .order-status .btn.dropdown-toggle:hover {
         background-color: rgba(0,0,0,0.03);
     }
-    .modal-wide {
-        max-width: 70% !important;
-        margin: 10px auto !important;   /* center horizontally */
-    }
     .switch {
         position: relative;
         display: inline-block;
@@ -1397,50 +1393,52 @@ $expectEmails = ['order_pending'];
                         </div>
                         <div id="collapseEmailHistory" class="collapse show" aria-labelledby="headingEmailHistory">
                             <div class="card-body">
-                                <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>To</th>
-                                            <th>From</th>
-                                            <th>Subject</th>
-                                            <th>Status</th>
-                                            <th>Content</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if(!empty($emailHistories) && is_iterable($emailHistories))
-                                            @foreach($emailHistories as $email)
-                                                <tr>
-                                                    <td>{{ $email->created_at }}</td>
-                                                    <td>{{ $email->to_email }}</td>
-                                                    <td>{{ $email->from_email }}</td>
-                                                    <td>{{ $email->subject }}</td>
-                                                    <td>{{ ucwords($email->status) }}</td>
-                                                    <td>
-                                                        <button type="button" class="btn btn-sm btn-primary view-email-btn">
-                                                            View
-                                                        </button>
-
-                                                        <textarea class="d-none email-body">
-                                                            {!! $email->body !!}
-                                                        </textarea>
-
-                                                        <input type="hidden" class="email-to" value="{{ $email->to_email }}">
-                                                        <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
-                                                        <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
-                                                        <input type="hidden" class="email-subject" value="{{ $email->subject }}">
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        @else
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
                                             <tr>
-                                                <td colspan="5">No email history found</td>
+                                                <th>Date</th>
+                                                <th>To</th>
+                                                <th>From</th>
+                                                <th>Subject</th>
+                                                <th>Status</th>
+                                                <th>Content</th>
                                             </tr>
-                                        @endif
-                                    </tbody>
-                                </table>
-                                {{ $emailHistories->links() }}
+                                        </thead>
+                                        <tbody>
+                                            @if(!empty($emailHistories) && is_iterable($emailHistories))
+                                                @foreach($emailHistories as $email)
+                                                    <tr>
+                                                        <td>{{ $email->created_at }}</td>
+                                                        <td>{{ $email->to_email }}</td>
+                                                        <td>{{ $email->from_email }}</td>
+                                                        <td>{{ $email->subject }}</td>
+                                                        <td>{{ ucwords($email->status) }}</td>
+                                                        <td>
+                                                            <button type="button" class="btn btn-sm btn-primary view-email-btn">
+                                                                View
+                                                            </button>
+
+                                                            <textarea class="d-none email-body">
+                                                                {!! $email->body !!}
+                                                            </textarea>
+
+                                                            <input type="hidden" class="email-to" value="{{ $email->to_email }}">
+                                                            <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
+                                                            <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
+                                                            <input type="hidden" class="email-subject" value="{{ $email->subject }}">
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5">No email history found</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                    {{ $emailHistories->links() }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1761,20 +1759,24 @@ $expectEmails = ['order_pending'];
 
             <div class="modal-body">
 
-                <div class="mb-2">
-                    <strong>To:</strong> <span id="preview_to"></span>
+                <div class="preview-detail">
+                    <strong>To</strong> 
+                    <span id="preview_to"></span>
                 </div>
 
-                <div class="mb-2">
-                    <strong>CC:</strong> <span id="preview_cc"></span>
+                <div class="preview-detail">
+                    <strong>CC</strong> 
+                    <span id="preview_cc"></span>
                 </div>
 
-                <div class="mb-2">
-                    <strong>BCC:</strong> <span id="preview_bcc"></span>
+                <div class="preview-detail">
+                    <strong>BCC</strong> 
+                    <span id="preview_bcc"></span>
                 </div>
 
-                <div class="mb-2">
-                    <strong>Subject:</strong> <span id="preview_subject"></span>
+                <div class="preview-detail">
+                    <strong>Subject</strong> 
+                    <span id="preview_subject"></span>
                 </div>
 
                 <hr>
