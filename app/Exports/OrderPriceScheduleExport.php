@@ -4,20 +4,22 @@ namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 use Maatwebsite\Excel\Events\AfterSheet;
 
-class OrderPriceScheduleExport implements FromArray, WithEvents
+class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunkSize
 {
     protected $rows;
     protected $addonKeys = [];
 
     public function __construct($rows)
     {
-        $this->rows = $rows;
+        // Treat rows as an array safely
+        $this->rows = is_array($rows) ? $rows : $rows->toArray();
 
         // 🔥 detect addons dynamically
-        if (!empty($rows)) {
-            $this->addonKeys = collect($rows[0])
+        if (!empty($this->rows)) {
+            $this->addonKeys = collect($this->rows[0])
                 ->keys()
                 ->filter(fn($k) => str_ends_with($k, '_desc'))
                 ->map(fn($k) => str_replace('_desc', '', $k))
@@ -26,13 +28,27 @@ class OrderPriceScheduleExport implements FromArray, WithEvents
         }
     }
 
+    /**
+     * Force a massive chunk size so Laravel Excel processes 
+     * all 3k+ records in a single internal batch without resetting the sheet pointer.
+     */
+    public function chunkSize(): int
+    {
+        return 10000; 
+    }
+
     public function array(): array
     {
+        ini_set('memory_limit', '2048M');
+
+        logger('Rows received: ' . count($this->rows));
         $data = [];
 
-        // 🔥 ROW 1 (empty → merged later)
+        // 🔥 ROW 1: Give cell A1 a solid string value so the package reads it as a valid row.
         $totalColumns = 23 + (count($this->addonKeys) * 6);
-        $data[] = array_fill(0, $totalColumns, '');
+        $row1 = array_fill(0, $totalColumns, '');
+        $row1[0] = 'No.'; // Overwritten cleanly in AfterSheet later anyway
+        $data[] = $row1;
 
         // 🔥 ROW 2 (sub headers)
         $headers = [
@@ -55,7 +71,6 @@ class OrderPriceScheduleExport implements FromArray, WithEvents
 
         // 🔥 DATA ROWS
         foreach ($this->rows as $r) {
-
             $row = [
                 $r['no'] ?? '',
                 $r['order_number'] ?? '',
@@ -63,7 +78,7 @@ class OrderPriceScheduleExport implements FromArray, WithEvents
                 $r['order_date'] ?? '',
                 $r['fulfilment_date'] ?? '',
 
-                ($r['adult'] + $r['child'] + $r['infant'] + $r['other'] + $r['senior']),
+                (($r['adult'] ?? 0) + ($r['child'] ?? 0) + ($r['infant'] ?? 0) + ($r['other'] ?? 0) + ($r['senior'] ?? 0)),
                 $r['adult'] ?? 0,
                 $r['child'] ?? 0,
                 $r['infant'] ?? 0,
@@ -81,8 +96,8 @@ class OrderPriceScheduleExport implements FromArray, WithEvents
                 number_format($r['tour_selling_price'] ?? 0, 2, '.', ''),
                 number_format($r['tour_selling_tax'] ?? 0, 2, '.', ''),
                 0,
-                number_format(($r['tour_selling_total'] + $r['transport_cost']), 2, '.', ''),
-                number_format(($r['customer_total'] - $r['tour_selling_total'] - $r['transport_cost']), 2, '.', ''),
+                number_format(($r['tour_selling_total'] ?? 0) + ($r['transport_cost'] ?? 0), 2, '.', ''),
+                number_format(($r['customer_total'] ?? 0) - ($r['tour_selling_total'] ?? 0) - ($r['transport_cost'] ?? 0), 2, '.', ''),
 
                 $r['product_name'] ?? '',
             ];
@@ -99,7 +114,7 @@ class OrderPriceScheduleExport implements FromArray, WithEvents
 
             $data[] = $row;
         }
-
+        
         return $data;
     }
 
@@ -107,9 +122,7 @@ class OrderPriceScheduleExport implements FromArray, WithEvents
     {
         return [
             AfterSheet::class => function ($event) {
-
                 $sheet = $event->sheet->getDelegate();
-
                 $col = 1;
 
                 // 🔥 STATIC HEADERS (VERTICAL MERGE)
@@ -131,14 +144,11 @@ class OrderPriceScheduleExport implements FromArray, WithEvents
 
                 // 🔥 ADDON GROUP HEADERS
                 foreach ($this->addonKeys as $key) {
-
                     $label = ucwords(str_replace('_', ' ', $key));
-
                     $sheet->setCellValueByColumnAndRow($col, 1, $label);
 
                     // 🔥 6 columns per addon
                     $sheet->mergeCellsByColumnAndRow($col, 1, $col + 5, 1);
-
                     $col += 6;
                 }
 

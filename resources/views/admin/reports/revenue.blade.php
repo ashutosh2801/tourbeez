@@ -94,9 +94,9 @@
                         'action_type'
                     ]);
                 @endphp
-                <div class="col-xl-4 col-md-3 col-12 position-relative">
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <div class="form-group">
-                        <label class="filter-label">Booking Date</label>
+                        <label class="filter-label">Order Date</label>
                         <input 
                             type="text" 
                             name="booking_date"
@@ -116,7 +116,7 @@
                 </div>
 
                 {{-- TOUR DATE --}}
-                <div class="col-xl-4 col-md-3 col-12 position-relative">
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <div class="form-group">
                         <label class="filter-label">Tour Date</label>
                         <input 
@@ -170,7 +170,7 @@
                 </div>  -->
 
                 {{-- PRODUCTS --}}
-                <div class="col-xl-4 col-md-3 col-12 position-relative"> 
+                <div class="col-xl-3 col-md-3 col-12 position-relative"> 
                     <div class="form-group">
                         <label class="filter-label">Products</label>
                         <select id="productFilter" name="product" class="form-control">
@@ -240,12 +240,51 @@
                         </select>
                     </div>
                 </div>
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
+                            <label class="filter-label">Sort By</label>
+                            <select name="order_by" id="order_by" class="form-control">
+                                <option value="">Sort By</option>
+
+                                <option value="tour_date_desc"
+                                    {{ request('order_by') == 'tour_date_desc' ? 'selected' : '' }}>
+                                    Tour Date (Newest First)
+                                </option>
+
+                                <option value="tour_date_asc"
+                                    {{ request('order_by') == 'tour_date_asc' ? 'selected' : '' }}>
+                                    Tour Date (Oldest First)
+                                </option>
+
+                                <option value="booking_date_desc"
+                                    {{ request('order_by') == 'booking_date_desc' ? 'selected' : '' }}>
+                                    Booking Date (Newest First)
+                                </option>
+
+                                <option value="booking_date_asc"
+                                    {{ request('order_by') == 'booking_date_asc' ? 'selected' : '' }}>
+                                    Booking Date (Oldest First)
+                                </option>
+
+                                <!-- <option value="revenue_desc"
+                                    {{ request('order_by') == 'revenue_desc' ? 'selected' : '' }}>
+                                    Revenue (High → Low)
+                                </option>
+
+                                <option value="revenue_asc"
+                                    {{ request('order_by') == 'revenue_asc' ? 'selected' : '' }}>
+                                    Revenue (Low → High)
+                                </option> -->
+                            </select>
+                        </div>
+                    </div>
+
 
                 {{-- BUTTONS --}}
                 <div class="col-xl-3 col-md-3 col-12">
                     <div class="d-flex column-gap-10">
                         <button class="btn btn-apply flex-fill">Apply</button>
-                        <a href="{{ route('admin.report.overview') }}" class="btn btn-secondary flex-fill">Reset</a>
+                        <a href="{{ route('admin.report.revenue') }}" class="btn btn-secondary flex-fill">Reset</a>
                     </div>
                 </div>
 
@@ -404,7 +443,7 @@
                             <td>{{ $order->source ?? '-' }}</td>
                             <td>{{ $order->agent_name ?? 'NA' }}</td>
 
-                            <td>{{ \Carbon\Carbon::parse($order->booking_date)->format('Y-m-d H:i') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($order->booking_date)->format('Y-m-d') }}</td>
                             <td>{{ \Carbon\Carbon::parse($order->fulfilment_date)->format('Y-m-d') }}</td>
 
                             <td>{{ trim(($order->customer_first_name ?? '') . ' ' . ($order->customer_last_name ?? '')) ?: '-' }}</td>

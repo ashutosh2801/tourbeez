@@ -5,6 +5,7 @@ use App\Models\Currency;
 use App\Models\EmailTemplate;
 use App\Models\Order;
 use App\Models\OrderLog;
+use App\Models\Partner;
 use App\Models\Setting;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
@@ -69,18 +70,40 @@ if(!function_exists('group_tour_status')) {
     }
 }
 
-if(!function_exists('source_list_db')) {
+if(!function_exists('source_list_db2324')) {
+    function source_list_db32432() {
+        $partners = Partner::select('id', 'slug', 'name')->orderBy('name', 'ASC')->get();
+        $p = $partners->map(function($item) {
+            return (object)['key' => $item->slug, 'name' => $item->name];
+        })->toArray();
+
+        return $p;
+        // return [
+        //     (object)['key'=> 'internal', 'name' => 'Internal', 'exclude_payment' => false],
+        //     (object)['key'=> 'getyourguide', 'name' => 'GetYourGuide (Excluding payment)', 'exclude_payment' => true],
+        //     (object)['key'=> 'niagarafallstour', 'name' => 'Niagara Falls Tour', 'exclude_payment' => false],
+        //     (object)['key'=> 'rezdy', 'name' => 'Rezdy (Excluding payment)', 'exclude_payment' => true],
+        //     (object)['key'=> 'toniagara', 'name' => 'Toniagara', 'exclude_payment' => false],
+        //     (object)['key'=> 'tourbeez', 'name' => 'Tourbeez', 'exclude_payment' => false],
+        //     (object)['key'=> 'tripadvisor', 'name' => 'TripAdvisor (Excluding payment)', 'exclude_payment' => true],
+        //     (object)['key'=> 'viator', 'name' => 'Viator (Excluding payment)', 'exclude_payment' => true],
+        // ];
+    }
+}
+
+if (!function_exists('source_list_db')) {
     function source_list_db() {
-        return [
-            (object)['key'=> 'internal', 'name' => 'Internal', 'exclude_payment' => false],
-            (object)['key'=> 'getyourguide', 'name' => 'GetYourGuide (Excluding payment)', 'exclude_payment' => true],
-            (object)['key'=> 'niagarafallstour', 'name' => 'Niagara Falls Tour', 'exclude_payment' => false],
-            (object)['key'=> 'rezdy', 'name' => 'Rezdy (Excluding payment)', 'exclude_payment' => true],
-            (object)['key'=> 'toniagara', 'name' => 'Toniagara', 'exclude_payment' => false],
-            (object)['key'=> 'tourbeez', 'name' => 'Tourbeez', 'exclude_payment' => false],
-            (object)['key'=> 'tripadvisor', 'name' => 'TripAdvisor (Excluding payment)', 'exclude_payment' => true],
-            (object)['key'=> 'viator', 'name' => 'Viator (Excluding payment)', 'exclude_payment' => true],
-        ];
+        $partners = Partner::select('id', 'slug', 'name', 'exclude_payment')
+            ->orderBy('name', 'ASC')
+            ->get();
+
+        return $partners->map(function ($item) {
+            return (object)[
+                'key' => $item->slug,
+                'name' => $item->name,
+                'exclude_payment' => (bool) $item->exclude_payment,
+            ];
+        })->toArray();
     }
 }
 
@@ -1778,6 +1801,64 @@ if (!function_exists('currencyConvertWithoutRound')) {
             } catch (\Exception $e) {
                 \Log::error('OrderLog failed: ' . $e->getMessage());
             }
+        }
+    }
+
+    if (!function_exists('apply_report_sorting')) {
+
+        function apply_report_sorting(
+            $query,
+            $request,
+            $tourDateColumn = 'order_tours.tour_date',
+            $bookingDateColumn = 'orders.created_at',
+            $revenueColumn = 'orders.total_amount'
+        ) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | AUTO DETERMINE SORT
+            |--------------------------------------------------------------------------
+            */
+
+            $orderBy = $request->input('order_by');
+
+            if (!$orderBy) {
+
+                if ($request->filled('booking_date')) {
+
+                    $orderBy = 'booking_date_asc';
+
+                } elseif ($request->filled('tour_date')) {
+
+                    $orderBy = 'tour_date_asc';
+
+                } else {
+
+                    $orderBy = 'tour_date_desc';
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | APPLY SORT
+            |--------------------------------------------------------------------------
+            */
+
+            $sorts = [
+                'tour_date_asc'      => [$tourDateColumn, 'asc'],
+                'tour_date_desc'     => [$tourDateColumn, 'desc'],
+
+                'booking_date_asc'   => [$bookingDateColumn, 'asc'],
+                'booking_date_desc'  => [$bookingDateColumn, 'desc'],
+
+                // 'revenue_asc'        => [$revenueColumn, 'asc'],
+                // 'revenue_desc'       => [$revenueColumn, 'desc'],
+            ];
+
+            [$column, $direction] = $sorts[$orderBy]
+                ?? [$tourDateColumn, 'desc'];
+
+            return $query->orderBy($column, $direction);
         }
     }
 

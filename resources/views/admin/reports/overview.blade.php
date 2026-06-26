@@ -69,7 +69,7 @@
                 @endphp
                 <div class="col-xl-4 col-md-3 col-12 position-relative">
                     <div class="form-group">
-                        <label class="filter-label">Booking Date</label>
+                        <label class="filter-label">Order Date</label>
                         <input 
                             type="text" 
                             name="booking_date"
@@ -336,7 +336,7 @@
                         <i class="fa fa-check-circle"></i>
                     </div>
                     <div class="sale-num">
-                        <h3>$ {{ $performance['payment_received'] }}</h3>
+                        <h3>$ {{ number_format($performance['payment_received'], 2) }}</h3>
                         <div class="stat-title">Payment Recieved</div>
                     </div>
                 </div>

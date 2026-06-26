@@ -247,7 +247,7 @@
                     <a href="{{ route('admin.report.overview') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.report.overview') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-chart-pie"></i>
-                        <p>{{ translate('Overview') }}</p>
+                        <p>{{ translate('Overview') }} </p>
                     </a>
                 </li>
 
@@ -255,7 +255,7 @@
                     <a href="{{ route('admin.report.revenue') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.report.revenue') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-dollar-sign"></i>
-                        <p>{{ translate('Revenue') }}</p>
+                        <p>{{ translate('Revenue ') }}<small>(Price breakup)</small></p>
                     </a>
                 </li>
                 <li class="aiz-side-nav-list">
@@ -269,17 +269,17 @@
                     <a href="{{ route('admin.report.invoice.details') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.report.invoice.details') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-file-invoice"></i>
-                        <p>{{ translate('Invoice Details') }}</p>
+                        <p>{{ translate('Invoice Details ') }}<small> (Extra Breakup)</small></p>
                     </a>
                 </li>
 
-                <li class="aiz-side-nav-list">
+                <!-- <li class="aiz-side-nav-list">
                     <a href="{{ route('admin.report.schedule-pricing-report') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.report.schedule-pricing-report') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-file-invoice-dollar"></i>
                         <p>{{ translate('Schedule Pricing') }}</p>
                     </a>
-                </li>
+                </li> -->
                 <li class="aiz-side-nav-list">
                     <a href="{{ route('admin.report.price_schedule') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.report.price_schedule') ? 'active' : '' }}">
