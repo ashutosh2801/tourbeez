@@ -87,11 +87,15 @@
                         <option value="{{ $driver->id }}" {{request()->input('driver_id') == $driver->id ? 'Selected' : ''}}>{{ $driver->name }}</option>
                     @endforeach
                 </select>
+                <select id="vehicleFilter" class="form-control vehicle-filter">
+                    <option value="">All Vehicle</option>
+                    @foreach($vehicles as $vehicle)
+                        <option value="{{ $vehicle->id }}" {{request()->input('vehicle_id') == $vehicle->id ? 'Selected' : ''}}>{{ $vehicle->name }}</option>
+                    @endforeach
+                </select>
             </div>
             <!-- <a href="{{ route('admin.driver.manifest.export', ['date' => $date]) }}" 
                    class="btn btn-success btn-sm">
-
-
                     Export Excel
                 </a> -->
 
@@ -168,6 +172,18 @@
                                         })
                                         ->filter()
                                         ->implode(', ');
+
+
+                                    $vehicleNames = collect($cellOrders)
+                                    ->flatMap(function ($o) {
+                                        return $o['vehicle_ids'] ?? [];
+                                    })
+                                    ->unique()
+                                    ->map(function ($vehicleId) use ($vehicleNameMap) {
+                                        return $vehicleNameMap[$vehicleId] ?? null;
+                                    })
+                                    ->filter()
+                                    ->implode(', ');
                             @endphp
                             <td class="text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
                                 data-tour="{{ $tourTitle }}"
@@ -181,6 +197,10 @@
                                         <br><small class="text-success">{{ $driverNames }}</small>
                                     @else
                                         <!-- <br><small class="text-danger">No Driver</small> -->
+                                    @endif
+
+                                    @if($vehicleNames)
+                                        <br><small class="text-primary">{{ $vehicleNames }}</small>
                                     @endif
                                 @endif
                             </td>
@@ -255,11 +275,68 @@
                 <label class="form-label">Orders</label>
                 <div id="order_list" class="order-list bg-light" style="min-height: 300px;"></div>
 
-                <div class="mt-2">
+                <!-- <div class="mt-2">
                     <label>
                         <input type="checkbox" id="select_all_orders" checked> Apply to all orders
                     </label>
-                </div>
+                </div> -->
+
+
+                <div class="mt-3">
+    <button type="button"
+            class="btn btn-primary btn-sm"
+            id="bulkAssignBtn">
+        Assign Driver & Vehicle to All Orders
+    </button>
+</div>
+
+<div id="bulkAssignPanel"
+     class="border rounded p-3 mt-3"
+     style="display:none;">
+
+    <h6>Bulk Assignment</h6>
+
+    <div class="row">
+
+        <div class="col-md-6">
+            <label>Drivers</label>
+
+            <select
+                id="bulkDriver"
+                class="form-control aiz-selectpicker"
+                multiple
+                data-live-search="true">
+
+            </select>
+        </div>
+
+        <div class="col-md-6">
+            <label>Vehicle</label>
+
+            <select
+                id="bulkVehicle"
+                class="form-control aiz-selectpicker"
+                data-live-search="true">
+
+            </select>
+        </div>
+
+    </div>
+
+    <div class="mt-3">
+
+        <button
+            type="button"
+            class="btn btn-success"
+            id="applyBulkAssignment">
+
+            Apply To All Orders
+
+        </button>
+
+    </div>
+
+</div>
             </div>
             <div class="modal-footer">
                 <!-- <button type="button" class="btn btn-danger" id="removeDriver">
@@ -278,6 +355,7 @@
 <script>
 window.allDrivers = @json($drivers);
 let driversList = @json($drivers);
+let vehiclesList = @json($vehicles);
 const orderEditRoute = "{{ route('admin.orders.edit', ':id') }}";
 </script>
 
@@ -343,10 +421,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         cell.addEventListener('click', function() {
 
-            if (this.dataset.assignable !== '1') {
-                Swal.fire('Not Allowed', 'Driver cannot be assigned', 'warning');
-                return;
-            }
+            
+
+            $('#bulkAssignPanel').hide();
+
+            $('#bulkAssignBtn').text('Assign Driver & Vehicle to All Orders');
+
+            const assignable = this.dataset.assignable === '1';
+
+
+            // if (this.dataset.assignable !== '1') {
+            //     Swal.fire('Not Allowed', 'Driver cannot be assigned', 'warning');
+            //     return;
+            // }
 
             let orders = JSON.parse(this.dataset.orders);
             let date = this.dataset.date;
@@ -359,28 +446,35 @@ document.addEventListener('DOMContentLoaded', function() {
             container.innerHTML = '';
 
             // build driver options
-            let driversHtml = '';
+            let driversHtml = '<option value="">Select Drivers</option>';
             driversList.forEach(d => {
                 driversHtml += `<option value="${d.id}">${d.name}</option>`;
             });
+
+            let vehiclesHtml = '<option value="">Select Vehicle</option>';
+            vehiclesList.forEach(d => {
+                vehiclesHtml += `<option value="${d.id}">${d.name}</option>`;
+            });
+
+
 
             // render orders
             orders.forEach(o => {
                 let orderUrl = orderEditRoute.replace(':id', o.order_encrypt_id);
                 container.innerHTML += `
-                <div class="order-content mb-2 p-2 border rounded">
+                <div class="order-content mb-2 p-2 border rounded" data-assignment-type="${o.assignment_type}">
                     <div class="d-flex justify-content-between">
 
-                        <div style="width:50%">
+                        <div style="width:30%">
                             <input type="checkbox" class="order-checkbox" value="${o.order_id}" checked>
                             <a href="${orderUrl}" class="alink" target="_blank">
-                        #${o.order_number}
-                    </a><br>
+                                #${o.order_number}
+                            </a><br>
                             <small>${o.customer || ''}</small><br>
                             <small>👥 ${o.guest_count}</small>
                         </div>
 
-                        <div style="width:50%">
+                        <div style="width:32%">
                             <select 
                                 class="form-control aiz-selectpicker order-driver-select"
                                 multiple
@@ -390,191 +484,231 @@ document.addEventListener('DOMContentLoaded', function() {
                             </select>
                         </div>
 
+                        <div style="width:35%; margin-left:2%">
+                            <select 
+                                class="form-control aiz-selectpicker order-vehicle-select"
+                                
+                                data-live-search="true"
+                                data-order-id="${o.order_id}">
+                                ${vehiclesHtml}
+                            </select>
+                        </div>
+
                     </div>
                 </div>`;
             });
 
+            // $('#bulkDriver').html(driversHtml);
+
+            // $('#bulkVehicle').html(vehiclesHtml);
+
+            // TB.plugins.bootstrapSelect();
+
             // ✅ INIT AIZ SELECT PROPERLY
             TB.plugins.bootstrapSelect();
+            loadBulkDropdowns();
 
             // ✅ PRESELECT EXISTING DRIVERS
             orders.forEach(o => {
-                let select = document.querySelector(
+                let driverSelect = document.querySelector(
                     `.order-driver-select[data-order-id="${o.order_id}"]`
                 );
 
-                if (!select) return;
+                if (!driverSelect) return;
 
-                let selected = o.driver_ids || [];
+                let selectedDrivers = (o.driver_ids || []).map(String);
 
-                Array.from(select.options).forEach(opt => {
-                    opt.selected = selected.includes(parseInt(opt.value));
-                });
+                $(driverSelect).selectpicker('val', selectedDrivers);
+                $(driverSelect).selectpicker('refresh');
+            });
+
+            orders.forEach(o => {
+                let vehicleSelect = document.querySelector(
+                    `.order-vehicle-select[data-order-id="${o.order_id}"]`
+                );
+
+                if (!vehicleSelect) return;
+
+                let selectedVehicles = (o.vehicle_ids || []).map(String);
+
+                $(vehicleSelect).selectpicker('val', selectedVehicles);
+                $(vehicleSelect).selectpicker('refresh');
             });
 
             // ✅ REFRESH AFTER SETTING VALUES
-            TB.plugins.bootstrapSelect('refresh');
+            // TB.plugins.bootstrapSelect('refresh');
 
             new bootstrap.Modal(document.getElementById('driverModal')).show();
-        });
+           
+
+           if (!assignable) { $('.order-driver-select') .prop('disabled', true) .selectpicker('refresh'); $('.order-vehicle-select') .prop('disabled', true) .selectpicker('refresh'); $('#assignDriver').prop('disabled', true); $('#bulkAssignBtn').prop('disabled', true); Swal.fire({ icon: 'warning', title: 'Driver Assignment Disabled', text: 'This tour is not assignable.' }); 
+
+                $('#bulkAssignBtn').hide();
+                $('#bulkAssignPanel').hide();
+
+            }
+
+
+            else { $('.order-driver-select') .prop('disabled', false) .selectpicker('refresh'); $('.order-vehicle-select') .prop('disabled', false) .selectpicker('refresh'); $('#assignDriver').prop('disabled', false); $('#bulkAssignBtn').prop('disabled', false); 
+
+                $('#bulkAssignBtn').show();
+                
+            } 
+           });
+            
     });
+
+    document
+.getElementById('bulkAssignBtn')
+.addEventListener('click', function(){
+
+    let panel = document.getElementById('bulkAssignPanel');
+
+    if(panel.style.display === 'none' || panel.style.display === ''){
+
+        panel.style.display='block';
+        this.innerHTML='Hide Bulk Assignment';
+
+    }else{
+
+        panel.style.display='none';
+        this.innerHTML='Assign Driver & Vehicle to All Orders';
+
+    }
+
+});
+        document
+.getElementById('applyBulkAssignment')
+.addEventListener('click', function () {
+
+    let drivers =
+        $('#bulkDriver').val() || [];
+
+    let vehicle =
+        $('#bulkVehicle').val();
+
+    $('.order-driver-select').each(function () {
+
+        $(this)
+            .selectpicker('val', drivers)
+            .selectpicker('refresh');
+
+    });
+
+    $('.order-vehicle-select').each(function () {
+
+        $(this)
+            .selectpicker('val', vehicle)
+            .selectpicker('refresh');
+
+    });
+
+});
+
+function loadBulkDropdowns() {
+
+    let driverHtml = '';
+
+    window.allDrivers.forEach(function(driver) {
+        driverHtml += `<option value="${driver.id}">${driver.name}</option>`;
+    });
+
+    $('#bulkDriver').html(driverHtml);
+
+    let vehicleHtml = '<option value="">Select</option>';
+
+    vehiclesList.forEach(function(vehicle) {
+        vehicleHtml += `<option value="${vehicle.id}">${vehicle.name}</option>`;
+    });
+
+    $('#bulkVehicle').html(vehicleHtml);
+
+    $('#bulkDriver').selectpicker('destroy').selectpicker();
+    $('#bulkVehicle').selectpicker('destroy').selectpicker();
+}
 
     // =========================
     // ASSIGN DRIVER (FIXED)
     // =========================
-document.getElementById('assignDriver').addEventListener('click', async function() {
+    document.getElementById('assignDriver').addEventListener('click', async function() {
 
-    let btn = this;
-    let date = document.getElementById('modal_date').value;
+        let btn = this;
+        let date = document.getElementById('modal_date').value;
 
-    let ordersPayload = [];
+        let ordersPayload = [];
 
-    document.querySelectorAll('.order-content').forEach(function(row) {
+        document.querySelectorAll('.order-content').forEach(function(row) {
 
-        let orderId = parseInt(row.querySelector('.order-checkbox').value);
+            let orderId = parseInt(row.querySelector('.order-checkbox').value);
 
-        let $select = $(row).find('.order-driver-select');
+            let $select = $(row).find('.order-driver-select');
+            let $select2 = $(row).find('.order-vehicle-select');
 
-        let selectedDrivers = [];
+            let selectedDrivers = [];
+            let selectedVehicles = [];
 
-        // ✅ READ FROM SELECTED OPTIONS (REAL FIX)
-        $select.find('option:selected').each(function () {
-            selectedDrivers.push(parseInt($(this).val()));
+            // ✅ READ FROM SELECTED OPTIONS (REAL FIX)
+            $select.find('option:selected').each(function () {
+                selectedDrivers.push(parseInt($(this).val()));
+            });
+
+            $select2.find('option:selected').each(function () {
+                selectedVehicles.push(parseInt($(this).val()));
+            });
+
+            console.log('FIXED:', orderId, selectedDrivers, selectedVehicles);
+
+            ordersPayload.push({
+                order_id: orderId,
+                driver_ids: selectedDrivers,
+                vehicle_ids: selectedVehicles,
+                assignment_type: row.dataset.assignmentType
+            });
         });
 
-        console.log('FIXED:', orderId, selectedDrivers);
+        try {
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
 
-        ordersPayload.push({
-            order_id: orderId,
-            driver_ids: selectedDrivers
-        });
+            let res = await fetch("{{ route('admin.assign.driver') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    orders: ordersPayload,
+                    date: date
+                })
+            });
+
+            if (!res.ok) throw new Error();
+
+            location.reload();
+
+        } catch (e) {
+            alert('Error saving');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Assign';
+        }
     });
-
-    try {
-        btn.disabled = true;
-        btn.innerText = 'Saving...';
-
-        let res = await fetch("{{ route('admin.assign.driver') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                orders: ordersPayload,
-                date: date
-            })
-        });
-
-        if (!res.ok) throw new Error();
-
-        location.reload();
-
-    } catch (e) {
-        alert('Error saving');
-    } finally {
-        btn.disabled = false;
-        btn.innerText = 'Assign';
-    }
-});
 
     // =========================
     // DRIVER FILTER
     // =========================
+    driverFilter.addEventListener('change', function () {
 
-driverFilter.addEventListener('change', function () {
+        let selectedDriver = this.value;
+        let date = dateInput.value;
+        let url = `?date=${date}`;
 
-    let selectedDriver = this.value;
-    
-    let date = dateInput.value;
+        if (selectedDriver) {
+            url += `&driver_id=${selectedDriver}`;
+        }
 
-    let url = `?date=${date}`;
-
-    if (selectedDriver) {
-        url += `&driver_id=${selectedDriver}`;
-    }
-
-    window.location.href = url;
-});
-//     driverFilter.addEventListener('change', function() {
-
-//     let selectedDriver = parseInt(this.value);
-
-//     let totalMap = {};
-//     let assignedMap = {};
-//     let driverWiseMap = {}; // NEW
-
-//     document.querySelectorAll('.manifest-cell').forEach(cell => {
-
-//         if (!cell.classList.contains('has-orders')) return;
-
-//         let orders = JSON.parse(cell.dataset.orders);
-//         let date = cell.dataset.date;
-
-//         let visible = false;
-
-//         orders.forEach(o => {
-
-//             let match = !selectedDriver ||
-//                 (o.driver_ids && o.driver_ids.includes(selectedDriver));
-
-//             if (match) {
-//                 visible = true;
-
-//                 totalMap[date] = (totalMap[date] || 0) + o.guest_count;
-
-//                 if (o.driver_ids?.length) {
-//                     assignedMap[date] = (assignedMap[date] || 0) + o.guest_count;
-
-//                     // driver-wise
-//                     o.driver_ids.forEach(dId => {
-
-//                         if (selectedDriver && dId !== selectedDriver) return;
-
-//                         if (!driverWiseMap[date]) driverWiseMap[date] = {};
-//                         driverWiseMap[date][dId] =
-//                             (driverWiseMap[date][dId] || 0) + o.guest_count;
-//                     });
-//                 }
-//             }
-//         });
-
-//         cell.style.opacity = visible ? '1' : '0.2';
-//     });
-
-//     // update totals
-//     document.querySelectorAll('.total-pax').forEach(td => {
-//         td.innerText = totalMap[td.dataset.date] || 0;
-//     });
-
-//     document.querySelectorAll('.assigned-pax').forEach(td => {
-
-//         let date = td.dataset.date;
-//         let html = `<strong>${assignedMap[date] || 0}</strong>`;
-
-//         if (driverWiseMap[date]) {
-
-//             html += `<div style="margin-top:5px;">`;
-
-//             Object.entries(driverWiseMap[date]).forEach(([driverId, pax]) => {
-
-//                 let driver = driversList.find(d => d.id == driverId);
-
-//                 html += `
-//                     <div style="font-size:12px; color:#374151;">
-//                         ${driver?.name || 'Unknown'}: <strong>${pax}</strong>
-//                     </div>
-//                 `;
-//             });
-
-//             html += `</div>`;
-//         }
-
-//         td.innerHTML = html;
-//     });
-
-//     updateExportUrl();
-// });
+        window.location.href = url;
+    });
 
     updateExportUrl();
 });

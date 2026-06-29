@@ -58,6 +58,7 @@ class Order extends Model
         'balance_amount',
         'booked_amount',
         'currency',
+        'current_rate',
         'order_status',
         'additional_info',
         'email_sent',

@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderDriver;
 use App\Models\TourPricing;
 use App\Models\User;
+use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
@@ -136,231 +137,335 @@ class ManifestController extends Controller
         }
 
         $drivers = User::where('role', 'Driver')->get();
+        $vehicles = Vehicle::orderBy('name')->get();
 
         return view('admin.manifest.driver-1', compact(
             'sortedGrid',
             'dateRange',
             'tourTimes',
             'drivers',
+            'vehicles',
             'date'
         ));
     }
 
     public function driverManifest(Request $request)
-{
-    $date = $request->input('date') ?? Carbon::today()->toDateString();
-    $selectedDriver = $request->input('driver_id');
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+        $selectedDriver = $request->input('driver_id');
+        $selectedVehicle = $request->input('driver_id');
 
-    $startOfWeek = Carbon::parse($date);
-    $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
+        $startOfWeek = Carbon::parse($date);
+        $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
 
-    $driverPaxPerDay = [];   // [date][driver_id] => pax
-    $driverNameMap = [];     // [driver_id] => name
+        $driverPaxPerDay = [];   // [date][driver_id] => pax
+        $driverNameMap = [];     // [driver_id] => name
 
-    $orders = Order::with([
-        'customer',
-        'orderTours.tour.detail'
-    ])
-        ->where('order_status', 5)
-        ->whereHas('orderTours', function ($q) use ($startOfWeek, $endOfWeek) {
-            $q->whereBetween('tour_date', [
+        $orders = Order::with([
+                'customer',
+                'orderTours.tour.detail'
+            ])
+            ->where('order_status', 5)
+            ->whereHas('orderTours', function ($q) use ($startOfWeek, $endOfWeek) {
+                $q->whereBetween('tour_date', [
+                    $startOfWeek->toDateString(),
+                    $endOfWeek->toDateString()
+                ]);
+            })
+            ->get();
+
+        $orderDriverMap = OrderDriver::with('driver')
+            ->whereBetween('assigned_date', [
                 $startOfWeek->toDateString(),
                 $endOfWeek->toDateString()
-            ]);
-        })
-        ->get();
+            ])
+            ->get()
+            ->groupBy(function ($item) {
+                return $item->order_id . '_' . $item->assigned_date . '_' . $item->assignment_type;
+            });
 
-    // Preload all drivers for the week
-    $orderDriverMap = OrderDriver::with('driver')
-        ->whereBetween('assigned_date', [
-            $startOfWeek->toDateString(),
-            $endOfWeek->toDateString()
-        ])
-        ->get()
-        ->groupBy(function ($item) {
-            return $item->order_id . '_' . $item->assigned_date;
-        });
+        $grid = [];
 
-    $grid = [];
+        $tourTimes = [];
+        $tourAssignableMap = [];
+        $tourReportGroupMap = [];
+        $tourPaxMap = [];
 
-    $tourTimes = [];
-    $tourAssignableMap = [];
-    $tourReportGroupMap = [];
-    $tourPaxMap = [];
+        $totalPaxPerDay = [];
+        $assignedPaxPerDay = [];
+        $dateRange = [];
 
-    $totalPaxPerDay = [];
-    $assignedPaxPerDay = [];
-    $dateRange = [];
+        $d = $startOfWeek->copy();
 
-    $d = $startOfWeek->copy();
+        while ($d->lte($endOfWeek)) {
 
-    while ($d->lte($endOfWeek)) {
+            $day = $d->toDateString();
 
-        $day = $d->toDateString();
+            $dateRange[] = $d->copy();
 
-        $dateRange[] = $d->copy();
+            $totalPaxPerDay[$day] = 0;
+            $assignedPaxPerDay[$day] = 0;
 
-        $totalPaxPerDay[$day] = 0;
-        $assignedPaxPerDay[$day] = 0;
-
-        $d->addDay();
-    }
-
-    foreach ($orders as $order) {
-
-        $encryptedOrderId = encrypt($order->id);
-
-        foreach ($order->orderTours as $ot) {
-
-            $tourDate = $ot->tour_date;
-
-            if (!$tourDate) {
-                continue;
-            }
-
-            $tourTitle = $ot->tour->title ?? 'Unknown Tour';
-            $slotTime  = $ot->tour_time ?? '00:00 AM';
-
-            $guestCount = collect(
-                json_decode($ot->tour_pricing, true) ?? []
-            )->sum('quantity');
-
-            $driverKey = $order->id . '_' . $tourDate;
-
-            $orderDrivers = $orderDriverMap[$driverKey] ?? collect();
-
-            $driverIds = $orderDrivers->pluck('driver_id')->toArray();
-
-            $driverNames = $orderDrivers
-                ->pluck('driver.name')
-                ->filter()
-                ->values()
-                ->toArray();
-
-            // Totals
-            $totalPaxPerDay[$tourDate] += $guestCount;
-            // if (!$selectedDriver || in_array($selectedDriver, $driverIds)) {
-            //     $totalPaxPerDay[$tourDate] += $guestCount;
-            // }
-
-            // if (!empty($driverIds)) {
-            //     $assignedPaxPerDay[$tourDate] += $guestCount;
-            // }
-
-            if (!$selectedDriver || in_array($selectedDriver, $driverIds)) {
-
-                foreach ($orderDrivers as $driver) {
-
-                    if ($selectedDriver && $driver->driver_id != $selectedDriver) {
-                        continue;
-                    }
-
-                    $driverId = $driver->driver_id;
-                    $driverName = $driver->driver?->name;
-
-                    $driverNameMap[$driverId] = $driverName;
-
-                    if (!isset($driverPaxPerDay[$tourDate][$driverId])) {
-                        $driverPaxPerDay[$tourDate][$driverId] = 0;
-                    }
-
-                    $driverPaxPerDay[$tourDate][$driverId] += $guestCount;
-                }
-            }
-
-            // Keep your existing total logic
-            // if (!empty($driverIds)) {
-            //     $assignedPaxPerDay[$tourDate] += $guestCount;
-            // }
-
-            if (!$selectedDriver) {
-                if (!empty($driverIds)) {
-                    $assignedPaxPerDay[$tourDate] += $guestCount;
-                }
-            } else {
-                if (in_array($selectedDriver, $driverIds)) {
-                    $assignedPaxPerDay[$tourDate] += $guestCount;
-                }
-            }
-
-            $tourDetail = $ot->tour?->detail;
-
-            $grid[$tourTitle][$tourDate][] = [
-                'order_id'           => $order->id,
-                'order_encrypt_id'   => $encryptedOrderId,
-                'order_number'       => $order->order_number,
-                'customer'           => $order->customer?->name,
-                'guest_count'        => $guestCount,
-                'driver_ids'         => $driverIds,
-                'driver_names'       => $driverNames,
-                'tour_assignable'    => $tourDetail?->assign_driver ?? false,
-            ];
-
-            // Maps for sorting
-            $tourTimes[$tourTitle] = $slotTime;
-
-            $tourAssignableMap[$tourTitle] =
-                $tourDetail?->assign_driver ?? false;
-
-            $tourReportGroupMap[$tourTitle] =
-                $ot->tour->report_group ?? 999;
-
-            $tourPaxMap[$tourTitle] =
-                ($tourPaxMap[$tourTitle] ?? 0) + $guestCount;
+            $d->addDay();
         }
-    }
 
-    // Sort by report_group ASC first
-    $sortedGrid = collect($grid)
-        ->sortBy(function ($dates, $tour) use (
-            $tourReportGroupMap,
-            $tourAssignableMap,
-            $tourPaxMap,
-            $tourTimes
-        ) {
+        foreach ($orders as $order) {
 
-            $reportGroup = $tourReportGroupMap[$tour] ?? 999;
+            $encryptedOrderId = encrypt($order->id);
 
-            $assignableSort =
-                ($tourAssignableMap[$tour] ?? false) ? 0 : 1;
+            foreach ($order->orderTours as $ot) {
 
-            $hasPax =
-                ($tourPaxMap[$tour] ?? 0) > 0 ? 0 : 1;
+                $tourDate = $ot->tour_date;
 
-            try {
-                $timeSort = Carbon::parse(
-                    $tourTimes[$tour] ?? '00:00 AM'
-                )->format('Hi');
-            } catch (\Exception $e) {
-                $timeSort = 9999;
+                if (!$tourDate) {
+                    continue;
+                }
+
+                $tourTitle = $ot->tour->title ?? 'Unknown Tour';
+                $slotTime  = $ot->tour_time ?? '00:00 AM';
+
+                $guestCount = collect(
+                    json_decode($ot->tour_pricing, true) ?? []
+                )->sum('quantity');
+
+                // $driverKey = $order->id . '_' . $tourDate;
+                $driverKey = $order->id . '_' . $tourDate . '_tour';
+
+                $orderDrivers = $orderDriverMap[$driverKey] ?? collect();
+
+                $driverIds = $orderDrivers->pluck('driver_id')->toArray();
+                $vehicleIds = $orderDrivers->pluck('vehicle_id')->toArray();
+
+                $driverNames = $orderDrivers
+                    ->pluck('driver.name')
+                    ->filter()
+                    ->values()
+                    ->toArray();
+
+                $vehicleNames = $orderDrivers
+                    ->pluck('vehicle.name')
+                    ->filter()
+                    ->values()
+                    ->toArray();    
+
+                // Totals
+                $totalPaxPerDay[$tourDate] += $guestCount;
+
+                if (!$selectedDriver || in_array($selectedDriver, $driverIds)) {
+
+                    foreach ($orderDrivers as $driver) {
+
+                        if ($selectedDriver && $driver->driver_id != $selectedDriver) {
+                            continue;
+                        }
+
+                        $driverId = $driver->driver_id;
+                        $driverName = $driver->driver?->name;
+
+                        $driverNameMap[$driverId] = $driverName;
+
+                        if (!isset($driverPaxPerDay[$tourDate][$driverId])) {
+                            $driverPaxPerDay[$tourDate][$driverId] = 0;
+                        }
+
+                        $driverPaxPerDay[$tourDate][$driverId] += $guestCount;
+                    }
+                }
+
+                if (!$selectedDriver) {
+                    if (!empty($driverIds)) {
+                        $assignedPaxPerDay[$tourDate] += $guestCount;
+                    }
+                } else {
+                    if (in_array($selectedDriver, $driverIds)) {
+                        $assignedPaxPerDay[$tourDate] += $guestCount;
+                    }
+                }
+
+                $tourDetail = $ot->tour?->detail;
+
+                $grid[$tourTitle][$tourDate][] = [
+                    'order_id'           => $order->id,
+                    'order_encrypt_id'   => $encryptedOrderId,
+                    'order_number'       => $order->order_number,
+                    'customer'           => $order->customer?->name,
+                    'guest_count'        => $guestCount,
+                    'driver_ids'         => $driverIds,
+                    'driver_names'       => $driverNames,
+                    'vehicle_ids'        => $vehicleIds,
+                    'vehicle_names'      => $vehicleNames,
+                    'tour_assignable'    => $tourDetail?->assign_driver ?? false,
+                    'assignment_type'    => 'tour',
+                ];
+
+                // Maps for sorting
+                $tourTimes[$tourTitle] = $slotTime;
+
+                $tourAssignableMap[$tourTitle] =
+                    $tourDetail?->assign_driver ?? false;
+
+                $tourReportGroupMap[$tourTitle] =
+                    $ot->tour->report_group ?? 999;
+
+                $tourPaxMap[$tourTitle] =
+                    ($tourPaxMap[$tourTitle] ?? 0) + $guestCount;
             }
+            $extras = json_decode($ot->tour_extra, true) ?? [];
 
-            return sprintf(
-                '%04d_%d_%d_%s',
-                $reportGroup,
-                $assignableSort,
-                $hasPax,
-                $timeSort
-            );
-        })
-        ->toArray();
+            foreach ($extras as $extra) {
 
-    $drivers = User::where('role', 'Driver')->orderBy('name')->get();
-    
+                if (
+                    !isset($extra['label']) ||
+                    stripos($extra['label'], 'Next Day Pick Up') === false
+                ) {
+                    continue;
+                }
 
-    return view('admin.manifest.driver', compact(
-        'sortedGrid',
-        'dateRange',
-        'tourTimes',
-        'drivers',
-        'date',
-        'totalPaxPerDay',
-        'assignedPaxPerDay',
-        'driverPaxPerDay',
-        'driverNameMap',
-        'selectedDriver'
-    ));
-}
+                $extraDate = Carbon::parse($tourDate)
+                    ->addDay()
+                    ->toDateString();
+
+                $extraDriverKey = $order->id . '_' . $extraDate . '_next_day_pickup';
+                $orderDrivers = $orderDriverMap[$extraDriverKey] ?? collect();
+
+                $driverIds = $orderDrivers->pluck('driver_id')->toArray();
+
+                $driverNames = $orderDrivers
+                    ->pluck('driver.name')
+                    ->filter()
+                    ->values()
+                    ->toArray();
+                $vehicleIds = $orderDrivers->pluck('vehicle_id')->toArray();
+
+                $driverNames = $orderDrivers
+                    ->pluck('driver.name')
+                    ->filter()
+                    ->values()
+                    ->toArray();
+
+                $vehicleNames = $orderDrivers
+                    ->pluck('vehicle.name')
+                    ->filter()
+                    ->values()
+                    ->toArray();
+
+                $extraGuestCount = (int)($extra['quantity'] ?? 0);
+
+                if (!isset($totalPaxPerDay[$extraDate])) {
+                    $totalPaxPerDay[$extraDate] = 0;
+                    $assignedPaxPerDay[$extraDate] = 0;
+                }
+
+                $totalPaxPerDay[$extraDate] += $extraGuestCount;
+
+                if (!$selectedDriver || in_array($selectedDriver, $driverIds)) {
+
+                    foreach ($orderDrivers as $driver) {
+
+                        if ($selectedDriver && $driver->driver_id != $selectedDriver) {
+                            continue;
+                        }
+
+                        $driverId = $driver->driver_id;
+                        $driverNameMap[$driverId] = $driver->driver?->name;
+
+                        $driverPaxPerDay[$extraDate][$driverId] =
+                            ($driverPaxPerDay[$extraDate][$driverId] ?? 0)
+                            + $extraGuestCount;
+                    }
+                }
+
+                if (!$selectedDriver) {
+
+                    if (!empty($driverIds)) {
+                        $assignedPaxPerDay[$extraDate] += $extraGuestCount;
+                    }
+
+                } else {
+
+                    if (in_array($selectedDriver, $driverIds)) {
+                        $assignedPaxPerDay[$extraDate] += $extraGuestCount;
+                    }
+
+                }
+
+                $grid['Next Day Pick Up'][$extraDate][] = [
+                    'order_id' => $order->id,
+                    'order_encrypt_id' => $encryptedOrderId,
+                    'order_number' => $order->order_number,
+                    'customer' => $order->customer?->name,
+                    'guest_count' => $extraGuestCount,
+                    'driver_ids' => $driverIds,
+                    'driver_names' => $driverNames,
+                    'vehicle_ids'        => $vehicleIds,
+                    'vehicle_names'      => $vehicleNames,
+                    'tour_assignable' => true,
+                    'assignment_type'    => 'next_day_pickup',
+                ];
+
+                $tourTimes['Next Day Pick Up'] = '00:00 AM';
+                $tourAssignableMap['Next Day Pick Up'] = true;
+                $tourReportGroupMap['Next Day Pick Up'] = 999;
+                $tourPaxMap['Next Day Pick Up'] =
+                    ($tourPaxMap['Next Day Pick Up'] ?? 0) + $extraGuestCount;
+            }
+        }
+
+        // Sort by report_group ASC first
+        $sortedGrid = collect($grid)
+            ->sortBy(function ($dates, $tour) use (
+                $tourReportGroupMap,
+                $tourAssignableMap,
+                $tourPaxMap,
+                $tourTimes
+            ) {
+
+                $reportGroup = $tourReportGroupMap[$tour] ?? 999;
+
+                $assignableSort =
+                    ($tourAssignableMap[$tour] ?? false) ? 0 : 1;
+
+                $hasPax =
+                    ($tourPaxMap[$tour] ?? 0) > 0 ? 0 : 1;
+
+                try {
+                    $timeSort = Carbon::parse(
+                        $tourTimes[$tour] ?? '00:00 AM'
+                    )->format('Hi');
+                } catch (\Exception $e) {
+                    $timeSort = 9999;
+                }
+
+                return sprintf(
+                    '%04d_%d_%d_%s',
+                    $reportGroup,
+                    $assignableSort,
+                    $hasPax,
+                    $timeSort
+                );
+            })
+            ->toArray();
+
+        $drivers = User::where('role', 'Driver')->orderBy('name')->get();
+        $vehicles = Vehicle::orderBy('id')->get();
+
+        $vehicleNameMap = Vehicle::pluck('name', 'id')->toArray();
+
+        return view('admin.manifest.driver', compact(
+            'sortedGrid',
+            'dateRange',
+            'tourTimes',
+            'drivers',
+            'vehicles',
+            'vehicleNameMap',
+            'date',
+            'totalPaxPerDay',
+            'assignedPaxPerDay',
+            'driverPaxPerDay',
+            'driverNameMap',
+            'selectedDriver'
+        ));
+    }
 
     public function assignDriver4june(Request $request)
     {
@@ -404,52 +509,111 @@ class ManifestController extends Controller
 
         return response()->json(['success' => true]);
     }
+
     public function assignDriver(Request $request)
-{
-    $request->validate([
-        'orders' => 'required|array',
-        'date'   => 'required|date'
-    ]);
+    {
+        $request->validate([
+            'orders' => 'required|array',
+            'date'   => 'required|date'
+        ]);
 
-    foreach ($request->orders as $item) {
+        foreach ($request->orders as $item) {
 
-        $orderId = $item['order_id'];
-        $selectedDrivers = $item['driver_ids'] ?? [];
+            $orderId            = $item['order_id'];
+            $selectedDrivers    = $item['driver_ids'] ?? [];
+            $selectedVehicles   = $item['vehicle_ids'] ?? [];
+            $assignmentType     = $item['assignment_type'] ?? 'tour';
 
-        // ✅ Existing drivers
-        $existingDrivers = OrderDriver::where('order_id', $orderId)
-            ->whereDate('assigned_date', $request->date)
-            ->pluck('driver_id')
-            ->toArray();
-
-        // =========================
-        // ✅ ADD NEW DRIVERS
-        // =========================
-        $toAdd = array_diff($selectedDrivers, $existingDrivers);
-
-        foreach ($toAdd as $driverId) {
-            OrderDriver::create([
-                'order_id'      => $orderId,
-                'driver_id'     => $driverId,
-                'assigned_date' => $request->date
-            ]);
-        }
-
-        // =========================
-        // ✅ REMOVE DRIVERS
-        // =========================
-        $toRemove = array_diff($existingDrivers, $selectedDrivers);
-
-        if (!empty($toRemove)) {
-            OrderDriver::where('order_id', $orderId)
+            // =========================
+            // Existing drivers
+            // =========================
+            $existingDrivers = OrderDriver::where('order_id', $orderId)
                 ->whereDate('assigned_date', $request->date)
-                ->whereIn('driver_id', $toRemove)
-                ->delete();
+                ->where('assignment_type', $assignmentType)
+                ->pluck('driver_id')
+                ->toArray();
+            
+            // =========================
+            // REMOVE DRIVERS
+            // =========================
+            // $toRemove = array_diff($existingDrivers, $selectedDrivers);
+            if (!empty($existingDrivers)) {
+                OrderDriver::where('order_id', $orderId)
+                    ->whereDate('assigned_date', $request->date)
+                    ->where('assignment_type', $assignmentType)
+                    ->whereIn('driver_id', $existingDrivers)
+                    ->delete();
+            }
+
+            // =========================
+            // ADD NEW DRIVERS
+            // =========================
+            // $toAdd = array_diff($selectedDrivers, $existingDrivers);
+            foreach ($selectedDrivers as $index => $driverId) {
+                OrderDriver::create([
+                    'order_id'        => $orderId,
+                    'driver_id'       => $driverId,
+                    'vehicle_id'      => $selectedVehicles[0] ?? null,
+                    'assigned_date'   => $request->date,
+                    'assignment_type' => $assignmentType,
+                ]);
+            }
+
+            
         }
+
+        return response()->json([
+            'success' => true,
+        ]);
     }
 
-    return response()->json(['success' => true]);
-}
+    public function assignDriver_prenextdaytour(Request $request)
+    {
+        $request->validate([
+            'orders' => 'required|array',
+            'date'   => 'required|date'
+        ]);
+
+        foreach ($request->orders as $item) {
+
+            $orderId = $item['order_id'];
+            $selectedDrivers = $item['driver_ids'] ?? [];
+
+            // ✅ Existing drivers
+            $existingDrivers = OrderDriver::where('order_id', $orderId)
+                ->whereDate('assigned_date', $request->date)
+                ->pluck('driver_id')
+                ->toArray();
+
+            // =========================
+            // ✅ ADD NEW DRIVERS
+            // =========================
+            $toAdd = array_diff($selectedDrivers, $existingDrivers);
+
+            foreach ($toAdd as $driverId) {
+                OrderDriver::create([
+                    'order_id'      => $orderId,
+                    'driver_id'     => $driverId,
+                    'assigned_date' => $request->date
+                ]);
+            }
+
+            // =========================
+            // ✅ REMOVE DRIVERS
+            // =========================
+            $toRemove = array_diff($existingDrivers, $selectedDrivers);
+
+            if (!empty($toRemove)) {
+                OrderDriver::where('order_id', $orderId)
+                    ->whereDate('assigned_date', $request->date)
+                    ->whereIn('driver_id', $toRemove)
+                    ->delete();
+            }
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     public function removeDriver(Request $request)
     {
         OrderDriver::whereIn('order_id', $request->order_ids)
