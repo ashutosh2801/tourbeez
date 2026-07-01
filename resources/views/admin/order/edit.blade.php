@@ -1052,7 +1052,13 @@ $expectEmails = ['order_pending'];
 
                                             @php
 
-                                                $latestPayment = $order->payments()->latest()->first();
+                                                //$latestPayment = $order->payments()->latest()->first();
+                                                $latestPayment = $order->payments()
+                                                ->where('status', 'succeeded')
+                                                ->latest()
+                                                ->first();
+
+                                                //echo '<pre>'; print_r($latestPayment->payment_intent_id); echo '</pre>'; 
                                             @endphp
 
                                             <!-- @if($order->payment_intent_id)
@@ -1091,15 +1097,15 @@ $expectEmails = ['order_pending'];
                                                 </div>
                                             @endif
                                             <div class="col-12 col-md-2">
-                                                @if($order->payments()->first() &&  $order->payments()->first()->status != 'pending')
+                                                @if($latestPayment)
 
-                                                    @if(str_contains( $order->payment_intent_id, 'pm_') || str_contains( $order->payment_method_id, 'pm_'))
+                                                    @if(str_contains( $latestPayment->payment_intent_id, 'pm_') || str_contains( $latestPayment->payment_method_id, 'pm_'))
                                                     <a id="chargeSavedCard" type="button" class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
                                                         Charge Now
                                                     </a>
 
 
-                                                    @elseif(str_contains( $order->payment_intent_id, 'pi_'))
+                                                    @elseif(str_contains( $latestPayment->payment_intent_id, 'pi_'))
                                                     <a class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
                                                         Charge Now
                                                     </a>
