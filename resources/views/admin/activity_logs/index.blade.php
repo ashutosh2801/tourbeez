@@ -45,10 +45,6 @@
             color: green;
             font-weight: bold;
         }
-        .filter-panel {
-            display: none;
-            animation: fadeSlide 0.3s ease-in-out;
-        }
     </style>
 
     <div class="card-primary mb-3">
@@ -56,174 +52,62 @@
             <h3 class="card-title">{{ translate('Activity Logs') }}</h3>
         </div>
     </div>
+
     <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
-    <form method="GET">
-
-        <div class="row">
-
-            {{-- ACTIVITY DATE --}}
-
-            <div class="col-xl-3 col-md-3 col-12 position-relative">
-                <label class="filter-label">Activity Date</label>
-
-                <input 
-                    type="text" 
-                    name="activity_date"
-                    
-                    class="form-control aiz-date-range"
-                    data-advanced-range="true"
-                    data-separator=" - "
-                    data-show-dropdown="true"
-                    placeholder="Select date range"
-                    autocomplete="off"
-                    value="{{ request('activity_date') }}"
-                >
-
-                @if(request('activity_date'))
-                    <span class="clear-btn" onclick="clearBooking()">✕</span>
-                @endif
-            </div>
-            <!-- <div class="col-xl-2 col-md-2 col-12 position-relative">
-                <label class="filter-label">Activity Date</label>
-
-                <input type="text" id="activity_range" class="form-control"
-                    placeholder="Select date range" autocomplete="off">
-
-                @if(request('start_date'))
-                    <span class="clear-btn" onclick="clearActivity()">✕</span>
-                @endif
-
-                <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
-                <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
-            </div> -->
-
-            {{-- ORDER NUMBER --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Order Number</label>
-                <input type="text" name="order_number"
-                    value="{{ request('order_number') }}"
-                    class="form-control"
-                    placeholder="Order Number">
-            </div>
-
-            {{-- MODEL --}}
-
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Model</label>
-                <select name="model" class="form-control">
-                    <option value="">All</option>
-
-                    @foreach(activity_models_list() as $class => $label)
-                        <option value="{{ $class }}"
-                            {{ request('model') == $class ? 'selected' : '' }}>
-                            {{ $label }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            {{-- ACTION --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Action</label>
-                <select name="action" class="form-control">
-                    <option value="">All</option>
-                    <option value="created" {{ request('action')=='created'?'selected':'' }}>Created</option>
-                    <option value="updated" {{ request('action')=='updated'?'selected':'' }}>Updated</option>
-                    <option value="deleted" {{ request('action')=='deleted'?'selected':'' }}>Deleted</option>
-                </select>
-            </div>
-
-            {{-- USER --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">User</label>
-                <input type="text" name="user_id"
-                    value="{{ request('user_id') }}"
-                    class="form-control"
-                    placeholder="User">
-            </div>
-
-            {{-- SEARCH --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Search</label>
-                <input type="text" name="search"
-                    value="{{ request('search') }}"
-                    class="form-control"
-                    placeholder="Search action...">
-            </div>
-
-            {{-- PROPERTY --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Properties</label>
-                <input type="text" name="property"
-                    value="{{ request('property') }}"
-                    class="form-control"
-                    placeholder="Search JSON...">
-            </div>
-
-            {{-- MODEL ID --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">Model ID</label>
-                <input type="text" name="model_id"
-                    value="{{ request('model_id') }}"
-                    class="form-control"
-                    placeholder="ID">
-            </div>
-
-            {{-- BUTTONS --}}
-            <div class="col-xl-2 col-md-2 col-12">
-                <label class="filter-label">&nbsp;</label>
-                <div class="d-flex column-gap-10">
-                    <button class="btn btn-apply flex-fill mt-0" style="
-    height: fit-content;
-">Apply</button>
-                    <a href="{{ url()->current() }}" class="btn btn-secondary flex-fill mt-0" style="
-    height: fit-content;
-">Reset</a>
-                </div>
-                <div class="col-md-4 col-6">
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-secondary" id="toggleFilter">
-                            <i class="fas fa-filter"></i> Filters
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="filter-panel" id="filterPanel">
-        <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
-            <form method="GET">
-                <div class="row">
-
-                    {{-- ACTIVITY DATE --}}
-                    <div class="col-xl-3 col-md-2 col-12 position-relative">
+        <form method="GET">
+            <div class="row">
+                {{-- ACTIVITY DATE --}}
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <div class="form-group">
                         <label class="filter-label">Activity Date</label>
+                        <input 
+                            type="text" 
+                            name="activity_date"
+                            
+                            class="form-control aiz-date-range"
+                            data-advanced-range="true"
+                            data-separator=" - "
+                            data-show-dropdown="true"
+                            placeholder="Select date range"
+                            autocomplete="off"
+                            value="{{ request('activity_date') }}"
+                        >
 
-                        <input type="text" id="activity_range" class="form-control"
-                            placeholder="Select date range" autocomplete="off">
-
-                        @if(request('start_date'))
-                            <span class="clear-btn" onclick="clearActivity()">✕</span>
+                        @if(request('activity_date'))
+                            <span class="clear-btn" onclick="clearBooking()">✕</span>
                         @endif
-
-                        <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
-                        <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
                     </div>
+                </div>
 
-                    {{-- ORDER NUMBER --}}
-                    <div class="col-xl-3 col-md-2 col-12">
+                <!-- <div class="col-xl-2 col-md-2 col-12 position-relative">
+                    <label class="filter-label">Activity Date</label>
+
+                    <input type="text" id="activity_range" class="form-control"
+                        placeholder="Select date range" autocomplete="off">
+
+                    @if(request('start_date'))
+                        <span class="clear-btn" onclick="clearActivity()">✕</span>
+                    @endif
+
+                    <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
+                    <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
+                </div> -->
+
+                {{-- ORDER NUMBER --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
                         <label class="filter-label">Order Number</label>
-                        <input type="text" name="order_number"
-                            value="{{ request('order_number') }}"
-                            class="form-control"
-                            placeholder="TUU8XXA">
+                        <input type="text" name="order_number" value="{{ request('order_number') }}" class="form-control" placeholder="Order Number">
                     </div>
+                </div>
 
-                    {{-- MODEL --}}
-                    <div class="col-xl-2 col-md-2 col-12">
+                {{-- MODEL --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
                         <label class="filter-label">Model</label>
                         <select name="model" class="form-control">
                             <option value="">All</option>
+
                             @foreach(activity_models_list() as $class => $label)
                                 <option value="{{ $class }}"
                                     {{ request('model') == $class ? 'selected' : '' }}>
@@ -232,9 +116,11 @@
                             @endforeach
                         </select>
                     </div>
+                </div>
 
-                    {{-- ACTION --}}
-                    <div class="col-xl-2 col-md-2 col-12">
+                {{-- ACTION --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
                         <label class="filter-label">Action</label>
                         <select name="action" class="form-control">
                             <option value="">All</option>
@@ -243,56 +129,56 @@
                             <option value="deleted" {{ request('action')=='deleted'?'selected':'' }}>Deleted</option>
                         </select>
                     </div>
-
-                    {{-- USER --}}
-                    <div class="col-xl-2 col-md-2 col-12">
-                        <label class="filter-label">User</label>
-                        <input type="text" name="user_id"
-                            value="{{ request('user_id') }}"
-                            class="form-control"
-                            placeholder="User">
-                    </div>
-
-                    {{-- SEARCH --}}
-                    <div class="col-xl-3 col-md-2 col-12">
-                        <label class="filter-label">Search</label>
-                        <input type="text" name="search"
-                            value="{{ request('search') }}"
-                            class="form-control"
-                            placeholder="Search action...">
-                    </div>
-
-                    {{-- PROPERTY --}}
-                    <div class="col-xl-3 col-md-2 col-12">
-                        <label class="filter-label">Properties</label>
-                        <input type="text" name="property"
-                            value="{{ request('property') }}"
-                            class="form-control"
-                            placeholder="Search JSON...">
-                    </div>
-
-                    {{-- MODEL ID --}}
-                    <div class="col-xl-3 col-md-2 col-12">
-                        <label class="filter-label">Model ID</label>
-                        <input type="text" name="model_id"
-                            value="{{ request('model_id') }}"
-                            class="form-control"
-                            placeholder="ID">
-                    </div>
-
-                    {{-- BUTTONS --}}
-                    <div class="col-xl-3 col-md-2 col-12">
-                        <label class="filter-label">&nbsp;</label>
-                        <div class="d-flex column-gap-10">
-                            <button class="btn btn-apply flex-fill mt-0" style="height: fit-content;">Apply</button>
-                            <a href="{{ url()->current() }}" class="btn btn-secondary flex-fill mt-0" style="height: fit-content;">Reset</a>
-                        </div>
-                    </div>
-
                 </div>
-            </form>
-        </div>
+
+                {{-- USER --}}
+                <div class="col-xl-2 col-md-2 col-12">
+                    <label class="filter-label">User</label>
+                    <input type="text" name="user_id"
+                        value="{{ request('user_id') }}"
+                        class="form-control"
+                        placeholder="User">
+                </div>
+
+                {{-- SEARCH --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <label class="filter-label">Search</label>
+                    <input type="text" name="search"
+                        value="{{ request('search') }}"
+                        class="form-control"
+                        placeholder="Search action...">
+                </div>
+
+                {{-- PROPERTY --}}
+                <div class="col-xl-2 col-md-2 col-12">
+                    <label class="filter-label">Properties</label>
+                    <input type="text" name="property"
+                        value="{{ request('property') }}"
+                        class="form-control"
+                        placeholder="Search JSON...">
+                </div>
+
+                {{-- MODEL ID --}}
+                <div class="col-xl-2 col-md-2 col-12">
+                    <label class="filter-label">Model ID</label>
+                    <input type="text" name="model_id"
+                        value="{{ request('model_id') }}"
+                        class="form-control"
+                        placeholder="ID">
+                </div>
+
+                {{-- BUTTONS --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <label class="filter-label">&nbsp;</label>
+                    <div class="d-flex column-gap-10">
+                        <button class="btn btn-apply flex-fill mt-0" style="height: fit-content;">Apply</button>
+                        <a href="{{ url()->current() }}" class="btn btn-secondary flex-fill mt-0" style="height: fit-content;">Reset</a>
+                    </div>
+                </div>
+            </div>
+        </form>
     </div>
+
     <div class="row">
         <div class="col-lg-12">
             <div class="card card-primary bg-white border rounded-lg-custom">
@@ -413,33 +299,11 @@
                 </div>
             </div>
         </div>
-
+    </div>
 
     @section('js')
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-
-    <script>
-        let filterOpen = false;
-
-        $('#toggleFilter').on('click', function () {
-            $('#filterPanel').slideToggle(250);
-
-            filterOpen = !filterOpen;
-
-            if (filterOpen) {
-                $(this)
-                    .removeClass('btn-secondary')
-                    .addClass('btn-danger')
-                    .html('<i class="fas fa-times"></i> Hide Filters');
-            } else {
-                $(this)
-                    .removeClass('btn-danger')
-                    .addClass('btn-secondary')
-                    .html('<i class="fas fa-filter"></i> Filters');
-            }
-        });
-    </script>
 
     <script>
         let start = "{{ request('start_date') }}";

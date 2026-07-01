@@ -117,11 +117,6 @@
     white-space: nowrap;
 }
 
-.filter-panel {
-    display: none;
-    animation: fadeSlide 0.3s ease-in-out;
-}
-
 @keyframes fadeSlide {
     from {
         opacity: 0;
@@ -134,18 +129,20 @@
 }
 </style>
 
+<div class="card-primary mb-3">
+    <div class="card-header reports-head">
+        <h3 class="card-title">{{ translate('Activity Timeline') }}</h3>
+    </div>
+</div>
 
-
-{{-- ✅ FILTER SAME AS BEFORE --}}
+{{-- FILTER SAME AS BEFORE --}}
 <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
     <form method="GET">
 
         <div class="row">
-
             {{-- ACTIVITY DATE --}}
             <div class="col-xl-3 col-md-3 col-12 position-relative">
                 <label class="filter-label">Activity Date</label>
-
                 <input 
                     type="text" 
                     name="activity_date"
@@ -158,11 +155,11 @@
                     autocomplete="off"
                     value="{{ request('activity_date') }}"
                 >
-
                 @if(request('activity_date'))
                     <span class="clear-btn" onclick="clearBooking()">✕</span>
                 @endif
             </div>
+
             <!-- <div class="col-xl-2 col-md-2 col-12 position-relative">
                 <label class="filter-label">Activity Date</label>
 
@@ -187,12 +184,10 @@
             </div>
 
             {{-- MODEL --}}
-
             <div class="col-xl-2 col-md-2 col-12">
                 <label class="filter-label">Model</label>
                 <select name="model" class="form-control">
                     <option value="">All</option>
-
                     @foreach(activity_models_list() as $class => $label)
                         <option value="{{ $class }}"
                             {{ request('model') == $class ? 'selected' : '' }}>
@@ -253,12 +248,8 @@
             <div class="col-xl-2 col-md-2 col-12">
                 <label class="filter-label">&nbsp;</label>
                 <div class="d-flex column-gap-10">
-                    <button class="btn btn-apply flex-fill mt-0" style="
-    height: fit-content;
-">Apply</button>
-                    <a href="{{ url()->current() }}" class="btn btn-secondary flex-fill mt-0" style="
-    height: fit-content;
-">Reset</a>
+                    <button class="btn btn-apply flex-fill mt-0" style="height: fit-content;">Apply</button>
+                    <a href="{{ url()->current() }}" class="btn btn-secondary flex-fill mt-0" style="height: fit-content;">Reset</a>
                 </div>
             </div>
         </div>
