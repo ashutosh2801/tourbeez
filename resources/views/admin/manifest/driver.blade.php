@@ -646,12 +646,12 @@ orders.forEach(function (o) {
 
     container.innerHTML += `
 
-    <div class="order-content mb-2 p-2 border rounded"
+    <div class="order-content mb-2 p-2 rounded"
          data-assignment-type="${o.assignment_type}">
 
-        <div class="d-flex justify-content-between align-items-start">
+        <div class="d-flex justify-content-between align-items-start content-part">
 
-            <div style="width:28%;">
+            <div class="content-detail">
 
                 <input
                     type="checkbox"
@@ -676,7 +676,7 @@ orders.forEach(function (o) {
 
             </div>
 
-            <div style="width:34%;">
+            <div class="content-driver">
 
                 <select
                     class="form-control order-driver-select"
@@ -689,7 +689,7 @@ orders.forEach(function (o) {
 
             </div>
 
-            <div style="width:34%;">
+            <div class="content-vehicle">
 
                 <select
                     class="form-control aiz-selectpicker order-vehicle-select"
