@@ -9869,7 +9869,8 @@ table.dataTable {
     border-color: #5a6268;
 }
 
-.order-manifest-head .driver-filter {
+.order-manifest-head .driver-filter,
+.order-manifest-head .vehicle-filter {
     width: 200px;
     height: auto;
     padding: 0.216rem .51rem;
@@ -11246,7 +11247,6 @@ table.dataTable {
     outline: 0;
     box-shadow: none;
     -webkit-appearance: textfield;
-    margin-top: 12px;
 }
 
 #driverModal .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
@@ -11258,6 +11258,17 @@ table.dataTable {
     min-height: calc(1.3125rem + 1.2rem + 2px) !important;
     padding: 0.6rem 1rem !important;
     margin-bottom: 15px !important;
+}
+
+#driverModal .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    margin: 0;
+    line-height: 1.7;
+    color: #FFF;
+}
+
+#driverModal .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #333;
+    background: #607D8B;
 }
 
 @media (min-width: 768px) {
