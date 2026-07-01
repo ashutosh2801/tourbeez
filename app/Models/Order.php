@@ -225,6 +225,11 @@ class Order extends Model
         return $this->hasMany(StripeWebhookLog::class);
     }
 
+    public function latestPaymentLog()
+    {
+        return $this->hasOne(StripeWebhookLog::class)->latestOfMany();
+    }
+
     public function driver()
     {
         return $this->belongsToMany(User::class, 'order_drivers', 'order_id', 'driver_id')
