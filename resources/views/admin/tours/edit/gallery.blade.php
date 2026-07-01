@@ -44,7 +44,7 @@
                 
                 <button type="button"
                     class="btn btn-sm btn-primary mt-1"
-                    onclick="previewVideo('{{ $image->file_name }}')">
+                    onclick="previewVideo('{{ $image->file_name }}', event)">
                     Preview
                 </button>
 
@@ -240,5 +240,23 @@ document.addEventListener('click', function (e) {
         }
     }
 });
+
+function previewVideo(videoId, event) {
+
+    // stop aizuploader click trigger
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    if (!videoId) {
+        alert('Invalid video');
+        return;
+    }
+
+    // open YouTube video
+    const url = `https://www.youtube.com/watch?v=${videoId}`;
+    window.open(url, '_blank');
+}
 </script>
 @endsection

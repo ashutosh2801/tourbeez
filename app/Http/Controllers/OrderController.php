@@ -75,6 +75,22 @@ class OrderController extends Controller
             });
         }
 
+        if ($excludeProducts = $request->input('exclude_product')) {
+
+            $excludeProducts = array_filter((array)$excludeProducts);
+
+            if (!empty($excludeProducts)) {
+
+                $query->whereDoesntHave('orderTours', function ($q) use ($excludeProducts) {
+
+                    $q->whereIn('tour_id', $excludeProducts);
+
+                });
+
+            }
+
+        }
+
         // Filter by payment status
         if ($paymentStatus = $request->input('payment_status')) {
             $query->where('payment_status', $paymentStatus);
@@ -224,9 +240,19 @@ class OrderController extends Controller
 
         $orders = $query->paginate($perPage)->appends($request->all()); // preserve filters in pagination
 
-        $products = Tour::select('id', 'title')->where('status', 1)->get(); // for filter dropdown
+        $products = Tour::select('id', 'title')->where('status', 1)->get(); 
 
-        return view('admin.order.index', compact('orders', 'products', 'totalOrders'));
+        $selectedProducts = Tour::whereIn(
+            'id',
+            (array)$request->product
+        )->get(['id','title']);
+
+        $excludedProducts = Tour::whereIn(
+            'id',
+            (array)$request->exclude_product
+        )->get(['id','title']);// for filter dropdown
+
+        return view('admin.order.index', compact('orders', 'products', 'totalOrders', 'selectedProducts', 'excludedProducts'));
     }
 
     public function showPdfFiles()
@@ -2025,7 +2051,7 @@ class OrderController extends Controller
                         $TOUR_ITEM_SUMMARY .= '
                         <tr>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' (Extra)</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
                         </tr>';

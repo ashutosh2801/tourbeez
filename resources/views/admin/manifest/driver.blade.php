@@ -60,6 +60,27 @@
     .manifest-cell.has-orders:hover {
         background-color: #f0f7ff;
     }
+
+    .select2-container {
+    width: 100% !important;
+}
+
+.select2-selection--multiple {
+    min-height: 38px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: .375rem !important;
+}
+
+.select2-selection__choice {
+    background: #607D8B !important;
+    color: white !important;
+    border: none !important;
+}
+
+.select2-selection__choice__remove {
+    color: white !important;
+    margin-right: 6px;
+}
 </style>
 
 <div class="card-primary mb-3">
@@ -87,11 +108,15 @@
                         <option value="{{ $driver->id }}" {{request()->input('driver_id') == $driver->id ? 'Selected' : ''}}>{{ $driver->name }}</option>
                     @endforeach
                 </select>
+                <select id="vehicleFilter" class="form-control vehicle-filter">
+                    <option value="">All Vehicle</option>
+                    @foreach($vehicles as $vehicle)
+                        <option value="{{ $vehicle->id }}" {{request()->input('vehicle_id') == $vehicle->id ? 'Selected' : ''}}>{{ $vehicle->name }}</option>
+                    @endforeach
+                </select>
             </div>
             <!-- <a href="{{ route('admin.driver.manifest.export', ['date' => $date]) }}" 
                    class="btn btn-success btn-sm">
-
-
                     Export Excel
                 </a> -->
 
@@ -168,6 +193,18 @@
                                         })
                                         ->filter()
                                         ->implode(', ');
+
+
+                                    $vehicleNames = collect($cellOrders)
+                                    ->flatMap(function ($o) {
+                                        return $o['vehicle_ids'] ?? [];
+                                    })
+                                    ->unique()
+                                    ->map(function ($vehicleId) use ($vehicleNameMap) {
+                                        return $vehicleNameMap[$vehicleId] ?? null;
+                                    })
+                                    ->filter()
+                                    ->implode(', ');
                             @endphp
                             <td class="text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
                                 data-tour="{{ $tourTitle }}"
@@ -181,6 +218,10 @@
                                         <br><small class="text-success">{{ $driverNames }}</small>
                                     @else
                                         <!-- <br><small class="text-danger">No Driver</small> -->
+                                    @endif
+
+                                    @if($vehicleNames)
+                                        <br><small class="text-primary">{{ $vehicleNames }}</small>
                                     @endif
                                 @endif
                             </td>
@@ -255,11 +296,68 @@
                 <label class="form-label">Orders</label>
                 <div id="order_list" class="order-list bg-light" style="min-height: 300px;"></div>
 
-                <div class="mt-2">
+                <!-- <div class="mt-2">
                     <label>
                         <input type="checkbox" id="select_all_orders" checked> Apply to all orders
                     </label>
-                </div>
+                </div> -->
+
+
+                <div class="mt-3">
+    <button type="button"
+            class="btn btn-primary btn-sm"
+            id="bulkAssignBtn">
+        Assign Driver & Vehicle to All Orders
+    </button>
+</div>
+
+<div id="bulkAssignPanel"
+     class="border rounded p-3 mt-3"
+     style="display:none;">
+
+    <h6>Bulk Assignment</h6>
+
+    <div class="row">
+
+        <div class="col-md-6">
+            <label>Drivers</label>
+
+            <select
+                id="bulkDriver"
+                class="form-control aiz-selectpicker"
+                multiple
+                data-live-search="true">
+
+            </select>
+        </div>
+
+        <div class="col-md-6">
+            <label>Vehicle</label>
+
+            <select
+                id="bulkVehicle"
+                class="form-control aiz-selectpicker"
+                data-live-search="true">
+
+            </select>
+        </div>
+
+    </div>
+
+    <div class="mt-3">
+
+        <button
+            type="button"
+            class="btn btn-success"
+            id="applyBulkAssignment">
+
+            Apply To All Orders
+
+        </button>
+
+    </div>
+
+</div>
             </div>
             <div class="modal-footer">
                 <!-- <button type="button" class="btn btn-danger" id="removeDriver">
@@ -275,306 +373,745 @@
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 window.allDrivers = @json($drivers);
 let driversList = @json($drivers);
+let vehiclesList = @json($vehicles);
 const orderEditRoute = "{{ route('admin.orders.edit', ':id') }}";
 </script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
-    let driverFilter = document.getElementById('driverFilter');
-    let exportBtn = document.querySelector('.btn-download');
-    let dateInput = document.getElementById('filter-date');
+    const driverFilter = document.getElementById('driverFilter');
+    const exportBtn = document.querySelector('.btn-download');
+    const dateInput = document.getElementById('filter-date');
 
-    // =========================
-    // OPEN CALENDAR
-    // =========================
-    dateInput.addEventListener('click', function() {
-        if (this.showPicker) this.showPicker();
-    });
+    // ====================================
+    // Calendar
+    // ====================================
 
-    // =========================
-    // TODAY BUTTON
-    // =========================
-    document.getElementById('today-date').addEventListener('click', function() {
-        let today = new Date();
-        let formatted = today.toISOString().split('T')[0];
-        window.location.href = "?date=" + formatted;
-    });
+    if (dateInput) {
 
-    // =========================
-    // EXPORT URL
-    // =========================
-    function updateExportUrl() {
-        let selectedDriver = driverFilter.value;
-        let date = dateInput.value;
+        dateInput.addEventListener('click', function () {
 
-        let url = `?date=${date}`;
-        if (selectedDriver) url += `&driver_id=${selectedDriver}`;
-
-        exportBtn.href = "{{ route('admin.driver.manifest.export') }}" + url;
-    }
-
-    // =========================
-    // WEEK NAVIGATION
-    // =========================
-    document.getElementById('prev-week').onclick = function() {
-        let d = new Date(dateInput.value);
-        d.setDate(d.getDate() - 6);
-        window.location.href = "?date=" + d.toISOString().split('T')[0];
-    };
-
-    document.getElementById('next-week').onclick = function() {
-        let d = new Date(dateInput.value);
-        d.setDate(d.getDate() + 6);
-        window.location.href = "?date=" + d.toISOString().split('T')[0];
-    };
-
-    dateInput.onchange = function() {
-        window.location.href = "?date=" + this.value;
-    };
-
-    // =========================
-    // CELL CLICK → MODAL
-    // =========================
-    document.querySelectorAll('.manifest-cell.has-orders').forEach(cell => {
-
-        cell.addEventListener('click', function() {
-
-            if (this.dataset.assignable !== '1') {
-                Swal.fire('Not Allowed', 'Driver cannot be assigned', 'warning');
-                return;
+            if (this.showPicker) {
+                this.showPicker();
             }
 
-            let orders = JSON.parse(this.dataset.orders);
-            let date = this.dataset.date;
+        });
 
-            document.getElementById('modal_date').value = date;
-            document.getElementById('modal_tour_title').innerText = this.dataset.tour;
-            document.getElementById('modal_date_display').innerText = date;
+        dateInput.addEventListener('change', function () {
 
-            let container = document.getElementById('order_list');
+            const url = new URL(window.location.href);
+
+            url.searchParams.set('date', this.value);
+
+            window.location.href = url.toString();
+
+        });
+
+    }
+
+    // ====================================
+    // Today
+    // ====================================
+
+    $('#today-date').on('click', function () {
+
+        const today = new Date();
+
+        const yyyy = today.getFullYear();
+
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+
+        const dd = String(today.getDate()).padStart(2, '0');
+
+        window.location.href = '?date=' + `${yyyy}-${mm}-${dd}`;
+
+    });
+
+    // ====================================
+    // Previous Week
+    // ====================================
+
+    $('#prev-week').on('click', function () {
+
+        let d = new Date(dateInput.value);
+
+        d.setDate(d.getDate() - 6);
+
+        window.location.href =
+            '?date=' + d.toISOString().split('T')[0];
+
+    });
+
+    // ====================================
+    // Next Week
+    // ====================================
+
+    $('#next-week').on('click', function () {
+
+        let d = new Date(dateInput.value);
+
+        d.setDate(d.getDate() + 6);
+
+        window.location.href =
+            '?date=' + d.toISOString().split('T')[0];
+
+    });
+
+    // ====================================
+    // Export URL
+    // ====================================
+
+    function updateExportUrl() {
+
+        const url = new URL(
+            "{{ route('admin.driver.manifest.export') }}",
+            window.location.origin
+        );
+
+        url.searchParams.set('date', dateInput.value);
+
+        if (driverFilter.value) {
+
+            url.searchParams.set(
+                'driver_id',
+                driverFilter.value
+            );
+
+        }
+
+        exportBtn.href = url.toString();
+
+    }
+
+    updateExportUrl();
+
+    // ====================================
+    // Driver Filter
+    // ====================================
+
+    driverFilter.addEventListener('change', function () {
+
+        const url = new URL(window.location.href);
+
+        url.searchParams.set('date', dateInput.value);
+
+        if (this.value) {
+
+            url.searchParams.set(
+                'driver_id',
+                this.value
+            );
+
+        } else {
+
+            url.searchParams.delete('driver_id');
+
+        }
+
+        window.location.href = url.toString();
+
+    });
+
+    // ====================================
+    // Cell Click
+    // ====================================
+
+    document.querySelectorAll('.manifest-cell.has-orders').forEach(function (cell) {
+
+        cell.addEventListener('click', function () {
+
+            $('#bulkAssignPanel').hide();
+
+            $('#bulkAssignBtn')
+                .text('Assign Driver & Vehicle to All Orders');
+
+            const assignable =
+                this.dataset.assignable === '1';
+
+            const orders =
+                JSON.parse(this.dataset.orders);
+
+            const date =
+                this.dataset.date;
+
+            $('#modal_date').val(date);
+
+            $('#modal_tour_title').text(this.dataset.tour);
+
+            $('#modal_date_display').text(date);
+
+            const container =
+                document.getElementById('order_list');
+
             container.innerHTML = '';
 
-            // build driver options
             let driversHtml = '';
-            driversList.forEach(d => {
-                driversHtml += `<option value="${d.id}">${d.name}</option>`;
+
+            driversList.forEach(function (driver) {
+
+                driversHtml +=
+                    `<option value="${driver.id}">
+                        ${driver.name}
+                    </option>`;
+
             });
 
-            // render orders
-            orders.forEach(o => {
-                let orderUrl = orderEditRoute.replace(':id', o.order_encrypt_id);
-                container.innerHTML += `
-                <div class="order-content mb-2 p-2 border rounded">
-                    <div class="d-flex justify-content-between">
+            let vehiclesHtml =
+                `<option value="">
+                    Select Vehicle
+                </option>`;
 
-                        <div style="width:50%">
-                            <input type="checkbox" class="order-checkbox" value="${o.order_id}" checked>
-                            <a href="${orderUrl}" class="alink" target="_blank">
-                        #${o.order_number}
-                    </a><br>
-                            <small>${o.customer || ''}</small><br>
-                            <small>👥 ${o.guest_count}</small>
-                        </div>
+            vehiclesList.forEach(function (vehicle) {
 
-                        <div style="width:50%">
-                            <select 
-                                class="form-control aiz-selectpicker order-driver-select"
-                                multiple
-                                data-live-search="true"
-                                data-order-id="${o.order_id}">
-                                ${driversHtml}
-                            </select>
-                        </div>
+                vehiclesHtml +=
+                    `<option value="${vehicle.id}">
+                        ${vehicle.name}
+                    </option>`;
 
-                    </div>
-                </div>`;
             });
 
-            // ✅ INIT AIZ SELECT PROPERLY
-            TB.plugins.bootstrapSelect();
+            // Render orders starts here...
 
-            // ✅ PRESELECT EXISTING DRIVERS
-            orders.forEach(o => {
-                let select = document.querySelector(
-                    `.order-driver-select[data-order-id="${o.order_id}"]`
-                );
 
-                if (!select) return;
 
-                let selected = o.driver_ids || [];
+// ====================================
+// Render Orders
+// ====================================
 
-                Array.from(select.options).forEach(opt => {
-                    opt.selected = selected.includes(parseInt(opt.value));
-                });
-            });
+orders.forEach(function (o) {
 
-            // ✅ REFRESH AFTER SETTING VALUES
-            TB.plugins.bootstrapSelect('refresh');
+    let orderUrl = orderEditRoute.replace(
+        ':id',
+        o.order_encrypt_id
+    );
 
-            new bootstrap.Modal(document.getElementById('driverModal')).show();
-        });
+    container.innerHTML += `
+
+    <div class="order-content mb-2 p-2 border rounded"
+         data-assignment-type="${o.assignment_type}">
+
+        <div class="d-flex justify-content-between align-items-start">
+
+            <div style="width:28%;">
+
+                <input
+                    type="checkbox"
+                    class="order-checkbox"
+                    value="${o.order_id}"
+                    checked>
+
+                <a href="${orderUrl}"
+                   target="_blank">
+
+                    #${o.order_number}
+
+                </a>
+
+                <br>
+
+                <small>${o.customer ?? ''}</small>
+
+                <br>
+
+                <small>👥 ${o.guest_count}</small>
+
+            </div>
+
+            <div style="width:34%;">
+
+                <select
+                    class="form-control order-driver-select"
+                    multiple
+                    data-order-id="${o.order_id}">
+
+                    ${driversHtml}
+
+                </select>
+
+            </div>
+
+            <div style="width:34%;">
+
+                <select
+                    class="form-control aiz-selectpicker order-vehicle-select"
+                    data-live-search="true"
+                    data-order-id="${o.order_id}">
+
+                    ${vehiclesHtml}
+
+                </select>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    `;
+
+});
+
+
+// ====================================
+// Initialise Select2 (Drivers)
+// ====================================
+
+$('.order-driver-select').select2({
+
+    width: '100%',
+
+    placeholder: 'Select Driver',
+
+    closeOnSelect: false
+
+});
+
+
+// ====================================
+// Initialise Vehicle Picker
+// ====================================
+
+$('.order-vehicle-select').selectpicker('refresh');
+
+loadBulkDropdowns();
+
+
+// ====================================
+// Preselect Existing Drivers
+// ====================================
+
+orders.forEach(function (o) {
+
+    let driverSelect = document.querySelector(
+
+        `.order-driver-select[data-order-id="${o.order_id}"]`
+
+    );
+
+    if (!driverSelect) {
+
+        return;
+
+    }
+
+    let drivers = (o.driver_ids || []).map(String);
+
+    $(driverSelect)
+
+        .val(drivers)
+
+        .trigger('change');
+
+});
+
+
+// ====================================
+// Preselect Existing Vehicles
+// ====================================
+
+orders.forEach(function (o) {
+
+    let vehicleSelect = document.querySelector(
+
+        `.order-vehicle-select[data-order-id="${o.order_id}"]`
+
+    );
+
+    if (!vehicleSelect) {
+
+        return;
+
+    }
+
+    let vehicles = (o.vehicle_ids || []).map(String);
+
+    $(vehicleSelect)
+
+        .selectpicker('val', vehicles)
+
+        .selectpicker('refresh');
+
+});
+
+
+// ====================================
+// Open Modal
+// ====================================
+
+new bootstrap.Modal(
+
+    document.getElementById('driverModal')
+
+).show();
+
+
+// ====================================
+// Enable / Disable
+// ====================================
+
+if (!assignable) {
+
+    $('.order-driver-select')
+        .prop('disabled', true)
+        .trigger('change');
+
+    $('.order-vehicle-select')
+        .prop('disabled', true)
+        .selectpicker('refresh');
+
+    $('#assignDriver').prop('disabled', true);
+
+    $('#bulkAssignBtn').hide();
+
+    $('#bulkAssignPanel').hide();
+
+    Swal.fire({
+
+        icon: 'warning',
+
+        title: 'Driver Assignment Disabled',
+
+        text: 'This tour is not assignable.'
+
     });
+
+} else {
+
+    $('.order-driver-select')
+        .prop('disabled', false)
+        .trigger('change');
+
+    $('.order-vehicle-select')
+        .prop('disabled', false)
+        .selectpicker('refresh');
+
+    $('#assignDriver').prop('disabled', false);
+
+    $('#bulkAssignBtn').show();
+
+}
+
+});
+
+});
+
+   // ========================================
+// BULK ASSIGN PANEL
+// ========================================
+
+$('#bulkAssignBtn').on('click', function () {
+
+    $('#bulkAssignPanel').slideToggle(200);
+
+    if ($('#bulkAssignPanel').is(':visible')) {
+
+        $(this).text('Hide Bulk Assignment');
+
+    } else {
+
+        $(this).text('Assign Driver & Vehicle to All Orders');
+
+    }
+
+});
+
+
+// ========================================
+// LOAD BULK DROPDOWNS
+// ========================================
+
+function loadBulkDropdowns() {
+
+    let driverHtml = '';
+
+    window.allDrivers.forEach(function(driver){
+
+        driverHtml += `
+            <option value="${driver.id}">
+                ${driver.name}
+            </option>
+        `;
+
+    });
+
+    $('#bulkDriver').html(driverHtml);
+
+
+
+    let vehicleHtml = `
+        <option value="">
+            Select Vehicle
+        </option>
+    `;
+
+    vehiclesList.forEach(function(vehicle){
+
+        vehicleHtml += `
+            <option value="${vehicle.id}">
+                ${vehicle.name}
+            </option>
+        `;
+
+    });
+
+    $('#bulkVehicle').html(vehicleHtml);
+
+
+
+    // Destroy if already initialized
+
+    if ($('#bulkDriver').hasClass('select2-hidden-accessible')) {
+
+        $('#bulkDriver').select2('destroy');
+
+    }
+
+    $('#bulkDriver').select2({
+
+        width: '100%',
+
+        placeholder: 'Select Drivers',
+
+        closeOnSelect: false
+
+    });
+
+
+
+    $('#bulkVehicle').selectpicker('destroy');
+
+    $('#bulkVehicle').selectpicker();
+
+}
+
+
+
+// ========================================
+// APPLY BULK ASSIGNMENT
+// ========================================
+
+$('#applyBulkAssignment').on('click', function () {
+
+    let drivers = $('#bulkDriver').val() || [];
+
+    let vehicle = $('#bulkVehicle').val();
+
+
+
+    // Apply Driver
+
+    $('.order-driver-select').each(function(){
+
+        $(this)
+
+            .val(drivers)
+
+            .trigger('change');
+
+    });
+
+
+
+    // Apply Vehicle
+
+    $('.order-vehicle-select').each(function(){
+
+        $(this)
+
+            .selectpicker('val', vehicle)
+
+            .selectpicker('refresh');
+
+    });
+
+});
 
     // =========================
     // ASSIGN DRIVER (FIXED)
     // =========================
-document.getElementById('assignDriver').addEventListener('click', async function() {
+   // ========================================
+// ASSIGN DRIVER
+// ========================================
 
-    let btn = this;
-    let date = document.getElementById('modal_date').value;
+$('#assignDriver').on('click', async function () {
+
+    const btn = this;
+
+    const date = $('#modal_date').val();
 
     let ordersPayload = [];
 
-    document.querySelectorAll('.order-content').forEach(function(row) {
+    $('.order-content').each(function () {
 
-        let orderId = parseInt(row.querySelector('.order-checkbox').value);
+        const row = $(this);
 
-        let $select = $(row).find('.order-driver-select');
+        const orderId = parseInt(
+            row.find('.order-checkbox').val()
+        );
 
-        let selectedDrivers = [];
+        // ----------------------------
+        // Driver IDs
+        // ----------------------------
 
-        // ✅ READ FROM SELECTED OPTIONS (REAL FIX)
-        $select.find('option:selected').each(function () {
-            selectedDrivers.push(parseInt($(this).val()));
+        let driverIds =
+            row.find('.order-driver-select').val() || [];
+
+        driverIds = driverIds.map(Number);
+
+        // ----------------------------
+        // Vehicle IDs
+        // ----------------------------
+
+        let vehicleIds = [];
+
+        let vehicleSelect = row.find('.order-vehicle-select');
+
+        let vehicleValue = vehicleSelect.selectpicker('val');
+
+        if (vehicleValue) {
+
+            if (Array.isArray(vehicleValue)) {
+
+                vehicleIds = vehicleValue.map(Number);
+
+            } else {
+
+                vehicleIds = [Number(vehicleValue)];
+
+            }
+
+        }
+
+        console.log({
+
+            order: orderId,
+
+            drivers: driverIds,
+
+            vehicles: vehicleIds
+
         });
-
-        console.log('FIXED:', orderId, selectedDrivers);
 
         ordersPayload.push({
+
             order_id: orderId,
-            driver_ids: selectedDrivers
+
+            driver_ids: driverIds,
+
+            vehicle_ids: vehicleIds,
+
+            assignment_type: row.data('assignment-type')
+
         });
+
     });
 
-    try {
-        btn.disabled = true;
-        btn.innerText = 'Saving...';
+    console.log("Sending Payload", ordersPayload);
 
-        let res = await fetch("{{ route('admin.assign.driver') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                orders: ordersPayload,
-                date: date
-            })
+    try {
+
+        btn.disabled = true;
+
+        btn.innerText = "Saving...";
+
+        const response = await fetch(
+            "{{ route('admin.assign.driver') }}",
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type": "application/json",
+
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+
+                },
+
+                body: JSON.stringify({
+
+                    date: date,
+
+                    orders: ordersPayload
+
+                })
+
+            }
+        );
+
+        const result = await response.json();
+
+        console.log(result);
+
+        if (!response.ok) {
+
+            throw result;
+
+        }
+
+        Swal.fire({
+
+            icon: 'success',
+
+            title: 'Saved',
+
+            timer: 1000,
+
+            showConfirmButton: false
+
+        }).then(() => {
+
+            location.reload();
+
         });
 
-        if (!res.ok) throw new Error();
-
-        location.reload();
-
     } catch (e) {
-        alert('Error saving');
+
+        console.error(e);
+
+        Swal.fire({
+
+            icon: 'error',
+
+            title: 'Save Failed',
+
+            text: 'Unable to assign driver.'
+
+        });
+
     } finally {
+
         btn.disabled = false;
-        btn.innerText = 'Assign';
+
+        btn.innerText = "Assign";
+
     }
+
 });
 
     // =========================
     // DRIVER FILTER
     // =========================
+    driverFilter.addEventListener('change', function () {
 
-driverFilter.addEventListener('change', function () {
+        let selectedDriver = this.value;
+        let date = dateInput.value;
+        let url = `?date=${date}`;
 
-    let selectedDriver = this.value;
-    
-    let date = dateInput.value;
+        if (selectedDriver) {
+            url += `&driver_id=${selectedDriver}`;
+        }
 
-    let url = `?date=${date}`;
-
-    if (selectedDriver) {
-        url += `&driver_id=${selectedDriver}`;
-    }
-
-    window.location.href = url;
-});
-//     driverFilter.addEventListener('change', function() {
-
-//     let selectedDriver = parseInt(this.value);
-
-//     let totalMap = {};
-//     let assignedMap = {};
-//     let driverWiseMap = {}; // NEW
-
-//     document.querySelectorAll('.manifest-cell').forEach(cell => {
-
-//         if (!cell.classList.contains('has-orders')) return;
-
-//         let orders = JSON.parse(cell.dataset.orders);
-//         let date = cell.dataset.date;
-
-//         let visible = false;
-
-//         orders.forEach(o => {
-
-//             let match = !selectedDriver ||
-//                 (o.driver_ids && o.driver_ids.includes(selectedDriver));
-
-//             if (match) {
-//                 visible = true;
-
-//                 totalMap[date] = (totalMap[date] || 0) + o.guest_count;
-
-//                 if (o.driver_ids?.length) {
-//                     assignedMap[date] = (assignedMap[date] || 0) + o.guest_count;
-
-//                     // driver-wise
-//                     o.driver_ids.forEach(dId => {
-
-//                         if (selectedDriver && dId !== selectedDriver) return;
-
-//                         if (!driverWiseMap[date]) driverWiseMap[date] = {};
-//                         driverWiseMap[date][dId] =
-//                             (driverWiseMap[date][dId] || 0) + o.guest_count;
-//                     });
-//                 }
-//             }
-//         });
-
-//         cell.style.opacity = visible ? '1' : '0.2';
-//     });
-
-//     // update totals
-//     document.querySelectorAll('.total-pax').forEach(td => {
-//         td.innerText = totalMap[td.dataset.date] || 0;
-//     });
-
-//     document.querySelectorAll('.assigned-pax').forEach(td => {
-
-//         let date = td.dataset.date;
-//         let html = `<strong>${assignedMap[date] || 0}</strong>`;
-
-//         if (driverWiseMap[date]) {
-
-//             html += `<div style="margin-top:5px;">`;
-
-//             Object.entries(driverWiseMap[date]).forEach(([driverId, pax]) => {
-
-//                 let driver = driversList.find(d => d.id == driverId);
-
-//                 html += `
-//                     <div style="font-size:12px; color:#374151;">
-//                         ${driver?.name || 'Unknown'}: <strong>${pax}</strong>
-//                     </div>
-//                 `;
-//             });
-
-//             html += `</div>`;
-//         }
-
-//         td.innerHTML = html;
-//     });
-
-//     updateExportUrl();
-// });
+        window.location.href = url;
+    });
 
     updateExportUrl();
 });
