@@ -66,7 +66,7 @@
 }
 
 .select2-selection--multiple {
-    min-height: 38px !important;
+    min-height: 45px !important;
     border: 1px solid #ced4da !important;
     border-radius: .375rem !important;
 }
@@ -80,6 +80,11 @@
 .select2-selection__choice__remove {
     color: white !important;
     margin-right: 6px;
+}
+.selection .select2-selection .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+    padding: 0.6rem 1rem !important;
+    margin-bottom: 15px !important;
 }
 </style>
 
@@ -122,7 +127,8 @@
 
                 <a href="{{ route('admin.driver.manifest.export', [
                     'date' => $date,
-                    'driver_id' => request('driver_id')
+                    'driver_id' => request('driver_id'),
+                    'vehicle_id' => request('vehicle_id')
                 ]) }}" 
                 class="btn btn-download btn-sm">
                     <i class="bi bi-download"></i> Download Excel
@@ -158,14 +164,27 @@
                             @php
                                 $dateKey = $d->toDateString();
                                 //$cellOrders = $dates[$dateKey] ?? [];
+                                // $cellOrders = collect($dates[$dateKey] ?? [])
+                               // ->filter(function ($o) use ($selectedDriver) {
+
+                               //     if (!$selectedDriver) return true;
+
+                               //     return in_array($selectedDriver, $o['driver_ids'] ?? []);
+                              //  })
+                              //  ->values(); 
+
                                 $cellOrders = collect($dates[$dateKey] ?? [])
-                                ->filter(function ($o) use ($selectedDriver) {
+                                    ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
 
-                                    if (!$selectedDriver) return true;
+                                        $driverMatch = !$selectedDriver ||
+                                            in_array($selectedDriver, $o['driver_ids'] ?? []);
 
-                                    return in_array($selectedDriver, $o['driver_ids'] ?? []);
-                                })
-                                ->values();
+                                        $vehicleMatch = !$selectedVehicle ||
+                                            in_array($selectedVehicle, $o['vehicle_ids'] ?? []);
+
+                                        return $driverMatch && $vehicleMatch;
+                                    })
+                                    ->values();
 
                                $totalGuests = collect($cellOrders)->sum('guest_count');
                                 //$driverNames = collect($cellOrders)
@@ -176,28 +195,39 @@
                                  //   ->implode(', ');
 
                                     $driverNames = collect($cellOrders)
-                                        ->flatMap(function ($o) use ($selectedDriver) {
+                                    ->flatMap(function ($o) use ($selectedDriver, $selectedVehicle) {
 
-                                            // no filter → show all
-                                            if (!$selectedDriver) {
-                                                return $o['driver_ids'] ?? [];
-                                            }
+                                        $driverIds = collect($o['driver_ids'] ?? []);
+                                        $vehicleIds = collect($o['vehicle_ids'] ?? []);
 
-                                            // filter → only matching driver
-                                            return collect($o['driver_ids'] ?? [])
-                                                ->filter(fn ($id) => $id == $selectedDriver);
-                                        })
-                                        ->unique()
-                                        ->map(function ($driverId) use ($driverNameMap) {
-                                            return $driverNameMap[$driverId] ?? null;
-                                        })
-                                        ->filter()
-                                        ->implode(', ');
+                                        if ($selectedVehicle && !$vehicleIds->contains($selectedVehicle)) {
+                                            return [];
+                                        }
+
+                                        if ($selectedDriver) {
+                                            return $driverIds->filter(fn($id) => $id == $selectedDriver);
+                                        }
+
+                                        return $driverIds;
+                                    })
+                                    ->unique()
+                                    ->map(function ($driverId) use ($driverNameMap) {
+                                        return $driverNameMap[$driverId] ?? null;
+                                    })
+                                    ->filter()
+                                    ->implode(', ');
 
 
                                     $vehicleNames = collect($cellOrders)
-                                    ->flatMap(function ($o) {
-                                        return $o['vehicle_ids'] ?? [];
+                                    ->flatMap(function ($o) use ($selectedVehicle) {
+
+                                        $vehicles = collect($o['vehicle_ids'] ?? []);
+
+                                        if ($selectedVehicle) {
+                                            return $vehicles->filter(fn($id) => $id == $selectedVehicle);
+                                        }
+
+                                        return $vehicles;
                                     })
                                     ->unique()
                                     ->map(function ($vehicleId) use ($vehicleNameMap) {
@@ -324,7 +354,7 @@
 
             <select
                 id="bulkDriver"
-                class="form-control aiz-selectpicker"
+                class="form-control"
                 multiple
                 data-live-search="true">
 
@@ -390,6 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const driverFilter = document.getElementById('driverFilter');
     const exportBtn = document.querySelector('.btn-download');
     const dateInput = document.getElementById('filter-date');
+    let vehicleFilter = document.getElementById('vehicleFilter');
 
     // ====================================
     // Calendar
@@ -471,24 +502,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateExportUrl() {
 
-        const url = new URL(
-            "{{ route('admin.driver.manifest.export') }}",
-            window.location.origin
-        );
+        let selectedDriver  = driverFilter.value;
+        let selectedVehicle = vehicleFilter.value;
+        let date            = dateInput.value;
 
-        url.searchParams.set('date', dateInput.value);
+        let url = `?date=${date}`;
 
-        if (driverFilter.value) {
-
-            url.searchParams.set(
-                'driver_id',
-                driverFilter.value
-            );
-
+        if (selectedDriver) {
+            url += `&driver_id=${selectedDriver}`;
         }
 
-        exportBtn.href = url.toString();
+        if (selectedVehicle) {
+            url += `&vehicle_id=${selectedVehicle}`;
+        }
 
+        exportBtn.href =
+            "{{ route('admin.driver.manifest.export') }}" + url;
     }
 
     updateExportUrl();
@@ -519,6 +548,29 @@ document.addEventListener('DOMContentLoaded', function () {
         window.location.href = url.toString();
 
     });
+
+    function applyFilters() {
+
+        let date = dateInput.value;
+
+        let driver  = driverFilter.value;
+        let vehicle = vehicleFilter.value;
+
+        let url = `?date=${date}`;
+
+        if (driver) {
+            url += `&driver_id=${driver}`;
+        }
+
+        if (vehicle) {
+            url += `&vehicle_id=${vehicle}`;
+        }
+
+        window.location.href = url;
+    }
+
+    driverFilter.addEventListener('change', applyFilters);
+    vehicleFilter.addEventListener('change', applyFilters);
 
     // ====================================
     // Cell Click

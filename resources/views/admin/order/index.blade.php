@@ -246,113 +246,95 @@
             </div>
         </form>
 
-        <div class="active-filters m-4">
-            @php
-                $query = request()->query();
-            @endphp
+        @php
+            $hasActiveFilters =
+                request('search') ||
+                request()->filled('payment_status') ||
+                request('order_status') ||
+                request('tour_start_date') ||
+                request('order_created_date') ||
+                request('source') ||
+                $selectedProducts->isNotEmpty() ||
+                $excludedProducts->isNotEmpty();
+        @endphp
 
+        @if($hasActiveFilters)
+        <div class="active-filters m-4">
             <div class="d-flex flex-wrap gap-2">
 
                 {{-- Search --}}
                 @if(request('search'))
-                    <span class="badge badge-dark mr-2">
+                    <span class="badge badge-dark mr-2 mt-2 mt-2 text-white">
                         Search: {{ request('search') }}
-
-                        <a href="{{ request()->fullUrlWithQuery(['search'=>null]) }}">
-                            ✕
-                        </a>
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['search' => null]) }}">✕</a>
                     </span>
                 @endif
 
                 {{-- Payment --}}
                 @if(request()->filled('payment_status'))
-                    <span class="badge badge-dark mr-2">
-                        Payment:
-                        {{ request('payment_status') ? 'Paid' : 'Unpaid' }}
-
-                        <a href="{{ request()->fullUrlWithQuery(['payment_status'=>null]) }}">
-                            ✕
-                        </a>
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Payment: {{ request('payment_status') ? 'Paid' : 'Unpaid' }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['payment_status' => null]) }}">✕</a>
                     </span>
                 @endif
 
                 {{-- Order Status --}}
                 @if(request('order_status'))
-                    <span class="badge badge-dark mr-2">
-
-                        Status:
-                        {{ $statuses[request('order_status')] }}
-
-                        <a href="{{ request()->fullUrlWithQuery(['order_status'=>null]) }}">
-                            ✕
-                        </a>
-
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Status: {{ $statuses[request('order_status')] }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['order_status' => null]) }}">✕</a>
                     </span>
                 @endif
 
                 {{-- Tour Date --}}
                 @if(request('tour_start_date'))
-                    <span class="badge badge-dark mr-2">
-
-                        Tour Date:
-                        {{ request('tour_start_date') }}
-
-                        <a href="{{ request()->fullUrlWithQuery(['tour_start_date'=>null]) }}">
-                            ✕
-                        </a>
-
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Tour Date: {{ request('tour_start_date') }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['tour_start_date' => null]) }}">✕</a>
                     </span>
                 @endif
 
                 {{-- Created Date --}}
                 @if(request('order_created_date'))
-                    <span class="badge badge-dark mr-2">
-
-                        Created:
-                        {{ request('order_created_date') }}
-
-                        <a href="{{ request()->fullUrlWithQuery(['order_created_date'=>null]) }}">
-                            ✕
-                        </a>
-
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Created: {{ request('order_created_date') }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['order_created_date' => null]) }}">✕</a>
                     </span>
                 @endif
 
                 {{-- Source --}}
                 @if(request('source'))
-                    <span class="badge badge-dark mr-2">
-
-                        Source:
-                        {{ source_list(request('source')) }}
-
-                        <a href="{{ request()->fullUrlWithQuery(['source'=>null]) }}">
-                            ✕
-                        </a>
-
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Source: {{ source_list(request('source')) }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['source' => null]) }}">✕</a>
                     </span>
                 @endif
 
-               @if($selectedProducts->isNotEmpty())
-    @php $p = $selectedProducts->first(); @endphp
-    <span class="badge badge-primary mr-2">
-        Tour: {{ $p->title }}
-        <a href="{{ request()->fullUrlWithQuery(['product' => null]) }}">✕</a>
-    </span>
-@endif
+                {{-- Selected Tour --}}
+                @if($selectedProducts->isNotEmpty())
+                    @php $p = $selectedProducts->first(); @endphp
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Tour: {{ $p->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['product' => null]) }}">✕</a>
+                    </span>
+                @endif
 
-@foreach($excludedProducts as $ep)
-    <span class="badge badge-danger mr-2">
-        Excluded: {{ $ep->title }}
-        <a href="{{ request()->fullUrlWithQuery([
-            'exclude_product' => collect(request('exclude_product'))
-                ->reject(fn($id) => $id == $ep->id)
-                ->values()->all(),
-        ]) }}">✕</a>
-    </span>
-@endforeach
+                {{-- Excluded Tours --}}
+                @foreach($excludedProducts as $ep)
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Excluded: {{ $ep->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery([
+                            'exclude_product' => collect(request('exclude_product'))
+                                ->reject(fn($id) => $id == $ep->id)
+                                ->values()
+                                ->all(),
+                        ]) }}">✕</a>
+                    </span>
+                @endforeach
+
             </div>
         </div>
-        
+        @endif        
 
         {{-- Bulk Delete --}}
         <form id="bulkDeleteForm" method="POST" action="{{ route('admin.order.bulkDelete') }}">
@@ -745,9 +727,9 @@
         //     }
         // });
 
-        function initTourSelect(selector, isMultiple) {
+        function initTourSelect(selector, isMultiple, placeholderText) {
     $(selector).select2({
-        placeholder: isMultiple ? 'Exclude tours' : 'Select Tour',
+        placeholder: placeholderText,
         minimumInputLength: 4,
         multiple: isMultiple,
         ajax: {
@@ -763,12 +745,11 @@
     });
 }
 
-initTourSelect('#productFilter', false);
-initTourSelect('#excludeProductFilter', true);
+initTourSelect('#productFilter', true, 'Select Tour');
+initTourSelect('#excludeProductFilter', true, 'Exclude tours');
 
 // initTourSelect('#productFilter');
-initTourSelect('#productFilter', true);
-initTourSelect('#excludeProductFilter', true);
+
 
     });
 

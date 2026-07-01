@@ -69,10 +69,35 @@ class OrderController extends Controller
         }
 
         // Filter by tour product
+        // if ($product = $request->input('product')) {
+        //     $query->whereHas('orderTours', function ($q) use ($product) {
+        //         $q->where('tour_id', $product);
+        //     });
+        // }
+
         if ($product = $request->input('product')) {
-            $query->whereHas('orderTours', function ($q) use ($product) {
-                $q->where('tour_id', $product);
-            });
+            $product = array_filter((array)$product);
+            if (!empty($product)) {
+                $query->whereHas('orderTours', function ($q) use ($product) {
+                    $q->whereIn('tour_id', $product);
+                });
+            }
+        }
+
+        if ($excludeProducts = $request->input('exclude_product')) {
+
+            $excludeProducts = array_filter((array)$excludeProducts);
+
+            if (!empty($excludeProducts)) {
+
+                $query->whereDoesntHave('orderTours', function ($q) use ($excludeProducts) {
+
+                    $q->whereIn('tour_id', $excludeProducts);
+
+                });
+
+            }
+
         }
 
         if ($excludeProducts = $request->input('exclude_product')) {

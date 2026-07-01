@@ -983,18 +983,20 @@ public function getInvoiceData($request, $paginate = false)
                 // FIXED → treat as Adults
                 if ($priceType === 'FIXED') {
                     $adult += $qty;
-                    continue;
+                    
+                } else{
+                    if (str_contains($label, 'adult')) {
+                    $adult += $qty;
+                    } elseif (str_contains($label, 'child')) {
+                        $child += $qty;
+                    } elseif (str_contains($label, 'infant')) {
+                        $infant += $qty;
+                    } else {
+                        $other += $qty;
+                    }
                 }
 
-                if (str_contains($label, 'adult')) {
-                    $adult += $qty;
-                } elseif (str_contains($label, 'child')) {
-                    $child += $qty;
-                } elseif (str_contains($label, 'infant')) {
-                    $infant += $qty;
-                } else {
-                    $other += $qty;
-                }
+                
                 $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
                 if ($qty > 0) {
@@ -1425,20 +1427,22 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 // FIXED → treat as Adults
                 if ($priceType === 'FIXED') {
                     $adult += $qty;
-                    continue;
+                    // continue;
+                } else{
+                     if (str_contains($label, 'adult')) {
+                        $adult += $qty;
+                    } elseif (str_contains($label, 'child')) {
+                        $child += $qty;
+                    } elseif (str_contains($label, 'infant')) {
+                        $infant += $qty;
+                    } elseif (str_contains($label, 'senior')) {
+                        $senior += $qty;
+                    } else {
+                        $other += $qty;
+                    }
                 }
 
-                if (str_contains($label, 'adult')) {
-                    $adult += $qty;
-                } elseif (str_contains($label, 'child')) {
-                    $child += $qty;
-                } elseif (str_contains($label, 'infant')) {
-                    $infant += $qty;
-                } elseif (str_contains($label, 'senior')) {
-                    $senior += $qty;
-                } else {
-                    $other += $qty;
-                }
+               
 
                 $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
@@ -1676,315 +1680,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
             ? ['rows' => $rows, 'pagination' => $orders]
             : $rows;
     }
-private function getInvoiceWithDetailsData34342($request, $paginate = false)
-{
-    $excludedStatuses = [1, 2, 6, 7];
 
-    $hasFilter = $request->filled('booking_date')
-    || $request->filled('tour_date')
-    || $request->filled('product')
-    || $request->filled('order_status')
-    || $request->filled('payment_status')
-    || $request->filled('partner')
-    || $request->filled('action_type');
-
-    if (!$hasFilter) {
-        return $paginate
-            ? [
-                'rows' => [],
-                'pagination' => new LengthAwarePaginator([], 0, 20)
-            ]
-            : [];
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | MAPS
-    |--------------------------------------------------------------------------
-    */
-
-    // tour_extra_id → addon_id
-    $tourExtraMap = DB::table('addon_tour')
-        ->pluck('addon_id', 'id')
-        ->toArray();
-
-    // addon_id → safe_key (dynamic)
-    $addonColumnMap = DB::table('addons')
-        ->get()
-        ->mapWithKeys(function ($addon) {
-            return [
-                $addon->id => \Illuminate\Support\Str::slug($addon->name, '_')
-            ];
-        })
-        ->toArray();
-
-    // freeze all addon keys (IMPORTANT)
-    $allAddonKeys = array_values($addonColumnMap);
-
-    /*
-    |--------------------------------------------------------------------------
-    | QUERY
-    |--------------------------------------------------------------------------
-    */
-    $query = DB::table('orders')
-        ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
-        ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
-        ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
-        ->whereNull('orders.deleted_at')
-        ->whereNotIn('orders.order_status', $excludedStatuses)
-        ->groupBy('orders.id');
-
-    if ($request->filled('booking_date')) {
-        try {
-            [$start, $end] = explode(' - ', $request->booking_date);
-
-            $startDate = Carbon::parse($start)->startOfDay();
-            $endDate   = Carbon::parse($end)->endOfDay();
-            if ($startDate && $endDate) {
-                $query->whereBetween('orders.created_at', [$startDate, $endDate]);
-            }
-        } catch (\Exception $e) {}
-
-    }
-
-    if ($request->filled('order_status')) {
-        $query->where('orders.order_status', $request->order_status);
-    }
-
-    if ($request->filled('payment_status')) {
-        $query->where('orders.payment_status', $request->payment_status);
-    }
-
-    if ($request->filled('partner')) {
-        $query->where('orders.source', $request->partner);
-    }
-
-    if ($request->action_type === 'pay_now') {
-        $query->where('orders.action_name', 'book');
-    } elseif ($request->action_type === 'pay_later') {
-        $query->where(function ($q) {
-            $q->where('orders.action_name', '!=', 'book')
-              ->orWhereNull('orders.action_name');
-        });
-    }
-    if ($product = $request->input('product')) {
-        $query->where('order_tours.tour_id', $product);
-    }
-
-    if ($request->filled('tour_date')) {
-
-        try {
-            [$start, $end] = explode(' - ', $request->tour_date);
-
-            $query->whereBetween('order_tours.tour_date', [
-                $start,
-                $end,
-            ]);
-
-        } catch (\Exception $e) {
-            // fail silently
-        }
-    }
-    apply_report_sorting($query, $request); 
-
-    $query->select(
-        'orders.id',
-        'orders.order_number',
-        'orders.payment_status',
-        'orders.created_at',
-        'orders.currency',
-
-        'order_tours.tour_date',
-        'order_tours.tour_extra',
-        'order_tours.tour_fees',
-        'order_tours.tour_pricing',
-
-        'order_customers.first_name',
-        'order_customers.last_name',
-
-        'tours.title as product_name'
-    );
-
-    $orders = $paginate
-        ? $query->paginate(20)->withQueryString()
-        : $query->get();
-
-    $collection = $paginate ? $orders->getCollection() : $orders;
-
-    $rows = [];
-    $index = $paginate
-        ? ($orders->currentPage() - 1) * $orders->perPage() + 1
-        : 1;
-
-
-    foreach ($collection as $order) {
-
-        $extras = json_decode($order->tour_extra, true) ?? [];
-
-        /*
-        |--------------------------------------------------------------------------
-        | INIT ALL ADDON COLUMNS (prevents undefined errors)
-        |--------------------------------------------------------------------------
-        */
-        $extraColumns = [];
-
-        foreach ($allAddonKeys as $key) {
-            $extraColumns[$key] = [
-                'description' => '',
-                'price' => 0,
-                'tax' => 0,
-                'fee' => 0,
-                'total' => 0,
-                'quantity' => 0,
-            ];
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | MAP EXTRAS
-        |--------------------------------------------------------------------------
-        */
-        foreach ($extras as $e) {
-
-            $tourExtraId = $e['tour_extra_id'] ?? null;
-
-            if (!$tourExtraId || !isset($tourExtraMap[$tourExtraId])) {
-                continue;
-            }
-
-            $addonId = $tourExtraMap[$tourExtraId];
-
-            if (!isset($addonColumnMap[$addonId])) {
-                continue;
-            }
-
-            $key = $addonColumnMap[$addonId];
-
-            $price = $e['price'] ?? 0;
-            $qty   = $e['quantity'] ?? 1;
-            $total = $e['total_price'] ?? ($price * $qty);
-
-            $extraColumns[$key] = [
-                'description' => $e['label'] ?? '',
-                'quantity' => $qty,
-                'price' => round(currencyConvertWithoutRound($price, $order->currency, 'CAD'), 2),
-                'tax' => 0,
-                'fee' => 0,
-                'total' => round(currencyConvertWithoutRound($total, $order->currency, 'CAD'), 2),
-            ];
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | CALCULATION
-        |--------------------------------------------------------------------------
-        */
-        $extraValue = 0;
-        $taxValue = 0;
-
-        foreach ($extras as $e) {
-            $extraValue += $e['total_price'] ?? 0;
-        }
-
-        if (!empty($order->tour_fees)) {
-            $taxes = json_decode($order->tour_fees, true) ?? [];
-            foreach ($taxes as $tax) {
-                $taxValue += $tax['price'] ?? 0;
-            }
-        }
-
-        $customerTotal = $extraValue + $taxValue;
-
-
-            $pricing = json_decode($order->tour_pricing, true) ?? [];
-
-        $adult = 0;
-        $child = 0;
-        $infant = 0;
-        $other = 0;
-
-        foreach ($pricing as $p) {
-            $qty = (int) ($p['quantity'] ?? 0);
-            $label = strtolower($p['label'] ?? '');
-            $priceType = $p['price_type'] ?? '';
-
-            // FIXED → treat as Adults
-            if ($priceType === 'FIXED') {
-                $adult += $qty;
-                continue;
-            }
-
-            if (str_contains($label, 'adult')) {
-                $adult += $qty;
-            } elseif (str_contains($label, 'child')) {
-                $child += $qty;
-            } elseif (str_contains($label, 'infant')) {
-                $infant += $qty;
-            } else {
-                $other += $qty;
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | FINAL ROW (DYNAMIC SAFE)
-        |--------------------------------------------------------------------------
-        */
-        // $row = [
-        //     'order_id' => $order->id,
-        //     'no' => $index++,
-        //     'order_number' => $order->order_number,
-        //     'customer_name' => trim($order->first_name . ' ' . $order->last_name),
-        //     'order_date' => $order->created_at,
-        //     'fulfilment_date' => $order->tour_date,
-        //     'customer_total' => round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
-        //     'payment_status' => $order->payment_status == 2 ? 'Yes' : 'No',
-        //     'product_name' => $order->product_name,
-        //     'adult' => $adult,
-        //     'child' => $child,
-        //     'infant' => $infant,
-        //     'other' => $other,
-        // ];
-
-        $row = [
-                'no' => $index++,
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'customer_name' => trim($order->first_name . ' ' . $order->last_name),
-                'order_date' => $order->created_at,
-                'fulfilment_date' => $order->tour_date,
-                'payment_status' => $order->payment_status == 2 ? 'Yes' : 'No',
-                'product_name' => $order->product_name,
-                'adult' => $adult,
-                'child' => $child,
-                'infant' => $infant,
-                'senior' => $senior,
-                'other' => $other,
-                'product_price' => round(currencyConvertWithoutRound($product_price, $order->currency, 'CAD'), 2),
-                'extra_amount' => round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2),
-                'tax_amount' => round(currencyConvertWithoutRound($taxValue, $order->currency, 'CAD'), 2),
-                'discount_amount' => round(currencyConvertWithoutRound($discount_amount, $order->currency, 'CAD'), 2),
-                'customer_total' => round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
-                'balance_amount' => round(currencyConvertWithoutRound($order->balance_amount, $order->currency, 'CAD'), 2),
-            ];
-
-        // attach all addon columns consistently
-        foreach ($allAddonKeys as $key) {
-            $row[$key.'_desc']  = $extraColumns[$key]['description'];
-            $row[$key.'_quant'] = $extraColumns[$key]['quantity'];
-            $row[$key.'_price'] = $extraColumns[$key]['price'];
-            $row[$key.'_tax']   = $extraColumns[$key]['tax'];
-            $row[$key.'_fee']   = $extraColumns[$key]['fee'];
-            $row[$key.'_total'] = $extraColumns[$key]['total'];
-        }
-
-        $rows[] = $row;
-    }
-
-    return $paginate
-        ? ['rows' => $rows, 'pagination' => $orders]
-        : $rows;
-}
 
 
 public function exportRevenue(Request $request)
