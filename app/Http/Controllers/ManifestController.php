@@ -637,7 +637,7 @@ class ManifestController extends Controller
         //     'driver-manifest.xlsx'
         // );
         return Excel::download(
-            new DriverManifestExport($request->date, $request->driver_id),
+            new DriverManifestExport($request->date, $request->driver_id, $request->vehicle_id),
             'driver-manifest'. $date.'.xlsx'
         );
     }
