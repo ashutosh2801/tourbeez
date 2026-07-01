@@ -60,6 +60,32 @@
     .manifest-cell.has-orders:hover {
         background-color: #f0f7ff;
     }
+
+    .select2-container {
+    width: 100% !important;
+}
+
+.select2-selection--multiple {
+    min-height: 45px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: .375rem !important;
+}
+
+.select2-selection__choice {
+    background: #607D8B !important;
+    color: white !important;
+    border: none !important;
+}
+
+.select2-selection__choice__remove {
+    color: white !important;
+    margin-right: 6px;
+}
+.selection .select2-selection .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+    padding: 0.6rem 1rem !important;
+    margin-bottom: 15px !important;
+}
 </style>
 
 <div class="card-primary mb-3">
@@ -101,7 +127,8 @@
 
                 <a href="{{ route('admin.driver.manifest.export', [
                     'date' => $date,
-                    'driver_id' => request('driver_id')
+                    'driver_id' => request('driver_id'),
+                    'vehicle_id' => request('vehicle_id')
                 ]) }}" 
                 class="btn btn-download btn-sm">
                     <i class="bi bi-download"></i> Download Excel
@@ -137,14 +164,27 @@
                             @php
                                 $dateKey = $d->toDateString();
                                 //$cellOrders = $dates[$dateKey] ?? [];
+                                // $cellOrders = collect($dates[$dateKey] ?? [])
+                               // ->filter(function ($o) use ($selectedDriver) {
+
+                               //     if (!$selectedDriver) return true;
+
+                               //     return in_array($selectedDriver, $o['driver_ids'] ?? []);
+                              //  })
+                              //  ->values(); 
+
                                 $cellOrders = collect($dates[$dateKey] ?? [])
-                                ->filter(function ($o) use ($selectedDriver) {
+                                    ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
 
-                                    if (!$selectedDriver) return true;
+                                        $driverMatch = !$selectedDriver ||
+                                            in_array($selectedDriver, $o['driver_ids'] ?? []);
 
-                                    return in_array($selectedDriver, $o['driver_ids'] ?? []);
-                                })
-                                ->values();
+                                        $vehicleMatch = !$selectedVehicle ||
+                                            in_array($selectedVehicle, $o['vehicle_ids'] ?? []);
+
+                                        return $driverMatch && $vehicleMatch;
+                                    })
+                                    ->values();
 
                                $totalGuests = collect($cellOrders)->sum('guest_count');
                                 //$driverNames = collect($cellOrders)
@@ -155,28 +195,39 @@
                                  //   ->implode(', ');
 
                                     $driverNames = collect($cellOrders)
-                                        ->flatMap(function ($o) use ($selectedDriver) {
+                                    ->flatMap(function ($o) use ($selectedDriver, $selectedVehicle) {
 
-                                            // no filter → show all
-                                            if (!$selectedDriver) {
-                                                return $o['driver_ids'] ?? [];
-                                            }
+                                        $driverIds = collect($o['driver_ids'] ?? []);
+                                        $vehicleIds = collect($o['vehicle_ids'] ?? []);
 
-                                            // filter → only matching driver
-                                            return collect($o['driver_ids'] ?? [])
-                                                ->filter(fn ($id) => $id == $selectedDriver);
-                                        })
-                                        ->unique()
-                                        ->map(function ($driverId) use ($driverNameMap) {
-                                            return $driverNameMap[$driverId] ?? null;
-                                        })
-                                        ->filter()
-                                        ->implode(', ');
+                                        if ($selectedVehicle && !$vehicleIds->contains($selectedVehicle)) {
+                                            return [];
+                                        }
+
+                                        if ($selectedDriver) {
+                                            return $driverIds->filter(fn($id) => $id == $selectedDriver);
+                                        }
+
+                                        return $driverIds;
+                                    })
+                                    ->unique()
+                                    ->map(function ($driverId) use ($driverNameMap) {
+                                        return $driverNameMap[$driverId] ?? null;
+                                    })
+                                    ->filter()
+                                    ->implode(', ');
 
 
                                     $vehicleNames = collect($cellOrders)
-                                    ->flatMap(function ($o) {
-                                        return $o['vehicle_ids'] ?? [];
+                                    ->flatMap(function ($o) use ($selectedVehicle) {
+
+                                        $vehicles = collect($o['vehicle_ids'] ?? []);
+
+                                        if ($selectedVehicle) {
+                                            return $vehicles->filter(fn($id) => $id == $selectedVehicle);
+                                        }
+
+                                        return $vehicles;
                                     })
                                     ->unique()
                                     ->map(function ($vehicleId) use ($vehicleNameMap) {
@@ -303,7 +354,7 @@
 
             <select
                 id="bulkDriver"
-                class="form-control aiz-selectpicker"
+                class="form-control"
                 multiple
                 data-live-search="true">
 
@@ -352,6 +403,10 @@
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 window.allDrivers = @json($drivers);
 let driversList = @json($drivers);
@@ -360,339 +415,739 @@ const orderEditRoute = "{{ route('admin.orders.edit', ':id') }}";
 </script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
-    let driverFilter = document.getElementById('driverFilter');
-    let exportBtn = document.querySelector('.btn-download');
-    let dateInput = document.getElementById('filter-date');
+    const driverFilter = document.getElementById('driverFilter');
+    const exportBtn = document.querySelector('.btn-download');
+    const dateInput = document.getElementById('filter-date');
+    let vehicleFilter = document.getElementById('vehicleFilter');
 
-    // =========================
-    // OPEN CALENDAR
-    // =========================
-    dateInput.addEventListener('click', function() {
-        if (this.showPicker) this.showPicker();
-    });
+    // ====================================
+    // Calendar
+    // ====================================
 
-    // =========================
-    // TODAY BUTTON
-    // =========================
-    document.getElementById('today-date').addEventListener('click', function() {
-        let today = new Date();
-        let formatted = today.toISOString().split('T')[0];
-        window.location.href = "?date=" + formatted;
-    });
+    if (dateInput) {
 
-    // =========================
-    // EXPORT URL
-    // =========================
-    function updateExportUrl() {
-        let selectedDriver = driverFilter.value;
-        let date = dateInput.value;
+        dateInput.addEventListener('click', function () {
 
-        let url = `?date=${date}`;
-        if (selectedDriver) url += `&driver_id=${selectedDriver}`;
+            if (this.showPicker) {
+                this.showPicker();
+            }
 
-        exportBtn.href = "{{ route('admin.driver.manifest.export') }}" + url;
+        });
+
+        dateInput.addEventListener('change', function () {
+
+            const url = new URL(window.location.href);
+
+            url.searchParams.set('date', this.value);
+
+            window.location.href = url.toString();
+
+        });
+
     }
 
-    // =========================
-    // WEEK NAVIGATION
-    // =========================
-    document.getElementById('prev-week').onclick = function() {
+    // ====================================
+    // Today
+    // ====================================
+
+    $('#today-date').on('click', function () {
+
+        const today = new Date();
+
+        const yyyy = today.getFullYear();
+
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+
+        const dd = String(today.getDate()).padStart(2, '0');
+
+        window.location.href = '?date=' + `${yyyy}-${mm}-${dd}`;
+
+    });
+
+    // ====================================
+    // Previous Week
+    // ====================================
+
+    $('#prev-week').on('click', function () {
+
         let d = new Date(dateInput.value);
+
         d.setDate(d.getDate() - 6);
-        window.location.href = "?date=" + d.toISOString().split('T')[0];
-    };
 
-    document.getElementById('next-week').onclick = function() {
+        window.location.href =
+            '?date=' + d.toISOString().split('T')[0];
+
+    });
+
+    // ====================================
+    // Next Week
+    // ====================================
+
+    $('#next-week').on('click', function () {
+
         let d = new Date(dateInput.value);
+
         d.setDate(d.getDate() + 6);
-        window.location.href = "?date=" + d.toISOString().split('T')[0];
-    };
 
-    dateInput.onchange = function() {
-        window.location.href = "?date=" + this.value;
-    };
+        window.location.href =
+            '?date=' + d.toISOString().split('T')[0];
 
-    // =========================
-    // CELL CLICK → MODAL
-    // =========================
-    document.querySelectorAll('.manifest-cell.has-orders').forEach(cell => {
+    });
 
-        cell.addEventListener('click', function() {
+    // ====================================
+    // Export URL
+    // ====================================
 
-            
+    function updateExportUrl() {
+
+        let selectedDriver  = driverFilter.value;
+        let selectedVehicle = vehicleFilter.value;
+        let date            = dateInput.value;
+
+        let url = `?date=${date}`;
+
+        if (selectedDriver) {
+            url += `&driver_id=${selectedDriver}`;
+        }
+
+        if (selectedVehicle) {
+            url += `&vehicle_id=${selectedVehicle}`;
+        }
+
+        exportBtn.href =
+            "{{ route('admin.driver.manifest.export') }}" + url;
+    }
+
+    updateExportUrl();
+
+    // ====================================
+    // Driver Filter
+    // ====================================
+
+    driverFilter.addEventListener('change', function () {
+
+        const url = new URL(window.location.href);
+
+        url.searchParams.set('date', dateInput.value);
+
+        if (this.value) {
+
+            url.searchParams.set(
+                'driver_id',
+                this.value
+            );
+
+        } else {
+
+            url.searchParams.delete('driver_id');
+
+        }
+
+        window.location.href = url.toString();
+
+    });
+
+    function applyFilters() {
+
+        let date = dateInput.value;
+
+        let driver  = driverFilter.value;
+        let vehicle = vehicleFilter.value;
+
+        let url = `?date=${date}`;
+
+        if (driver) {
+            url += `&driver_id=${driver}`;
+        }
+
+        if (vehicle) {
+            url += `&vehicle_id=${vehicle}`;
+        }
+
+        window.location.href = url;
+    }
+
+    driverFilter.addEventListener('change', applyFilters);
+    vehicleFilter.addEventListener('change', applyFilters);
+
+    // ====================================
+    // Cell Click
+    // ====================================
+
+    document.querySelectorAll('.manifest-cell.has-orders').forEach(function (cell) {
+
+        cell.addEventListener('click', function () {
 
             $('#bulkAssignPanel').hide();
 
-            $('#bulkAssignBtn').text('Assign Driver & Vehicle to All Orders');
+            $('#bulkAssignBtn')
+                .text('Assign Driver & Vehicle to All Orders');
 
-            const assignable = this.dataset.assignable === '1';
+            const assignable =
+                this.dataset.assignable === '1';
 
+            const orders =
+                JSON.parse(this.dataset.orders);
 
-            // if (this.dataset.assignable !== '1') {
-            //     Swal.fire('Not Allowed', 'Driver cannot be assigned', 'warning');
-            //     return;
-            // }
+            const date =
+                this.dataset.date;
 
-            let orders = JSON.parse(this.dataset.orders);
-            let date = this.dataset.date;
+            $('#modal_date').val(date);
 
-            document.getElementById('modal_date').value = date;
-            document.getElementById('modal_tour_title').innerText = this.dataset.tour;
-            document.getElementById('modal_date_display').innerText = date;
+            $('#modal_tour_title').text(this.dataset.tour);
 
-            let container = document.getElementById('order_list');
+            $('#modal_date_display').text(date);
+
+            const container =
+                document.getElementById('order_list');
+
             container.innerHTML = '';
 
-            // build driver options
-            let driversHtml = '<option value="">Select Drivers</option>';
-            driversList.forEach(d => {
-                driversHtml += `<option value="${d.id}">${d.name}</option>`;
+            let driversHtml = '';
+
+            driversList.forEach(function (driver) {
+
+                driversHtml +=
+                    `<option value="${driver.id}">
+                        ${driver.name}
+                    </option>`;
+
             });
 
-            let vehiclesHtml = '<option value="">Select Vehicle</option>';
-            vehiclesList.forEach(d => {
-                vehiclesHtml += `<option value="${d.id}">${d.name}</option>`;
+            let vehiclesHtml =
+                `<option value="">
+                    Select Vehicle
+                </option>`;
+
+            vehiclesList.forEach(function (vehicle) {
+
+                vehiclesHtml +=
+                    `<option value="${vehicle.id}">
+                        ${vehicle.name}
+                    </option>`;
+
             });
 
+            // Render orders starts here...
 
 
-            // render orders
-            orders.forEach(o => {
-                let orderUrl = orderEditRoute.replace(':id', o.order_encrypt_id);
-                container.innerHTML += `
-                <div class="order-content mb-2 p-2 border rounded" data-assignment-type="${o.assignment_type}">
-                    <div class="d-flex justify-content-between">
 
-                        <div style="width:30%">
-                            <input type="checkbox" class="order-checkbox" value="${o.order_id}" checked>
-                            <a href="${orderUrl}" class="alink" target="_blank">
-                                #${o.order_number}
-                            </a><br>
-                            <small>${o.customer || ''}</small><br>
-                            <small>👥 ${o.guest_count}</small>
-                        </div>
+// ====================================
+// Render Orders
+// ====================================
 
-                        <div style="width:32%">
-                            <select 
-                                class="form-control aiz-selectpicker order-driver-select"
-                                multiple
-                                data-live-search="true"
-                                data-order-id="${o.order_id}">
-                                ${driversHtml}
-                            </select>
-                        </div>
+orders.forEach(function (o) {
 
-                        <div style="width:35%; margin-left:2%">
-                            <select 
-                                class="form-control aiz-selectpicker order-vehicle-select"
-                                
-                                data-live-search="true"
-                                data-order-id="${o.order_id}">
-                                ${vehiclesHtml}
-                            </select>
-                        </div>
+    let orderUrl = orderEditRoute.replace(
+        ':id',
+        o.order_encrypt_id
+    );
 
-                    </div>
-                </div>`;
-            });
+    container.innerHTML += `
 
-            // $('#bulkDriver').html(driversHtml);
+    <div class="order-content mb-2 p-2 border rounded"
+         data-assignment-type="${o.assignment_type}">
 
-            // $('#bulkVehicle').html(vehiclesHtml);
+        <div class="d-flex justify-content-between align-items-start">
 
-            // TB.plugins.bootstrapSelect();
+            <div style="width:28%;">
 
-            // ✅ INIT AIZ SELECT PROPERLY
-            TB.plugins.bootstrapSelect();
-            loadBulkDropdowns();
+                <input
+                    type="checkbox"
+                    class="order-checkbox"
+                    value="${o.order_id}"
+                    checked>
 
-            // ✅ PRESELECT EXISTING DRIVERS
-            orders.forEach(o => {
-                let driverSelect = document.querySelector(
-                    `.order-driver-select[data-order-id="${o.order_id}"]`
-                );
+                <a href="${orderUrl}"
+                   target="_blank">
 
-                if (!driverSelect) return;
+                    #${o.order_number}
 
-                let selectedDrivers = (o.driver_ids || []).map(String);
+                </a>
 
-                $(driverSelect).selectpicker('val', selectedDrivers);
-                $(driverSelect).selectpicker('refresh');
-            });
+                <br>
 
-            orders.forEach(o => {
-                let vehicleSelect = document.querySelector(
-                    `.order-vehicle-select[data-order-id="${o.order_id}"]`
-                );
+                <small>${o.customer ?? ''}</small>
 
-                if (!vehicleSelect) return;
+                <br>
 
-                let selectedVehicles = (o.vehicle_ids || []).map(String);
+                <small>👥 ${o.guest_count}</small>
 
-                $(vehicleSelect).selectpicker('val', selectedVehicles);
-                $(vehicleSelect).selectpicker('refresh');
-            });
+            </div>
 
-            // ✅ REFRESH AFTER SETTING VALUES
-            // TB.plugins.bootstrapSelect('refresh');
+            <div style="width:34%;">
 
-            new bootstrap.Modal(document.getElementById('driverModal')).show();
-           
+                <select
+                    class="form-control order-driver-select"
+                    multiple
+                    data-order-id="${o.order_id}">
 
-           if (!assignable) { $('.order-driver-select') .prop('disabled', true) .selectpicker('refresh'); $('.order-vehicle-select') .prop('disabled', true) .selectpicker('refresh'); $('#assignDriver').prop('disabled', true); $('#bulkAssignBtn').prop('disabled', true); Swal.fire({ icon: 'warning', title: 'Driver Assignment Disabled', text: 'This tour is not assignable.' }); 
+                    ${driversHtml}
 
-                $('#bulkAssignBtn').hide();
-                $('#bulkAssignPanel').hide();
+                </select>
 
-            }
+            </div>
+
+            <div style="width:34%;">
+
+                <select
+                    class="form-control aiz-selectpicker order-vehicle-select"
+                    data-live-search="true"
+                    data-order-id="${o.order_id}">
+
+                    ${vehiclesHtml}
+
+                </select>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    `;
+
+});
 
 
-            else { $('.order-driver-select') .prop('disabled', false) .selectpicker('refresh'); $('.order-vehicle-select') .prop('disabled', false) .selectpicker('refresh'); $('#assignDriver').prop('disabled', false); $('#bulkAssignBtn').prop('disabled', false); 
+// ====================================
+// Initialise Select2 (Drivers)
+// ====================================
 
-                $('#bulkAssignBtn').show();
-                
-            } 
-           });
-            
+$('.order-driver-select').select2({
+
+    width: '100%',
+
+    placeholder: 'Select Driver',
+
+    closeOnSelect: false
+
+});
+
+
+// ====================================
+// Initialise Vehicle Picker
+// ====================================
+
+$('.order-vehicle-select').selectpicker('refresh');
+
+loadBulkDropdowns();
+
+
+// ====================================
+// Preselect Existing Drivers
+// ====================================
+
+orders.forEach(function (o) {
+
+    let driverSelect = document.querySelector(
+
+        `.order-driver-select[data-order-id="${o.order_id}"]`
+
+    );
+
+    if (!driverSelect) {
+
+        return;
+
+    }
+
+    let drivers = (o.driver_ids || []).map(String);
+
+    $(driverSelect)
+
+        .val(drivers)
+
+        .trigger('change');
+
+});
+
+
+// ====================================
+// Preselect Existing Vehicles
+// ====================================
+
+orders.forEach(function (o) {
+
+    let vehicleSelect = document.querySelector(
+
+        `.order-vehicle-select[data-order-id="${o.order_id}"]`
+
+    );
+
+    if (!vehicleSelect) {
+
+        return;
+
+    }
+
+    let vehicles = (o.vehicle_ids || []).map(String);
+
+    $(vehicleSelect)
+
+        .selectpicker('val', vehicles)
+
+        .selectpicker('refresh');
+
+});
+
+
+// ====================================
+// Open Modal
+// ====================================
+
+new bootstrap.Modal(
+
+    document.getElementById('driverModal')
+
+).show();
+
+
+// ====================================
+// Enable / Disable
+// ====================================
+
+if (!assignable) {
+
+    $('.order-driver-select')
+        .prop('disabled', true)
+        .trigger('change');
+
+    $('.order-vehicle-select')
+        .prop('disabled', true)
+        .selectpicker('refresh');
+
+    $('#assignDriver').prop('disabled', true);
+
+    $('#bulkAssignBtn').hide();
+
+    $('#bulkAssignPanel').hide();
+
+    Swal.fire({
+
+        icon: 'warning',
+
+        title: 'Driver Assignment Disabled',
+
+        text: 'This tour is not assignable.'
+
     });
 
-    document
-.getElementById('bulkAssignBtn')
-.addEventListener('click', function(){
+} else {
 
-    let panel = document.getElementById('bulkAssignPanel');
+    $('.order-driver-select')
+        .prop('disabled', false)
+        .trigger('change');
 
-    if(panel.style.display === 'none' || panel.style.display === ''){
+    $('.order-vehicle-select')
+        .prop('disabled', false)
+        .selectpicker('refresh');
 
-        panel.style.display='block';
-        this.innerHTML='Hide Bulk Assignment';
+    $('#assignDriver').prop('disabled', false);
 
-    }else{
+    $('#bulkAssignBtn').show();
 
-        panel.style.display='none';
-        this.innerHTML='Assign Driver & Vehicle to All Orders';
+}
+
+});
+
+});
+
+   // ========================================
+// BULK ASSIGN PANEL
+// ========================================
+
+$('#bulkAssignBtn').on('click', function () {
+
+    $('#bulkAssignPanel').slideToggle(200);
+
+    if ($('#bulkAssignPanel').is(':visible')) {
+
+        $(this).text('Hide Bulk Assignment');
+
+    } else {
+
+        $(this).text('Assign Driver & Vehicle to All Orders');
 
     }
 
 });
-        document
-.getElementById('applyBulkAssignment')
-.addEventListener('click', function () {
 
-    let drivers =
-        $('#bulkDriver').val() || [];
 
-    let vehicle =
-        $('#bulkVehicle').val();
-
-    $('.order-driver-select').each(function () {
-
-        $(this)
-            .selectpicker('val', drivers)
-            .selectpicker('refresh');
-
-    });
-
-    $('.order-vehicle-select').each(function () {
-
-        $(this)
-            .selectpicker('val', vehicle)
-            .selectpicker('refresh');
-
-    });
-
-});
+// ========================================
+// LOAD BULK DROPDOWNS
+// ========================================
 
 function loadBulkDropdowns() {
 
     let driverHtml = '';
 
-    window.allDrivers.forEach(function(driver) {
-        driverHtml += `<option value="${driver.id}">${driver.name}</option>`;
+    window.allDrivers.forEach(function(driver){
+
+        driverHtml += `
+            <option value="${driver.id}">
+                ${driver.name}
+            </option>
+        `;
+
     });
 
     $('#bulkDriver').html(driverHtml);
 
-    let vehicleHtml = '<option value="">Select</option>';
 
-    vehiclesList.forEach(function(vehicle) {
-        vehicleHtml += `<option value="${vehicle.id}">${vehicle.name}</option>`;
+
+    let vehicleHtml = `
+        <option value="">
+            Select Vehicle
+        </option>
+    `;
+
+    vehiclesList.forEach(function(vehicle){
+
+        vehicleHtml += `
+            <option value="${vehicle.id}">
+                ${vehicle.name}
+            </option>
+        `;
+
     });
 
     $('#bulkVehicle').html(vehicleHtml);
 
-    $('#bulkDriver').selectpicker('destroy').selectpicker();
-    $('#bulkVehicle').selectpicker('destroy').selectpicker();
+
+
+    // Destroy if already initialized
+
+    if ($('#bulkDriver').hasClass('select2-hidden-accessible')) {
+
+        $('#bulkDriver').select2('destroy');
+
+    }
+
+    $('#bulkDriver').select2({
+
+        width: '100%',
+
+        placeholder: 'Select Drivers',
+
+        closeOnSelect: false
+
+    });
+
+
+
+    $('#bulkVehicle').selectpicker('destroy');
+
+    $('#bulkVehicle').selectpicker();
+
 }
+
+
+
+// ========================================
+// APPLY BULK ASSIGNMENT
+// ========================================
+
+$('#applyBulkAssignment').on('click', function () {
+
+    let drivers = $('#bulkDriver').val() || [];
+
+    let vehicle = $('#bulkVehicle').val();
+
+
+
+    // Apply Driver
+
+    $('.order-driver-select').each(function(){
+
+        $(this)
+
+            .val(drivers)
+
+            .trigger('change');
+
+    });
+
+
+
+    // Apply Vehicle
+
+    $('.order-vehicle-select').each(function(){
+
+        $(this)
+
+            .selectpicker('val', vehicle)
+
+            .selectpicker('refresh');
+
+    });
+
+});
 
     // =========================
     // ASSIGN DRIVER (FIXED)
     // =========================
-    document.getElementById('assignDriver').addEventListener('click', async function() {
+   // ========================================
+// ASSIGN DRIVER
+// ========================================
 
-        let btn = this;
-        let date = document.getElementById('modal_date').value;
+$('#assignDriver').on('click', async function () {
 
-        let ordersPayload = [];
+    const btn = this;
 
-        document.querySelectorAll('.order-content').forEach(function(row) {
+    const date = $('#modal_date').val();
 
-            let orderId = parseInt(row.querySelector('.order-checkbox').value);
+    let ordersPayload = [];
 
-            let $select = $(row).find('.order-driver-select');
-            let $select2 = $(row).find('.order-vehicle-select');
+    $('.order-content').each(function () {
 
-            let selectedDrivers = [];
-            let selectedVehicles = [];
+        const row = $(this);
 
-            // ✅ READ FROM SELECTED OPTIONS (REAL FIX)
-            $select.find('option:selected').each(function () {
-                selectedDrivers.push(parseInt($(this).val()));
-            });
+        const orderId = parseInt(
+            row.find('.order-checkbox').val()
+        );
 
-            $select2.find('option:selected').each(function () {
-                selectedVehicles.push(parseInt($(this).val()));
-            });
+        // ----------------------------
+        // Driver IDs
+        // ----------------------------
 
-            console.log('FIXED:', orderId, selectedDrivers, selectedVehicles);
+        let driverIds =
+            row.find('.order-driver-select').val() || [];
 
-            ordersPayload.push({
-                order_id: orderId,
-                driver_ids: selectedDrivers,
-                vehicle_ids: selectedVehicles,
-                assignment_type: row.dataset.assignmentType
-            });
+        driverIds = driverIds.map(Number);
+
+        // ----------------------------
+        // Vehicle IDs
+        // ----------------------------
+
+        let vehicleIds = [];
+
+        let vehicleSelect = row.find('.order-vehicle-select');
+
+        let vehicleValue = vehicleSelect.selectpicker('val');
+
+        if (vehicleValue) {
+
+            if (Array.isArray(vehicleValue)) {
+
+                vehicleIds = vehicleValue.map(Number);
+
+            } else {
+
+                vehicleIds = [Number(vehicleValue)];
+
+            }
+
+        }
+
+        console.log({
+
+            order: orderId,
+
+            drivers: driverIds,
+
+            vehicles: vehicleIds
+
         });
 
-        try {
-            btn.disabled = true;
-            btn.innerText = 'Saving...';
+        ordersPayload.push({
 
-            let res = await fetch("{{ route('admin.assign.driver') }}", {
-                method: 'POST',
+            order_id: orderId,
+
+            driver_ids: driverIds,
+
+            vehicle_ids: vehicleIds,
+
+            assignment_type: row.data('assignment-type')
+
+        });
+
+    });
+
+    console.log("Sending Payload", ordersPayload);
+
+    try {
+
+        btn.disabled = true;
+
+        btn.innerText = "Saving...";
+
+        const response = await fetch(
+            "{{ route('admin.assign.driver') }}",
+            {
+
+                method: "POST",
+
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    orders: ordersPayload,
-                    date: date
-                })
-            });
 
-            if (!res.ok) throw new Error();
+                    "Content-Type": "application/json",
+
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+
+                },
+
+                body: JSON.stringify({
+
+                    date: date,
+
+                    orders: ordersPayload
+
+                })
+
+            }
+        );
+
+        const result = await response.json();
+
+        console.log(result);
+
+        if (!response.ok) {
+
+            throw result;
+
+        }
+
+        Swal.fire({
+
+            icon: 'success',
+
+            title: 'Saved',
+
+            timer: 1000,
+
+            showConfirmButton: false
+
+        }).then(() => {
 
             location.reload();
 
-        } catch (e) {
-            alert('Error saving');
-        } finally {
-            btn.disabled = false;
-            btn.innerText = 'Assign';
-        }
-    });
+        });
+
+    } catch (e) {
+
+        console.error(e);
+
+        Swal.fire({
+
+            icon: 'error',
+
+            title: 'Save Failed',
+
+            text: 'Unable to assign driver.'
+
+        });
+
+    } finally {
+
+        btn.disabled = false;
+
+        btn.innerText = "Assign";
+
+    }
+
+});
 
     // =========================
     // DRIVER FILTER
