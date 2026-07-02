@@ -11837,3 +11837,7 @@ table.dataTable {
 .search-options .select2-container--default .select2-search--inline .select2-search__field {
     font-size: 14px;
 }
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #a3a3a3;
+}
