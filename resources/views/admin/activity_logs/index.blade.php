@@ -57,7 +57,7 @@
         <form method="GET">
             <div class="row">
                 {{-- ACTIVITY DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                <div class="col-xl-3 col-md-2 col-12 position-relative">
                     <div class="form-group">
                         <label class="filter-label">Activity Date</label>
                         <input 
@@ -94,7 +94,7 @@
                 </div> -->
 
                 {{-- ORDER NUMBER --}}
-                <div class="col-xl-3 col-md-3 col-12">
+                <div class="col-xl-3 col-md-2 col-12">
                     <div class="form-group">
                         <label class="filter-label">Order Number</label>
                         <input type="text" name="order_number" value="{{ request('order_number') }}" class="form-control" placeholder="Order Number">
@@ -102,7 +102,7 @@
                 </div>
 
                 {{-- MODEL --}}
-                <div class="col-xl-3 col-md-3 col-12">
+                <div class="col-xl-2 col-md-2 col-12">
                     <div class="form-group">
                         <label class="filter-label">Model</label>
                         <select name="model" class="form-control">
@@ -119,7 +119,7 @@
                 </div>
 
                 {{-- ACTION --}}
-                <div class="col-xl-3 col-md-3 col-12">
+                <div class="col-xl-2 col-md-2 col-12">
                     <div class="form-group">
                         <label class="filter-label">Action</label>
                         <select name="action" class="form-control">
@@ -141,7 +141,7 @@
                 </div>
 
                 {{-- SEARCH --}}
-                <div class="col-xl-3 col-md-3 col-12">
+                <div class="col-xl-3 col-md-2 col-12">
                     <label class="filter-label">Search</label>
                     <input type="text" name="search"
                         value="{{ request('search') }}"
@@ -150,7 +150,7 @@
                 </div>
 
                 {{-- PROPERTY --}}
-                <div class="col-xl-2 col-md-2 col-12">
+                <div class="col-xl-3 col-md-2 col-12">
                     <label class="filter-label">Properties</label>
                     <input type="text" name="property"
                         value="{{ request('property') }}"
@@ -159,7 +159,7 @@
                 </div>
 
                 {{-- MODEL ID --}}
-                <div class="col-xl-2 col-md-2 col-12">
+                <div class="col-xl-3 col-md-2 col-12">
                     <label class="filter-label">Model ID</label>
                     <input type="text" name="model_id"
                         value="{{ request('model_id') }}"
@@ -168,7 +168,7 @@
                 </div>
 
                 {{-- BUTTONS --}}
-                <div class="col-xl-3 col-md-3 col-12">
+                <div class="col-xl-3 col-md-2 col-12">
                     <label class="filter-label">&nbsp;</label>
                     <div class="d-flex column-gap-10">
                         <button class="btn btn-apply flex-fill mt-0" style="height: fit-content;">Apply</button>

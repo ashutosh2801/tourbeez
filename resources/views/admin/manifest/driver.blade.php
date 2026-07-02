@@ -62,29 +62,29 @@
     }
 
     .select2-container {
-    width: 100% !important;
-}
+        width: 100% !important;
+    }
 
-.select2-selection--multiple {
-    min-height: 45px !important;
-    border: 1px solid #b5b5b5 !important;
-    border-radius: 4px !important;
-    padding: 0.6rem 1.2rem;
-    color: #898b92;
-    font-size: 14px;
-}
+    .select2-selection--multiple {
+        min-height: 45px !important;
+        border: 1px solid #b5b5b5 !important;
+        border-radius: 4px !important;
+        padding: 0.6rem 1.2rem;
+        color: #898b92;
+        font-size: 14px;
+    }
 
-.select2-selection__choice {
-    background: #607D8B !important;
-    color: white !important;
-    border: none !important;
-}
+    .select2-selection__choice {
+        background: #607D8B !important;
+        color: white !important;
+        border: none !important;
+    }
 
-.selection .select2-selection .select2-selection--multiple {
-    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-    padding: 0.6rem 1rem !important;
-    margin-bottom: 15px !important;
-}
+    .selection .select2-selection .select2-selection--multiple {
+        min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+        padding: 0.6rem 1rem !important;
+        margin-bottom: 15px !important;
+    }
 </style>
 
 <div class="card-primary mb-3">
