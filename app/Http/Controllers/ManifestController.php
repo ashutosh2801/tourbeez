@@ -153,7 +153,7 @@ class ManifestController extends Controller
     {
         $date = $request->input('date') ?? Carbon::today()->toDateString();
         $selectedDriver = $request->input('driver_id');
-        $selectedVehicle = $request->input('driver_id');
+        $selectedVehicle = $request->input('vehicle_id');
 
         $startOfWeek = Carbon::parse($date);
         $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
@@ -251,11 +251,18 @@ class ManifestController extends Controller
                 // Totals
                 $totalPaxPerDay[$tourDate] += $guestCount;
 
-                if (!$selectedDriver || in_array($selectedDriver, $driverIds)) {
-
-                    foreach ($orderDrivers as $driver) {
+                if (
+                        (!$selectedDriver || in_array($selectedDriver, $driverIds)) &&
+                        (!$selectedVehicle || in_array($selectedVehicle, $vehicleIds))
+                    ) {
+                                        
+                        foreach ($orderDrivers as $driver) {
 
                         if ($selectedDriver && $driver->driver_id != $selectedDriver) {
+                            continue;
+                        }
+
+                        if ($selectedVehicle && $driver->vehicle_id != $selectedVehicle) {
                             continue;
                         }
 
@@ -272,14 +279,11 @@ class ManifestController extends Controller
                     }
                 }
 
-                if (!$selectedDriver) {
-                    if (!empty($driverIds)) {
-                        $assignedPaxPerDay[$tourDate] += $guestCount;
-                    }
-                } else {
-                    if (in_array($selectedDriver, $driverIds)) {
-                        $assignedPaxPerDay[$tourDate] += $guestCount;
-                    }
+                $matchDriver = !$selectedDriver || in_array($selectedDriver, $driverIds);
+                $matchVehicle = !$selectedVehicle || in_array($selectedVehicle, $vehicleIds);
+
+                if ($matchDriver && $matchVehicle && !empty($driverIds)) {
+                    $assignedPaxPerDay[$tourDate] += $guestCount;
                 }
 
                 $tourDetail = $ot->tour?->detail;
@@ -358,11 +362,18 @@ class ManifestController extends Controller
 
                 $totalPaxPerDay[$extraDate] += $extraGuestCount;
 
-                if (!$selectedDriver || in_array($selectedDriver, $driverIds)) {
+               if (
+                        (!$selectedDriver || in_array($selectedDriver, $driverIds)) &&
+                        (!$selectedVehicle || in_array($selectedVehicle, $vehicleIds))
+                    ) {
 
                     foreach ($orderDrivers as $driver) {
 
                         if ($selectedDriver && $driver->driver_id != $selectedDriver) {
+                            continue;
+                        }
+
+                        if ($selectedVehicle && $driver->vehicle_id != $selectedVehicle) {
                             continue;
                         }
 
@@ -375,18 +386,11 @@ class ManifestController extends Controller
                     }
                 }
 
-                if (!$selectedDriver) {
+                $matchDriver = !$selectedDriver || in_array($selectedDriver, $driverIds);
+                $matchVehicle = !$selectedVehicle || in_array($selectedVehicle, $vehicleIds);
 
-                    if (!empty($driverIds)) {
-                        $assignedPaxPerDay[$extraDate] += $extraGuestCount;
-                    }
-
-                } else {
-
-                    if (in_array($selectedDriver, $driverIds)) {
-                        $assignedPaxPerDay[$extraDate] += $extraGuestCount;
-                    }
-
+                if ($matchDriver && $matchVehicle && !empty($driverIds)) {
+                    $assignedPaxPerDay[$extraDate] += $extraGuestCount;
                 }
 
                 $grid['Next Day Pick Up'][$extraDate][] = [
@@ -463,7 +467,8 @@ class ManifestController extends Controller
             'assignedPaxPerDay',
             'driverPaxPerDay',
             'driverNameMap',
-            'selectedDriver'
+            'selectedDriver',
+            'selectedVehicle'
         ));
     }
 
