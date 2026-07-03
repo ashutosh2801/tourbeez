@@ -805,8 +805,40 @@ if ($request->filled('payment_status')) {
 
 
 
-if ($product = $request->input('product')) {
-    $customers->where('order_tours.tour_id', $product);
+if ($products = $request->input('product')) {
+
+        $products = array_filter((array)$products);
+
+        if (!empty($products)) {
+
+            $customers->whereIn('orders.id', function ($q) use ($products) {
+
+                $q->select('order_id')
+                  ->from('order_tours')
+                  ->whereNull('deleted_at')
+                  ->whereIn('tour_id', $products);
+
+            });
+
+        }
+    }
+
+    if ($excludeProducts = $request->input('exclude_product')) {
+
+    $excludeProducts = array_filter((array)$excludeProducts);
+
+    if (!empty($excludeProducts)) {
+
+        $customers->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+            $q->select('order_id')
+              ->from('order_tours')
+              ->whereNull('deleted_at')
+              ->whereIn('tour_id', $excludeProducts);
+
+        });
+
+    }
 }
 
 if ($request->action_type === 'pay_now') {

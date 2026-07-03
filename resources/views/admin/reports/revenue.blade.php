@@ -304,7 +304,7 @@
                         <label class="filter-label">Source</label>
                         <select name="partner" class="form-control">
                             <option value="">All</option>
-                            @php
+                            
                             
                             @foreach($partners as $partner)
                                 <option value="{{ ucfirst($partner->slug) }}"
@@ -425,6 +425,27 @@
                         <a href="{{ request()->fullUrlWithQuery(['partner' => null]) }}" ><span class="ml-2">✕</span></a>
                     </span>
                 @endif
+
+                @if($selectedProducts->isNotEmpty())
+                    @php $p = $selectedProducts->first(); @endphp
+                    <span class="badge badge-dark ml-2">
+                        Tour: {{ $p->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['product' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Excluded Tours --}}
+                @foreach($excludedProducts as $ep)
+                    <span class="badge badge-dark ml-2">
+                        Excluded: {{ $ep->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery([
+                            'exclude_product' => collect(request('exclude_product'))
+                                ->reject(fn($id) => $id == $ep->id)
+                                ->values()
+                                ->all(),
+                        ]) }}">✕</a>
+                    </span>
+                @endforeach
 
             </div>
         @endif
