@@ -45,7 +45,7 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Order::with(['customer', 'orderTours.tour', 'payments', 'partner'])
+        $query = Order::with(['customer', 'orderTours.tour', 'payments', 'partner', 'latestPaymentLog'])
             ->whereHas('customer', function ($q) {
                 $q->whereNotNull('first_name')
                   ->where('first_name', '!=', ''); // exclude empty strings

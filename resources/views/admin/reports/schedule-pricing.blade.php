@@ -73,6 +73,79 @@
     .select2-container {
         width: 100% !important;
     }
+
+       .search-options .select2-container--default .select2-selection--multiple {
+        min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+        padding: 0.4rem 1rem !important;
+        margin-bottom: 15px !important;
+    }
+
+.select2-container--default .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+        padding: 0.6rem 1rem !important;
+        margin-bottom: 15px !important;
+}
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin-right: 0;
+    margin-left: 0;
+    margin-bottom: 5px;
+    margin-top: 0;
+    background-color: #a3a3a3;
+}
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    font-size: 13px;
+}
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #FFF;
+    margin-left: 0;
+}
+
+.search-options .select2-container--default .select2-search--inline .select2-search__field {
+    font-size: 14px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin: 0 0 5px 1px;
+    font-size: 13px;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    background: transparent;
+    border: none;
+    outline: 0;
+    box-shadow: none;
+    -webkit-appearance: textfield;
+    margin: 0;
+}
+
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background-color: #5897fb;
+    color: white;
+}
+
+.selection .select2-selection .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+    padding: 0.6rem 1rem !important;
+    margin-bottom: 15px !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    margin: 0;
+    line-height: 1.7;
+    color: #FFF;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #333;
+    background: #607D8B;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice{
+    background-color: #a3a3a3 !important;
+}
 </style>
 
 <div class="card-primary mb-3">
