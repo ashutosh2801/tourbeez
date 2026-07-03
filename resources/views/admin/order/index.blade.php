@@ -76,9 +76,13 @@
     padding: 0 !important;
 }
 .select2-search--inline .select2-search__field {
-    margin-top: 4px !important;
+    margin: 0 !important;
     border: none !important;
     outline: none !important;
+    line-height: 1.2;
+}
+.select2-search--inline .select2-search__field::placeholder {
+    color: #898b92;
 }
 
     </style>
@@ -113,7 +117,7 @@
                     <div class="search-options">
                         <div class="row">
                             <div class="col-md-4 col-6">
-                                <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name/Email" value="{{ request('search') }}">
+                                <input type="text" name="search" class="form-control" placeholder="Order # / Customer First / Last Name / Email" value="{{ request('search') }}">
                             </div>
                             <!-- <div class="col-md-4 col-6">
                                 <select name="product" class="form-control aiz-selectpicker" data-live-search="true">
