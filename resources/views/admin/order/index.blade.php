@@ -462,7 +462,7 @@
                                 <td>
                                     <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink">{{ $order->order_number }}</a>
                                 </td>
-                                <td>{!! order_status($order->order_status) !!}</td>
+                                <td class="text-center">{!! order_status($order->order_status) !!} <br> <small>{{  $order->latestPaymentLog?->status ? in_array($order->latestPaymentLog?->status, ['success', 'authorized', 'failed', 'cancelled']) ? ucwords($order->latestPaymentLog?->status) : 'Failed' : '' }}</small></td>
                                 <td class="">
                                     @foreach ($order->orderTours as $order_tour)
 
@@ -515,6 +515,7 @@
                                     {{ $order->customer?->email }}
                                 </td>
                                 @php
+
                                     $total = round($order->total_amount);
                                    // $paid = round($order->booked_amount) ?? 0; 
 

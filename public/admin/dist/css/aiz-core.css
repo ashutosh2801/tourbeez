@@ -11823,6 +11823,7 @@ table.dataTable {
     margin-left: 0;
     margin-bottom: 5px;
     margin-top: 0;
+    background-color: #a3a3a3;
 }
 
 .search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__display {

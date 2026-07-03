@@ -25,11 +25,14 @@ class DriverManifestExport implements
     ShouldAutoSize
 {
     protected $date;
+    protected $driverId;
+    protected $vehicleId;
 
-    public function __construct($date, $driverId = null)
+    public function __construct($date, $driverId = null, $vehicleId = null)
     {
         $this->date = $date;
         $this->driverId = $driverId;
+        $this->vehicleId = $vehicleId;
     }
 
 
@@ -134,31 +137,62 @@ class DriverManifestExport implements
             // DRIVER FILTER
             // -----------------------------------
 
-            if ($this->driverId) {
+            // if ($this->driverId) {
 
-                if (!in_array($this->driverId, $driverIds)) {
-                    continue;
-                }
+            //     if (!in_array($this->driverId, $driverIds)) {
+            //         continue;
+            //     }
 
-                $orderDrivers = $orderDrivers
-                    ->where('driver_id', $this->driverId);
+            //     $orderDrivers = $orderDrivers
+            //         ->where('driver_id', $this->driverId);
 
-                $driverIds = $orderDrivers->pluck('driver_id')->toArray();
+            //     $driverIds = $orderDrivers->pluck('driver_id')->toArray();
 
-                $driverNames = $orderDrivers
-                    ->pluck('driver.name')
-                    ->filter()
-                    ->values()
-                    ->toArray();
+            //     $driverNames = $orderDrivers
+            //         ->pluck('driver.name')
+            //         ->filter()
+            //         ->values()
+            //         ->toArray();
 
-                $vehicleIds = $orderDrivers->pluck('vehicle_id')->toArray();
+            //     $vehicleIds = $orderDrivers->pluck('vehicle_id')->toArray();
 
-                $vehicleNames = $orderDrivers
-                    ->pluck('vehicle.name')
-                    ->filter()
-                    ->values()
-                    ->toArray();
-            }
+            //     $vehicleNames = $orderDrivers
+            //         ->pluck('vehicle.name')
+            //         ->filter()
+            //         ->values()
+            //         ->toArray();
+            // }
+
+        $matchDriver = !$this->driverId || in_array($this->driverId, $driverIds);
+        $matchVehicle = !$this->vehicleId || in_array($this->vehicleId, $vehicleIds);
+
+        if (!$matchDriver || !$matchVehicle) {
+            continue;
+        }
+
+        if ($this->driverId) {
+            $orderDrivers = $orderDrivers->where('driver_id', $this->driverId);
+        }
+
+        if ($this->vehicleId) {
+            $orderDrivers = $orderDrivers->where('vehicle_id', $this->vehicleId);
+        }
+
+        $driverIds = $orderDrivers->pluck('driver_id')->toArray();
+
+        $vehicleIds = $orderDrivers->pluck('vehicle_id')->toArray();
+
+        $driverNames = $orderDrivers
+            ->pluck('driver.name')
+            ->filter()
+            ->values()
+            ->toArray();
+
+        $vehicleNames = $orderDrivers
+            ->pluck('vehicle.name')
+            ->filter()
+            ->values()
+            ->toArray();
 
             // -----------------------------------
             // TOTALS
@@ -179,17 +213,11 @@ class DriverManifestExport implements
                 $driverPaxPerDay[$tourDate][$driverId] += $guestCount;
             }
 
-            if ($this->driverId) {
+            $matchDriver = !$this->driverId || in_array($this->driverId, $driverIds);
+            $matchVehicle = !$this->vehicleId || in_array($this->vehicleId, $vehicleIds);
 
-                if (in_array($this->driverId, $driverIds)) {
-                    $assignedPaxPerDay[$tourDate] += $guestCount;
-                }
-
-            } else {
-
-                if (!empty($driverIds)) {
-                    $assignedPaxPerDay[$tourDate] += $guestCount;
-                }
+            if ($matchDriver && $matchVehicle && !empty($driverIds)) {
+                $assignedPaxPerDay[$tourDate] += $guestCount;
             }
 
             $tourDetail = $ot->tour?->detail;
@@ -272,27 +300,36 @@ class DriverManifestExport implements
                     ->values()
                     ->toArray();
 
-                if ($this->driverId) {
+                $matchDriver = !$this->driverId || in_array($this->driverId, $driverIds);
+                $matchVehicle = !$this->vehicleId || in_array($this->vehicleId, $vehicleIds);
 
-                    if (!in_array($this->driverId, $driverIds)) {
-                        continue;
-                    }
-
-                    $pickupDrivers = $pickupDrivers
-                        ->where('driver_id', $this->driverId);
-
-                    $driverIds =
-                        $pickupDrivers->pluck('driver_id')->toArray();
-
-                    $vehicleIds =
-                        $pickupDrivers->pluck('vehicle_id')->toArray();
-
-                    $driverNames =
-                        $pickupDrivers->pluck('driver.name')->toArray();
-
-                    $vehicleNames =
-                        $pickupDrivers->pluck('vehicle.name')->toArray();
+                if (!$matchDriver || !$matchVehicle) {
+                    continue;
                 }
+
+                if ($this->driverId) {
+                    $pickupDrivers = $pickupDrivers->where('driver_id', $this->driverId);
+                }
+
+                if ($this->vehicleId) {
+                    $pickupDrivers = $pickupDrivers->where('vehicle_id', $this->vehicleId);
+                }
+
+                $driverIds = $pickupDrivers->pluck('driver_id')->toArray();
+
+                $vehicleIds = $pickupDrivers->pluck('vehicle_id')->toArray();
+
+                $driverNames = $pickupDrivers
+                    ->pluck('driver.name')
+                    ->filter()
+                    ->values()
+                    ->toArray();
+
+                $vehicleNames = $pickupDrivers
+                    ->pluck('vehicle.name')
+                    ->filter()
+                    ->values()
+                    ->toArray();
 
                 $extraGuestCount =
                     (int)($extra['quantity'] ?? 0);
@@ -318,21 +355,11 @@ class DriverManifestExport implements
                         + $extraGuestCount;
                 }
 
-                if ($this->driverId) {
+                $matchDriver = !$this->driverId || in_array($this->driverId, $driverIds);
+                $matchVehicle = !$this->vehicleId || in_array($this->vehicleId, $vehicleIds);
 
-                    if (in_array($this->driverId, $driverIds)) {
-
-                        $assignedPaxPerDay[$extraDate] +=
-                            $extraGuestCount;
-                    }
-
-                } else {
-
-                    if (!empty($driverIds)) {
-
-                        $assignedPaxPerDay[$extraDate] +=
-                            $extraGuestCount;
-                    }
+                if ($matchDriver && $matchVehicle && !empty($driverIds)) {
+                    $assignedPaxPerDay[$extraDate] += $extraGuestCount;
                 }
 
                 $grid['Next Day Pick Up'][$extraDate][] = [
