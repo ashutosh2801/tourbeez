@@ -67,6 +67,79 @@
     .select2-container {
         width: 100% !important;
     }
+
+       .search-options .select2-container--default .select2-selection--multiple {
+        min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+        padding: 0.4rem 1rem !important;
+        margin-bottom: 15px !important;
+    }
+
+.select2-container--default .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+        padding: 0.6rem 1rem !important;
+        margin-bottom: 15px !important;
+}
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin-right: 0;
+    margin-left: 0;
+    margin-bottom: 5px;
+    margin-top: 0;
+    background-color: #a3a3a3;
+}
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    font-size: 13px;
+}
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #FFF;
+    margin-left: 0;
+}
+
+.search-options .select2-container--default .select2-search--inline .select2-search__field {
+    font-size: 14px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin: 0 0 5px 1px;
+    font-size: 13px;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    background: transparent;
+    border: none;
+    outline: 0;
+    box-shadow: none;
+    -webkit-appearance: textfield;
+    margin: 0;
+}
+
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background-color: #5897fb;
+    color: white;
+}
+
+.selection .select2-selection .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+    padding: 0.6rem 1rem !important;
+    margin-bottom: 15px !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    margin: 0;
+    line-height: 1.7;
+    color: #FFF;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #333;
+    background: #607D8B;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice{
+    background-color: #a3a3a3 !important;
+}
 </style>
 
 
@@ -170,19 +243,23 @@
                 </div>  -->
 
                 {{-- PRODUCTS --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative"> 
-                    <div class="form-group">
-                        <label class="filter-label">Products</label>
-                        <select id="productFilter" name="product" class="form-control">
-                            @if(request('product') && request('product_text'))
-                                <option value="{{ request('product') }}" selected>
-                                    {{ request('product_text') }}
-                                </option>
-                            @endif
-                        </select>
-                        <input type="hidden" id="product_text" name="product_text" value="{{ request('product_text') }}">
-                    </div>
+                <div class="col-md-3 col-6">
+                    <label class="filter-label">Products</label>
+                    <select id="productFilter" name="product[]" class="form-control" multiple>
+                        @foreach($selectedProducts as $sp)
+                            <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
+                        @endforeach
+                    </select>
                 </div>
+                <div class="col-md-3 col-6">
+                    <label class="filter-label">Excluded Products</label>
+                    <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
+                        @foreach($excludedProducts as $ep)
+                            <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
 
                 {{-- ORDER STATUS --}}
                 <div class="col-xl-3 col-md-3 col-12">
@@ -325,12 +402,7 @@
                 @endif
 
                 {{-- PRODUCT --}}
-                @if(request('product'))
-                    <span class="badge bg-dark ml-2">
-                        Product: {{ request('product_text') ?? request('product') }}
-                        <a href="{{ request()->fullUrlWithQuery(['product' => null, 'product_text' => null]) }}"><span class="ml-2">✕</span></a>
-                    </span>
-                @endif
+                
 
                 {{-- STATUS --}}
                 @if(request('order_status'))
@@ -739,27 +811,26 @@
     <script>
     $(document).ready(function () {
         // ✅ Select2 (optimized)
-        $('#productFilter').select2({
-            placeholder: 'Select Tour',
-            minimumInputLength: 3,
-            ajax: {
-                url: '{{ route("admin.tours.tours-list") }}',
-                dataType: 'json',
-                delay: 0,
-                cache: true,
-                data: function (params) {
-                    return { q: params.term };
-                },
-                processResults: function (data) {
-                    return {
-                        results: data.map(tour => ({
-                            id: tour.id,
-                            text: `${tour.title} (${tour.unique_code ?? 'N/A'})`
-                        }))
-                    };
+              function initTourSelect(selector, isMultiple, placeholderText) {
+            $(selector).select2({
+                placeholder: placeholderText,
+                minimumInputLength: 4,
+                multiple: isMultiple,
+                ajax: {
+                    url: '{{ route("admin.tours.tours-list") }}',
+                    dataType: 'json',
+                    delay: 0,
+                    cache: true,
+                    data: params => ({ q: params.term }),
+                    processResults: data => ({
+                        results: data.map(tour => ({ id: tour.id, text: tour.title }))
+                    })
                 }
-            }
-        });
+            });
+        }
+
+        initTourSelect('#productFilter', true, 'Select Tour');
+        initTourSelect('#excludeProductFilter', true, 'Exclude tours');
 
     });
     
@@ -787,10 +858,10 @@ function clearTour() {
     window.location.href = url.toString();
 }
 
-        if ($('#productFilter').val() && !$('#product_text').val()) {
-    let selectedText = $('#productFilter option:selected').text();
-    $('#product_text').val(selectedText);
-}
+//         if ($('#productFilter').val() && !$('#product_text').val()) {
+//     let selectedText = $('#productFilter option:selected').text();
+//     $('#product_text').val(selectedText);
+// }
 </script>
 
 @endsection

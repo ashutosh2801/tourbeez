@@ -9869,7 +9869,8 @@ table.dataTable {
     border-color: #5a6268;
 }
 
-.order-manifest-head .driver-filter {
+.order-manifest-head .driver-filter,
+.order-manifest-head .vehicle-filter {
     width: 200px;
     height: auto;
     padding: 0.216rem .51rem;
@@ -9892,7 +9893,8 @@ table.dataTable {
         flex-direction: column;
     }
 
-    .order-manifest-head .driver-filter {
+    .order-manifest-head .driver-filter,
+    .order-manifest-head .vehicle-filter {
         width: 100%;
         padding: 6px;
     }
@@ -11227,7 +11229,7 @@ table.dataTable {
 }
 
 #driverModal .order-list .order-content {
-    border-bottom: 1px solid #dddddd;
+    border-bottom: 1px solid #dee2e6;
     padding: 15px 15px 0;
 }
 
@@ -11235,11 +11237,25 @@ table.dataTable {
     font-size: 13px;
 }
 
-#driverModal .select2-container--default .select2-selection--multiple .select2-selection__choice {
-    margin: 0 0 5px 0;
-    font-size: 13px;
+#driverModal .order-content .content-detail {
+    width: 30%;
+    padding: 0 5px;
 }
 
+#driverModal .order-content .content-driver {
+    width: 35%;
+    padding: 0 5px;
+}
+
+#driverModal .order-content .content-vehicle {
+    width: 35%;
+    padding: 0 5px;
+}
+
+#driverModal .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin: 0 0 5px 1px;
+    font-size: 13px;
+}
 
 #driverModal .select2-container--default .select2-search--inline .select2-search__field {
     background: transparent;
@@ -11247,7 +11263,7 @@ table.dataTable {
     outline: 0;
     box-shadow: none;
     -webkit-appearance: textfield;
-    margin-top: 12px;
+    margin: 0;
 }
 
 #driverModal .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
@@ -11261,6 +11277,17 @@ table.dataTable {
     margin-bottom: 15px !important;
 }
 
+#driverModal .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    margin: 0;
+    line-height: 1.7;
+    color: #FFF;
+}
+
+#driverModal .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #333;
+    background: #607D8B;
+}
+
 @media (min-width: 768px) {
 
     #driverModal .modal-dialog {
@@ -11269,6 +11296,24 @@ table.dataTable {
 
     #driverModal .modal-content .modal-body {
         max-height: 70vh;
+    }
+
+}
+
+@media (max-width: 768px) {
+
+    #driverModal .order-content .content-detail {
+        width: 100%;
+        padding-bottom: 10px;
+    }
+
+    #driverModal .order-content .content-driver,
+    #driverModal .order-content .content-vehicle {
+        width: 50%;
+    }
+
+    #driverModal .order-content .content-part {
+        flex-wrap: wrap;
     }
 
 }
@@ -11778,6 +11823,7 @@ table.dataTable {
     margin-left: 0;
     margin-bottom: 5px;
     margin-top: 0;
+    background-color: #a3a3a3;
 }
 
 .search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
