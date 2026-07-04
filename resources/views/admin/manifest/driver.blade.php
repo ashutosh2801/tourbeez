@@ -65,11 +65,11 @@
     width: 100% !important;
 }
 
-.select2-selection--multiple {
+/*.select2-selection--multiple {
     min-height: 45px !important;
     border: 1px solid #ced4da !important;
     border-radius: .375rem !important;
-}
+}*/
 
 .select2-selection__choice {
     background: #607D8B !important;
@@ -81,11 +81,19 @@
     color: white !important;
     margin-right: 6px;
 }
-.selection .select2-selection .select2-selection--multiple {
+/*.selection .select2-selection .select2-selection--multiple {
     min-height: calc(1.3125rem + 1.2rem + 2px) !important;
     padding: 0.6rem 1rem !important;
     margin-bottom: 15px !important;
+}*/
+
+.select2-container--default .select2-selection--multiple  {
+    min-height: calc(1.3125rem + 1.2rem + 2px);
+    padding: 0.6rem 1rem;
+    margin-bottom: 15px;
 }
+
+
 </style>
 
 <div class="card-primary mb-3">
@@ -155,7 +163,7 @@
                 @forelse($sortedGrid as $tourTitle => $dates)
                     <tr>
                         <td>
-                            <p>{{ $tourTitle }}</p>
+                            <p>{!! $tourTitle !!}</p>
                             @if(isset($tourTimes[$tourTitle]))
                                 <!-- <br><small class="text-muted">{{ $tourTimes[$tourTitle] }}</small> -->
                             @endif
@@ -242,18 +250,53 @@
                                 data-orders='@json($cellOrders)'
                                 data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}"
                                 style="cursor: {{ count($cellOrders) ? 'pointer' : 'default' }};">
-                                @if(count($cellOrders))
-                                    <strong>{{ $totalGuests }}</strong>
-                                    @if($driverNames)
-                                        <br><small class="text-success">{{ $driverNames }}</small>
-                                    @else
-                                        <!-- <br><small class="text-danger">No Driver</small> -->
-                                    @endif
+                                
 
-                                    @if($vehicleNames)
-                                        <br><small class="text-primary">{{ $vehicleNames }}</small>
-                                    @endif
+                                @if(count($cellOrders))
+
+                                    <strong>Total - {{ $totalGuests }}</strong>
+
+                                    @php
+                                        $summary = [];
+
+                                        foreach ($cellOrders as $order) {
+
+                                            foreach (($order['driver_ids'] ?? []) as $index => $driverId) {
+
+                                                $driver = $driverNameMap[$driverId] ?? 'Unknown';
+                                                $vehicleId = $order['vehicle_ids'][$index] ?? null;
+                                                $vehicle = $vehicleNameMap[$vehicleId] ?? '';
+
+                                                if (!isset($summary[$driver])) {
+                                                    $summary[$driver] = [
+                                                        'pax' => 0,
+                                                        'vehicles' => []
+                                                    ];
+                                                }
+
+                                                $summary[$driver]['pax'] += $order['guest_count'];
+
+                                                if ($vehicle) {
+                                                    $summary[$driver]['vehicles'][$vehicle] = true;
+                                                }
+                                            }
+                                        }
+                                    @endphp
+
+                                    @foreach($summary as $driver => $info)
+                                        <br>
+                                        <small class="text-success">
+                                            {{ $info['pax'] }} - {{ $driver }}
+                                            @if(count($info['vehicles']))
+                                                <span class="text-primary">({{ implode(', ', array_keys($info['vehicles'])) }})</span>
+                                            @endif
+                                        </small>
+                                    @endforeach
+
                                 @endif
+
+
+
                             </td>
                         @endforeach
                     </tr>
@@ -334,12 +377,12 @@
 
 
                 <div class="mt-3">
-    <button type="button"
-            class="btn btn-primary btn-sm"
-            id="bulkAssignBtn">
-        Assign Driver & Vehicle to All Orders
-    </button>
-</div>
+                    <button type="button"
+                            class="btn btn-primary btn-sm"
+                            id="bulkAssignBtn">
+                        Assign Driver & Vehicle to All Orders
+                    </button>
+                </div>
 
 <div id="bulkAssignPanel"
      class="border rounded p-3 mt-3"
@@ -382,6 +425,14 @@
             id="applyBulkAssignment">
 
             Apply To All Orders
+
+        </button>
+        <button
+            type="button"
+            class="btn btn-secondary"
+            id="bulkAssignBtnBack">
+
+            Cancel
 
         </button>
 
@@ -855,23 +906,26 @@ if (!assignable) {
 
 });
 
-   // ========================================
+
+// ========================================
 // BULK ASSIGN PANEL
 // ========================================
 
 $('#bulkAssignBtn').on('click', function () {
 
-    $('#bulkAssignPanel').slideToggle(200);
+    $(this).hide();
 
-    if ($('#bulkAssignPanel').is(':visible')) {
+    $('#bulkAssignPanel').stop(true, true).slideDown(200);
 
-        $(this).text('Hide Bulk Assignment');
+});
 
-    } else {
+$('#bulkAssignBtnBack').on('click', function () {
 
-        $(this).text('Assign Driver & Vehicle to All Orders');
+    $('#bulkAssignPanel').stop(true, true).slideUp(200, function () {
 
-    }
+        $('#bulkAssignBtn').show();
+
+    });
 
 });
 

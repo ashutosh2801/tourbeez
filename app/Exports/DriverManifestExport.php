@@ -520,9 +520,9 @@ class DriverManifestExport implements
                     }
 
                     $cell .= "\n"
-                        . $driver
-                        . ' - '
                         . $info['pax']
+                        . ' - '
+                        . $driver
                         . $vehicleText;
                 }
             }

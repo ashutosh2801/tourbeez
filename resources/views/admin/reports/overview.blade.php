@@ -102,7 +102,8 @@
                         'order_status',
                         'payment_status',
                         'partner',
-                        'action_type'
+                        'action_type',
+                        'exclude_product'
                     ]);
                 @endphp
                 <div class="col-xl-3 col-md-3 col-12 position-relative">
@@ -272,7 +273,7 @@
     <div class="active-filters mb-3">
         @if(request()->hasAny([
             'booking_date','tour_date','product',
-            'order_status','action_type','partner'
+            'order_status','action_type','partner', 'exclude_product'
         ]))
 
             <div class="d-flex flex-wrap gap-2">

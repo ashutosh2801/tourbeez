@@ -221,9 +221,23 @@ class ManifestController extends Controller
                     continue;
                 }
 
-                $tourTitle = $ot->tour->title ?? 'Unknown Tour';
-                $slotTime  = $ot->tour_time ?? '00:00 AM';
+                if($order->sub_tour_id && $order->subTour){
 
+                    $tourTitle = $order->tour?->title .'<br>' . '<small>' . $ot->tour->title . '</small>';
+
+
+                    $sortTitle = $order->tour?->title ?? '';
+
+                } else{
+                    $tourTitle = $ot->tour->title ?? 'Unknown Tour';
+                    $sortTitle = $ot->tour->title ?? '';
+                    
+                }
+
+
+                
+                $slotTime  = $ot->tour_time ?? '00:00 AM';
+                
                 $guestCount = collect(
                     json_decode($ot->tour_pricing, true) ?? []
                 )->sum('quantity');
@@ -309,7 +323,7 @@ class ManifestController extends Controller
                     $tourDetail?->assign_driver ?? false;
 
                 $tourReportGroupMap[$tourTitle] =
-                    $ot->tour->report_group ?? 999;
+                    $sortTitle ?? 999;
 
                 $tourPaxMap[$tourTitle] =
                     ($tourPaxMap[$tourTitle] ?? 0) + $guestCount;
@@ -414,8 +428,11 @@ class ManifestController extends Controller
                     ($tourPaxMap['Next Day Pick Up'] ?? 0) + $extraGuestCount;
             }
         }
+        // dd(collect($grid));
 
-        // Sort by report_group ASC first
+
+        
+        // Sort by report_group ASC first;
         $sortedGrid = collect($grid)
             ->sortBy(function ($dates, $tour) use (
                 $tourReportGroupMap,
@@ -424,8 +441,10 @@ class ManifestController extends Controller
                 $tourTimes
             ) {
 
-                $reportGroup = $tourReportGroupMap[$tour] ?? 999;
 
+
+                $reportGroup = $tourReportGroupMap[$tour] ?? 999;
+                
                 $assignableSort =
                     ($tourAssignableMap[$tour] ?? false) ? 0 : 1;
 

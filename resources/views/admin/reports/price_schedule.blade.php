@@ -95,6 +95,62 @@
 .select2-container--default .select2-selection--multiple .select2-selection__choice{
     background-color: #a3a3a3 !important;
 }
+.table-wrapper {
+    overflow-x: auto;
+    position: relative;
+}
+
+/* Freeze first 3 columns */
+.table th,
+.table td {
+    white-space: nowrap;
+    vertical-align: top;
+}
+
+.table th:nth-child(1),
+.table td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 20;
+    min-width: 60px;
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3) {
+    position: sticky;
+    left: 60px;
+    background: #fff;
+    z-index: 20;
+    min-width: 220px;
+}
+
+.table th:nth-child(4),
+.table td:nth-child(4) {
+    position: sticky;
+    left: 280px;
+    background: #fff;
+    z-index: 20;
+    min-width: 260px;
+}
+
+/* Header above body */
+.table thead th {
+    z-index: 30 !important;
+}
+
+/* Border for frozen columns */
+.table td:nth-child(-n+4),
+.table th:nth-child(-n+4) {
+    box-shadow: 2px 0 4px rgba(0,0,0,.08);
+}
+.product-name {
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 220px; /* Adjust as needed */
+    line-height: 1.4;
+}
 </style>
 
 <div class="card-primary mb-3">
@@ -118,7 +174,8 @@
                         'order_status',
                         'payment_status',
                         'partner',
-                        'action_type'
+                        'action_type',
+                        'exclude_product'
                     ]);
                 @endphp
                 <div class="col-xl-3 col-md-3 col-12 position-relative">
@@ -335,7 +392,7 @@
             </div>
     </form>
 </div>
-@if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
+@if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type', 'exclude_product']))
         <div class="alert alert-info">
             Please apply filters to view report data.
         </div>
@@ -343,7 +400,7 @@
 <div class="active-filters mb-3">
         @if(request()->hasAny([
             'booking_date','tour_date','product',
-            'order_status','action_type','partner'
+            'order_status','action_type','partner', 'exclude_product'
         ]))
 
 
@@ -442,140 +499,223 @@
         </div>
 
         <div class="table-wrapper">
-          <table class="table table-bordered" style="min-width: 2500px; margin: 15px 20px;">
+          <table class="table table-bordered" style=" margin: 15px 20px;">
 
                 <thead>
-                    <tr>
-                        <th>No.</th>
-                        <th>Order #</th>
-                        <th>Customer</th>
-                        <th>Order Date</th>
-                        <th>Fulfilment</th>
-                        <th>Quantity</th>
-                        <th>Adult (13+)</th>
-                        <th>Child (3-12)</th>
-                        <th>Infant (2 and under)</th>
-                        <th>Senior (60+ years)</th>
-                        
-                        <th>Product Price</th>
-                        <th>Extra Amount</th>
-                        <th>Tax Amount</th>
-                        <th>Discount</th>
-                        <th>Customer Total</th>
-                        <th>Order Balance</th>
-                        
-                        
-                        <th>Transport Cost - Tax</th>
-                        <th>Product Price (Supplier Cost)</th>
-                        <th>Tax</th>
-                        <th>Other Fee</th>
-                        <th>Net Total</th>
-                        <th>Profit</th>
-                        <th>Product</th>
-                        {{-- ADDON HEADERS --}}
-                        @foreach($addonKeys as $key)
-                          <th colspan="6">{{ Str::headline($key) }}</th>
-                        @endforeach
+    <tr>
+        <th>No.</th>
+        <th>Order</th>
+        <!-- <th>Order Date</th> -->
+        <th>Customer</th>
+        <th class="product-name">Product</th>
 
+        <th >Product Price</th>
+        <th>Extra Amount</th>
+        <th>Tax Amount</th>
+        <th>Discount</th>
+        <th>Customer Total</th>
+        <th>Order Balance</th>
 
-											                
-                    </tr>
+        <th>Transport Cost - Tax</th>
+        <th>Supplier Price</th>
+        <th>Supplier Tax</th>
+        <th>Other Fee</th>
+        <th>Net Total</th>
+        <th>Profit</th>
+        <!-- <th></th> -->
+        <th>Addons</th>
 
-                    <tr>
-                        <th colspan="23"></th>
-                        @foreach($addonKeys as $key)
-                          <th>Desc</th>
-                          <th>Quantity</th>
-                          <th>Price</th>
-                          <th>Tax</th>
-                          <th>Fee</th>
-                          <th>Total</th>
-                        @endforeach
-                    </tr>   
+        <!-- @foreach($addonKeys as $key)
+            <th>{{ Str::headline($key) }}</th>
+        @endforeach -->
+    </tr>
 
-                </thead>
+    <!-- <tr>
+        <th colspan="15"></th>
+        @foreach($addonKeys as $key)
+            <th>Desc</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Tax</th>
+            <th>Fee</th>
+            <th>Total</th>
+        @endforeach
+    </tr> -->
+</thead>
 
                 <tbody>
                     @forelse($rows as $row) 
                     
                     <tr>
-                        <td>{{ $row['no'] ?? '' }}</td>
-                        <td><a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">{{ $row['order_number'] ?? '' }}</a></td>
-                        <td>{{ $row['customer_name'] ?? '' }}</td>
-                        <td>{{ \Carbon\Carbon::parse($row['order_date'])->format('Y-m-d') }}</td>
-                        <td>{{ $row['fulfilment_date'] ?? '' }}</td>
-                        <?php /*                         
-                        <td>{{ $row['payment_status'] ?? '' }}</td> 
-                        */ ?>
-                        
-                        <td>{{ $row['adult'] + $row['child'] + $row['infant'] + $row['other'] + $row['senior'] }}</td>
-                        <td>{{ $row['adult'] }}</td>
-                        <td>{{ $row['child'] }}</td>
-                        <td>{{ $row['infant'] }}</td>
-                        <td>{{ $row['senior'] }}</td>
-                        <td align="right">{{ number_format_with_currency($row['product_price'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['extra_amount'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['tax_amount'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['discount_amount'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['customer_total'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['balance_amount'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['transport_cost'], 2) }}</td>
-                        
-                        
-                        <td align="right">{{ number_format_with_currency($row['tour_selling_price'], 2) }}</td>
-                        <td align="right">{{ number_format_with_currency($row['tour_selling_tax'], 2) }}</td>
-                        <td align="right">0</td>
-                        <td align="right">{{ number_format_with_currency(($row['tour_selling_total']+$row['transport_cost'] ) , 2) }}</td>
-                        <td align="right">{{ number_format_with_currency(($row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost']), 2)  }}</td>
-                        <td align="right">{{ $row['product_name'] ?? '' }}</td>
-                        {{-- DYNAMIC ADDONS --}}
-                        @foreach($addonKeys as $key)
-                            <td align="right">
-                                @if(!empty($row[$key.'_desc']))
-                                    <strong>{{ $row[$key.'_desc'] }}</strong>
-                                @endif
-                            </td>
 
-                            <td align="right">
-                                @if(!empty($row[$key.'_quant']))
-                                    <strong>{{ $row[$key.'_quant'] }}</strong>
-                                @endif
-                            </td>
+    {{-- No --}}
+    <td>{{ $row['no'] ?? '' }}</td>
 
-                            <td align="right">
-                                @if(!empty($row[$key.'_price']))
-                                    <strong>{{ number_format_with_currency($row[$key.'_price'], 2) }}</strong>
-                                @else
-                                    0
-                                @endif
-                            </td>
+    {{-- Order --}}
+    <td style="min-width:180px">
 
-                            <td align="right">
-                                @if(!empty($row[$key.'_tax']))
-                                    <strong>{{ number_format_with_currency($row[$key.'_tax'], 2) }}</strong>
-                                @else
-                                    0
-                                @endif
-                            </td>
+        <strong>
+            <a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">
+                {{ $row['order_number'] }}
+            </a>
+        </strong>
 
-                            <td align="right">
-                                @if(!empty($row[$key.'_fee']))
-                                    <strong>{{ number_format_with_currency($row[$key.'_fee'], 2) }}</strong>
-                                @else
-                                    0
-                                @endif
-                            </td>
+        <br>
 
-                            <td>
-                                @if(!empty($row[$key.'_total']))
-                                    <strong>{{ number_format_with_currency($row[$key.'_total'], 2) }}</strong>
-                                @else
-                                    0
-                                @endif
-                            </td>
-                        @endforeach
+        <small class="text-muted">
+            Order :
+            {{ \Carbon\Carbon::parse($row['order_date'])->format('Y-m-d') }}
+        </small>
 
-                    </tr>
+        <br>
+
+        <small>
+            Fulfilment :
+            {{ $row['fulfilment_date'] }}
+        </small>
+
+    </td>
+
+    {{-- Customer --}}
+    <td style="min-width:240px">
+
+        <strong>{{ $row['customer_name'] }}</strong>
+
+        <br>
+
+        <small>
+            Adult :
+            {{ $row['adult'] }}
+            |
+            Child :
+            {{ $row['child'] }}
+            |
+            Infant :
+            {{ $row['infant'] }}
+            |
+            Senior :
+            {{ $row['senior'] }}
+        </small>
+
+        <br>
+
+        <small>
+            Qty :
+            {{ $row['adult'] + $row['child'] + $row['infant'] + $row['other'] + $row['senior'] }}
+        </small>
+
+        <br>
+
+        
+
+    </td>
+    <td class="product-name" style="word-wrap: ;">
+            {{ $row['product_name'] }}
+
+    </td>
+
+    <td align="right">{{ number_format_with_currency($row['product_price'],2) }}</td>
+
+    <td align="right">{{ number_format_with_currency($row['extra_amount'],2) }}</td>
+
+    <td align="right">{{ number_format_with_currency($row['tax_amount'],2) }}</td>
+
+    <td align="right">{{ number_format_with_currency($row['discount_amount'],2) }}</td>
+
+    <td align="right">{{ number_format_with_currency($row['customer_total'],2) }}</td>
+
+    <td align="right">{{ number_format_with_currency($row['balance_amount'],2) }}</td>
+
+    <td align="right">{{ number_format_with_currency($row['transport_cost'],2) }}</td>
+
+    <td align="right">{{ number_format_with_currency($row['tour_selling_price'],2) }}</td>
+
+    <td align="right">{{ number_format_with_currency($row['tour_selling_tax'],2) }}</td>
+
+    <td align="right">0</td>
+
+    <td align="right">
+        {{ number_format_with_currency(($row['tour_selling_total'] + $row['transport_cost']),2) }}
+    </td>
+
+    <td align="right">
+        {{ number_format_with_currency(($row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost']),2) }}
+    </td>
+
+    <td>@foreach($addonKeys as $key)
+
+<!-- <td style="min-width:180px"> -->
+
+    @if(
+        !empty($row[$key.'_desc']) ||
+        !empty($row[$key.'_qty']) ||
+        !empty($row[$key.'_price']) ||
+        !empty($row[$key.'_tax']) ||
+        !empty($row[$key.'_fee']) ||
+        !empty($row[$key.'_total'])
+    )
+
+        <strong>{{ $row[$key.'_desc'] ?? '-' }}</strong><br>
+
+        Qty :
+        {{ $row[$key.'_qty'] ?? 0 }}
+
+        <br>
+
+        Price :
+        {{ number_format_with_currency($row[$key.'_price'] ?? 0,2) }}
+
+        <br>
+
+        Tax :
+        {{ number_format_with_currency($row[$key.'_tax'] ?? 0,2) }}
+
+        <br>
+
+        Fee :
+        {{ number_format_with_currency($row[$key.'_fee'] ?? 0,2) }}
+
+        <br>
+
+        Total :
+        <strong>
+            {{ number_format_with_currency($row[$key.'_total'] ?? 0,2) }}
+        </strong>
+        <br>
+   
+
+    @endif
+
+<!-- </td> -->
+
+@endforeach</td>
+
+    {{-- Dynamic Addons --}}
+   <!--  @foreach($addonKeys as $key)
+
+        <td>{{ $row[$key.'_desc'] ?? '-' }}</td>
+
+        <td align="center">{{ $row[$key.'_qty'] ?? 0 }}</td>
+
+        <td align="right">
+            {{ number_format_with_currency($row[$key.'_price'] ?? 0,2) }}
+        </td>
+
+        <td align="right">
+            {{ number_format_with_currency($row[$key.'_tax'] ?? 0,2) }}
+        </td>
+
+        <td align="right">
+            {{ number_format_with_currency($row[$key.'_fee'] ?? 0,2) }}
+        </td>
+
+        <td align="right">
+            {{ number_format_with_currency($row[$key.'_total'] ?? 0,2) }}
+        </td>
+
+    @endforeach -->
+
+</tr>
                     @empty
                     <tr>
                         <td colspan="{{ 8 + (count($addonKeys) * 5) }}" class="text-center">
