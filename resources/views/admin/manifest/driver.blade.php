@@ -93,6 +93,32 @@
     margin-bottom: 15px;
 }
 
+.manifest-grid {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.manifest-grid th,
+.manifest-grid td {
+    word-wrap: break-word;
+    white-space: normal;
+    vertical-align: top;
+}
+
+/* Tours column (~60% of previous width) */
+.manifest-grid th:first-child,
+.manifest-grid td:first-child {
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+}
+
+/* All remaining columns equal width */
+.manifest-grid th:not(:first-child),
+.manifest-grid td:not(:first-child) {
+    width: calc((100% - 120px) / 7);
+}
+
 
 </style>
 
@@ -150,7 +176,9 @@
         <table class="table table-bordered table-sm manifest-grid">
             <thead>
                 <tr>
-                    <th style="min-width: 200px;">Tours</th>
+                    <td>Tours</th>
+
+
                     @foreach($dateRange as $d)
                         <th class="text-center" style="min-width: 120px;">
                             {{ $d->format('j-M-Y') }}<br>
@@ -243,6 +271,8 @@
                                     })
                                     ->filter()
                                     ->implode(', ');
+
+
                             @endphp
                             <td class="text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
                                 data-tour="{{ $tourTitle }}"
@@ -250,9 +280,47 @@
                                 data-orders='@json($cellOrders)'
                                 data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}"
                                 style="cursor: {{ count($cellOrders) ? 'pointer' : 'default' }};">
-                                
+
 
                                 @if(count($cellOrders))
+
+                                    <div style="text-align:left;font-size:12px;line-height:1.5;">
+
+                                        <strong>Total - {{ $totalGuests }}</strong>
+
+                                        @foreach($cellOrders as $order)
+                                            @if($order['tour_assignable'] != '1')
+                                                @continue
+                                            @endif
+                                            @php
+
+
+                                                $driver = !empty($order['driver_names'])
+                                                    ? implode(', ', array_unique($order['driver_names']))
+                                                    : 'NA';
+
+                                                $vehicle = !empty($order['vehicle_names'])
+                                                    ? implode(', ', array_unique($order['vehicle_names']))
+                                                    : 'NA';
+                                            @endphp
+
+                                            <br>
+                                            
+                                            <span class="font-bold">{{ $order['order_number'] }}</span>
+                                            -
+                                            <span >{{ $order['guest_count'] }}</span>
+                                            -
+                                           <span class="text-success"> {{ $driver }}</span>
+                                            -
+                                            <span class="text-primary">{{ $vehicle }}</span>
+
+                                        @endforeach
+
+                                    </div>
+
+                                @endif
+
+                                <!-- @if(count($cellOrders))
 
                                     <strong>Total - {{ $totalGuests }}</strong>
 
@@ -293,7 +361,7 @@
                                         </small>
                                     @endforeach
 
-                                @endif
+                                @endif -->
 
 
 
@@ -540,7 +608,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let d = new Date(dateInput.value);
 
-        d.setDate(d.getDate() + 6);
+        d.setDate(d.getDate() + 5);
 
         window.location.href =
             '?date=' + d.toISOString().split('T')[0];

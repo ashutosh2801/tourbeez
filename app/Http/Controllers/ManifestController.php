@@ -24,7 +24,7 @@ class ManifestController extends Controller
         $selectedVehicle = $request->input('vehicle_id');
 
         $startOfWeek = Carbon::parse($date);
-        $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
+        $endOfWeek   = Carbon::parse($date)->copy()->addDays(4);
 
         $driverPaxPerDay = [];   // [date][driver_id] => pax
         $driverNameMap = [];     // [driver_id] => name
