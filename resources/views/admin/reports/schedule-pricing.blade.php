@@ -293,7 +293,7 @@
 <div class="active-filters mb-3">
         @if(request()->hasAny([
             'booking_date','tour_date','product',
-            'order_status','action_type','partner'
+            'order_status','action_type','partner', 'exclude_product'
         ]))
             <div class="d-flex flex-wrap gap-2">
 

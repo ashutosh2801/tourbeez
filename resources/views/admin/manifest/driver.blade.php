@@ -80,11 +80,49 @@
         border: none !important;
     }
 
-    .selection .select2-selection .select2-selection--multiple {
-        min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-        padding: 0.6rem 1rem !important;
-        margin-bottom: 15px !important;
-    }
+.select2-selection__choice__remove {
+    color: white !important;
+    margin-right: 6px;
+}
+/*.selection .select2-selection .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+    padding: 0.6rem 1rem !important;
+    margin-bottom: 15px !important;
+}*/
+
+.select2-container--default .select2-selection--multiple  {
+    min-height: calc(1.3125rem + 1.2rem + 2px);
+    padding: 0.6rem 1rem;
+    margin-bottom: 15px;
+}
+
+.manifest-grid {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.manifest-grid th,
+.manifest-grid td {
+    word-wrap: break-word;
+    white-space: normal;
+    vertical-align: top;
+}
+
+/* Tours column (~60% of previous width) */
+.manifest-grid th:first-child,
+.manifest-grid td:first-child {
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+}
+
+/* All remaining columns equal width */
+.manifest-grid th:not(:first-child),
+.manifest-grid td:not(:first-child) {
+    width: calc((100% - 120px) / 7);
+}
+
+
 </style>
 
 <div class="card-primary mb-3">
@@ -141,7 +179,9 @@
         <table class="table table-bordered table-sm manifest-grid">
             <thead>
                 <tr>
-                    <th style="min-width: 200px;">Tours</th>
+                    <td>Tours</th>
+
+
                     @foreach($dateRange as $d)
                         <th class="text-center" style="min-width: 120px;">
                             {{ $d->format('j-M-Y') }}<br>
@@ -151,10 +191,26 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($sortedGrid as $tourTitle => $dates)
+                @php
+                    $previousReportGroup = null;
+                    $tourKeys = array_keys($sortedGrid);
+                @endphp
+               @forelse($sortedGrid as $tourTitle => $dates)
+
+                    @php
+                        $currentIndex = array_search($tourTitle, $tourKeys);
+
+                        $currentGroup = $tourReportGroupMap[$tourTitle] ?? 99;
+
+                        $nextTour = $tourKeys[$currentIndex + 1] ?? null;
+
+                        $nextGroup = $nextTour
+                            ? ($tourReportGroupMap[$nextTour] ?? 99)
+                            : null;
+                    @endphp
                     <tr>
                         <td>
-                            <p>{{ $tourTitle }}</p>
+                            <p>{!! $tourTitle !!}</p>
                             @if(isset($tourTimes[$tourTitle]))
                                 <!-- <br><small class="text-muted">{{ $tourTimes[$tourTitle] }}</small> -->
                             @endif
@@ -234,6 +290,8 @@
                                     })
                                     ->filter()
                                     ->implode(', ');
+
+
                             @endphp
                             <td class="text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
                                 data-tour="{{ $tourTitle }}"
@@ -241,22 +299,138 @@
                                 data-orders='@json($cellOrders)'
                                 data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}"
                                 style="cursor: {{ count($cellOrders) ? 'pointer' : 'default' }};">
-                                @if(count($cellOrders))
-                                    <strong>{{ $totalGuests }}</strong>
-                                    @if($driverNames)
-                                        <br><small class="text-success">{{ $driverNames }}</small>
-                                    @else
-                                        <!-- <br><small class="text-danger">No Driver</small> -->
-                                    @endif
 
-                                    @if($vehicleNames)
-                                        <br><small class="text-primary">{{ $vehicleNames }}</small>
-                                    @endif
+
+                                @if(count($cellOrders))
+
+                                    <div style="text-align:left;font-size:12px;line-height:1.5;">
+
+                                        <strong>Total - {{ $totalGuests }}</strong>
+
+                                        @foreach($cellOrders as $order)
+                                            @if($order['tour_assignable'] != '1')
+                                                @continue
+                                            @endif
+                                            @php
+
+
+                                                $driver = !empty($order['driver_names'])
+                                                    ? implode(', ', array_unique($order['driver_names']))
+                                                    : 'NA';
+
+                                                $vehicle = !empty($order['vehicle_names'])
+                                                    ? implode(', ', array_unique($order['vehicle_names']))
+                                                    : 'NA';
+                                            @endphp
+
+                                            <br>
+                                            
+                                            <span class="font-bold">{{ $order['order_number'] }}</span>
+                                            -
+                                            <span >{{ $order['guest_count'] }}</span>
+                                            -
+                                           <span class="text-success"> {{ $driver }}</span>
+                                            -
+                                            <span class="text-primary">{{ $vehicle }}</span>
+
+                                        @endforeach
+
+                                    </div>
+
                                 @endif
+
+                                <!-- @if(count($cellOrders))
+
+                                    <strong>Total - {{ $totalGuests }}</strong>
+
+                                    @php
+                                        $summary = [];
+
+                                        foreach ($cellOrders as $order) {
+
+                                            foreach (($order['driver_ids'] ?? []) as $index => $driverId) {
+
+                                                $driver = $driverNameMap[$driverId] ?? 'Unknown';
+                                                $vehicleId = $order['vehicle_ids'][$index] ?? null;
+                                                $vehicle = $vehicleNameMap[$vehicleId] ?? '';
+
+                                                if (!isset($summary[$driver])) {
+                                                    $summary[$driver] = [
+                                                        'pax' => 0,
+                                                        'vehicles' => []
+                                                    ];
+                                                }
+
+                                                $summary[$driver]['pax'] += $order['guest_count'];
+
+                                                if ($vehicle) {
+                                                    $summary[$driver]['vehicles'][$vehicle] = true;
+                                                }
+                                            }
+                                        }
+                                    @endphp
+
+                                    @foreach($summary as $driver => $info)
+                                        <br>
+                                        <small class="text-success">
+                                            {{ $info['pax'] }} - {{ $driver }}
+                                            @if(count($info['vehicles']))
+                                                <span class="text-primary">({{ implode(', ', array_keys($info['vehicles'])) }})</span>
+                                            @endif
+                                        </small>
+                                    @endforeach
+
+                                @endif -->
+
+
+
                             </td>
                         @endforeach
                     </tr>
                     <tr style="background:#f8f9fa; font-weight:600;">
+
+                        @if($nextGroup !== $currentGroup)
+
+                            <tr style="background:#eef2f7;font-weight:700;">
+                                <td>
+                                    Total {{ report_group_tour_status($currentGroup) }}
+                                </td>
+
+                                @foreach($dateRange as $d)
+
+                                    @php
+                                        $groupTotal = 0;
+
+                                        foreach ($sortedGrid as $title => $tourDates) {
+
+                                            if (($tourReportGroupMap[$title] ?? 99) != $currentGroup) {
+                                                continue;
+                                            }
+
+                                            $orders = collect($tourDates[$d->toDateString()] ?? [])
+                                                ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
+
+                                                    $driverMatch = !$selectedDriver ||
+                                                        in_array($selectedDriver, $o['driver_ids'] ?? []);
+
+                                                    $vehicleMatch = !$selectedVehicle ||
+                                                        in_array($selectedVehicle, $o['vehicle_ids'] ?? []);
+
+                                                    return $driverMatch && $vehicleMatch;
+                                                });
+
+                                            $groupTotal += $orders->sum('guest_count');
+                                        }
+                                    @endphp
+
+                                    <td class="text-center">
+                                        {{ $groupTotal }}
+                                    </td>
+
+                                @endforeach
+                            </tr>
+
+                            @endif
 
                 @empty
                     <tr>
@@ -333,12 +507,12 @@
 
 
                 <div class="mt-3">
-    <button type="button"
-            class="btn btn-primary btn-sm"
-            id="bulkAssignBtn">
-        Assign Driver & Vehicle to All Orders
-    </button>
-</div>
+                    <button type="button"
+                            class="btn btn-primary btn-sm"
+                            id="bulkAssignBtn">
+                        Assign Driver & Vehicle to All Orders
+                    </button>
+                </div>
 
 <div id="bulkAssignPanel"
      class="border rounded p-3 mt-3"
@@ -381,6 +555,14 @@
             id="applyBulkAssignment">
 
             Apply To All Orders
+
+        </button>
+        <button
+            type="button"
+            class="btn btn-secondary"
+            id="bulkAssignBtnBack">
+
+            Cancel
 
         </button>
 
@@ -488,7 +670,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let d = new Date(dateInput.value);
 
-        d.setDate(d.getDate() + 6);
+        d.setDate(d.getDate() + 5);
 
         window.location.href =
             '?date=' + d.toISOString().split('T')[0];
@@ -854,23 +1036,26 @@ if (!assignable) {
 
 });
 
-   // ========================================
+
+// ========================================
 // BULK ASSIGN PANEL
 // ========================================
 
 $('#bulkAssignBtn').on('click', function () {
 
-    $('#bulkAssignPanel').slideToggle(200);
+    $(this).hide();
 
-    if ($('#bulkAssignPanel').is(':visible')) {
+    $('#bulkAssignPanel').stop(true, true).slideDown(200);
 
-        $(this).text('Hide Bulk Assignment');
+});
 
-    } else {
+$('#bulkAssignBtnBack').on('click', function () {
 
-        $(this).text('Assign Driver & Vehicle to All Orders');
+    $('#bulkAssignPanel').stop(true, true).slideUp(200, function () {
 
-    }
+        $('#bulkAssignBtn').show();
+
+    });
 
 });
 

@@ -164,7 +164,8 @@
                         'order_status',
                         'payment_status',
                         'partner',
-                        'action_type'
+                        'action_type',
+                        'exclude_product'
                     ]);
                 @endphp
                 <div class="col-xl-3 col-md-3 col-12 position-relative">
@@ -304,7 +305,7 @@
                         <label class="filter-label">Source</label>
                         <select name="partner" class="form-control">
                             <option value="">All</option>
-                            @php
+                            
                             
                             @foreach($partners as $partner)
                                 <option value="{{ ucfirst($partner->slug) }}"
@@ -370,7 +371,7 @@
     </div>
 
 
-    @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
+    @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type', 'exclude_product']))
         <div class="alert alert-info">
             Please apply filters to view report data.
         </div>
@@ -378,7 +379,7 @@
     <div class="active-filters mb-3">
         @if(request()->hasAny([
             'booking_date','tour_date','product',
-            'order_status','action_type','partner'
+            'order_status','action_type','partner', 'exclude_product'
         ]))
 
 
@@ -425,6 +426,27 @@
                         <a href="{{ request()->fullUrlWithQuery(['partner' => null]) }}" ><span class="ml-2">✕</span></a>
                     </span>
                 @endif
+
+                @if($selectedProducts->isNotEmpty())
+                    @php $p = $selectedProducts->first(); @endphp
+                    <span class="badge badge-dark ml-2">
+                        Tour: {{ $p->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['product' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Excluded Tours --}}
+                @foreach($excludedProducts as $ep)
+                    <span class="badge badge-dark ml-2">
+                        Excluded: {{ $ep->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery([
+                            'exclude_product' => collect(request('exclude_product'))
+                                ->reject(fn($id) => $id == $ep->id)
+                                ->values()
+                                ->all(),
+                        ]) }}">✕</a>
+                    </span>
+                @endforeach
 
             </div>
         @endif
