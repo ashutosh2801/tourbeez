@@ -62,6 +62,7 @@ class ManifestController extends Controller
         $totalPaxPerDay = [];
         $assignedPaxPerDay = [];
         $dateRange = [];
+        $reportGroupTotals = [];
 
         $d = $startOfWeek->copy();
 
@@ -94,11 +95,11 @@ class ManifestController extends Controller
                     $tourTitle = $order->tour?->title .'<br>' . '<small>' . $ot->tour->title . '</small>';
 
 
-                    $sortTitle = $order->tour?->title ?? '';
+                    $sortTitle = $order->tour?->report_group ?? 99;
 
                 } else{
                     $tourTitle = $ot->tour->title ?? 'Unknown Tour';
-                    $sortTitle = $ot->tour->title ?? '';
+                    $sortTitle = $ot->tour->report_group ?? 99;
 
                 }
 
@@ -167,6 +168,14 @@ class ManifestController extends Controller
                 if ($matchDriver && $matchVehicle && !empty($driverIds)) {
                     $assignedPaxPerDay[$tourDate] += $guestCount;
                 }
+
+                $reportGroup = $sortTitle ?? 99;
+
+                if (!isset($reportGroupTotals[$reportGroup][$tourDate])) {
+                    $reportGroupTotals[$reportGroup][$tourDate] = 0;
+                }
+
+                $reportGroupTotals[$reportGroup][$tourDate] += $guestCount;
 
                 $tourDetail = $ot->tour?->detail;
 
@@ -275,6 +284,14 @@ class ManifestController extends Controller
                     $assignedPaxPerDay[$extraDate] += $extraGuestCount;
                 }
 
+                $reportGroup = $sortTitle ?? 99;
+
+                if (!isset($reportGroupTotals[$reportGroup][$extraDate])) {
+                    $reportGroupTotals[$reportGroup][$extraDate] = 0;
+                }
+
+                $reportGroupTotals[$reportGroup][$extraDate] += $extraGuestCount;
+
                 $grid['Next Day Pick Up'][$extraDate][] = [
                     'order_id' => $order->id,
                     'order_encrypt_id' => $encryptedOrderId,
@@ -291,7 +308,7 @@ class ManifestController extends Controller
 
                 $tourTimes['Next Day Pick Up'] = '00:00 AM';
                 $tourAssignableMap['Next Day Pick Up'] = true;
-                $tourReportGroupMap['Next Day Pick Up'] = 999;
+                $tourReportGroupMap['Next Day Pick Up'] = $sortTitle;
                 $tourPaxMap['Next Day Pick Up'] =
                     ($tourPaxMap['Next Day Pick Up'] ?? 0) + $extraGuestCount;
             }
@@ -301,6 +318,8 @@ class ManifestController extends Controller
 
         
         // Sort by report_group ASC first;
+
+        
         $sortedGrid = collect($grid)
             ->sortBy(function ($dates, $tour) use (
                 $tourReportGroupMap,
@@ -311,7 +330,7 @@ class ManifestController extends Controller
 
 
 
-                $reportGroup = $tourReportGroupMap[$tour] ?? 999;
+                $reportGroup = $tourReportGroupMap[$tour] ?? 99;
                 
                 $assignableSort =
                     ($tourAssignableMap[$tour] ?? false) ? 0 : 1;
@@ -337,6 +356,10 @@ class ManifestController extends Controller
             })
             ->toArray();
 
+       $groupedGrid = collect($sortedGrid)->groupBy(function ($dates, $tourTitle) use ($tourReportGroupMap) {
+            return $tourReportGroupMap[$tourTitle] ?? 99;
+        });
+
         $drivers = User::where('role', 'Driver')->orderBy('name')->get();
         $vehicles = Vehicle::orderBy('id')->get();
 
@@ -355,7 +378,10 @@ class ManifestController extends Controller
             'driverPaxPerDay',
             'driverNameMap',
             'selectedDriver',
-            'selectedVehicle'
+            'selectedVehicle',
+            'reportGroupTotals',
+            'tourReportGroupMap',
+            'groupedGrid'
         ));
     }
 

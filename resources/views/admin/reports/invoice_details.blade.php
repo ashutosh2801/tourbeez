@@ -324,7 +324,7 @@
     </form>
 </div>
 
-@if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type', exclude_product]))
+@if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type', 'exclude_product']))
         <div class="alert alert-info">
             Please apply filters to view report data.
         </div>

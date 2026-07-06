@@ -188,7 +188,23 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($sortedGrid as $tourTitle => $dates)
+                @php
+                    $previousReportGroup = null;
+                    $tourKeys = array_keys($sortedGrid);
+                @endphp
+               @forelse($sortedGrid as $tourTitle => $dates)
+
+                    @php
+                        $currentIndex = array_search($tourTitle, $tourKeys);
+
+                        $currentGroup = $tourReportGroupMap[$tourTitle] ?? 99;
+
+                        $nextTour = $tourKeys[$currentIndex + 1] ?? null;
+
+                        $nextGroup = $nextTour
+                            ? ($tourReportGroupMap[$nextTour] ?? 99)
+                            : null;
+                    @endphp
                     <tr>
                         <td>
                             <p>{!! $tourTitle !!}</p>
@@ -369,6 +385,49 @@
                         @endforeach
                     </tr>
                     <tr style="background:#f8f9fa; font-weight:600;">
+
+                        @if($nextGroup !== $currentGroup)
+
+                            <tr style="background:#eef2f7;font-weight:700;">
+                                <td>
+                                    Total {{ report_group_tour_status($currentGroup) }}
+                                </td>
+
+                                @foreach($dateRange as $d)
+
+                                    @php
+                                        $groupTotal = 0;
+
+                                        foreach ($sortedGrid as $title => $tourDates) {
+
+                                            if (($tourReportGroupMap[$title] ?? 99) != $currentGroup) {
+                                                continue;
+                                            }
+
+                                            $orders = collect($tourDates[$d->toDateString()] ?? [])
+                                                ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
+
+                                                    $driverMatch = !$selectedDriver ||
+                                                        in_array($selectedDriver, $o['driver_ids'] ?? []);
+
+                                                    $vehicleMatch = !$selectedVehicle ||
+                                                        in_array($selectedVehicle, $o['vehicle_ids'] ?? []);
+
+                                                    return $driverMatch && $vehicleMatch;
+                                                });
+
+                                            $groupTotal += $orders->sum('guest_count');
+                                        }
+                                    @endphp
+
+                                    <td class="text-center">
+                                        {{ $groupTotal }}
+                                    </td>
+
+                                @endforeach
+                            </tr>
+
+                            @endif
 
                 @empty
                     <tr>

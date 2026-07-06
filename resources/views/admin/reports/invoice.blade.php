@@ -133,7 +133,7 @@
                         'order_status',
                         'payment_status',
                         'partner',
-                        'action_type'
+                        'action_type',
                         'exclude_product'
                     ]);
                 @endphp
