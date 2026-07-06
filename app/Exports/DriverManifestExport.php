@@ -39,7 +39,7 @@ class DriverManifestExport implements
     public function collection()
 {
     $startOfWeek = Carbon::parse($this->date);
-    $endOfWeek   = Carbon::parse($this->date)->copy()->addDays(6);
+    $endOfWeek   = Carbon::parse($this->date)->copy()->addDays(4);
 
     $driverPaxPerDay = [];
     $driverNameMap   = [];
@@ -520,9 +520,9 @@ class DriverManifestExport implements
                     }
 
                     $cell .= "\n"
-                        . $driver
-                        . ' - '
                         . $info['pax']
+                        . ' - '
+                        . $driver
                         . $vehicleText;
                 }
             }

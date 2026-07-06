@@ -202,19 +202,21 @@
             </div>  -->
 
             {{-- PRODUCTS --}}
-            <div class="col-xl-3 col-md-3 col-12 position-relative">
-                <div class="form-group">
-                    <label class="filter-label">Products</label>
-                    <select id="productFilter" name="product" class="form-control">
-                        @if(request('product') && request('product_text'))
-                            <option value="{{ request('product') }}" selected>
-                                {{ request('product_text') }}
-                            </option>
-                        @endif
-                    </select>
-
-                    <input type="hidden" id="product_text" name="product_text" value="{{ request('product_text') }}">
-                </div>
+            <div class="col-md-3 col-6">
+                <label class="filter-label">Products</label>
+                <select id="productFilter" name="product[]" class="form-control" multiple>
+                    @foreach($selectedProducts as $sp)
+                        <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3 col-6">
+                <label class="filter-label">Excluded Products</label>
+                <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
+                    @foreach($excludedProducts as $ep)
+                        <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
+                    @endforeach
+                </select>
             </div>
 
             {{-- ORDER STATUS --}}
@@ -258,7 +260,7 @@
                 <label class="filter-label">Source</label>
                 <select name="partner" class="form-control">
                     <option value="">All</option>
-                    @php
+                    
                     
                     @foreach($partners as $partner)
                         <option value="{{ ucfirst($partner->slug) }}"
@@ -322,7 +324,7 @@
     </form>
 </div>
 
-@if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
+@if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type', 'exclude_product']))
         <div class="alert alert-info">
             Please apply filters to view report data.
         </div>
@@ -330,7 +332,7 @@
 <div class="active-filters mb-3">
         @if(request()->hasAny([
             'booking_date','tour_date','product',
-            'order_status','action_type','partner'
+            'order_status','action_type','partner','exclude_product'
         ]))
 
 
@@ -354,7 +356,26 @@
                 @endif
 
                 {{-- PRODUCT --}}
-               
+               @if($selectedProducts->isNotEmpty())
+                    @php $p = $selectedProducts->first(); @endphp
+                    <span class="badge badge-dark ml-2">
+                        Tour: {{ $p->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['product' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Excluded Tours --}}
+                @foreach($excludedProducts as $ep)
+                    <span class="badge badge-dark ml-2">
+                        Excluded: {{ $ep->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery([
+                            'exclude_product' => collect(request('exclude_product'))
+                                ->reject(fn($id) => $id == $ep->id)
+                                ->values()
+                                ->all(),
+                        ]) }}">✕</a>
+                    </span>
+                @endforeach
 
                 {{-- STATUS --}}
                 @if(request('order_status'))

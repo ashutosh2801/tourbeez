@@ -1,5 +1,6 @@
 <x-admin>
-    @section('title','Dashboard')
+    @section('title','Tour-wise Overview
+')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
         /* ✅ Keep container scoped */
@@ -105,13 +106,13 @@
         <div class="dash-perform">
             <div class="row">
                 <div class="col-md-6 col-12">
-                    <h2 class="text-sm m-0">Tour-wise overview</h2>
+                    <!-- <h2 class="text-sm m-0">Tour-wise overview</h2> -->
                     <input 
                         type="text" 
                         name="booking_date"
                         id="bookingDate"
                         class="form-control aiz-date-range"
-                        placeholder="Booking Date"
+                        placeholder="Order Date"
                         autocomplete="off"
                         data-advanced-range="true"
                         data-separator=" - "
@@ -205,14 +206,16 @@
         </div>
     </div>
 
-    @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
+   <!--  @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
         <div class="alert alert-info">
-            Please apply filters to view report data.
+            Please apply filters to view report data.weww
         </div>
-    @endif
+    @endif -->
     
 
-    <div id="noFilterAlert"></div>
+    <div id="noFilterAlert"><div class="alert alert-info">
+            Please apply filters to view report data.
+        </div></div>
     
     <div class="dashboard-wrapper">
             <div class="cards">
@@ -594,7 +597,7 @@ function renderFilters() {
     // 🔥 ALERT
     if (!hasFilter) {
         alertBox.innerHTML = `
-            <div class="alert alert-info">
+            <div class="alert alert-info no">
                 Please apply filters to view report data.
             </div>
         `;

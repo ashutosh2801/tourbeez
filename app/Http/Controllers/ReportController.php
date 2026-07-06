@@ -64,7 +64,8 @@ public function overview(Request $request)
         || $request->filled('order_status')
         || $request->filled('payment_status')
         || $request->filled('partner')
-        || $request->filled('action_type');
+        || $request->filled('action_type')
+        || $request->filled('exclude_product');
 
      if (!$hasFilter) {
         return view('admin.reports.overview', [
@@ -388,7 +389,8 @@ public function revenue(Request $request)
         || $request->filled('order_status')
         || $request->filled('payment_status')
         || $request->filled('partner')
-        || $request->filled('action_type');
+        || $request->filled('action_type')
+        || $request->filled('exclude_product');
 
     /*
     |--------------------------------------------------------------------------
@@ -805,8 +807,40 @@ if ($request->filled('payment_status')) {
 
 
 
-if ($product = $request->input('product')) {
-    $customers->where('order_tours.tour_id', $product);
+if ($products = $request->input('product')) {
+
+        $products = array_filter((array)$products);
+
+        if (!empty($products)) {
+
+            $customers->whereIn('orders.id', function ($q) use ($products) {
+
+                $q->select('order_id')
+                  ->from('order_tours')
+                  ->whereNull('deleted_at')
+                  ->whereIn('tour_id', $products);
+
+            });
+
+        }
+    }
+
+    if ($excludeProducts = $request->input('exclude_product')) {
+
+    $excludeProducts = array_filter((array)$excludeProducts);
+
+    if (!empty($excludeProducts)) {
+
+        $customers->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+            $q->select('order_id')
+              ->from('order_tours')
+              ->whereNull('deleted_at')
+              ->whereIn('tour_id', $excludeProducts);
+
+        });
+
+    }
 }
 
 if ($request->action_type === 'pay_now') {
@@ -900,7 +934,8 @@ public function getInvoiceData($request, $paginate = false)
     || $request->filled('order_status')
     || $request->filled('payment_status')
     || $request->filled('partner')
-    || $request->filled('action_type');
+    || $request->filled('action_type')
+    || $request->filled('exclude_product');
 
     if (!$hasFilter) {
         return $paginate
@@ -1332,7 +1367,8 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
         || $request->filled('order_status')
         || $request->filled('payment_status')
         || $request->filled('partner')
-        || $request->filled('action_type');
+        || $request->filled('action_type')
+        || $request->filled('exclude_product');
 
         if (!$hasFilter) {
             return $paginate
@@ -1495,7 +1531,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
         );
 
         $orders = $paginate
-            ? $query->paginate(20)->withQueryString()
+            ? $query->paginate(10)->withQueryString()
             : $query->get();
 
         $collection = $paginate ? $orders->getCollection() : $orders;

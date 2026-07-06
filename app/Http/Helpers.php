@@ -33,12 +33,12 @@ if(!function_exists('getFullSql')) {
 }
 
 // group tour status
-if(!function_exists('group_tour_status')) {
+if(!function_exists('report_group_tours')) {
     function report_group_tours() {
         return [
             1 => 'Day Tour',
             2 => 'Evening Tour',
-            3 => 'Helicopter Tour',
+            6 => 'Helicopter Tour',
             4 => 'Private Tour',
             5 => 'Group Tour',
             99=> 'Unknown'
