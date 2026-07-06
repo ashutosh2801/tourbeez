@@ -10561,6 +10561,27 @@ table.dataTable {
     color: #FFF;
 }
 
+.order-list-body .search-options .select2-search--inline .select2-search__field {
+    margin: 0;
+    border: none;
+    outline: none;
+    line-height: 1.2;
+}
+
+.order-list-body .search-options .select2-search--inline .select2-search__field::placeholder {
+    color: #898b92;
+}
+
+.order-list-body .search-options .select2-container--default .select2-selection--multiple {
+    border: 1px solid #ced4da !important;
+}
+
+.order-list-body .search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #fff;
+    margin-right: 6px;
+    font-weight: bold;
+}
+
 @media (max-width: 767px) {
 
     .order-list-body .btn-options .card-tools {
@@ -11841,4 +11862,72 @@ table.dataTable {
 
 .search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
     background-color: #a3a3a3;
+}
+
+.tour-search-filter .filter-sidebar{
+    position:fixed;
+    top:0;
+    right:-430px;
+    width:430px;
+    height:100vh;
+    background:#fff;
+    box-shadow:-5px 0 20px rgba(0,0,0,.15);
+    transition:.35s;
+    z-index:1055;
+    display:flex;
+    flex-direction:column;
+}
+
+.tour-search-filter .filter-sidebar.show{
+    right:0;
+}
+
+.tour-search-filter .filter-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:18px;
+    border-bottom:1px solid #eee;
+}
+
+.tour-search-filter .filter-body{
+    flex:1;
+    overflow-y: scroll;
+    padding: 20px;
+    height: 490px;
+}
+
+.tour-search-filter .filter-footer{
+    padding:20px;
+    border-top:1px solid #eee;
+}
+
+.tour-search-filter #filterOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.4);
+    display:none;
+    z-index:1050;
+}
+
+.tour-search-filter #filterOverlay.show{
+    display:block;
+}
+
+.tour-search-filter #closeFilter{
+    background:none;
+    border:none;
+    font-size:22px;
+}
+
+.tour-search-filter #closeFilter i:hover {
+    color: #666;
+}
+
+@media(max-width:767px) {
+
+    .tour-search-filter .filter-sidebar{
+        width: 100%;
+    }
+
 }
