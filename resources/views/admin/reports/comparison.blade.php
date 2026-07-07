@@ -31,9 +31,9 @@
 .insight-blue{background:#eef5ff}
 .insight-orange{background:#fff4ea}
 .insight-red{background:#fdeeee}
- .select2-container .select2-selection--single {
+    .select2-container .select2-selection--single {
         height: 42px !important;
-        border: 1px solid #ced4da !important;
+        border: 1px solid #aeb0b4 !important;
         border-radius: 0.375rem !important;
         display: flex !important;
         align-items: center !important;
@@ -72,60 +72,72 @@
 <div class="comparison-body">
     <div class="card card-primary bg-white border rounded-lg-custom mb-3 top-search-bar">
         <div class="row">
-            <div class="col-sm-12">
-                <b class="text-sm">Compare performance between two selected dates</b>
+            <div class="col-xl-12 col-12">
+                <b class="text-sm">Compare performance between two Order dates</b>
             </div>
-            <div class="col-sm-3">
-                <input type="date" id="date1" class="form-control" required>
+
+            <div class="col-xl-4 col-md-3 col-12">
+            <div class="form-group">
+                <input type="text" id="date1" class="form-control" placeholder="Order Date 1" autocomplete="off" required>
             </div>
-            <div class="col-sm-3">
-                <input type="date" id="date2" class="form-control" required>
-            </div>
-            <!-- <div class="col-sm-2">
-                <select id="productFilter" class="form-control">
-                    <option value="">All Products</option>
-                </select>
-            </div> -->
-            <div class="col-md-3">
-            <!-- <label>Product</label> -->
-            <select id="productFilter" name="product" class="form-control">
-                @if(request('product') && request('product_text'))
-                    <option value="{{ request('product') }}" selected>
-                        {{ request('product_text') }}
-                    </option>
-                @endif
-            </select>
-        </div>
-         <!-- ORDER STATUS -->
-        <div class="col-md-2">
-            <!-- <label>Order Status</label> -->
-            <select name="order_status" id="order_status" class="form-control">
-                <option value="">All</option>
-                <option value="3">Pending supplier</option>
-                <option value="4">Pending customer</option>
-                <option value="5">Confirmed</option>
-            </select>
         </div>
 
-        <!-- PAY TYPE -->
-        <div class="col-md-2 mt-2">
-            <!-- <label>Pay Type</label> -->
-            <select name="action_type" id="action_type" class="form-control">
-                <option value="">All</option>
-                <option value="pay_now">Pay Now</option>
-                <option value="pay_later">Pay Later</option>
-            </select>
-        </div>
-            <div class="col-sm-2 mt-2">
-                <select id="partner" class="form-control">
-                    <option value="">All Channels</option>
-                    @foreach($partners as $p)
-                        <option value="{{ $p->name }}">{{ $p->name }}</option>
-                    @endforeach
-                </select>
+        <div class="col-xl-4 col-md-3 col-12">
+            <div class="form-group">
+                <input type="text" id="date2" class="form-control" placeholder="Order Date 2" autocomplete="off" required>
             </div>
-            <div class="col-sm-2 mt-2">
+        </div>
+
+            <div class="col-xl-4 col-md-3 col-12">
+                <div class="form-group">
+                    <select id="productFilter" name="product" class="form-control">
+                        @if(request('product') && request('product_text'))
+                            <option value="{{ request('product') }}" selected>
+                                {{ request('product_text') }}
+                            </option>
+                        @endif
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-3 col-12">
+                <div class="form-group">
+                    <select name="order_status" id="order_status" class="form-control">
+                        <option value="">All</option>
+                        <option value="3">Pending supplier</option>
+                        <option value="4">Pending customer</option>
+                        <option value="5">Confirmed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-3 col-12">
+                <div class="form-group">
+                    <select name="action_type" id="action_type" class="form-control">
+                        <option value="">All</option>
+                        <option value="pay_now">Pay Now</option>
+                        <option value="pay_later">Pay Later</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-3 col-12">
+                <div class="form-group">
+                    <select id="partner" class="form-control">
+                        <option value="">All Channels</option>
+                        @foreach($partners as $p)
+                            <option value="{{ $p->name }}">{{ $p->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-12 col-12">
                 <button id="applyBtn" class="btn btn-search">Apply</button>
+            </div>
+
+            <div class="col-12">
+                <div id="activeFilters" class="mb-2"></div>
             </div>
         </div>
     </div>
@@ -140,11 +152,8 @@
     <div id="noFilterAlert"></div>
     <!-- <div id="activeFilters" class="mb-3"></div> -->
 
-    <!-- 🔥 FILTER ALERT -->
-<div id="filterAlert" class="mb-2"></div>
-
-<!-- 🔥 ACTIVE FILTER TAGS -->
-<div id="activeFilters" class="mb-3"></div>
+    <!-- FILTER ALERT -->
+    <div id="filterAlert" class="mb-2"></div>
 
     <div class="stats-cards">
 
@@ -166,12 +175,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label labelDate1">Date 1</div>
                     <div class="metric-value" id="rev1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label labelDate2">Date 2</div>
                     <div class="metric-value green" id="rev2"></div>
                 </div>
 
@@ -199,12 +208,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label labelDate1">Date 1</div>
                     <div class="metric-value" id="pass1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label labelDate2">Date 2</div>
                     <div class="metric-value green" id="pass2"></div>
                 </div>
 
@@ -232,12 +241,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label labelDate1">Date 1</div>
                     <div class="metric-value" id="book1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label labelDate2">Date 2</div>
                     <div class="metric-value green" id="book2"></div>
                 </div>
 
@@ -265,12 +274,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label labelDate1">Date 1</div>
                     <div class="metric-value" id="avg1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label labelDate2">Date 2</div>
                     <div class="metric-value red" id="avg2"></div>
                 </div>
 
@@ -300,13 +309,16 @@
 
         <div class="panel">
             <h4>Product-wise Comparison</h4>
-            <div class="table-responsive">
+            <div class="table-responsive productComparison">
                 <table class="table">
                     <thead>
                         <tr>
                             <th>Product</th>
-                            <th>Yesterday</th>
-                            <th>Today</th>
+                            <!-- <th>Yesterday</th> -->
+                            <th class="metric-label labelDate1">Date 1</th>
+                           
+                            <th class="metric-label labelDate2">Date 2</th>
+
                             <th>Change</th>
                         </tr>
                     </thead>
@@ -341,20 +353,17 @@ function render(data) {
     const d1 = data.date1;
     const d2 = data.date2;
 
-    if (!d1 || !d2) return;
+    set('rev1', d1.revenue);
+    set('rev2', d2.revenue);
 
-    // 🔥 METRICS
-    setMoney('rev1', d1.revenue);
-    setMoney('rev2', d2.revenue);
+    set('pass1', d1.passengers);
+    set('pass2', d2.passengers);
 
-    setNumber('pass1', d1.passengers);
-    setNumber('pass2', d2.passengers);
+    set('book1', d1.bookings);
+    set('book2', d2.bookings);
 
-    setNumber('book1', d1.bookings);
-    setNumber('book2', d2.bookings);
-
-    setMoney('avg1', d1.avg);
-    setMoney('avg2', d2.avg);
+    set('avg1', d1.avg);
+    set('avg2', d2.avg);
 
     // 🔥 DIFF
     diff('revDiff', d1.revenue, d2.revenue);
@@ -368,32 +377,94 @@ function render(data) {
 
     const date1Label = formatDate(document.getElementById('date1').value) || 'Date 1';
     const date2Label = formatDate(document.getElementById('date2').value) || 'Date 2';
+    // document.getElementById('labelDate1').innerText = date1Label;
+    // document.getElementById('labelDate2').innerText = date2Label;
 
-    // 🔥 REVENUE CHART
-    revChart = new ApexCharts(document.querySelector("#revChart"), {
-        chart: { type: 'bar', height: 350 },
-        series: [{
-            name: 'Revenue',
-            data: [d1.revenue, d2.revenue]
-        }],
-        xaxis: {
-            categories: [date1Label, date2Label]
-        }
+    document.querySelectorAll('.labelDate1').forEach(el => {
+        el.innerText = date1Label;
     });
-    revChart.render();
 
-    // 🔥 PASSENGER CHART
-    passChart = new ApexCharts(document.querySelector("#passChart"), {
-        chart: { type: 'bar', height: 350 },
-        series: [{
-            name: 'Passengers',
-            data: [d1.passengers, d2.passengers]
-        }],
-        xaxis: {
-            categories: [date1Label, date2Label]
-        }
+    document.querySelectorAll('.labelDate2').forEach(el => {
+        el.innerText = date2Label;
     });
-    passChart.render();
+
+revChart = new ApexCharts(
+document.querySelector("#revChart"),
+{
+    chart:{
+        type:'bar',
+        height:350,
+        toolbar:{show:false}
+    },
+
+    series:[{
+        name:'Revenue',
+        data:[d1.revenue,d2.revenue]
+    }],
+
+    legend: {
+        show: false
+    },
+
+    plotOptions:{
+        bar:{
+            distributed:true,
+            borderRadius:8,
+            columnWidth:'50%'
+        }
+    },
+
+    colors:['#94a3b8','#22c55e'],
+
+    dataLabels:{
+        enabled:true
+    },
+
+    xaxis:{
+        categories:[date1Label,date2Label]
+    }
+});
+
+revChart.render();
+
+passChart = new ApexCharts(
+document.querySelector("#passChart"),
+{
+    chart:{
+        type:'bar',
+        height:350,
+        toolbar:{show:false}
+    },
+
+    series:[{
+        name:'Passengers',
+        data:[d1.passengers,d2.passengers]
+    }],
+
+    legend: {
+        show: false
+    },
+
+    plotOptions:{
+        bar:{
+            distributed:true,
+            borderRadius:8,
+            columnWidth:'50%'
+        }
+    },
+
+    colors:['#94a3b8','#3b82f6'],
+
+    dataLabels:{
+        enabled:true
+    },
+
+    xaxis:{
+        categories:[date1Label,date2Label]
+    }
+});
+
+passChart.render();
 
     // ============================================================
     // 🔥 PRODUCT TABLE (FIXED — THIS WAS MISSING)
@@ -493,6 +564,18 @@ document.getElementById('applyBtn').onclick = function () {
     window.location.href = `{{ route('admin.report.comparison') }}?${params.toString()}`;
 };
 
+function set(id, value) {
+    const el = document.getElementById(id);
+
+    if (!el) return;
+
+    if (typeof value === 'number') {
+        el.innerHTML = value.toLocaleString();
+    } else {
+        el.innerHTML = value ?? 0;
+    }
+}
+
 
 /*
 |--------------------------------------------------------------------------
@@ -505,8 +588,15 @@ async function fetchData() {
 
     if (!params.toString()) return;
 
+    console.log('Params:', params.toString());
+
     const res = await fetch(`{{ route('admin.report.comparison.data') }}?${params}`);
+
+    console.log('Response Status:', res.status);
+
     const data = await res.json();
+
+    console.log('API Data:', data);
 
     render(data);
 }
@@ -646,14 +736,6 @@ function showAlert(msg) {
         `<div class="alert alert-warning">${msg}</div>`;
 }
 
-function setMoney(id,val){
-    document.getElementById(id).innerHTML = '$' + Number(val).toLocaleString();
-}
-
-function setNumber(id,val){
-    document.getElementById(id).innerHTML = Number(val).toLocaleString();
-}
-
 function formatDate(dateStr){
     if(!dateStr) return '';
     const d = new Date(dateStr);
@@ -696,6 +778,18 @@ window.onload = function () {
 
         
     $(document).ready(function () {
+
+        $('#date1, #date2').daterangepicker({
+            singleDatePicker: true,
+            autoUpdateInput: false,
+            locale: {
+                format: 'YYYY-MM-DD'
+            }
+        });
+
+        $('#date1, #date2').on('apply.daterangepicker', function(ev, picker) {
+            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+        });
         // ✅ Select2 (optimized)
         $('#productFilter').select2({
             placeholder: 'Select Tour',

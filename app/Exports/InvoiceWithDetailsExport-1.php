@@ -2,31 +2,23 @@
 
 namespace App\Exports;
 
-use App\Models\Order;
-use Maatwebsite\Excel\Concerns\{
-    FromQuery,
-    WithMapping,
-    WithHeadings,
-    WithEvents,
-    WithChunkReading
-};
+use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
+use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
 
-class OrderPriceScheduleExport implements FromQuery, WithMapping, WithHeadings, WithEvents, WithChunkReading
+class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunkSize
 {
-    protected $request;
+    protected $rows;
     protected $addonKeys = [];
 
-    public function __construct($request)
+    public function __construct($rows)
     {
-        $this->request = $request;
+        $this->rows = $rows;
 
-        // 🔥 detect addon keys from ONE sample (not all rows)
-        $sample = app(\App\Http\Controllers\ReportController::class)
-            ->getInvoiceWithDetailsData($request, false);
-
-        if (!empty($sample)) {
-            $this->addonKeys = collect($sample[0])
+        // 🔥 detect addons dynamically
+        if (!empty($rows)) {
+            $this->addonKeys = collect($rows[0])
                 ->keys()
                 ->filter(fn($k) => str_ends_with($k, '_desc'))
                 ->map(fn($k) => str_replace('_desc', '', $k))
@@ -35,64 +27,19 @@ class OrderPriceScheduleExport implements FromQuery, WithMapping, WithHeadings, 
         }
     }
 
-    // 🔥 STREAM QUERY (IMPORTANT)
-    public function query()
+    public function array(): array
     {
-        return Order::query(); // 🔥 Replace with your actual filtered query logic
-    }
 
-    // 🔥 MAP EACH ROW (NO MEMORY LOAD)
-    public function map($order): array
-    {
-        $r = $this->transformRow($order);
+        ini_set('memory_limit', '2048M');
 
-        $row = [
-            $r['no'] ?? '',
-            $r['order_number'] ?? '',
-            $r['customer_name'] ?? '',
-            $r['order_date'] ?? '',
-            $r['fulfilment_date'] ?? '',
+        logger('Rows received: '.count($this->rows));
+        $data = [];
 
-            ($r['adult'] + $r['child'] + $r['infant'] + $r['other'] + $r['senior']),
-            $r['adult'] ?? 0,
-            $r['child'] ?? 0,
-            $r['infant'] ?? 0,
-            $r['senior'] ?? 0,
+        // 🔥 ROW 1 (empty → merged later)
+        $totalColumns = 23 + (count($this->addonKeys) * 6);
+        $data[] = array_fill(0, $totalColumns, '');
 
-            number_format_with_currency($r['product_price'] ?? 0, 2, '.', ''),
-            number_format_with_currency($r['extra_amount'] ?? 0, 2, '.', ''),
-            number_format_with_currency($r['tax_amount'] ?? 0, 2, '.', ''),
-            number_format_with_currency($r['discount_amount'] ?? 0, 2, '.', ''),
-            number_format_with_currency($r['customer_total'] ?? 0, 2, '.', ''),
-            number_format_with_currency($r['balance_amount'] ?? 0, 2, '.', ''),
-
-            number_format_with_currency($r['transport_cost'] ?? 0, 2, '.', ''),
-
-            number_format_with_currency($r['tour_selling_price'] ?? 0, 2, '.', ''),
-            number_format_with_currency($r['tour_selling_tax'] ?? 0, 2, '.', ''),
-            0,
-            number_format_with_currency(($r['tour_selling_total'] + $r['transport_cost']), 2, '.', ''),
-            number_format_with_currency(($r['customer_total'] - $r['tour_selling_total'] - $r['transport_cost']), 2, '.', ''),
-
-            $r['product_name'] ?? '',
-        ];
-
-        // 🔥 ADDONS
-        foreach ($this->addonKeys as $key) {
-            $row[] = $r[$key.'_desc'] ?? '';
-            $row[] = $r[$key.'_quant'] ?? 0;
-            $row[] = number_format_with_currency($r[$key.'_price'] ?? 0, 2, '.', '');
-            $row[] = number_format_with_currency($r[$key.'_tax'] ?? 0, 2, '.', '');
-            $row[] = number_format_with_currency($r[$key.'_fee'] ?? 0, 2, '.', '');
-            $row[] = number_format_with_currency($r[$key.'_total'] ?? 0, 2, '.', '');
-        }
-
-        return $row;
-    }
-
-    // 🔥 HEADERS (row 2)
-    public function headings(): array
-    {
+        // 🔥 ROW 2 (sub headers)
         $headers = [
             'No.', 'Order #', 'Customer', 'Order Date', 'Fulfilment',
             'Quantity', 'Adult', 'Child', 'Infant', 'Senior',
@@ -109,24 +56,68 @@ class OrderPriceScheduleExport implements FromQuery, WithMapping, WithHeadings, 
             ]);
         }
 
-        return $headers;
+        $data[] = $headers;
+
+        // 🔥 DATA ROWS
+        foreach ($this->rows as $r) {
+
+            $row = [
+                $r['no'] ?? '',
+                $r['order_number'] ?? '',
+                $r['customer_name'] ?? '',
+                $r['order_date'] ?? '',
+                $r['fulfilment_date'] ?? '',
+
+                ($r['adult'] + $r['child'] + $r['infant'] + $r['other'] + $r['senior']),
+                $r['adult'] ?? 0,
+                $r['child'] ?? 0,
+                $r['infant'] ?? 0,
+                $r['senior'] ?? 0,
+
+                number_format($r['product_price'] ?? 0, 2, '.', ''),
+                number_format($r['extra_amount'] ?? 0, 2, '.', ''),
+                number_format($r['tax_amount'] ?? 0, 2, '.', ''),
+                number_format($r['discount_amount'] ?? 0, 2, '.', ''),
+                number_format($r['customer_total'] ?? 0, 2, '.', ''),
+                number_format($r['balance_amount'] ?? 0, 2, '.', ''),
+
+                number_format($r['transport_cost'] ?? 0, 2, '.', ''),
+
+                number_format($r['tour_selling_price'] ?? 0, 2, '.', ''),
+                number_format($r['tour_selling_tax'] ?? 0, 2, '.', ''),
+                0,
+                number_format(($r['tour_selling_total'] + $r['transport_cost']), 2, '.', ''),
+                number_format(($r['customer_total'] - $r['tour_selling_total'] - $r['transport_cost']), 2, '.', ''),
+
+                $r['product_name'] ?? '',
+            ];
+
+            // 🔥 ADDONS
+            foreach ($this->addonKeys as $key) {
+                $row[] = $r[$key.'_desc'] ?? '';
+                $row[] = $r[$key.'_quant'] ?? 0;
+                $row[] = number_format($r[$key.'_price'] ?? 0, 2, '.', '');
+                $row[] = number_format($r[$key.'_tax'] ?? 0, 2, '.', '');
+                $row[] = number_format($r[$key.'_fee'] ?? 0, 2, '.', '');
+                $row[] = number_format($r[$key.'_total'] ?? 0, 2, '.', '');
+            }
+
+            $data[] = $row;
+        }
+
+        return $data;
     }
 
-    // 🔥 CHUNK SIZE (CRITICAL)
-    public function chunkSize(): int
-    {
-        return 200; // safe
-    }
-
-    // 🔥 MERGE HEADERS (same as before)
     public function registerEvents(): array
     {
         return [
             AfterSheet::class => function ($event) {
 
                 $sheet = $event->sheet->getDelegate();
+
                 $col = 1;
 
+                // 🔥 STATIC HEADERS (VERTICAL MERGE)
                 $staticHeaders = [
                     'No.', 'Order #', 'Customer', 'Order Date', 'Fulfilment',
                     'Quantity', 'Adult', 'Child', 'Infant', 'Senior',
@@ -143,25 +134,28 @@ class OrderPriceScheduleExport implements FromQuery, WithMapping, WithHeadings, 
                     $col++;
                 }
 
+                // 🔥 ADDON GROUP HEADERS
                 foreach ($this->addonKeys as $key) {
+
                     $label = ucwords(str_replace('_', ' ', $key));
 
                     $sheet->setCellValueByColumnAndRow($col, 1, $label);
+
+                    // 🔥 6 columns per addon
                     $sheet->mergeCellsByColumnAndRow($col, 1, $col + 5, 1);
 
                     $col += 6;
                 }
 
+                // 🔥 STYLE
                 $sheet->getStyle('1:2')->getFont()->setBold(true);
                 $sheet->getStyle('1:2')->getAlignment()->setHorizontal('center');
             }
         ];
     }
 
-    // 🔥 reuse your existing logic
-    private function transformRow($order)
+    public function chunkSize(): int
     {
-        return app(\App\Http\Controllers\ReportController::class)
-            ->transformInvoiceRow($order);
+        return 10000; // 👈 Forces it to process up to 10k items in one batch
     }
 }

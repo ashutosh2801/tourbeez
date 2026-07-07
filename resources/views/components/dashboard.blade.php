@@ -271,7 +271,6 @@
             }
         };
 
-        var chart = new ApexCharts(document.querySelector("#mountainChart"), options);
-        chart.render();
+         // 
     });
 </script>

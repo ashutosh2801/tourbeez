@@ -41,6 +41,7 @@ use App\Http\Controllers\TaxesFeeController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\TourTypeController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -81,6 +82,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/user_supplier',[SupplierController::class, 'index'])->name('supplier.index');
     Route::get('/user_driver',[DriverController::class, 'index'])->name('driver.index');
     Route::resource('/customers',CustomerController::class);
+    Route::resource('/vehicles',VehicleController::class);
 
     Route::get('/customers/{id}/{source}/edit',[CustomerController::class, 'editFromSource'])->name('customers.edit.source');
     Route::put('/customers-source/{id}/{source}',[CustomerController::class, 'updateSource'])->name('customers.source.update');
@@ -213,6 +215,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/tours/reorder', [TourController::class, 'reorder'])->name('tour.reorder');
     Route::post('/tours/save-coupon', [TourController::class, 'saveCoupon'])->name('tour.saveCoupon');
     Route::post('/tours/update-price', [TourController::class, 'updatePrices'])->name('tour.updatePrices');
+    Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');
     Route::post('/tours/toggle-status', [TourController::class, 'toggleStatus'])->name('tour.toggleStatus');
     Route::post('/tours/import-price', [TourController::class, 'importPrice'])->name('tours.importPrice');
     Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');

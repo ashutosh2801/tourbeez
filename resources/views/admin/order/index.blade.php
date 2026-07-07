@@ -458,7 +458,7 @@
                                 <td>
                                     <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink">{{ $order->order_number }}</a>
                                 </td>
-                                <td class="text-center">{!! order_status($order->order_status) !!} <br> <small>{{  in_array($order->latestPaymentLog?->status, ['success', 'authorized', 'failed', 'cancelled']) ? ucwords($order->latestPaymentLog?->status) : '' }}</small></td>
+                                <td class="text-center">{!! order_status($order->order_status) !!} <br> <small>{{  $order->latestPaymentLog?->status ? in_array($order->latestPaymentLog?->status, ['success', 'authorized', 'failed', 'cancelled']) ? ucwords($order->latestPaymentLog?->status) : 'Failed' : '' }}</small></td>
                                 <td class="">
                                     @foreach ($order->orderTours as $order_tour)
 
