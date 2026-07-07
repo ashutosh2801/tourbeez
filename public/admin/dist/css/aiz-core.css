@@ -8489,10 +8489,6 @@ a.dropdown-footer:hover {
         width: 47%;
         float: right;
     }
-
-    .order-table table {
-        table-layout: auto;
-    }
 }
 
 .customer-details .alink {
@@ -10598,6 +10594,14 @@ table.dataTable {
         margin-right: 5px;
     }
 
+}
+
+@media (min-width: 767px) {
+
+    .order-list-body .order-table .table {
+        table-layout: fixed;
+    }
+    
 }
 
 .voucher-list-header .card-header {

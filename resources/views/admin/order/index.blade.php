@@ -21,22 +21,20 @@
                 transform: translateY(0);
             }
         }
-        /* Single & Multiple same height */
 
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #fd7e14;
+            border: none;
+            color: #fff;
+            border-radius: 12px;
+            padding: 2px 8px;
+            margin: 0;
+            line-height: 1.6;
+        }
 
-.select2-container--default .select2-selection--multiple .select2-selection__choice {
-    background-color: #fd7e14;
-    border: none;
-    color: #fff;
-    border-radius: 12px;
-    padding: 2px 8px;
-    margin: 0;
-    line-height: 1.6;
-}
-
-#excludeProductFilter + .select2-container .select2-selection--multiple .select2-selection__choice {
-    background-color: #dc3545; /* red for excluded, orange for included */
-}
+        #excludeProductFilter + .select2-container .select2-selection--multiple .select2-selection__choice {
+            background-color: #dc3545; /* red for excluded, orange for included */
+        }
 
     </style>
     @section('title', 'Orders List')
@@ -383,7 +381,7 @@
             @endif
             
             <div class="card-body p-0 order-table table-responsive">
-                <table class="table table-striped" id="OrderTable" style="table-layout:fixed; width:100%;">
+                <table class="table table-striped" id="OrderTable" style="width:100%;">
                     <thead>
                         <tr>
                             <th style="width:4%;">

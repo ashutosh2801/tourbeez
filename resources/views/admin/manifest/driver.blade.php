@@ -80,48 +80,47 @@
         border: none !important;
     }
 
-.select2-selection__choice__remove {
-    color: white !important;
-    margin-right: 6px;
-}
-/*.selection .select2-selection .select2-selection--multiple {
-    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-    padding: 0.6rem 1rem !important;
-    margin-bottom: 15px !important;
-}*/
+    .select2-selection__choice__remove {
+        color: white !important;
+        margin-right: 6px;
+    }
+    /*.selection .select2-selection .select2-selection--multiple {
+        min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+        padding: 0.6rem 1rem !important;
+        margin-bottom: 15px !important;
+    }*/
 
-.select2-container--default .select2-selection--multiple  {
-    min-height: calc(1.3125rem + 1.2rem + 2px);
-    padding: 0.6rem 1rem;
-    margin-bottom: 15px;
-}
+    .select2-container--default .select2-selection--multiple  {
+        min-height: calc(1.3125rem + 1.2rem + 2px);
+        padding: 0.6rem 1rem;
+        margin-bottom: 15px;
+    }
 
-.manifest-grid {
-    table-layout: fixed;
-    width: 100%;
-}
+    .manifest-grid {
+        table-layout: fixed;
+        width: 100%;
+    }
 
-.manifest-grid th,
-.manifest-grid td {
-    word-wrap: break-word;
-    white-space: normal;
-    vertical-align: top;
-}
+    .manifest-grid th,
+    .manifest-grid td {
+        word-wrap: break-word;
+        white-space: normal;
+        vertical-align: top;
+    }
 
-/* Tours column (~60% of previous width) */
-.manifest-grid th:first-child,
-.manifest-grid td:first-child {
-    width: 220px;
-    min-width: 220px;
-    max-width: 220px;
-}
+    /* Tours column (~60% of previous width) */
+    .manifest-grid th:first-child,
+    .manifest-grid td:first-child {
+        width: 220px;
+        min-width: 220px;
+        max-width: 220px;
+    }
 
-/* All remaining columns equal width */
-.manifest-grid th:not(:first-child),
-.manifest-grid td:not(:first-child) {
-    width: calc((100% - 120px) / 7);
-}
-
+    /* All remaining columns equal width */
+    .manifest-grid th:not(:first-child),
+    .manifest-grid td:not(:first-child) {
+        width: calc((100% - 120px) / 7);
+    }
 
 </style>
 
