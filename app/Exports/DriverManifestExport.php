@@ -133,36 +133,6 @@ class DriverManifestExport implements
                 ->values()
                 ->toArray();
 
-            // -----------------------------------
-            // DRIVER FILTER
-            // -----------------------------------
-
-            // if ($this->driverId) {
-
-            //     if (!in_array($this->driverId, $driverIds)) {
-            //         continue;
-            //     }
-
-            //     $orderDrivers = $orderDrivers
-            //         ->where('driver_id', $this->driverId);
-
-            //     $driverIds = $orderDrivers->pluck('driver_id')->toArray();
-
-            //     $driverNames = $orderDrivers
-            //         ->pluck('driver.name')
-            //         ->filter()
-            //         ->values()
-            //         ->toArray();
-
-            //     $vehicleIds = $orderDrivers->pluck('vehicle_id')->toArray();
-
-            //     $vehicleNames = $orderDrivers
-            //         ->pluck('vehicle.name')
-            //         ->filter()
-            //         ->values()
-            //         ->toArray();
-            // }
-
         $matchDriver = !$this->driverId || in_array($this->driverId, $driverIds);
         $matchVehicle = !$this->vehicleId || in_array($this->vehicleId, $vehicleIds);
 
@@ -459,8 +429,19 @@ class DriverManifestExport implements
     // ==========================
     // TOUR ROWS
     // ==========================
+    $tourKeys = array_keys($sortedGrid->toArray());
 
     foreach ($sortedGrid as $tourTitle => $dates) {
+
+        $currentIndex = array_search($tourTitle, $tourKeys);
+
+        $currentGroup = $tourReportGroupMap[$tourTitle] ?? 99;
+
+        $nextTour = $tourKeys[$currentIndex + 1] ?? null;
+
+        $nextGroup = $nextTour
+            ? ($tourReportGroupMap[$nextTour] ?? 99)
+            : null;
 
         $row = [$tourTitle];
 
@@ -531,6 +512,42 @@ class DriverManifestExport implements
         }
 
         $rows[] = $row;
+        if ($nextGroup !== $currentGroup) {
+
+            $groupRow = [
+                'Total ' . report_group_tour_status($currentGroup)
+            ];
+
+            foreach ($dateRange as $d) {
+
+                $groupTotal = 0;
+
+                foreach ($sortedGrid as $title => $tourDates) {
+
+                    if (($tourReportGroupMap[$title] ?? 99) != $currentGroup) {
+                        continue;
+                    }
+
+                    $orders = collect($tourDates[$d->toDateString()] ?? [])
+                                ->filter(function ($o) {
+
+                                    $driverMatch = !$this->driverId
+                                        || in_array($this->driverId, $o['driver_ids'] ?? []);
+
+                                    $vehicleMatch = !$this->vehicleId
+                                        || in_array($this->vehicleId, $o['vehicle_ids'] ?? []);
+
+                                    return $driverMatch && $vehicleMatch;
+                                });
+
+                    $groupTotal += $orders->sum('guest_count');
+                }
+
+                $groupRow[] = $groupTotal;
+            }
+
+            $rows[] = $groupRow;
+        }
     }
 
     // ==========================
