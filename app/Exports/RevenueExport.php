@@ -87,9 +87,42 @@ class RevenueExport implements FromCollection, WithHeadings
     }
 
     // ✅ Product
-    if ($product = $request->input('product')) {
-        $query->where('order_tours.tour_id', $product);
-    }
+    if ($products = $request->input('product')) {
+
+            $products = array_filter((array)$products);
+
+            if (!empty($products)) {
+
+                $query->whereIn('orders.id', function ($q) use ($products) {
+
+                    $q->select('order_id')
+                      ->from('order_tours')
+                      ->whereNull('deleted_at')
+                      ->whereIn('tour_id', $products);
+
+                });
+
+            }
+        }
+
+        if ($excludeProducts = $request->input('exclude_product')) {
+
+            $excludeProducts = array_filter((array)$excludeProducts);
+
+            if (!empty($excludeProducts)) {
+
+                $query->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+                    $q->select('order_id')
+                      ->from('order_tours')
+                      ->whereNull('deleted_at')
+                      ->whereIn('tour_id', $excludeProducts);
+
+                });
+
+            }
+        }
+
 
     // ✅ Order Status
     if ($request->filled('order_status')) {

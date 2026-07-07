@@ -73,20 +73,20 @@
     <div class="card card-primary bg-white border rounded-lg-custom mb-3 top-search-bar">
         <div class="row">
             <div class="col-xl-12 col-12">
-                <b class="text-sm">Compare performance between two selected dates</b>
+                <b class="text-sm">Compare performance between two Order dates</b>
             </div>
 
             <div class="col-xl-4 col-md-3 col-12">
-                <div class="form-group">
-                    <input type="date" id="date1" class="form-control" required>
-                </div>
+            <div class="form-group">
+                <input type="text" id="date1" class="form-control" placeholder="Order Date 1" autocomplete="off" required>
             </div>
+        </div>
 
-            <div class="col-xl-4 col-md-3 col-12">
-                <div class="form-group">
-                    <input type="date" id="date2" class="form-control" required>
-                </div>
+        <div class="col-xl-4 col-md-3 col-12">
+            <div class="form-group">
+                <input type="text" id="date2" class="form-control" placeholder="Order Date 2" autocomplete="off" required>
             </div>
+        </div>
 
             <div class="col-xl-4 col-md-3 col-12">
                 <div class="form-group">
@@ -175,12 +175,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label labelDate1">Date 1</div>
                     <div class="metric-value" id="rev1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label labelDate2">Date 2</div>
                     <div class="metric-value green" id="rev2"></div>
                 </div>
 
@@ -208,12 +208,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label labelDate1">Date 1</div>
                     <div class="metric-value" id="pass1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label labelDate2">Date 2</div>
                     <div class="metric-value green" id="pass2"></div>
                 </div>
 
@@ -241,12 +241,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label labelDate1">Date 1</div>
                     <div class="metric-value" id="book1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label labelDate2">Date 2</div>
                     <div class="metric-value green" id="book2"></div>
                 </div>
 
@@ -274,12 +274,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label">Yesterday</div>
+                    <div class="metric-label labelDate1">Date 1</div>
                     <div class="metric-value" id="avg1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label">Today</div>
+                    <div class="metric-label labelDate2">Date 2</div>
                     <div class="metric-value red" id="avg2"></div>
                 </div>
 
@@ -314,8 +314,11 @@
                     <thead>
                         <tr>
                             <th>Product</th>
-                            <th>Yesterday</th>
-                            <th>Today</th>
+                            <!-- <th>Yesterday</th> -->
+                            <th class="metric-label labelDate1">Date 1</th>
+                           
+                            <th class="metric-label labelDate2">Date 2</th>
+
                             <th>Change</th>
                         </tr>
                     </thead>
@@ -374,6 +377,16 @@ function render(data) {
 
     const date1Label = formatDate(document.getElementById('date1').value) || 'Date 1';
     const date2Label = formatDate(document.getElementById('date2').value) || 'Date 2';
+    // document.getElementById('labelDate1').innerText = date1Label;
+    // document.getElementById('labelDate2').innerText = date2Label;
+
+    document.querySelectorAll('.labelDate1').forEach(el => {
+        el.innerText = date1Label;
+    });
+
+    document.querySelectorAll('.labelDate2').forEach(el => {
+        el.innerText = date2Label;
+    });
 
 revChart = new ApexCharts(
 document.querySelector("#revChart"),
@@ -408,7 +421,7 @@ document.querySelector("#revChart"),
     },
 
     xaxis:{
-        categories:['Yesterday','Today']
+        categories:[date1Label,date2Label]
     }
 });
 
@@ -447,7 +460,7 @@ document.querySelector("#passChart"),
     },
 
     xaxis:{
-        categories:['Yesterday','Today']
+        categories:[date1Label,date2Label]
     }
 });
 
@@ -765,6 +778,18 @@ window.onload = function () {
 
         
     $(document).ready(function () {
+
+        $('#date1, #date2').daterangepicker({
+            singleDatePicker: true,
+            autoUpdateInput: false,
+            locale: {
+                format: 'YYYY-MM-DD'
+            }
+        });
+
+        $('#date1, #date2').on('apply.daterangepicker', function(ev, picker) {
+            $(this).val(picker.startDate.format('YYYY-MM-DD'));
+        });
         // ✅ Select2 (optimized)
         $('#productFilter').select2({
             placeholder: 'Select Tour',

@@ -16,6 +16,7 @@ use App\Models\TaxesFee;
 use App\Models\Tour;
 use App\Models\Tourtype;
 use App\Models\User;
+use App\Models\Vehicle;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
@@ -94,6 +95,9 @@ class Sidebar extends Component
         view()->share('partnerCount',$partnerCount);
 
         view()->share('excludedUsers', $excludedUsers);
+
+        $vehicleCount = Vehicle::count();
+        view()->share('vehicleCount',$vehicleCount);
 
 
 

@@ -133,46 +133,56 @@
 
                 {{-- USER --}}
                 <div class="col-xl-2 col-md-2 col-12">
-                    <label class="filter-label">User</label>
-                    <input type="text" name="user_id"
-                        value="{{ request('user_id') }}"
-                        class="form-control"
-                        placeholder="User">
+                    <div class="form-group">
+                        <label class="filter-label">User</label>
+                        <input type="text" name="user_id"
+                            value="{{ request('user_id') }}"
+                            class="form-control"
+                            placeholder="User">
+                    </div>
                 </div>
 
                 {{-- SEARCH --}}
                 <div class="col-xl-3 col-md-2 col-12">
-                    <label class="filter-label">Search</label>
-                    <input type="text" name="search"
-                        value="{{ request('search') }}"
-                        class="form-control"
-                        placeholder="Search action...">
+                    <div class="form-group">
+                        <label class="filter-label">Search</label>
+                        <input type="text" name="search"
+                            value="{{ request('search') }}"
+                            class="form-control"
+                            placeholder="Search action...">
+                    </div>
                 </div>
 
                 {{-- PROPERTY --}}
                 <div class="col-xl-3 col-md-2 col-12">
-                    <label class="filter-label">Properties</label>
-                    <input type="text" name="property"
-                        value="{{ request('property') }}"
-                        class="form-control"
-                        placeholder="Search JSON...">
+                    <div class="form-group">
+                        <label class="filter-label">Properties</label>
+                        <input type="text" name="property"
+                            value="{{ request('property') }}"
+                            class="form-control"
+                            placeholder="Search JSON...">
+                    </div>
                 </div>
 
                 {{-- MODEL ID --}}
                 <div class="col-xl-3 col-md-2 col-12">
-                    <label class="filter-label">Model ID</label>
-                    <input type="text" name="model_id"
-                        value="{{ request('model_id') }}"
-                        class="form-control"
-                        placeholder="ID">
+                    <div class="form-group">
+                        <label class="filter-label">Model ID</label>
+                        <input type="text" name="model_id"
+                            value="{{ request('model_id') }}"
+                            class="form-control"
+                            placeholder="ID">
+                    </div>
                 </div>
 
                 {{-- BUTTONS --}}
                 <div class="col-xl-3 col-md-2 col-12">
-                    <label class="filter-label">&nbsp;</label>
-                    <div class="d-flex column-gap-10">
-                        <button class="btn btn-apply flex-fill mt-0" style="height: fit-content;">Apply</button>
-                        <a href="{{ url()->current() }}" class="btn btn-secondary flex-fill mt-0" style="height: fit-content;">Reset</a>
+                    <div class="form-group">
+                        <label class="filter-label">&nbsp;</label>
+                        <div class="d-flex column-gap-10">
+                            <button class="btn btn-apply flex-fill mt-0" style="height: fit-content;">Apply</button>
+                            <a href="{{ url()->current() }}" class="btn btn-secondary flex-fill mt-0" style="height: fit-content;">Reset</a>
+                        </div>
                     </div>
                 </div>
             </div>

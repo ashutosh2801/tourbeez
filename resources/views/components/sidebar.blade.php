@@ -347,7 +347,18 @@
                         </p>
                     </a>
                 </li>
-                @endcan  
+                @endcan
+                @can('show_users')
+                <li class="aiz-side-nav-item">
+                    <a href="{{ route('admin.vehicles.index') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.vehicles.index') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-car"></i>
+                        <p>{{ translate('Vehicles')}}
+                            <span class="badge badge-warning right">{{ $vehicleCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                @endcan    
                   
                 @role('Super Admin')
                 <li class="aiz-side-nav-item">

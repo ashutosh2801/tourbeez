@@ -19,7 +19,8 @@ class OrderDriver extends Model
         'drop_location',
         'driver_amount',
         'notes',
-        'assignment_type'
+        'assignment_type',
+        'pickup_time'
     ];
     public function driver()
     {

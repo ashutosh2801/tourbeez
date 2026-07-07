@@ -48,13 +48,24 @@ public function overview(Request $request)
     | CHECK IF ANY FILTER IS APPLIED
     |--------------------------------------------------------------------------
     */
+
+        $selectedProducts = Tour::whereIn(
+            'id',
+            (array)$request->product
+        )->get(['id','title']);
+
+        $excludedProducts = Tour::whereIn(
+            'id',
+            (array)$request->exclude_product
+        )->get(['id','title']);
     $hasFilter = $request->filled('booking_date')
         || $request->filled('tour_date')
         || $request->filled('product')
         || $request->filled('order_status')
         || $request->filled('payment_status')
         || $request->filled('partner')
-        || $request->filled('action_type');
+        || $request->filled('action_type')
+        || $request->filled('exclude_product');
 
      if (!$hasFilter) {
         return view('admin.reports.overview', [
@@ -67,6 +78,8 @@ public function overview(Request $request)
                     'net_sales' => 0,
                 ],
                 'partners' => Partner::get(),
+                'selectedProducts' => $selectedProducts,
+                'excludedProducts' => $excludedProducts
             ]);
     }
 
@@ -119,8 +132,44 @@ public function overview(Request $request)
     | OTHER FILTERS
     |--------------------------------------------------------------------------
     */
-    if ($request->filled('product')) {
-        $orderQuery->where('order_tours.tour_id', $request->product);
+    // if ($request->filled('product')) {
+    //     $orderQuery->where('order_tours.tour_id', $request->product);
+    // }
+
+      if ($products = $request->input('product')) {
+
+            $products = array_filter((array)$products);
+
+            if (!empty($products)) {
+
+                $orderQuery->whereIn('orders.id', function ($q) use ($products) {
+
+                    $q->select('order_id')
+                      ->from('order_tours')
+                      ->whereNull('deleted_at')
+                      ->whereIn('tour_id', $products);
+
+                });
+
+            }
+        }
+
+        if ($excludeProducts = $request->input('exclude_product')) {
+
+        $excludeProducts = array_filter((array)$excludeProducts);
+
+        if (!empty($excludeProducts)) {
+
+            $orderQuery->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+                $q->select('order_id')
+                  ->from('order_tours')
+                  ->whereNull('deleted_at')
+                  ->whereIn('tour_id', $excludeProducts);
+
+            });
+
+        }
     }
 
     if ($request->filled('order_status')) {
@@ -143,6 +192,8 @@ public function overview(Request $request)
               ->orWhereNull('orders.action_name');
         });
     }
+
+
 
     /*
     |--------------------------------------------------------------------------
@@ -305,7 +356,9 @@ public function overview(Request $request)
 
     $partners = Partner::get();
 
-    return view('admin.reports.overview', compact('performance', 'partners'));
+    
+
+    return view('admin.reports.overview', compact('performance', 'partners', 'selectedProducts','excludedProducts' ));
 }
     
 
@@ -336,13 +389,23 @@ public function revenue(Request $request)
         || $request->filled('order_status')
         || $request->filled('payment_status')
         || $request->filled('partner')
-        || $request->filled('action_type');
+        || $request->filled('action_type')
+        || $request->filled('exclude_product');
 
     /*
     |--------------------------------------------------------------------------
     | DEFAULT BOOKING DATE (LAST 7 DAYS)
     |--------------------------------------------------------------------------
     */
+    $selectedProducts = Tour::whereIn(
+            'id',
+            (array)$request->product
+        )->get(['id','title']);
+
+        $excludedProducts = Tour::whereIn(
+            'id',
+            (array)$request->exclude_product
+        )->get(['id','title']);
     if (!$hasFilter) {
 
         // if (!$hasFilter) {
@@ -350,7 +413,7 @@ public function revenue(Request $request)
         $customers = new LengthAwarePaginator([], 0, 8);
         $partners = Partner::get();
 
-            return view('admin.reports.revenue', compact('orders', 'customers', 'partners'));
+            return view('admin.reports.revenue', compact('orders', 'customers', 'partners', 'selectedProducts', 'excludedProducts'));
         // }
         $request->merge([
             'booking_date' => now()->subDays(7)->format('Y-m-d') . ' - ' . now()->format('Y-m-d')
@@ -408,9 +471,44 @@ public function revenue(Request $request)
         $query->whereBetween('orders.created_at', [$startDate, $endDate]);
     }
 
-    if ($product = $request->input('product')) {
-        $query->where('order_tours.tour_id', $product);
+    // if ($product = $request->input('product')) {
+    //     $query->where('order_tours.tour_id', $product);
+    // }
+      if ($products = $request->input('product')) {
+
+        $products = array_filter((array)$products);
+
+        if (!empty($products)) {
+
+            $query->whereIn('orders.id', function ($q) use ($products) {
+
+                $q->select('order_id')
+                  ->from('order_tours')
+                  ->whereNull('deleted_at')
+                  ->whereIn('tour_id', $products);
+
+            });
+
+        }
     }
+
+    if ($excludeProducts = $request->input('exclude_product')) {
+
+    $excludeProducts = array_filter((array)$excludeProducts);
+
+    if (!empty($excludeProducts)) {
+
+        $query->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+            $q->select('order_id')
+              ->from('order_tours')
+              ->whereNull('deleted_at')
+              ->whereIn('tour_id', $excludeProducts);
+
+        });
+
+    }
+}
 
     if ($request->filled('order_status')) {
         $query->where('orders.order_status', $request->order_status);
@@ -709,8 +807,40 @@ if ($request->filled('payment_status')) {
 
 
 
-if ($product = $request->input('product')) {
-    $customers->where('order_tours.tour_id', $product);
+if ($products = $request->input('product')) {
+
+        $products = array_filter((array)$products);
+
+        if (!empty($products)) {
+
+            $customers->whereIn('orders.id', function ($q) use ($products) {
+
+                $q->select('order_id')
+                  ->from('order_tours')
+                  ->whereNull('deleted_at')
+                  ->whereIn('tour_id', $products);
+
+            });
+
+        }
+    }
+
+    if ($excludeProducts = $request->input('exclude_product')) {
+
+    $excludeProducts = array_filter((array)$excludeProducts);
+
+    if (!empty($excludeProducts)) {
+
+        $customers->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+            $q->select('order_id')
+              ->from('order_tours')
+              ->whereNull('deleted_at')
+              ->whereIn('tour_id', $excludeProducts);
+
+        });
+
+    }
 }
 
 if ($request->action_type === 'pay_now') {
@@ -752,18 +882,32 @@ $customers = $customers->select(
     ->withQueryString();
 
     $partners = Partner::get();
+    
 
-    return view('admin.reports.revenue', compact('orders', 'customers', 'partners'));
+    return view('admin.reports.revenue', compact('orders', 'customers', 'partners', 'selectedProducts', 'excludedProducts'));
 }
 
 public function invoice(Request $request)
 {
+    
     $data = $this->getInvoiceData($request, true);
+
+    $selectedProducts = Tour::whereIn(
+            'id',
+            (array)$request->product
+        )->get(['id','title']);
+
+        $excludedProducts = Tour::whereIn(
+            'id',
+            (array)$request->exclude_product
+        )->get(['id','title']);
 
     return view('admin.reports.invoice', [
         'rows' => $data['rows'],
         'orders' => $data['pagination'],
-        'partners' => Partner::get()
+        'partners' => Partner::get(),
+        'selectedProducts' => $selectedProducts,
+        'excludedProducts' => $excludedProducts
     ]);
 }
 
@@ -790,7 +934,8 @@ public function getInvoiceData($request, $paginate = false)
     || $request->filled('order_status')
     || $request->filled('payment_status')
     || $request->filled('partner')
-    || $request->filled('action_type');
+    || $request->filled('action_type')
+    || $request->filled('exclude_product');
 
     if (!$hasFilter) {
         return $paginate
@@ -852,9 +997,70 @@ public function getInvoiceData($request, $paginate = false)
         });
     }
 
-    if ($product = $request->input('product')) {
-        $query->where('order_tours.tour_id', $product);
+    // if ($product = $request->input('product')) {
+    //     $query->where('order_tours.tour_id', $product);
+    // }
+
+    // if ($product = $request->input('product')) {
+    //         $product = array_filter((array)$product);
+    //         if (!empty($product)) {
+    //             $query->whereHas('orderTours', function ($q) use ($product) {
+    //                 $q->whereIn('tour_id', $product);
+    //             });
+    //         }
+    //     }
+
+    if ($products = $request->input('product')) {
+
+        $products = array_filter((array)$products);
+
+        if (!empty($products)) {
+
+            $query->whereIn('orders.id', function ($q) use ($products) {
+
+                $q->select('order_id')
+                  ->from('order_tours')
+                  ->whereNull('deleted_at')
+                  ->whereIn('tour_id', $products);
+
+            });
+
+        }
     }
+
+    if ($excludeProducts = $request->input('exclude_product')) {
+
+    $excludeProducts = array_filter((array)$excludeProducts);
+
+    if (!empty($excludeProducts)) {
+
+        $query->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+            $q->select('order_id')
+              ->from('order_tours')
+              ->whereNull('deleted_at')
+              ->whereIn('tour_id', $excludeProducts);
+
+        });
+
+    }
+}
+
+        // if ($excludeProducts = $request->input('exclude_product')) {
+
+        //     $excludeProducts = array_filter((array)$excludeProducts);
+
+        //     if (!empty($excludeProducts)) {
+
+        //         $query->whereDoesntHave('orderTours', function ($q) use ($excludeProducts) {
+
+        //             $q->whereIn('tour_id', $excludeProducts);
+
+        //         });
+
+        //     }
+
+        // }
 
 
 
@@ -1112,11 +1318,24 @@ public function getInvoiceData($request, $paginate = false)
 public function invoiceWithDetails(Request $request)
 {
     $data = $this->getInvoiceWithDetailsData($request, true);
+
+
+    $selectedProducts = Tour::whereIn(
+            'id',
+            (array)$request->product
+        )->get(['id','title']);
+
+        $excludedProducts = Tour::whereIn(
+            'id',
+            (array)$request->exclude_product
+        )->get(['id','title']);
     
     return view('admin.reports.invoice_details', [
         'rows' => $data['rows'],
         'orders' => $data['pagination'],
         'partners' => Partner::get(),
+        'selectedProducts' => $selectedProducts,
+        'excludedProducts' => $excludedProducts,
         'addonKeys' => collect($data['rows'][0] ?? [])
         ->keys()
         ->filter(fn($key) => str_contains($key, '_desc'))
@@ -1148,7 +1367,8 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
         || $request->filled('order_status')
         || $request->filled('payment_status')
         || $request->filled('partner')
-        || $request->filled('action_type');
+        || $request->filled('action_type')
+        || $request->filled('exclude_product');
 
         if (!$hasFilter) {
             return $paginate
@@ -1231,9 +1451,44 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 ->orWhereNull('orders.action_name');
             });
         }
-        if ($product = $request->input('product')) {
-            $query->where('order_tours.tour_id', $product);
+        // if ($product = $request->input('product')) {
+        //     $query->where('order_tours.tour_id', $product);
+        // }
+          if ($products = $request->input('product')) {
+
+        $products = array_filter((array)$products);
+
+        if (!empty($products)) {
+
+            $query->whereIn('orders.id', function ($q) use ($products) {
+
+                $q->select('order_id')
+                  ->from('order_tours')
+                  ->whereNull('deleted_at')
+                  ->whereIn('tour_id', $products);
+
+            });
+
         }
+    }
+
+    if ($excludeProducts = $request->input('exclude_product')) {
+
+    $excludeProducts = array_filter((array)$excludeProducts);
+
+    if (!empty($excludeProducts)) {
+
+        $query->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+            $q->select('order_id')
+              ->from('order_tours')
+              ->whereNull('deleted_at')
+              ->whereIn('tour_id', $excludeProducts);
+
+        });
+
+    }
+}
 
         if ($request->filled('tour_date')) {
 
@@ -1276,7 +1531,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
         );
 
         $orders = $paginate
-            ? $query->paginate(20)->withQueryString()
+            ? $query->paginate(10)->withQueryString()
             : $query->get();
 
         $collection = $paginate ? $orders->getCollection() : $orders;
@@ -1715,8 +1970,17 @@ public function exportCustomer(Request $request)
         $rows = $this->getSchedulePricingReportData($request, false);
 
         $partners = Partner::get();
+        $selectedProducts = Tour::whereIn(
+            'id',
+            (array)$request->product
+        )->get(['id','title']);
 
-        return view('admin.reports.schedule-pricing', compact('rows', 'partners'));
+        $excludedProducts = Tour::whereIn(
+            'id',
+            (array)$request->exclude_product
+        )->get(['id','title']);
+
+        return view('admin.reports.schedule-pricing', compact('rows', 'partners', 'selectedProducts', 'excludedProducts'));
     }
 
     private function getSchedulePricingReportData($request, $export = false)
@@ -1880,11 +2144,23 @@ public function exportCustomer(Request $request)
         public function reportPriceSchedule(Request $request)
     {
         $data = $this->getInvoiceWithDetailsData($request, true);
+
+        $selectedProducts = Tour::whereIn(
+            'id',
+            (array)$request->product
+        )->get(['id','title']);
+
+        $excludedProducts = Tour::whereIn(
+            'id',
+            (array)$request->exclude_product
+        )->get(['id','title']);
         
         return view('admin.reports.price_schedule', [
             'rows' => $data['rows'],
             'orders' => $data['pagination'],
             'partners' => Partner::get(),
+            'selectedProducts' => $selectedProducts,
+            'excludedProducts' => $excludedProducts,
             'addonKeys' => collect($data['rows'][0] ?? [])
             ->keys()
             ->filter(fn($key) => str_contains($key, '_desc'))
