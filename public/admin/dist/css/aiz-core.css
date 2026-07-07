@@ -7833,6 +7833,12 @@ a.dropdown-footer:hover {
     color: #000;
 }
 
+.dash-perform .form-control-sm {
+    border: 0;
+    padding: 7px 0;
+    cursor: pointer;
+}
+
 .dash-perform input {
     color: #555;
     height: auto;
@@ -9863,7 +9869,8 @@ table.dataTable {
     border-color: #5a6268;
 }
 
-.order-manifest-head .driver-filter {
+.order-manifest-head .driver-filter,
+.order-manifest-head .vehicle-filter {
     width: 200px;
     height: auto;
     padding: 0.216rem .51rem;
@@ -9886,7 +9893,8 @@ table.dataTable {
         flex-direction: column;
     }
 
-    .order-manifest-head .driver-filter {
+    .order-manifest-head .driver-filter,
+    .order-manifest-head .vehicle-filter {
         width: 100%;
         padding: 6px;
     }
@@ -11221,12 +11229,63 @@ table.dataTable {
 }
 
 #driverModal .order-list .order-content {
-    border-bottom: 1px solid #dddddd;
+    border-bottom: 1px solid #dee2e6;
     padding: 15px 15px 0;
 }
 
 #driverModal .order-list .order-content small {
     font-size: 13px;
+}
+
+#driverModal .order-content .content-detail {
+    width: 30%;
+    padding: 0 5px;
+}
+
+#driverModal .order-content .content-driver {
+    width: 35%;
+    padding: 0 5px;
+}
+
+#driverModal .order-content .content-vehicle {
+    width: 35%;
+    padding: 0 5px;
+}
+
+#driverModal .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin: 0 0 5px 0;
+    font-size: 13px;
+}
+
+#driverModal .select2-container--default .select2-search--inline .select2-search__field {
+    background: transparent;
+    border: none;
+    outline: 0;
+    box-shadow: none;
+    -webkit-appearance: textfield;
+    margin: 0;
+}
+
+#driverModal .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background-color: #5897fb;
+    color: white;
+}
+
+#driverModal .selection .select2-selection .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+    padding: 0.6rem 1rem !important;
+    margin-bottom: 15px !important;
+}
+
+#driverModal .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    margin: 0;
+    line-height: 1.7;
+    color: #FFF;
+}
+
+#driverModal .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #333;
+    background: #607D8B;
 }
 
 @media (min-width: 768px) {
@@ -11237,6 +11296,24 @@ table.dataTable {
 
     #driverModal .modal-content .modal-body {
         max-height: 70vh;
+    }
+
+}
+
+@media (max-width: 768px) {
+
+    #driverModal .order-content .content-detail {
+        width: 100%;
+        padding-bottom: 10px;
+    }
+
+    #driverModal .order-content .content-driver,
+    #driverModal .order-content .content-vehicle {
+        width: 50%;
+    }
+
+    #driverModal .order-content .content-part {
+        flex-wrap: wrap;
     }
 
 }
@@ -11477,6 +11554,10 @@ table.dataTable {
     width: 100%;
 }
 
+.comparison-body .top-search-bar .badge {
+    background: #a8a8a8 !important;
+}
+
 .comparison-body .stats-cards{
     display: grid;
     grid-template-columns: repeat(4,1fr);
@@ -11622,6 +11703,11 @@ table.dataTable {
     margin-top: 20px;
 }
 
+.comparison-body .comparison-chart .productComparison {
+    overflow-y: scroll;
+    height: 320px;
+}
+
 .comparison-body .comparison-chart .panel {
     background: #fff;
     padding: 20px;
@@ -11633,14 +11719,14 @@ table.dataTable {
     font-weight: 600;
 }
 
-.comparison-body  .comparison-chart .panel table{
+.comparison-body .comparison-chart .panel table{
     width:100%;
     border-collapse:collapse;
     font-size: 14px;
     border: 1px solid #eee;
 }
 
-.comparison-body  .comparison-chart .panel table th{
+.comparison-body .comparison-chart .panel table th{
     font-size:13px;
     color:#6b7280;
     font-weight:600;
@@ -11649,7 +11735,7 @@ table.dataTable {
     border-bottom:1px solid #ececec;
 }
 
-.comparison-body  .comparison-chart .panel table td{
+.comparison-body .comparison-chart .panel table td{
     padding:14px 12px;
     border-bottom:1px solid #f1f1f1;
     vertical-align:middle;
@@ -11673,4 +11759,86 @@ table.dataTable {
     .comparison-body .comparison-chart .panel {
         margin-bottom: 20px;
     }
+
+    .comparison-body .top-search-bar .badge {
+        margin-top: 10px;
+    }
+}
+
+#emailPreviewModal .modal-header {
+    background: #343a41;
+    color: #FFF;
+}
+
+#emailPreviewModal .modal-header .close {
+    color: #FFF;
+}
+
+.preview-detail {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.preview-detail strong {
+    background: #e8e8e8;
+    padding: 10px 20px 10px 10px;
+    border-radius: 7px 0 0 7px;
+    border: 1px solid #e1e1e1;
+    width: 100px;
+}
+
+.preview-detail span {
+    border: 1px solid #e1e1e1;
+    padding: 10px 10px 10px 15px;
+    border-radius: 0 7px 7px 0;
+    width: 100%;
+}
+
+.modal-wide {
+    max-width: 70% !important;
+    margin: 10px auto !important;
+}
+
+@media(max-width:767px) {
+
+    .modal-wide {
+        max-width: 95% !important;
+    }
+
+    .preview-detail strong {
+        width: 115px;
+    }
+
+}
+
+.search-options .select2-container--default .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px);
+    padding: 0.6rem 1rem;
+    margin-bottom: 15px;
+}
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin-right: 0;
+    margin-left: 0;
+    margin-bottom: 5px;
+    margin-top: 0;
+    background-color: #a3a3a3;
+}
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    font-size: 13px;
+}
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #FFF;
+    margin-left: 0;
+}
+
+.search-options .select2-container--default .select2-search--inline .select2-search__field {
+    font-size: 14px;
+}
+
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #a3a3a3;
 }

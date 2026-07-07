@@ -143,6 +143,7 @@ class PaymentController extends Controller
                 case 'payment_intent.succeeded':
 
                     $this->saveCardDetails( $eventObject );
+                    $this->syncPaymentStatusFromWebhook($eventObject);
 
                     $logData['status'] = 'success';
                     $logData['message'] = 'Payment successful';
@@ -177,9 +178,13 @@ class PaymentController extends Controller
                 case 'payment_intent.amount_capturable_updated':
 
                     $this->saveCardDetails( $eventObject );
+                    $this->syncPaymentStatusFromWebhook($eventObject);
 
                     $logData['status'] = 'authorized';
                     $logData['message'] = 'Payment authorized, awaiting capture';
+
+
+                    
                     break;                      
 
                 default:
@@ -985,7 +990,7 @@ class PaymentController extends Controller
                         $TOUR_ITEM_SUMMARY .= '
                         <tr>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' (Extra)</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
                         </tr>';
@@ -1493,6 +1498,80 @@ class PaymentController extends Controller
             Log::error(
                 'Webhook card save error: ' .
                 $e->getMessage()
+            );
+        }
+    }
+
+    /**
+ * Sync OrderPayment and Order status from Stripe PaymentIntent.
+ */
+    private function syncPaymentStatusFromWebhook($intent): void
+    {
+        $orderPayment = OrderPayment::where(
+            'payment_intent_id',
+            $intent->id
+        )->first();
+
+        if (!$orderPayment) {
+            return;
+        }
+
+        $order = Order::find($orderPayment->order_id);
+
+        if (!$order) {
+            return;
+        }
+
+        $status = match ($intent->status) {
+            'requires_capture' => 'uncaptured',
+            'succeeded'        => 'succeeded',
+            'canceled'         => 'capture_canceled',
+            default            => null,
+        };
+
+        if (!$status) {
+            return;
+        }
+
+        // Special case: Pending -> Uncaptured
+        if (
+            $orderPayment->status === 'pending' &&
+            $order->order_status == 1 &&
+            $intent->status === 'requires_capture'
+        ) {
+
+            $orderPayment->update([
+                'status' => 'uncaptured',
+            ]);
+
+            $order->update([
+                'order_status' => 3,
+            ]);
+
+            orderLogAdvanced(
+                $order,
+                'payment',
+                'pending_to_uncaptured',
+                'success',
+                'Pending payment converted to uncaptured from Stripe webhook.'
+            );
+
+            return;
+        }
+
+        // Normal status update
+        if ($orderPayment->status !== $status) {
+
+            $orderPayment->update([
+                'status' => $status,
+            ]);
+
+            orderLogAdvanced(
+                $order,
+                'payment',
+                'payment_status_updated',
+                'success',
+                "Payment status updated to {$status}."
             );
         }
     }

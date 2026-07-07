@@ -58,6 +58,7 @@ class Order extends Model
         'balance_amount',
         'booked_amount',
         'currency',
+        'current_rate',
         'order_status',
         'additional_info',
         'email_sent',
@@ -222,6 +223,11 @@ class Order extends Model
     public function paymentLogs()
     {
         return $this->hasMany(StripeWebhookLog::class);
+    }
+
+    public function latestPaymentLog()
+    {
+        return $this->hasOne(StripeWebhookLog::class)->latestOfMany();
     }
 
     public function driver()
