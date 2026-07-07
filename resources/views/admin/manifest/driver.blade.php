@@ -65,11 +65,6 @@
     width: 100% !important;
 }
 
-/*.select2-selection--multiple {
-    min-height: 45px !important;
-    border: 1px solid #ced4da !important;
-    border-radius: .375rem !important;
-}*/
 
 .select2-selection__choice {
     background: #607D8B !important;
@@ -81,11 +76,6 @@
     color: white !important;
     margin-right: 6px;
 }
-/*.selection .select2-selection .select2-selection--multiple {
-    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-    padding: 0.6rem 1rem !important;
-    margin-bottom: 15px !important;
-}*/
 
 .select2-container--default .select2-selection--multiple  {
     min-height: calc(1.3125rem + 1.2rem + 2px);
@@ -154,10 +144,7 @@
                     @endforeach
                 </select>
             </div>
-            <!-- <a href="{{ route('admin.driver.manifest.export', ['date' => $date]) }}" 
-                   class="btn btn-success btn-sm">
-                    Export Excel
-                </a> -->
+           
 
                 <a href="{{ route('admin.driver.manifest.export', [
                     'date' => $date,
@@ -215,15 +202,7 @@
                         @foreach($dateRange as $d)
                             @php
                                 $dateKey = $d->toDateString();
-                                //$cellOrders = $dates[$dateKey] ?? [];
-                                // $cellOrders = collect($dates[$dateKey] ?? [])
-                               // ->filter(function ($o) use ($selectedDriver) {
-
-                               //     if (!$selectedDriver) return true;
-
-                               //     return in_array($selectedDriver, $o['driver_ids'] ?? []);
-                              //  })
-                              //  ->values(); 
+                                
 
                                 $cellOrders = collect($dates[$dateKey] ?? [])
                                     ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
@@ -239,12 +218,7 @@
                                     ->values();
 
                                $totalGuests = collect($cellOrders)->sum('guest_count');
-                                //$driverNames = collect($cellOrders)
-                                //    ->pluck('driver_names')   // array of //arrays
-                                 //   ->flatten()
-                                 //   ->filter()
-                                 //   ->unique()
-                                 //   ->implode(', ');
+                                
 
                                     $driverNames = collect($cellOrders)
                                     ->flatMap(function ($o) use ($selectedDriver, $selectedVehicle) {
@@ -335,50 +309,6 @@
                                     </div>
 
                                 @endif
-
-                                <!-- @if(count($cellOrders))
-
-                                    <strong>Total - {{ $totalGuests }}</strong>
-
-                                    @php
-                                        $summary = [];
-
-                                        foreach ($cellOrders as $order) {
-
-                                            foreach (($order['driver_ids'] ?? []) as $index => $driverId) {
-
-                                                $driver = $driverNameMap[$driverId] ?? 'Unknown';
-                                                $vehicleId = $order['vehicle_ids'][$index] ?? null;
-                                                $vehicle = $vehicleNameMap[$vehicleId] ?? '';
-
-                                                if (!isset($summary[$driver])) {
-                                                    $summary[$driver] = [
-                                                        'pax' => 0,
-                                                        'vehicles' => []
-                                                    ];
-                                                }
-
-                                                $summary[$driver]['pax'] += $order['guest_count'];
-
-                                                if ($vehicle) {
-                                                    $summary[$driver]['vehicles'][$vehicle] = true;
-                                                }
-                                            }
-                                        }
-                                    @endphp
-
-                                    @foreach($summary as $driver => $info)
-                                        <br>
-                                        <small class="text-success">
-                                            {{ $info['pax'] }} - {{ $driver }}
-                                            @if(count($info['vehicles']))
-                                                <span class="text-primary">({{ implode(', ', array_keys($info['vehicles'])) }})</span>
-                                            @endif
-                                        </small>
-                                    @endforeach
-
-                                @endif -->
-
 
 
                             </td>
@@ -479,8 +409,8 @@
 
 {{-- MODAL --}}
 <div class="modal fade" id="driverModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
+    <div class="modal-dialog modal-xl" style="max-width:80%;">
+            <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Assign Driver</h5>
                 <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true"></button>
@@ -826,64 +756,96 @@ orders.forEach(function (o) {
     container.innerHTML += `
 
     <div class="order-content mb-2 p-2 border rounded"
-         data-assignment-type="${o.assignment_type}">
+     data-assignment-type="${o.assignment_type}">
 
-        <div class="d-flex justify-content-between align-items-start">
+    <div class="row align-items-center">
 
-            <div style="width:28%;">
+        <!-- Order Details -->
+        <div class="col-md-3">
 
-                <input
-                    type="checkbox"
-                    class="order-checkbox"
-                    value="${o.order_id}"
-                    checked>
+            <input
+                type="checkbox"
+                class="order-checkbox"
+                value="${o.order_id}"
+                checked>
 
-                <a href="${orderUrl}"
-                   target="_blank">
+            <a href="${orderUrl}" target="_blank">
+                <strong>#${o.order_number}</strong>
+            </a>
 
-                    #${o.order_number}
+            <br>
 
-                </a>
+            <small class="text-muted">${o.customer ?? ''}</small>
 
-                <br>
+            <br>
 
-                <small>${o.customer ?? ''}</small>
+            <small>👥 ${o.guest_count} Pax
 
-                <br>
+            
 
-                <small>👥 ${o.guest_count}</small>
+            <button
+                type="button"
+                class="mt-2 order-info-btn"
+                data-order='${JSON.stringify(o)}'>
+                <i class="bi bi-info-circle"></i> Info
+            </button>
+        </small>
+        </div>
 
-            </div>
+        <!-- Pickup Time -->
+        <div class="col-md-2">
 
-            <div style="width:34%;">
+            <label class="small text-muted mb-1">
+                Pickup Time
+            </label>
 
-                <select
-                    class="form-control order-driver-select"
-                    multiple
-                    data-order-id="${o.order_id}">
+            <input
+                type="time"
+                class="form-control order-pickup-time mb-3"
+                value="${o.pickup_time ? o.pickup_time.substring(0,5) : ''}"
+                data-order-id="${o.order_id}">
 
-                    ${driversHtml}
+        </div>
 
-                </select>
+        <!-- Driver -->
+        <div class="col-md-4">
 
-            </div>
+            <label class="small text-muted mb-1">
+                Driver
+            </label>
 
-            <div style="width:34%;">
+            <select
+                class="form-control order-driver-select "
+                multiple
+                data-order-id="${o.order_id}">
 
-                <select
-                    class="form-control aiz-selectpicker order-vehicle-select"
-                    data-live-search="true"
-                    data-order-id="${o.order_id}">
+                ${driversHtml}
 
-                    ${vehiclesHtml}
+            </select>
 
-                </select>
+        </div>
 
-            </div>
+        <!-- Vehicle -->
+        <div class="col-md-3">
+
+            <label class="small text-muted mb-1">
+                Vehicle
+            </label>
+
+            <select
+                class="form-control aiz-selectpicker order-vehicle-select mb-3"
+                data-live-search="true"
+                data-order-id="${o.order_id}">
+
+                ${vehiclesHtml}
+
+            </select>
 
         </div>
 
     </div>
+
+</div>
 
     `;
 
@@ -1180,6 +1142,9 @@ $('#assignDriver').on('click', async function () {
 
     const date = $('#modal_date').val();
 
+    let pickup_time;
+    
+
     let ordersPayload = [];
 
     $('.order-content').each(function () {
@@ -1189,6 +1154,7 @@ $('#assignDriver').on('click', async function () {
         const orderId = parseInt(
             row.find('.order-checkbox').val()
         );
+        
 
         // ----------------------------
         // Driver IDs
@@ -1198,6 +1164,8 @@ $('#assignDriver').on('click', async function () {
             row.find('.order-driver-select').val() || [];
 
         driverIds = driverIds.map(Number);
+
+        pickup_time = row.find('.order-pickup-time').val();
 
         // ----------------------------
         // Vehicle IDs
@@ -1240,6 +1208,7 @@ $('#assignDriver').on('click', async function () {
             driver_ids: driverIds,
 
             vehicle_ids: vehicleIds,
+            pickup_time: pickup_time,
 
             assignment_type: row.data('assignment-type')
 
@@ -1365,6 +1334,57 @@ $('#assignDriver').on('click', async function () {
 
         // redirect like your other filters
         window.location.href = "?date=" + formatted;
+    });
+    $(document).on('click', '.order-info-btn', function () {
+
+        const o = $(this).data('order');
+
+        Swal.fire({
+
+            title: 'Order Details',
+
+            width: 700,
+
+            html: `
+                <table class="table table-bordered table-sm text-start mb-0">
+
+                    <tr>
+                        <th width="35%">Order No</th>
+                        <td>${o.order_number}</td>
+                    </tr>
+
+                    <tr>
+                        <th>Customer</th>
+                        <td>${o.customer ?? '-'}</td>
+                    </tr>
+
+                    <tr>
+                        <th>Pax</th>
+                        <td>${o.guest_count}</td>
+                    </tr>
+
+                    <tr>
+                        <th>Pickup Location</th>
+                        <td>${o.pickup_location || '-'}</td>
+                    </tr>
+
+                    <tr>
+                        <th>Instructions</th>
+                        <td>${o.instruction || '-'}</td>
+                    </tr>
+
+                    <tr>
+                        <th>Internal Notes</th>
+                        <td>${o.internal_notes || '-'}</td>
+                    </tr>
+
+                </table>
+            `,
+
+            confirmButtonText: 'Close'
+
+        });
+
     });
 </script>
 @endsection

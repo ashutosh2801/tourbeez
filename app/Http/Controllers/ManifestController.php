@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\DriverManifestExport;
 use App\Models\Order;
 use App\Models\OrderDriver;
+use App\Models\PickupLocation;
 use App\Models\TourPricing;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -178,6 +179,30 @@ class ManifestController extends Controller
                 $reportGroupTotals[$reportGroup][$tourDate] += $guestCount;
 
                 $tourDetail = $ot->tour?->detail;
+                $pickupTime = optional($orderDrivers->first())->pickup_time;
+
+                $pickName = '';
+                $instruction = '';
+
+                if ($order->customer && $order->customer->pickup_name) {
+
+                    $pickName = $order->customer->pickup_name;
+                    $instruction = $order->customer->instructions;
+
+                } elseif ($order->customer && $order->customer->pickup_id) {
+
+                    $pickLocation = PickupLocation::find($order->customer->pickup_id);
+
+                    $pickName = trim(
+                        ($pickLocation?->location ?? '') .
+                        ' - ' .
+                        ($pickLocation?->address ?? '') .
+                        ' - ' .
+                        ($pickLocation?->time ?? '')
+                    );
+
+                    $instruction = $order->customer->instructions;
+                }
 
                 $grid[$tourTitle][$tourDate][] = [
                     'order_id'           => $order->id,
@@ -191,6 +216,10 @@ class ManifestController extends Controller
                     'vehicle_names'      => $vehicleNames,
                     'tour_assignable'    => $tourDetail?->assign_driver ?? false,
                     'assignment_type'    => 'tour',
+                    'pickup_time' => $pickupTime,
+                    'pickup_location' => $pickName,
+                    'instruction'     => $instruction,
+                    'internal_notes'  => $order->internal_notes,
                 ];
 
                 // Maps for sorting
@@ -291,6 +320,30 @@ class ManifestController extends Controller
                 }
 
                 $reportGroupTotals[$reportGroup][$extraDate] += $extraGuestCount;
+                $pickupTime = optional($orderDrivers->first())->pickup_time;
+
+                $pickName = '';
+                $instruction = '';
+
+                if ($order->customer && $order->customer->pickup_name) {
+
+                    $pickName = $order->customer->pickup_name;
+                    $instruction = $order->customer->instructions;
+
+                } elseif ($order->customer && $order->customer->pickup_id) {
+
+                    $pickLocation = PickupLocation::find($order->customer->pickup_id);
+
+                    $pickName = trim(
+                        ($pickLocation?->location ?? '') .
+                        ' - ' .
+                        ($pickLocation?->address ?? '') .
+                        ' - ' .
+                        ($pickLocation?->time ?? '')
+                    );
+
+                    $instruction = $order->customer->instructions;
+                }
 
                 $grid['Next Day Pick Up'][$extraDate][] = [
                     'order_id' => $order->id,
@@ -304,6 +357,11 @@ class ManifestController extends Controller
                     'vehicle_names'      => $vehicleNames,
                     'tour_assignable' => true,
                     'assignment_type'    => 'next_day_pickup',
+                    'pickup_time' => $pickupTime,
+                    'pickup_location' => $pickName,
+                    'instruction'     => $instruction,
+                    'internal_notes'  => $order->internal_notes,
+
                 ];
 
                 $tourTimes['Next Day Pick Up'] = '00:00 AM';
@@ -392,11 +450,13 @@ class ManifestController extends Controller
             'date'   => 'required|date'
         ]);
 
+
         foreach ($request->orders as $item) {
 
             $orderId            = $item['order_id'];
             $selectedDrivers    = $item['driver_ids'] ?? [];
             $selectedVehicles   = $item['vehicle_ids'] ?? [];
+            $selectedTime       = $item['pickup_time'] ?? NULL;
             $assignmentType     = $item['assignment_type'] ?? 'tour';
 
             // =========================
@@ -430,6 +490,7 @@ class ManifestController extends Controller
                     'driver_id'       => $driverId,
                     'vehicle_id'      => $selectedVehicles[0] ?? null,
                     'assigned_date'   => $request->date,
+                    'pickup_time'     => $selectedTime,
                     'assignment_type' => $assignmentType,
                 ]);
             }
