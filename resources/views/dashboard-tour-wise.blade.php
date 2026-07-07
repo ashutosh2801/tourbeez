@@ -104,7 +104,7 @@
     <div class="mb-2">
         <div class="dash-perform">
             <div class="row">
-                <div class="col-md-6 col-6">
+                <div class="col-md-6 col-12">
                     <h2 class="text-sm m-0">Tour-wise overview</h2>
                     <input 
                         type="text" 
@@ -122,7 +122,7 @@
                     </button>
                     <div id="activeFilters" class="active-filters"></div>
                 </div>
-                <div class="col-md-6 col-6">
+                <div class="col-md-6 col-12">
                     <button type="button" id="toggleFilter" class="btn btn-secondary float-right">
                         <i class="fas fa-filter"></i> Filters
                     </button>
@@ -320,6 +320,11 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 let revenueChart, bookingChart, trendChart;
+const statusMap = {
+        3: 'Pending supplier',
+        4: 'Pending customer',
+        5: 'Confirmed'
+    };
 
 async function fetchDashboard() {
 
@@ -615,7 +620,7 @@ function renderFilters() {
     }
 
     if (filters.order_status) {
-        html += badge('Status', filters.order_status, 'order_status');
+        html += badge('Status', statusMap[filters.order_status], 'order_status');
     }
 
     if (filters.action_type) {

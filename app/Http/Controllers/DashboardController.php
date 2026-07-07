@@ -11,198 +11,15 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function dashboard464( Request $request )
-    {
-        $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
-        $toDate   = $request->to_date ?? now()->format('Y-m-d');
-        $tourId   = $request->tour_id;
-
-        $query = Order::selectRaw("
-                    tours.id,
-                    tours.title,
-                    COUNT(orders.id) as bookings,
-                    SUM(orders.total_amount) as revenue
-                ")
-                ->join('tours', 'tours.id', '=', 'orders.tour_id')
-                ->where('orders.payment_status', 'paid')
-                ->groupBy(
-                    'tours.id',
-                    'tours.title'
-                )
-                ->orderByDesc('revenue')
-                ->limit(10);
-
-        if (!empty($tourId)) {
-            $query->where('tours.id', $tourId);
-        }
-
-        $tourAnalytics = $query->get();
-
-        $tours = Tour::select('id', 'title')->limit(10)->get();
-
-        // echo '<pre>'; print_r($tours);exit;
-        $totalRevenue = Order::where('payment_status', 'paid')
-            ->whereDate('created_at', '>=', $fromDate)
-            ->whereDate('created_at', '<=', $toDate)
-            ->sum('total_amount');
-
-        $totalBookings = Order::where('payment_status', 'paid')
-            ->whereDate('created_at', '>=', $fromDate)
-            ->whereDate('created_at', '<=', $toDate)
-            ->count();
-
-        $avgBookingValue = $totalBookings > 0
-            ? round($totalRevenue / $totalBookings, 2)
-            : 0;
-
-        $totalTours = Tour::count();
-
-        return view('dashboard', compact( 
-                'tourAnalytics', 
-                'tours', 
-                'fromDate', 
-                'toDate',
-                'totalRevenue',
-                'totalBookings',
-                'avgBookingValue',
-                'totalTours' 
-            ));
-    }
-
-    public function dashboard876(Request $request)
-{
-
-    $fromDate = $request->from_date ?? now()->startOfMonth()->format('Y-m-d');
-    $toDate   = $request->to_date ?? now()->format('Y-m-d');
-    $tourId   = $request->tour_id;
-
-    /*
-    |--------------------------------------------------------------------------
-    | RAW QUERY (NO SUM HERE)
-    |--------------------------------------------------------------------------
-    */
-    $query = Order::select(
-            'tours.id',
-            'tours.title',
-            'orders.total_amount',
-            'orders.currency',
-            'orders.created_at'
-        )
-        ->join('tours', 'tours.id', '=', 'orders.tour_id')
-        ->where('orders.payment_status', 'paid')
-        ->whereDate('orders.created_at', '>=', $fromDate)
-        ->whereDate('orders.created_at', '<=', $toDate);
-
-    if (!empty($tourId)) {
-        $query->where('tours.id', $tourId);
-    }
-
-    $rawData = $query->get();
-
-    /*
-    |--------------------------------------------------------------------------
-    | TOUR ANALYTICS (CONVERT → CAD → GROUP)
-    |--------------------------------------------------------------------------
-    */
-    $tourAnalytics = $rawData
-        ->groupBy('id')
-        ->map(function ($items) {
-
-            $revenue = 0;
-
-            foreach ($items as $order) {
-                $revenue += currencyConvertWithoutRound(
-                    $order->total_amount,
-                    $order->currency,
-                    'CAD'
-                );
-            }
-
-            return [
-                'id' => $items->first()->id,
-                'title' => $items->first()->title,
-                'bookings' => $items->count(),
-                'revenue' => round($revenue, 2),
-            ];
-        })
-        ->sortByDesc('revenue')
-        ->take(10)
-        ->values();
-
-    /*
-    |--------------------------------------------------------------------------
-    | TOTAL REVENUE (CAD)
-    |--------------------------------------------------------------------------
-    */
-    $totalRevenue = $rawData->sum(function ($order) {
-        return currencyConvertWithoutRound(
-            $order->total_amount,
-            $order->currency,
-            'CAD'
-        );
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | TOTAL BOOKINGS
-    |--------------------------------------------------------------------------
-    */
-    $totalBookings = $rawData->count();
-
-    /*
-    |--------------------------------------------------------------------------
-    | AVG BOOKING VALUE
-    |--------------------------------------------------------------------------
-    */
-    $avgBookingValue = $totalBookings > 0
-        ? round($totalRevenue / $totalBookings, 2)
-        : 0;
-
-    /*
-    |--------------------------------------------------------------------------
-    | TOTAL TOURS
-    |--------------------------------------------------------------------------
-    */
-    $totalTours = Tour::count();
-
-    /*
-    |--------------------------------------------------------------------------
-    | TOUR LIST (FILTER DROPDOWN)
-    |--------------------------------------------------------------------------
-    */
-    $tours = Tour::select('id', 'title')->limit(10)->get();
-    
-    if ($request->ajax()) {
-        
-        return response()->json([
-            'tourAnalytics' => $tourAnalytics,
-            'totalRevenue' => round($totalRevenue, 2),
-            'totalBookings' => $totalBookings,
-            'avgBookingValue' => $avgBookingValue,
-            'totalTours' => $totalTours,
-        ]);
-    }
-   
-    return view('dashboard', compact(
-        'tourAnalytics',
-        'tours',
-        'fromDate',
-        'toDate',
-        'totalRevenue',
-        'totalBookings',
-        'avgBookingValue',
-        'totalTours'
-    ));
-    }
-
     public function dashboard(Request $request)
     {
 
         $excludedStatuses = [1, 2, 6, 7];
+        $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
 
         /*
         |--------------------------------------------------------------------------
-        | CHECK FILTER
+        | 🔥 CHECK FILTER
         |--------------------------------------------------------------------------
         */
         $partners = Partner::get();
@@ -254,7 +71,7 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | BASE QUERY (SAME AS INVOICE)
+        | 🔥 BASE QUERY (SAME AS INVOICE)
         |--------------------------------------------------------------------------
         */
         $query = DB::table('orders')
@@ -265,7 +82,7 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | FILTERS (EXACT COPY)
+        | 🔥 FILTERS (EXACT COPY)
         |--------------------------------------------------------------------------
         */
         if ($request->filled('booking_date')) {
@@ -312,13 +129,14 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | SELECT RAW DATA
+        | 🔥 SELECT RAW DATA
         |--------------------------------------------------------------------------
         */
         $orders = $query->select(
                 'orders.id',
                 'orders.currency',
                 'orders.total_amount',
+                'orders.source',
                 'tours.id as tour_id',
                 'tours.title'
             )
@@ -326,16 +144,28 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | GROUP BY TOUR + CONVERT TO CAD
+        | 🔥 GROUP BY TOUR + CONVERT TO CAD
         |--------------------------------------------------------------------------
         */
+
+
+
         $tourAnalytics = $orders
             ->groupBy('tour_id')
-            ->map(function ($items) {
+            ->map(function ($items) use ($excludedPaymentSources) {
 
                 $revenue = 0;
 
                 foreach ($items as $order) {
+
+                    $isExcluded = in_array(
+                        strtolower($order->source ?? ''),
+                        $excludedPaymentSources
+                    );
+
+                    if ($isExcluded) {
+                        continue;
+                    }
                     $revenue += currencyConvertWithoutRound(
                         $order->total_amount,
                         $order->currency,
@@ -356,10 +186,19 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | TOTALS
+        | 🔥 TOTALS
         |--------------------------------------------------------------------------
         */
-        $totalRevenue = $orders->sum(function ($order) {
+        $totalRevenue = $orders->sum(function ($order) use ($excludedPaymentSources) {
+
+            $isExcluded = in_array(
+                strtolower($order->source ?? ''),
+                $excludedPaymentSources
+            );
+
+            if ($isExcluded) {
+                return 0;
+            }
             return currencyConvertWithoutRound(
                 $order->total_amount,
                 $order->currency,
@@ -369,22 +208,35 @@ class DashboardController extends Controller
 
         $totalBookings = $orders->count();
 
-        $avgBookingValue = $totalBookings > 0
-            ? round($totalRevenue / $totalBookings, 2)
+        // $avgBookingValue = $totalBookings > 0
+        //     ? round($totalRevenue / $totalBookings, 2)
+        //     : 0;
+
+        $validBookings = $orders->filter(function ($order) use ($excludedPaymentSources) {
+            return !in_array(
+                strtolower($order->source ?? ''),
+                $excludedPaymentSources
+            );
+        });
+
+        $validRevenue = $totalRevenue;
+
+        $avgBookingValue = $validBookings->count() > 0
+            ? round($validRevenue / $validBookings->count(), 2)
             : 0;
 
         $totalTours = $orders->pluck('tour_id')->unique()->count();
 
         /*
         |--------------------------------------------------------------------------
-        | TOUR DROPDOWN
+        | 🔥 TOUR DROPDOWN
         |--------------------------------------------------------------------------
         */
         $tours = DB::table('tours')->select('id', 'title')->limit(20)->get();
 
         /*
         |--------------------------------------------------------------------------
-        | RESPONSE
+        | 🔥 RESPONSE
         |--------------------------------------------------------------------------
         */
         
@@ -410,15 +262,14 @@ class DashboardController extends Controller
 
         ));
     }
-
     public function comparisonView(Request $request)
     {
         $partners = Partner::get();
         return view('admin.reports.comparison', compact('partners'));
     }
-    
     public function comparisonData(Request $request)
     {
+        $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
         $date1 = $request->date1;
         $date2 = $request->date2;
 
@@ -437,13 +288,25 @@ class DashboardController extends Controller
         $rows1 = $reportController->getInvoiceData($req1);
         $rows2 = $reportController->getInvoiceData($req2);
 
-        // GROUP BY PRODUCT
-        $groupByProduct = function ($rows) {
+        // 🔥 GROUP BY PRODUCT
+        $groupByProduct = function ($rows) use ($excludedPaymentSources) {
             return collect($rows)
                 ->groupBy('product_name')
-                ->map(function ($items) {
+                ->map(function ($items) use ($excludedPaymentSources) {
                     return [
-                        'revenue' => $items->sum('customer_total'),
+                        'revenue' => $items->sum(function ($r) use ($excludedPaymentSources) {
+
+                                    $isExcluded = in_array(
+                                        strtolower($r['source'] ?? ''),
+                                        $excludedPaymentSources
+                                    );
+
+                                    if ($isExcluded) {
+                                        return 0;
+                                    }
+
+                                    return $r['customer_total'] ?? 0;
+                                }),
                         'passengers' => $items->sum(fn($r) => $r['adult'] + $r['child'] + $r['infant']),
                     ];
                 });
@@ -472,9 +335,21 @@ class DashboardController extends Controller
             ];
         }
 
-        // SUMMARY
-        $calc = function ($rows) {
-            $revenue = collect($rows)->sum('customer_total');
+        // 🔥 SUMMARY
+        $calc = function ($rows) use ($excludedPaymentSources) {
+            $revenue = collect($rows)->sum(function ($r) use ($excludedPaymentSources) {
+
+                $isExcluded = in_array(
+                    strtolower($r['source'] ?? ''),
+                    $excludedPaymentSources
+                );
+
+                if ($isExcluded) {
+                    return 0;
+                }
+
+                return $r['customer_total'] ?? 0;
+            });
             $bookings = count($rows);
             $passengers = collect($rows)->sum(fn($r) => $r['adult'] + $r['child'] + $r['infant']);
             $avg = $passengers > 0 ? $revenue / $passengers : 0;
@@ -490,7 +365,7 @@ class DashboardController extends Controller
         return response()->json([
             'date1' => $calc($rows1),
             'date2' => $calc($rows2),
-            'products' => $products, // IMPORTANT
+            'products' => $products, // 🔥 IMPORTANT
         ]);
     }
 

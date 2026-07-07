@@ -25,6 +25,7 @@ class OrderPayment extends Model
         'collection_date',
         'amount',
         'currency',
+        'current_rate',
         'status',
         'action',
         'reason',

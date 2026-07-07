@@ -18,68 +18,6 @@
                 transform: translateY(0);
             }
         }
-        /* Single & Multiple same height */
-
-.select2-container--default .select2-selection--multiple {
-    border: 1px solid #ced4da;
-    border-radius: .25rem;
-    min-height: calc(2.25rem + 2px);
-    padding: .25rem .35rem;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-}
-.select2-container--default .select2-selection--multiple .select2-selection__rendered {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 0;
-}
-.select2-container--default .select2-selection--multiple .select2-selection__choice {
-    background-color: #fd7e14;
-    border: none;
-    color: #fff;
-    border-radius: 12px;
-    padding: 2px 8px;
-    margin: 0;
-    line-height: 1.6;
-}
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-    color: #fff;
-    margin-right: 6px;
-    font-weight: bold;
-}
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-    color: #ffe0c2;
-}
-#excludeProductFilter + .select2-container .select2-selection--multiple .select2-selection__choice {
-    background-color: #dc3545; /* red for excluded, orange for included */
-}
-.select2-container--default .select2-search--inline .select2-search__field {
-    margin-top: 2px;
-}
-
-.select2-container {
-    width: 100% !important;
-}
-.select2-container--default .select2-selection--multiple {
-    border: 1px solid #ced4da !important;
-    border-radius: .25rem;
-    min-height: calc(2.25rem + 2px);
-    padding: .25rem .35rem;
-    background-color: #fff;
-}
-.select2-selection__rendered {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 0 !important;
-}
-.select2-search--inline .select2-search__field {
-    margin-top: 4px !important;
-    border: none !important;
-    outline: none !important;
-}
 
     </style>
     @section('title', 'Orders List')
@@ -124,18 +62,7 @@
                                 </select>
                             </div> -->
                             <div class="col-md-4 col-6">
-                                <select id="productFilter" name="product[]" class="form-control" multiple>
-                                    @foreach($selectedProducts as $sp)
-                                        <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-4 col-6">
-                                <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
-                                    @foreach($excludedProducts as $ep)
-                                        <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
-                                    @endforeach
-                                </select>
+                                <select id="productFilter" name="product" class="form-control"></select>
                             </div>
                             <div class="col-md-2 col-6">
                                 <select name="payment_status" class="form-control" >
@@ -245,96 +172,7 @@
                 </div>
             </div>
         </form>
-
-        @php
-            $hasActiveFilters =
-                request('search') ||
-                request()->filled('payment_status') ||
-                request('order_status') ||
-                request('tour_start_date') ||
-                request('order_created_date') ||
-                request('source') ||
-                $selectedProducts->isNotEmpty() ||
-                $excludedProducts->isNotEmpty();
-        @endphp
-
-        @if($hasActiveFilters)
-        <div class="active-filters m-4">
-            <div class="d-flex flex-wrap gap-2">
-
-                {{-- Search --}}
-                @if(request('search'))
-                    <span class="badge badge-dark mr-2 mt-2 mt-2 text-white">
-                        Search: {{ request('search') }}
-                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['search' => null]) }}">✕</a>
-                    </span>
-                @endif
-
-                {{-- Payment --}}
-                @if(request()->filled('payment_status'))
-                    <span class="badge badge-dark mr-2 mt-2">
-                        Payment: {{ request('payment_status') ? 'Paid' : 'Unpaid' }}
-                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['payment_status' => null]) }}">✕</a>
-                    </span>
-                @endif
-
-                {{-- Order Status --}}
-                @if(request('order_status'))
-                    <span class="badge badge-dark mr-2 mt-2">
-                        Status: {{ $statuses[request('order_status')] }}
-                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['order_status' => null]) }}">✕</a>
-                    </span>
-                @endif
-
-                {{-- Tour Date --}}
-                @if(request('tour_start_date'))
-                    <span class="badge badge-dark mr-2 mt-2">
-                        Tour Date: {{ request('tour_start_date') }}
-                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['tour_start_date' => null]) }}">✕</a>
-                    </span>
-                @endif
-
-                {{-- Created Date --}}
-                @if(request('order_created_date'))
-                    <span class="badge badge-dark mr-2 mt-2">
-                        Created: {{ request('order_created_date') }}
-                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['order_created_date' => null]) }}">✕</a>
-                    </span>
-                @endif
-
-                {{-- Source --}}
-                @if(request('source'))
-                    <span class="badge badge-dark mr-2 mt-2">
-                        Source: {{ source_list(request('source')) }}
-                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['source' => null]) }}">✕</a>
-                    </span>
-                @endif
-
-                {{-- Selected Tour --}}
-                @if($selectedProducts->isNotEmpty())
-                    @php $p = $selectedProducts->first(); @endphp
-                    <span class="badge badge-dark mr-2 mt-2">
-                        Tour: {{ $p->title }}
-                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['product' => null]) }}">✕</a>
-                    </span>
-                @endif
-
-                {{-- Excluded Tours --}}
-                @foreach($excludedProducts as $ep)
-                    <span class="badge badge-dark mr-2 mt-2">
-                        Excluded: {{ $ep->title }}
-                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery([
-                            'exclude_product' => collect(request('exclude_product'))
-                                ->reject(fn($id) => $id == $ep->id)
-                                ->values()
-                                ->all(),
-                        ]) }}">✕</a>
-                    </span>
-                @endforeach
-
-            </div>
-        </div>
-        @endif        
+        
 
         {{-- Bulk Delete --}}
         <form id="bulkDeleteForm" method="POST" action="{{ route('admin.order.bulkDelete') }}">
@@ -458,7 +296,7 @@
                                 <td>
                                     <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink">{{ $order->order_number }}</a>
                                 </td>
-                                <td class="text-center">{!! order_status($order->order_status) !!} <br> <small>{{  in_array($order->latestPaymentLog?->status, ['success', 'authorized', 'failed', 'cancelled']) ? ucwords($order->latestPaymentLog?->status) : '' }}</small></td>
+                                <td>{!! order_status($order->order_status) !!}</td>
                                 <td class="">
                                     @foreach ($order->orderTours as $order_tour)
 
@@ -511,7 +349,6 @@
                                     {{ $order->customer?->email }}
                                 </td>
                                 @php
-
                                     $total = round($order->total_amount);
                                    // $paid = round($order->booked_amount) ?? 0; 
 
@@ -706,68 +543,29 @@
         });
 
         // ✅ Select2 (optimized)
-        // $('#productFilter').select2({
-        //     placeholder: 'Select Tour',
-        //     minimumInputLength: 4,
-        //     ajax: {
-        //         url: '{{ route("admin.tours.tours-list") }}',
-        //         dataType: 'json',
-        //         delay: 0,
-        //         cache: true,
-        //         data: function (params) {
-        //             return { q: params.term };
-        //         },
-        //         processResults: function (data) {
-        //             return {
-        //                 results: data.map(tour => ({
-        //                     id: tour.id,
-        //                     text: tour.title
-        //                 }))
-        //             };
-        //         }
-        //     }
-        // });
-
-        function initTourSelect(selector, isMultiple, placeholderText) {
-    $(selector).select2({
-        placeholder: placeholderText,
-        minimumInputLength: 4,
-        multiple: isMultiple,
-        ajax: {
-            url: '{{ route("admin.tours.tours-list") }}',
-            dataType: 'json',
-            delay: 0,
-            cache: true,
-            data: params => ({ q: params.term }),
-            processResults: data => ({
-                results: data.map(tour => ({ id: tour.id, text: tour.title }))
-            })
-        }
-    });
-}
-
-initTourSelect('#productFilter', true, 'Select Tour');
-initTourSelect('#excludeProductFilter', true, 'Exclude tours');
-
-// initTourSelect('#productFilter');
-
+        $('#productFilter').select2({
+            placeholder: 'Select Tour',
+            minimumInputLength: 4,
+            ajax: {
+                url: '{{ route("admin.tours.tours-list") }}',
+                dataType: 'json',
+                delay: 0,
+                cache: true,
+                data: function (params) {
+                    return { q: params.term };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.map(tour => ({
+                            id: tour.id,
+                            text: tour.title
+                        }))
+                    };
+                }
+            }
+        });
 
     });
-
-@if($selectedProducts->count())
-
-let option = new Option(
-    "{{ $selectedProducts->first()->title }}",
-    "{{ $selectedProducts->first()->id }}",
-    true,
-    true
-);
-
-$('#productFilter')
-    .append(option)
-    .trigger('change');
-
-@endif
     </script>
 
 @endsection

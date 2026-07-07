@@ -212,16 +212,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/tour/addfocus/{id}', [TourController::class, 'add_focus_keyword'])->name('tour.addfocus');
     Route::post('/tours/reorder', [TourController::class, 'reorder'])->name('tour.reorder');
     Route::post('/tours/save-coupon', [TourController::class, 'saveCoupon'])->name('tour.saveCoupon');
-    Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');
+    Route::post('/tours/update-price', [TourController::class, 'updatePrices'])->name('tour.updatePrices');
     Route::post('/tours/toggle-status', [TourController::class, 'toggleStatus'])->name('tour.toggleStatus');
     Route::post('/tours/import-price', [TourController::class, 'importPrice'])->name('tours.importPrice');
-
-    // Route::post('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit..special.deposit');
+    Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');
     Route::put('/tour/special-deposit/{id}', [TourController::class, 'specialDepositUpdate'])->name('tour.special-deposit');
     Route::post('/tour/shedule-pricing/{id}', [TourController::class, 'schedulePricingUpdate'])->name('tour.shedule-pricing');
-
     Route::put('/tour/review/{id}', [TourController::class, 'reviewUpdate'])->name('tour.review');
-
     Route::put('/tour/parent-tour/{id}', [TourController::class, 'parentUpdate'])
     ->name('tour.parent');
     Route::get('/tours/{id}/sub-create', [TourController::class, 'createSubTour'])->name('tours.sub-create');

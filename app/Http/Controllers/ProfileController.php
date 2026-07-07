@@ -14,6 +14,10 @@ use Illuminate\View\View;
 class ProfileController extends Controller
 {
 
+    public function dashboard()
+    {
+        return view('dashboard');
+    }
     /**
      * Display the user's profile form.
      */
@@ -65,6 +69,7 @@ class ProfileController extends Controller
 
     public function suplierUpdate(Request $request)
     {
+
         $supplierData = [
             'business_name' => $request->business_name,
             'supplier_type' => $request->supplier_type,
@@ -108,4 +113,6 @@ class ProfileController extends Controller
 
         return Redirect::route('admin.profile.edit')->with('status', 'profile-updated');
     }
+
+    
 }

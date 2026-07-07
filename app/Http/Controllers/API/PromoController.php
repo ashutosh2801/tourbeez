@@ -40,36 +40,65 @@ class PromoController extends Controller
             ], 400);
         }
 
-        // Calculate discount
-        $discount = 0; 
+        $discountableTotal = (float) $request->input('discountable_cart_total', $request->cart_total);
+        $discountableTotalPayLater = (float) $request->input('discountable_cart_totalPayLater', $request->cart_totalPayLater ?? $request->cart_total);
+        $taxableTotal = (float) $request->input('taxable_cart_total', $request->cart_total);
+        $taxableTotalPayLater = (float) $request->input('taxable_cart_totalPayLater', $request->cart_totalPayLater ?? $request->cart_total);
+
+        // Calculate discount only on eligible tour items. Taxes apply after discount.
+        $discount = $discountPayLater = 0;
 
         if ($promo->value_type === 'VALUE_LIMITPRODUCT') {
-            $discount = $promo->voucher_value;
+            $discount = min($promo->voucher_value, $discountableTotal);
+            $discountPayLater = min($promo->voucher_value, $discountableTotalPayLater);
         }
         else if ($promo->value_type === 'VALUE') {
-            $discount = $promo->voucher_value;
+            $discount = min($promo->voucher_value, $discountableTotal);
+            $discountPayLater = min($promo->voucher_value, $discountableTotalPayLater);
         }
         else if ($promo->value_type === 'VALUE_LIMITCATEGORY') {
-            $discount = $promo->voucher_value;
+            $discount = min($promo->voucher_value, $discountableTotal);
+            $discountPayLater = min($promo->voucher_value, $discountableTotalPayLater);
         }
         else if ($promo->value_type === 'PERCENT_LIMITPRODUCT') {
-            $discount = ($request->cart_total * $promo->value_percent) / 100;
+            $discount = ($discountableTotal * $promo->value_percent) / 100;
+            $discountPayLater = ($discountableTotalPayLater * $promo->value_percent) / 100;
         }
         else if ($promo->value_type === 'PERCENT') {
-            $discount = ($request->cart_total * $promo->value_percent) / 100;
+            $discount = ($discountableTotal * $promo->value_percent) / 100;
+            $discountPayLater = ($discountableTotalPayLater * $promo->value_percent) / 100;
         }
         else if ($promo->value_type === 'PERCENT_LIMITCATEGORY') {
-            $discount = ($request->cart_total * $promo->value_percent) / 100;
+            $discount = ($discountableTotal * $promo->value_percent) / 100;
+            $discountPayLater = ($discountableTotalPayLater * $promo->value_percent) / 100;
         }
 
+        // Pay Now
+        $sub_total = max(0, ($taxableTotal - $discount));
+        $hst_value = round($sub_total * 0.13, 2);
+        $final_total = max(0, ($sub_total + $hst_value));
+
+        // Pay Later
+        $sub_totalPayLater = max(0, ($taxableTotalPayLater - $discountPayLater));
+        $hst_valuePayLater = round($sub_totalPayLater * 0.13, 2);
+        $final_totalPayLater = max(0, ($sub_totalPayLater + $hst_valuePayLater));
+
         return response()->json([
-            'success' => true,
-            'discount' => round($discount, 2),
-            'hst_value' => round(($request->cart_total - $discount) * 0.13, 2), // Assuming HST is 13%
-            'sub_total' => max(0, $request->cart_total - $discount),
-            'final_total' => max(0, $request->cart_total - $discount),
-            'code' => $promo->code,
-            'type' => $promo->value_type,
+            'success'   => true,
+            'code'      => $promo->code,
+            'type'      => $promo->value_type,
+
+            'is_pay_later'          => ($request->cart_totalPayLater === $request->cart_total) ? 0 : 1,
+
+            'discount'              => round($discount, 2),
+            'hst_value'             => $hst_value, // Assuming HST is 13%
+            'sub_total'             => $sub_total,
+            'final_total'           => $final_total,
+
+            'discount_paylater'     => round($discountPayLater, 2),
+            'hst_value_paylater'    => $hst_valuePayLater, // Assuming HST is 13%
+            'sub_total_paylater'    => $sub_totalPayLater,
+            'final_total_paylater'  => $final_totalPayLater,
         ]);
     }
 }

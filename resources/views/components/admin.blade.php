@@ -186,10 +186,10 @@
         })();
 
         // Toastr alerts
-        toastr.options = {
-            "progressBar": true,
-            "closeButton": true,
-        }
+        // toastr.options = {
+        //     "progressBar": true,
+        //     "closeButton": true,
+        // }
     </script>
 
     <script src="{{ asset('admin/dist/js/vendor.js') }}"></script>

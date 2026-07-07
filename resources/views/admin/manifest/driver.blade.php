@@ -84,14 +84,18 @@
                 <select id="driverFilter" class="form-control driver-filter">
                     <option value="">All Drivers</option>
                     @foreach($drivers as $driver)
-                        <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                        <option value="{{ $driver->id }}" {{request()->input('driver_id') == $driver->id ? 'Selected' : ''}}>{{ $driver->name }}</option>
+                    @endforeach
+                </select>
+                <select id="vehicleFilter" class="form-control vehicle-filter">
+                    <option value="">All Vehicle</option>
+                    @foreach($vehicles as $vehicle)
+                        <option value="{{ $vehicle->id }}" {{request()->input('vehicle_id') == $vehicle->id ? 'Selected' : ''}}>{{ $vehicle->name }}</option>
                     @endforeach
                 </select>
             </div>
             <!-- <a href="{{ route('admin.driver.manifest.export', ['date' => $date]) }}" 
                    class="btn btn-success btn-sm">
-
-
                     Export Excel
                 </a> -->
 
@@ -132,14 +136,54 @@
                         @foreach($dateRange as $d)
                             @php
                                 $dateKey = $d->toDateString();
-                                $cellOrders = $dates[$dateKey] ?? [];
-                                $totalGuests = collect($cellOrders)->sum('guest_count');
-                                $driverNames = collect($cellOrders)
-                                    ->pluck('driver_names')   // array of arrays
-                                    ->flatten()
-                                    ->filter()
-                                    ->unique()
-                                    ->implode(', ');
+                                //$cellOrders = $dates[$dateKey] ?? [];
+                                $cellOrders = collect($dates[$dateKey] ?? [])
+                                ->filter(function ($o) use ($selectedDriver) {
+
+                                    if (!$selectedDriver) return true;
+
+                                    return in_array($selectedDriver, $o['driver_ids'] ?? []);
+                                })
+                                ->values();
+
+                               $totalGuests = collect($cellOrders)->sum('guest_count');
+                                //$driverNames = collect($cellOrders)
+                                //    ->pluck('driver_names')   // array of //arrays
+                                 //   ->flatten()
+                                 //   ->filter()
+                                 //   ->unique()
+                                 //   ->implode(', ');
+
+                                    $driverNames = collect($cellOrders)
+                                        ->flatMap(function ($o) use ($selectedDriver) {
+
+                                            // no filter → show all
+                                            if (!$selectedDriver) {
+                                                return $o['driver_ids'] ?? [];
+                                            }
+
+                                            // filter → only matching driver
+                                            return collect($o['driver_ids'] ?? [])
+                                                ->filter(fn ($id) => $id == $selectedDriver);
+                                        })
+                                        ->unique()
+                                        ->map(function ($driverId) use ($driverNameMap) {
+                                            return $driverNameMap[$driverId] ?? null;
+                                        })
+                                        ->filter()
+                                        ->implode(', ');
+
+
+    $vehicleNames = collect($cellOrders)
+    ->flatMap(function ($o) {
+        return $o['vehicle_ids'] ?? [];
+    })
+    ->unique()
+    ->map(function ($vehicleId) use ($vehicleNameMap) {
+        return $vehicleNameMap[$vehicleId] ?? null;
+    })
+    ->filter()
+    ->implode(', ');
                             @endphp
                             <td class="text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
                                 data-tour="{{ $tourTitle }}"
@@ -153,6 +197,10 @@
                                         <br><small class="text-success">{{ $driverNames }}</small>
                                     @else
                                         <!-- <br><small class="text-danger">No Driver</small> -->
+                                    @endif
+
+                                    @if($vehicleNames)
+                                        <br><small class="text-primary">{{ $vehicleNames }}</small>
                                     @endif
                                 @endif
                             </td>
@@ -176,14 +224,7 @@
                         @endforeach
                     </tr>
 
-                    <!-- <tr style="font-weight:600;">
-                        <td>Assigned Pax</td>
-                        @foreach($dateRange as $d)
-                            <td class="text-center assigned-pax text-success" data-date="{{ $d->toDateString() }}">
-                                {{ $assignedPaxPerDay[$d->toDateString()] ?? 0 }}
-                            </td>
-                        @endforeach
-                    </tr> -->
+                   
                     <tr style="font-weight:600;">
                         <td>Assigned Pax</td>
                         @foreach($dateRange as $d)
@@ -257,6 +298,7 @@
 <script>
 window.allDrivers = @json($drivers);
 let driversList = @json($drivers);
+let vehiclesList = @json($vehicles);
 const orderEditRoute = "{{ route('admin.orders.edit', ':id') }}";
 </script>
 
@@ -338,34 +380,49 @@ document.addEventListener('DOMContentLoaded', function() {
             container.innerHTML = '';
 
             // build driver options
-            let driversHtml = '';
+            let driversHtml = '<option value="">Select Drivers</option>';
             driversList.forEach(d => {
                 driversHtml += `<option value="${d.id}">${d.name}</option>`;
+            });
+
+            let vehiclesHtml = '<option value="">Select Vehicle</option>';
+            vehiclesList.forEach(d => {
+                vehiclesHtml += `<option value="${d.id}">${d.name}</option>`;
             });
 
             // render orders
             orders.forEach(o => {
                 let orderUrl = orderEditRoute.replace(':id', o.order_encrypt_id);
                 container.innerHTML += `
-                <div class="order-content mb-2 p-2 border rounded">
+                <div class="order-content mb-2 p-2 border rounded" data-assignment-type="${o.assignment_type}">
                     <div class="d-flex justify-content-between">
 
-                        <div style="width:50%">
+                        <div style="width:30%">
                             <input type="checkbox" class="order-checkbox" value="${o.order_id}" checked>
                             <a href="${orderUrl}" class="alink" target="_blank">
-                        #${o.order_number}
-                    </a><br>
+                                #${o.order_number}
+                            </a><br>
                             <small>${o.customer || ''}</small><br>
                             <small>👥 ${o.guest_count}</small>
                         </div>
 
-                        <div style="width:50%">
+                        <div style="width:32%">
                             <select 
                                 class="form-control aiz-selectpicker order-driver-select"
                                 multiple
                                 data-live-search="true"
                                 data-order-id="${o.order_id}">
                                 ${driversHtml}
+                            </select>
+                        </div>
+
+                        <div style="width:35%; margin-left:2%">
+                            <select 
+                                class="form-control aiz-selectpicker order-vehicle-select"
+                                
+                                data-live-search="true"
+                                data-order-id="${o.order_id}">
+                                ${vehiclesHtml}
                             </select>
                         </div>
 
@@ -378,21 +435,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // ✅ PRESELECT EXISTING DRIVERS
             orders.forEach(o => {
-                let select = document.querySelector(
+                let driverSelect = document.querySelector(
                     `.order-driver-select[data-order-id="${o.order_id}"]`
                 );
 
-                if (!select) return;
+                if (!driverSelect) return;
 
-                let selected = o.driver_ids || [];
+                let selectedDrivers = (o.driver_ids || []).map(String);
 
-                Array.from(select.options).forEach(opt => {
-                    opt.selected = selected.includes(parseInt(opt.value));
-                });
+                $(driverSelect).selectpicker('val', selectedDrivers);
+                $(driverSelect).selectpicker('refresh');
+            });
+
+            orders.forEach(o => {
+                let vehicleSelect = document.querySelector(
+                    `.order-vehicle-select[data-order-id="${o.order_id}"]`
+                );
+
+                if (!vehicleSelect) return;
+
+                let selectedVehicles = (o.vehicle_ids || []).map(String);
+
+                $(vehicleSelect).selectpicker('val', selectedVehicles);
+                $(vehicleSelect).selectpicker('refresh');
             });
 
             // ✅ REFRESH AFTER SETTING VALUES
-            TB.plugins.bootstrapSelect('refresh');
+            // TB.plugins.bootstrapSelect('refresh');
 
             new bootstrap.Modal(document.getElementById('driverModal')).show();
         });
@@ -401,143 +470,85 @@ document.addEventListener('DOMContentLoaded', function() {
     // =========================
     // ASSIGN DRIVER (FIXED)
     // =========================
-document.getElementById('assignDriver').addEventListener('click', async function() {
+    document.getElementById('assignDriver').addEventListener('click', async function() {
 
-    let btn = this;
-    let date = document.getElementById('modal_date').value;
+        let btn = this;
+        let date = document.getElementById('modal_date').value;
 
-    let ordersPayload = [];
+        let ordersPayload = [];
 
-    document.querySelectorAll('.order-content').forEach(function(row) {
+        document.querySelectorAll('.order-content').forEach(function(row) {
 
-        let orderId = parseInt(row.querySelector('.order-checkbox').value);
+            let orderId = parseInt(row.querySelector('.order-checkbox').value);
 
-        let $select = $(row).find('.order-driver-select');
+            let $select = $(row).find('.order-driver-select');
+            let $select2 = $(row).find('.order-vehicle-select');
 
-        let selectedDrivers = [];
+            let selectedDrivers = [];
+            let selectedVehicles = [];
 
-        // ✅ READ FROM SELECTED OPTIONS (REAL FIX)
-        $select.find('option:selected').each(function () {
-            selectedDrivers.push(parseInt($(this).val()));
+            // ✅ READ FROM SELECTED OPTIONS (REAL FIX)
+            $select.find('option:selected').each(function () {
+                selectedDrivers.push(parseInt($(this).val()));
+            });
+
+            $select2.find('option:selected').each(function () {
+                selectedVehicles.push(parseInt($(this).val()));
+            });
+
+            console.log('FIXED:', orderId, selectedDrivers, selectedVehicles);
+
+            ordersPayload.push({
+                order_id: orderId,
+                driver_ids: selectedDrivers,
+                vehicle_ids: selectedVehicles,
+                assignment_type: row.dataset.assignmentType
+            });
         });
 
-        console.log('FIXED:', orderId, selectedDrivers);
+        try {
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
 
-        ordersPayload.push({
-            order_id: orderId,
-            driver_ids: selectedDrivers
-        });
+            let res = await fetch("{{ route('admin.assign.driver') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    orders: ordersPayload,
+                    date: date
+                })
+            });
+
+            if (!res.ok) throw new Error();
+
+            location.reload();
+
+        } catch (e) {
+            alert('Error saving');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Assign';
+        }
     });
-
-    try {
-        btn.disabled = true;
-        btn.innerText = 'Saving...';
-
-        let res = await fetch("{{ route('admin.assign.driver') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                orders: ordersPayload,
-                date: date
-            })
-        });
-
-        if (!res.ok) throw new Error();
-
-        location.reload();
-
-    } catch (e) {
-        alert('Error saving');
-    } finally {
-        btn.disabled = false;
-        btn.innerText = 'Assign';
-    }
-});
 
     // =========================
     // DRIVER FILTER
     // =========================
-    driverFilter.addEventListener('change', function() {
+    driverFilter.addEventListener('change', function () {
 
-    let selectedDriver = parseInt(this.value);
-    let totalMap = {};
-    let assignedMap = {};
-    let driverWiseMap = {}; // NEW
+        let selectedDriver = this.value;
+        let date = dateInput.value;
+        let url = `?date=${date}`;
 
-    document.querySelectorAll('.manifest-cell').forEach(cell => {
-
-        if (!cell.classList.contains('has-orders')) return;
-
-        let orders = JSON.parse(cell.dataset.orders);
-        let date = cell.dataset.date;
-
-        let visible = false;
-
-        orders.forEach(o => {
-
-            let match = !selectedDriver ||
-                (o.driver_ids && o.driver_ids.includes(selectedDriver));
-
-            if (match) {
-                visible = true;
-
-                totalMap[date] = (totalMap[date] || 0) + o.guest_count;
-
-                if (o.driver_ids?.length) {
-                    assignedMap[date] = (assignedMap[date] || 0) + o.guest_count;
-
-                    // driver-wise
-                    o.driver_ids.forEach(dId => {
-
-                        if (selectedDriver && dId !== selectedDriver) return;
-
-                        if (!driverWiseMap[date]) driverWiseMap[date] = {};
-                        driverWiseMap[date][dId] =
-                            (driverWiseMap[date][dId] || 0) + o.guest_count;
-                    });
-                }
-            }
-        });
-
-        cell.style.opacity = visible ? '1' : '0.2';
-    });
-
-    // update totals
-    document.querySelectorAll('.total-pax').forEach(td => {
-        td.innerText = totalMap[td.dataset.date] || 0;
-    });
-
-    document.querySelectorAll('.assigned-pax').forEach(td => {
-
-        let date = td.dataset.date;
-        let html = `<strong>${assignedMap[date] || 0}</strong>`;
-
-        if (driverWiseMap[date]) {
-
-            html += `<div style="margin-top:5px;">`;
-
-            Object.entries(driverWiseMap[date]).forEach(([driverId, pax]) => {
-
-                let driver = driversList.find(d => d.id == driverId);
-
-                html += `
-                    <div style="font-size:12px; color:#374151;">
-                        ${driver?.name || 'Unknown'}: <strong>${pax}</strong>
-                    </div>
-                `;
-            });
-
-            html += `</div>`;
+        if (selectedDriver) {
+            url += `&driver_id=${selectedDriver}`;
         }
 
-        td.innerHTML = html;
+        window.location.href = url;
     });
-
-    updateExportUrl();
-});
 
     updateExportUrl();
 });

@@ -1052,7 +1052,13 @@ $expectEmails = ['order_pending'];
 
                                             @php
 
-                                                $latestPayment = $order->payments()->latest()->first();
+                                                //$latestPayment = $order->payments()->latest()->first();
+                                                $latestPayment = $order->payments()
+                                                ->where('status', 'succeeded')
+                                                ->latest()
+                                                ->first();
+
+                                                //echo '<pre>'; print_r($latestPayment->payment_intent_id); echo '</pre>'; 
                                             @endphp
 
                                             <!-- @if($order->payment_intent_id)
@@ -1091,15 +1097,15 @@ $expectEmails = ['order_pending'];
                                                 </div>
                                             @endif
                                             <div class="col-12 col-md-2">
-                                                @if($order->payments()->first() &&  $order->payments()->first()->status != 'pending')
+                                                @if($latestPayment)
 
-                                                    @if(str_contains( $order->payment_intent_id, 'pm_') || str_contains( $order->payment_method_id, 'pm_'))
+                                                    @if(str_contains( $latestPayment->payment_intent_id, 'pm_') || str_contains( $latestPayment->payment_method_id, 'pm_'))
                                                     <a id="chargeSavedCard" type="button" class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
                                                         Charge Now
                                                     </a>
 
 
-                                                    @elseif(str_contains( $order->payment_intent_id, 'pi_'))
+                                                    @elseif(str_contains( $latestPayment->payment_intent_id, 'pi_'))
                                                     <a class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
                                                         Charge Now
                                                     </a>
@@ -1447,30 +1453,32 @@ $expectEmails = ['order_pending'];
                         </div>
                         <div id="collapseRecentActions" class="collapse show" aria-labelledby="headingRecentActions">
                             <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table" style="border: 1px solid #dee2e6;">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Subject</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @if(!empty($actions) && is_iterable($actions))
-                                                @foreach($actions as $action)
-                                                    <tr>
-                                                        <td>{{ $action->created_at }}</td>
-                                                        <td>{!! $action->notes !!}</td>
-                                                    </tr>
-                                                @endforeach
-                                            @else
+                                <div id="recent-actions-container">
+                                    <div class="table-responsive">
+                                        <table class="table" style="border: 1px solid #dee2e6;">
+                                            <thead>
                                                 <tr>
-                                                    <td colspan="5">No action history found</td>
+                                                    <th>Date</th>
+                                                    <th>Subject</th>
                                                 </tr>
-                                            @endif
-                                        </tbody>
-                                    </table>
-                                    {{ $actions->links() }}
+                                            </thead>
+                                            <tbody>
+                                                @if(!empty($actions) && is_iterable($actions))
+                                                    @foreach($actions as $action)
+                                                        <tr>
+                                                            <td>{{ $action->created_at }}</td>
+                                                            <td>{!! $action->notes !!}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                @else
+                                                    <tr>
+                                                        <td colspan="5">No action history found</td>
+                                                    </tr>
+                                                @endif
+                                            </tbody>
+                                        </table>
+                                        {{ $actions->links() }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -4838,6 +4846,23 @@ $('#customerForm').on('submit', function (e) {
 $('input').on('input', function () {
     let id = $(this).attr('id').replace('oc_', '');
     $('#error_' + id).addClass('d-none').text('');
+});
+
+$(document).on('click', '#recent-actions-container .pagination a', function(e) {
+    e.preventDefault();
+
+    let url = $(this).attr('href');
+
+    $.ajax({
+        url: url,
+        type: "GET",
+        success: function(data) {
+            $('#recent-actions-container').html(data);
+        },
+        error: function() {
+            alert('Something went wrong');
+        }
+    });
 });
 </script>
 

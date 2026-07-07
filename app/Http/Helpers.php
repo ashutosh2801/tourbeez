@@ -113,6 +113,12 @@ if(!function_exists('source_list')) {
         }
     }
 }
+function excluded_payment_sources() {
+    return collect(source_list_db())
+        ->where('exclude_payment', true)
+        ->pluck('key')
+        ->toArray();
+}
 
 if(!function_exists('remove_last_Tour_word')) {
     function remove_last_Tour_word($string) {
