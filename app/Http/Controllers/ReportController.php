@@ -1370,11 +1370,26 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
         || $request->filled('action_type')
         || $request->filled('exclude_product');
 
+        $totals = [
+            'product_price'      => 0,
+            'extra_amount'       => 0,
+            'tax_amount'         => 0,
+            'discount_amount'    => 0,
+            'customer_total'     => 0,
+            'balance_amount'     => 0,
+            'transport_cost'     => 0,
+            'tour_selling_price' => 0,
+            'tour_selling_tax'   => 0,
+            'net_total'          => 0,
+            'profit'             => 0,
+        ];
+
         if (!$hasFilter) {
             return $paginate
                 ? [
                     'rows' => [],
-                    'pagination' => new LengthAwarePaginator([], 0, 20)
+                    'pagination' => new LengthAwarePaginator([], 0, 20),
+                    'totals'     => $totals,
                 ]
                 : [];
         }
@@ -1917,6 +1932,22 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 'profit' => $isExcludedFromPayment ? 0 : round($sellingTotal - $costTotal, 2),
             ];
 
+            $totals['product_price']      += $row['product_price'];
+            $totals['extra_amount']       += $row['extra_amount'];
+            $totals['tax_amount']         += $row['tax_amount'];
+            $totals['discount_amount']    += $row['discount_amount'];
+            $totals['customer_total']     += $row['customer_total'];
+            $totals['balance_amount']     += $row['balance_amount'];
+            $totals['transport_cost']     += $row['transport_cost'];
+            $totals['tour_selling_price'] += $row['tour_selling_price'];
+            $totals['tour_selling_tax']   += $row['tour_selling_tax'];
+
+            $netTotal = $row['tour_selling_total'] + $row['transport_cost'];
+            $profit   = $row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost'];
+
+            $totals['net_total'] += $netTotal;
+            $totals['profit']    += $profit;
+
             // attach all addon columns consistently
 
             foreach ($allAddonKeys as $key) {
@@ -1930,10 +1961,10 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
             // dd($row);
             $rows[] = $row;
         }
-
+        
         return $paginate
-            ? ['rows' => $rows, 'pagination' => $orders]
-            : $rows;
+            ? ['rows' => $rows, 'pagination' => $orders, 'totals' => $totals]
+            : ['rows' => $rows, 'totals' => $totals];
     }
 
 
@@ -2141,10 +2172,13 @@ public function exportCustomer(Request $request)
         return Excel::download(new PriceScheduleExport($rows), 'price_schedule_report.xlsx');
     }
 
-        public function reportPriceSchedule(Request $request)
+    public function reportPriceSchedule32432(Request $request)
     {
-        $data = $this->getInvoiceWithDetailsData($request, true);
+        
 
+        $paginated = $request->filled('pagination');
+        $data = $this->getInvoiceWithDetailsData($request, $paginated);
+        dd($data);
         $selectedProducts = Tour::whereIn(
             'id',
             (array)$request->product
@@ -2166,6 +2200,46 @@ public function exportCustomer(Request $request)
             ->filter(fn($key) => str_contains($key, '_desc'))
             ->map(fn($key) => str_replace('_desc', '', $key))
             ->values()
+        ]);
+    }
+
+    public function reportPriceSchedule(Request $request)
+    {
+        $paginated = $request->filled('pagination');
+
+        $data = $this->getInvoiceWithDetailsData($request, $paginated);
+
+        // Normalize the response
+        if (!$paginated) {
+            $data = [
+                'rows' => $data['rows'],
+                'pagination' => null,
+                'totals' => $data['totals']
+            ];
+        }
+
+        $selectedProducts = Tour::whereIn(
+            'id',
+            (array) $request->product
+        )->get(['id', 'title']);
+
+        $excludedProducts = Tour::whereIn(
+            'id',
+            (array) $request->exclude_product
+        )->get(['id', 'title']);
+
+        return view('admin.reports.price_schedule', [
+            'rows'              => $data['rows'],
+            'orders'            => $data['pagination'],
+            'totals'            => $data['totals'],
+            'partners'          => Partner::get(),
+            'selectedProducts'  => $selectedProducts,
+            'excludedProducts'  => $excludedProducts,
+            'addonKeys'         => collect($data['rows'][0] ?? [])
+                ->keys()
+                ->filter(fn($key) => str_contains($key, '_desc'))
+                ->map(fn($key) => str_replace('_desc', '', $key))
+                ->values(),
         ]);
     }
     public function exportPriceSchedule(Request $request)

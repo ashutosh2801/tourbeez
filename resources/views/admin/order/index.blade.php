@@ -510,7 +510,7 @@
                                     <br>
                                     {{ $order->customer?->email }}
                                 </td>
-                                @php
+                                <!-- @php
 
                                     $total = round($order->total_amount);
                                    // $paid = round($order->booked_amount) ?? 0; 
@@ -534,8 +534,84 @@
                                     if ($order->order_status == 6) {
                                         $amountClass = 'text-secondary'; // grey
                                     } 
+                                @endphp -->
+
+                                @php
+
+                                    $total = round($order->total_amount);
+
+
+
+                                    $paid = round(
+
+                                        $order->payments->where('status', 'succeeded')->sum('amount')
+
+                                        - $order->payments->where('status', 'refunded')->sum('amount')
+
+                                        + $order->payments->where('status', 'partial_refunded')->sum('amount')
+
+                                    );
+
+
+
+                                    $balance = max(0, $total - $paid);
+
+
+
+                                    $hasUncaptured = $order->payments->contains('status', 'uncaptured');
+
+
+
+                                    if ($paid < $total) {
+
+                                        if ($paid == 0 && $hasUncaptured) {
+
+                                            $amountClass = 'text-orange';
+
+                                        } else {
+
+                                            $amountClass = 'text-danger'; // red
+
+                                        }
+
+                                    } else {
+
+                                        $amountClass = 'text-success'; // green
+
+                                    }
+
+
+
+                                    if ($order->order_status == 6) {
+
+                                        $amountClass = 'text-secondary'; // grey
+
+                                    }
+
                                 @endphp
-                                <td >
+
+
+
+                                <td>
+
+
+
+
+
+                                <span class="{{ $amountClass }}">
+
+                                        @if($amountClass == 'text-danger')
+
+                                            {{ price_format_with_currency($balance, $order->currency) }}
+
+                                        @else
+
+                                            {{ price_format_with_currency($order->total_amount, $order->currency) }}
+
+                                        @endif
+
+                                    </span>
+                               <!--  <td >
 
                                     <span class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}</span>
                                 <!-- </td> -->

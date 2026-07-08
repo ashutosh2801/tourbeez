@@ -5,8 +5,20 @@
 
 <style>
     .table {
-        font-size: 12px;
-    }
+    font-size: 14px;
+}
+
+.table th {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 8px;
+}
+
+.table td {
+    font-size: 14px;
+    padding: 10px 8px;
+    vertical-align: middle;
+}
 
     .table th, .table td {
         white-space: nowrap;
@@ -22,6 +34,23 @@
     .pagination {
         justify-content: center;
     }
+
+    .table tbody tr:hover {
+    background: #f5f9ff;
+}
+
+.table td {
+    vertical-align: middle;
+}
+.table-wrapper {
+    overflow: auto;
+    cursor: grab;
+    position: relative;
+}
+
+.table-wrapper.active {
+    cursor: grabbing;
+}
         /* FULL FIX FOR SELECT2 HEIGHT */
    .search-options .select2-container--default .select2-selection--multiple {
         min-height: calc(1.3125rem + 1.2rem + 2px) !important;
@@ -100,49 +129,80 @@
     position: relative;
 }
 
-/* Freeze first 3 columns */
-.table th,
-.table td {
-    white-space: nowrap;
-    vertical-align: top;
-}
+/* Freeze first 4 columns */
+/* 1st */
+/* ---------------- First 4 Frozen Columns ---------------- */
 
+/* No */
 .table th:nth-child(1),
 .table td:nth-child(1) {
     position: sticky;
     left: 0;
+    width: 20px;
+    min-width: 20px;
+    max-width: 20px;
     background: #fff;
     z-index: 20;
-    min-width: 60px;
 }
 
+/* Order */
+.table th:nth-child(2),
+.table td:nth-child(2) {
+    position: sticky;
+    left: 20px;
+    width: 130px;
+    min-width: 130px;
+    max-width: 130px;
+    background: #fff;
+    z-index: 20;
+}
+
+/* Customer */
 .table th:nth-child(3),
 .table td:nth-child(3) {
     position: sticky;
-    left: 60px;
+    left: 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
     background: #fff;
     z-index: 20;
-    min-width: 220px;
 }
 
+/* Product */
 .table th:nth-child(4),
 .table td:nth-child(4) {
     position: sticky;
-    left: 280px;
+    left: 300px;
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
     background: #fff;
     z-index: 20;
-    min-width: 260px;
 }
 
 /* Header above body */
 .table thead th {
-    z-index: 30 !important;
+    position: sticky;
+    top: 0;
+    background: #212529;
+    color: #fff;
+    z-index: 30;
+    font-weight: 600;
+}
+
+.table thead th:nth-child(1),
+.table thead th:nth-child(2),
+.table thead th:nth-child(3),
+.table thead th:nth-child(4) {
+    z-index: 50;
 }
 
 /* Border for frozen columns */
 .table td:nth-child(-n+4),
 .table th:nth-child(-n+4) {
-    box-shadow: 2px 0 4px rgba(0,0,0,.08);
+    /*box-shadow: 2px 0 4px rgba(0,0,0,.08);*/
+    box-shadow: 1px 0 0 #dee2e6;
 }
 .product-name {
     white-space: normal !important;
@@ -150,6 +210,21 @@
     overflow-wrap: anywhere;
     max-width: 220px; /* Adjust as needed */
     line-height: 1.4;
+}
+
+.table thead th {
+    background: #212529 !important;
+    color: #fff;
+}
+
+.table th:nth-child(-n+4),
+.table td:nth-child(-n+4) {
+    background: #fff;
+}
+
+.table td:nth-child(-n+4),
+.table th:nth-child(-n+4) {
+    box-shadow: 2px 0 4px rgba(0,0,0,.08);
 }
 </style>
 
@@ -226,55 +301,6 @@
                     </div>
                 </div>
 
-                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Booking Date</label>
-
-                    <input type="text" id="booking_range" class="form-control"
-                        placeholder="Select date range" autocomplete="off">
-
-                    
-                        <span class="clear-btn" onclick="clearBooking()">✕</span>
-                    
-
-                    <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
-                    <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
-                </div> -->
-
-
-                {{-- TOUR DATE --}}
-                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">     Date</label>
-
-                    <input type="text" id="tour_range" class="form-control"
-                        placeholder="Select date range" autocomplete="off">
-
-                   
-                        <span class="clear-btn" onclick="clearTour()">✕</span>
-                   
-
-                    <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
-                    <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
-                </div> -->
-
-                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Products</label>
-                    <select id="productFilter" name="product" class="form-control"></select>
-                </div>  -->
-
-                {{-- PRODUCTS --}}
-                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <div class="form-group">
-                        <label class="filter-label">Products</label>
-                        <select id="productFilter" name="product" class="form-control">
-                            @if(request('product') && request('product_text'))
-                                <option value="{{ request('product') }}" selected>
-                                    {{ request('product_text') }}
-                                </option>
-                            @endif
-                        </select>
-                        <input type="hidden" id="product_text" name="product_text" value="{{ request('product_text') }}">
-                    </div>
-                </div>  -->
 
                 <div class="col-md-3 col-6">
                     <label class="filter-label">Products</label>
@@ -498,12 +524,12 @@
             </div>
         </div>
 
-        <div class="table-wrapper">
+        <div class="table-wrapper" id="tableWrapper">
           <table class="table table-bordered" style=" margin: 15px 20px;">
 
                 <thead>
     <tr>
-        <th>No.</th>
+        <th>#</th>
         <th>Order</th>
         <!-- <th>Order Date</th> -->
         <th>Customer</th>
@@ -525,22 +551,9 @@
         <!-- <th></th> -->
         <th>Addons</th>
 
-        <!-- @foreach($addonKeys as $key)
-            <th>{{ Str::headline($key) }}</th>
-        @endforeach -->
     </tr>
 
-    <!-- <tr>
-        <th colspan="15"></th>
-        @foreach($addonKeys as $key)
-            <th>Desc</th>
-            <th>Qty</th>
-            <th>Price</th>
-            <th>Tax</th>
-            <th>Fee</th>
-            <th>Total</th>
-        @endforeach
-    </tr> -->
+
 </thead>
 
                 <tbody>
@@ -552,7 +565,7 @@
     <td>{{ $row['no'] ?? '' }}</td>
 
     {{-- Order --}}
-    <td style="min-width:180px">
+    <td >
 
         <strong>
             <a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">
@@ -577,7 +590,7 @@
     </td>
 
     {{-- Customer --}}
-    <td style="min-width:240px">
+    <td>
 
         <strong>{{ $row['customer_name'] }}</strong>
 
@@ -644,7 +657,7 @@
 
     <td>@foreach($addonKeys as $key)
 
-<!-- <td style="min-width:180px"> -->
+<!-- <td > -->
 
     @if(
         !empty($row[$key.'_desc']) ||
@@ -658,24 +671,12 @@
         <strong>{{ $row[$key.'_desc'] ?? '-' }}</strong><br>
 
         Qty :
-        {{ $row[$key.'_qty'] ?? 0 }}
+        {{ $row[$key.'_qty'] ?? 0 }} |
 
-        <br>
+        <!-- <br> -->
 
         Price :
-        {{ number_format_with_currency($row[$key.'_price'] ?? 0,2) }}
-
-        <br>
-
-        Tax :
-        {{ number_format_with_currency($row[$key.'_tax'] ?? 0,2) }}
-
-        <br>
-
-        Fee :
-        {{ number_format_with_currency($row[$key.'_fee'] ?? 0,2) }}
-
-        <br>
+        {{ number_format_with_currency($row[$key.'_price'] ?? 0,2) }} |
 
         Total :
         <strong>
@@ -690,46 +691,60 @@
 
 @endforeach</td>
 
+
     {{-- Dynamic Addons --}}
-   <!--  @foreach($addonKeys as $key)
-
-        <td>{{ $row[$key.'_desc'] ?? '-' }}</td>
-
-        <td align="center">{{ $row[$key.'_qty'] ?? 0 }}</td>
-
-        <td align="right">
-            {{ number_format_with_currency($row[$key.'_price'] ?? 0,2) }}
-        </td>
-
-        <td align="right">
-            {{ number_format_with_currency($row[$key.'_tax'] ?? 0,2) }}
-        </td>
-
-        <td align="right">
-            {{ number_format_with_currency($row[$key.'_fee'] ?? 0,2) }}
-        </td>
-
-        <td align="right">
-            {{ number_format_with_currency($row[$key.'_total'] ?? 0,2) }}
-        </td>
-
-    @endforeach -->
 
 </tr>
-                    @empty
-                    <tr>
-                        <td colspan="{{ 8 + (count($addonKeys) * 5) }}" class="text-center">
-                            No Data Found
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
+
+
+    @empty
+    <tr>
+        <td colspan="{{ 8 + (count($addonKeys) * 5) }}" class="text-center">
+            No Data Found
+        </td>
+    </tr>
+    @endforelse
+
+    <tr style="background:#eef2f7;font-weight:700;">
+    <td colspan="4" style="position: sticky;
+    background: #fff;
+    z-index: 50;">Grand Total</td>
+
+    <td align="right">{{ number_format_with_currency($totals['product_price'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['extra_amount'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['tax_amount'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['discount_amount'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['transport_cost'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['tour_selling_price'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['tour_selling_tax'],2) }}</td>
+
+    <td align="center">-</td>
+
+    <td align="right">{{ number_format_with_currency($totals['net_total'],2) }}</td>
+
+    <td align="right">{{ number_format_with_currency($totals['profit'],2) }}</td>
+
+    <!-- <td>
+        @foreach($addonKeys as $key)
+            @if(($addonTotals[$key] ?? 0) > 0)
+                <strong>{{ ucwords(str_replace('_', ' ', $key)) }}</strong><br>
+                Total:
+                <strong>{{ number_format_with_currency($addonTotals[$key],2) }}</strong><br>
+            @endif
+        @endforeach
+    </td> -->
+</tr>
+</tbody>
           </table>
 
           {{-- PAGINATION --}}
-          <div class="text-center">
-              {{ $orders->links() }}
-          </div>
+          @if($orders instanceof \Illuminate\Contracts\Pagination\Paginator)
+            <div class="text-center">
+                {{ $orders->links() }}
+            </div>
+        @endif
 
         </div>
   </div>
@@ -787,10 +802,46 @@ function clearTour() {
     window.location.href = url.toString();
 }
 
-// if ($('#productFilter').val() && !$('#product_text').val()) {
-//     let selectedText = $('#productFilter option:selected').text();
-//     $('#product_text').val(selectedText);
-// }
+const tableWrapper = document.getElementById("tableWrapper");
+
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let scrollLeft = 0;
+let scrollTop = 0;
+
+tableWrapper.addEventListener("mousedown", function (e) {
+    isDragging = true;
+    tableWrapper.classList.add("active");
+
+    startX = e.pageX - tableWrapper.offsetLeft;
+    startY = e.pageY - tableWrapper.offsetTop;
+
+    scrollLeft = tableWrapper.scrollLeft;
+    scrollTop = tableWrapper.scrollTop;
+});
+
+tableWrapper.addEventListener("mouseleave", stopDragging);
+tableWrapper.addEventListener("mouseup", stopDragging);
+
+function stopDragging() {
+    isDragging = false;
+    tableWrapper.classList.remove("active");
+}
+
+tableWrapper.addEventListener("mousemove", function (e) {
+    if (!isDragging) return;
+
+    e.preventDefault();
+
+    const x = e.pageX - tableWrapper.offsetLeft;
+    const y = e.pageY - tableWrapper.offsetTop;
+
+    tableWrapper.scrollLeft = scrollLeft - (x - startX);
+    tableWrapper.scrollTop = scrollTop - (y - startY);
+});
+
+
 </script>
 
 @endsection

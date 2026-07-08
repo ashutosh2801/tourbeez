@@ -3,68 +3,118 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
-    
-    .manifest-grid {
-        font-size: 16px;
-    }
-
-    .manifest-grid th {
-        font-size: 14px;
-        font-weight: 600;
-        padding: 10px 8px;
-        background: #f1f5f9;
-    }
-
-    .manifest-grid td {
-        font-size: 14px;
-        padding: 10px 8px;
-        vertical-align: middle;
-    }
-
-    .manifest-grid td strong {
-        font-size: 14px;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .manifest-grid td p {
-        margin: 0;
-    }
-
-    .manifest-grid small {
-        font-size: 12px;
-        font-weight: 500;
-    }
-
-    .manifest-cell.has-orders:hover {
-        background-color: #eef6ff;
-        transition: 0.2s;
-    }
-
-    .total-pax {
-        font-size: 15px;
-        font-weight: 700;
-        color: #1f2937;
-    }
-
-    .assigned-pax {
-        font-size: 15px;
-        font-weight: 700;
-        color: #16a34a;
-    }
-
-    .manifest-grid td, .manifest-grid th {
-        vertical-align: middle;
-    }
-
-    .manifest-cell.has-orders:hover {
-        background-color: #f0f7ff;
-    }
-
-    .select2-container {
-    width: 100% !important;
+.table-scroll-wrapper {
+    max-width: 800px;
+    height: 420px;
+    overflow: auto;
+    cursor: grab;
+    border: 1px solid #dee2e6;
+    background: #fff;
 }
 
+.table-scroll-wrapper.active {
+    cursor: grabbing;
+}
+
+table {
+    min-width: 1000px;
+    user-select: none;
+    margin-bottom: 0;
+}
+
+th,
+td {
+    min-width: 150px !important;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #212529 !important;
+    color: #fff;
+}
+
+th:first-child,
+td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #f8f9fa !important;
+    font-weight: 600;
+    min-width: 300px !important;
+}
+
+thead th:first-child {
+    z-index: 4;
+}
+
+.manifest-grid {
+    font-size: 16px;
+}
+
+.manifest-grid th {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 8px;
+    background: #f1f5f9;
+}
+
+.manifest-grid td {
+    font-size: 14px;
+    padding: 10px 8px;
+    vertical-align: middle;
+}
+
+.manifest-grid td strong {
+    font-size: 14px;
+    font-weight: 700;
+    display:inline-block;
+    padding: 2px 8px;
+    background: #e2e8f0;
+    color: #1f2937;
+    border-radius: 10px;
+    margin-bottom: 8px;
+}
+
+.manifest-grid td p {
+    margin: 0;
+}
+
+.manifest-grid small {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.manifest-cell.has-orders:hover {
+    transition: 0.2s;
+}
+
+.total-pax {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.assigned-pax {
+    font-size: 15px;
+    font-weight: 700;
+    color: #16a34a;
+}
+
+.manifest-grid td, .manifest-grid th {
+    vertical-align: middle;
+}
+
+.manifest-cell.has-orders:hover {
+    background-color: #f0f7ff;
+}
+
+.select2-container {
+    width: 100% !important;
+}
 
 .select2-selection__choice {
     background: #607D8B !important;
@@ -83,16 +133,11 @@
     margin-bottom: 15px;
 }
 
-.manifest-grid {
-    table-layout: fixed;
-    width: 100%;
-}
-
 .manifest-grid th,
 .manifest-grid td {
     word-wrap: break-word;
     white-space: normal;
-    vertical-align: top;
+    vertical-align: middle;
 }
 
 /* Tours column (~60% of previous width) */
@@ -108,8 +153,32 @@
 .manifest-grid td:not(:first-child) {
     width: calc((100% - 120px) / 7);
 }
+.orders-container {
+    overflow: hidden;
+    display: none;
+}
 
+.toggle-orders {
+    transition: transform 0.3s ease;
+}
 
+.toggle-orders.active {
+    transform: rotate(-180deg);
+}
+.main-order-wrapper{
+    text-align:left;
+    font-size:13px;
+    line-height:1.5;
+    background-color:#01228b;
+    color: #fff;
+    padding:10px;
+    border-radius:10px;
+}
+.order-wrapper {border-top: 1px dotted #f9f9f9;}
+.order-wrapper span:first-child {width: 60px; display: inline-block; font-size: 12px;}
+.order-wrapper span:nth-child(2) {width: 10px; display: inline-block;}
+.order-wrapper span:nth-child(3) {width: 45px; display: inline-block;}
+.order-wrapper span:nth-child(4) {display: inline-block;}
 </style>
 
 <div class="card-primary mb-3">
@@ -159,18 +228,16 @@
 </div>
 
 <div class="card-primary bg-white border rounded-lg-custom">
-    <div class="card-body table-responsive p-0">
+    <div class="card-body table-responsive p-0" id="tableWrapper">
         <table class="table table-bordered table-sm manifest-grid">
             <thead>
                 <tr>
-                    <td>Tours</th>
-
-
+                    <th>Tours</th>
                     @foreach($dateRange as $d)
-                        <th class="text-center" style="min-width: 120px;">
-                            {{ $d->format('j-M-Y') }}<br>
-                            <small>{{ $d->format('l') }}</small>
-                        </th>
+                    <th class="text-center">
+                        {{ $d->format('j-M-Y') }}<br>
+                        <small>{{ $d->format('l') }}</small>
+                    </th>
                     @endforeach
                 </tr>
             </thead>
@@ -202,7 +269,6 @@
                         @foreach($dateRange as $d)
                             @php
                                 $dateKey = $d->toDateString();
-                                
 
                                 $cellOrders = collect($dates[$dateKey] ?? [])
                                     ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
@@ -217,10 +283,9 @@
                                     })
                                     ->values();
 
-                               $totalGuests = collect($cellOrders)->sum('guest_count');
+                                $totalGuests = collect($cellOrders)->sum('guest_count');
                                 
-
-                                    $driverNames = collect($cellOrders)
+                                $driverNames = collect($cellOrders)
                                     ->flatMap(function ($o) use ($selectedDriver, $selectedVehicle) {
 
                                         $driverIds = collect($o['driver_ids'] ?? []);
@@ -244,7 +309,7 @@
                                     ->implode(', ');
 
 
-                                    $vehicleNames = collect($cellOrders)
+                                $vehicleNames = collect($cellOrders)
                                     ->flatMap(function ($o) use ($selectedVehicle) {
 
                                         $vehicles = collect($o['vehicle_ids'] ?? []);
@@ -264,19 +329,22 @@
 
 
                             @endphp
-                            <td class="text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
-                                data-tour="{{ $tourTitle }}"
-                                data-date="{{ $dateKey }}"
-                                data-orders='@json($cellOrders)'
-                                data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}"
-                                style="cursor: {{ count($cellOrders) ? 'pointer' : 'default' }};">
-
+                            <td style="cursor: {{ count($cellOrders) ? 'pointer' : 'grab' }};">
 
                                 @if(count($cellOrders))
 
-                                    <div style="text-align:left;font-size:12px;line-height:1.5;">
+                                    <div class="main-order-wrapper">
 
-                                        <strong>Total - {{ $totalGuests }}</strong>
+                                        <div class="d-flex align-items-center justify-content-between w-80">
+                                            <strong>Total - {{ $totalGuests }}</strong>
+                                            <i class="fas fa-chevron-down toggle-orders" style="cursor:pointer;"></i>
+                                        </div>
+
+                                        <div class="orders-container mt-2 text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
+                                                data-tour="{{ $tourTitle }}"
+                                                data-date="{{ $dateKey }}"
+                                                data-orders='@json($cellOrders)'
+                                                data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}">                                        
 
                                         @foreach($cellOrders as $order)
                                             @if($order['tour_assignable'] != '1')
@@ -294,8 +362,7 @@
                                                     : 'NA';
                                             @endphp
 
-                                            <br>
-                                            
+                                            <div class="order-wrapper">                                            
                                             <span class="font-bold">{{ $order['order_number'] }}</span>
                                             -
                                             <span >{{ $order['guest_count'] }}</span>
@@ -303,8 +370,11 @@
                                            <span class="text-success"> {{ $driver }}</span>
                                             -
                                             <span class="text-primary">{{ $vehicle }}</span>
+                                            </div>
 
                                         @endforeach
+
+                                        </div>
 
                                     </div>
 
@@ -314,52 +384,51 @@
                             </td>
                         @endforeach
                     </tr>
-                    <tr style="background:#f8f9fa; font-weight:600;">
 
-                        @if($nextGroup !== $currentGroup)
+                    @if($nextGroup !== $currentGroup)
 
-                            <tr style="background:#eef2f7;font-weight:700;">
-                                <td>
-                                    Total {{ report_group_tour_status($currentGroup) }}
-                                </td>
+                    <tr style="background:#eef2f7;font-weight:700;">
+                        <td>
+                            Total {{ report_group_tour_status($currentGroup) }}
+                        </td>
 
-                                @foreach($dateRange as $d)
+                        @foreach($dateRange as $d)
 
-                                    @php
-                                        $groupTotal = 0;
+                            @php
+                                $groupTotal = 0;
 
-                                        foreach ($sortedGrid as $title => $tourDates) {
+                                foreach ($sortedGrid as $title => $tourDates) {
 
-                                            if (($tourReportGroupMap[$title] ?? 99) != $currentGroup) {
-                                                continue;
-                                            }
+                                    if (($tourReportGroupMap[$title] ?? 99) != $currentGroup) {
+                                        continue;
+                                    }
 
-                                            $orders = collect($tourDates[$d->toDateString()] ?? [])
-                                                ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
+                                    $orders = collect($tourDates[$d->toDateString()] ?? [])
+                                        ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
 
-                                                    $driverMatch = !$selectedDriver ||
-                                                        in_array($selectedDriver, $o['driver_ids'] ?? []);
+                                            $driverMatch = !$selectedDriver ||
+                                                in_array($selectedDriver, $o['driver_ids'] ?? []);
 
-                                                    $vehicleMatch = !$selectedVehicle ||
-                                                        in_array($selectedVehicle, $o['vehicle_ids'] ?? []);
+                                            $vehicleMatch = !$selectedVehicle ||
+                                                in_array($selectedVehicle, $o['vehicle_ids'] ?? []);
 
-                                                    return $driverMatch && $vehicleMatch;
-                                                });
+                                            return $driverMatch && $vehicleMatch;
+                                        });
 
-                                            $groupTotal += $orders->sum('guest_count');
-                                        }
-                                    @endphp
+                                    $groupTotal += $orders->sum('guest_count');
+                                }
+                            @endphp
 
-                                    <td class="text-center">
-                                        {{ $groupTotal }}
-                                    </td>
+                            <td class="text-center">
+                                {{ $groupTotal }}
+                            </td>
 
-                                @endforeach
-                            </tr>
+                        @endforeach
+                    </tr>
 
-                            @endif
+                    @endif
 
-                @empty
+                    @empty
                     <tr>
                         <td colspan="{{ count($dateRange) + 1 }}" class="text-center text-muted">
                             No tours found for this week.
@@ -1160,7 +1229,6 @@ $('#assignDriver').on('click', async function () {
         // Driver IDs
         // ----------------------------
 
-,
         let driverIds =
             row.find('.order-driver-select').val() || [];
 
@@ -1318,6 +1386,18 @@ $('#assignDriver').on('click', async function () {
 
     updateExportUrl();
 });
+
+$(document).on('click', '.toggle-orders', function () {
+
+    let icon = $(this);
+
+    icon.toggleClass('active');
+
+    icon.closest('.main-order-wrapper')
+        .find('.orders-container')
+        .slideToggle(300);
+
+});
 </script>
 <script>
     document.getElementById('today-date').addEventListener('click', function() {
@@ -1388,5 +1468,45 @@ $('#assignDriver').on('click', async function () {
 
     });
 </script>
+<script>
+    const tableWrapper = document.getElementById("tableWrapper");
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let scrollLeft = 0;
+    let scrollTop = 0;
+
+    tableWrapper.addEventListener("mousedown", function (e) {
+      isDragging = true;
+      tableWrapper.classList.add("active");
+
+      startX = e.pageX - tableWrapper.offsetLeft;
+      startY = e.pageY - tableWrapper.offsetTop;
+
+      scrollLeft = tableWrapper.scrollLeft;
+      scrollTop = tableWrapper.scrollTop;
+    });
+
+    tableWrapper.addEventListener("mouseleave", stopDragging);
+    tableWrapper.addEventListener("mouseup", stopDragging);
+
+    function stopDragging() {
+      isDragging = false;
+      tableWrapper.classList.remove("active");
+    }
+
+    tableWrapper.addEventListener("mousemove", function (e) {
+      if (!isDragging) return;
+
+      e.preventDefault();
+
+      const x = e.pageX - tableWrapper.offsetLeft;
+      const y = e.pageY - tableWrapper.offsetTop;
+
+      tableWrapper.scrollLeft = scrollLeft - (x - startX);
+      tableWrapper.scrollTop = scrollTop - (y - startY);
+    });
+  </script>
 @endsection
 </x-admin>
