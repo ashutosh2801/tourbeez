@@ -704,11 +704,12 @@
         </td>
     </tr>
     @endforelse
-
+    @if($rows)
     <tr style="background:#eef2f7;font-weight:700;">
     <td colspan="4" style="position: sticky;
     background: #fff;
     z-index: 50;">Grand Total</td>
+
 
     <td align="right">{{ number_format_with_currency($totals['product_price'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['extra_amount'],2) }}</td>
@@ -736,6 +737,7 @@
         @endforeach
     </td> -->
 </tr>
+@endif
 </tbody>
           </table>
 

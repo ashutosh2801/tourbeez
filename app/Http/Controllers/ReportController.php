@@ -1391,7 +1391,11 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                     'pagination' => new LengthAwarePaginator([], 0, 20),
                     'totals'     => $totals,
                 ]
-                : [];
+                : [
+                    'rows' => [],
+                    'pagination' => null,
+                    'totals'     => $totals,
+                ];
         }
 
         /*
@@ -2178,7 +2182,6 @@ public function exportCustomer(Request $request)
 
         $paginated = $request->filled('pagination');
         $data = $this->getInvoiceWithDetailsData($request, $paginated);
-        dd($data);
         $selectedProducts = Tour::whereIn(
             'id',
             (array)$request->product
@@ -2208,13 +2211,13 @@ public function exportCustomer(Request $request)
         $paginated = $request->filled('pagination');
 
         $data = $this->getInvoiceWithDetailsData($request, $paginated);
-
+        
         // Normalize the response
         if (!$paginated) {
             $data = [
-                'rows' => $data['rows'],
+                'rows' => isset($data['rows']) ?  $data['rows'] : [],
                 'pagination' => null,
-                'totals' => $data['totals']
+                'totals' => isset($data['totals']) ? $data['totals'] : []
             ];
         }
 
