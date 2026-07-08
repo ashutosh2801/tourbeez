@@ -3,6 +3,9 @@
 ')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
+        body.sidebar-open {
+            overflow: hidden;
+        }
         /* ✅ Keep container scoped */
         .dashboard-wrapper .container {
             max-width: 1400px;
@@ -132,78 +135,91 @@
         </div>
     </div>
 
-    <div id="filterPanel" style="display:none;">
-        <div class="card card-primary bg-white border rounded-lg-custom report-filter-box mb-2">
-
-            <div class="row">
-
-                <!-- TOUR DATE -->
-                <div class="col-md-3">
-                    <label>Tour Date</label>
-                    <input 
-                        type="text" 
-                        name="tour_date"
-                        id="tourDate"
-                        autocomplete="off"
-                        class="form-control aiz-date-range"
-                        data-advanced-range="true"
-                        data-separator=" - "
-                        placeholder="Select tour date"
-                        value="{{ request('tour_date') }}"
-                    >
-                </div>
-
-                <!-- PRODUCT -->
-                <div class="col-md-3">
-                    <label>Product</label>
-                    <select id="productFilter" name="product" class="form-control">
-                        @if(request('product') && request('product_text'))
-                            <option value="{{ request('product') }}" selected>
-                                {{ request('product_text') }}
-                            </option>
-                        @endif
-                    </select>
-                </div>
-
-                <!-- ORDER STATUS -->
-                <div class="col-md-2">
-                    <label>Order Status</label>
-                    <select name="order_status" id="orderStatus" class="form-control">
-                        <option value="">All</option>
-                        <option value="3">Pending supplier</option>
-                        <option value="4">Pending customer</option>
-                        <option value="5">Confirmed</option>
-                    </select>
-                </div>
-
-                <!-- PAY TYPE -->
-                <div class="col-md-2">
-                    <label>Pay Type</label>
-                    <select name="action_type" id="actionType" class="form-control">
-                        <option value="">All</option>
-                        <option value="pay_now">Pay Now</option>
-                        <option value="pay_later">Pay Later</option>
-                    </select>
-                </div>
-
-                <!-- SOURCE -->
-                <div class="col-md-2">
-                    <label>Source</label>
-                    <select name="partner" id="partner" class="form-control">
-                        <option value="">All</option>
-                        @foreach($partners as $partner)
-                            <option value="{{ ucfirst($partner->slug) }}">
-                                {{ $partner->name }}
-                            </option>
-                        @endforeach
-                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
-                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
-                    </select>
-                </div>
-
+    <div class="tour-search-filter">
+        <div id="filterSidebar" class="filter-sidebar">
+            <div class="filter-header">
+                <h5><i class="fas fa-filter"></i> Filters</h5>
+                <button type="button" id="closeFilter">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
+            <div class="filter-body">
+                <div class="row">
 
+                    <!-- TOUR DATE -->
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Tour Date</label>
+                            <input 
+                                type="text" 
+                                name="tour_date"
+                                id="tourDate"
+                                autocomplete="off"
+                                class="form-control aiz-date-range"
+                                data-advanced-range="true"
+                                data-separator=" - "
+                                placeholder="Select tour date"
+                                value="{{ request('tour_date') }}"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- PRODUCT -->
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Product</label>
+                            <select id="productFilter" name="product" class="form-control">
+                                @if(request('product') && request('product_text'))
+                                    <option value="{{ request('product') }}" selected>
+                                        {{ request('product_text') }}
+                                    </option>
+                                @endif
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- ORDER STATUS -->
+                    <div class="col-12">
+                        <div class="form-group">
+                        <label>Order Status</label>
+                        <select name="order_status" id="orderStatus" class="form-control">
+                            <option value="">All</option>
+                            <option value="3">Pending supplier</option>
+                            <option value="4">Pending customer</option>
+                            <option value="5">Confirmed</option>
+                        </select>
+                        </div>    
+                    </div>
+
+                    <!-- PAY TYPE -->
+                    <div class="col-12">
+                        <label>Pay Type</label>
+                        <select name="action_type" id="actionType" class="form-control">
+                            <option value="">All</option>
+                            <option value="pay_now">Pay Now</option>
+                            <option value="pay_later">Pay Later</option>
+                        </select>
+                    </div>
+
+                    <!-- SOURCE -->
+                    <div class="col-12">
+                        <label>Source</label>
+                        <select name="partner" id="partner" class="form-control">
+                            <option value="">All</option>
+                            @foreach($partners as $partner)
+                                <option value="{{ ucfirst($partner->slug) }}">
+                                    {{ $partner->name }}
+                                </option>
+                            @endforeach
+                            <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                            <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                        </select>
+                    </div>
+
+                </div>  
+            </div>
         </div>
+        <div id="filterOverlay"></div>
     </div>
 
    <!--  @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
@@ -726,27 +742,33 @@ document.getElementById('applyFilter').onclick = fetchDashboard;
 // };
 </script>
 <script>
-    let filterOpen = false;
+    $('#toggleFilter').click(function () {
 
-document.getElementById('toggleFilter').onclick = function () {
+        $('#filterSidebar').addClass('show');
 
-    const panel = document.getElementById('filterPanel');
+        $('#filterOverlay').addClass('show');
 
-    if (filterOpen) {
-        panel.style.display = 'none';
-        this.classList.remove('btn-danger');
-        this.classList.add('btn-secondary');
-        this.innerHTML = '<i class="fas fa-filter"></i> Filters';
-    } else {
-        panel.style.display = 'block';
-        this.classList.remove('btn-secondary');
-        this.classList.add('btn-danger');
-        this.innerHTML = '<i class="fas fa-times"></i> Hide Filters';
-    }
+        $('body').addClass('sidebar-open');
 
-    filterOpen = !filterOpen;
-};
+        $(this)
+            .removeClass('btn-secondary')
+            .addClass('btn-danger')
+            .html('<i class="fas fa-times"></i> Filters');
+    });
 
+    $('#closeFilter,#filterOverlay').click(function () {
+
+        $('#filterSidebar').removeClass('show');
+
+        $('#filterOverlay').removeClass('show');
+
+        $('body').removeClass('sidebar-open');
+
+        $('#toggleFilter')
+            .removeClass('btn-danger')
+            .addClass('btn-secondary')
+            .html('<i class="fas fa-filter"></i> Filters');
+    });
 </script>
     <script>
 

@@ -6,21 +6,6 @@
         .text-orange {
             color: #fd7e14;
         }
-        .filter-panel {
-            display: none;
-            animation: fadeSlide 0.3s ease-in-out;
-        }
-
-        @keyframes fadeSlide {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
 
         .select2-container--default .select2-selection--multiple .select2-selection__choice {
             background-color: #fd7e14;
@@ -34,6 +19,37 @@
 
         #excludeProductFilter + .select2-container .select2-selection--multiple .select2-selection__choice {
             background-color: #dc3545; /* red for excluded, orange for included */
+        }
+
+        @media(min-width:767px) {
+
+            .daterangepicker.show-calendar {
+                top: 245px !important;
+                left: auto;
+                right: 430px !important;
+            }
+
+            .daterangepicker.show-calendar:before,
+            .daterangepicker.show-calendar:after {
+                left: 595px;
+                border-bottom-color: #999;
+                rotate: 90deg;
+                top: 200px;
+            }
+
+            .daterangepicker.show-calendar:nth-of-type(2):before,
+            .daterangepicker.show-calendar:nth-of-type(2):after {
+                top: 140px;
+            }
+        }
+
+        @media(max-width:767px) {
+
+            .daterangepicker.show-calendar {
+                height: 200px;
+                overflow-y: scroll;
+            }
+
         }
 
     </style>
