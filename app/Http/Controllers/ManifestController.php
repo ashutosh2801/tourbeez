@@ -25,7 +25,7 @@ class ManifestController extends Controller
         $selectedVehicle = $request->input('vehicle_id');
 
         $startOfWeek = Carbon::parse($date);
-        $endOfWeek   = Carbon::parse($date)->copy()->addDays(4);
+        $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
 
         $driverPaxPerDay = [];   // [date][driver_id] => pax
         $driverNameMap = [];     // [driver_id] => name
@@ -179,10 +179,11 @@ class ManifestController extends Controller
                 $reportGroupTotals[$reportGroup][$tourDate] += $guestCount;
 
                 $tourDetail = $ot->tour?->detail;
-                $pickupTime = optional($orderDrivers->first())->pickup_time;
+                
 
                 $pickName = '';
                 $instruction = '';
+                $pickLocationTime = NULL;
 
                 if ($order->customer && $order->customer->pickup_name) {
 
@@ -200,10 +201,12 @@ class ManifestController extends Controller
                         ' - ' .
                         ($pickLocation?->time ?? '')
                     );
-
+                    $pickLocationTime = convertTo24HourFormat($pickLocation?->time);
                     $instruction = $order->customer->instructions;
                 }
 
+                $pickupTime = optional($orderDrivers->first())->pickup_time ?? $pickLocationTime;
+                
                 $grid[$tourTitle][$tourDate][] = [
                     'order_id'           => $order->id,
                     'order_encrypt_id'   => $encryptedOrderId,
@@ -320,10 +323,11 @@ class ManifestController extends Controller
                 }
 
                 $reportGroupTotals[$reportGroup][$extraDate] += $extraGuestCount;
-                $pickupTime = optional($orderDrivers->first())->pickup_time;
+                
 
                 $pickName = '';
                 $instruction = '';
+                $pickLocationTime = NULL;
 
                 if ($order->customer && $order->customer->pickup_name) {
 
@@ -341,9 +345,14 @@ class ManifestController extends Controller
                         ' - ' .
                         ($pickLocation?->time ?? '')
                     );
+                    $pickLocationTime = convertTo24HourFormat($pickLocation?->time);
 
                     $instruction = $order->customer->instructions;
                 }
+
+                $pickupTime = optional($orderDrivers->first())->pickup_time ?? $pickLocationTime;
+
+                
 
                 $grid['Next Day Pick Up'][$extraDate][] = [
                     'order_id' => $order->id,

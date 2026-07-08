@@ -1862,4 +1862,11 @@ if (!function_exists('currencyConvertWithoutRound')) {
         }
     }
 
+    if (!function_exists('convertTo24HourFormat')) {
+        function convertTo24HourFormat($time)
+        {
+            return date('H:i', strtotime($time));
+        }
+    }
+
 ?>

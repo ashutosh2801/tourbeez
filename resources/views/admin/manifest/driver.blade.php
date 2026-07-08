@@ -1160,6 +1160,7 @@ $('#assignDriver').on('click', async function () {
         // Driver IDs
         // ----------------------------
 
+,
         let driverIds =
             row.find('.order-driver-select').val() || [];
 
