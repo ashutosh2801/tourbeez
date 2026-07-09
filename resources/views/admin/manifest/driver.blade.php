@@ -42,9 +42,9 @@ td:first-child {
     position: sticky;
     left: 0;
     z-index: 2;
-    background: #f8f9fa !important;
     font-weight: 600;
     min-width: 300px !important;
+    vertical-align: middle !important;
 }
 
 thead th:first-child {
@@ -76,7 +76,6 @@ thead th:first-child {
     background: #e2e8f0;
     color: #1f2937;
     border-radius: 10px;
-    margin-bottom: 8px;
 }
 
 .manifest-grid td p {
@@ -108,10 +107,6 @@ thead th:first-child {
     vertical-align: middle;
 }
 
-.manifest-cell.has-orders:hover {
-    background-color: #f0f7ff;
-}
-
 .select2-container {
     width: 100% !important;
 }
@@ -140,23 +135,6 @@ thead th:first-child {
     vertical-align: middle;
 }
 
-/* Tours column (~60% of previous width) */
-.manifest-grid th:first-child,
-.manifest-grid td:first-child {
-    width: 220px;
-    min-width: 220px;
-    max-width: 220px;
-}
-
-/* All remaining columns equal width */
-.manifest-grid th:not(:first-child),
-.manifest-grid td:not(:first-child) {
-    width: calc((100% - 120px) / 7);
-}
-.orders-container {
-    overflow: hidden;
-    display: none;
-}
 
 .toggle-orders {
     transition: transform 0.3s ease;
@@ -168,17 +146,66 @@ thead th:first-child {
 .main-order-wrapper{
     text-align:left;
     font-size:13px;
-    line-height:1.5;
+    line-height:1.9;
     background-color:#01228b;
     color: #fff;
     padding:10px;
     border-radius:10px;
+    position: relative;
 }
-.order-wrapper {border-top: 1px dotted #f9f9f9;}
-.order-wrapper span:first-child {width: 60px; display: inline-block; font-size: 12px;}
-.order-wrapper span:nth-child(2) {width: 10px; display: inline-block;}
-.order-wrapper span:nth-child(3) {width: 45px; display: inline-block;}
-.order-wrapper span:nth-child(4) {display: inline-block;}
+.order-wrapper {border-top: 1px dotted #f9f9f9;line-height: 3rem;}
+.order-wrapper span:first-child {width: 7cqmin0px; display: inline-block; font-size: 14px;}
+.order-wrapper span:nth-child(2) {width: 40px; display: inline-block; font-size: 14px;}
+.order-wrapper span:nth-child(3) {width: 65px; display: inline-block; font-size: 14px;}
+.order-wrapper span:nth-child(4) {display: inline-block; font-size: 14px;}
+
+.orders-container {
+    overflow: hidden;
+    display: none;
+    position: absolute;
+    left: -45%;
+    top: 50px;
+    overflow: visible;
+    background: #9C27B0;
+    z-index: 11;
+    width: 360px;
+    border-radius: 8px 8px;
+}
+.orders-container:hover {
+    background: #01228c;
+}
+
+/* Top Arrow */
+.orders-container::before {
+    content: "";
+    position: absolute;
+    top: -10px;
+    right: 50%;
+    transform: translateX(50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #9d26b0;
+}
+
+.orders-container::after {
+    content: "";
+    position: absolute;
+    top: -9px;
+    right: 50%;
+    transform: translateX(50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #9d26b0;
+}
+
+.orders-container:hover::before, 
+.orders-container:hover::after {
+    border-bottom: 10px solid #01228c;
+}
 </style>
 
 <div class="card-primary mb-3">
@@ -335,10 +362,151 @@ thead th:first-child {
 
                                     <div class="main-order-wrapper">
 
-                                        <div class="d-flex align-items-center justify-content-between w-80">
+                                        <!-- <div class="d-flex align-items-center justify-content-between w-80">
                                             <strong>Total - {{ $totalGuests }}</strong>
                                             <i class="fas fa-chevron-down toggle-orders" style="cursor:pointer;"></i>
+                                        </div> -->
+
+                                        @php
+                                        $driverSummary = collect($cellOrders)
+                                            ->flatMap(function ($order) use ($selectedDriver, $selectedVehicle) {
+                                                $drivers = $order['driver_ids'] ?? [];
+                                                $driverNames = $order['driver_names'] ?? [];
+                                                $vehicles = $order['vehicle_names'] ?? [];
+                                                $guestCount = $order['guest_count'] ?? 0;
+                                                if (empty($driverNames)) {
+                                                    return [[
+                                                        'driver'  => 'NA',
+                                                        'vehicle' => 'NA',
+                                                        'pax'     => 0,
+                                                    ]];
+                                                }
+
+                                                $rows = [];
+
+
+
+                                                foreach ($drivers as $index => $driverId) {
+
+                                                    // Driver filter
+                                                    if ($selectedDriver && $driverId != $selectedDriver) {
+                                                        continue;
+                                                    }
+
+                                                    // Vehicle filter
+                                                    $vehicleId = $order['vehicle_ids'][$index] ?? null;
+
+                                                    if ($selectedVehicle && $vehicleId != $selectedVehicle) {
+                                                        continue;
+                                                    }
+
+                                                    $driverName = trim($driverNames[$index] ?? '');
+                                                    $driverName = ($driverName === '' || strtoupper($driverName) === 'NA')
+                                                        ? 'NA'
+                                                        : $driverName;
+
+                                                    $vehicleName = trim($vehicles[$index] ?? '');
+                                                    $vehicleName = ($vehicleName === '' || strtoupper($vehicleName) === 'NA')
+                                                        ? 'NA'
+                                                        : $vehicleName;
+
+                                                    $rows[] = [
+                                                        'driver'  => $driverName,
+                                                        'vehicle' => $vehicleName,
+                                                        'pax'     => $guestCount,
+                                                    ];
+                                                }
+
+                                                return $rows;
+                                            })
+                                            ->groupBy('driver')
+                                            ->map(function ($items, $driver) {
+
+                                                $driverTotal = $items->sum('pax');
+
+                                                $busSummary = $items
+                                                    ->groupBy('vehicle')
+                                                    ->map(function ($busItems, $bus) {
+                                                        return '<i class="fas fa-shuttle-van"></i> '.$bus.' x'.$busItems->sum('pax');
+                                                    })
+                                                    ->implode(', ');
+
+                                                return '<i class="fas fa-user-tie"></i> '.$driverTotal.' - '.$driver.' ('.$busSummary.')';
+                                            });
+                                    @endphp
+
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="text-truncate" style="font-size:13px;">
+                                            <strong>Total - {{ $totalGuests }} </strong>
+
+                                            <p>
+
+                                            @if($driverSummary)
+                                                |
+                                                <span>
+                                                    {!! collect($cellOrders)
+                                                        ->flatMap(function ($order) use ($selectedDriver, $selectedVehicle) {
+                                                            $drivers = $order['driver_ids'] ?? [];
+                                                            $driverNames = $order['driver_names'] ?? [];
+                                                            $vehicles = $order['vehicle_names'] ?? [];
+                                                            $guestCount = $order['guest_count'] ?? 0;
+
+                                                            if (empty($drivers)) {
+                                                                    return [[
+                                                                        'driver'  => 'NA',
+                                                                        'vehicle' => 'NA',
+                                                                        'pax'     => 0,
+                                                                    ]];
+                                                                }
+
+                                                            $rows = [];
+
+                                                            foreach ($drivers as $index => $driverId) {
+
+                                                                if ($selectedDriver && $driverId != $selectedDriver) {
+                                                                    continue;
+                                                                }
+
+                                                                $vehicleId = $vehicleIds[$index] ?? null;
+
+                                                                if ($selectedVehicle && $vehicleId != $selectedVehicle) {
+                                                                    continue;
+                                                                }
+                                                                $rows[] = [
+                                                                    'driver' => $driverNames[$index] ?? 'Unknown',
+                                                                    'vehicle' => $vehicles[$index] ?? 'NA',
+                                                                    'pax' => $guestCount,
+                                                                ];
+                                                            }
+
+                                                            return $rows;
+                                                        })
+                                                        ->groupBy('driver')
+                                                        ->map(function ($items, $driver) {
+
+                                                            $driverTotal = $items->sum('pax');
+
+                                                            $busSummary = $items
+                                                                ->groupBy('vehicle')
+                                                                ->map(function ($busItems, $bus) {
+                                                                    return '<i class="fas fa-shuttle-van"></i> '.$bus.' x'.$busItems->sum('pax');
+                                                                })
+                                                                ->implode(', ');
+
+                                                            return '<i class="fas fa-user-tie"></i> '.$driverTotal.' - '.$driver.' ('.$busSummary.')';
+                                                        })
+                                                        ->implode(' | ') !!}
+                                                </span>
+
+                                            @endif
+
+
                                         </div>
+
+                                        <i class="fas fa-chevron-down toggle-orders ms-2" style="cursor:pointer;"></i>
+                                    </div>
+                                            <!-- <i class="fas fa-chevron-down toggle-orders" style="cursor:pointer;"></i>
+                                        </div> -->
 
                                         <div class="orders-container mt-2 text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
                                                 data-tour="{{ $tourTitle }}"
@@ -365,11 +533,11 @@ thead th:first-child {
                                             <div class="order-wrapper">                                            
                                             <span class="font-bold">{{ $order['order_number'] }}</span>
                                             -
-                                            <span >{{ $order['guest_count'] }}</span>
+                                            <span ><i class="fas fa-users"></i> {{ $order['guest_count'] }}</span>
                                             -
-                                           <span class="text-success"> {{ $driver }}</span>
+                                           <span class="text-success"><i class="fas fa-user-tie"></i>  {{ $driver }}</span>
                                             -
-                                            <span class="text-primary">{{ $vehicle }}</span>
+                                            <span class="text-primary"><i class="fas fa-shuttle-van"></i> {{ $vehicle }}</span>
                                             </div>
 
                                         @endforeach
@@ -385,7 +553,7 @@ thead th:first-child {
                         @endforeach
                     </tr>
 
-                    @if($nextGroup !== $currentGroup)
+                    @if($nextGroup !== $currentGroup && $currentGroup === 1)
 
                     <tr style="background:#eef2f7;font-weight:700;">
                         <td>
@@ -478,29 +646,71 @@ thead th:first-child {
 
 {{-- MODAL --}}
 <div class="modal fade" id="driverModal">
-    <div class="modal-dialog modal-xl" style="max-width:80%;">
+    <div class="modal-dialog modal-xl" style="max-width:900px;">
             <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Assign Driver</h5>
+                <h5 class="modal-title"><strong>Assign Driver</strong> - <span id="modal_tour_title"></span></h5>
                 <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="modal_date">
 
-                <div class="mb-3">
-                    <label class="form-label"><strong id="modal_tour_title"></strong></label>
-                    <div class="text-muted" id="modal_date_display"></div>
-                </div>                
-
-                <label class="form-label">Orders</label>
+                <label class="form-label">Orders - <span class="text-muted" id="modal_date_display"></span></label>
                 <div id="order_list" class="order-list bg-light" style="min-height: 300px;"></div>
 
-                <!-- <div class="mt-2">
-                    <label>
-                        <input type="checkbox" id="select_all_orders" checked> Apply to all orders
-                    </label>
-                </div> -->
+                <div id="bulkAssignPanel" class="border rounded p-3 mt-3" style="display:none;">
 
+                    <h6>Bulk Assignment</h6>
+
+                    <div class="row">
+
+                        <div class="col-md-6">
+                            <label>Drivers</label>
+
+                            <select
+                                id="bulkDriver"
+                                class="form-control"
+                                multiple
+                                data-live-search="true">
+
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label>Vehicle</label>
+
+                            <select
+                                id="bulkVehicle"
+                                class="form-control aiz-selectpicker"
+                                data-live-search="true">
+
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="mt-3">
+
+                        <button
+                            type="button"
+                            class="btn btn-success"
+                            id="applyBulkAssignment">
+
+                            Apply To All Orders
+
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            id="bulkAssignBtnBack">
+
+                            Cancel
+
+                        </button>
+
+                    </div>
+
+                </div>
 
                 <div class="mt-3">
                     <button type="button"
@@ -510,61 +720,6 @@ thead th:first-child {
                     </button>
                 </div>
 
-<div id="bulkAssignPanel"
-     class="border rounded p-3 mt-3"
-     style="display:none;">
-
-    <h6>Bulk Assignment</h6>
-
-    <div class="row">
-
-        <div class="col-md-6">
-            <label>Drivers</label>
-
-            <select
-                id="bulkDriver"
-                class="form-control"
-                multiple
-                data-live-search="true">
-
-            </select>
-        </div>
-
-        <div class="col-md-6">
-            <label>Vehicle</label>
-
-            <select
-                id="bulkVehicle"
-                class="form-control aiz-selectpicker"
-                data-live-search="true">
-
-            </select>
-        </div>
-
-    </div>
-
-    <div class="mt-3">
-
-        <button
-            type="button"
-            class="btn btn-success"
-            id="applyBulkAssignment">
-
-            Apply To All Orders
-
-        </button>
-        <button
-            type="button"
-            class="btn btn-secondary"
-            id="bulkAssignBtnBack">
-
-            Cancel
-
-        </button>
-
-    </div>
-
-</div>
             </div>
             <div class="modal-footer">
                 <!-- <button type="button" class="btn btn-danger" id="removeDriver">
@@ -830,7 +985,7 @@ orders.forEach(function (o) {
     <div class="row align-items-center">
 
         <!-- Order Details -->
-        <div class="col-md-3">
+        <div class="col-md-2">
 
             <input
                 type="checkbox"
@@ -848,28 +1003,25 @@ orders.forEach(function (o) {
 
             <br>
 
-            <small>👥 ${o.guest_count} Pax
+            <small><i class="fas fa-users"></i> ${o.guest_count} Pax            
 
-            
-
-            <button
-                type="button"
-                class="mt-2 order-info-btn"
+            <span
+                class="mt-2 order-info-btn cursor-default"
                 data-order='${JSON.stringify(o)}'>
                 <i class="bi bi-info-circle"></i> Info
-            </button>
+            </span>
         </small>
         </div>
 
         <!-- Pickup Time -->
-        <div class="col-md-2">
+        <div class="col-md-3">
 
             <label class="small text-muted mb-1">
                 Pickup Time
             </label>
 
             <input
-                type="time"
+                type="time" step="300"
                 class="form-control order-pickup-time mb-3"
                 value="${o.pickup_time ? o.pickup_time.substring(0,5) : ''}"
                 data-order-id="${o.order_id}">
@@ -1390,13 +1542,15 @@ $('#assignDriver').on('click', async function () {
 $(document).on('click', '.toggle-orders', function () {
 
     let icon = $(this);
+    let currentContainer = icon.closest('.main-order-wrapper').find('.orders-container');
 
+    // Close all other open dropdowns
+    $('.orders-container').not(currentContainer).slideUp(300);
+    $('.toggle-orders').not(icon).removeClass('active');
+
+    // Toggle current dropdown
+    currentContainer.slideToggle(300);
     icon.toggleClass('active');
-
-    icon.closest('.main-order-wrapper')
-        .find('.orders-container')
-        .slideToggle(300);
-
 });
 </script>
 <script>
@@ -1427,22 +1581,17 @@ $(document).on('click', '.toggle-orders', function () {
             width: 700,
 
             html: `
-                <table class="table table-bordered table-sm text-start mb-0">
+                <table class="table table-bordered table-sm text-start mb-0 text-left" style="width:auto">
 
                     <tr>
-                        <th width="35%">Order No</th>
+                        <th style="width:150px">Order No</th>
                         <td>${o.order_number}</td>
                     </tr>
 
                     <tr>
                         <th>Customer</th>
                         <td>${o.customer ?? '-'}</td>
-                    </tr>
-
-                    <tr>
-                        <th>Pax</th>
-                        <td>${o.guest_count}</td>
-                    </tr>
+                    </tr>                    
 
                     <tr>
                         <th>Pickup Location</th>

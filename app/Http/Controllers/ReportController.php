@@ -1370,19 +1370,28 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
         || $request->filled('action_type')
         || $request->filled('exclude_product');
 
+        $addonTotals = [
+            'qty' => 0,
+            'price' => 0,
+            'total' => 0,
+        ];
+
         $totals = [
             'product_price'      => 0,
             'extra_amount'       => 0,
             'tax_amount'         => 0,
             'discount_amount'    => 0,
             'customer_total'     => 0,
+            'exclude_total'     => 0,
             'balance_amount'     => 0,
             'transport_cost'     => 0,
             'tour_selling_price' => 0,
             'tour_selling_tax'   => 0,
             'net_total'          => 0,
             'profit'             => 0,
+            'addonTotals'        => $addonTotals,
         ];
+
 
         if (!$hasFilter) {
             return $paginate
@@ -1788,7 +1797,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
             // $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
 
             if ($isExcludedFromPayment) {
-
+                $excludeTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
                 $customerTotal = 0;
                 $tax_amount = 0;
                 $discount_amount = 0;
@@ -1800,6 +1809,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 $sellingPriceBase = 0;
 
                 $profit = 0;
+                
 
             } else {
 
@@ -1910,6 +1920,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 'tax_amount' => $isExcludedFromPayment ? 0 :  round(currencyConvertWithoutRound($tax_amount, $order->currency, 'CAD'), 2),
                 'discount_amount' => $isExcludedFromPayment ? 0 :  round(currencyConvertWithoutRound($discount_amount, $order->currency, 'CAD'), 2),
                 'customer_total' =>  $isExcludedFromPayment ? 0 : round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
+                'exclude_total' =>  $isExcludedFromPayment ? round(currencyConvertWithoutRound($excludeTotal, $order->currency, 'CAD'), 2) :0,
                 'balance_amount' => $isExcludedFromPayment ? 0 : round(currencyConvertWithoutRound($customerTotal - $order->booked_amount, $order->currency, 'CAD'), 2),
 
                 /*
@@ -1941,6 +1952,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
             $totals['tax_amount']         += $row['tax_amount'];
             $totals['discount_amount']    += $row['discount_amount'];
             $totals['customer_total']     += $row['customer_total'];
+            $totals['exclude_total']     +=  $row['exclude_total'];
             $totals['balance_amount']     += $row['balance_amount'];
             $totals['transport_cost']     += $row['transport_cost'];
             $totals['tour_selling_price'] += $row['tour_selling_price'];
@@ -1961,7 +1973,13 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 $row[$key.'_tax']   = $extraColumns[$key]['tax'];
                 $row[$key.'_fee']   = $extraColumns[$key]['fee'];
                 $row[$key.'_total'] = $extraColumns[$key]['total'];
+
+                $addonTotals['qty'] += $row[$key.'_quant'] ?? 0;
+                $addonTotals['price'] += $row[$key.'_price'] ?? 0;
+                $addonTotals['total'] += $row[$key.'_total'] ?? 0;
             }
+            $totals['addonTotals']    = $addonTotals;
+
             // dd($row);
             $rows[] = $row;
         }

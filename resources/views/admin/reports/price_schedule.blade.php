@@ -540,6 +540,7 @@
         <th>Tax Amount</th>
         <th>Discount</th>
         <th>Customer Total</th>
+        <th>Excluded Total</th>
         <th>Order Balance</th>
 
         <th>Transport Cost - Tax</th>
@@ -636,6 +637,7 @@
     <td align="right">{{ number_format_with_currency($row['discount_amount'],2) }}</td>
 
     <td align="right">{{ number_format_with_currency($row['customer_total'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($row['exclude_total'],2) }}  </td>
 
     <td align="right">{{ number_format_with_currency($row['balance_amount'],2) }}</td>
 
@@ -661,7 +663,7 @@
 
     @if(
         !empty($row[$key.'_desc']) ||
-        !empty($row[$key.'_qty']) ||
+        !empty($row[$key.'_quant']) ||
         !empty($row[$key.'_price']) ||
         !empty($row[$key.'_tax']) ||
         !empty($row[$key.'_fee']) ||
@@ -671,7 +673,7 @@
         <strong>{{ $row[$key.'_desc'] ?? '-' }}</strong><br>
 
         Qty :
-        {{ $row[$key.'_qty'] ?? 0 }} |
+        {{ $row[$key.'_quant'] ?? 0 }} |
 
         <!-- <br> -->
 
@@ -716,6 +718,7 @@
     <td align="right">{{ number_format_with_currency($totals['tax_amount'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['discount_amount'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['exclude_total'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['transport_cost'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['tour_selling_price'],2) }}</td>
@@ -726,6 +729,21 @@
     <td align="right">{{ number_format_with_currency($totals['net_total'],2) }}</td>
 
     <td align="right">{{ number_format_with_currency($totals['profit'],2) }}</td>
+
+    <td>
+    <strong>Qty:</strong>
+    {{ $totals['addonTotals']['qty'] }}
+
+    <br>
+
+    <strong>Price:</strong>
+    {{ number_format_with_currency($totals['addonTotals']['price'], 2) }}
+
+    <br>
+
+    <strong>Total:</strong>
+    {{ number_format_with_currency($totals['addonTotals']['total'], 2) }}
+</td>
 
     <!-- <td>
         @foreach($addonKeys as $key)
