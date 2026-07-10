@@ -141,7 +141,7 @@
     width: 20px;
     min-width: 20px;
     max-width: 20px;
-    background: #fff;
+    background: #f1f5f9;
     z-index: 20;
 }
 
@@ -153,7 +153,7 @@
     width: 130px;
     min-width: 130px;
     max-width: 130px;
-    background: #fff;
+    background: #f1f5f9;
     z-index: 20;
 }
 
@@ -165,7 +165,7 @@
     width: 150px;
     min-width: 150px;
     max-width: 150px;
-    background: #fff;
+    background: #f1f5f9;
     z-index: 20;
 }
 
@@ -177,7 +177,7 @@
     width: 180px;
     min-width: 180px;
     max-width: 180px;
-    background: #fff;
+    background: #f1f5f9;
     z-index: 20;
 }
 
@@ -214,17 +214,63 @@
 
 .table thead th {
     background: #212529 !important;
-    color: #fff;
+    /*color: #fff;*/
 }
 
 .table th:nth-child(-n+4),
 .table td:nth-child(-n+4) {
-    background: #fff;
+    /*background: #fff;*/
 }
 
 .table td:nth-child(-n+4),
 .table th:nth-child(-n+4) {
     box-shadow: 2px 0 4px rgba(0,0,0,.08);
+}
+
+
+
+.table tfoot td {
+    font-weight: 600;
+}
+
+/* Freeze first four columns */
+.table tfoot .summary-label{
+    position: sticky;
+    left: 0;
+    z-index: 40;
+    background: inherit;
+}
+
+.summary-expense{
+    background:#fff8e1;
+}
+
+.summary-total{
+    background:#ffeeba;
+}
+
+.summary-net{
+    background:#e8f4fd;
+}
+
+.summary-profit{
+    background:#d4edda;
+}
+
+/* Freeze the first cell (colspan=4) */
+.table tfoot td.summary-label{
+    position: sticky;
+    left: 0;
+    z-index: 100;
+    background: inherit;
+}
+
+/* Freeze the amount column (5th column) ONLY IN FOOTER */
+.table tfoot td:nth-child(2){
+    position: sticky;
+    left: 480px; /* 20 + 130 + 150 + 180 */
+    z-index: 100;
+    background: inherit;
 }
 </style>
 
@@ -744,20 +790,72 @@
     <strong>Total:</strong>
     {{ number_format_with_currency($totals['addonTotals']['total'], 2) }}
 </td>
-
-    <!-- <td>
-        @foreach($addonKeys as $key)
-            @if(($addonTotals[$key] ?? 0) > 0)
-                <strong>{{ ucwords(str_replace('_', ' ', $key)) }}</strong><br>
-                Total:
-                <strong>{{ number_format_with_currency($addonTotals[$key],2) }}</strong><br>
-            @endif
-        @endforeach
-    </td> -->
 </tr>
+
+
+
+
+
 @endif
 </tbody>
+@if($rows)
+<tfoot class="table-footer">
+        @foreach($businessExpense['expenses'] as $expense)
+        <tr class="summary-expense">
+            <td colspan="4" class="summary-label">
+                {{ ucwords($expense->category) }}
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($expense->amount,2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+        @endforeach
+
+        <tr class="summary-total">
+            <td colspan="4" class="summary-label">
+                Total Business Expense
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($businessExpense['total'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+
+        <tr class="summary-net">
+            <td colspan="4" class="summary-label">
+                Net Total + Business Expense
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($totals['net_total'] + $businessExpense['total'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+
+        <tr class="summary-profit">
+            <td colspan="4" class="summary-label">
+                Final Profit
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency(
+                    $totals['customer_total'] - ($totals['net_total'] + $businessExpense['total']),
+                    2
+                ) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+    </tfoot>
+    @endif
           </table>
+
 
           {{-- PAGINATION --}}
           @if($orders instanceof \Illuminate\Contracts\Pagination\Paginator)

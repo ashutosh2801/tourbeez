@@ -7,6 +7,7 @@ use App\Exports\InvoiceWithDetailsExport;
 use App\Exports\OrderPriceScheduleExport;
 use App\Exports\PriceScheduleExport;
 use App\Exports\RevenueExport;
+use App\Models\BusinessExpense;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Partner;
@@ -2229,13 +2230,16 @@ public function exportCustomer(Request $request)
         $paginated = $request->filled('pagination');
 
         $data = $this->getInvoiceWithDetailsData($request, $paginated);
+
+        $businessExpense = $this->getBusinessExpenses($request);
         
         // Normalize the response
         if (!$paginated) {
             $data = [
                 'rows' => isset($data['rows']) ?  $data['rows'] : [],
                 'pagination' => null,
-                'totals' => isset($data['totals']) ? $data['totals'] : []
+                'totals' => isset($data['totals']) ? $data['totals'] : [],
+                'businessExpense' => $businessExpense
             ];
         }
 
@@ -2256,6 +2260,7 @@ public function exportCustomer(Request $request)
             'partners'          => Partner::get(),
             'selectedProducts'  => $selectedProducts,
             'excludedProducts'  => $excludedProducts,
+             'businessExpense' => $businessExpense,
             'addonKeys'         => collect($data['rows'][0] ?? [])
                 ->keys()
                 ->filter(fn($key) => str_contains($key, '_desc'))
@@ -2269,9 +2274,9 @@ public function exportCustomer(Request $request)
 
         ini_set('memory_limit', '1024M');
         $data = $this->getInvoiceWithDetailsData($request, false);
-        
+
         return Excel::download(
-            new OrderPriceScheduleExport($data),
+            new OrderPriceScheduleExport($data['rows']),
             'price_schedule_' . now()->format('Ymd_His') . '.xlsx'
         );
     }
@@ -2434,6 +2439,46 @@ public function exportCustomer(Request $request)
         'product_name' => $order->product_name,
     ];
 }
+
+    private function getBusinessExpenses(Request $request)
+    {
+        $query = BusinessExpense::query();
+
+        // Date Filter
+        if ($request->filled('booking_date')) {
+            try {
+                [$start, $end] = explode(' - ', $request->booking_date);
+
+                $query->whereBetween('expense_date', [
+                    Carbon::parse($start)->startOfDay(),
+                    Carbon::parse($end)->endOfDay(),
+                ]);
+            } catch (\Exception $e) {
+                //
+            }
+        }
+
+        // Product Filter
+        if ($products = array_filter((array) $request->product)) {
+            $query->whereIn('tour_id', $products);
+        }
+
+        // Partner Filter
+        if ($partners = array_filter((array) $request->partner)) {
+            $query->whereIn('partner_id', $partners);
+        }
+
+        $expenses = $query
+            ->select('category', DB::raw('SUM(amount) as amount'))
+            ->groupBy('category')
+            ->orderBy('category')
+            ->get();
+
+        return [
+            'expenses' => $expenses,
+            'total' => $expenses->sum('amount'),
+        ];
+    }
 
 
     }

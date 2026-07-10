@@ -1868,5 +1868,29 @@ if (!function_exists('currencyConvertWithoutRound')) {
             return date('H:i', strtotime($time));
         }
     }
+    if (!function_exists('business_expense_categories')) {
+
+        function business_expense_categories()
+        {
+            return [
+                'marketing'       => 'Marketing',
+                'facebook_ads'    => 'Facebook Ads',
+                'google_ads'      => 'Google Ads',
+                'instagram_ads'   => 'Instagram Ads',
+                'influencer'      => 'Influencer',
+                'commission'      => 'Commission',
+                'salary'          => 'Salary',
+                'software'        => 'Software',
+                'office'          => 'Office',
+                'travel'          => 'Travel',
+                'refund'          => 'Refund',
+                'bank_charges'    => 'Bank Charges',
+                'payment_gateway' => 'Payment Gateway',
+                'miscellaneous'   => 'Miscellaneous',
+                'other'           => 'Other',
+            ];
+        }
+
+    }
 
 ?>
