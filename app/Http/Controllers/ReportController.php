@@ -1345,179 +1345,179 @@ public function invoiceWithDetails(Request $request)
     ]);
 }
 
-public function invoiceWithDetailsExport(Request $request)
-{
-    ini_set('memory_limit', '1024M');
-    $data = $this->getInvoiceWithDetailsData($request, false);
-
-    return Excel::download(
-        new \App\Exports\InvoiceWithDetailsExport($data),
-        'invoice-details' . now()->format('Ymd_His') . '.xlsx'
-    );
-}
-
-
-public function getInvoiceWithDetailsData($request, $paginate = false)
+    public function invoiceWithDetailsExport(Request $request)
     {
-        $excludedStatuses = [1, 2, 6, 7];
-        $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
+        ini_set('memory_limit', '1024M');
+        $data = $this->getInvoiceWithDetailsData($request, false);
 
-        $hasFilter = $request->filled('booking_date')
-        || $request->filled('tour_date')
-        || $request->filled('product')
-        || $request->filled('order_status')
-        || $request->filled('payment_status')
-        || $request->filled('partner')
-        || $request->filled('action_type')
-        || $request->filled('exclude_product');
-
-        $addonTotals = [
-            'qty' => 0,
-            'price' => 0,
-            'total' => 0,
-        ];
-
-        $totals = [
-            'product_price'      => 0,
-            'extra_amount'       => 0,
-            'tax_amount'         => 0,
-            'discount_amount'    => 0,
-            'customer_total'     => 0,
-            'exclude_total'     => 0,
-            'balance_amount'     => 0,
-            'transport_cost'     => 0,
-            'tour_selling_price' => 0,
-            'tour_selling_tax'   => 0,
-            'net_total'          => 0,
-            'profit'             => 0,
-            'addonTotals'        => $addonTotals,
-        ];
+        return Excel::download(
+            new \App\Exports\InvoiceWithDetailsExport($data),
+            'invoice-details' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
 
 
-        if (!$hasFilter) {
-            return $paginate
-                ? [
-                    'rows' => [],
-                    'pagination' => new LengthAwarePaginator([], 0, 20),
-                    'totals'     => $totals,
-                ]
-                : [
-                    'rows' => [],
-                    'pagination' => null,
-                    'totals'     => $totals,
-                ];
-        }
+    public function getInvoiceWithDetailsData($request, $paginate = false)
+    {
+            $excludedStatuses = [1, 2, 6, 7];
+            $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
 
-        /*
-        |--------------------------------------------------------------------------
-        | MAPS
-        |--------------------------------------------------------------------------
-        */
+            $hasFilter = $request->filled('booking_date')
+            || $request->filled('tour_date')
+            || $request->filled('product')
+            || $request->filled('order_status')
+            || $request->filled('payment_status')
+            || $request->filled('partner')
+            || $request->filled('action_type')
+            || $request->filled('exclude_product');
 
-        // tour_extra_id → addon_id
-        $tourExtraMap = DB::table('addon_tour')
-            ->pluck('addon_id','id')
-            ->toArray();
-        // dd(DB::table('addon_tour')->get(), $tourExtraMap);
-        // addon_id → safe_key (dynamic)
-        $addonColumnMap = DB::table('addons')
-            ->get()
-            ->mapWithKeys(function ($addon) {
-                return [
-                    $addon->id => \Illuminate\Support\Str::slug($addon->name, '_')
-                ];
-            })
-            ->toArray();
+            $addonTotals = [
+                'qty' => 0,
+                'price' => 0,
+                'total' => 0,
+            ];
 
-        // freeze all addon keys (IMPORTANT)
-        $allAddonKeys = array_values($addonColumnMap);
+            $totals = [
+                'product_price'      => 0,
+                'extra_amount'       => 0,
+                'tax_amount'         => 0,
+                'discount_amount'    => 0,
+                'customer_total'     => 0,
+                'exclude_total'     => 0,
+                'balance_amount'     => 0,
+                'transport_cost'     => 0,
+                'tour_selling_price' => 0,
+                'tour_selling_tax'   => 0,
+                'net_total'          => 0,
+                'profit'             => 0,
+                'addonTotals'        => $addonTotals,
+            ];
 
-        /*
-        |--------------------------------------------------------------------------
-        | QUERY
-        |--------------------------------------------------------------------------
-        */
-        $query = DB::table('orders')
-            ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
-            ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
-            ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
-            ->whereNull('orders.deleted_at')
-            ->whereNotIn('orders.order_status', $excludedStatuses)
-            ->leftJoin('tour_pricings as tp', 'tp.tour_id', '=', 'tours.id')
-            ->whereNull('tp.deleted_at')
-            ->groupBy('orders.id');
 
-        if ($request->filled('booking_date')) {
-            try {
-                [$start, $end] = explode(' - ', $request->booking_date);
+            if (!$hasFilter) {
+                return $paginate
+                    ? [
+                        'rows' => [],
+                        'pagination' => new LengthAwarePaginator([], 0, 20),
+                        'totals'     => $totals,
+                    ]
+                    : [
+                        'rows' => [],
+                        'pagination' => null,
+                        'totals'     => $totals,
+                    ];
+            }
 
-                $startDate = Carbon::parse($start)->startOfDay();
-                $endDate   = Carbon::parse($end)->endOfDay();
-                if ($startDate && $endDate) {
-                    $query->whereBetween('orders.created_at', [$startDate, $endDate]);
+            /*
+            |--------------------------------------------------------------------------
+            | MAPS
+            |--------------------------------------------------------------------------
+            */
+
+            // tour_extra_id → addon_id
+            $tourExtraMap = DB::table('addon_tour')
+                ->pluck('addon_id','id')
+                ->toArray();
+            // dd(DB::table('addon_tour')->get(), $tourExtraMap);
+            // addon_id → safe_key (dynamic)
+            $addonColumnMap = DB::table('addons')
+                ->get()
+                ->mapWithKeys(function ($addon) {
+                    return [
+                        $addon->id => \Illuminate\Support\Str::slug($addon->name, '_')
+                    ];
+                })
+                ->toArray();
+
+            // freeze all addon keys (IMPORTANT)
+            $allAddonKeys = array_values($addonColumnMap);
+
+            /*
+            |--------------------------------------------------------------------------
+            | QUERY
+            |--------------------------------------------------------------------------
+            */
+            $query = DB::table('orders')
+                ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
+                ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
+                ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
+                ->whereNull('orders.deleted_at')
+                ->whereNotIn('orders.order_status', $excludedStatuses)
+                ->leftJoin('tour_pricings as tp', 'tp.tour_id', '=', 'tours.id')
+                ->whereNull('tp.deleted_at')
+                ->groupBy('orders.id');
+
+            if ($request->filled('booking_date')) {
+                try {
+                    [$start, $end] = explode(' - ', $request->booking_date);
+
+                    $startDate = Carbon::parse($start)->startOfDay();
+                    $endDate   = Carbon::parse($end)->endOfDay();
+                    if ($startDate && $endDate) {
+                        $query->whereBetween('orders.created_at', [$startDate, $endDate]);
+                    }
+                } catch (\Exception $e) {}
+
+            }
+
+            if ($request->filled('order_status')) {
+                $query->where('orders.order_status', $request->order_status);
+            }
+
+            if ($request->filled('payment_status')) {
+                $query->where('orders.payment_status', $request->payment_status);
+            }
+
+            if ($request->filled('partner')) {
+                $query->where('orders.source', $request->partner);
+            }
+
+            if ($request->action_type === 'pay_now') {
+                $query->where('orders.action_name', 'book');
+            } elseif ($request->action_type === 'pay_later') {
+                $query->where(function ($q) {
+                    $q->where('orders.action_name', '!=', 'book')
+                    ->orWhereNull('orders.action_name');
+                });
+            }
+            // if ($product = $request->input('product')) {
+            //     $query->where('order_tours.tour_id', $product);
+            // }
+              if ($products = $request->input('product')) {
+
+                $products = array_filter((array)$products);
+
+                if (!empty($products)) {
+
+                    $query->whereIn('orders.id', function ($q) use ($products) {
+
+                        $q->select('order_id')
+                          ->from('order_tours')
+                          ->whereNull('deleted_at')
+                          ->whereIn('tour_id', $products);
+
+                    });
+
                 }
-            } catch (\Exception $e) {}
+            }
 
+            if ($excludeProducts = $request->input('exclude_product')) {
+
+            $excludeProducts = array_filter((array)$excludeProducts);
+
+            if (!empty($excludeProducts)) {
+
+                $query->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+                    $q->select('order_id')
+                      ->from('order_tours')
+                      ->whereNull('deleted_at')
+                      ->whereIn('tour_id', $excludeProducts);
+
+                });
+
+            }
         }
-
-        if ($request->filled('order_status')) {
-            $query->where('orders.order_status', $request->order_status);
-        }
-
-        if ($request->filled('payment_status')) {
-            $query->where('orders.payment_status', $request->payment_status);
-        }
-
-        if ($request->filled('partner')) {
-            $query->where('orders.source', $request->partner);
-        }
-
-        if ($request->action_type === 'pay_now') {
-            $query->where('orders.action_name', 'book');
-        } elseif ($request->action_type === 'pay_later') {
-            $query->where(function ($q) {
-                $q->where('orders.action_name', '!=', 'book')
-                ->orWhereNull('orders.action_name');
-            });
-        }
-        // if ($product = $request->input('product')) {
-        //     $query->where('order_tours.tour_id', $product);
-        // }
-          if ($products = $request->input('product')) {
-
-        $products = array_filter((array)$products);
-
-        if (!empty($products)) {
-
-            $query->whereIn('orders.id', function ($q) use ($products) {
-
-                $q->select('order_id')
-                  ->from('order_tours')
-                  ->whereNull('deleted_at')
-                  ->whereIn('tour_id', $products);
-
-            });
-
-        }
-    }
-
-    if ($excludeProducts = $request->input('exclude_product')) {
-
-    $excludeProducts = array_filter((array)$excludeProducts);
-
-    if (!empty($excludeProducts)) {
-
-        $query->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
-
-            $q->select('order_id')
-              ->from('order_tours')
-              ->whereNull('deleted_at')
-              ->whereIn('tour_id', $excludeProducts);
-
-        });
-
-    }
-}
 
         if ($request->filled('tour_date')) {
 
