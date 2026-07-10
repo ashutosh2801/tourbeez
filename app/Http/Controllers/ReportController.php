@@ -1636,23 +1636,11 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
             |--------------------------------------------------------------------------
             */
             $extra_amount = 0;
-            // dd($extras);
+            
             foreach ($extras as $e) {
 
                 $tourExtraId = $e['tour_extra_id'] ?? null;
                 
-                // if (!$tourExtraId || !isset($tourExtraMap[$tourExtraId])) {
-                //     dd(3432, $tourExtraId, $tourExtraMap);
-                //     continue;
-                // }
-
-                // $addonId = $tourExtraMap[$tourExtraId];
-
-                // if (!isset($addonColumnMap[$addonId])) {
-                //     dd(23432);
-                //     continue;
-                // }
-
                 $key = $addonColumnMap[$tourExtraId];
                 // dd($e, $addonColumnMap,$tourExtraId, $key,$addonColumnMap[$addonId], $addonId, $tourExtraMap[$tourExtraId] ,$tourExtraId, $tourExtraMap);
                 $price = $e['price'] ?? 0;
@@ -1737,44 +1725,11 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 }
             }
 
-
-            // foreach ($pricing as $p) {
-            //     $qty = (int) ($p['quantity'] ?? 0);
-            //     $label = strtolower($p['label'] ?? '');
-            //     $priceType = $p['price_type'] ?? '';
-
-            //     // FIXED → treat as Adults
-            //     if ($priceType === 'FIXED') {
-            //         $adult += $qty;
-            //         continue;
-            //     }
-
-            //     if (str_contains($label, 'adult')) {
-            //         $adult += $qty;
-            //     } elseif (str_contains($label, 'child')) {
-            //         $child += $qty;
-            //     } elseif (str_contains($label, 'infant')) {
-            //         $infant += $qty;
-            //     } else {
-            //         $other += $qty;
-            //     }
-            //     $price = $p['actual_price'] ?? $p['price'] ?? 0;
-
-            //     if ($qty > 0) {
-            //         $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-            //             ? $price
-            //             : $price * $qty;
-            //     }
-            // }
-
             $discount_amount = 0;
             $discounts = json_decode($order->discount, true) ?? [];
             foreach ($discounts as $d) {
                 $discount_amount += $d['price'] ?? 0;
             }
-
-            // dd($order->tour_fees);
-            // $taxesfees = $order_tour->tour->taxes_fees_resolved;
 
             $taxesfees = json_decode($order->tour_fees, true) ?? [];
 
