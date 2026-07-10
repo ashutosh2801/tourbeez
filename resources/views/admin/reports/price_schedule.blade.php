@@ -652,7 +652,7 @@
     <!-- <td align="right">{{ number_format_with_currency($row['transport_cost'],2) }}</td> -->
 
     <td align="right">{{ number_format_with_currency($row['tour_selling_price'],2) }}</td>
-    <td align="right">Extra Included</td>
+    <td align="right">{{ number_format_with_currency($row['tour_extra_included_price'],2) }} </td>
     <td align="right">Extra Excluded</td>
 
     <td align="right">{{ number_format_with_currency($row['tour_selling_tax'],2) }}</td>

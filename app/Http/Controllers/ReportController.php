@@ -1640,7 +1640,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
             foreach ($extras as $e) {
 
                 $tourExtraId = $e['tour_extra_id'] ?? null;
-                
+                dd($tourExtraId);
                 $key = $addonColumnMap[$tourExtraId];
                 // dd($e, $addonColumnMap,$tourExtraId, $key,$addonColumnMap[$addonId], $addonId, $tourExtraMap[$tourExtraId] ,$tourExtraId, $tourExtraMap);
                 $price = $e['price'] ?? 0;
@@ -1783,6 +1783,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
 
             $sellingPriceBase = 0;
             $costBase = 0;
+            $baseExtraIncludedBase = 0;
 
             if (isset($tourPricing[$order->tour_id])) {
 
@@ -1806,6 +1807,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
 
                     $baseCost = currencyConvertWithoutRound($matched->price, $currency, 'CAD');
                     $baseSelling = currencyConvertWithoutRound($matched->selling_price, 'CAD', 'CAD');
+                    $baseExtraIncluded = currencyConvertWithoutRound($matched->extra_included, 'CAD', 'CAD');
 
                     /*
                     |--------------------------------------------------------------------------
@@ -1815,13 +1817,17 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                     if (($p['price_type'] ?? '') === 'FIXED') {
                         $costBase += $baseCost;
                         $sellingPriceBase += $baseSelling;
+                        $baseExtraIncludedBase += $baseExtraIncluded * $qty;
+
                     } else {
                         $costBase += $baseCost * $qty;
                         $sellingPriceBase += $baseSelling * $qty;
+                        $baseExtraIncludedBase += $baseExtraIncluded * $qty;
+
                     }
                 }
             }
-            $sellingTotal = $sellingPriceBase;
+            $sellingTotal = $sellingPriceBase + $baseExtraIncludedBase;
             $costTotal    = $costBase;
             
             if (isset($allTaxes[$order->tour_id])) {
@@ -1890,6 +1896,7 @@ public function getInvoiceWithDetailsData($request, $paginate = false)
                 'tour_cost_total' => $isExcludedFromPayment ? 0 :  round($costTotal, 2),
 
                 'tour_selling_price' => $isExcludedFromPayment ? 0 :  round($sellingPriceBase, 2),
+                'tour_extra_included_price' => $isExcludedFromPayment ? 0 :  round($baseExtraIncludedBase, 2),
                 'tour_selling_tax' => $isExcludedFromPayment ? 0 :  round($sellingTotal - $sellingPriceBase, 2),
                 'tour_selling_total' => $isExcludedFromPayment ? 0 :  round($sellingTotal, 2),
                 'transport_cost'    => $isExcludedFromPayment ? 0 :  round($transportCost, 2),
