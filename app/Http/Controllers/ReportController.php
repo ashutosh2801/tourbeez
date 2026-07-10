@@ -1640,7 +1640,7 @@ public function invoiceWithDetails(Request $request)
             foreach ($extras as $e) {
 
                 $tourExtraId = $e['tour_extra_id'] ?? null;
-                dd($tourExtraId);
+                
                 $key = $addonColumnMap[$tourExtraId];
                 // dd($e, $addonColumnMap,$tourExtraId, $key,$addonColumnMap[$addonId], $addonId, $tourExtraMap[$tourExtraId] ,$tourExtraId, $tourExtraMap);
                 $price = $e['price'] ?? 0;
