@@ -566,6 +566,14 @@
 </thead>
 
                 <tbody>
+
+                    @php
+
+
+                      $totalAddonQnty = 0;
+                      $totalAddonPrice = 0;
+
+                    @endphp
                     @forelse($rows as $row) 
                     
                     <tr>
@@ -653,7 +661,8 @@
 
     <td align="right">{{ number_format_with_currency($row['tour_selling_price'],2) }}</td>
     <td align="right">{{ number_format_with_currency($row['tour_extra_included_price'],2) }} </td>
-    <td align="right">Extra Excluded</td>
+    <td align="right">{{ number_format_with_currency($row['tour_extra_excluded_price'],2) }} </td>
+    <!-- <td align="right"> Extra Excluded</td> -->
 
     <td align="right">{{ number_format_with_currency($row['tour_selling_tax'],2) }}</td>
 
@@ -669,6 +678,9 @@
 
     <td>@foreach($addonKeys as $key)
 
+
+
+
 <!-- <td > -->
 
     @if(
@@ -679,7 +691,13 @@
         !empty($row[$key.'_fee']) ||
         !empty($row[$key.'_total'])
     )
+        @php
 
+
+          $totalAddonQnty += $row[$key.'_quant'];
+          $totalAddonPrice += $row[$key.'_total'];
+
+        @endphp
         <strong>{{ $row[$key.'_desc'] ?? '-' }}</strong><br>
 
         Qty :
@@ -687,8 +705,8 @@
 
         <!-- <br> -->
 
-        Price :
-        {{ number_format_with_currency($row[$key.'_price'] ?? 0,2) }} |
+        <!-- Price :
+        {{ number_format_with_currency($row[$key.'_price'] ?? 0,2) }} --> 
 
         Total :
         <strong>
@@ -728,13 +746,15 @@
     <td align="right">{{ number_format_with_currency($totals['tax_amount'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['discount_amount'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
-    <td align="right">{{ number_format_with_currency($totals['exclude_total'],2) }}</td>
+    <!-- <td align="right">{{ number_format_with_currency($totals['exclude_total'],2) }}</td> -->
     <td align="right">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>
-    <td align="right">{{ number_format_with_currency($totals['transport_cost'],2) }}</td>
+    <!-- <td align="right">{{ number_format_with_currency($totals['transport_cost'],2) }}</td> -->
     <td align="right">{{ number_format_with_currency($totals['tour_selling_price'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['tour_extra_included_price'],2) }} </td>
+    <td align="right">{{ number_format_with_currency($totals['tour_extra_excluded_price'],2) }} </td>
     <td align="right">{{ number_format_with_currency($totals['tour_selling_tax'],2) }}</td>
 
-    <td align="center">-</td>
+    <!-- <td align="center">-</td> -->
 
     <td align="right">{{ number_format_with_currency($totals['net_total'],2) }}</td>
 
@@ -742,17 +762,17 @@
 
     <td>
     <strong>Qty:</strong>
-    {{ $totals['addonTotals']['qty'] }}
+    {{ $totalAddonQnty }}
 
-    <br>
+    <!-- <br> -->
 
-    <strong>Price:</strong>
-    {{ number_format_with_currency($totals['addonTotals']['price'], 2) }}
+    <!-- <strong>Price:</strong> -->
+    <!-- {{ number_format_with_currency($totals['addonTotals']['price'], 2) }} -->
 
     <br>
 
     <strong>Total:</strong>
-    {{ number_format_with_currency($totals['addonTotals']['total'], 2) }}
+    {{ number_format_with_currency($totalAddonPrice, 2) }}
 </td>
 </tr>
 
@@ -764,6 +784,18 @@
 </tbody>
 @if($rows)
 <tfoot class="table-footer">
+
+        <tr class="summary-total">
+            <td colspan="4" class="summary-label">
+                Total Customer Total
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($totals['customer_total'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
         @foreach($businessExpense['expenses'] as $expense)
         <tr class="summary-expense">
             <td colspan="4" class="summary-label">
@@ -780,7 +812,7 @@
 
         <tr class="summary-total">
             <td colspan="4" class="summary-label">
-                Total Business Expense
+                Total Ads Expense
             </td>
 
             <td align="right">
@@ -789,10 +821,21 @@
 
             <td colspan="13"></td>
         </tr>
+        <tr class="summary-total">
+            <td colspan="4" class="summary-label">
+                Supplier Total Expense
+            </td>
+
+            <td align="right">
+               {{ number_format_with_currency($totals['net_total'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
 
         <tr class="summary-net">
             <td colspan="4" class="summary-label">
-                Net Total + Business Expense
+                Total Expense <small>(Supplier Total + Ads Expense)</small>
             </td>
 
             <td align="right">
@@ -804,7 +847,7 @@
 
         <tr class="summary-profit">
             <td colspan="4" class="summary-label">
-                Final Profit
+                Final Profit <small>(Customer Total - Expenses)</small>
             </td>
 
             <td align="right">

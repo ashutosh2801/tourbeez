@@ -1387,10 +1387,13 @@ public function invoiceWithDetails(Request $request)
                 'balance_amount'     => 0,
                 'transport_cost'     => 0,
                 'tour_selling_price' => 0,
+                'tour_extra_included_price'=> 0,
+                'tour_extra_excluded_price'=> 0,
                 'tour_selling_tax'   => 0,
                 'net_total'          => 0,
                 'profit'             => 0,
                 'addonTotals'        => $addonTotals,
+
             ];
 
 
@@ -1419,6 +1422,12 @@ public function invoiceWithDetails(Request $request)
                 ->pluck('addon_id','id')
                 ->toArray();
             // dd(DB::table('addon_tour')->get(), $tourExtraMap);
+            // Load all addons only once
+            $addons = DB::table('addons')
+                ->whereNull('deleted_at')
+                ->get()
+                ->keyBy('id');
+
             // addon_id → safe_key (dynamic)
             $addonColumnMap = DB::table('addons')
                 ->get()
@@ -1431,6 +1440,8 @@ public function invoiceWithDetails(Request $request)
 
             // freeze all addon keys (IMPORTANT)
             $allAddonKeys = array_values($addonColumnMap);
+
+            // dd($allAddonKeys);
 
             /*
             |--------------------------------------------------------------------------
@@ -1636,17 +1647,37 @@ public function invoiceWithDetails(Request $request)
             |--------------------------------------------------------------------------
             */
             $extra_amount = 0;
+            $baseExtraExcludedBase = 0;
             
             foreach ($extras as $e) {
+
+                if($e['quantity'] < 1){
+                    continue;
+                }
 
                 $tourExtraId = $e['tour_extra_id'] ?? null;
                 
                 $key = $addonColumnMap[$tourExtraId];
-                // dd($e, $addonColumnMap,$tourExtraId, $key,$addonColumnMap[$addonId], $addonId, $tourExtraMap[$tourExtraId] ,$tourExtraId, $tourExtraMap);
+
+                // dd($tourExtraMap, $addons);
+
+                // $addonId = $tourExtraMap[$tourExtraId] ?? null;
+                $addon   = $tourExtraId ? ($addons[$tourExtraId] ?? null) : null;
+
                 $price = $e['price'] ?? 0;
                 $qty   = $e['quantity'] ?? 1;
                 $total = $e['total_price'] ?? ($price * $qty);
                 $extra_amount += $total;
+
+                if ($addon) {
+
+                    $baseExtraExcludedBase += currencyConvertWithoutRound(
+                        ($addon->selling_price ?? 0) * $qty,
+                        'CAD',
+                        'CAD'
+                    );
+
+                }
 
                 $extraColumns[$key] = [
                     // 'con' => $key,
@@ -1658,6 +1689,8 @@ public function invoiceWithDetails(Request $request)
                     'total' => round(currencyConvertWithoutRound($total, $order->currency, 'CAD'), 2),
                 ];
             }
+
+            // dd($extraColumns, $key);
             // dd($extraColumns);
             /*
             |--------------------------------------------------------------------------
@@ -1790,6 +1823,8 @@ public function invoiceWithDetails(Request $request)
                 foreach ($pricing as $p) {
 
                     $label = strtolower(trim($p['label'] ?? ''));
+
+                    $tourPricingId = $p['tour_pricing_id'];
                     $qty   = (int) ($p['quantity'] ?? 0);
 
                     if ($qty <= 0) continue;
@@ -1799,8 +1834,13 @@ public function invoiceWithDetails(Request $request)
                     | 🔥 MATCH LABEL (SMART MATCH)
                     |--------------------------------------------------------------------------
                     */
-                    $matched = $tourPricing[$order->tour_id]->first(function ($tp) use ($label) {
-                        return str_contains($label, strtolower($tp->label));
+
+                    // dd($tourPricing);
+                    $matched = $tourPricing[$order->tour_id]->first(function ($tp) use ($label, $tourPricingId) {
+
+                        // dd($label, $tp->label, $tourPricingId);
+
+                        return str_contains($tourPricingId, strtolower($tp->id));
                     });
 
                     if (!$matched) continue;
@@ -1827,7 +1867,9 @@ public function invoiceWithDetails(Request $request)
                     }
                 }
             }
-            $sellingTotal = $sellingPriceBase + $baseExtraIncludedBase;
+
+            $sellingTotal = $sellingPriceBase + $baseExtraIncludedBase + $baseExtraExcludedBase;
+
             $costTotal    = $costBase;
             
             if (isset($allTaxes[$order->tour_id])) {
@@ -1839,6 +1881,7 @@ public function invoiceWithDetails(Request $request)
                         : $tax->tax_fee_value;
 
                     $sellingTax = get_tax($sellingTotal, $tax->fee_type, $taxValue);
+
                     $costTax    = get_tax($costTotal, $tax->fee_type, $taxValue);
                     
                     $sellingTotal += $sellingTax;
@@ -1897,7 +1940,8 @@ public function invoiceWithDetails(Request $request)
 
                 'tour_selling_price' => $isExcludedFromPayment ? 0 :  round($sellingPriceBase, 2),
                 'tour_extra_included_price' => $isExcludedFromPayment ? 0 :  round($baseExtraIncludedBase, 2),
-                'tour_selling_tax' => $isExcludedFromPayment ? 0 :  round($sellingTotal - $sellingPriceBase, 2),
+                'tour_extra_excluded_price' => $isExcludedFromPayment ? 0 :  round($baseExtraExcludedBase, 2),
+                'tour_selling_tax' => $isExcludedFromPayment ? 0 :  round($sellingTax, 2),
                 'tour_selling_total' => $isExcludedFromPayment ? 0 :  round($sellingTotal, 2),
                 'transport_cost'    => $isExcludedFromPayment ? 0 :  round($transportCost, 2),
 
@@ -1919,6 +1963,8 @@ public function invoiceWithDetails(Request $request)
             $totals['balance_amount']     += $row['balance_amount'];
             $totals['transport_cost']     += $row['transport_cost'];
             $totals['tour_selling_price'] += $row['tour_selling_price'];
+            $totals['tour_extra_included_price'] += $row['tour_extra_included_price'];
+            $totals['tour_extra_excluded_price'] += $row['tour_extra_excluded_price'];
             $totals['tour_selling_tax']   += $row['tour_selling_tax'];
 
             $netTotal = $row['tour_selling_total'] + $row['transport_cost'];
@@ -1928,7 +1974,7 @@ public function invoiceWithDetails(Request $request)
             $totals['profit']    += $profit;
 
             // attach all addon columns consistently
-
+            // dd($allAddonKeys);
             foreach ($allAddonKeys as $key) {
                 $row[$key.'_desc']  = $extraColumns[$key]['description'];
                 $row[$key.'_quant'] = $extraColumns[$key]['quantity'];
@@ -1937,16 +1983,16 @@ public function invoiceWithDetails(Request $request)
                 $row[$key.'_fee']   = $extraColumns[$key]['fee'];
                 $row[$key.'_total'] = $extraColumns[$key]['total'];
 
-                $addonTotals['qty'] += $row[$key.'_quant'] ?? 0;
-                $addonTotals['price'] += $row[$key.'_price'] ?? 0;
-                $addonTotals['total'] += $row[$key.'_total'] ?? 0;
+                $addonTotals['qty'] += $extraColumns[$key]['quantity'] ?? 0;
+                $addonTotals['price'] += $extraColumns[$key]['price'] ?? 0;
+                $addonTotals['total'] += $extraColumns[$key]['total'] ?? 0;
             }
             $totals['addonTotals']    = $addonTotals;
 
             // dd($row);
             $rows[] = $row;
         }
-        
+        // dd($rows);
         return $paginate
             ? ['rows' => $rows, 'pagination' => $orders, 'totals' => $totals]
             : ['rows' => $rows, 'totals' => $totals];
