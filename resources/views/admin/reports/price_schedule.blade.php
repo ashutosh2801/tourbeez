@@ -4,136 +4,53 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
 <style>
-    .table {
+    /* ================= TABLE ================= */
+
+.table {
     font-size: 14px;
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
-.table th {
-    font-size: 14px;
-    font-weight: 600;
-    padding: 10px 8px;
-}
-
+.table th,
 .table td {
-    font-size: 14px;
-    padding: 10px 8px;
+    padding: 6px 10px;
+    white-space: nowrap;
     vertical-align: middle;
+    font-size: 14px;
 }
 
-    .table th, .table td {
-        white-space: nowrap;
-        padding: 6px 10px;
-        vertical-align: middle;
-    }
-
-    .table-wrapper {
-        overflow-x: auto;
-        width: 100%;
-    }
-
-    .pagination {
-        justify-content: center;
-    }
-
-    .table tbody tr:hover {
+.table tbody tr:hover {
     background: #f5f9ff;
 }
 
-.table td {
-    vertical-align: middle;
-}
 .table-wrapper {
+    width: 100%;
     overflow: auto;
-    cursor: grab;
     position: relative;
+    cursor: grab;
+    max-height: 75vh; /* Required for sticky header */
 }
 
 .table-wrapper.active {
     cursor: grabbing;
 }
-        /* FULL FIX FOR SELECT2 HEIGHT */
-   .search-options .select2-container--default .select2-selection--multiple {
-        min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-        padding: 0.4rem 1rem !important;
-        margin-bottom: 15px !important;
-    }
 
-.select2-container--default .select2-selection--multiple {
-    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-        padding: 0.6rem 1rem !important;
-        margin-bottom: 15px !important;
+/* ================= STICKY HEADER ================= */
+
+.table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #212529 !important;
+    color: #fff;
+    font-weight: 600;
 }
 
-.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
-    margin-right: 0;
-    margin-left: 0;
-    margin-bottom: 5px;
-    margin-top: 0;
-    background-color: #a3a3a3;
-}
+/* ================= FROZEN FIRST 4 COLUMNS ================= */
 
-.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
-    font-size: 13px;
-}
-
-.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-    color: #FFF;
-    margin-left: 0;
-}
-
-.search-options .select2-container--default .select2-search--inline .select2-search__field {
-    font-size: 14px;
-}
-
-.select2-container--default .select2-selection--multiple .select2-selection__choice {
-    margin: 0 0 5px 1px;
-    font-size: 13px;
-}
-
-.select2-container--default .select2-search--inline .select2-search__field {
-    background: transparent;
-    border: none;
-    outline: 0;
-    box-shadow: none;
-    -webkit-appearance: textfield;
-    margin: 0;
-}
-
-.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
-    background-color: #5897fb;
-    color: white;
-}
-
-.selection .select2-selection .select2-selection--multiple {
-    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-    padding: 0.6rem 1rem !important;
-    margin-bottom: 15px !important;
-}
-
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-    margin: 0;
-    line-height: 1.7;
-    color: #FFF;
-}
-
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-    color: #333;
-    background: #607D8B;
-}
-
-.select2-container--default .select2-selection--multiple .select2-selection__choice{
-    background-color: #a3a3a3 !important;
-}
-.table-wrapper {
-    overflow-x: auto;
-    position: relative;
-}
-
-/* Freeze first 4 columns */
-/* 1st */
-/* ---------------- First 4 Frozen Columns ---------------- */
-
-/* No */
+/* # */
 .table th:nth-child(1),
 .table td:nth-child(1) {
     position: sticky;
@@ -181,97 +98,75 @@
     z-index: 20;
 }
 
-/* Header above body */
-.table thead th {
-    position: sticky;
-    top: 0;
-    background: #212529;
-    color: #fff;
-    z-index: 30;
-    font-weight: 600;
+/* Header over frozen columns */
+.table thead th:nth-child(-n+4) {
+    z-index: 110;
 }
 
-.table thead th:nth-child(1),
-.table thead th:nth-child(2),
-.table thead th:nth-child(3),
-.table thead th:nth-child(4) {
-    z-index: 50;
-}
-
-/* Border for frozen columns */
-.table td:nth-child(-n+4),
-.table th:nth-child(-n+4) {
-    /*box-shadow: 2px 0 4px rgba(0,0,0,.08);*/
+/* Shadow */
+.table th:nth-child(-n+4),
+.table td:nth-child(-n+4) {
     box-shadow: 1px 0 0 #dee2e6;
 }
+
+/* ================= PRODUCT NAME ================= */
+
 .product-name {
     white-space: normal !important;
     word-break: break-word;
     overflow-wrap: anywhere;
-    max-width: 220px; /* Adjust as needed */
+    max-width: 220px;
     line-height: 1.4;
 }
 
-.table thead th {
-    background: #212529 !important;
-    /*color: #fff;*/
-}
-
-.table th:nth-child(-n+4),
-.table td:nth-child(-n+4) {
-    /*background: #fff;*/
-}
-
-.table td:nth-child(-n+4),
-.table th:nth-child(-n+4) {
-    box-shadow: 2px 0 4px rgba(0,0,0,.08);
-}
-
-
+/* ================= FOOTER ================= */
 
 .table tfoot td {
     font-weight: 600;
 }
 
-/* Freeze first four columns */
-.table tfoot .summary-label{
+/* Freeze label */
+.table tfoot .summary-label {
     position: sticky;
     left: 0;
-    z-index: 40;
+    z-index: 120;
     background: inherit;
 }
 
-.summary-expense{
-    background:#fff8e1;
-}
-
-.summary-total{
-    background:#ffeeba;
-}
-
-.summary-net{
-    background:#e8f4fd;
-}
-
-.summary-profit{
-    background:#d4edda;
-}
-
-/* Freeze the first cell (colspan=4) */
-.table tfoot td.summary-label{
+/* Freeze amount column */
+/*.table tfoot .summary-value {
     position: sticky;
-    left: 0;
-    z-index: 100;
+    left: 480px; 
+    z-index: 120;
     background: inherit;
+}
+*/
+.table tfoot td:nth-child(2){ position: sticky; left: 480px; /* 20 + 130 + 150 + 180 */ z-index: 120; background: inherit; }
+
+/* Footer colors */
+
+.summary-expense td {
+    background: #fff8e1;
 }
 
-/* Freeze the amount column (5th column) ONLY IN FOOTER */
-.table tfoot td:nth-child(2){
-    position: sticky;
-    left: 480px; /* 20 + 130 + 150 + 180 */
-    z-index: 100;
-    background: inherit;
+.summary-total td {
+    background: #ffeeba;
 }
+
+.summary-net td {
+    background: #e8f4fd;
+}
+
+.summary-profit td {
+    background: #d4edda;
+}
+
+/* ================= PAGINATION ================= */
+
+.pagination {
+    justify-content: center;
+}
+
 </style>
 
 <div class="card-primary mb-3">
@@ -439,15 +334,6 @@
                                     Booking Date (Oldest First)
                                 </option>
 
-                                <!-- <option value="revenue_desc"
-                                    {{ request('order_by') == 'revenue_desc' ? 'selected' : '' }}>
-                                    Revenue (High → Low)
-                                </option>
-
-                                <option value="revenue_asc"
-                                    {{ request('order_by') == 'revenue_asc' ? 'selected' : '' }}>
-                                    Revenue (Low → High)
-                                </option> -->
                             </select>
                         </div>
                     </div>
