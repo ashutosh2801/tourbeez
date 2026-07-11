@@ -235,6 +235,10 @@
     background: #d4edda;
 }
 
+.table-footer{
+    background:#d4edda;
+}
+
 /* ================= PAGINATION ================= */
 
 .pagination {
@@ -507,6 +511,85 @@
 {{-- TABLE --}}
 
     <div class="card card-primary bg-white border rounded-lg-custom report-table">
+
+    @if($rows)
+        <table style="width:100%; border-collapse:separate; border-spacing:20px 0; margin-bottom:25px; margin-top: 20px;">
+            <tr>
+
+                <td style="
+                    width:25%;
+                    border:2px solid #d6e4ff;
+                    background:#f8fbff;
+                    border-radius:8px;
+                    text-align:center;
+                    padding:18px;
+                ">
+                    <div style="font-size:13px;color:#666;font-weight:600;">
+                        TOTAL BOOKINGS
+                    </div>
+
+                    <div style="font-size:24px;font-weight:bold;color:#1f2937;margin-top:8px;">
+                        {{count($rows)}}
+                    </div>
+                </td>
+
+                <td style="
+                    width:25%;
+                    border:2px solid #d1fae5;
+                    background:#f0fdf4;
+                    border-radius:8px;
+                    text-align:center;
+                    padding:18px;
+                ">
+                    <div style="font-size:13px;color:#666;font-weight:600;">
+                        TOTAL PROFIT
+                    </div>
+
+                    <div style="font-size:24px;font-weight:bold;color:#15803d;margin-top:8px;">
+                        {{ number_format_with_currency(
+                            $totals['customer_total'] - ($totals['net_total'] + $businessExpense['total']),
+                            2
+                        ) }}
+                    </div>
+                </td>
+
+                <td style="
+                    width:25%;
+                    border:2px solid #fee2e2;
+                    background:#fef2f2;
+                    border-radius:8px;
+                    text-align:center;
+                    padding:18px;
+                ">
+                    <div style="font-size:13px;color:#666;font-weight:600;">
+                        TOTAL EXPENSES
+                    </div>
+
+                    <div style="font-size:24px;font-weight:bold;color:#dc2626;margin-top:8px;">
+                        {{ number_format_with_currency($totals['net_total'] + $businessExpense['total'],2) }}
+                    </div>
+                </td>
+
+                <td style="
+                    width:25%;
+                    border:2px solid #fde68a;
+                    background:#fffbeb;
+                    border-radius:8px;
+                    text-align:center;
+                    padding:18px;
+                ">
+                    <div style="font-size:13px;color:#666;font-weight:600;">
+                        TOTAL REVENUE
+                    </div>
+
+                    <div style="font-size:24px;font-weight:bold;color:#b45309;margin-top:8px;">
+                        {{ number_format_with_currency($totals['customer_total'],2) }}
+                    </div>
+                </td>
+
+            </tr>
+        </table>
+    @endif
 
         <div class="card-header report-table-head">
             <div class="row">
