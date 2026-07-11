@@ -2284,7 +2284,7 @@ public function exportCustomer(Request $request)
         $data = $this->getInvoiceWithDetailsData($request, false);
 
         return Excel::download(
-            new OrderPriceScheduleExport($data['rows']),
+            new OrderPriceScheduleExport($data['rows'], $data['totals']),
             'price_schedule_' . now()->format('Ymd_His') . '.xlsx'
         );
     }
