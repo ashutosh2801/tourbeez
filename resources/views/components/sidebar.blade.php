@@ -249,10 +249,10 @@
                     <a href="{{ route('admin.report.revenue') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.report.revenue') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-dollar-sign"></i>
-                        <p>{{ translate('Revenue ') }}<small>(Price breakup)</small></p>
+                        <p>{{ translate('Revenue ') }}</p>
                     </a>
                 </li>
-                <li class="aiz-side-nav-list">
+                <!-- <li class="aiz-side-nav-list">
                     <a href="{{ route('admin.report.invoice') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.report.invoice') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-file"></i>
@@ -265,7 +265,7 @@
                         <i class="nav-icon fas fa-file-invoice"></i>
                         <p>{{ translate('Invoice Details ') }}<small> (Extra Breakup)</small></p>
                     </a>
-                </li>
+                </li> -->
 
                 <!-- <li class="aiz-side-nav-list">
                     <a href="{{ route('admin.report.schedule-pricing-report') }}"
@@ -278,7 +278,7 @@
                     <a href="{{ route('admin.report.price_schedule') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.report.price_schedule') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                        <p>{{ translate('Schedule Order Pricing') }}</p>
+                        <p>{{ translate('Invoice') }}</p>
                     </a>
                 </li>
 
@@ -375,6 +375,15 @@
                 </li>
                 @endrole
             </ul>
+        </li>
+        @endcan 
+        @can('show_orders') 
+        <li class="nav-item">
+            <a href="{{ route('admin.business-expenses.index') }}"
+                class="nav-link {{ areActiveRoutes(['admin.business-expenses.index', 'admin.business-expenses.create']) }}">
+                <i class="nav-icon fas fa-money-bill-wave"></i>
+                <p>{{ translate('Bussiness Expenses') }}</p>
+            </a>
         </li>
         @endcan   
         @can('show_medias')

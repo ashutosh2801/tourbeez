@@ -6,6 +6,7 @@ use App\Http\Controllers\API\TourController as APITourController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AddonController;
 use App\Http\Controllers\AizUploadController;
+use App\Http\Controllers\BusinessExpenseController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CollectionController;
@@ -429,6 +430,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::post('/assign-driver', [ManifestController::class, 'assignDriver'])->name('assign.driver');
     Route::post('/remove-driver', [ManifestController::class, 'removeDriver'])->name('remove.driver');
+
+
+    Route::resource('business-expenses', BusinessExpenseController::class);
 
 
 

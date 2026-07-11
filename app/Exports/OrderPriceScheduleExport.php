@@ -12,10 +12,13 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
     protected $rows;
     protected $addonKeys = [];
 
-    public function __construct($rows)
+    public function __construct($rows, $totals)
     {
         // Treat rows as an array safely
         $this->rows = is_array($rows) ? $rows : $rows->toArray();
+        $this->totals = is_array($totals) ? $totals : $totals->toArray();
+
+
 
         // 🔥 detect addons dynamically
         if (!empty($this->rows)) {
@@ -56,9 +59,9 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
             'Quantity', 'Adult', 'Child', 'Infant', 'Senior',
             'Product Price', 'Extra Amount', 'Tax Amount', 'Discount',
             'Customer Total', 'Order Balance',
-            'Transport Cost',
-            'Product Price (Supplier Cost)', 'Tax', 'Other Fee',
-            'Net Total', 'Profit', 'Product'
+            'Supplier Price',
+            'Extra Included', 'Extra Excluded', 'Supplier Tax',
+            'Supplier Total', 'Profit', 'Product'
         ];
 
         foreach ($this->addonKeys as $key) {
@@ -91,13 +94,16 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
                 number_format($r['customer_total'] ?? 0, 2, '.', ''),
                 number_format($r['balance_amount'] ?? 0, 2, '.', ''),
 
-                number_format($r['transport_cost'] ?? 0, 2, '.', ''),
+                number_format($r['tour_selling_price'] ?? 0,2,'.',''),
 
-                number_format($r['tour_selling_price'] ?? 0, 2, '.', ''),
-                number_format($r['tour_selling_tax'] ?? 0, 2, '.', ''),
-                0,
-                number_format(($r['tour_selling_total'] ?? 0) + ($r['transport_cost'] ?? 0), 2, '.', ''),
-                number_format(($r['customer_total'] ?? 0) - ($r['tour_selling_total'] ?? 0) - ($r['transport_cost'] ?? 0), 2, '.', ''),
+                number_format($r['tour_extra_included_price'] ?? 0,2,'.',''),
+
+                number_format($r['tour_extra_excluded_price'] ?? 0,2,'.',''),
+
+                number_format($r['tour_selling_tax'] ?? 0,2,'.',''),
+
+                number_format($r['tour_selling_total'] ?? 0,2,'.',''),
+                number_format(($r['customer_total'] - $r['tour_selling_total']) ?? 0,2,'.',''),
 
                 $r['product_name'] ?? '',
             ];
@@ -115,6 +121,36 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
             $data[] = $row;
         }
         
+        $data[] = [
+            '',
+            '',
+            '',
+            'Grand Total',
+            '-',
+            '-',
+            '-',
+            '-',
+            '-',
+            '-',
+
+            number_format($this->totals['product_price'],2,'.',''),
+            number_format($this->totals['extra_amount'],2,'.',''),
+            number_format($this->totals['tax_amount'],2,'.',''),
+            number_format($this->totals['discount_amount'],2,'.',''),
+            number_format($this->totals['customer_total'],2,'.',''),
+            number_format($this->totals['balance_amount'],2,'.',''),
+
+            number_format($this->totals['tour_selling_price'],2,'.',''),
+            number_format($this->totals['tour_extra_included_price'],2,'.',''),
+            number_format($this->totals['tour_extra_excluded_price'],2,'.',''),
+            number_format($this->totals['tour_selling_tax'],2,'.',''),
+            number_format($this->totals['net_total'],2,'.',''),
+            number_format($this->totals['profit'],2,'.',''),
+
+            '',
+            ''
+        ];
+        
         return $data;
     }
 
@@ -131,9 +167,9 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
                     'Quantity', 'Adult', 'Child', 'Infant', 'Senior',
                     'Product Price', 'Extra Amount', 'Tax Amount', 'Discount',
                     'Customer Total', 'Order Balance',
-                    'Transport Cost',
-                    'Product Price (Supplier Cost)', 'Tax', 'Other Fee',
-                    'Net Total', 'Profit', 'Product'
+                    'Supplier Price',
+                    'Extra Included', 'Extra Excluded', 'Supplier Tax',
+                    'Supplier Total', 'Profit', 'Product'
                 ];
 
                 foreach ($staticHeaders as $header) {
