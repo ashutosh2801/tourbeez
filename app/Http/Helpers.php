@@ -6,6 +6,7 @@ use App\Models\EmailTemplate;
 use App\Models\Order;
 use App\Models\OrderLog;
 use App\Models\Partner;
+use App\Models\PickupLocation;
 use App\Models\Setting;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
@@ -19,6 +20,58 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 //use Illuminate\Support\Facades\Storage;
+
+if(!function_exists('getManifestOrderGuestCount')) {
+    function getManifestOrderGuestCount( Order $order, string $date ): int {
+        $orderTour = $order->orderTours
+            ->first(function ($orderTour) use ($date) {
+                return Carbon::parse($orderTour->tour_date)
+                    ->toDateString() === Carbon::parse($date)
+                    ->toDateString();
+            });
+
+        if (!$orderTour) {
+            return 0;
+        }
+
+        return (int) collect(
+            json_decode($orderTour->tour_pricing, true) ?? []
+        )->sum('quantity');
+    }
+}
+
+if(!function_exists('getManifestPickupLocation')) {
+    function getManifestPickupLocation(Order $order): string
+    {
+        if (!$order->customer) {
+            return '';
+        }
+
+        if ($order->customer->pickup_name) {
+            return $order->customer->pickup_name;
+        }
+
+        if (!$order->customer->pickup_id) {
+            return '';
+        }
+
+        $pickupLocation = PickupLocation::find(
+            $order->customer->pickup_id
+        );
+
+        if (!$pickupLocation) {
+            return '';
+        }
+
+        return collect([
+            $pickupLocation->location,
+            $pickupLocation->address,
+            $pickupLocation->time,
+        ])
+            ->filter()
+            ->implode(' - ');
+    }
+}
 
 if(!function_exists('getFullSql')) {
     function getFullSql($query)

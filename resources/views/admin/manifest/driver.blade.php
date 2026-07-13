@@ -45,6 +45,7 @@ td:first-child {
     font-weight: 600;
     min-width: 300px !important;
     vertical-align: middle !important;
+    background: #f1f5f9;
 }
 
 thead th:first-child {
@@ -69,13 +70,17 @@ thead th:first-child {
 }
 
 .manifest-grid td strong {
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 700;
     display:inline-block;
     padding: 2px 8px;
     background: #e2e8f0;
     color: #1f2937;
     border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    line-height: 37px;
+    text-align: center;
 }
 
 .manifest-grid td p {
@@ -154,57 +159,55 @@ thead th:first-child {
     position: relative;
 }
 .order-wrapper {border-top: 1px dotted #f9f9f9;line-height: 3rem;}
-.order-wrapper span:first-child {width: 7cqmin0px; display: inline-block; font-size: 14px;}
+.order-wrapper span:first-child {width: 70px; display: inline-block; font-size: 14px;}
 .order-wrapper span:nth-child(2) {width: 40px; display: inline-block; font-size: 14px;}
 .order-wrapper span:nth-child(3) {width: 65px; display: inline-block; font-size: 14px;}
 .order-wrapper span:nth-child(4) {display: inline-block; font-size: 14px;}
 
+.summary-wra {border-bottom: 1px dotted #f9f9f9;line-height: 2rem;}
+.summary-wra span:first-child {min-width: 90px; display: inline-block; font-size: 14px;}
+.summary-wra span:nth-child(2) {min-width: 115px; display: inline-block; font-size: 14px;}
+.summary-wra:last-child {border-bottom: 0;}
+
 .orders-container {
-    overflow: hidden;
     display: none;
     position: absolute;
     left: -45%;
-    top: 50px;
+    top: 80px;
     overflow: visible;
     background: #9C27B0;
     z-index: 11;
     width: 360px;
-    border-radius: 8px 8px;
+    border-radius: 8px;
 }
+
 .orders-container:hover {
     background: #01228c;
 }
 
-/* Top Arrow */
 .orders-container::before {
     content: "";
     position: absolute;
     top: -10px;
-    right: 50%;
-    transform: translateX(50%);
+    left: 50%;
+    transform: translateX(-50%);
     width: 0;
     height: 0;
     border-left: 10px solid transparent;
     border-right: 10px solid transparent;
-    border-bottom: 10px solid #9d26b0;
+    border-bottom: 10px solid #9C27B0;
 }
 
-.orders-container::after {
-    content: "";
-    position: absolute;
-    top: -9px;
-    right: 50%;
-    transform: translateX(50%);
-    width: 0;
-    height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid #9d26b0;
+.orders-container:hover::before {
+    border-bottom-color: #01228c;
 }
 
-.orders-container:hover::before, 
-.orders-container:hover::after {
-    border-bottom: 10px solid #01228c;
+.toggle-orders .icon {
+    transition: transform 0.3s ease;
+}
+
+.toggle-orders .icon.active {
+    transform: rotate(-180deg);
 }
 </style>
 
@@ -285,6 +288,8 @@ thead th:first-child {
                         $nextGroup = $nextTour
                             ? ($tourReportGroupMap[$nextTour] ?? 99)
                             : null;
+
+                        $totalCellOrders = [];
                     @endphp
                     <tr>
                         <td>
@@ -311,7 +316,7 @@ thead th:first-child {
                                     ->values();
 
                                 $totalGuests = collect($cellOrders)->sum('guest_count');
-                                
+                                $totalCellOrders[] = $cellOrders;
                                 $driverNames = collect($cellOrders)
                                     ->flatMap(function ($o) use ($selectedDriver, $selectedVehicle) {
 
@@ -360,12 +365,7 @@ thead th:first-child {
 
                                 @if(count($cellOrders))
 
-                                    <div class="main-order-wrapper">
-
-                                        <!-- <div class="d-flex align-items-center justify-content-between w-80">
-                                            <strong>Total - {{ $totalGuests }}</strong>
-                                            <i class="fas fa-chevron-down toggle-orders" style="cursor:pointer;"></i>
-                                        </div> -->
+                                    <div class="main-order-wrapper">                                        
 
                                         @php
                                         $driverSummary = collect($cellOrders)
@@ -435,78 +435,69 @@ thead th:first-child {
                                             });
                                     @endphp
 
-                                    <div class="d-flex align-items-center justify-content-between">
-                                        <div class="text-truncate" style="font-size:13px;">
-                                            <strong>Total - {{ $totalGuests }} </strong>
-
-                                            <p>
-
+                                    <div class="d-flex align-items-center justify-content-between toggle-orders" style="cursor:pointer;">
+                                        <div class="flex align-items-center text-truncate" style="font-size:13px; display: flex; gap: 10px; align-items: center;">
+                                            <div><strong>{{ $totalGuests }} </strong></div>
+                                            <div>
                                             @if($driverSummary)
-                                                |
-                                                <span>
-                                                    {!! collect($cellOrders)
-                                                        ->flatMap(function ($order) use ($selectedDriver, $selectedVehicle) {
-                                                            $drivers = $order['driver_ids'] ?? [];
-                                                            $driverNames = $order['driver_names'] ?? [];
-                                                            $vehicles = $order['vehicle_names'] ?? [];
-                                                            $guestCount = $order['guest_count'] ?? 0;
+                                                {!! collect($cellOrders)
+                                                    ->flatMap(function ($order) use ($selectedDriver, $selectedVehicle) {
+                                                        $drivers = $order['driver_ids'] ?? [];
+                                                        $driverNames = $order['driver_names'] ?? [];
+                                                        $vehicles = $order['vehicle_names'] ?? [];
+                                                        $guestCount = $order['guest_count'] ?? 0;
 
-                                                            if (empty($drivers)) {
-                                                                    return [[
-                                                                        'driver'  => 'NA',
-                                                                        'vehicle' => 'NA',
-                                                                        'pax'     => 0,
-                                                                    ]];
-                                                                }
-
-                                                            $rows = [];
-
-                                                            foreach ($drivers as $index => $driverId) {
-
-                                                                if ($selectedDriver && $driverId != $selectedDriver) {
-                                                                    continue;
-                                                                }
-
-                                                                $vehicleId = $vehicleIds[$index] ?? null;
-
-                                                                if ($selectedVehicle && $vehicleId != $selectedVehicle) {
-                                                                    continue;
-                                                                }
-                                                                $rows[] = [
-                                                                    'driver' => $driverNames[$index] ?? 'Unknown',
-                                                                    'vehicle' => $vehicles[$index] ?? 'NA',
-                                                                    'pax' => $guestCount,
-                                                                ];
+                                                        if (empty($drivers)) {
+                                                                return [[
+                                                                    'driver'  => 'NA',
+                                                                    'vehicle' => 'NA',
+                                                                    'pax'     => 0,
+                                                                ]];
                                                             }
 
-                                                            return $rows;
-                                                        })
-                                                        ->groupBy('driver')
-                                                        ->map(function ($items, $driver) {
+                                                        $rows = [];
 
-                                                            $driverTotal = $items->sum('pax');
+                                                        foreach ($drivers as $index => $driverId) {
 
-                                                            $busSummary = $items
-                                                                ->groupBy('vehicle')
-                                                                ->map(function ($busItems, $bus) {
-                                                                    return '<i class="fas fa-shuttle-van"></i> '.$bus.' x'.$busItems->sum('pax');
-                                                                })
-                                                                ->implode(', ');
+                                                            if ($selectedDriver && $driverId != $selectedDriver) {
+                                                                continue;
+                                                            }
 
-                                                            return '<i class="fas fa-user-tie"></i> '.$driverTotal.' - '.$driver.' ('.$busSummary.')';
-                                                        })
-                                                        ->implode(' | ') !!}
-                                                </span>
+                                                            $vehicleId = $vehicleIds[$index] ?? null;
 
+                                                            if ($selectedVehicle && $vehicleId != $selectedVehicle) {
+                                                                continue;
+                                                            }
+                                                            $rows[] = [
+                                                                'driver' => $driverNames[$index] ?? 'Unknown',
+                                                                'vehicle' => $vehicles[$index] ?? 'NA',
+                                                                'pax' => $guestCount,
+                                                            ];
+                                                        }
+
+                                                        return $rows;
+                                                    })
+                                                    ->groupBy('driver')
+                                                    ->map(function ($items, $driver) {
+
+                                                        $driverTotal = $items->sum('pax');
+
+                                                        $busSummary = $items
+                                                            ->groupBy('vehicle')
+                                                            ->map(function ($busItems, $bus) {
+                                                                return '<span><i class="fas fa-shuttle-van"></i> '.$bus.' x '.$busItems->sum('pax').'</span>';
+                                                            })
+                                                            ->implode(', ');
+
+                                                        return '<div class="summary-wra"><span><i class="fas fa-user-tie"></i> '.$driverTotal.' - '.$driver.'</span> - '.$busSummary.'</div>';
+                                                    })
+                                                    ->implode('') !!}
                                             @endif
-
-
+                                            </div>
+                                            <div><i class="fas fa-chevron-down ms-2 icon" style="cursor:pointer;"></i></div>
                                         </div>
 
-                                        <i class="fas fa-chevron-down toggle-orders ms-2" style="cursor:pointer;"></i>
                                     </div>
-                                            <!-- <i class="fas fa-chevron-down toggle-orders" style="cursor:pointer;"></i>
-                                        </div> -->
 
                                         <div class="orders-container mt-2 text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
                                                 data-tour="{{ $tourTitle }}"
@@ -557,7 +548,7 @@ thead th:first-child {
 
                     <tr style="background:#eef2f7;font-weight:700;">
                         <td>
-                            Total {{ report_group_tour_status($currentGroup) }}
+                            Total {{ report_group_tour_status($currentGroup) }} 
                         </td>
 
                         @foreach($dateRange as $d)
@@ -588,7 +579,24 @@ thead th:first-child {
                             @endphp
 
                             <td class="text-center">
-                                {{ $groupTotal }}
+                                <div style="display:flex;gap:10px;align-items:center;">
+                                    <strong>{{ $groupTotal }}</strong>
+
+                                        <button
+                                            type="button"
+                                            id="pickupMailDropdown"
+                                            class="btn btn-warning btn-sm manifest-cell {{ $groupTotal ? 'has-orders' : '' }}"
+                                                data-tour="Send Pickup Mail"
+                                                data-date="{{ $_COOKIE['manifest_date'] ?? $date }}"
+                                                data-orders='@json($cellOrders ?? [])'
+                                                data-assignable="1"
+                                        >
+                                            Send Pickup Mail
+                                        </button>
+
+                                        
+                                    </div>
+                                </div>
                             </td>
 
                         @endforeach
@@ -646,7 +654,7 @@ thead th:first-child {
 
 {{-- MODAL --}}
 <div class="modal fade" id="driverModal">
-    <div class="modal-dialog modal-xl" style="max-width:900px;">
+    <div class="modal-dialog modal-xl" style="max-width:1000px;">
             <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><strong>Assign Driver</strong> - <span id="modal_tour_title"></span></h5>
@@ -656,7 +664,11 @@ thead th:first-child {
                 <input type="hidden" id="modal_date">
 
                 <label class="form-label">Orders - <span class="text-muted" id="modal_date_display"></span></label>
-                <div id="order_list" class="order-list bg-light" style="min-height: 300px;"></div>
+                <button type="button"
+                        class="btn btn-primary btn-sm"
+                        id="bulkAssignBtn">
+                    Assign Driver & Vehicle to All Orders
+                </button>
 
                 <div id="bulkAssignPanel" class="border rounded p-3 mt-3" style="display:none;">
 
@@ -712,19 +724,35 @@ thead th:first-child {
 
                 </div>
 
-                <div class="mt-3">
-                    <button type="button"
-                            class="btn btn-primary btn-sm"
-                            id="bulkAssignBtn">
-                        Assign Driver & Vehicle to All Orders
-                    </button>
-                </div>
+                <div id="order_list" class="order-list bg-light" style="min-height: auto;max-height: fit-content;overflow: visible;"></div>
+                
 
             </div>
             <div class="modal-footer">
-                <!-- <button type="button" class="btn btn-danger" id="removeDriver">
-                    Remove Driver
-                </button> -->
+                <div class="dropdown">
+                    <button
+                        class="btn btn-warning dropdown-toggle"
+                        type="button"
+                        id="pickupMailDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Send Pickup Mail
+                    </button>
+
+                    <ul class="dropdown-menu" aria-labelledby="pickupMailDropdown">
+                        <li>
+                            <a class="dropdown-item" href="javascript:void(0);" id="pickupMailDriver">
+                                <i class="fas fa-user-tie me-2"></i> To the Driver
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="javascript:void(0);" id="pickupMailPassenger">
+                                <i class="fas fa-users me-2"></i> To the Passenger
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success" id="assignDriver">Assign</button>
             </div>
@@ -757,25 +785,18 @@ document.addEventListener('DOMContentLoaded', function () {
     // ====================================
     // Calendar
     // ====================================
-
-    if (dateInput) {
+    if (dateInput) {let me 
 
         dateInput.addEventListener('click', function () {
-
             if (this.showPicker) {
                 this.showPicker();
             }
-
         });
 
         dateInput.addEventListener('change', function () {
-
             const url = new URL(window.location.href);
-
             url.searchParams.set('date', this.value);
-
             window.location.href = url.toString();
-
         });
 
     }
@@ -783,19 +804,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // ====================================
     // Today
     // ====================================
-
     $('#today-date').on('click', function () {
-
         const today = new Date();
-
         const yyyy = today.getFullYear();
-
         const mm = String(today.getMonth() + 1).padStart(2, '0');
-
         const dd = String(today.getDate()).padStart(2, '0');
-
         window.location.href = '?date=' + `${yyyy}-${mm}-${dd}`;
-
     });
 
     // ====================================
@@ -803,14 +817,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // ====================================
 
     $('#prev-week').on('click', function () {
-
         let d = new Date(dateInput.value);
-
         d.setDate(d.getDate() - 6);
-
-        window.location.href =
-            '?date=' + d.toISOString().split('T')[0];
-
+        window.location.href = '?date=' + d.toISOString().split('T')[0];
     });
 
     // ====================================
@@ -818,14 +827,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // ====================================
 
     $('#next-week').on('click', function () {
-
         let d = new Date(dateInput.value);
-
         d.setDate(d.getDate() + 5);
-
-        window.location.href =
-            '?date=' + d.toISOString().split('T')[0];
-
+        window.location.href = '?date=' + d.toISOString().split('T')[0];
     });
 
     // ====================================
@@ -848,8 +852,7 @@ document.addEventListener('DOMContentLoaded', function () {
             url += `&vehicle_id=${selectedVehicle}`;
         }
 
-        exportBtn.href =
-            "{{ route('admin.driver.manifest.export') }}" + url;
+        exportBtn.href = "{{ route('admin.driver.manifest.export') }}" + url;
     }
 
     updateExportUrl();
@@ -913,612 +916,797 @@ document.addEventListener('DOMContentLoaded', function () {
         cell.addEventListener('click', function () {
 
             $('#bulkAssignPanel').hide();
+            $('#bulkAssignBtn').text('Assign Driver & Vehicle to All Orders');
 
-            $('#bulkAssignBtn')
-                .text('Assign Driver & Vehicle to All Orders');
-
-            const assignable =
-                this.dataset.assignable === '1';
-
-            const orders =
-                JSON.parse(this.dataset.orders);
-
-            const date =
-                this.dataset.date;
+            const assignable = this.dataset.assignable === '1';
+            const orders = JSON.parse(this.dataset.orders);
+            const date = this.dataset.date;
 
             $('#modal_date').val(date);
-
             $('#modal_tour_title').text(this.dataset.tour);
-
             $('#modal_date_display').text(date);
 
-            const container =
-                document.getElementById('order_list');
-
+            const container = document.getElementById('order_list');
             container.innerHTML = '';
 
             let driversHtml = '';
-
             driversList.forEach(function (driver) {
-
-                driversHtml +=
-                    `<option value="${driver.id}">
-                        ${driver.name}
-                    </option>`;
-
+                driversHtml +=`<option value="${driver.id}">${driver.name}</option>`;
             });
 
-            let vehiclesHtml =
-                `<option value="">
-                    Select Vehicle
-                </option>`;
-
+            let vehiclesHtml = `<option value="">Select Vehicle</option>`;
             vehiclesList.forEach(function (vehicle) {
-
-                vehiclesHtml +=
-                    `<option value="${vehicle.id}">
-                        ${vehicle.name}
-                    </option>`;
-
+                vehiclesHtml += `<option value="${vehicle.id}">${vehicle.name}</option>`;
             });
 
             // Render orders starts here...
 
 
+            // ====================================
+            // Render Orders
+            // ====================================
 
-// ====================================
-// Render Orders
-// ====================================
+            orders.forEach(function (o) {
 
-orders.forEach(function (o) {
+                let orderUrl = orderEditRoute.replace(
+                    ':id',
+                    o.order_encrypt_id
+                );
 
-    let orderUrl = orderEditRoute.replace(
-        ':id',
-        o.order_encrypt_id
-    );
+                container.innerHTML += `
 
-    container.innerHTML += `
+                <div class="order-content mb-2 p-2 border rounded"
+                data-assignment-type="${o.assignment_type}">
 
-    <div class="order-content mb-2 p-2 border rounded"
-     data-assignment-type="${o.assignment_type}">
+                <div class="row align-items-center">
 
-    <div class="row align-items-center">
+                    <!-- Order Details -->
+                    <div class="col-md-2">
 
-        <!-- Order Details -->
-        <div class="col-md-2">
+                        <input
+                            type="checkbox"
+                            class="order-checkbox"
+                            value="${o.order_id}" style="width:20px; height:20px;"
+                            checked>
 
-            <input
-                type="checkbox"
-                class="order-checkbox"
-                value="${o.order_id}"
-                checked>
+                        <a href="${orderUrl}" target="_blank">
+                            <strong>#${o.order_number}</strong>
+                        </a>
 
-            <a href="${orderUrl}" target="_blank">
-                <strong>#${o.order_number}</strong>
-            </a>
+                        <br>
 
-            <br>
+                        <small class="text-muted">${o.customer ?? ''}</small>
 
-            <small class="text-muted">${o.customer ?? ''}</small>
+                        <br>
 
-            <br>
+                        <small><i class="fas fa-users"></i> ${o.guest_count} Pax            
 
-            <small><i class="fas fa-users"></i> ${o.guest_count} Pax            
+                        <span
+                            class="ml-2 order-info-btn" style="cursor:pointer;"
+                            data-order='${JSON.stringify(o)}'>
+                            <i class="bi bi-info-circle"></i> Info
+                        </span>
+                    </small>
+                    </div>
 
-            <span
-                class="mt-2 order-info-btn cursor-default"
-                data-order='${JSON.stringify(o)}'>
-                <i class="bi bi-info-circle"></i> Info
-            </span>
-        </small>
-        </div>
+                    <!-- Pickup Time -->
+                    <div class="col-md-3">
 
-        <!-- Pickup Time -->
-        <div class="col-md-3">
+                        <label class="small text-muted mb-1">
+                            Pickup Time
+                        </label>
 
-            <label class="small text-muted mb-1">
-                Pickup Time
-            </label>
+                        <input
+                            type="time" step="300"
+                            class="form-control order-pickup-time mb-3"
+                            value="${o.pickup_time ? o.pickup_time.substring(0,5) : ''}"
+                            data-order-id="${o.order_id}">
 
-            <input
-                type="time" step="300"
-                class="form-control order-pickup-time mb-3"
-                value="${o.pickup_time ? o.pickup_time.substring(0,5) : ''}"
-                data-order-id="${o.order_id}">
+                    </div>
 
-        </div>
+                    <!-- Driver -->
+                    <div class="col-md-4">
 
-        <!-- Driver -->
-        <div class="col-md-4">
+                        <label class="small text-muted mb-1">
+                            Driver
+                        </label>
 
-            <label class="small text-muted mb-1">
-                Driver
-            </label>
+                        <select
+                            class="form-control order-driver-select "
+                            multiple
+                            data-order-id="${o.order_id}">
 
-            <select
-                class="form-control order-driver-select "
-                multiple
-                data-order-id="${o.order_id}">
+                            ${driversHtml}
 
-                ${driversHtml}
+                        </select>
 
-            </select>
+                    </div>
 
-        </div>
+                    <!-- Vehicle -->
+                    <div class="col-md-3">
 
-        <!-- Vehicle -->
-        <div class="col-md-3">
+                        <label class="small text-muted mb-1">
+                            Vehicle
+                        </label>
 
-            <label class="small text-muted mb-1">
-                Vehicle
-            </label>
+                        <select
+                            class="form-control aiz-selectpicker order-vehicle-select mb-3"
+                            data-live-search="true"
+                            data-order-id="${o.order_id}">
 
-            <select
-                class="form-control aiz-selectpicker order-vehicle-select mb-3"
-                data-live-search="true"
-                data-order-id="${o.order_id}">
+                            ${vehiclesHtml}
 
-                ${vehiclesHtml}
+                        </select>
 
-            </select>
+                    </div>
 
-        </div>
+                </div>
 
-    </div>
+            </div>
 
-</div>
+                `;
 
-    `;
-
-});
-
-
-// ====================================
-// Initialise Select2 (Drivers)
-// ====================================
-
-$('.order-driver-select').select2({
-
-    width: '100%',
-
-    placeholder: 'Select Driver',
-
-    closeOnSelect: false
-
-});
+            });
 
 
-// ====================================
-// Initialise Vehicle Picker
-// ====================================
+            // ====================================
+            // Initialise Select2 (Drivers)
+            // ====================================
 
-$('.order-vehicle-select').selectpicker('refresh');
+            $('.order-driver-select').select2({
 
-loadBulkDropdowns();
+                width: '100%',
+
+                placeholder: 'Select Driver',
+
+                closeOnSelect: false
+
+            });
 
 
-// ====================================
-// Preselect Existing Drivers
-// ====================================
+            // ====================================
+            // Initialise Vehicle Picker
+            // ====================================
 
-orders.forEach(function (o) {
+            $('.order-vehicle-select').selectpicker('refresh');
+            loadBulkDropdowns();
 
-    let driverSelect = document.querySelector(
 
-        `.order-driver-select[data-order-id="${o.order_id}"]`
+            // ====================================
+            // Preselect Existing Drivers
+            // ====================================
 
-    );
+            orders.forEach(function (o) {
 
-    if (!driverSelect) {
+                let driverSelect = document.querySelector(
 
-        return;
+                    `.order-driver-select[data-order-id="${o.order_id}"]`
 
+                );
+
+                if (!driverSelect) {
+
+                    return;
+
+                }
+
+                let drivers = (o.driver_ids || []).map(String);
+
+                $(driverSelect)
+
+                    .val(drivers)
+
+                    .trigger('change');
+
+            });
+
+
+            // ====================================
+            // Preselect Existing Vehicles
+            // ====================================
+
+            orders.forEach(function (o) {
+
+                let vehicleSelect = document.querySelector(
+
+                    `.order-vehicle-select[data-order-id="${o.order_id}"]`
+
+                );
+
+                if (!vehicleSelect) {
+
+                    return;
+
+                }
+
+                let vehicles = (o.vehicle_ids || []).map(String);
+
+                $(vehicleSelect)
+
+                    .selectpicker('val', vehicles)
+
+                    .selectpicker('refresh');
+
+            });
+
+
+            // ====================================
+            // Open Modal
+            // ====================================
+
+            new bootstrap.Modal( document.getElementById('driverModal') ).show();
+
+
+            // ====================================
+            // Enable / Disable
+            // ====================================
+
+            if (!assignable) {
+
+                $('.order-driver-select')
+                    .prop('disabled', true)
+                    .trigger('change');
+
+                $('.order-vehicle-select')
+                    .prop('disabled', true)
+                    .selectpicker('refresh');
+
+                $('#assignDriver').prop('disabled', true);
+                $('#bulkAssignBtn').hide();
+                $('#bulkAssignPanel').hide();
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Driver Assignment Disabled',
+                    text: 'This tour is not assignable.'
+                });
+
+            } else {
+
+                $('.order-driver-select')
+                    .prop('disabled', false)
+                    .trigger('change');
+
+                $('.order-vehicle-select')
+                    .prop('disabled', false)
+                    .selectpicker('refresh');
+
+                $('#assignDriver').prop('disabled', false);
+                $('#bulkAssignBtn').show();
+            }
+        });
+    });
+
+
+    // ========================================
+    // BULK ASSIGN PANEL
+    // ========================================
+
+    $('#bulkAssignBtn').on('click', function () {
+        $(this).hide();
+        $('#bulkAssignPanel').stop(true, true).slideDown(200);
+    });
+
+    $('#bulkAssignBtnBack').on('click', function () {
+        $('#bulkAssignPanel').stop(true, true).slideUp(200, function () {
+            $('#bulkAssignBtn').show();
+        });
+    });
+
+
+    // ========================================
+    // LOAD BULK DROPDOWNS
+    // ========================================
+
+    function loadBulkDropdowns() {
+
+        let driverHtml = '';
+
+        window.allDrivers.forEach(function(driver) {
+            driverHtml += `
+                <option value="${driver.id}">
+                    ${driver.name}
+                </option>`;
+        });
+
+        $('#bulkDriver').html(driverHtml);
+
+        let vehicleHtml = `
+            <option value="">
+                Select Vehicle
+            </option>`;
+
+        vehiclesList.forEach(function(vehicle){
+            vehicleHtml += `
+                <option value="${vehicle.id}">
+                    ${vehicle.name}
+                </option>
+            `;
+        });
+
+        $('#bulkVehicle').html(vehicleHtml);
+
+        // Destroy if already initialized
+        if ($('#bulkDriver').hasClass('select2-hidden-accessible')) {
+            $('#bulkDriver').select2('destroy');
+        }
+
+        $('#bulkDriver').select2({
+            width: '100%',
+            placeholder: 'Select Drivers',
+            closeOnSelect: false
+        });
+
+        $('#bulkVehicle').selectpicker('destroy');
+        $('#bulkVehicle').selectpicker();
     }
 
-    let drivers = (o.driver_ids || []).map(String);
 
-    $(driverSelect)
+    // ========================================
+    // APPLY BULK ASSIGNMENT
+    // ========================================
 
-        .val(drivers)
+    $('#applyBulkAssignment').on('click', function () {
 
-        .trigger('change');
+        let drivers = $('#bulkDriver').val() || [];
+        let vehicle = $('#bulkVehicle').val();
 
-});
+        // Apply Driver
+        $('.order-driver-select').each(function(){
+            $(this)
+                .val(drivers)
+                .trigger('change');
+        });
 
-
-// ====================================
-// Preselect Existing Vehicles
-// ====================================
-
-orders.forEach(function (o) {
-
-    let vehicleSelect = document.querySelector(
-
-        `.order-vehicle-select[data-order-id="${o.order_id}"]`
-
-    );
-
-    if (!vehicleSelect) {
-
-        return;
-
-    }
-
-    let vehicles = (o.vehicle_ids || []).map(String);
-
-    $(vehicleSelect)
-
-        .selectpicker('val', vehicles)
-
-        .selectpicker('refresh');
-
-});
-
-
-// ====================================
-// Open Modal
-// ====================================
-
-new bootstrap.Modal(
-
-    document.getElementById('driverModal')
-
-).show();
-
-
-// ====================================
-// Enable / Disable
-// ====================================
-
-if (!assignable) {
-
-    $('.order-driver-select')
-        .prop('disabled', true)
-        .trigger('change');
-
-    $('.order-vehicle-select')
-        .prop('disabled', true)
-        .selectpicker('refresh');
-
-    $('#assignDriver').prop('disabled', true);
-
-    $('#bulkAssignBtn').hide();
-
-    $('#bulkAssignPanel').hide();
-
-    Swal.fire({
-
-        icon: 'warning',
-
-        title: 'Driver Assignment Disabled',
-
-        text: 'This tour is not assignable.'
-
+        // Apply Vehicle
+        $('.order-vehicle-select').each(function() {
+            $(this)
+                .selectpicker('val', vehicle)
+                .selectpicker('refresh');
+        });
     });
-
-} else {
-
-    $('.order-driver-select')
-        .prop('disabled', false)
-        .trigger('change');
-
-    $('.order-vehicle-select')
-        .prop('disabled', false)
-        .selectpicker('refresh');
-
-    $('#assignDriver').prop('disabled', false);
-
-    $('#bulkAssignBtn').show();
-
-}
-
-});
-
-});
-
-
-// ========================================
-// BULK ASSIGN PANEL
-// ========================================
-
-$('#bulkAssignBtn').on('click', function () {
-
-    $(this).hide();
-
-    $('#bulkAssignPanel').stop(true, true).slideDown(200);
-
-});
-
-$('#bulkAssignBtnBack').on('click', function () {
-
-    $('#bulkAssignPanel').stop(true, true).slideUp(200, function () {
-
-        $('#bulkAssignBtn').show();
-
-    });
-
-});
-
-
-// ========================================
-// LOAD BULK DROPDOWNS
-// ========================================
-
-function loadBulkDropdowns() {
-
-    let driverHtml = '';
-
-    window.allDrivers.forEach(function(driver){
-
-        driverHtml += `
-            <option value="${driver.id}">
-                ${driver.name}
-            </option>
-        `;
-
-    });
-
-    $('#bulkDriver').html(driverHtml);
-
-
-
-    let vehicleHtml = `
-        <option value="">
-            Select Vehicle
-        </option>
-    `;
-
-    vehiclesList.forEach(function(vehicle){
-
-        vehicleHtml += `
-            <option value="${vehicle.id}">
-                ${vehicle.name}
-            </option>
-        `;
-
-    });
-
-    $('#bulkVehicle').html(vehicleHtml);
-
-
-
-    // Destroy if already initialized
-
-    if ($('#bulkDriver').hasClass('select2-hidden-accessible')) {
-
-        $('#bulkDriver').select2('destroy');
-
-    }
-
-    $('#bulkDriver').select2({
-
-        width: '100%',
-
-        placeholder: 'Select Drivers',
-
-        closeOnSelect: false
-
-    });
-
-
-
-    $('#bulkVehicle').selectpicker('destroy');
-
-    $('#bulkVehicle').selectpicker();
-
-}
-
-
-
-// ========================================
-// APPLY BULK ASSIGNMENT
-// ========================================
-
-$('#applyBulkAssignment').on('click', function () {
-
-    let drivers = $('#bulkDriver').val() || [];
-
-    let vehicle = $('#bulkVehicle').val();
-
-
-
-    // Apply Driver
-
-    $('.order-driver-select').each(function(){
-
-        $(this)
-
-            .val(drivers)
-
-            .trigger('change');
-
-    });
-
-
-
-    // Apply Vehicle
-
-    $('.order-vehicle-select').each(function(){
-
-        $(this)
-
-            .selectpicker('val', vehicle)
-
-            .selectpicker('refresh');
-
-    });
-
-});
 
     // =========================
     // ASSIGN DRIVER (FIXED)
     // =========================
    // ========================================
-// ASSIGN DRIVER
-// ========================================
+    // ASSIGN DRIVER
+    // ========================================
 
-$('#assignDriver').on('click', async function () {
+    $('#assignDriver').on('click', async function () {
 
-    const btn = this;
+        const btn = this;
+        const date = $('#modal_date').val();
+        let pickup_time;
+        let ordersPayload = [];
 
-    const date = $('#modal_date').val();
+        $('.order-content').each(function () {
+            const row = $(this);
+            const orderId = parseInt(
+                row.find('.order-checkbox').val()
+            );
 
-    let pickup_time;
-    
+            // ----------------------------
+            // Driver IDs
+            // ----------------------------
 
-    let ordersPayload = [];
+            let driverIds = row.find('.order-driver-select').val() || [];
+            driverIds = driverIds.map(Number);
+            pickup_time = row.find('.order-pickup-time').val();
 
-    $('.order-content').each(function () {
+            // ----------------------------
+            // Vehicle IDs
+            // ----------------------------
 
-        const row = $(this);
-
-        const orderId = parseInt(
-            row.find('.order-checkbox').val()
-        );
-        
-
-        // ----------------------------
-        // Driver IDs
-        // ----------------------------
-
-        let driverIds =
-            row.find('.order-driver-select').val() || [];
-
-        driverIds = driverIds.map(Number);
-
-        pickup_time = row.find('.order-pickup-time').val();
-
-        // ----------------------------
-        // Vehicle IDs
-        // ----------------------------
-
-        let vehicleIds = [];
-
-        let vehicleSelect = row.find('.order-vehicle-select');
-
-        let vehicleValue = vehicleSelect.selectpicker('val');
-
-        if (vehicleValue) {
-
-            if (Array.isArray(vehicleValue)) {
-
-                vehicleIds = vehicleValue.map(Number);
-
-            } else {
-
-                vehicleIds = [Number(vehicleValue)];
-
+            let vehicleIds = [];
+            let vehicleSelect = row.find('.order-vehicle-select');
+            let vehicleValue = vehicleSelect.selectpicker('val');
+            if (vehicleValue) {
+                if (Array.isArray(vehicleValue)) {
+                    vehicleIds = vehicleValue.map(Number);
+                } else {
+                    vehicleIds = [Number(vehicleValue)];
+                }
             }
 
+            console.log({
+                order: orderId,
+                drivers: driverIds,
+                vehicles: vehicleIds
+            });
+
+            ordersPayload.push({
+                order_id: orderId,
+                driver_ids: driverIds,
+                vehicle_ids: vehicleIds,
+                pickup_time: pickup_time,
+                assignment_type: row.data('assignment-type')
+            });
+        });
+
+        console.log("Sending Payload", ordersPayload);
+
+        try {
+
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+            const response = await fetch(
+                "{{ route('admin.assign.driver') }}",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    },
+                    body: JSON.stringify({
+                        date: date,
+                        orders: ordersPayload
+                    })
+                }
+            );
+
+            const result = await response.json();
+            console.log(result);
+
+            if (!response.ok) {
+                throw result;
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Saved',
+                timer: 1000,
+                showConfirmButton: false
+            }).then(() => {
+                location.reload();
+            });
+
+        } catch (e) {
+
+            console.error(e);
+            Swal.fire({
+                icon: 'error',
+                title: 'Save Failed',
+                text: 'Unable to assign driver.'
+            });
+
+        } finally {
+
+            btn.disabled = false;
+            btn.innerText = "Assign";
+
         }
-
-        console.log({
-
-            order: orderId,
-
-            drivers: driverIds,
-
-            vehicles: vehicleIds
-
-        });
-
-        ordersPayload.push({
-
-            order_id: orderId,
-
-            driver_ids: driverIds,
-
-            vehicle_ids: vehicleIds,
-            pickup_time: pickup_time,
-
-            assignment_type: row.data('assignment-type')
-
-        });
 
     });
 
-    console.log("Sending Payload", ordersPayload);
+    // ========================================
+    // SEND MAIL TO DRIVER OR PASSENGER
+    // ========================================    
 
-    try {
+    $(document).on('click', '#pickupMailDriver', async function () {
 
-        btn.disabled = true;
+        let checkedOrders = [];
 
-        btn.innerText = "Saving...";
+        $('.order-content').each(function () {
 
-        const response = await fetch(
-            "{{ route('admin.assign.driver') }}",
-            {
+            const row = $(this);
+            const checkbox = row.find('.order-checkbox');
 
-                method: "POST",
-
-                headers: {
-
-                    "Content-Type": "application/json",
-
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
-
-                },
-
-                body: JSON.stringify({
-
-                    date: date,
-
-                    orders: ordersPayload
-
-                })
-
+            if (!checkbox.is(':checked')) {
+                return;
             }
-        );
 
-        const result = await response.json();
+            const orderId = parseInt(checkbox.val());
 
-        console.log(result);
+            const orderNumber = row
+                .find('a strong')
+                .text()
+                .replace('#', '')
+                .trim();
 
-        if (!response.ok) {
+            const pickupTime = row
+                .find('.order-pickup-time')
+                .val();
 
-            throw result;
+            const driverIds = row
+                .find('.order-driver-select')
+                .val() || [];
 
+            const vehicleId = row
+                .find('.order-vehicle-select')
+                .val() || null;
+
+            checkedOrders.push({
+                order_id: orderId,
+                order_number: orderNumber,
+                pickup_time: pickupTime,
+                driver_ids: driverIds.map(Number),
+                vehicle_id: vehicleId ? Number(vehicleId) : null
+            });
+        });
+
+        if (!checkedOrders.length) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Orders Selected',
+                text: 'Please select at least one order.'
+            });
+
+            return;
+        }
+
+        const ordersList = checkedOrders.map(order => {
+            return `<div>Order #${order.order_number}</div>`;
+        }).join('');
+
+        const confirmResult = await Swal.fire({
+            title: 'Send Pickup Mail to Driver',
+            html: `
+                <div class="text-start">
+                    <p>
+                        Please make sure the correct orders and drivers are
+                        selected before sending the pickup mail.
+                    </p>
+
+                    <div class="border rounded p-2 mt-2">
+                        <strong>Selected Orders:</strong>
+                        ${ordersList}
+                    </div>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Send Now',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (!confirmResult.isConfirmed) {
+            return;
         }
 
         Swal.fire({
+            title: 'Sending Driver Pickup Mail',
+            html: `
+                <div class="text-start">
+                    <p id="driverMailStatus">
+                        Preparing selected orders...
+                    </p>
 
-            icon: 'success',
-
-            title: 'Saved',
-
-            timer: 1000,
-
+                    <div class="progress" style="height:20px;">
+                        <div
+                            id="driverMailProgress"
+                            class="progress-bar progress-bar-striped progress-bar-animated"
+                            style="width:10%">
+                            10%
+                        </div>
+                    </div>
+                </div>
+            `,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
             showConfirmButton: false
-
-        }).then(() => {
-
-            location.reload();
-
         });
 
-    } catch (e) {
+        try {
 
-        console.error(e);
+            $('#driverMailStatus').html(
+                `Sending ${checkedOrders.length} selected orders...`
+            );
+
+            $('#driverMailProgress')
+                .css('width', '50%')
+                .text('50%');
+
+            const response = await fetch(
+                "{{ route('admin.driver.pickup.mail') }}",
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date: $('#modal_date').val(),
+                        orders: checkedOrders
+                    })
+                }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(
+                    result.message || 'Unable to send driver pickup mail.'
+                );
+            }
+
+            $('#driverMailProgress')
+                .css('width', '100%')
+                .text('100%');
+
+            await new Promise(resolve => setTimeout(resolve, 400));
+
+            const sentDrivers = (result.sent || []).map(item => `
+                <div class="text-success mb-1">
+                    <i class="fas fa-check-circle"></i>
+                    ${item.driver_name} — ${item.email}
+                    (${item.orders_count} orders)
+                </div>
+            `).join('');
+
+            const failedDrivers = (result.failed || []).map(item => `
+                <div class="text-danger mb-1">
+                    <i class="fas fa-times-circle"></i>
+                    ${item.driver_name || 'Unknown Driver'}
+                    — ${item.message}
+                </div>
+            `).join('');
+
+            Swal.fire({
+                icon: result.failed_count > 0 ? 'warning' : 'success',
+                title: 'Driver Pickup Mail Completed',
+                html: `
+                    <div class="text-start">
+                        <p>
+                            <strong>Sent:</strong> ${result.sent_count}
+                            &nbsp; | &nbsp;
+                            <strong>Failed:</strong> ${result.failed_count}
+                        </p>
+
+                        ${sentDrivers}
+
+                        ${failedDrivers}
+                    </div>
+                `,
+                confirmButtonText: 'OK'
+            });
+
+        } catch (error) {
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Mail Failed',
+                text: error.message || 'Unable to send driver pickup mail.'
+            });
+        }
+    });
+
+    $(document).on('click', '#pickupMailPassenger', async function () {
 
         Swal.fire({
+            title: 'Send Pickup Mail to the Passenger',
+            text: 'Please make sure to select the correct recipient before sending the pickup mail.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Send Now',
+            cancelButtonText: 'Cancel'
+        }).then(async (result) => {
 
-            icon: 'error',
+            if (!result.isConfirmed) return;
 
-            title: 'Save Failed',
+            const date = $('#modal_date').val();
 
-            text: 'Unable to assign driver.'
+            let orders = [];
 
+            $('.order-content').each(function () {
+
+                let checkbox = $(this).find('.order-checkbox');
+
+                if (!checkbox.is(':checked')) {
+                    return;
+                }
+
+                orders.push({
+                    order_id: parseInt(checkbox.val()),
+                    order_number: $(this).find('a strong').text().replace('#', '')
+                });
+            });
+
+            if (!orders.length) {
+
+                Swal.fire(
+                    'No Orders',
+                    'No orders found to send mail.',
+                    'warning'
+                );
+
+                return;
+            }
+
+            let html = `
+                <div class="text-start">
+                    <p><strong>Total Orders:</strong> ${orders.length}</p>
+                    <div id="mailProgressList"></div>
+                </div>
+            `;
+
+            Swal.fire({
+                title: 'Sending Passenger Pickup Mail',
+                html: html,
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: async () => {
+
+                    let sent = 0;
+                    let failed = 0;
+
+                    for (let i = 0; i < orders.length; i++) {
+
+                        let order = orders[i];
+                        let orderId = order.order_id;
+                        let orderNumber = order.order_number;
+
+                        $('#mailProgressList').append(`
+                            <div id="mail-row-${orderId}">
+                                ⏳ Order #${orderNumber} - Sending...
+                            </div>
+                        `);
+
+                        try {
+
+                            const response = await fetch(
+                                "{{ route('admin.passenger.pickup.mail') }}",
+                                {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                                    },
+                                    body: JSON.stringify({
+                                        date: date,
+                                        order_id: orderId
+                                    })
+                                }
+                            );
+
+                            const result = await response.json();
+
+                            if (result.success) {
+
+                                sent++;
+
+                                $(`#mail-row-${orderId}`).html(`
+                                    ✅ Order #${orderNumber} - Sent
+                                `);
+
+                            } else {
+
+                                failed++;
+
+                                $(`#mail-row-${orderId}`).html(`
+                                    ❌ Order #${orderNumber}
+                                    - Request failed
+                                `);
+                            }
+
+                        } catch (error) {
+
+                            failed++;
+
+                            $(`#mail-row-${orderId}`).html(`
+                                ❌ Order ID ${orderId}
+                                - Request failed
+                            `);
+                        }
+
+                        // Slow down sending
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+
+                    Swal.fire({
+                        icon: failed > 0 ? 'warning' : 'success',
+                        title: 'Pickup Mail Completed',
+                        html: `
+                            <p><strong>Sent:</strong> ${sent}</p>
+                            <p><strong>Failed:</strong> ${failed}</p>
+                        `,
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
         });
-
-    } finally {
-
-        btn.disabled = false;
-
-        btn.innerText = "Assign";
-
-    }
-
-});
+    });
 
     // =========================
     // DRIVER FILTER
@@ -1537,24 +1725,34 @@ $('#assignDriver').on('click', async function () {
     });
 
     updateExportUrl();
+
+    $(document).on('click', '.toggle-orders', function (e) {
+        e.stopPropagation();
+
+        let wrapper = $(this).closest('.main-order-wrapper');
+        let currentContainer = wrapper.find('.orders-container');
+        let icon = $(this).find('.icon');
+
+        $('.orders-container').not(currentContainer).slideUp(300);
+        $('.toggle-orders .icon').not(icon).removeClass('active');
+
+        currentContainer.slideToggle(300);
+        icon.toggleClass('active');
+    });
+
+    $(document).on('click', function () {
+        $('.orders-container').slideUp(300);
+        $('.toggle-orders .icon').removeClass('active');
+    });
+
+    $(document).on('click', '.orders-container', function (e) {
+        e.stopPropagation();
+    });
 });
 
-$(document).on('click', '.toggle-orders', function () {
-
-    let icon = $(this);
-    let currentContainer = icon.closest('.main-order-wrapper').find('.orders-container');
-
-    // Close all other open dropdowns
-    $('.orders-container').not(currentContainer).slideUp(300);
-    $('.toggle-orders').not(icon).removeClass('active');
-
-    // Toggle current dropdown
-    currentContainer.slideToggle(300);
-    icon.toggleClass('active');
-});
 </script>
 <script>
-    document.getElementById('today-date').addEventListener('click', function() {
+    /*document.getElementById('today-date').addEventListener('click', function() {
         let dateInput = document.getElementById('filter-date'); // ✅ define it here
 
         let today = new Date();
@@ -1569,7 +1767,8 @@ $(document).on('click', '.toggle-orders', function () {
 
         // redirect like your other filters
         window.location.href = "?date=" + formatted;
-    });
+    });*/
+    
     $(document).on('click', '.order-info-btn', function () {
 
         const o = $(this).data('order');
@@ -1584,27 +1783,27 @@ $(document).on('click', '.toggle-orders', function () {
                 <table class="table table-bordered table-sm text-start mb-0 text-left" style="width:auto">
 
                     <tr>
-                        <th style="width:150px">Order No</th>
+                        <th style="width: 150px;position: relative;min-width: auto !important;">Order No</th>
                         <td>${o.order_number}</td>
                     </tr>
 
                     <tr>
-                        <th>Customer</th>
+                        <th style="width: 150px;position: relative;min-width: auto !important;">Customer</th>
                         <td>${o.customer ?? '-'}</td>
                     </tr>                    
 
                     <tr>
-                        <th>Pickup Location</th>
+                        <th style="width: 150px;position: relative;min-width: auto !important;">Pickup Location</th>
                         <td>${o.pickup_location || '-'}</td>
                     </tr>
 
                     <tr>
-                        <th>Instructions</th>
+                        <th style="width: 150px;position: relative;min-width: auto !important;">Instructions</th>
                         <td>${o.instruction || '-'}</td>
                     </tr>
 
                     <tr>
-                        <th>Internal Notes</th>
+                        <th style="width: 150px;position: relative;min-width: auto !important;">Internal Notes</th>
                         <td>${o.internal_notes || '-'}</td>
                     </tr>
 
