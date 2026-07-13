@@ -245,7 +245,7 @@
         @endphp
 
         @if($hasActiveFilters)
-        <div class="active-filters m-4">
+        <div class="active-filters">
             <div class="d-flex flex-wrap gap-2">
 
                 {{-- Search --}}

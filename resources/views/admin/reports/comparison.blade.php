@@ -5,32 +5,36 @@
 
 <style>
 
-.card h3{font-size:16px;margin-bottom:15px}
+    body.sidebar-open {
+        overflow: hidden;
+    }
 
-.diff{
-    margin-top:10px;
-    font-size:14px
-}
-.green{color:#28a745}
-.red{color:#dc3545}
+    .card h3{font-size:16px;margin-bottom:15px}
 
-.table{width:100%;border-collapse:collapse}
-.table th,.table td{padding:8px;border-bottom:1px solid #eee;text-align:center}
+    .diff{
+        margin-top:10px;
+        font-size:14px
+    }
+    .green{color:#28a745}
+    .red{color:#dc3545}
 
-.badge-green{color:#28a745;font-weight:bold}
-.badge-red{color:#dc3545;font-weight:bold}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{padding:8px;border-bottom:1px solid #eee;text-align:center}
 
-.insights div{
-    padding:10px;
-    border-radius:8px;
-    margin-bottom:10px;
-    font-size:14px
-}
-.insight-green{background:#eaf7ef}
-.insight-purple{background:#f3ecff}
-.insight-blue{background:#eef5ff}
-.insight-orange{background:#fff4ea}
-.insight-red{background:#fdeeee}
+    .badge-green{color:#28a745;font-weight:bold}
+    .badge-red{color:#dc3545;font-weight:bold}
+
+    .insights div{
+        padding:10px;
+        border-radius:8px;
+        margin-bottom:10px;
+        font-size:14px
+    }
+    .insight-green{background:#eaf7ef}
+    .insight-purple{background:#f3ecff}
+    .insight-blue{background:#eef5ff}
+    .insight-orange{background:#fff4ea}
+    .insight-red{background:#fdeeee}
     .select2-container .select2-selection--single {
         height: 42px !important;
         border: 1px solid #aeb0b4 !important;
@@ -70,76 +74,117 @@
 </style>
 
 <div class="comparison-body">
-    <div class="card card-primary bg-white border rounded-lg-custom mb-3 top-search-bar">
-        <div class="row">
-            <div class="col-xl-12 col-12">
-                <b class="text-sm">Compare performance between two Order dates</b>
-            </div>
 
-            <div class="col-xl-4 col-md-3 col-12">
-            <div class="form-group">
-                <input type="text" id="date1" class="form-control" placeholder="Order Date 1" autocomplete="off" required>
+    <div class="card-primary mb-3">
+        <div class="card-header tour-main-head">
+            <div class="row">
+                <div class="col-md-8 col-12">
+                    <h3 class="card-title text-white">Date Comparison Report</h3>
+                </div>
+                <div class="col-md-4 col-12">
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-secondary" id="toggleFilter">
+                            <i class="fas fa-filter"></i> Filters
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-xl-4 col-md-3 col-12">
-            <div class="form-group">
-                <input type="text" id="date2" class="form-control" placeholder="Order Date 2" autocomplete="off" required>
+    <div class="tour-search-filter">
+        <div id="filterSidebar" class="filter-sidebar">
+            <div class="filter-header">
+                <h5><i class="fas fa-filter"></i> Filters</h5>
+                <button type="button" id="closeFilter">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="filter-body">
+                <div class="row">
+                    <div class="col-xl-12 col-12">
+                        <b class="text-sm">Compare performance between two Order dates</b>
+                    </div>
+
+                    <div class="col-md-6 col-12">
+                        <div class="form-group">
+                            <input type="text" id="date1" class="form-control" placeholder="Order Date 1" autocomplete="off" required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-12">
+                        <div class="form-group">
+                            <input type="text" id="date2" class="form-control" placeholder="Order Date 2" autocomplete="off" required>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Product</label>
+                            <select id="productFilter" name="product" class="form-control">
+                                @if(request('product') && request('product_text'))
+                                    <option value="{{ request('product') }}" selected>
+                                        {{ request('product_text') }}
+                                    </option>
+                                @endif
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Order Status</label>
+                            <select name="order_status" id="order_status" class="form-control">
+                                <option value="">All</option>
+                                <option value="3">Pending supplier</option>
+                                <option value="4">Pending customer</option>
+                                <option value="5">Confirmed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Pay Type</label>
+                            <select name="action_type" id="action_type" class="form-control">
+                                <option value="">All</option>
+                                <option value="pay_now">Pay Now</option>
+                                <option value="pay_later">Pay Later</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Source</label>
+                            <select id="partner" class="form-control">
+                                <option value="">All Channels</option>
+                                @foreach($partners as $p)
+                                    <option value="{{ $p->name }}">{{ $p->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div id="activeFilters" class="active-filters mb-2"></div>
+                    </div>
+
+                    <div class="col-12">
+                        <div id="filterAlert" class="mb-2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="filter-footer">
+                <button id="applyBtn" class="btn btn-search">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <a href="{{ route('admin.report.comparison') }}" class="btn btn-clear">
+                    <i class="fas fa-times"></i> Clear Search
+                </a>
             </div>
         </div>
-
-            <div class="col-xl-4 col-md-3 col-12">
-                <div class="form-group">
-                    <select id="productFilter" name="product" class="form-control">
-                        @if(request('product') && request('product_text'))
-                            <option value="{{ request('product') }}" selected>
-                                {{ request('product_text') }}
-                            </option>
-                        @endif
-                    </select>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-md-3 col-12">
-                <div class="form-group">
-                    <select name="order_status" id="order_status" class="form-control">
-                        <option value="">All</option>
-                        <option value="3">Pending supplier</option>
-                        <option value="4">Pending customer</option>
-                        <option value="5">Confirmed</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-md-3 col-12">
-                <div class="form-group">
-                    <select name="action_type" id="action_type" class="form-control">
-                        <option value="">All</option>
-                        <option value="pay_now">Pay Now</option>
-                        <option value="pay_later">Pay Later</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-md-3 col-12">
-                <div class="form-group">
-                    <select id="partner" class="form-control">
-                        <option value="">All Channels</option>
-                        @foreach($partners as $p)
-                            <option value="{{ $p->name }}">{{ $p->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-md-12 col-12">
-                <button id="applyBtn" class="btn btn-search">Apply</button>
-            </div>
-
-            <div class="col-12">
-                <div id="activeFilters" class="mb-2"></div>
-            </div>
-        </div>
+        <div id="filterOverlay"></div>
     </div>
 
    <!--  @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
@@ -151,9 +196,7 @@
 
     <div id="noFilterAlert"></div>
     <!-- <div id="activeFilters" class="mb-3"></div> -->
-
-    <!-- FILTER ALERT -->
-    <div id="filterAlert" class="mb-2"></div>
+    
 
     <div class="stats-cards">
 
@@ -339,6 +382,35 @@
 @parent() 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $('#toggleFilter').click(function () {
+
+        $('#filterSidebar').addClass('show');
+
+        $('#filterOverlay').addClass('show');
+
+        $('body').addClass('sidebar-open');
+
+        $(this)
+            .removeClass('btn-secondary')
+            .addClass('btn-danger')
+            .html('<i class="fas fa-times"></i> Filters');
+    });
+
+    $('#closeFilter,#filterOverlay').click(function () {
+
+        $('#filterSidebar').removeClass('show');
+
+        $('#filterOverlay').removeClass('show');
+
+        $('body').removeClass('sidebar-open');
+
+        $('#toggleFilter')
+            .removeClass('btn-danger')
+            .addClass('btn-secondary')
+            .html('<i class="fas fa-filter"></i> Filters');
+    });
+</script>
 <script>
 let revChart, passChart;
 const statusMap = {
@@ -792,6 +864,7 @@ window.onload = function () {
         });
         // ✅ Select2 (optimized)
         $('#productFilter').select2({
+            dropdownParent: $('#filterSidebar'),
             placeholder: 'Select Tour',
             minimumInputLength: 3,
             ajax: {

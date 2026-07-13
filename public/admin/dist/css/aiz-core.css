@@ -10578,6 +10578,10 @@ table.dataTable {
     font-weight: bold;
 }
 
+.order-list-body .active-filters {
+    padding: 12px 25px;
+}
+
 @media (max-width: 767px) {
 
     .order-list-body .btn-options .card-tools {
@@ -11933,10 +11937,30 @@ table.dataTable {
     padding-right: 0;
 }
 
+.tour-search-filter .filter-body label {
+    margin: 0;
+}
+
+.tour-search-filter .active-filters .badge {
+    background: #a8a8a8 !important;
+    margin-bottom: 7px;
+}
+
+.tour-search-filter .alert {
+    padding: 10px;
+    font-size: 14px;
+}
+
 @media(max-width:767px) {
 
     .tour-search-filter .filter-sidebar{
         width: 100%;
+    }
+
+    .comparison-body .tour-main-head .card-tools,
+    .dashboard-body .tour-main-head .card-tools {
+        float: left;
+        margin-top: 10px;
     }
 
 }

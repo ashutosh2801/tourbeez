@@ -1,71 +1,71 @@
 <x-admin>
-    @section('title','Tour-wise Overview
+    @section('title','Tour Wise Overview
 ')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
-        body.sidebar-open {
-            overflow: hidden;
-        }
-        /* ✅ Keep container scoped */
-        .dashboard-wrapper .container {
-            max-width: 1400px;
-            margin: auto;
-        }
+    body.sidebar-open {
+        overflow: hidden;
+    }
+    /* ✅ Keep container scoped */
+    .dashboard-wrapper .container {
+        max-width: 1400px;
+        margin: auto;
+    }
 
-        /* ✅ Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+    /* ✅ Header */
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+    }
 
-        /* 🔥 RIGHT SIDE ALIGNMENT */
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-left: auto; /* 🔥 pushes everything to right */
-        }
+    /* 🔥 RIGHT SIDE ALIGNMENT */
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: auto; /* 🔥 pushes everything to right */
+    }
 
-        /* Optional: control width */
-        .header-actions input {
-            width: 220px;
-        }
+    /* Optional: control width */
+    .header-actions input {
+        width: 220px;
+    }
 
-        /* ✅ Panels */
-        .dashboard-wrapper .card,
-        .dashboard-wrapper .panel {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 1px 6px rgba(0,0,0,.1);
-        }
+    /* ✅ Panels */
+    .dashboard-wrapper .card,
+    .dashboard-wrapper .panel {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 1px 6px rgba(0,0,0,.1);
+    }
 
-        /* ✅ Table */
-        .dashboard-wrapper table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+    /* ✅ Table */
+    .dashboard-wrapper table {
+        width: 100%;
+        border-collapse: collapse;
+    }
 
-        .dashboard-wrapper th,
-        .dashboard-wrapper td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
+    .dashboard-wrapper th,
+    .dashboard-wrapper td {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
 
-        .dashboard-wrapper .text-right {
-            text-align: right;
-        }
+    .dashboard-wrapper .text-right {
+        text-align: right;
+    }
 
-        /* ✅ Responsive */
-        @media(max-width:900px){
-            .dashboard-wrapper .cards,
-            .dashboard-wrapper .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
+    /* ✅ Responsive */
+    @media(max-width:900px){
+        .dashboard-wrapper .cards,
+        .dashboard-wrapper .dashboard-grid {
+            grid-template-columns: 1fr;
         }
-                /* FULL FIX FOR SELECT2 HEIGHT */
+    }
+    /* FULL FIX FOR SELECT2 HEIGHT */
     .select2-container .select2-selection--single {
         height: 42px !important;
         border: 1px solid #aeb0b4 !important;
@@ -77,8 +77,9 @@
     /* TEXT FIX */
     .select2-container--default .select2-selection--single .select2-selection__rendered {
         line-height: normal !important;
-        padding-left: 10px !important;
-        color: #495057 !important;
+        padding-left: 7px !important;
+        color: #898b92 !important;
+        font-size: 14px;
     }
 
     /* PLACEHOLDER COLOR */
@@ -102,34 +103,53 @@
     .select2-container {
         width: 100% !important;
     }
+
+    @media(min-width:767px) {
+
+        .daterangepicker.show-calendar {
+            top: 80px !important;
+            left: auto;
+            right: 430px !important;
+        }
+
+        .daterangepicker.show-calendar:before,
+        .daterangepicker.show-calendar:after {
+            left: 595px;
+            border-bottom-color: #999;
+            rotate: 90deg;
+            top: 130px;
+        }
+
+        .daterangepicker.show-calendar:nth-of-type(2):before,
+        .daterangepicker.show-calendar:nth-of-type(2):after {
+            top: 40px;
+        }
+    }
+
+    @media(max-width:767px) {
+
+        .daterangepicker.show-calendar {
+            height: 200px;
+            overflow-y: scroll;
+        }
+
+    }
 </style>
 
 <div class="dashboard-body">
-    <div class="mb-2">
-        <div class="dash-perform">
+
+    <div class="card-primary mb-3">
+        <div class="card-header tour-main-head">
             <div class="row">
-                <div class="col-md-6 col-12">
-                    <!-- <h2 class="text-sm m-0">Tour-wise overview</h2> -->
-                    <input 
-                        type="text" 
-                        name="booking_date"
-                        id="bookingDate"
-                        class="form-control aiz-date-range"
-                        placeholder="Order Date"
-                        autocomplete="off"
-                        data-advanced-range="true"
-                        data-separator=" - "
-                        value="{{ request('booking_date') }}"
-                    >
-                    <button type="button" id="applyFilter" class="btn btn-apply">
-                        Apply
-                    </button>
-                    <div id="activeFilters" class="active-filters"></div>
+                <div class="col-md-8 col-12">
+                    <h3 class="card-title text-white">Tour Wise Overview</h3>
                 </div>
-                <div class="col-md-6 col-12">
-                    <button type="button" id="toggleFilter" class="btn btn-secondary float-right">
-                        <i class="fas fa-filter"></i> Filters
-                    </button>
+                <div class="col-md-4 col-12">
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-secondary" id="toggleFilter">
+                            <i class="fas fa-filter"></i> Filters
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -145,6 +165,24 @@
             </div>
             <div class="filter-body">
                 <div class="row">
+
+                    <!-- BOOKING DATE -->
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label>Order Date</label>
+                            <input 
+                                type="text" 
+                                name="booking_date"
+                                id="bookingDate"
+                                class="form-control aiz-date-range"
+                                placeholder="Order Date"
+                                autocomplete="off"
+                                data-advanced-range="true"
+                                data-separator=" - "
+                                value="{{ request('booking_date') }}"
+                            >
+                        </div>
+                    </div>
 
                     <!-- TOUR DATE -->
                     <div class="col-12">
@@ -193,30 +231,54 @@
 
                     <!-- PAY TYPE -->
                     <div class="col-12">
-                        <label>Pay Type</label>
-                        <select name="action_type" id="actionType" class="form-control">
-                            <option value="">All</option>
-                            <option value="pay_now">Pay Now</option>
-                            <option value="pay_later">Pay Later</option>
-                        </select>
+                        <div class="form-group">
+                            <label>Pay Type</label>
+                            <select name="action_type" id="actionType" class="form-control">
+                                <option value="">All</option>
+                                <option value="pay_now">Pay Now</option>
+                                <option value="pay_later">Pay Later</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- SOURCE -->
                     <div class="col-12">
-                        <label>Source</label>
-                        <select name="partner" id="partner" class="form-control">
-                            <option value="">All</option>
-                            @foreach($partners as $partner)
-                                <option value="{{ ucfirst($partner->slug) }}">
-                                    {{ $partner->name }}
-                                </option>
-                            @endforeach
-                            <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
-                            <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
-                        </select>
+                        <div class="form-group">
+                            <label>Source</label>
+                            <select name="partner" id="partner" class="form-control">
+                                <option value="">All</option>
+                                @foreach($partners as $partner)
+                                    <option value="{{ ucfirst($partner->slug) }}">
+                                        {{ $partner->name }}
+                                    </option>
+                                @endforeach
+                                <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                                <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div id="activeFilters" class="active-filters"></div>
+                    </div>
+
+                    <div class="col-12">
+                        <div id="noFilterAlert">
+                            <div class="alert alert-info">
+                                Please apply filters to view report data.
+                            </div>
+                        </div>
                     </div>
 
                 </div>  
+            </div>
+            <div class="filter-footer">
+                <button type="submit" id="applyFilter" class="btn btn-search">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <a href="{{ route('admin.report.tour-wise') }}" class="btn btn-clear">
+                    <i class="fas fa-times"></i> Clear Search
+                </a>
             </div>
         </div>
         <div id="filterOverlay"></div>
@@ -227,11 +289,6 @@
             Please apply filters to view report data.weww
         </div>
     @endif -->
-    
-
-    <div id="noFilterAlert"><div class="alert alert-info">
-            Please apply filters to view report data.
-        </div></div>
     
     <div class="dashboard-wrapper">
             <div class="cards">
@@ -375,6 +432,7 @@ async function fetchDashboard() {
 
     const data = await res.json();
     renderDashboard(data);
+    
 }
 
 function renderDashboard(data) {
@@ -533,6 +591,7 @@ function renderDashboard(data) {
         }
     }
 );
+closeFilterSidebar();
 
 trendChart.render();
 
@@ -755,20 +814,20 @@ document.getElementById('applyFilter').onclick = fetchDashboard;
             .addClass('btn-danger')
             .html('<i class="fas fa-times"></i> Filters');
     });
-
-    $('#closeFilter,#filterOverlay').click(function () {
-
+    
+</script>
+<script>
+    function closeFilterSidebar() {
         $('#filterSidebar').removeClass('show');
-
         $('#filterOverlay').removeClass('show');
-
         $('body').removeClass('sidebar-open');
 
         $('#toggleFilter')
             .removeClass('btn-danger')
             .addClass('btn-secondary')
             .html('<i class="fas fa-filter"></i> Filters');
-    });
+    }
+    $('#closeFilter, #filterOverlay').click(closeFilterSidebar);
 </script>
     <script>
 
@@ -776,21 +835,24 @@ document.getElementById('applyFilter').onclick = fetchDashboard;
     $(document).ready(function () {
         // ✅ Select2 (optimized)
         $('#productFilter').select2({
+            dropdownParent: $('#filterSidebar'),
             placeholder: 'Select Tour',
+            width: '100%',
             minimumInputLength: 3,
             ajax: {
                 url: '{{ route("admin.tours.tours-list") }}',
                 dataType: 'json',
-                delay: 0,
-                cache: true,
-                data: function (params) {
-                    return { q: params.term };
-                },
-                processResults: function (data) {
+                delay: 300,
+                data: function(params) {
                     return {
-                        results: data.map(tour => ({
-                            id: tour.id,
-                            text: `${tour.title} (${tour.unique_code ?? 'N/A'})`
+                        q: params.term
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data.map(item => ({
+                            id: item.id,
+                            text: item.title
                         }))
                     };
                 }
