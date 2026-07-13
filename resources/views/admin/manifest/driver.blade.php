@@ -209,6 +209,9 @@ thead th:first-child {
 .toggle-orders .icon.active {
     transform: rotate(-180deg);
 }
+.pickup-mail-hidden {
+    display: none !important;
+}
 </style>
 
 <div class="card-primary mb-3">
@@ -503,7 +506,10 @@ thead th:first-child {
                                                 data-tour="{{ $tourTitle }}"
                                                 data-date="{{ $dateKey }}"
                                                 data-orders='@json($cellOrders)'
-                                                data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}">                                        
+                                                data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}"
+                                                data-is-show-mail-button="{{!($nextGroup !== $currentGroup && $currentGroup === 1)}}"
+
+                                                >                                        
 
                                         @foreach($cellOrders as $order)
                                             @if($order['tour_assignable'] != '1')
@@ -555,6 +561,7 @@ thead th:first-child {
 
                             @php
                                 $groupTotal = 0;
+                                $groupOrders = [];
 
                                 foreach ($sortedGrid as $title => $tourDates) {
 
@@ -575,6 +582,9 @@ thead th:first-child {
                                         });
 
                                     $groupTotal += $orders->sum('guest_count');
+                                     foreach ($orders as $order) {
+                                        $groupOrders[] = $order;
+                                    }
                                 }
                             @endphp
 
@@ -582,14 +592,18 @@ thead th:first-child {
                                 <div style="display:flex;gap:10px;align-items:center;">
                                     <strong>{{ $groupTotal }}</strong>
 
+
+                                        
+
                                         <button
                                             type="button"
                                             id="pickupMailDropdown"
                                             class="btn btn-warning btn-sm manifest-cell {{ $groupTotal ? 'has-orders' : '' }}"
                                                 data-tour="Send Pickup Mail"
                                                 data-date="{{ $_COOKIE['manifest_date'] ?? $date }}"
-                                                data-orders='@json($cellOrders ?? [])'
+                                                data-orders='@json($groupOrders ?? [])'
                                                 data-assignable="1"
+                                                data-is-show-mail-button="1"
                                         >
                                             Send Pickup Mail
                                         </button>
@@ -657,7 +671,7 @@ thead th:first-child {
     <div class="modal-dialog modal-xl" style="max-width:1000px;">
             <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><strong>Assign Driver</strong> - <span id="modal_tour_title"></span></h5>
+                <h5 class="modal-title"><strong>Assign Driver </strong> - <span id="modal_tour_title"></span></h5>
                 <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true"></button>
             </div>
             <div class="modal-body">
@@ -728,8 +742,8 @@ thead th:first-child {
                 
 
             </div>
-            <div class="modal-footer">
-                <div class="dropdown">
+            <div class="modal-footer ">
+                <div class="dropdown pickupMailWrapper">
                     <button
                         class="btn btn-warning dropdown-toggle"
                         type="button"
@@ -918,7 +932,19 @@ document.addEventListener('DOMContentLoaded', function () {
             $('#bulkAssignPanel').hide();
             $('#bulkAssignBtn').text('Assign Driver & Vehicle to All Orders');
 
+
+
             const assignable = this.dataset.assignable === '1';
+            const isShowMailButton = this.dataset.isShowMailButton === '1';
+
+
+            if (isShowMailButton) {
+                $('.pickupMailWrapper').removeClass('pickup-mail-hidden');
+            } else {
+                $('.pickupMailWrapper').addClass('pickup-mail-hidden');
+            }
+
+
             const orders = JSON.parse(this.dataset.orders);
             const date = this.dataset.date;
 

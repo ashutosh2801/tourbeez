@@ -309,7 +309,6 @@ class OrderController extends Controller
     public function store(Request $request)
     {
 
-
         $request->merge([
             'customer_id' => $request->customer_id ?: null
         ]);    
@@ -706,7 +705,7 @@ class OrderController extends Controller
                 foreach ($request->paymentType as $i => $type) {
                     //$amount = $request->amount[$i] ?? null;
 
-                    $amount          = $request->amount[$i] ?? null;
+                    $amount          = $request->amount[$i] ?? 0;
                     $collection_date = $request->collection_date[$i] ?? null;
                     $transactionId   = $request->transactionId[$i] ?? null;
 
@@ -740,9 +739,25 @@ class OrderController extends Controller
 
             // ===== Update Order totals =====
             $balanceAmount = $totalOrderAmount - $totalPaymentAmount;
-            $order->total_amount = $totalOrderAmount;
-            $order->balance_amount = $balanceAmount;
-            $order->booked_amount = $totalOrderAmount - $balanceAmount;
+            // $order->total_amount = $totalOrderAmount;
+            // $order->balance_amount = $balanceAmount;
+            // $order->booked_amount = $totalOrderAmount - $balanceAmount;
+
+
+            $totals = $this->calculateTotals(
+                $totalOrderAmount,
+                $totalPaymentAmount,
+                $request->paymentType ?? [],
+                $request->amount ?? []
+            );
+            
+            $order->total_amount   = $totals['total'];
+            $order->booked_amount  = $totals['paid'];
+            $order->balance_amount = $totals['balance'];
+            $balanceAmount = $totals['balance'];
+            $balanceAmount = $totals['balance'];
+
+            
             
             // dd($request->payment_type);
             if( $order->save() ){
@@ -1472,9 +1487,24 @@ class OrderController extends Controller
         
         }
         // dd($total, $balanceAmount, $totalPaymentAmount, $order->balance_amount, $order->booked_amount );
-        $order->total_amount    = $total;
-        $order->balance_amount  = $balanceAmount;
-        $order->booked_amount  = $totalPaymentAmount;
+        // $order->total_amount    = $total;
+        // $order->balance_amount  = $balanceAmount;
+        // $order->booked_amount  = $totalPaymentAmount;
+
+
+        $totals = $this->calculateTotals(
+            $total,
+            $totalPaymentAmount,
+            $request->paymentType ?? [],
+            $request->amount ?? []
+        );
+
+        $order->total_amount   = $totals['total'];
+        $order->booked_amount  = $totals['paid'];
+        $order->balance_amount = $totals['balance'];
+        $balanceAmount = $totals['balance'];
+        $balanceAmount = $totals['balance'];
+        $total =         $totals['total'];
         
 
         if( $order->save() ) {
@@ -4785,5 +4815,40 @@ class OrderController extends Controller
                 'message' => 'Something went wrong. Please try again.'
             ], 500);
         }
+    }
+
+    private function calculateTotals(
+        float $totalOrderAmount,
+        float $totalPaymentAmount,
+        array $paymentTypes,
+        array $amounts
+    ): array
+    {
+        $excludeAmount = 0;
+        
+        foreach ($paymentTypes as $index => $type) {
+            if ($type === 'EXCLUDEDPAYMENT') {
+                
+                $excludeAmount += (float)($amounts[$index] ?? 0);
+            }
+        }
+        
+        if ($excludeAmount > 0) {
+
+
+            return [
+                'total'   => $excludeAmount,
+                'paid'    => $excludeAmount,
+                'balance' => 0,
+                'exclude' => true,
+            ];
+        }
+
+        return [
+            'total'   => $totalOrderAmount,
+            'paid'    => $totalPaymentAmount,
+            'balance' => max($totalOrderAmount - $totalPaymentAmount, 0),
+            'exclude' => false,
+        ];
     }
 }
