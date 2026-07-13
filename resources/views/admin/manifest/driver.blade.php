@@ -64,7 +64,113 @@
     .select2-container {
         width: 100% !important;
     }
+.table-scroll-wrapper {
+    max-width: 800px;
+    height: 420px;
+    overflow: auto;
+    cursor: grab;
+    border: 1px solid #dee2e6;
+    background: #fff;
+}
 
+.table-scroll-wrapper.active {
+    cursor: grabbing;
+}
+
+table {
+    min-width: 1000px;
+    user-select: none;
+    margin-bottom: 0;
+}
+
+th,
+td {
+    min-width: 150px !important;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #212529 !important;
+    color: #fff;
+}
+
+th:first-child,
+td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    font-weight: 600;
+    min-width: 300px !important;
+    vertical-align: middle !important;
+}
+
+thead th:first-child {
+    z-index: 4;
+}
+
+.manifest-grid {
+    font-size: 16px;
+}
+
+.manifest-grid th {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 8px;
+    background: #f1f5f9;
+}
+
+.manifest-grid td {
+    font-size: 14px;
+    padding: 10px 8px;
+    vertical-align: middle;
+}
+
+.manifest-grid td strong {
+    font-size: 14px;
+    font-weight: 700;
+    display:inline-block;
+    padding: 2px 8px;
+    background: #e2e8f0;
+    color: #1f2937;
+    border-radius: 10px;
+}
+
+.manifest-grid td p {
+    margin: 0;
+}
+
+.manifest-grid small {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.manifest-cell.has-orders:hover {
+    transition: 0.2s;
+}
+
+.total-pax {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.assigned-pax {
+    font-size: 15px;
+    font-weight: 700;
+    color: #16a34a;
+}
+
+.manifest-grid td, .manifest-grid th {
+    vertical-align: middle;
+}
+
+.select2-container {
+    width: 100% !important;
+}
 
     .select2-selection__choice {
         background: #607D8B !important;
@@ -109,6 +215,76 @@
         width: calc((100% - 120px) / 7);
     }
 
+.toggle-orders {
+    transition: transform 0.3s ease;
+}
+
+.toggle-orders.active {
+    transform: rotate(-180deg);
+}
+.main-order-wrapper{
+    text-align:left;
+    font-size:13px;
+    line-height:1.9;
+    background-color:#01228b;
+    color: #fff;
+    padding:10px;
+    border-radius:10px;
+    position: relative;
+}
+.order-wrapper {border-top: 1px dotted #f9f9f9;line-height: 3rem;}
+.order-wrapper span:first-child {width: 7cqmin0px; display: inline-block; font-size: 14px;}
+.order-wrapper span:nth-child(2) {width: 40px; display: inline-block; font-size: 14px;}
+.order-wrapper span:nth-child(3) {width: 65px; display: inline-block; font-size: 14px;}
+.order-wrapper span:nth-child(4) {display: inline-block; font-size: 14px;}
+
+.orders-container {
+    overflow: hidden;
+    display: none;
+    position: absolute;
+    left: -45%;
+    top: 50px;
+    overflow: visible;
+    background: #9C27B0;
+    z-index: 11;
+    width: 360px;
+    border-radius: 8px 8px;
+}
+.orders-container:hover {
+    background: #01228c;
+}
+
+/* Top Arrow */
+.orders-container::before {
+    content: "";
+    position: absolute;
+    top: -10px;
+    right: 50%;
+    transform: translateX(50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #9d26b0;
+}
+
+.orders-container::after {
+    content: "";
+    position: absolute;
+    top: -9px;
+    right: 50%;
+    transform: translateX(50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #9d26b0;
+}
+
+.orders-container:hover::before, 
+.orders-container:hover::after {
+    border-bottom: 10px solid #01228c;
+}
 </style>
 
 <div class="card-primary mb-3">
@@ -158,18 +334,16 @@
 </div>
 
 <div class="card-primary bg-white border rounded-lg-custom">
-    <div class="card-body table-responsive p-0">
+    <div class="card-body table-responsive p-0" id="tableWrapper">
         <table class="table table-bordered table-sm manifest-grid">
             <thead>
                 <tr>
-                    <td>Tours</th>
-
-
+                    <th>Tours</th>
                     @foreach($dateRange as $d)
-                        <th class="text-center" style="min-width: 120px;">
-                            {{ $d->format('j-M-Y') }}<br>
-                            <small>{{ $d->format('l') }}</small>
-                        </th>
+                    <th class="text-center">
+                        {{ $d->format('j-M-Y') }}<br>
+                        <small>{{ $d->format('l') }}</small>
+                    </th>
                     @endforeach
                 </tr>
             </thead>
@@ -201,7 +375,6 @@
                         @foreach($dateRange as $d)
                             @php
                                 $dateKey = $d->toDateString();
-                                
 
                                 $cellOrders = collect($dates[$dateKey] ?? [])
                                     ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
@@ -216,10 +389,9 @@
                                     })
                                     ->values();
 
-                               $totalGuests = collect($cellOrders)->sum('guest_count');
+                                $totalGuests = collect($cellOrders)->sum('guest_count');
                                 
-
-                                    $driverNames = collect($cellOrders)
+                                $driverNames = collect($cellOrders)
                                     ->flatMap(function ($o) use ($selectedDriver, $selectedVehicle) {
 
                                         $driverIds = collect($o['driver_ids'] ?? []);
@@ -243,7 +415,7 @@
                                     ->implode(', ');
 
 
-                                    $vehicleNames = collect($cellOrders)
+                                $vehicleNames = collect($cellOrders)
                                     ->flatMap(function ($o) use ($selectedVehicle) {
 
                                         $vehicles = collect($o['vehicle_ids'] ?? []);
@@ -263,19 +435,163 @@
 
 
                             @endphp
-                            <td class="text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
-                                data-tour="{{ $tourTitle }}"
-                                data-date="{{ $dateKey }}"
-                                data-orders='@json($cellOrders)'
-                                data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}"
-                                style="cursor: {{ count($cellOrders) ? 'pointer' : 'default' }};">
-
+                            <td style="cursor: {{ count($cellOrders) ? 'pointer' : 'grab' }};">
 
                                 @if(count($cellOrders))
 
-                                    <div style="text-align:left;font-size:12px;line-height:1.5;">
+                                    <div class="main-order-wrapper">
 
-                                        <strong>Total - {{ $totalGuests }}</strong>
+                                        <!-- <div class="d-flex align-items-center justify-content-between w-80">
+                                            <strong>Total - {{ $totalGuests }}</strong>
+                                            <i class="fas fa-chevron-down toggle-orders" style="cursor:pointer;"></i>
+                                        </div> -->
+
+                                        @php
+                                        $driverSummary = collect($cellOrders)
+                                            ->flatMap(function ($order) use ($selectedDriver, $selectedVehicle) {
+                                                $drivers = $order['driver_ids'] ?? [];
+                                                $driverNames = $order['driver_names'] ?? [];
+                                                $vehicles = $order['vehicle_names'] ?? [];
+                                                $guestCount = $order['guest_count'] ?? 0;
+                                                if (empty($driverNames)) {
+                                                    return [[
+                                                        'driver'  => 'NA',
+                                                        'vehicle' => 'NA',
+                                                        'pax'     => 0,
+                                                    ]];
+                                                }
+
+                                                $rows = [];
+
+
+
+                                                foreach ($drivers as $index => $driverId) {
+
+                                                    // Driver filter
+                                                    if ($selectedDriver && $driverId != $selectedDriver) {
+                                                        continue;
+                                                    }
+
+                                                    // Vehicle filter
+                                                    $vehicleId = $order['vehicle_ids'][$index] ?? null;
+
+                                                    if ($selectedVehicle && $vehicleId != $selectedVehicle) {
+                                                        continue;
+                                                    }
+
+                                                    $driverName = trim($driverNames[$index] ?? '');
+                                                    $driverName = ($driverName === '' || strtoupper($driverName) === 'NA')
+                                                        ? 'NA'
+                                                        : $driverName;
+
+                                                    $vehicleName = trim($vehicles[$index] ?? '');
+                                                    $vehicleName = ($vehicleName === '' || strtoupper($vehicleName) === 'NA')
+                                                        ? 'NA'
+                                                        : $vehicleName;
+
+                                                    $rows[] = [
+                                                        'driver'  => $driverName,
+                                                        'vehicle' => $vehicleName,
+                                                        'pax'     => $guestCount,
+                                                    ];
+                                                }
+
+                                                return $rows;
+                                            })
+                                            ->groupBy('driver')
+                                            ->map(function ($items, $driver) {
+
+                                                $driverTotal = $items->sum('pax');
+
+                                                $busSummary = $items
+                                                    ->groupBy('vehicle')
+                                                    ->map(function ($busItems, $bus) {
+                                                        return '<i class="fas fa-shuttle-van"></i> '.$bus.' x'.$busItems->sum('pax');
+                                                    })
+                                                    ->implode(', ');
+
+                                                return '<i class="fas fa-user-tie"></i> '.$driverTotal.' - '.$driver.' ('.$busSummary.')';
+                                            });
+                                    @endphp
+
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="text-truncate" style="font-size:13px;">
+                                            <strong>Total - {{ $totalGuests }} </strong>
+
+                                            <p>
+
+                                            @if($driverSummary)
+                                                |
+                                                <span>
+                                                    {!! collect($cellOrders)
+                                                        ->flatMap(function ($order) use ($selectedDriver, $selectedVehicle) {
+                                                            $drivers = $order['driver_ids'] ?? [];
+                                                            $driverNames = $order['driver_names'] ?? [];
+                                                            $vehicles = $order['vehicle_names'] ?? [];
+                                                            $guestCount = $order['guest_count'] ?? 0;
+
+                                                            if (empty($drivers)) {
+                                                                    return [[
+                                                                        'driver'  => 'NA',
+                                                                        'vehicle' => 'NA',
+                                                                        'pax'     => 0,
+                                                                    ]];
+                                                                }
+
+                                                            $rows = [];
+
+                                                            foreach ($drivers as $index => $driverId) {
+
+                                                                if ($selectedDriver && $driverId != $selectedDriver) {
+                                                                    continue;
+                                                                }
+
+                                                                $vehicleId = $vehicleIds[$index] ?? null;
+
+                                                                if ($selectedVehicle && $vehicleId != $selectedVehicle) {
+                                                                    continue;
+                                                                }
+                                                                $rows[] = [
+                                                                    'driver' => $driverNames[$index] ?? 'Unknown',
+                                                                    'vehicle' => $vehicles[$index] ?? 'NA',
+                                                                    'pax' => $guestCount,
+                                                                ];
+                                                            }
+
+                                                            return $rows;
+                                                        })
+                                                        ->groupBy('driver')
+                                                        ->map(function ($items, $driver) {
+
+                                                            $driverTotal = $items->sum('pax');
+
+                                                            $busSummary = $items
+                                                                ->groupBy('vehicle')
+                                                                ->map(function ($busItems, $bus) {
+                                                                    return '<i class="fas fa-shuttle-van"></i> '.$bus.' x'.$busItems->sum('pax');
+                                                                })
+                                                                ->implode(', ');
+
+                                                            return '<i class="fas fa-user-tie"></i> '.$driverTotal.' - '.$driver.' ('.$busSummary.')';
+                                                        })
+                                                        ->implode(' | ') !!}
+                                                </span>
+
+                                            @endif
+
+
+                                        </div>
+
+                                        <i class="fas fa-chevron-down toggle-orders ms-2" style="cursor:pointer;"></i>
+                                    </div>
+                                            <!-- <i class="fas fa-chevron-down toggle-orders" style="cursor:pointer;"></i>
+                                        </div> -->
+
+                                        <div class="orders-container mt-2 text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
+                                                data-tour="{{ $tourTitle }}"
+                                                data-date="{{ $dateKey }}"
+                                                data-orders='@json($cellOrders)'
+                                                data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}">                                        
 
                                         @foreach($cellOrders as $order)
                                             @if($order['tour_assignable'] != '1')
@@ -293,17 +609,19 @@
                                                     : 'NA';
                                             @endphp
 
-                                            <br>
-                                            
+                                            <div class="order-wrapper">                                            
                                             <span class="font-bold">{{ $order['order_number'] }}</span>
                                             -
-                                            <span >{{ $order['guest_count'] }}</span>
+                                            <span ><i class="fas fa-users"></i> {{ $order['guest_count'] }}</span>
                                             -
-                                           <span class="text-success"> {{ $driver }}</span>
+                                           <span class="text-success"><i class="fas fa-user-tie"></i>  {{ $driver }}</span>
                                             -
-                                            <span class="text-primary">{{ $vehicle }}</span>
+                                            <span class="text-primary"><i class="fas fa-shuttle-van"></i> {{ $vehicle }}</span>
+                                            </div>
 
                                         @endforeach
+
+                                        </div>
 
                                     </div>
 
@@ -313,52 +631,51 @@
                             </td>
                         @endforeach
                     </tr>
-                    <tr style="background:#f8f9fa; font-weight:600;">
 
-                        @if($nextGroup !== $currentGroup)
+                    @if($nextGroup !== $currentGroup && $currentGroup === 1)
 
-                            <tr style="background:#eef2f7;font-weight:700;">
-                                <td>
-                                    Total {{ report_group_tour_status($currentGroup) }}
-                                </td>
+                    <tr style="background:#eef2f7;font-weight:700;">
+                        <td>
+                            Total {{ report_group_tour_status($currentGroup) }}
+                        </td>
 
-                                @foreach($dateRange as $d)
+                        @foreach($dateRange as $d)
 
-                                    @php
-                                        $groupTotal = 0;
+                            @php
+                                $groupTotal = 0;
 
-                                        foreach ($sortedGrid as $title => $tourDates) {
+                                foreach ($sortedGrid as $title => $tourDates) {
 
-                                            if (($tourReportGroupMap[$title] ?? 99) != $currentGroup) {
-                                                continue;
-                                            }
+                                    if (($tourReportGroupMap[$title] ?? 99) != $currentGroup) {
+                                        continue;
+                                    }
 
-                                            $orders = collect($tourDates[$d->toDateString()] ?? [])
-                                                ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
+                                    $orders = collect($tourDates[$d->toDateString()] ?? [])
+                                        ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
 
-                                                    $driverMatch = !$selectedDriver ||
-                                                        in_array($selectedDriver, $o['driver_ids'] ?? []);
+                                            $driverMatch = !$selectedDriver ||
+                                                in_array($selectedDriver, $o['driver_ids'] ?? []);
 
-                                                    $vehicleMatch = !$selectedVehicle ||
-                                                        in_array($selectedVehicle, $o['vehicle_ids'] ?? []);
+                                            $vehicleMatch = !$selectedVehicle ||
+                                                in_array($selectedVehicle, $o['vehicle_ids'] ?? []);
 
-                                                    return $driverMatch && $vehicleMatch;
-                                                });
+                                            return $driverMatch && $vehicleMatch;
+                                        });
 
-                                            $groupTotal += $orders->sum('guest_count');
-                                        }
-                                    @endphp
+                                    $groupTotal += $orders->sum('guest_count');
+                                }
+                            @endphp
 
-                                    <td class="text-center">
-                                        {{ $groupTotal }}
-                                    </td>
+                            <td class="text-center">
+                                {{ $groupTotal }}
+                            </td>
 
-                                @endforeach
-                            </tr>
+                        @endforeach
+                    </tr>
 
-                            @endif
+                    @endif
 
-                @empty
+                    @empty
                     <tr>
                         <td colspan="{{ count($dateRange) + 1 }}" class="text-center text-muted">
                             No tours found for this week.
@@ -408,29 +725,71 @@
 
 {{-- MODAL --}}
 <div class="modal fade" id="driverModal">
-    <div class="modal-dialog modal-xl" style="max-width:80%;">
+    <div class="modal-dialog modal-xl" style="max-width:900px;">
             <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Assign Driver</h5>
+                <h5 class="modal-title"><strong>Assign Driver</strong> - <span id="modal_tour_title"></span></h5>
                 <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="modal_date">
 
-                <div class="mb-3">
-                    <label class="form-label"><strong id="modal_tour_title"></strong></label>
-                    <div class="text-muted" id="modal_date_display"></div>
-                </div>                
-
-                <label class="form-label">Orders</label>
+                <label class="form-label">Orders - <span class="text-muted" id="modal_date_display"></span></label>
                 <div id="order_list" class="order-list bg-light" style="min-height: 300px;"></div>
 
-                <!-- <div class="mt-2">
-                    <label>
-                        <input type="checkbox" id="select_all_orders" checked> Apply to all orders
-                    </label>
-                </div> -->
+                <div id="bulkAssignPanel" class="border rounded p-3 mt-3" style="display:none;">
 
+                    <h6>Bulk Assignment</h6>
+
+                    <div class="row">
+
+                        <div class="col-md-6">
+                            <label>Drivers</label>
+
+                            <select
+                                id="bulkDriver"
+                                class="form-control"
+                                multiple
+                                data-live-search="true">
+
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label>Vehicle</label>
+
+                            <select
+                                id="bulkVehicle"
+                                class="form-control aiz-selectpicker"
+                                data-live-search="true">
+
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <div class="mt-3">
+
+                        <button
+                            type="button"
+                            class="btn btn-success"
+                            id="applyBulkAssignment">
+
+                            Apply To All Orders
+
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            id="bulkAssignBtnBack">
+
+                            Cancel
+
+                        </button>
+
+                    </div>
+
+                </div>
 
                 <div class="mt-3">
                     <button type="button"
@@ -440,61 +799,6 @@
                     </button>
                 </div>
 
-<div id="bulkAssignPanel"
-     class="border rounded p-3 mt-3"
-     style="display:none;">
-
-    <h6>Bulk Assignment</h6>
-
-    <div class="row">
-
-        <div class="col-md-6">
-            <label>Drivers</label>
-
-            <select
-                id="bulkDriver"
-                class="form-control"
-                multiple
-                data-live-search="true">
-
-            </select>
-        </div>
-
-        <div class="col-md-6">
-            <label>Vehicle</label>
-
-            <select
-                id="bulkVehicle"
-                class="form-control aiz-selectpicker"
-                data-live-search="true">
-
-            </select>
-        </div>
-
-    </div>
-
-    <div class="mt-3">
-
-        <button
-            type="button"
-            class="btn btn-success"
-            id="applyBulkAssignment">
-
-            Apply To All Orders
-
-        </button>
-        <button
-            type="button"
-            class="btn btn-secondary"
-            id="bulkAssignBtnBack">
-
-            Cancel
-
-        </button>
-
-    </div>
-
-</div>
             </div>
             <div class="modal-footer">
                 <!-- <button type="button" class="btn btn-danger" id="removeDriver">
@@ -760,7 +1064,7 @@ orders.forEach(function (o) {
     <div class="row align-items-center">
 
         <!-- Order Details -->
-        <div class="col-md-3">
+        <div class="col-md-2">
 
             <input
                 type="checkbox"
@@ -778,28 +1082,25 @@ orders.forEach(function (o) {
 
             <br>
 
-            <small>👥 ${o.guest_count} Pax
+            <small><i class="fas fa-users"></i> ${o.guest_count} Pax            
 
-            
-
-            <button
-                type="button"
-                class="mt-2 order-info-btn"
+            <span
+                class="mt-2 order-info-btn cursor-default"
                 data-order='${JSON.stringify(o)}'>
                 <i class="bi bi-info-circle"></i> Info
-            </button>
+            </span>
         </small>
         </div>
 
         <!-- Pickup Time -->
-        <div class="col-md-2">
+        <div class="col-md-3">
 
             <label class="small text-muted mb-1">
                 Pickup Time
             </label>
 
             <input
-                type="time"
+                type="time" step="300"
                 class="form-control order-pickup-time mb-3"
                 value="${o.pickup_time ? o.pickup_time.substring(0,5) : ''}"
                 data-order-id="${o.order_id}">
@@ -1316,6 +1617,20 @@ $('#assignDriver').on('click', async function () {
 
     updateExportUrl();
 });
+
+$(document).on('click', '.toggle-orders', function () {
+
+    let icon = $(this);
+    let currentContainer = icon.closest('.main-order-wrapper').find('.orders-container');
+
+    // Close all other open dropdowns
+    $('.orders-container').not(currentContainer).slideUp(300);
+    $('.toggle-orders').not(icon).removeClass('active');
+
+    // Toggle current dropdown
+    currentContainer.slideToggle(300);
+    icon.toggleClass('active');
+});
 </script>
 <script>
     document.getElementById('today-date').addEventListener('click', function() {
@@ -1345,22 +1660,17 @@ $('#assignDriver').on('click', async function () {
             width: 700,
 
             html: `
-                <table class="table table-bordered table-sm text-start mb-0">
+                <table class="table table-bordered table-sm text-start mb-0 text-left" style="width:auto">
 
                     <tr>
-                        <th width="35%">Order No</th>
+                        <th style="width:150px">Order No</th>
                         <td>${o.order_number}</td>
                     </tr>
 
                     <tr>
                         <th>Customer</th>
                         <td>${o.customer ?? '-'}</td>
-                    </tr>
-
-                    <tr>
-                        <th>Pax</th>
-                        <td>${o.guest_count}</td>
-                    </tr>
+                    </tr>                    
 
                     <tr>
                         <th>Pickup Location</th>
@@ -1386,5 +1696,45 @@ $('#assignDriver').on('click', async function () {
 
     });
 </script>
+<script>
+    const tableWrapper = document.getElementById("tableWrapper");
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let scrollLeft = 0;
+    let scrollTop = 0;
+
+    tableWrapper.addEventListener("mousedown", function (e) {
+      isDragging = true;
+      tableWrapper.classList.add("active");
+
+      startX = e.pageX - tableWrapper.offsetLeft;
+      startY = e.pageY - tableWrapper.offsetTop;
+
+      scrollLeft = tableWrapper.scrollLeft;
+      scrollTop = tableWrapper.scrollTop;
+    });
+
+    tableWrapper.addEventListener("mouseleave", stopDragging);
+    tableWrapper.addEventListener("mouseup", stopDragging);
+
+    function stopDragging() {
+      isDragging = false;
+      tableWrapper.classList.remove("active");
+    }
+
+    tableWrapper.addEventListener("mousemove", function (e) {
+      if (!isDragging) return;
+
+      e.preventDefault();
+
+      const x = e.pageX - tableWrapper.offsetLeft;
+      const y = e.pageY - tableWrapper.offsetTop;
+
+      tableWrapper.scrollLeft = scrollLeft - (x - startX);
+      tableWrapper.scrollTop = scrollTop - (y - startY);
+    });
+  </script>
 @endsection
 </x-admin>
