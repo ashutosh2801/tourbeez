@@ -608,6 +608,10 @@ const colors = [
     '#14B8A6',
     '#F97316',
     '#94A3B8'
+
+
+
+    
 ];
 
 tours.forEach((t,index)=>{
