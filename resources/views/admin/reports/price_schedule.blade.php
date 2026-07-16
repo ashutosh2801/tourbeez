@@ -245,6 +245,19 @@
     justify-content: center;
 }
 
+.col-total {
+    background: #d4edda !important;
+    color: #155724;
+    font-weight: 600;
+}
+
+/* Dark Green */
+.col-profit {
+    background: #198754 !important;
+    color: #fff !important;
+    font-weight: 700;
+}
+
 </style>
 
 <div class="card-primary mb-3">
@@ -546,10 +559,7 @@
                     </div>
 
                     <div style="font-size:24px;font-weight:bold;color:#15803d;margin-top:8px;">
-                        {{ number_format_with_currency(
-                            $totals['customer_total'] - ($totals['net_total'] + $businessExpense['total']),
-                            2
-                        ) }}
+                        {{ number_format_with_currency($totals['profit'] - $totals['balance_amount'],2) }}
                     </div>
                 </td>
 
@@ -562,11 +572,11 @@
                     padding:18px;
                 ">
                     <div style="font-size:13px;color:#666;font-weight:600;">
-                        TOTAL EXPENSES
+                        TOTAL ADS EXPENSES
                     </div>
 
                     <div style="font-size:24px;font-weight:bold;color:#dc2626;margin-top:8px;">
-                        {{ number_format_with_currency($totals['net_total'] + $businessExpense['total'],2) }}
+                        {{ number_format_with_currency($businessExpense['total'],2) }}
                     </div>
                 </td>
 
@@ -583,7 +593,7 @@
                     </div>
 
                     <div style="font-size:24px;font-weight:bold;color:#b45309;margin-top:8px;">
-                        {{ number_format_with_currency($totals['customer_total'],2) }}
+                        {{  number_format_with_currency($totals['profit'] - $totals['balance_amount'] - $businessExpense['total'],2)  }}
                     </div>
                 </td>
 
@@ -628,7 +638,7 @@
         <th>Extra Amount</th>
         <th>Tax Amount</th>
         <th>Discount</th>
-        <th>Customer Total</th>
+        <th class="col-total">Customer Total</th>
         <!-- <th>Excluded Total</th> -->
         <th>Order Balance</th>
 
@@ -638,8 +648,8 @@
         <th>Extra Excluded</th>
         <th>Supplier Tax</th>
         <!-- <th>Other Fee</th> -->
-        <th>Supplier Total</th>
-        <th>Profit</th>
+        <th class="col-total">Supplier Total</th>
+        <th class="col-profit">Profit</th>
         <!-- <th></th> -->
         <th>Addons</th>
 
@@ -735,10 +745,16 @@
 
     <td align="right">{{ number_format_with_currency($row['discount_amount'],2) }}</td>
 
-    <td align="right">{{ number_format_with_currency($row['customer_total'],2) }}</td>
+    <td class="col-total" align="right">{{ number_format_with_currency($row['customer_total'],2) }} 
+
+    @if($row['excluded_commission_payment'] > 0)
+      <p class="text-danger">(<small>{{$row['customer_total'] + $row['excluded_commission_payment'] }}  - {{$row['excluded_commission_payment']}}</small>)</p>
+    @endif
+
+  </td>
     <!-- <td align="right">{{ number_format_with_currency($row['exclude_total'],2) }}  </td> -->
 
-    <td align="right">{{ number_format_with_currency($row['balance_amount'],2) }}</td>
+    <td align="right">{{ $row['excluded_balance_amount'] ? number_format_with_currency($row['excluded_balance_amount'],2) :  number_format_with_currency($row['balance_amount'],2) }}</td>
 
     <!-- <td align="right">{{ number_format_with_currency($row['transport_cost'],2) }}</td> -->
 
@@ -751,12 +767,12 @@
 
     <!-- <td align="right">0</td> -->
 
-    <td align="right">
+    <td class="col-total" align="right">
         {{ number_format_with_currency(($row['tour_selling_total'] + $row['transport_cost']),2) }}
     </td>
 
-    <td align="right">
-        {{ number_format_with_currency(($row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost']),2) }}
+    <td class="col-profit" align="right">
+        {{ number_format_with_currency(($row['customer_total'] - $row['balance_amount'] - $row['tour_selling_total'] - $row['transport_cost']),2) }}
     </td>
 
     <td>@foreach($addonKeys as $key)
@@ -828,7 +844,7 @@
     <td align="right">{{ number_format_with_currency($totals['extra_amount'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['tax_amount'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['discount_amount'],2) }}</td>
-    <td align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
+    <td class="col-total" align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
     <!-- <td align="right">{{ number_format_with_currency($totals['exclude_total'],2) }}</td> -->
     <td align="right">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>
     <!-- <td align="right">{{ number_format_with_currency($totals['transport_cost'],2) }}</td> -->
@@ -839,9 +855,9 @@
 
     <!-- <td align="center">-</td> -->
 
-    <td align="right">{{ number_format_with_currency($totals['net_total'],2) }}</td>
+    <td class="col-total" align="right">{{ number_format_with_currency($totals['net_total'],2) }}</td>
 
-    <td align="right">{{ number_format_with_currency($totals['profit'],2) }}</td>
+    <td class="col-profit" align="right">{{ number_format_with_currency($totals['profit'] - $totals['balance_amount'],2) }}</td>
 
     <td>
     <strong>Qty:</strong>
@@ -868,9 +884,10 @@
 @if($rows)
 <tfoot class="table-footer">
 
+
         <tr class="summary-total">
             <td colspan="4" class="summary-label">
-                Total Customer Total
+                Total Product Amount
             </td>
 
             <td align="right">
@@ -879,7 +896,18 @@
 
             <td colspan="13"></td>
         </tr>
-        @foreach($businessExpense['expenses'] as $expense)
+        <tr class="summary-total">
+            <td colspan="4" class="summary-label">
+                Total Pending Balance
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($totals['balance_amount'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+        <!-- @foreach($businessExpense['expenses'] as $expense)
         <tr class="summary-expense">
             <td colspan="4" class="summary-label">
                 {{ ucwords($expense->category) }}
@@ -891,19 +919,7 @@
 
             <td colspan="13"></td>
         </tr>
-        @endforeach
-
-        <tr class="summary-total">
-            <td colspan="4" class="summary-label">
-                Total Ads Expense
-            </td>
-
-            <td align="right">
-                {{ number_format_with_currency($businessExpense['total'],2) }}
-            </td>
-
-            <td colspan="13"></td>
-        </tr>
+        @endforeach -->
         <tr class="summary-total">
             <td colspan="4" class="summary-label">
                 Supplier Total Expense
@@ -916,7 +932,20 @@
             <td colspan="13"></td>
         </tr>
 
-        <tr class="summary-net">
+        <tr class="summary-total">
+            <td colspan="4" class="summary-label">
+                Total Ads Expense
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($businessExpense['total'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+        
+
+        <!-- <tr class="summary-net">
             <td colspan="4" class="summary-label">
                 Total Expense <small>(Supplier Total + Ads Expense)</small>
             </td>
@@ -926,7 +955,7 @@
             </td>
 
             <td colspan="13"></td>
-        </tr>
+        </tr> -->
 
         <tr class="summary-profit">
             <td colspan="4" class="summary-label">
@@ -935,7 +964,7 @@
 
             <td align="right">
                 {{ number_format_with_currency(
-                    $totals['customer_total'] - ($totals['net_total'] + $businessExpense['total']),
+                    $totals['customer_total']- $totals['balance_amount'] - ($totals['net_total'] + $businessExpense['total']),
                     2
                 ) }}
             </td>

@@ -24,6 +24,7 @@
                             <th width="150">Name</th>
                             <th>Description</th>
                             <th>Price</th>
+                            <th>Selling Price</th>
                             <th width="80">Price Type</th>
                             <th>Action</th>
                         </tr>
@@ -38,6 +39,7 @@
                                 <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
                                 <td>{{ $item->description }}</td>
                                 <td>{{ price_format_with_currency($item->price, $item->currency) }}</td>
+                                <td>{{ price_format_with_currency($item->selling_price, $item->currency) }}</td>
                                 <td>{{ $item->customer_choice }}</td>
                                 <td width="60">
                                     <!-- <a href="{{ route('admin.addon.edit', encrypt($item->id)) }}"
