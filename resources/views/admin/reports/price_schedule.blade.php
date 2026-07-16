@@ -745,10 +745,16 @@
 
     <td align="right">{{ number_format_with_currency($row['discount_amount'],2) }}</td>
 
-    <td class="col-total" align="right">{{ number_format_with_currency($row['customer_total'],2) }}</td>
+    <td class="col-total" align="right">{{ number_format_with_currency($row['customer_total'],2) }} 
+
+    @if($row['excluded_commission_payment'] > 0)
+      <p class="text-danger">(<small>{{$row['customer_total'] + $row['excluded_commission_payment'] }}  - {{$row['excluded_commission_payment']}}</small>)</p>
+    @endif
+
+  </td>
     <!-- <td align="right">{{ number_format_with_currency($row['exclude_total'],2) }}  </td> -->
 
-    <td align="right">{{ number_format_with_currency($row['balance_amount'],2) }}</td>
+    <td align="right">{{ $row['excluded_balance_amount'] ? number_format_with_currency($row['excluded_balance_amount'],2) :  number_format_with_currency($row['balance_amount'],2) }}</td>
 
     <!-- <td align="right">{{ number_format_with_currency($row['transport_cost'],2) }}</td> -->
 

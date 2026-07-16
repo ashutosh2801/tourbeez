@@ -1205,7 +1205,8 @@ $expectEmails = ['order_pending'];
                                                     <option value="PROMO_CODE">Promo code</option>
                                                     <option value="FREE">Free of charge</option>
                                                     <option value="INVOICE">Invoice</option>
-                                                    <option value="EXCLUDEDPAYMENT">Exclude Payment</option>
+                                                    <!-- <option value="EXCLUDEDPAYMENT">Exclude Payment</option> -->
+                                                    <option value="COMMISSION">Commission</option>
                                                     <option value="OTHER">Other</option>
                                                 </select>
                                             </div>
@@ -2221,8 +2222,30 @@ document.addEventListener("click", function(e) {
     }
 
     // Remove row
+   // Remove row
     if (e.target.classList.contains("removeRow")) {
         let row = e.target.closest(".paymentRow");
+
+        if (!row) return;
+
+        // Disable all fields inside the row so they are not submitted
+        row.querySelectorAll("input, select, textarea").forEach(el => {
+            el.disabled = true;
+        });
+
+        // Remove any paymentId[] hidden inputs immediately before this row
+        let prev = row.previousElementSibling;
+        while (
+            prev &&
+            prev.tagName === "INPUT" &&
+            prev.name === "paymentId[]"
+        ) {
+            let current = prev;
+            prev = prev.previousElementSibling;
+            current.remove();
+        }
+
+        // Remove the row
         row.remove();
     }
 });

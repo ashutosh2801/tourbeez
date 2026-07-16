@@ -703,6 +703,8 @@ class OrderController extends Controller
                 $payments = [];
 
                 foreach ($request->paymentType as $i => $type) {
+
+                    
                     //$amount = $request->amount[$i] ?? null;
 
                     $amount          = $request->amount[$i] ?? 0;
@@ -710,13 +712,29 @@ class OrderController extends Controller
                     $transactionId   = $request->transactionId[$i] ?? null;
 
                     // Skip empty rows
-                    if (empty($type) && empty($amount)) {
+                    if (empty($type) && empty($amount) && $amount == 0) {
                         continue;
                     }
 
                     // Add amount to total (only if valid)
                     if (!empty($amount)) {
                         $totalPaymentAmount += floatval($amount);
+                    }
+
+                    if($type == "COMMISSION"){
+                        $payments[] = [
+                                'order_id'          => $order->id,
+                                'payment_intent_id' => null,
+                                'transaction_id'    => $transactionId,
+                                'payment_type'      => "EXCLUDED",
+                                'collection_type'   => 'Outside',
+                                'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
+                                'amount'            => $subtotal - $amount,
+                                'currency'          => $order->currency,
+                                'status'            => 'succeeded',
+                                'created_at'        => now(),
+                                'updated_at'        => now(),
+                            ];
                     }
 
                     $payments[] = [
@@ -1416,7 +1434,7 @@ class OrderController extends Controller
                     $transactionId   = $request->transactionId[$i] ?? null;
                     
                     // Skip empty rows
-                    if (empty($type) && empty($amount)) {
+                    if (empty($type) && empty($amount) && $amount == 0) {
                         continue;
                     }
 
@@ -1448,6 +1466,9 @@ class OrderController extends Controller
 
                     } else {
                         // INSERT new row
+
+
+                        
                         OrderPayment::create([
                             'order_id'       => $order->id,
                             'payment_type'   => $type,
@@ -1460,10 +1481,33 @@ class OrderController extends Controller
                             'created_at'     => now(),
                             'updated_at'     => now(),
                         ]);
+
+                        if($type == "COMMISSION"){
+
+                            if($order->total_amount - $amount){
+                                OrderPayment::create([
+                                    'order_id'          => $order->id,
+                                    'payment_intent_id' => null,
+                                    'transaction_id'    => $transactionId,
+                                    'payment_type'      => "EXCLUDED",
+                                    'collection_type'   => 'Outside',
+                                    'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
+                                    'amount'            => $order->total_amount - $amount,
+                                    'currency'          => $order->currency,
+                                    'status'            => 'succeeded',
+                                    'created_at'        => now(),
+                                    'updated_at'        => now(),
+                                ]);
+                                }
+
+                            }
+                            
                     }
                 }  
                 
                 // These are the payments that were NOT included in updated request
+
+                
                 if (!empty($existingPaymentIds)) {
                     OrderPayment::whereIn('id', $existingPaymentIds)->delete();
                 }
