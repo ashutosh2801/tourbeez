@@ -6,16 +6,33 @@
         overflow: hidden;
     }
     /* FULL FIX FOR SELECT2 HEIGHT */
-   .search-options .select2-container--default .select2-selection--multiple {
+   .tour-search-filter .select2-container--default .select2-selection--multiple {
         min-height: calc(1.3125rem + 1.2rem + 2px) !important;
         padding: 0.4rem 1rem !important;
         margin-bottom: 15px !important;
+        font-size: 14px;
+        color: #898b92;
+        border: 1px solid #aeb0b4;
     }
 
-    .select2-container--default .select2-selection--multiple {
-        min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-            padding: 0.6rem 1rem !important;
-            margin-bottom: 15px !important;
+    .tour-search-filter .select2-container--default.select2-container--focus .select2-selection--multiple {
+        border: 1px solid #aeb0b4;
+        outline: 0;
+    }
+
+    .tour-search-filter .select2-container--default .select2-search--inline .select2-search__field {
+        background: transparent;
+        border: none !important;
+        outline: 0;
+        box-shadow: none;
+        -webkit-appearance: textfield;
+        margin: 0 !important;
+    }
+
+    .tour-search-filter .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: #FFF;
+        margin: 0;
+        line-height: 1.7;
     }
 
     .search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
@@ -30,11 +47,6 @@
         font-size: 13px;
     }
 
-    .search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-        color: #FFF;
-        margin-left: 0;
-    }
-
     .search-options .select2-container--default .select2-search--inline .select2-search__field {
         font-size: 14px;
     }
@@ -44,30 +56,9 @@
         font-size: 13px;
     }
 
-    .select2-container--default .select2-search--inline .select2-search__field {
-        background: transparent;
-        border: none;
-        outline: 0;
-        box-shadow: none;
-        -webkit-appearance: textfield;
-        margin: 0;
-    }
-
     .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
         background-color: #5897fb;
         color: white;
-    }
-
-    .selection .select2-selection .select2-selection--multiple {
-        min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-        padding: 0.6rem 1rem !important;
-        margin-bottom: 15px !important;
-    }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-        margin: 0;
-        line-height: 1.7;
-        color: #FFF;
     }
 
     .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
@@ -89,7 +80,7 @@
 
         .daterangepicker.show-calendar:before,
         .daterangepicker.show-calendar:after {
-            left: 595px;
+            left: 623px !important;
             border-bottom-color: #999;
             rotate: 90deg;
             top: 130px;
@@ -120,10 +111,10 @@
     <div class="card-primary mb-3">
         <div class="card-header tour-main-head">
             <div class="row">
-                <div class="col-md-8 col-12">
+                <div class="col-md-8 col-7">
                     <h3 class="card-title text-white">Reports Overview</h3>
                 </div>
-                <div class="col-md-4 col-12">
+                <div class="col-md-4 col-5">
                     <div class="card-tools">
                         <button type="button" class="btn btn-secondary" id="toggleFilter">
                             <i class="fas fa-filter"></i> Filters
@@ -322,6 +313,14 @@
                             </div>
                         </div> -->
 
+                        <div class="col-12">
+                            @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
+                                <div class="alert alert-info">
+                                    Please apply filters to view report data.
+                                </div>
+                            @endif
+                        </div>
+
                     </div>
                 </div>
                 <div class="filter-footer">
@@ -411,12 +410,6 @@
             </div>
         @endif
     </div>
-
-    @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
-        <div class="alert alert-info">
-            Please apply filters to view report data.
-        </div>
-    @endif
 
     {{-- STATS --}}
     <div class="report-stats">
@@ -569,6 +562,7 @@
            function initTourSelect(selector, isMultiple, placeholderText) {
             $(selector).select2({
                 placeholder: placeholderText,
+                dropdownParent: $('#filterSidebar'),
                 minimumInputLength: 4,
                 multiple: isMultiple,
                 ajax: {
