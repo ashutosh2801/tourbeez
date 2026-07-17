@@ -47,6 +47,7 @@ use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Controllers\TourGalleryController;
 
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
@@ -431,10 +432,46 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/driver-pickup-mail', [ManifestController::class, 'driverPickupMail'])->name('driver.pickup.mail');
     Route::post('/assign-driver', [ManifestController::class, 'assignDriver'])->name('assign.driver');
     Route::post('/remove-driver', [ManifestController::class, 'removeDriver'])->name('remove.driver');
-
+    Route::post('/tour-itinerary',[ManifestController::class, 'getTourItinerary'])->name('tour.itinerary');
 
     Route::resource('business-expenses', BusinessExpenseController::class);
 
+});
 
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+
+    Route::get(
+        '/tour-gallery',
+        [TourGalleryController::class, 'index']
+    )->name('tour-gallery.index');
+
+    Route::post(
+        '/tour-gallery/{galleryUpload}/approve',
+        [TourGalleryController::class, 'approve']
+    )->name('tour-gallery.approve');
+
+    Route::post(
+        '/tour-gallery/{galleryUpload}/reject',
+        [TourGalleryController::class, 'reject']
+    )->name('tour-gallery.reject');
+
+    Route::delete(
+        '/tour-gallery/{galleryUpload}',
+        [TourGalleryController::class, 'destroy']
+    )->name('tour-gallery.destroy');
 
 });
+
+Route::get(
+    '/tour-gallery/{order}/upload',
+    [TourGalleryController::class, 'show']
+)
+    ->name('tour-gallery.show')
+    ->middleware('signed');
+
+Route::post(
+    '/tour-gallery/{order}/upload',
+    [TourGalleryController::class, 'store']
+)
+    ->name('tour-gallery.store')
+    ->middleware('signed');

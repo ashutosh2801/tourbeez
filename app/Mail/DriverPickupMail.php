@@ -13,12 +13,14 @@ class DriverPickupMail extends Mailable
     public $driver;
     public $orders;
     public $date;
+    public $customMessage;
 
-    public function __construct($driver, $orders, $date)
+    public function __construct($driver, $orders, $date, $customMessage)
     {
         $this->driver = $driver;
         $this->orders = $orders;
         $this->date = $date;
+        $this->customMessage = $customMessage;
     }
 
     public function build()

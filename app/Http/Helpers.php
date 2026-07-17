@@ -20,6 +20,55 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 //use Illuminate\Support\Facades\Storage;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+
+if(!function_exists('generateQRCodeForPassengerPickup')) {
+    function generateQRCodeForPassengerPickup(Order $order)
+    {
+        $galleryUploadUrl = URL::temporarySignedRoute(
+            'tour-gallery.show',
+            now()->addDays(30),
+            [
+                'order' => $order->id,
+            ]
+        );
+
+        $writer = new PngWriter();
+
+        $qrCode = new QrCode(
+            data: $galleryUploadUrl,
+            size: 250,
+            margin: 10
+        );
+
+        $qrResult = $writer->write($qrCode);
+
+        $qrDirectory = 'uploads/tour-gallery-qrcodes';
+
+        $qrFileName = 'order-' .
+            $order->id .
+            '-' .
+            md5($galleryUploadUrl) .
+            '.png';
+
+        $qrPath = $qrDirectory . '/' . $qrFileName;
+
+        Storage::disk('s3')->put(
+            $qrPath,
+            $qrResult->getString(),
+            [
+                'visibility' => 'public',
+                'ContentType' => 'image/png',
+            ]
+        );
+
+        $galleryQrUrl = Storage::disk('s3')->url($qrPath);
+        return [$galleryUploadUrl, $galleryQrUrl];
+    }
+}
 
 if(!function_exists('getManifestOrderGuestCount')) {
     function getManifestOrderGuestCount( Order $order, string $date ): int {
@@ -37,6 +86,37 @@ if(!function_exists('getManifestOrderGuestCount')) {
         return (int) collect(
             json_decode($orderTour->tour_pricing, true) ?? []
         )->sum('quantity');
+    }
+}
+
+if(!function_exists('getSinglePickupLocation')) {
+    function getSinglePickupLocation(Order $order): array
+    {
+        if (!$order->customer) {
+            return '';
+        }
+
+        if ($order->customer->pickup_name) {
+            return $order->customer->pickup_name;
+        }
+
+        if (!$order->customer->pickup_id) {
+            return '';
+        }
+
+        $pickupLocation = PickupLocation::find(
+            $order->customer->pickup_id
+        );
+
+        if (!$pickupLocation) {
+            return '';
+        }
+
+        return [
+            'location' => $pickupLocation->location,
+            'address'  => $pickupLocation->address,
+            'time'     => $pickupLocation->time,
+        ];
     }
 }
 
