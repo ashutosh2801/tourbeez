@@ -584,23 +584,42 @@
 
                                 <td>
 
+                                    @php
+                                        $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
 
+                                        $isExcludedSource = in_array(
+                                            strtolower($order->source ?? ''),
+                                            $excludedPaymentSources
+                                        );
 
+                                        $hasCommission = $order->payments
+                                            ->where('payment_type', 'COMMISSION')
+                                            ->isNotEmpty();
+                                    @endphp
 
+                                    @if($isExcludedSource && $hasCommission)
+                                        @php
+                                            $excludedCommissionPayment = $order->payments
+                                                ->where('payment_type', 'EXCLUDED')
+                                                ->sum('amount');
 
-                                <span class="{{ $amountClass }}">
+                                            $totalPaymentAmount = $order->payments
+                                                ->where('status', 'succeeded')
+                                                ->sum('amount') - $excludedCommissionPayment;
+                                        @endphp
 
-                                        @if($amountClass == 'text-danger')
-
-                                            {{ price_format_with_currency($balance, $order->currency) }}
-
-                                        @else
-
-                                            {{ price_format_with_currency($order->total_amount, $order->currency) }}
-
-                                        @endif
-
-                                    </span>
+                                        <span class="text-success">
+                                            {{ price_format_with_currency($totalPaymentAmount, $order->currency) }}
+                                        </span>
+                                    @else
+                                        <span class="{{ $amountClass }}">
+                                            @if($amountClass == 'text-danger')
+                                                {{ price_format_with_currency($balance, $order->currency) }}
+                                            @else
+                                                {{ price_format_with_currency($order->total_amount, $order->currency) }}
+                                            @endif
+                                        </span>
+                                    @endif
                                 <br>
                                 <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "N/A" }}</span>
                                 

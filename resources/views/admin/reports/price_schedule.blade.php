@@ -772,7 +772,12 @@
     </td>
 
     <td class="col-profit" align="right">
-        {{ number_format_with_currency(($row['customer_total'] - $row['balance_amount'] - $row['tour_selling_total'] - $row['transport_cost']),2) }}
+
+        @if($row['customer_total'] == 0)
+            0
+        @else
+           {{ number_format_with_currency(($row['customer_total'] - $row['balance_amount'] - $row['tour_selling_total'] - $row['transport_cost']),2) }}
+        @endif
     </td>
 
     <td>@foreach($addonKeys as $key)
