@@ -5,269 +5,245 @@
 
 <style>
 
-    body.sidebar-open {
-        overflow: hidden;
-    }
-
-    .tour-search-filter .select2-container--default .select2-selection--multiple {
+            /* FULL FIX FOR SELECT2 HEIGHT */
+   .search-options .select2-container--default .select2-selection--multiple {
         min-height: calc(1.3125rem + 1.2rem + 2px) !important;
         padding: 0.4rem 1rem !important;
-        font-size: 14px;
-        color: #898b92;
-        border: 1px solid #aeb0b4;
-    }
-
-    .tour-search-filter .select2-container--default.select2-container--focus .select2-selection--multiple {
-        border: 1px solid #aeb0b4;
-        outline: 0;
-    }
-
-    .tour-search-filter .select2-container--default .select2-search--inline .select2-search__field {
-        background: transparent;
-        border: none !important;
-        outline: 0;
-        box-shadow: none;
-        -webkit-appearance: textfield;
-        margin: 0 !important;
-        font-size: 14px;
-    }
-
-    .tour-search-filter .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-        color: #FFF;
-        margin: 0;
-        line-height: 1.7;
-    }
-
-    .search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
-        margin-right: 0;
-        margin-left: 0;
-        margin-bottom: 5px;
-        margin-top: 0;
-        background-color: #a3a3a3;
-    }
-
-    .search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
-        font-size: 13px;
-    }
-
-    .select2-container--default .select2-selection--multiple .select2-selection__choice {
-        margin: 0 0 5px 1px;
-        font-size: 13px;
-    }
-
-    .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
-        background-color: #5897fb;
-        color: white;
-    }
-
-    .selection .select2-selection .select2-selection--multiple {
-        min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-        padding: 0.6rem 1rem !important;
         margin-bottom: 15px !important;
     }
 
-    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-        margin: 0;
-        line-height: 1.7;
-        color: #FFF;
-    }
+.select2-container--default .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+        padding: 0.6rem 1rem !important;
+        margin-bottom: 15px !important;
+}
 
-    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-        color: #333;
-        background: #607D8B;
-    }
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin-right: 0;
+    margin-left: 0;
+    margin-bottom: 5px;
+    margin-top: 0;
+    background-color: #a3a3a3;
+}
 
-    .select2-container--default .select2-selection--multiple .select2-selection__choice{
-        background-color: #a3a3a3 !important;
-    }
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    font-size: 13px;
+}
 
+.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #FFF;
+    margin-left: 0;
+}
+
+.search-options .select2-container--default .select2-search--inline .select2-search__field {
+    font-size: 14px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    margin: 0 0 5px 1px;
+    font-size: 13px;
+}
+
+.select2-container--default .select2-search--inline .select2-search__field {
+    background: transparent;
+    border: none;
+    outline: 0;
+    box-shadow: none;
+    -webkit-appearance: textfield;
+    margin: 0;
+}
+
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background-color: #5897fb;
+    color: white;
+}
+
+.selection .select2-selection .select2-selection--multiple {
+    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
+    padding: 0.6rem 1rem !important;
+    margin-bottom: 15px !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    margin: 0;
+    line-height: 1.7;
+    color: #FFF;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #333;
+    background: #607D8B;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice{
+    background-color: #a3a3a3 !important;
+}
     /* ================= TABLE ================= */
-    .table {
-        font-size: 14px;
-        margin-bottom: 0;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
 
-    .table tbody tr:hover {
-        background: #f5f9ff;
-    }
+.table {
+    font-size: 14px;
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
 
-    .table-wrapper {
-        width: 100%;
-        overflow: auto;
-        position: relative;
-        cursor: grab;
-        max-height: 75vh; /* Required for sticky header */
-    }
+.table th,
+.table td {
+    padding: 6px 10px;
+    white-space: nowrap;
+    vertical-align: middle;
+    font-size: 14px;
+}
 
-    .table-wrapper.active {
-        cursor: grabbing;
-    }
+.table tbody tr:hover {
+    background: #f5f9ff;
+}
 
-    /* ================= STICKY HEADER ================= */
+.table-wrapper {
+    width: 100%;
+    overflow: auto;
+    position: relative;
+    cursor: grab;
+    max-height: 75vh; /* Required for sticky header */
+}
 
-    .table thead th {
-        font-size: 12px;
-        font-weight: 600;
-    }
+.table-wrapper.active {
+    cursor: grabbing;
+}
 
-    /* ================= FROZEN FIRST 4 COLUMNS ================= */
+/* ================= STICKY HEADER ================= */
 
-    /* # */
-    .table th:nth-child(1),
-    .table td:nth-child(1) {
-        position: sticky;
-        left: 0;
-        width: 20px;
-        min-width: 20px;
-        max-width: 20px;
-        background: #f1f5f9;
-        z-index: 20;
-    }
+.table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #212529 !important;
+    color: #fff;
+    font-weight: 600;
+}
 
-    .table th, .table td {
-        white-space: nowrap;
-    }
+/* ================= FROZEN FIRST 4 COLUMNS ================= */
 
-    /* Order */
-    .table th:nth-child(2),
-    .table td:nth-child(2) {
-        position: sticky;
-        left: 20px;
-        width: 130px;
-        min-width: 130px;
-        max-width: 130px;
-        background: #f1f5f9;
-        z-index: 20;
-    }
+/* # */
+.table th:nth-child(1),
+.table td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    width: 20px;
+    min-width: 20px;
+    max-width: 20px;
+    background: #f1f5f9;
+    z-index: 20;
+}
 
-    /* Customer */
-    .table th:nth-child(3),
-    .table td:nth-child(3) {
-        position: sticky;
-        left: 150px;
-        width: 150px;
-        min-width: 150px;
-        max-width: 150px;
-        background: #f1f5f9;
-        z-index: 20;
-    }
+/* Order */
+.table th:nth-child(2),
+.table td:nth-child(2) {
+    position: sticky;
+    left: 20px;
+    width: 130px;
+    min-width: 130px;
+    max-width: 130px;
+    background: #f1f5f9;
+    z-index: 20;
+}
 
-    /* Product */
-    .table th:nth-child(4),
-    .table td:nth-child(4) {
-        position: sticky;
-        left: 300px;
-        width: 180px;
-        min-width: 180px;
-        max-width: 180px;
-        background: #f1f5f9;
-        z-index: 20;
-    }
+/* Customer */
+.table th:nth-child(3),
+.table td:nth-child(3) {
+    position: sticky;
+    left: 150px;
+    width: 150px;
+    min-width: 150px;
+    max-width: 150px;
+    background: #f1f5f9;
+    z-index: 20;
+}
 
-    /* Header over frozen columns */
-    .table thead th:nth-child(-n+4) {
-        z-index: 110;
-    }
+/* Product */
+.table th:nth-child(4),
+.table td:nth-child(4) {
+    position: sticky;
+    left: 300px;
+    width: 180px;
+    min-width: 180px;
+    max-width: 180px;
+    background: #f1f5f9;
+    z-index: 20;
+}
 
-    /* Shadow */
-    .table th:nth-child(-n+4),
-    .table td:nth-child(-n+4) {
-        box-shadow: 1px 0 0 #dee2e6;
-    }
+/* Header over frozen columns */
+.table thead th:nth-child(-n+4) {
+    z-index: 110;
+}
 
-    /* ================= PRODUCT NAME ================= */
+/* Shadow */
+.table th:nth-child(-n+4),
+.table td:nth-child(-n+4) {
+    box-shadow: 1px 0 0 #dee2e6;
+}
 
-    .product-name {
-        white-space: normal !important;
-        word-break: break-word;
-        overflow-wrap: anywhere;
-        max-width: 220px;
-        line-height: 1.4;
-    }
+/* ================= PRODUCT NAME ================= */
 
-    /* ================= FOOTER ================= */
+.product-name {
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 220px;
+    line-height: 1.4;
+}
 
-    .table tfoot td {
-        font-weight: 600;
-    }
+/* ================= FOOTER ================= */
 
-    /* Freeze label */
-    .table tfoot .summary-label {
-        position: sticky;
-        left: 0;
-        z-index: 120;
-        background: inherit;
-    }
+.table tfoot td {
+    font-weight: 600;
+}
 
-    /* Freeze amount column */
-    /*.table tfoot .summary-value {
-        position: sticky;
-        left: 480px; 
-        z-index: 120;
-        background: inherit;
-    }
-    */
-    .table tfoot td:nth-child(2){ position: sticky; left: 480px; /* 20 + 130 + 150 + 180 */ z-index: 120; background: inherit; }
+/* Freeze label */
+.table tfoot .summary-label {
+    position: sticky;
+    left: 0;
+    z-index: 120;
+    background: inherit;
+}
 
-    /* Footer colors */
+/* Freeze amount column */
+/*.table tfoot .summary-value {
+    position: sticky;
+    left: 480px; 
+    z-index: 120;
+    background: inherit;
+}
+*/
+.table tfoot td:nth-child(2){ position: sticky; left: 480px; /* 20 + 130 + 150 + 180 */ z-index: 120; background: inherit; }
 
-    .summary-expense td {
-        background: #fff8e1;
-    }
+/* Footer colors */
 
-    .summary-total td {
-        background: #ffeeba;
-    }
+.summary-expense td {
+    background: #fff8e1;
+}
 
-    .summary-net td {
-        background: #e8f4fd;
-    }
+.summary-total td {
+    background: #ffeeba;
+}
 
-    .summary-profit td {
-        background: #d4edda;
-    }
+.summary-net td {
+    background: #e8f4fd;
+}
 
-    .table-footer{
-        background:#d4edda;
-    }
+.summary-profit td {
+    background: #d4edda;
+}
 
-    /* ================= PAGINATION ================= */
-    .pagination {
-        justify-content: center;
-    }
+.table-footer{
+    background:#d4edda;
+}
 
-    @media(min-width:767px) {
+/* ================= PAGINATION ================= */
 
-        .daterangepicker.show-calendar {
-            top: 80px !important;
-            left: auto;
-            right: 430px !important;
-        }
-
-        .daterangepicker.show-calendar:before,
-        .daterangepicker.show-calendar:after {
-            left: 623px !important;
-            border-bottom-color: #999;
-            rotate: 90deg;
-            top: 130px;
-        }
-
-        .daterangepicker.show-calendar:nth-of-type(2):before,
-        .daterangepicker.show-calendar:nth-of-type(2):after {
-            top: 40px;
-        }
-    }
-
-    @media(max-width:767px) {
-
-        .daterangepicker.show-calendar {
-            height: 200px;
-            overflow-y: scroll;
-        }
-
-    }
+.pagination {
+    justify-content: center;
+}
 
 .col-total {
     background: #d4edda !important;
@@ -286,176 +262,145 @@
 
 <div class="card-primary mb-3">
     <div class="card-header reports-head">
-        <div class="row">
-            <div class="col-md-8 col-7">
-                <h3 class="card-title text-white">Price Schedule</h3>
-            </div>
-            <div class="col-md-4 col-5">
-                <div class="card-tools">
-                    <button type="button" class="btn btn-secondary" id="toggleFilter">
-                        <i class="fas fa-filter"></i> Filters
-                    </button>
-                </div>
-            </div>
-        </div>
+        <h3 class="card-title">Price Schedule Filters</h3>
     </div>
 </div>
 
 {{-- FILTERS --}}
-<div class="tour-search-filter">
-    <div id="filterSidebar" class="filter-sidebar">
-        <div class="filter-header">
-            <h5><i class="fas fa-filter"></i> Filters</h5>
-            <button type="button" id="closeFilter">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <form method="GET">
-            <div class="filter-body">
-                <div class="row">
+<div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
+    <form method="GET">
 
-                    {{-- BOOKING DATE --}}
-                    @php
-                        $hasFilter = request()->hasAny([
-                            'booking_date',
-                            'tour_date',
-                            'product',
-                            'order_status',
-                            'payment_status',
-                            'partner',
-                            'action_type',
-                            'exclude_product'
-                        ]);
-                    @endphp
-                    <div class="col-12 position-relative">
-                        <div class="form-group">
-                            <label class="filter-label">Order Date</label>
+           <div class="row">
 
-                            <input 
-                                type="text" 
-                                name="booking_date"
-                                
-                                class="form-control aiz-date-range"
-                                data-advanced-range="true"
-                                data-separator=" - "
-                                data-show-dropdown="true"
-                                placeholder="Select date range"
-                                autocomplete="off"
-                                value="{{ request('booking_date') }}"
-                            >
+                {{-- BOOKING DATE --}}
+                @php
+                    $hasFilter = request()->hasAny([
+                        'booking_date',
+                        'tour_date',
+                        'product',
+                        'order_status',
+                        'payment_status',
+                        'partner',
+                        'action_type',
+                        'exclude_product'
+                    ]);
+                @endphp
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <div class="form-group">
+                        <label class="filter-label">Order Date</label>
 
-                            @if(request('booking_date'))
-                                <span class="clear-btn" onclick="clearBooking()">✕</span>
-                            @endif
-                        </div>
+                        <input 
+                            type="text" 
+                            name="booking_date"
+                            
+                            class="form-control aiz-date-range"
+                            data-advanced-range="true"
+                            data-separator=" - "
+                            data-show-dropdown="true"
+                            placeholder="Select date range"
+                            autocomplete="off"
+                            value="{{ request('booking_date') }}"
+                        >
+
+                        @if(request('booking_date'))
+                            <span class="clear-btn" onclick="clearBooking()">✕</span>
+                        @endif
                     </div>
+                </div>
 
-                    {{-- TOUR DATE --}}
-                    <div class="col-12 position-relative">
-                        <div class="form-group">
-                            <label class="filter-label">Tour Date</label>
 
-                            <input 
-                                type="text" 
-                                name="tour_date"
-                                
-                                class="form-control aiz-date-range"
-                                data-advanced-range="true"
-                                data-separator=" - "
-                                data-show-dropdown="true"
-                                placeholder="Select date range"
-                                autocomplete="off"
-                                value="{{ request('tour_date') }}"
-                            >
+                {{-- TOUR DATE --}}
+                <div class="col-xl-3 col-md-3 col-12 position-relative">
+                    <div class="form-group">
+                        <label class="filter-label">Tour Date</label>
 
-                            @if(request('tour_date'))
-                                <span class="clear-btn" onclick="clearTour()">✕</span>
-                            @endif
-                        </div>
+                        <input 
+                            type="text" 
+                            name="tour_date"
+                            
+                            class="form-control aiz-date-range"
+                            data-advanced-range="true"
+                            data-separator=" - "
+                            data-show-dropdown="true"
+                            placeholder="Select date range"
+                            autocomplete="off"
+                            value="{{ request('tour_date') }}"
+                        >
+
+                        @if(request('tour_date'))
+                            <span class="clear-btn" onclick="clearTour()">✕</span>
+                        @endif
                     </div>
+                </div>
 
-                    {{-- PRODUCTS --}}
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label class="filter-label">Products</label>
-                            <select id="productFilter" name="product[]" class="form-control" multiple>
-                                @foreach($selectedProducts as $sp)
-                                    <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
 
-                    {{-- EXCLUDED PRODUCTS --}}
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label class="filter-label">Excluded Products</label>
-                            <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
-                                @foreach($excludedProducts as $ep)
-                                    <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
+                <div class="col-md-3 col-6">
+                    <label class="filter-label">Products</label>
+                    <select id="productFilter" name="product[]" class="form-control" multiple>
+                        @foreach($selectedProducts as $sp)
+                            <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3 col-6">
+                    <label class="filter-label">Excluded Products</label>
+                    <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
+                        @foreach($excludedProducts as $ep)
+                            <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    {{-- ORDER STATUS --}}
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label class="filter-label">Order Status</label>
-                            <select name="order_status" class="form-control">
-                                <option value="">All</option>
-                                @php
-                                $status_with_code = [
-                                            
-                                            3 => 'Pending supplier',
-                                            4 => 'Pending customer',
-                                            5 => 'Confirmed',
-                                            
-                                    ];
-                                @endphp
-                                @foreach($status_with_code as $key => $val)
-                                    <option value="{{ $key }}"
-                                        {{ request('order_status') == $key ? 'selected' : '' }}>
-                                        {{ $val }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
+                {{-- ORDER STATUS --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <label class="filter-label">Order Status</label>
+                    <select name="order_status" class="form-control">
+                        <option value="">All</option>
+                        @php
+                        $status_with_code = [
+                                    
+                                    3 => 'Pending supplier',
+                                    4 => 'Pending customer',
+                                    5 => 'Confirmed',
+                                    
+                            ];
+                        @endphp
+                        @foreach($status_with_code as $key => $val)
+                            <option value="{{ $key }}"
+                                {{ request('order_status') == $key ? 'selected' : '' }}>
+                                {{ $val }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    {{-- PAY TYPE --}}
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label class="filter-label">Pay Type</label>
-                            <select name="action_type" class="form-control">
-                                <option value="">All</option>
-                                <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
-                                <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
-                            </select>
-                        </div>
-                    </div>
+                {{-- PAY TYPE --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <label class="filter-label">Pay Type</label>
+                    <select name="action_type" class="form-control">
+                        <option value="">All</option>
+                        <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
+                        <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
+                    </select>
+                </div>
 
-                    {{-- SOURCE --}}
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label class="filter-label">Source</label>
-                            <select name="partner" class="form-control">
-                                <option value="">All</option>
-                                @foreach($partners as $partner)
-                                    <option value="{{ ucfirst($partner->slug) }}"
-                                        {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
-                                        {{ $partner->name }}
-                                    </option>
-                                @endforeach
-                                <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
-                                <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {{-- SORT BY --}}
-                    <div class="col-12">
-                        <div class="form-group">
+                {{-- SOURCE --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <label class="filter-label">Source</label>
+                    <select name="partner" class="form-control">
+                        <option value="">All</option>
+                        @foreach($partners as $partner)
+                            <option value="{{ ucfirst($partner->slug) }}"
+                                {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
+                                {{ $partner->name }}
+                            </option>
+                        @endforeach
+                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                    </select>
+                </div>
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="form-group">
                             <label class="filter-label">Sort By</label>
                             <select name="order_by" id="order_by" class="form-control">
                                 <option value="">Sort By</option>
@@ -484,104 +429,102 @@
                         </div>
                     </div>
 
-                    <div class="col-12">
-                        @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type', 'exclude_product']))
-                            <div class="alert alert-info">
-                                Please apply filters to view report data.
-                            </div>
-                        @endif
+
+                {{-- BUTTONS --}}
+                <div class="col-xl-3 col-md-3 col-12">
+                    <div class="d-flex column-gap-10">
+                        <button class="btn btn-apply flex-fill">Apply</button>
+                        <a href="{{ route('admin.report.price_schedule') }}" class="btn btn-secondary flex-fill">Reset</a>
                     </div>
-
                 </div>
+
             </div>
-            <div class="filter-footer">
-                <button class="btn btn-search">
-                    <i class="fas fa-search"></i> Search
-                </button>
-                <a href="{{ route('admin.report.price_schedule') }}" class="btn btn-clear">
-                    <i class="fas fa-times"></i> Clear Search
-                </a>
-            </div>
-        </form>
-    </div>
-    <div id="filterOverlay"></div>
+    </form>
 </div>
-
-<div class="active-filters mb-3">
-    @if(request()->hasAny([
-        'booking_date','tour_date','product',
-        'order_status','action_type','partner', 'exclude_product'
-    ]))
-        <div class="d-flex flex-wrap gap-2">
-
-            {{-- BOOKING DATE --}}
-            @if(request('booking_date'))
-                <span class="badge bg-dark">
-                    Booking: {{ request('booking_date') }}
-                    <a href="{{ request()->fullUrlWithQuery(['booking_date' => null]) }}" class="remove-filter" data-filter="booking_date"><span class="ml-2">✕</span></a>
-                </span>
-            @endif
-
-            {{-- TOUR DATE --}}
-            @if(request('tour_date'))
-                <span class="badge bg-dark ml-2">
-                    Tour: {{ request('tour_date') }}
-                    <a href="{{ request()->fullUrlWithQuery(['tour_date' => null]) }}" class="remove-filter" data-filter="tour_date"><span class="ml-2">✕</span></a>
-                </span>
-            @endif
-
-            {{-- PRODUCT --}}
-            
-
-            {{-- STATUS --}}
-            @if(request('order_status'))
-                <span class="badge bg-dark  ml-2">
-                    Status: {{ $status_with_code[request('order_status')] ?? request('order_status') }}
-                    <a href="{{ request()->fullUrlWithQuery(['order_status' => null]) }}" class="remove-filter" data-filter="order_status"><span class="ml-2">✕</span></a>
-                </span>
-            @endif
-
-            {{-- PAY TYPE --}}
-            @if(request('action_type'))
-                <span class="badge bg-dark ml-2">
-                    Pay: {{ request('action_type') }}
-                    <a href="{{ request()->fullUrlWithQuery(['action_type' => null]) }}" class="remove-filter" data-filter="action_type"><span class="ml-2">✕</span></a>
-                </span>
-            @endif
-                @if(request('partner'))
-                <span class="badge bg-dark ml-2">
-                    Pay: {{ request('partner') }}
-                    <a href="{{ request()->fullUrlWithQuery(['partner' => null]) }}" class="remove-filter" data-filter="action_type"><span class="ml-2">✕</span></a>
-                </span>
-            @endif
-
-            @if($selectedProducts->isNotEmpty())
-                @php $p = $selectedProducts->first(); @endphp
-                <span class="badge badge-dark ml-2">
-                    Tour: {{ $p->title }}
-                    <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['product' => null]) }}">✕</a>
-                </span>
-            @endif
-
-            {{-- Excluded Tours --}}
-            @foreach($excludedProducts as $ep)
-                <span class="badge badge-dark ml-2">
-                    Excluded: {{ $ep->title }}
-                    <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery([
-                        'exclude_product' => collect(request('exclude_product'))
-                            ->reject(fn($id) => $id == $ep->id)
-                            ->values()
-                            ->all(),
-                    ]) }}">✕</a>
-                </span>
-            @endforeach
-
+@if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type', 'exclude_product']))
+        <div class="alert alert-info">
+            Please apply filters to view report data.
         </div>
     @endif
-</div>
+<div class="active-filters mb-3">
+        @if(request()->hasAny([
+            'booking_date','tour_date','product',
+            'order_status','action_type','partner', 'exclude_product'
+        ]))
 
+
+
+            <div class="d-flex flex-wrap gap-2">
+
+                {{-- BOOKING DATE --}}
+                @if(request('booking_date'))
+                    <span class="badge bg-dark">
+                        Booking: {{ request('booking_date') }}
+                        <a href="{{ request()->fullUrlWithQuery(['booking_date' => null]) }}" class="remove-filter" data-filter="booking_date"><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+
+                {{-- TOUR DATE --}}
+                @if(request('tour_date'))
+                    <span class="badge bg-dark ml-2">
+                        Tour: {{ request('tour_date') }}
+                        <a href="{{ request()->fullUrlWithQuery(['tour_date' => null]) }}" class="remove-filter" data-filter="tour_date"><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+
+                {{-- PRODUCT --}}
+                
+
+                {{-- STATUS --}}
+                @if(request('order_status'))
+                    <span class="badge bg-dark  ml-2">
+                        Status: {{ $status_with_code[request('order_status')] ?? request('order_status') }}
+                        <a href="{{ request()->fullUrlWithQuery(['order_status' => null]) }}" class="remove-filter" data-filter="order_status"><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+
+                {{-- PAY TYPE --}}
+                @if(request('action_type'))
+                    <span class="badge bg-dark ml-2">
+                        Pay: {{ request('action_type') }}
+                        <a href="{{ request()->fullUrlWithQuery(['action_type' => null]) }}" class="remove-filter" data-filter="action_type"><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+                 @if(request('partner'))
+                    <span class="badge bg-dark ml-2">
+                        Pay: {{ request('partner') }}
+                        <a href="{{ request()->fullUrlWithQuery(['partner' => null]) }}" class="remove-filter" data-filter="action_type"><span class="ml-2">✕</span></a>
+                    </span>
+                @endif
+
+                @if($selectedProducts->isNotEmpty())
+                    @php $p = $selectedProducts->first(); @endphp
+                    <span class="badge badge-dark ml-2">
+                        Tour: {{ $p->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['product' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Excluded Tours --}}
+                @foreach($excludedProducts as $ep)
+                    <span class="badge badge-dark ml-2">
+                        Excluded: {{ $ep->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery([
+                            'exclude_product' => collect(request('exclude_product'))
+                                ->reject(fn($id) => $id == $ep->id)
+                                ->values()
+                                ->all(),
+                        ]) }}">✕</a>
+                    </span>
+                @endforeach
+
+            </div>
+        @endif
+    </div>
 {{-- TABLE --}}
-<div class="card card-primary bg-white border rounded-lg-custom report-table">
+
+    <div class="card card-primary bg-white border rounded-lg-custom report-table">
+
     @if($rows)
         <table style="width:100%; border-collapse:separate; border-spacing:20px 0; margin-bottom:25px; margin-top: 20px;">
             <tr>
@@ -658,45 +601,38 @@
         </table>
     @endif
 
-    <div class="card-header report-table-head">
-        <div class="row">
-            <div class="col-md-8 col-12">
-                <h3 class="card-title">Price Schedule List</h3>
-            </div>
-            <div class="col-md-4 col-12">
-                <div class="card-tools">
-                    <!-- <a href="{{ route('admin.report.invoice.details.export', request()->all()) }}"
-                        class="btn btn-success btn-sm">
-                        Download Excel
-                    </a> -->
-                    <a 
-                        href="{{ route('admin.report.price_schedule.export', request()->query()) }}" 
-                        class="btn btn-success"
-                    >
-                        <i class="fas fa-download"></i> Download Excel
-                    </a>
+        <div class="card-header report-table-head">
+            <div class="row">
+                <div class="col-md-8 col-12">
+                    <h3 class="card-title">Price Schedule List</h3>
+                </div>
+                <div class="col-md-4 col-12">
+                    <div class="card-tools">
+                        <!-- <a href="{{ route('admin.report.invoice.details.export', request()->all()) }}"
+                           class="btn btn-success btn-sm">
+                            Download Excel
+                        </a> -->
+                        <a 
+                            href="{{ route('admin.report.price_schedule.export', request()->query()) }}" 
+                            class="btn btn-success"
+                        >
+                            <i class="fas fa-download"></i> Download Excel
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="table-wrapper" id="tableWrapper">
-        <table class="table table-bordered" style=" margin: 15px 20px;">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Order</th>
-                    <!-- <th>Order Date</th> -->
-                    <th>Customer</th>
-                    <th class="product-name">Product</th>
+        <div class="table-wrapper" id="tableWrapper">
+          <table class="table table-bordered" style=" margin: 15px 20px;">
 
-                    <th >Product Price</th>
-                    <th>Extra Amount</th>
-                    <th>Tax Amount</th>
-                    <th>Discount</th>
-                    <th>Customer Total</th>
-                    <!-- <th>Excluded Total</th> -->
-                    <th>Order Balance</th>
+                <thead>
+    <tr>
+        <th>#</th>
+        <th>Order</th>
+        <!-- <th>Order Date</th> -->
+        <th>Customer</th>
+        <th class="product-name">Product</th>
 
         <th >Product Price</th>
         <th>Extra Amount</th>
@@ -717,135 +653,23 @@
         <!-- <th></th> -->
         <th>Addons</th>
 
-                @endphp
-                @forelse($rows as $row) 
-                
-                <tr>
-                    {{-- No --}}
-                    <td>{{ $row['no'] ?? '' }}</td>
-
-                    {{-- Order --}}
-                    <td >
-
-                        <strong>
-                            <a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">
-                                {{ $row['order_number'] }}
-                            </a>
-                        </strong>
-
-                        <br>
-
-                        <small class="text-muted">
-                            Order :
-                            {{ \Carbon\Carbon::parse($row['order_date'])->format('Y-m-d') }}
-                        </small>
-
-                        <br>
-
-                        <small>
-                            Fulfilment :
-                            {{ $row['fulfilment_date'] }}
-                        </small>
-
-                    </td>
-
-                    {{-- Customer --}}
-                    <td>
-                        <strong>{{ $row['customer_name'] }}</strong>
-                        <br>
-                        <small>
-                            Adult :
-                            {{ $row['adult'] }}
-                            |
-                            Child :
-                            {{ $row['child'] }}
-                            |
-                            Infant :
-                            {{ $row['infant'] }}
-                            |
-                            Senior :
-                            {{ $row['senior'] }}
-                        </small>
-                        <br>
-                        <small>
-                            Qty :
-                            {{ $row['adult'] + $row['child'] + $row['infant'] + $row['other'] + $row['senior'] }}
-                        </small>
-                        <br>
-                    </td>
-
-                    <td class="product-name" style="word-wrap: ;">
-                            {{ $row['product_name'] }}
-                    </td>
-
-                    <td align="right">{{ number_format_with_currency($row['product_price'],2) }}</td>
-
-                    <td align="right">{{ number_format_with_currency($row['extra_amount'],2) }}</td>
-
-                    <td align="right">{{ number_format_with_currency($row['tax_amount'],2) }}</td>
-
-                    <td align="right">{{ number_format_with_currency($row['discount_amount'],2) }}</td>
-
-                    <td align="right">{{ number_format_with_currency($row['customer_total'],2) }}</td>
-                    <!-- <td align="right">{{ number_format_with_currency($row['exclude_total'],2) }}  </td> -->
-
-                    <td align="right">{{ number_format_with_currency($row['balance_amount'],2) }}</td>
-
-                    <!-- <td align="right">{{ number_format_with_currency($row['transport_cost'],2) }}</td> -->
-
-                    <td align="right">{{ number_format_with_currency($row['tour_selling_price'],2) }}</td>
-                    <td align="right">{{ number_format_with_currency($row['tour_extra_included_price'],2) }} </td>
-                    <td align="right">{{ number_format_with_currency($row['tour_extra_excluded_price'],2) }} </td>
-                    <!-- <td align="right"> Extra Excluded</td> -->
-
-                    <td align="right">{{ number_format_with_currency($row['tour_selling_tax'],2) }}</td>
-
-                    <!-- <td align="right">0</td> -->
-
-                    <td align="right">
-                        {{ number_format_with_currency(($row['tour_selling_total'] + $row['transport_cost']),2) }}
-                    </td>
-
-                    <td align="right">
-                        {{ number_format_with_currency(($row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost']),2) }}
-                    </td>
-
-                    <td>
-                        @foreach($addonKeys as $key)
-
-                        <!-- <td > -->
-
-                        @if(
-                            !empty($row[$key.'_desc']) ||
-                            !empty($row[$key.'_quant']) ||
-                            !empty($row[$key.'_price']) ||
-                            !empty($row[$key.'_tax']) ||
-                            !empty($row[$key.'_fee']) ||
-                            !empty($row[$key.'_total'])
-                        )
-                            @php
+    </tr>
 
 
-                            $totalAddonQnty += $row[$key.'_quant'];
-                            $totalAddonPrice += $row[$key.'_total'];
+</thead>
 
-                            @endphp
-                            <strong>{{ $row[$key.'_desc'] ?? '-' }}</strong><br>
+                <tbody>
 
-                            Qty :
-                            {{ $row[$key.'_quant'] ?? 0 }} |
+                    @php
 
-                            <!-- <br> -->
 
-                            <!-- Price :
-                            {{ number_format_with_currency($row[$key.'_price'] ?? 0,2) }} --> 
+                      $totalAddonQnty = 0;
+                      $totalAddonPrice = 0;
 
-                            Total :
-                            <strong>
-                                {{ number_format_with_currency($row[$key.'_total'] ?? 0,2) }}
-                            </strong>
-                            <br>
+                    @endphp
+                    @forelse($rows as $row) 
                     
+                    <tr>
 
     {{-- No --}}
     <td>{{ $row['no'] ?? '' }}</td>
@@ -948,7 +772,12 @@
     </td>
 
     <td class="col-profit" align="right">
-        {{ number_format_with_currency(($row['customer_total'] - $row['balance_amount'] - $row['tour_selling_total'] - $row['transport_cost']),2) }}
+
+        @if($row['customer_total'] == 0)
+            0
+        @else
+           {{ number_format_with_currency(($row['customer_total'] - $row['balance_amount'] - $row['tour_selling_total'] - $row['transport_cost']),2) }}
+        @endif
     </td>
 
     <td>@foreach($addonKeys as $key)
@@ -1159,8 +988,11 @@
             </div>
         @endif
 
-    </div>
-</div>
+        </div>
+  </div>
+
+
+
 
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
@@ -1170,36 +1002,6 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    $('#toggleFilter').click(function () {
-
-        $('#filterSidebar').addClass('show');
-
-        $('#filterOverlay').addClass('show');
-
-        $('body').addClass('sidebar-open');
-
-        $(this)
-            .removeClass('btn-secondary')
-            .addClass('btn-danger')
-            .html('<i class="fas fa-times"></i> Filters');
-    });
-
-    $('#closeFilter,#filterOverlay').click(function () {
-
-        $('#filterSidebar').removeClass('show');
-
-        $('#filterOverlay').removeClass('show');
-
-        $('body').removeClass('sidebar-open');
-
-        $('#toggleFilter')
-            .removeClass('btn-danger')
-            .addClass('btn-secondary')
-            .html('<i class="fas fa-filter"></i> Filters');
-    });
-</script>
-
-<script>
   let today = moment();
             
 
@@ -1207,7 +1009,6 @@
         function initTourSelect(selector, isMultiple, placeholderText) {
             $(selector).select2({
                 placeholder: placeholderText,
-                dropdownParent: $('#filterSidebar'),
                 minimumInputLength: 4,
                 multiple: isMultiple,
                 ajax: {
