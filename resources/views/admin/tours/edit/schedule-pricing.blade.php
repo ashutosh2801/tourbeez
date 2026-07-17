@@ -53,89 +53,112 @@
                     </div>
 
                     {{-- PRODUCT PRICING --}}
-                    <div class="col-xl-7">
-                        <div class="form-group">
-                            <label>Transport Cost</label>
-                            <div class="input-group">
-                                        <span class="input-group-text">$</span>
-                            <input  class="form-control" type=""
-                                       name="transport_cost"
-                                       value="{{ $data->transport_cost }}">
-                                   </div>
-                        </div>
-                    </div>
 
                     <div class="col-xl-12">
                         <div class="form-group">
                             <label>Product pricing</label>
 
                             @php
-                                $priceOptions = old('PriceOption', $data->pricings->map(function ($item) {
+                                $priceOptions = $data->pricings->map(function ($item, $index) {
+
+                                    $old = old("PriceOption.$index", []);
+
                                     return [
-                                        'id'       => $item->id,
-                                        'label'    => $item->label,
-                                        'price'    => $item->price,
-                                        'qty_used' => $item->quantity_used,
-                                        'selling_price' => $item->selling_price,
+                                        'id'             => $item->id,
+                                        'label'          => $item->label,
+                                        'price'          => $item->price,
+                                        'qty_used'       => $item->quantity_used,
+                                        'selling_price'  => $old['selling_price'] ?? $item->selling_price,
+                                        'extra_included' => $old['extra_included'] ?? $item->extra_included,
                                     ];
-                                })->toArray());
+
+                                })->toArray();
 
                                 $count = count($priceOptions);
                                 if($count == 0){
                                     $priceOptions = [ ['id'=>'', 'label'=>'', 'price'=>'', 'qty_used'=>1] ];
                                 }
                             @endphp
+                            <div class="row font-weight-bold mb-2 border-bottom pb-2">
+                                <div class="col-xl-2">Type</div>
+                                <div class="col-xl-2">Label</div>
+                                <div class="col-xl-2 text-left">Customer Price</div>
+                                <div class="col-xl-2 text-left">Selling Price</div>
+                                <div class="col-xl-2 text-left">Extra Included</div>
+                                <div class="col-xl-2 text-left">Total</div>
+                            </div>
+
+
 
                             @foreach ($priceOptions as $index => $option)
 
-                            <div class="row mb-3">
+                               <div class="row mb-3 align-items-center">
 
-                                {{-- ID --}}
                                 <input type="hidden"
                                        name="PriceOption[{{ $index }}][id]"
                                        value="{{ $option['id'] }}">
 
-                                {{-- PRICE TYPE (unchanged) --}}
-                                @if($index == 0)
+                                {{-- Type --}}
                                 <div class="col-xl-2">
-                                    <select class="form-control" disabled>
-                                        <option selected>{{$data->price_type=="FIXED" ? "FIXED" : "By Person"}}</option>
-                                    </select>
+                                    @if($index==0)
+                                        <input class="form-control"
+                                               value="{{ $data->price_type=='FIXED' ? 'FIXED' : 'By Person' }}"
+                                               readonly>
+                                    @endif
                                 </div>
-                                @else
-                                <div class="col-xl-2"></div>
-                                @endif
 
-                                {{-- LABEL (readonly) --}}
+                                {{-- Label --}}
                                 <div class="col-xl-2">
-                                    <input type="text"
+                                    <input class="form-control"
                                            value="{{ $option['label'] }}"
-                                           class="form-control"
                                            readonly>
                                 </div>
 
-                                {{-- ORIGINAL PRICE (readonly) --}}
+                                {{-- Customer Price --}}
                                 <div class="col-xl-2">
                                     <div class="input-group">
                                         <span class="input-group-text">$</span>
-                                        <input type="text"
+                                        <input class="form-control"
                                                value="{{ $option['price'] }}"
-                                               class="form-control"
                                                readonly>
                                     </div>
                                 </div>
 
-                                
-
-                                {{-- SELLING PRICE (ONLY EDITABLE) --}}
-                                <div class="col-xl-3">
+                                {{-- Selling Price --}}
+                                <div class="col-xl-2">
                                     <div class="input-group">
                                         <span class="input-group-text">$</span>
-                                        <input type="text"
+
+                                        <input type="number"
+                                               step="0.01"
                                                name="PriceOption[{{ $index }}][selling_price]"
-                                               value="{{ old("PriceOption.$index.selling_price", $option['selling_price']) }}"
-                                               class="form-control"
+                                               value="{{ old("PriceOption.$index.selling_price",$option['selling_price']) }}"
+                                               class="form-control selling-price"
                                                required>
+                                    </div>
+                                </div>
+
+                                {{-- Extra Included --}}
+                                <div class="col-xl-2">
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+
+                                        <input type="number"
+                                               step="0.01"
+                                               name="PriceOption[{{ $index }}][extra_included]"
+                                               value="{{ old("PriceOption.$index.extra_included",$option['extra_included'] ?? 0) }}"
+                                               class="form-control extra-included">
+                                    </div>
+                                </div>
+
+                                {{-- Total --}}
+                                <div class="col-xl-2">
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+
+                                        <input type="text"
+                                               class="form-control total-price"
+                                               readonly>
                                     </div>
                                 </div>
 
@@ -180,6 +203,27 @@ updateCurrencySymbol();
 
 $('select[name="currency"]').on('change', function () {
     updateCurrencySymbol();
+});
+
+function updateTotals() {
+
+    $('.selling-price').each(function(){
+
+        let row = $(this).closest('.row');
+
+        let selling = parseFloat(row.find('.selling-price').val()) || 0;
+        let extra   = parseFloat(row.find('.extra-included').val()) || 0;
+
+        row.find('.total-price').val((selling + extra).toFixed(2));
+
+    });
+
+}
+
+updateTotals();
+
+$(document).on('input', '.selling-price, .extra-included', function () {
+    updateTotals();
 });
 </script>
 

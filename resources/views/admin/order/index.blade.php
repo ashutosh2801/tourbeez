@@ -6,21 +6,6 @@
         .text-orange {
             color: #fd7e14;
         }
-        .filter-panel {
-            display: none;
-            animation: fadeSlide 0.3s ease-in-out;
-        }
-
-        @keyframes fadeSlide {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
 
         .select2-container--default .select2-selection--multiple .select2-selection__choice {
             background-color: #fd7e14;
@@ -36,19 +21,52 @@
             background-color: #dc3545; /* red for excluded, orange for included */
         }
 
+        @media(min-width:767px) {
+
+            .daterangepicker.show-calendar {
+                top: 245px !important;
+                left: auto;
+                right: 430px !important;
+            }
+
+            .daterangepicker.show-calendar:before,
+            .daterangepicker.show-calendar:after {
+                left: 595px;
+                border-bottom-color: #999;
+                rotate: 90deg;
+                top: 200px;
+            }
+
+            .daterangepicker.show-calendar:nth-of-type(2):before,
+            .daterangepicker.show-calendar:nth-of-type(2):after {
+                top: 140px;
+            }
+        }
+
+        @media(max-width:767px) {
+
+            .daterangepicker.show-calendar {
+                height: 200px;
+                overflow-y: scroll;
+            }
+
+        }
+
     </style>
     @section('title', 'Orders List')
 
     <div class="card-primary mb-3">
         <div class="card-header order-list-head">
             <div class="row">
-                <div class="col-md-8 col-6">
-                    <h3 class="card-title text-white">Order List</h3>
+                <div class="col-md-6 col-6">
+                    <form method="GET" action="{{ route('admin.orders.index') }}">
+                        <input type="text" name="search" class="form-control" placeholder="Order ID/Customer First/Last Name/Email and press Enter button" value="{{ request('search') }}">
+                    </form>
                 </div>
-                <div class="col-md-4 col-6">
+                <div class="col-md-6 col-6">
                     <div class="card-tools">
                         <button type="button" class="btn btn-secondary" id="toggleFilter">
-                            <i class="fas fa-filter"></i> Filters
+                            <i class="fas fa-filter"></i> More Filters
                         </button>
                     </div>
                 </div>
@@ -229,7 +247,7 @@
         @endphp
 
         @if($hasActiveFilters)
-        <div class="active-filters m-4">
+        <div class="active-filters">
             <div class="d-flex flex-wrap gap-2">
 
                 {{-- Search --}}
@@ -480,7 +498,7 @@
                                     <br>
                                     {{ $order->customer?->email }}
                                 </td>
-                                @php
+                                <!-- @php
 
                                     $total = round($order->total_amount);
                                    // $paid = round($order->booked_amount) ?? 0; 
@@ -509,6 +527,80 @@
 
                                     <span class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}</span>
                                 <!-- </td> -->
+
+                                @php
+
+                                    $total = $order->total_amount;
+
+
+
+                                    $paid = 
+
+                                        $order->payments->where('status', 'succeeded')->sum('amount')
+
+                                        - $order->payments->where('status', 'refunded')->sum('amount')
+
+                                        + $order->payments->where('status', 'partial_refunded')->sum('amount');
+
+
+
+                                    $balance = max(0, $total - $paid);
+
+
+
+                                    $hasUncaptured = $order->payments->contains('status', 'uncaptured');
+
+
+
+                                    if ($paid < $total) {
+
+                                        if ($paid == 0 && $hasUncaptured) {
+
+                                            $amountClass = 'text-orange';
+
+                                        } else {
+
+                                            $amountClass = 'text-danger'; // red
+
+                                        }
+
+                                    } else {
+
+                                        $amountClass = 'text-success'; // green
+
+                                    }
+
+
+
+                                    if ($order->order_status == 6) {
+
+                                        $amountClass = 'text-secondary'; // grey
+
+                                    }
+
+                                @endphp
+
+
+
+                                <td>
+
+
+
+
+
+                                <span class="{{ $amountClass }}">
+
+                                        @if($amountClass == 'text-danger')
+
+                                            {{ price_format_with_currency($balance, $order->currency) }}
+
+                                        @else
+
+                                            {{ price_format_with_currency($order->total_amount, $order->currency) }}
+
+                                        @endif
+
+                                    </span>
                                 <br>
                                 <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "N/A" }}</span>
                                 

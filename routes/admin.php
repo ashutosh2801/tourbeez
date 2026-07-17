@@ -6,6 +6,7 @@ use App\Http\Controllers\API\TourController as APITourController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AddonController;
 use App\Http\Controllers\AizUploadController;
+use App\Http\Controllers\BusinessExpenseController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CityController;
 use App\Http\Controllers\CollectionController;
@@ -421,19 +422,18 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     ->name('report.schedule.export');
     Route::get('report/price_schedule', [ReportController::class, 'reportPriceSchedule'])->name('report.price_schedule');
     Route::get('/reports/price-schedule/export', [ReportController::class, 'exportPriceSchedule'])
-    ->name('report.price_schedule.export');
-
-
-    
+    ->name('report.price_schedule.export');    
 
 
     Route::get('/driver-manifest', [ManifestController::class, 'driverManifest'])->name('driver.manifest');
-    Route::get('/driver-manifest/export', [ManifestController::class, 'exportDriverManifest'])
-    ->name('driver.manifest.export');
-
-
+    Route::get('/driver-manifest/export', [ManifestController::class, 'exportDriverManifest'])->name('driver.manifest.export');
+    Route::post('/passenger-pickup-mail', [ManifestController::class, 'passengerPickupMail'])->name('passenger.pickup.mail');
+    Route::post('/driver-pickup-mail', [ManifestController::class, 'driverPickupMail'])->name('driver.pickup.mail');
     Route::post('/assign-driver', [ManifestController::class, 'assignDriver'])->name('assign.driver');
     Route::post('/remove-driver', [ManifestController::class, 'removeDriver'])->name('remove.driver');
+
+
+    Route::resource('business-expenses', BusinessExpenseController::class);
 
 
 

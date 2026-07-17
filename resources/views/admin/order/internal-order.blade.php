@@ -300,6 +300,8 @@
                                                 <option value="PROMO_CODE">Promo code</option>
                                                 <option value="FREE">Free of charge</option>
                                                 <option value="INVOICE">Invoice</option>
+                                                <!-- <option value="EXCLUDEDPAYMENT">Exclude Payment</option> -->
+                                                <option value="COMMISSION">Commission</option>
                                                 <option value="OTHER">Other</option>
                                             </select>
                                         </div>

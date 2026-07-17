@@ -325,7 +325,6 @@ class OrderController extends Controller
     public function store(Request $request)
     {
 
-
         $request->merge([
             'customer_id' => $request->customer_id ?: null
         ]);    
@@ -720,20 +719,38 @@ class OrderController extends Controller
                 $payments = [];
 
                 foreach ($request->paymentType as $i => $type) {
+
+                    
                     //$amount = $request->amount[$i] ?? null;
 
-                    $amount          = $request->amount[$i] ?? null;
+                    $amount          = $request->amount[$i] ?? 0;
                     $collection_date = $request->collection_date[$i] ?? null;
                     $transactionId   = $request->transactionId[$i] ?? null;
 
                     // Skip empty rows
-                    if (empty($type) && empty($amount)) {
+                    if (empty($type) && empty($amount) && $amount == 0) {
                         continue;
                     }
 
                     // Add amount to total (only if valid)
                     if (!empty($amount)) {
                         $totalPaymentAmount += floatval($amount);
+                    }
+
+                    if($type == "COMMISSION"){
+                        $payments[] = [
+                                'order_id'          => $order->id,
+                                'payment_intent_id' => null,
+                                'transaction_id'    => $transactionId,
+                                'payment_type'      => "EXCLUDED",
+                                'collection_type'   => 'Outside',
+                                'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
+                                'amount'            => $subtotal - $amount,
+                                'currency'          => $order->currency,
+                                'status'            => 'succeeded',
+                                'created_at'        => now(),
+                                'updated_at'        => now(),
+                            ];
                     }
 
                     $payments[] = [
@@ -756,9 +773,25 @@ class OrderController extends Controller
 
             // ===== Update Order totals =====
             $balanceAmount = $totalOrderAmount - $totalPaymentAmount;
-            $order->total_amount = $totalOrderAmount;
-            $order->balance_amount = $balanceAmount;
-            $order->booked_amount = $totalOrderAmount - $balanceAmount;
+            // $order->total_amount = $totalOrderAmount;
+            // $order->balance_amount = $balanceAmount;
+            // $order->booked_amount = $totalOrderAmount - $balanceAmount;
+
+
+            $totals = $this->calculateTotals(
+                $totalOrderAmount,
+                $totalPaymentAmount,
+                $request->paymentType ?? [],
+                $request->amount ?? []
+            );
+            
+            $order->total_amount   = $totals['total'];
+            $order->booked_amount  = $totals['paid'];
+            $order->balance_amount = $totals['balance'];
+            $balanceAmount = $totals['balance'];
+            $balanceAmount = $totals['balance'];
+
+            
             
             // dd($request->payment_type);
             if( $order->save() ){
@@ -1114,7 +1147,7 @@ class OrderController extends Controller
             'tour_startdate.*' => 'required|date',
 
             'tour_starttime'   => 'nullable|array',
-            'tour_starttime.*' => 'nullable|string|max:10',
+            'tour_starttime.*' => 'nullable|string|max:40',
         ],
         [
             'order_status.required'   => 'Please select order status',
@@ -1417,7 +1450,7 @@ class OrderController extends Controller
                     $transactionId   = $request->transactionId[$i] ?? null;
                     
                     // Skip empty rows
-                    if (empty($type) && empty($amount)) {
+                    if (empty($type) && empty($amount) && $amount == 0) {
                         continue;
                     }
 
@@ -1449,6 +1482,9 @@ class OrderController extends Controller
 
                     } else {
                         // INSERT new row
+
+
+                        
                         OrderPayment::create([
                             'order_id'       => $order->id,
                             'payment_type'   => $type,
@@ -1461,10 +1497,33 @@ class OrderController extends Controller
                             'created_at'     => now(),
                             'updated_at'     => now(),
                         ]);
+
+                        if($type == "COMMISSION"){
+
+                            if($order->total_amount - $amount){
+                                OrderPayment::create([
+                                    'order_id'          => $order->id,
+                                    'payment_intent_id' => null,
+                                    'transaction_id'    => $transactionId,
+                                    'payment_type'      => "EXCLUDED",
+                                    'collection_type'   => 'Outside',
+                                    'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
+                                    'amount'            => $order->total_amount - $amount,
+                                    'currency'          => $order->currency,
+                                    'status'            => 'succeeded',
+                                    'created_at'        => now(),
+                                    'updated_at'        => now(),
+                                ]);
+                                }
+
+                            }
+                            
                     }
                 }  
                 
                 // These are the payments that were NOT included in updated request
+
+                
                 if (!empty($existingPaymentIds)) {
                     OrderPayment::whereIn('id', $existingPaymentIds)->delete();
                 }
@@ -1488,9 +1547,24 @@ class OrderController extends Controller
         
         }
         // dd($total, $balanceAmount, $totalPaymentAmount, $order->balance_amount, $order->booked_amount );
-        $order->total_amount    = $total;
-        $order->balance_amount  = $balanceAmount;
-        $order->booked_amount  = $totalPaymentAmount;
+        // $order->total_amount    = $total;
+        // $order->balance_amount  = $balanceAmount;
+        // $order->booked_amount  = $totalPaymentAmount;
+
+
+        $totals = $this->calculateTotals(
+            $total,
+            $totalPaymentAmount,
+            $request->paymentType ?? [],
+            $request->amount ?? []
+        );
+
+        $order->total_amount   = $totals['total'];
+        $order->booked_amount  = $totals['paid'];
+        $order->balance_amount = $totals['balance'];
+        $balanceAmount = $totals['balance'];
+        $balanceAmount = $totals['balance'];
+        $total =         $totals['total'];
         
 
         if( $order->save() ) {
@@ -4801,5 +4875,40 @@ class OrderController extends Controller
                 'message' => 'Something went wrong. Please try again.'
             ], 500);
         }
+    }
+
+    private function calculateTotals(
+        float $totalOrderAmount,
+        float $totalPaymentAmount,
+        array $paymentTypes,
+        array $amounts
+    ): array
+    {
+        $excludeAmount = 0;
+        
+        foreach ($paymentTypes as $index => $type) {
+            if ($type === 'EXCLUDEDPAYMENT') {
+                
+                $excludeAmount += (float)($amounts[$index] ?? 0);
+            }
+        }
+        
+        if ($excludeAmount > 0) {
+
+
+            return [
+                'total'   => $excludeAmount,
+                'paid'    => $excludeAmount,
+                'balance' => 0,
+                'exclude' => true,
+            ];
+        }
+
+        return [
+            'total'   => $totalOrderAmount,
+            'paid'    => $totalPaymentAmount,
+            'balance' => max($totalOrderAmount - $totalPaymentAmount, 0),
+            'exclude' => false,
+        ];
     }
 }

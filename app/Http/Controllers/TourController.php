@@ -1152,6 +1152,7 @@ $pickupHtml .= '</div>';
     {
         $data       = Tour::findOrFail(decrypt($id));
         $detail     = $data->detail ? $data->detail : new TourDetail();
+        
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
         return view('admin.tours.feature.schedule-pricing', compact( 'data', 'detail', 'metaData'));
     }
@@ -1458,9 +1459,10 @@ $pickupHtml .= '</div>';
     public function schedulePricingUpdate(Request $request, $id){
 
         $request->validate([
-            'transport_cost'                => 'required|numeric|min:0',
+            // 'transport_cost'                => 'required|numeric|min:0',
             'PriceOption'                   => 'required|array',
             'PriceOption.*.selling_price'   => 'required|numeric|min:0',
+            'PriceOption.*.extra_included'  => 'nullable|numeric|min:0',
 
         ]);
 
@@ -1470,6 +1472,8 @@ $pickupHtml .= '</div>';
                 $pricing = TourPricing::find($option['id']);
                 if ($pricing && $pricing->tour_id) {
                     $pricing->selling_price = $option['selling_price'] ?? 0;
+                    $pricing->extra_included = $option['extra_included'] ?? 0;
+
                     $pricing->save();
                 }
             }
@@ -1490,6 +1494,7 @@ $pickupHtml .= '</div>';
         // Save tour types
         
         // Checked addon IDs
+
         $checkedAddons = $request->input('selected_addons', []); // This is an array of IDs
 
         // All addon pivot data (includes sort_by values keyed by ID)
@@ -1506,6 +1511,12 @@ $pickupHtml .= '</div>';
             $syncData[$addonId] = [
                 'sort_by' => $sortBy,
             ];
+
+            if (isset($addonInputs[$addonId]['selling_price'])) {
+                Addon::where('id', $addonId)->update([
+                    'selling_price' => $addonInputs[$addonId]['selling_price'],
+                ]);
+            }
         }
 
         //echo '<pre>';  print_r($syncData); exit;
