@@ -58,13 +58,15 @@
     <div class="card-primary mb-3">
         <div class="card-header order-list-head">
             <div class="row">
-                <div class="col-md-8 col-6">
-                    <h3 class="card-title text-white">Order List</h3>
+                <div class="col-md-6 col-6">
+                    <form method="GET" action="{{ route('admin.orders.index') }}">
+                        <input type="text" name="search" class="form-control" placeholder="Order ID/Customer First/Last Name/Email and press Enter button" value="{{ request('search') }}">
+                    </form>
                 </div>
-                <div class="col-md-4 col-6">
+                <div class="col-md-6 col-6">
                     <div class="card-tools">
                         <button type="button" class="btn btn-secondary" id="toggleFilter">
-                            <i class="fas fa-filter"></i> Filters
+                            <i class="fas fa-filter"></i> More Filters
                         </button>
                     </div>
                 </div>

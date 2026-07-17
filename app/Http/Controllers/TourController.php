@@ -1494,6 +1494,7 @@ $pickupHtml .= '</div>';
         // Save tour types
         
         // Checked addon IDs
+
         $checkedAddons = $request->input('selected_addons', []); // This is an array of IDs
 
         // All addon pivot data (includes sort_by values keyed by ID)
@@ -1510,6 +1511,12 @@ $pickupHtml .= '</div>';
             $syncData[$addonId] = [
                 'sort_by' => $sortBy,
             ];
+
+            if (isset($addonInputs[$addonId]['selling_price'])) {
+                Addon::where('id', $addonId)->update([
+                    'selling_price' => $addonInputs[$addonId]['selling_price'],
+                ]);
+            }
         }
 
         //echo '<pre>';  print_r($syncData); exit;

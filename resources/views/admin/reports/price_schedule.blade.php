@@ -269,6 +269,19 @@
 
     }
 
+.col-total {
+    background: #d4edda !important;
+    color: #155724;
+    font-weight: 600;
+}
+
+/* Dark Green */
+.col-profit {
+    background: #198754 !important;
+    color: #fff !important;
+    font-weight: 700;
+}
+
 </style>
 
 <div class="card-primary mb-3">
@@ -603,10 +616,7 @@
                     </div>
 
                     <div style="font-size:24px;font-weight:bold;color:#15803d;margin-top:8px;">
-                        {{ number_format_with_currency(
-                            $totals['customer_total'] - ($totals['net_total'] + $businessExpense['total']),
-                            2
-                        ) }}
+                        {{ number_format_with_currency($totals['profit'] - $totals['balance_amount'],2) }}
                     </div>
                 </td>
 
@@ -619,11 +629,11 @@
                     padding:18px;
                 ">
                     <div style="font-size:13px;color:#666;font-weight:600;">
-                        TOTAL EXPENSES
+                        TOTAL ADS EXPENSES
                     </div>
 
                     <div style="font-size:24px;font-weight:bold;color:#dc2626;margin-top:8px;">
-                        {{ number_format_with_currency($totals['net_total'] + $businessExpense['total'],2) }}
+                        {{ number_format_with_currency($businessExpense['total'],2) }}
                     </div>
                 </td>
 
@@ -640,7 +650,7 @@
                     </div>
 
                     <div style="font-size:24px;font-weight:bold;color:#b45309;margin-top:8px;">
-                        {{ number_format_with_currency($totals['customer_total'],2) }}
+                        {{  number_format_with_currency($totals['profit'] - $totals['balance_amount'] - $businessExpense['total'],2)  }}
                     </div>
                 </td>
 
@@ -688,23 +698,24 @@
                     <!-- <th>Excluded Total</th> -->
                     <th>Order Balance</th>
 
-                    <!-- <th>Transport Cost - Tax</th> -->
-                    <th>Supplier Price</th>
-                    <th>Extra Included</th>
-                    <th>Extra Excluded</th>
-                    <th>Supplier Tax</th>
-                    <!-- <th>Other Fee</th> -->
-                    <th>Supplier Total</th>
-                    <th>Profit</th>
-                    <!-- <th></th> -->
-                    <th>Addons</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php
+        <th >Product Price</th>
+        <th>Extra Amount</th>
+        <th>Tax Amount</th>
+        <th>Discount</th>
+        <th class="col-total">Customer Total</th>
+        <!-- <th>Excluded Total</th> -->
+        <th>Order Balance</th>
 
-                    $totalAddonQnty = 0;
-                    $totalAddonPrice = 0;
+        <!-- <th>Transport Cost - Tax</th> -->
+        <th>Supplier Price</th>
+        <th>Extra Included</th>
+        <th>Extra Excluded</th>
+        <th>Supplier Tax</th>
+        <!-- <th>Other Fee</th> -->
+        <th class="col-total">Supplier Total</th>
+        <th class="col-profit">Profit</th>
+        <!-- <th></th> -->
+        <th>Addons</th>
 
                 @endphp
                 @forelse($rows as $row) 
@@ -836,145 +847,313 @@
                             <br>
                     
 
-                        @endif
+    {{-- No --}}
+    <td>{{ $row['no'] ?? '' }}</td>
 
-                        <!-- </td> -->
+    {{-- Order --}}
+    <td >
 
-                        @endforeach
-                    </td>
+        <strong>
+            <a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">
+                {{ $row['order_number'] }}
+            </a>
+        </strong>
 
-                </tr>
+        <br>
 
-                @empty
-                <tr>
-                    <td colspan="{{ 8 + (count($addonKeys) * 5) }}" class="text-center">
-                        No Data Found
-                    </td>
-                </tr>
-                @endforelse
+        <small class="text-muted">
+            Order :
+            {{ \Carbon\Carbon::parse($row['order_date'])->format('Y-m-d') }}
+        </small>
 
-                @if($rows)
-                    <tr style="background:#eef2f7;font-weight:700;">
-                        <td colspan="4" style="position: sticky; background: #fff; z-index: 50;">Grand Total</td>
-                        <td align="right">{{ number_format_with_currency($totals['product_price'],2) }}</td>
-                        <td align="right">{{ number_format_with_currency($totals['extra_amount'],2) }}</td>
-                        <td align="right">{{ number_format_with_currency($totals['tax_amount'],2) }}</td>
-                        <td align="right">{{ number_format_with_currency($totals['discount_amount'],2) }}</td>
-                        <td align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
-                        <!-- <td align="right">{{ number_format_with_currency($totals['exclude_total'],2) }}</td> -->
-                        <td align="right">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>
-                        <!-- <td align="right">{{ number_format_with_currency($totals['transport_cost'],2) }}</td> -->
-                        <td align="right">{{ number_format_with_currency($totals['tour_selling_price'],2) }}</td>
-                        <td align="right">{{ number_format_with_currency($totals['tour_extra_included_price'],2) }} </td>
-                        <td align="right">{{ number_format_with_currency($totals['tour_extra_excluded_price'],2) }} </td>
-                        <td align="right">{{ number_format_with_currency($totals['tour_selling_tax'],2) }}</td>
+        <br>
 
-                        <!-- <td align="center">-</td> -->
+        <small>
+            Fulfilment :
+            {{ $row['fulfilment_date'] }}
+        </small>
 
-                        <td align="right">{{ number_format_with_currency($totals['net_total'],2) }}</td>
+    </td>
 
-                        <td align="right">{{ number_format_with_currency($totals['profit'],2) }}</td>
+    {{-- Customer --}}
+    <td>
 
-                        <td>
-                            <strong>Qty:</strong>
-                            {{ $totalAddonQnty }}
+        <strong>{{ $row['customer_name'] }}</strong>
 
-                            <!-- <br> -->
+        <br>
 
-                            <!-- <strong>Price:</strong> -->
-                            <!-- {{ number_format_with_currency($totals['addonTotals']['price'], 2) }} -->
+        <small>
+            Adult :
+            {{ $row['adult'] }}
+            |
+            Child :
+            {{ $row['child'] }}
+            |
+            Infant :
+            {{ $row['infant'] }}
+            |
+            Senior :
+            {{ $row['senior'] }}
+        </small>
 
-                            <br>
+        <br>
 
-                            <strong>Total:</strong>
-                            {{ number_format_with_currency($totalAddonPrice, 2) }}
-                        </td>
-                    </tr>
-                @endif
-            </tbody>
-            @if($rows)
-            <tfoot class="table-footer">
+        <small>
+            Qty :
+            {{ $row['adult'] + $row['child'] + $row['infant'] + $row['other'] + $row['senior'] }}
+        </small>
 
-                <tr class="summary-total">
-                    <td colspan="4" class="summary-label">
-                        Total Customer Total
-                    </td>
+        <br>
 
-                    <td align="right">
-                        {{ number_format_with_currency($totals['customer_total'],2) }}
-                    </td>
+        
 
-                    <td colspan="13"></td>
-                </tr>
-                @foreach($businessExpense['expenses'] as $expense)
-                <tr class="summary-expense">
-                    <td colspan="4" class="summary-label">
-                        {{ ucwords($expense->category) }}
-                    </td>
+    </td>
+    <td class="product-name" style="word-wrap: ;">
+            {{ $row['product_name'] }}
 
-                    <td align="right">
-                        {{ number_format_with_currency($expense->amount,2) }}
-                    </td>
+    </td>
 
-                    <td colspan="13"></td>
-                </tr>
-                @endforeach
+    <td align="right">{{ number_format_with_currency($row['product_price'],2) }}</td>
 
-                <tr class="summary-total">
-                    <td colspan="4" class="summary-label">
-                        Total Ads Expense
-                    </td>
+    <td align="right">{{ number_format_with_currency($row['extra_amount'],2) }}</td>
 
-                    <td align="right">
-                        {{ number_format_with_currency($businessExpense['total'],2) }}
-                    </td>
+    <td align="right">{{ number_format_with_currency($row['tax_amount'],2) }}</td>
 
-                    <td colspan="13"></td>
-                </tr>
-                <tr class="summary-total">
-                    <td colspan="4" class="summary-label">
-                        Supplier Total Expense
-                    </td>
+    <td align="right">{{ number_format_with_currency($row['discount_amount'],2) }}</td>
 
-                    <td align="right">
-                    {{ number_format_with_currency($totals['net_total'],2) }}
-                    </td>
+    <td class="col-total" align="right">{{ number_format_with_currency($row['customer_total'],2) }} 
 
-                    <td colspan="13"></td>
-                </tr>
+    @if($row['excluded_commission_payment'] > 0)
+      <p class="text-danger">(<small>{{$row['customer_total'] + $row['excluded_commission_payment'] }}  - {{$row['excluded_commission_payment']}}</small>)</p>
+    @endif
 
-                <tr class="summary-net">
-                    <td colspan="4" class="summary-label">
-                        Total Expense <small>(Supplier Total + Ads Expense)</small>
-                    </td>
+  </td>
+    <!-- <td align="right">{{ number_format_with_currency($row['exclude_total'],2) }}  </td> -->
 
-                    <td align="right">
-                        {{ number_format_with_currency($totals['net_total'] + $businessExpense['total'],2) }}
-                    </td>
+    <td align="right">{{ $row['excluded_balance_amount'] ? number_format_with_currency($row['excluded_balance_amount'],2) :  number_format_with_currency($row['balance_amount'],2) }}</td>
 
-                    <td colspan="13"></td>
-                </tr>
+    <!-- <td align="right">{{ number_format_with_currency($row['transport_cost'],2) }}</td> -->
 
-                <tr class="summary-profit">
-                    <td colspan="4" class="summary-label">
-                        Final Profit <small>(Customer Total - Expenses)</small>
-                    </td>
+    <td align="right">{{ number_format_with_currency($row['tour_selling_price'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($row['tour_extra_included_price'],2) }} </td>
+    <td align="right">{{ number_format_with_currency($row['tour_extra_excluded_price'],2) }} </td>
+    <!-- <td align="right"> Extra Excluded</td> -->
 
-                    <td align="right">
-                        {{ number_format_with_currency(
-                            $totals['customer_total'] - ($totals['net_total'] + $businessExpense['total']),
-                            2
-                        ) }}
-                    </td>
+    <td align="right">{{ number_format_with_currency($row['tour_selling_tax'],2) }}</td>
 
-                    <td colspan="13"></td>
-                </tr>
-            </tfoot>
-            @endif
-        </table>
+    <!-- <td align="right">0</td> -->
 
-        {{-- PAGINATION --}}
-        @if($orders instanceof \Illuminate\Contracts\Pagination\Paginator)
+    <td class="col-total" align="right">
+        {{ number_format_with_currency(($row['tour_selling_total'] + $row['transport_cost']),2) }}
+    </td>
+
+    <td class="col-profit" align="right">
+        {{ number_format_with_currency(($row['customer_total'] - $row['balance_amount'] - $row['tour_selling_total'] - $row['transport_cost']),2) }}
+    </td>
+
+    <td>@foreach($addonKeys as $key)
+
+
+
+
+<!-- <td > -->
+
+    @if(
+        !empty($row[$key.'_desc']) ||
+        !empty($row[$key.'_quant']) ||
+        !empty($row[$key.'_price']) ||
+        !empty($row[$key.'_tax']) ||
+        !empty($row[$key.'_fee']) ||
+        !empty($row[$key.'_total'])
+    )
+        @php
+
+
+          $totalAddonQnty += $row[$key.'_quant'];
+          $totalAddonPrice += $row[$key.'_total'];
+
+        @endphp
+        <strong>{{ $row[$key.'_desc'] ?? '-' }}</strong><br>
+
+        Qty :
+        {{ $row[$key.'_quant'] ?? 0 }} |
+
+        <!-- <br> -->
+
+        <!-- Price :
+        {{ number_format_with_currency($row[$key.'_price'] ?? 0,2) }} --> 
+
+        Total :
+        <strong>
+            {{ number_format_with_currency($row[$key.'_total'] ?? 0,2) }}
+        </strong>
+        <br>
+   
+
+    @endif
+
+<!-- </td> -->
+
+@endforeach</td>
+
+
+    {{-- Dynamic Addons --}}
+
+</tr>
+
+
+    @empty
+    <tr>
+        <td colspan="{{ 8 + (count($addonKeys) * 5) }}" class="text-center">
+            No Data Found
+        </td>
+    </tr>
+    @endforelse
+    @if($rows)
+    <tr style="background:#eef2f7;font-weight:700;">
+    <td colspan="4" style="position: sticky;
+    background: #fff;
+    z-index: 50;">Grand Total</td>
+
+
+    <td align="right">{{ number_format_with_currency($totals['product_price'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['extra_amount'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['tax_amount'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['discount_amount'],2) }}</td>
+    <td class="col-total" align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
+    <!-- <td align="right">{{ number_format_with_currency($totals['exclude_total'],2) }}</td> -->
+    <td align="right">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>
+    <!-- <td align="right">{{ number_format_with_currency($totals['transport_cost'],2) }}</td> -->
+    <td align="right">{{ number_format_with_currency($totals['tour_selling_price'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['tour_extra_included_price'],2) }} </td>
+    <td align="right">{{ number_format_with_currency($totals['tour_extra_excluded_price'],2) }} </td>
+    <td align="right">{{ number_format_with_currency($totals['tour_selling_tax'],2) }}</td>
+
+    <!-- <td align="center">-</td> -->
+
+    <td class="col-total" align="right">{{ number_format_with_currency($totals['net_total'],2) }}</td>
+
+    <td class="col-profit" align="right">{{ number_format_with_currency($totals['profit'] - $totals['balance_amount'],2) }}</td>
+
+    <td>
+    <strong>Qty:</strong>
+    {{ $totalAddonQnty }}
+
+    <!-- <br> -->
+
+    <!-- <strong>Price:</strong> -->
+    <!-- {{ number_format_with_currency($totals['addonTotals']['price'], 2) }} -->
+
+    <br>
+
+    <strong>Total:</strong>
+    {{ number_format_with_currency($totalAddonPrice, 2) }}
+</td>
+</tr>
+
+
+
+
+
+@endif
+</tbody>
+@if($rows)
+<tfoot class="table-footer">
+
+
+        <tr class="summary-total">
+            <td colspan="4" class="summary-label">
+                Total Product Amount
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($totals['customer_total'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+        <tr class="summary-total">
+            <td colspan="4" class="summary-label">
+                Total Pending Balance
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($totals['balance_amount'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+        <!-- @foreach($businessExpense['expenses'] as $expense)
+        <tr class="summary-expense">
+            <td colspan="4" class="summary-label">
+                {{ ucwords($expense->category) }}
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($expense->amount,2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+        @endforeach -->
+        <tr class="summary-total">
+            <td colspan="4" class="summary-label">
+                Supplier Total Expense
+            </td>
+
+            <td align="right">
+               {{ number_format_with_currency($totals['net_total'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+
+        <tr class="summary-total">
+            <td colspan="4" class="summary-label">
+                Total Ads Expense
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($businessExpense['total'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+        
+
+        <!-- <tr class="summary-net">
+            <td colspan="4" class="summary-label">
+                Total Expense <small>(Supplier Total + Ads Expense)</small>
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency($totals['net_total'] + $businessExpense['total'],2) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr> -->
+
+        <tr class="summary-profit">
+            <td colspan="4" class="summary-label">
+                Final Profit <small>(Customer Total - Expenses)</small>
+            </td>
+
+            <td align="right">
+                {{ number_format_with_currency(
+                    $totals['customer_total']- $totals['balance_amount'] - ($totals['net_total'] + $businessExpense['total']),
+                    2
+                ) }}
+            </td>
+
+            <td colspan="13"></td>
+        </tr>
+    </tfoot>
+    @endif
+          </table>
+
+
+          {{-- PAGINATION --}}
+          @if($orders instanceof \Illuminate\Contracts\Pagination\Paginator)
             <div class="text-center">
                 {{ $orders->links() }}
             </div>
