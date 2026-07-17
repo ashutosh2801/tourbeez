@@ -212,11 +212,7 @@ $expectEmails = ['order_pending'];
                 <div class="col-md-12">
                     <h5 class="m-0">Created on {{ date__format($order->created_at) }} online on your booking form</h5>
                 </div>
-                <!-- <div class="col-md-3 {{ $order->payments->isNotEmpty() ? '' : 'd-none' }}">
-                    <button class="btn charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                        Charge Now
-                    </button>
-                </div> -->
+            
             </div>
         </div>
         <div class="card-body order-edit">
@@ -559,30 +555,10 @@ $expectEmails = ['order_pending'];
                                                             </div>
                                                         </div>
 
-                                                        <!-- <div>
-                                                            <input type="text" class="tour_startdate_display border-0" readonly>
-                                                        </div> -->
+                                                        
                                                     </td>
 
-                                                    <!-- <td class="text-right" width="200">
-                                                        <div class="input-group">
-                                                            <input type="text"
-                                                                placeholder="Time"
-                                                                name="tour_starttime[]"
-                                                                class="form-control aiz-time-picker tour_starttime"
-                                                                data-minute-step="1"
-                                                                value="{{ $order_tour->tour_time }}">
-                                                            <div class="input-group-prepend">
-                                                                <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                                            </div>
-                                                        </div>
-                                                        <input type="text" class="tour_startdate_time_display border-0" readonly>
-                                                    </td>
-
-                                                    <td class="text-right">
-                                                        <button type="button" onClick="removeTour('{{ $order_tour->id }}')" class="btn btn-sm btn-danger">-</button>
-                                                        <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
-                                                    </td> -->
+                                                    
                                                 </tr>
                                             </table>
 
@@ -666,51 +642,7 @@ $expectEmails = ['order_pending'];
                                                                 </tbody>
                                                             </table>
                                                         </td>
-                                                        <!-- <td>
-                                                            <table class="table">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <td colspan="2">
-                                                                            <h5 style="font-size:14px; font-weight:600; margin:0;">Optional extras</h5>
-                                                                        </td>
-                                                                    </tr>
-                                                                </thead>
-                                                                @if ($order_tour->tour)
-                                                                @php
-                                                                    $tour_extra = !empty($order_tour->tour_extra) ? ( json_decode($order_tour->tour_extra) ) : [];
-
-                                                                    $addons = $order_tour->tour?->addons->sortBy(function ($extra) use ($tour_extra) {
-                                                                            $result = getTourExtraDetails($tour_extra, $extra->id);
-                                                                            return isset($result['quantity']) && $result['quantity'] > 0 ? 0 : 1;
-                                                                        });
-
-                                                                @endphp
-                                                                @foreach($addons as $extra)
-                                                                @php
-
-                                                                    $price = $extra->price;
-                                                                    $result = getTourExtraDetails($tour_extra, $extra->id);
-                                                                    if(isset($result['price'])) {
-
-                                                                        $price = $result['price'];
-                                                                        $subtotal = $subtotal + ($result['quantity'] * $price);
-                                                                        $subtotal2 = $subtotal2 + ($result['quantity'] * $price);
-                                                                    } else{
-                                                                        $price = currencyConvertWithoutRound($price,$extra->currency, $order->currency);
-                                                                    }
-                                                                @endphp
-                                                                <tr>
-                                                                    <td width="60">
-                                                                        <input type="hidden" name="tour_extra_id_{{$_tourId}}[]" value="{{ $extra->id }}" />  
-                                                                        <input type="number" name="tour_extra_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" style="width:60px" min="0" class="form-contorl text-center">
-                                                                        <input type="hidden" name="tour_extra_price_{{$_tourId}}[]" value="{{ $price }}" /> 
-                                                                    </td>
-                                                                    <td>{{ $extra->name }} ({{ price_with_currency_no_round($price, $order->currency) }})</td>
-                                                                </tr>
-                                                                @endforeach
-                                                                @endif
-                                                            </table>
-                                                        </td> -->
+                                                    
                                                         <td>
                                                             <table class="table">
                                                                 <thead>
@@ -797,7 +729,7 @@ $expectEmails = ['order_pending'];
                                                 @endphp 
                                                 <tr>
                                                     <th>Sub Total </th>
-                                                    <!-- <th class="text-right withouttax-box">  {{ price_format_with_currency($withoutTax, $order->currency) }}  </th> -->
+                                                    
                                                     <th class="text-right withouttax-box"> {{ price_format_with_currency($subtotal2, $order->currency) }} </th>
                                                 </tr>
                                                 @php
@@ -834,6 +766,11 @@ $expectEmails = ['order_pending'];
                                                 @endif
 
                                                 @if($isFlag) 
+
+                                                @php
+
+                                                @endphp
+
                                                 <tr>
                                                     <th>Total </th>
                                                     <th class="text-right subtotal-box">  {{ price_format_with_currency($subtotal, $order->currency) }} </th>
@@ -927,6 +864,20 @@ $expectEmails = ['order_pending'];
                                                 <td class="text-right cummulative-total total-due"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
                                             @endif
                                         </tr>
+
+
+                                        @php
+                                            $commission = $order->payments
+                                                ->where('payment_type', 'COMMISSION');
+                                        @endphp
+                                        @if($commission->isNotEmpty() && $commission->sum('amount') > 0)
+                                            <tr class="commission" style="color: green">
+                                                <td><b>Commision From {{ $order->partner?->name}}</b></td>
+
+                                                    <td style="text-align: right !important;"><b>{{ price_format_with_currency($commission->sum('amount'), $order->currency) }}</b></td>
+                                                
+                                            </tr>
+                                        @endif
                                     </table>
                                 </div>
                             </div>
@@ -1061,22 +1012,6 @@ $expectEmails = ['order_pending'];
                                                 //echo '<pre>'; print_r($latestPayment->payment_intent_id); echo '</pre>'; 
                                             @endphp
 
-                                            <!-- @if($order->payment_intent_id)
-                                            <div class="col-2">
-                                                @if($order->latestPayment->card_last4)
-                                                    
-                                                    
-
-                                                    
-                                                    {!! cardSvg($order->latestPayment->card_brand) !!} 
-
-                                                    {{ $order->latestPayment->card_last4}} ({{ strtoupper($order->latestPayment->card_brand) }})
-                                                @else
-
-                                                    <svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill="#00D66F" d="M0 0h32v32H0z"></path><path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path></svg>    Link
-                                                @endif
-                                            </div>
-                                            @endif -->
 
                                             @if($order->payment_intent_id)
                                                 <div class="col-12 col-md-2">
@@ -1284,6 +1219,8 @@ $expectEmails = ['order_pending'];
                                                     <option value="PROMO_CODE">Promo code</option>
                                                     <option value="FREE">Free of charge</option>
                                                     <option value="INVOICE">Invoice</option>
+                                                    <!-- <option value="EXCLUDEDPAYMENT">Exclude Payment</option> -->
+                                                    <option value="COMMISSION">Commission</option>
                                                     <option value="OTHER">Other</option>
                                                 </select>
                                             </div>
@@ -1337,7 +1274,6 @@ $expectEmails = ['order_pending'];
 
                         <div id="collapsePaymentDetails" class="collapse show" aria-labelledby="headingPaymentDetails" >
                             <div class="card-body">
-                                <!-- <div class="card text-success" ><p>This customer choose to pay {{ ($order->adv_deposite =='full') ? ucwords($order->adv_deposite) : "Partial" }} amount ({{ price_format_with_currency($order->booked_amount, $order->currency) }})</p></div> -->
                                 
                                 <table class="table">    
                                     <tr>
@@ -2300,8 +2236,30 @@ document.addEventListener("click", function(e) {
     }
 
     // Remove row
+   // Remove row
     if (e.target.classList.contains("removeRow")) {
         let row = e.target.closest(".paymentRow");
+
+        if (!row) return;
+
+        // Disable all fields inside the row so they are not submitted
+        row.querySelectorAll("input, select, textarea").forEach(el => {
+            el.disabled = true;
+        });
+
+        // Remove any paymentId[] hidden inputs immediately before this row
+        let prev = row.previousElementSibling;
+        while (
+            prev &&
+            prev.tagName === "INPUT" &&
+            prev.name === "paymentId[]"
+        ) {
+            let current = prev;
+            prev = prev.previousElementSibling;
+            current.remove();
+        }
+
+        // Remove the row
         row.remove();
     }
 });
@@ -2451,21 +2409,7 @@ document.addEventListener("click", function(e) {
                             showMeridian: true
                         });
                     });
-                    // console.log(tour_id, response.start_date, tourCount);
-                    // fetchTourSessions(tour_id, response.start_date, tourCount);s
-
                     
-
-                    // const $container = $(`#tour_details_${count}`);
-            // $container.html(response);
-
-            // TB.plugins.dateRange();
-            // TB.plugins.timePicker();
-            // TB.plugins.bootstrapSelect('refresh');
-
-            // const $dateInput = $('#tour_all').find(
-            //     '.tour-startdate, .tour_startdate_field, input[name="tour_startdate[]"]'
-            // ).first();
 
             const $dateInput = newRow.find('.tour_startdate_field');
 
@@ -2475,10 +2419,6 @@ document.addEventListener("click", function(e) {
                     $dateInput.attr('value') ||
                     $dateInput.val() ||
                     '';
-
-                // const initialDate = serverDate
-                //     ? serverDate
-                //     : moment().format("YYYY-MM-DD");
 
                 const initialDate = moment().format("YYYY-MM-DD");
                     
@@ -2680,9 +2620,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ✅ Only update UI on page load, not backend
-    // const init = document.querySelector('input[name="order_status"]:checked');
-    // if (init) updateStatusUI(init);
 });
 
 
@@ -3453,10 +3390,36 @@ function calculateRowTotal23423(row, hide) {
 function calculateFinalTotal() {
 
     let grandTotal = 0;
+    let excludePaymentTotal = 0;
 
-    document.querySelectorAll("#tour_all > div").forEach((row) => {
-        grandTotal += calculateRowTotal(row);
-    });
+    // Check if any payment is of type exclude_payment
+    const hasExcludePayment = [...document.querySelectorAll('input[name="paymentType[]"]')]
+        .some(input => input.value === 'EXCLUDEDPAYMENT');
+
+    if (hasExcludePayment) {
+
+        // Grand total comes only from EXCLUDEDPAYMENT amounts
+        document.querySelectorAll('input[name="paymentType[]"]').forEach((paymentTypeInput, index) => {
+            if (paymentTypeInput.value === 'EXCLUDEDPAYMENT') {
+                const amountInput = document.querySelectorAll('input[name="amount[]"]')[index];
+                grandTotal += parseFloat(amountInput.value) || 0;
+            }
+        });
+
+    } else {
+
+        // Grand total comes from tour rows
+        document.querySelectorAll("#tour_all > div").forEach((row) => {
+            grandTotal += calculateRowTotal(row);
+        });
+
+    }
+
+
+
+    // document.querySelectorAll("#tour_all > div").forEach((row) => {
+    //     grandTotal += calculateRowTotal(row);
+    // });
 
     // Update TOTAL
     const totalRow = document.querySelector(".cummulative-total tr:first-child td.text-right");
@@ -3530,43 +3493,6 @@ $(document).ready(function () {
     calculateFinalTotal();
 });
 
-// $(document).ready(function () {
-//     $("input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']").each(function () {
-//         const row = this.closest("[id^='row_']");
-//         calculateRowTotal(row, false);
-//     });
-// });
-
-// $(document).ready(function () {
-
-//     let tourId = $("input[name='tour_id[]']").val();  // from edit row
-//     let order_id = $("input[name='order_id").val();  // from edit row
-
-
-//     let count  = 0; // or row number if multiple rows
-
-//     if (tourId) {
-        
-//         refreshCalendarAndSession(tourId, count, order_id);
-//     }
-// });
-
-// $(document).ready(function () {
-
-//     let order_id = $("input[name='order_id']").val();
-
-//     $("input[name='tour_id[]']").each(function(index) {
-
-//         let tourId = $(this).val();
-
-//         if (tourId) {
-//             refreshCalendarAndSession(tourId, index, order_id);
-//         }
-
-//     });
-
-// });
-
 
 $(document).ready(function () {
 
@@ -3588,24 +3514,6 @@ $(document).ready(function () {
     });
 
 });
-
-
-// $(document).ready(function () {
-
-//     let order_id = $("input[name='order_id']").val();
-
-//     $("input[name='tour_id[]']").each(function(index) {
-
-//         let tourId = $(this).val();
-
-//         if (tourId) {
-//             refreshCalendarAndSession(tourId, index, order_id);
-//         }
-
-//     });
-
-// });
-
 
 
 function refreshCalendarAndSession23432(tourId, count, order_id) {

@@ -241,18 +241,28 @@ public function overview(Request $request)
             strtolower($order->source),
             array_map('strtolower', $excludedPaymentSources)
         );
+        $orderPayments = $payments[$order->id] ?? collect();
+
+        $excludedCommissionPayment = 0;
 
          if ($isExcludedFromPayment) {
 
-            $finalTotal = 0;
-            $paid = 0;
-            $balance = 0;
-            $refundAmount = 0;
 
-        } else {
+            $excludedCommissionPayment = $orderPayments
+                    ->where('payment_type', 'EXCLUDED')
+                    ->sum('amount');
+
+            // $finalTotal = 0;
+            // $paid = 0;
+            // $balance = 0;
+            // $refundAmount = 0;
+
+        }
+
+        // } else {
 
         $tours = $orderTours[$order->id] ?? collect();
-        $orderPayments = $payments[$order->id] ?? collect();
+        
 
         $finalTotal = 0;
 
@@ -317,8 +327,43 @@ public function overview(Request $request)
             $finalTotal += $subtotal;
         }
 
-        // Payments
-        $totalPaid = $orderPayments->where('status', 'succeeded')->sum('amount')
+        // $finalTotal = $finalTotal - $excludedCommissionPayment;
+
+        // // Payments
+        // $totalPaid = $orderPayments->where('status', 'succeeded')->sum('amount')
+        //     - $orderPayments->where('status', 'refunded')->sum('amount');
+        // $totalPaid = $totalPaid - $excludedCommissionPayment;
+
+        // $promoPayment = $orderPayments
+        //     ->where('collection_type', 'Outside')
+        //     ->where('payment_type', 'PROMO_CODE')
+        //     ->sum('amount');
+
+        // $paid = $totalPaid - $promoPayment;
+
+        // $balance = $finalTotal - $paid;
+
+        $customerTotal = $finalTotal;
+        $excludedBalance = 0;
+
+        if ($isExcludedFromPayment) {
+
+            $totalPaymentAmount = $orderPayments
+                ->where('status', 'succeeded')
+                ->sum('amount')
+                - $excludedCommissionPayment;
+
+            $customerTotal = $finalTotal - $excludedCommissionPayment;
+
+            if (round($totalPaymentAmount, 2) < round($customerTotal, 2)) {
+                $excludedBalance = $customerTotal - $totalPaymentAmount;
+                $customerTotal = $totalPaymentAmount;
+            }
+        }
+
+        $totalPaid = $orderPayments
+            ->where('status', 'succeeded')
+            ->sum('amount')
             - $orderPayments->where('status', 'refunded')->sum('amount');
 
         $promoPayment = $orderPayments
@@ -328,16 +373,27 @@ public function overview(Request $request)
 
         $paid = $totalPaid - $promoPayment;
 
-        $balance = $finalTotal - $paid;
+        if ($isExcludedFromPayment) {
+            $paid -= $excludedCommissionPayment;
+        }
+
+        $balance = $customerTotal - $paid;
 
         // Refund
         $refundAmount = $orderPayments->sum('refund_amount');
-    }
+    // }
 
         // Convert to CAD
-        $gross += currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD');
+
+
+        $gross += currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD');
         $totalPaidAll += currencyConvertWithoutRound($paid, $order->currency, 'CAD');
-        $totalBalanceAll += currencyConvertWithoutRound($balance, $order->currency, 'CAD');
+        // $totalBalanceAll += currencyConvertWithoutRound($balance, $order->currency, 'CAD');
+        $totalBalanceAll += ($customerTotal == 0)? 0 : currencyConvertWithoutRound(
+                                $balance + $excludedBalance - $isExcludedFromPayment,
+                                $order->currency,
+                                'CAD'
+                            );
         $refund += currencyConvertWithoutRound($refundAmount, $order->currency, 'CAD');
     }
 
@@ -647,7 +703,7 @@ public function revenue(Request $request)
         $extras  = json_decode($order->tour_extra, true) ?? [];
         $discounts = json_decode($order->discount, true) ?? [];
 
-        if (!$isExcludedFromPayment) {
+        // if (!$isExcludedFromPayment) {
             
 
             // ✅ Pricing
@@ -702,27 +758,120 @@ public function revenue(Request $request)
 
             $finalTotal = $subtotal2;
 
+
+
+            // ✅ Excluded payment handling (same as invoice report)
+$customerTotal = $finalTotal;
+$excludedBalance = 0;
+$hideSuplierExcludeExtraCost = false;
+
+$orderPayments = $payments[$order->id] ?? collect();
+$excludedCommissionPayment = 0;
+
+if ($isExcludedFromPayment) {
+
+    $excludedCommissionPayment = $orderPayments
+        ->where('payment_type', 'EXCLUDED')
+        ->sum('amount');
+
+    $totalPaymentAmount = $orderPayments
+        ->where('status', 'succeeded')
+        ->sum('amount')
+        - $excludedCommissionPayment;
+
+    $customerTotal = $finalTotal - $excludedCommissionPayment;
+
+    if (round($totalPaymentAmount, 2) < round($customerTotal, 2)) {
+        $excludedBalance = $customerTotal - $totalPaymentAmount;
+        $customerTotal = $totalPaymentAmount;
+        $hideSuplierExcludeExtraCost = true;
+    }
+}
+// ✅ Payments
+$totalPaid = $orderPayments
+    ->where('status', 'succeeded')
+    ->sum('amount')
+    - $orderPayments->where('status', 'refunded')->sum('amount');
+
+$promoPayment = $orderPayments
+    ->where('collection_type', 'Outside')
+    ->where('payment_type', 'PROMO_CODE')
+    ->sum('amount');
+
+$paid = $totalPaid - $promoPayment;
+
+if ($isExcludedFromPayment) {
+    $paid -= $excludedCommissionPayment;
+}
+
+$balance = $customerTotal - $paid;
             // dd($check,$taxes, $taxAmount, $finalTotal, $subtotal2, $discountAmount, $extraValue, $productValue);
 
             // ✅ Payments
-            $orderPayments = $payments[$order->id] ?? collect();
+            // $orderPayments = $payments[$order->id] ?? collect();
 
-            $totalPaid = $orderPayments->where('status', 'succeeded')->sum('amount')
-                - $orderPayments->where('status', 'refunded')->sum('amount');
+            // $totalPaid = $orderPayments->where('status', 'succeeded')->sum('amount')
+            //     - $orderPayments->where('status', 'refunded')->sum('amount');
 
-            $promoPayment = $orderPayments
-                ->where('collection_type', 'Outside')
-                ->where('payment_type', 'PROMO_CODE')
+            // $promoPayment = $orderPayments
+            //     ->where('collection_type', 'Outside')
+            //     ->where('payment_type', 'PROMO_CODE')
+            //     ->sum('amount');
+
+            // $paid = $totalPaid - $promoPayment;
+
+            // $balance = $finalTotal - $paid;
+            // ✅ Payments
+            // $totalPaid = $orderPayments
+            //     ->where('status', 'succeeded')
+            //     ->sum('amount')
+            //     - $orderPayments->where('status', 'refunded')->sum('amount');
+
+            // $promoPayment = $orderPayments
+            //     ->where('collection_type', 'Outside')
+            //     ->where('payment_type', 'PROMO_CODE')
+            //     ->sum('amount');
+
+            // $paid = $totalPaid - $promoPayment;
+
+            // if ($isExcludedFromPayment) {
+            //     $paid -= $excludedCommissionPayment;
+            // }
+
+            // $balance = $customerTotal - $paid;
+
+        // }
+
+        // ✅ Excluded payment handling (same as invoice report)
+        $customerTotal = $finalTotal;
+        $excludedBalance = 0;
+        $hideSuplierExcludeExtraCost = false;
+
+        $orderPayments = $payments[$order->id] ?? collect();
+        $excludedCommissionPayment = 0;
+
+        if ($isExcludedFromPayment) {
+
+            $excludedCommissionPayment = $orderPayments
+                ->where('payment_type', 'EXCLUDED')
                 ->sum('amount');
 
-            $paid = $totalPaid - $promoPayment;
+            $totalPaymentAmount = $orderPayments
+                ->where('status', 'succeeded')
+                ->sum('amount')
+                - $excludedCommissionPayment;
 
-            $balance = $finalTotal - $paid;
+            $customerTotal = $finalTotal - $excludedCommissionPayment;
 
+            if (round($totalPaymentAmount, 2) < round($customerTotal, 2)) {
+                $excludedBalance = $customerTotal - $totalPaymentAmount;
+                $customerTotal = $totalPaymentAmount;
+                $hideSuplierExcludeExtraCost = true;
+            }
         }
 
         // ✅ Convert to CAD
-        $order->total_amount_converted = round(currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD'), 2);
+        $order->total_amount_converted = round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2);
         $order->paid_amount_converted = round(currencyConvertWithoutRound($paid, $order->currency, 'CAD'), 2);
         $order->balance_converted = round(currencyConvertWithoutRound($balance, $order->currency, 'CAD'), 2);
         $order->tax_converted = round(currencyConvertWithoutRound($totalTax, $order->currency, 'CAD'), 2);
@@ -1385,6 +1534,7 @@ public function invoiceWithDetails(Request $request)
                 'customer_total'     => 0,
                 'exclude_total'     => 0,
                 'balance_amount'     => 0,
+                'excluded_balance_amount'     => 0,
                 'transport_cost'     => 0,
                 'tour_selling_price' => 0,
                 'tour_extra_included_price'=> 0,
@@ -1556,6 +1706,7 @@ public function invoiceWithDetails(Request $request)
             'orders.currency',
             'orders.source',
             'orders.balance_amount',
+            'orders.total_amount',
             'orders.booked_amount',
             'order_tours.tour_date',
             'order_tours.tour_extra',
@@ -1611,6 +1762,14 @@ public function invoiceWithDetails(Request $request)
             )
             ->get()
             ->groupBy('tour_id');
+
+
+        $orderPayments = DB::table('order_payments')
+        ->whereIn('order_id', $collection->pluck('id'))
+        ->whereNull('deleted_at')
+        ->orderBy('id')
+        ->get()
+        ->groupBy('order_id');
 
         foreach ($collection as $order) {
 
@@ -1782,17 +1941,43 @@ public function invoiceWithDetails(Request $request)
 
 
 
-
+            $excludedCommissionPayment = 0;
+            $totalPaymentAmount = 0;
+            $hideSuplierExcludeExtraCost = false;
+            $excludedBalance = 0;
             // $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
 
             if ($isExcludedFromPayment) {
-                $excludeTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
-                $customerTotal = 0;
-                $tax_amount = 0;
-                $discount_amount = 0;
 
-                $costTotal = 0;
-                $costBase = 0;
+                $payments = $orderPayments[$order->id] ?? collect();
+
+                $excludedCommissionPayment = $payments
+                    ->where('payment_type', 'EXCLUDED')
+                    ->sum('amount');
+
+                $totalPaymentAmount = $payments
+                    ->where('status', 'succeeded')
+                    ->sum('amount') - $excludedCommissionPayment;
+
+
+                $excludeTotal =  ($product_price + $extraValue + $tax_amount) - $discount_amount;
+                $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount - $excludedCommissionPayment;
+
+                // dd($totalPaymentAmount, $customerTotal, $extraValue);
+
+                if(round($totalPaymentAmount, 2) < round($customerTotal, 2)){
+
+                    $excludedBalance = $customerTotal - $totalPaymentAmount;
+                    $customerTotal = $totalPaymentAmount;
+
+                    $hideSuplierExcludeExtraCost = true;
+                }
+
+                // $tax_amount = 0;
+                // $discount_amount = 0;
+
+                // $costTotal = 0;
+                // $costBase = 0;
 
                 $sellingTotal = 0;
                 $sellingPriceBase = 0;
@@ -1867,9 +2052,19 @@ public function invoiceWithDetails(Request $request)
                     }
                 }
             }
+            $baseExtraExcludedBase = $hideSuplierExcludeExtraCost ? 0 : $baseExtraExcludedBase;
 
-            $sellingTotal = $sellingPriceBase + $baseExtraIncludedBase + $baseExtraExcludedBase;
 
+            // dd($baseExtraExcludedBase);
+            $sellingTotal = $hideSuplierExcludeExtraCost ? 0 : $baseExtraExcludedBase;
+
+            // $sellingTotal = $hideSuplierExcludeExtraCost ? 0 : $baseExtraExcludedBase;
+
+            if(!$isExcludedFromPayment){
+                $sellingTotal = $sellingPriceBase + $baseExtraIncludedBase + $sellingTotal;
+            }
+            
+            
             $costTotal    = $costBase;
             
             if (isset($allTaxes[$order->tour_id])) {
@@ -1895,7 +2090,24 @@ public function invoiceWithDetails(Request $request)
                                     'CAD'
                                 );
 
-            
+            $displayTotals = $this->prepareDisplayTotals(
+                                        $isExcludedFromPayment,
+                                        $extraValue,
+                                        $costBase,
+                                        $costTotal,
+                                        $sellingPriceBase,
+                                        $baseExtraIncludedBase,
+                                        $baseExtraExcludedBase,
+                                        $sellingTax,
+                                        $sellingTotal,
+                                        $transportCost
+                                    );
+            // dd($excludedBalance, round(currencyConvertWithoutRound(($customerTotal + $excludedCommissionPayment) - $order->booked_amount, $order->currency, 'CAD'), 2));
+            // dd($excludeTotal, $sellingTax, $baseExtraExcludedBase);
+            // dd($sellingTotal, $costTotal, $customerTotal);
+            // dd(($isExcludedFromPayment && $extraValue >= 0), $isExcludedFromPayment, $extraValue);
+
+            // dd(($customerTotal == 0));
             $row = [
                 'no' => $index++,
                 'order_id' => $order->id,
@@ -1920,13 +2132,15 @@ public function invoiceWithDetails(Request $request)
                 'senior' => $senior,
                 'other' => $other,
 
-                'product_price' => $isExcludedFromPayment ? 0 :  round(currencyConvertWithoutRound($product_price, $order->currency, 'CAD'), 2),
-                'extra_amount' => $isExcludedFromPayment ? 0 :  round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2),
-                'tax_amount' => $isExcludedFromPayment ? 0 :  round(currencyConvertWithoutRound($tax_amount, $order->currency, 'CAD'), 2),
-                'discount_amount' => $isExcludedFromPayment ? 0 :  round(currencyConvertWithoutRound($discount_amount, $order->currency, 'CAD'), 2),
-                'customer_total' =>  $isExcludedFromPayment ? 0 : round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
+                'product_price' =>   round(currencyConvertWithoutRound($product_price, $order->currency, 'CAD'), 2),
+                'extra_amount' =>   round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2),
+                'tax_amount' =>   round(currencyConvertWithoutRound($tax_amount, $order->currency, 'CAD'), 2),
+                'discount_amount' =>   round(currencyConvertWithoutRound($discount_amount, $order->currency, 'CAD'), 2),
+                'customer_total' =>   round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
                 'exclude_total' =>  $isExcludedFromPayment ? round(currencyConvertWithoutRound($excludeTotal, $order->currency, 'CAD'), 2) :0,
-                'balance_amount' => $isExcludedFromPayment ? 0 : round(currencyConvertWithoutRound($customerTotal - $order->booked_amount, $order->currency, 'CAD'), 2),
+                'excluded_commission_payment' => round(currencyConvertWithoutRound($excludedCommissionPayment, $order->currency, 'CAD'), 2),
+                'balance_amount' => round(currencyConvertWithoutRound(($customerTotal + $excludedCommissionPayment) - $order->booked_amount, $order->currency, 'CAD'), 2),
+                'excluded_balance_amount' => $hideSuplierExcludeExtraCost ? $excludedBalance : 0,
 
                 /*
                 |--------------------------------------------------------------------------
@@ -1940,9 +2154,9 @@ public function invoiceWithDetails(Request $request)
 
                 'tour_selling_price' => $isExcludedFromPayment ? 0 :  round($sellingPriceBase, 2),
                 'tour_extra_included_price' => $isExcludedFromPayment ? 0 :  round($baseExtraIncludedBase, 2),
-                'tour_extra_excluded_price' => $isExcludedFromPayment ? 0 :  round($baseExtraExcludedBase, 2),
-                'tour_selling_tax' => $isExcludedFromPayment ? 0 :  round($sellingTax, 2),
-                'tour_selling_total' => $isExcludedFromPayment ? 0 :  round($sellingTotal, 2),
+                'tour_extra_excluded_price' => ($isExcludedFromPayment && $extraValue == 0) ? 0 :  round($baseExtraExcludedBase, 2),
+                'tour_selling_tax' => ($isExcludedFromPayment && $extraValue == 0) ?  0 :  round($sellingTax, 2),
+                'tour_selling_total' => ($isExcludedFromPayment && $extraValue == 0) ? 0 :  round($sellingTotal, 2),
                 'transport_cost'    => $isExcludedFromPayment ? 0 :  round($transportCost, 2),
 
                 /*
@@ -1951,16 +2165,44 @@ public function invoiceWithDetails(Request $request)
                 |--------------------------------------------------------------------------
                 */
 
-                'profit' => $isExcludedFromPayment ? 0 : round($sellingTotal - $costTotal, 2),
-            ];
+                'profit' => ($customerTotal == 0) ? 0 :  round($row['customer_total'] - $row['balance_amount'] - $row['tour_selling_total'] - $row['transport_cost']),//      round($sellingTotal - $costTotal, 2),
 
+                
+                /*
+                |--------------------------------------------------------------------------
+                | 🔥 TOUR PRICING BREAKDOWN
+                |--------------------------------------------------------------------------
+                */
+
+                // 'tour_cost_price' => $displayTotals['tour_cost_price'],
+                // 'tour_cost_tax' => $displayTotals['tour_cost_tax'],
+                // 'tour_cost_total' => $displayTotals['tour_cost_total'],
+
+                // 'tour_selling_price' => $displayTotals['tour_selling_price'],
+                // 'tour_extra_included_price' => $displayTotals['tour_extra_included_price'],
+                // 'tour_extra_excluded_price' => $displayTotals['tour_extra_excluded_price'],
+                // 'tour_selling_tax' => $displayTotals['tour_selling_tax'],
+                // 'tour_selling_total' => $displayTotals['tour_selling_total'],
+
+                // 'transport_cost' => $displayTotals['transport_cost'],
+
+                // /*
+                // |--------------------------------------------------------------------------
+                // | ✅ PROFIT
+                // |--------------------------------------------------------------------------
+                // */
+
+                // 'profit' => $displayTotals['profit'],
+            ];
+            // dd($profit, $row['excluded_balance_amount']);
             $totals['product_price']      += $row['product_price'];
             $totals['extra_amount']       += $row['extra_amount'];
             $totals['tax_amount']         += $row['tax_amount'];
             $totals['discount_amount']    += $row['discount_amount'];
             $totals['customer_total']     += $row['customer_total'];
             $totals['exclude_total']     +=  $row['exclude_total'];
-            $totals['balance_amount']     += $row['balance_amount'];
+            $totals['balance_amount']     += $row['balance_amount'] + $row['excluded_balance_amount'];
+            $totals['excluded_balance_amount']     += $row['excluded_balance_amount'];
             $totals['transport_cost']     += $row['transport_cost'];
             $totals['tour_selling_price'] += $row['tour_selling_price'];
             $totals['tour_extra_included_price'] += $row['tour_extra_included_price'];
@@ -1971,7 +2213,7 @@ public function invoiceWithDetails(Request $request)
             $profit   = $row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost'];
 
             $totals['net_total'] += $netTotal;
-            $totals['profit']    += $profit;
+            $totals['profit']    += ($row['customer_total'] == 0) ? 0 : $profit;
 
             // attach all addon columns consistently
             // dd($allAddonKeys);
@@ -1992,7 +2234,7 @@ public function invoiceWithDetails(Request $request)
             // dd($row);
             $rows[] = $row;
         }
-        // dd($rows);
+        // dd($rows, $totals);
         return $paginate
             ? ['rows' => $rows, 'pagination' => $orders, 'totals' => $totals]
             : ['rows' => $rows, 'totals' => $totals];
@@ -2282,7 +2524,7 @@ public function exportCustomer(Request $request)
 
         ini_set('memory_limit', '1024M');
         $data = $this->getInvoiceWithDetailsData($request, false);
-
+        dd($data);
         return Excel::download(
             new OrderPriceScheduleExport($data['rows'], $data['totals']),
             'price_schedule_' . now()->format('Ymd_His') . '.xlsx'
@@ -2452,6 +2694,9 @@ public function exportCustomer(Request $request)
     {
         $query = BusinessExpense::query();
 
+         $expenses = [];
+         $total = 0;
+
         // Date Filter
         if ($request->filled('booking_date')) {
             try {
@@ -2461,10 +2706,7 @@ public function exportCustomer(Request $request)
                     Carbon::parse($start)->startOfDay(),
                     Carbon::parse($end)->endOfDay(),
                 ]);
-            } catch (\Exception $e) {
-                //
-            }
-        }
+   
 
         // Product Filter
         if ($products = array_filter((array) $request->product)) {
@@ -2482,11 +2724,156 @@ public function exportCustomer(Request $request)
             ->orderBy('category')
             ->get();
 
+
         return [
-            'expenses' => $expenses,
-            'total' => $expenses->sum('amount'),
+                'expenses' => $expenses,
+                'total' => $expenses->sum('amount'),
+            ];
+                 } catch (\Exception $e) {
+                //
+            }
+        }
+        return [
+                'expenses' => $expenses,
+                'total' => $total,
+            ];
+    }
+
+    private function prepareDisplayTotals(
+        bool $isExcludedFromPayment,
+        float $extraValue,
+        float $costBase,
+        float $costTotal,
+        float $sellingPriceBase,
+        float $baseExtraIncludedBase,
+        float $baseExtraExcludedBase,
+        float $sellingTax,
+        float $sellingTotal,
+        float $transportCost
+    ): array {
+
+        $hideTourCost = $isExcludedFromPayment;
+        $hideExtraSelling = $isExcludedFromPayment && $extraValue == 0;
+
+        return [
+            'tour_cost_price' => $hideTourCost ? 0 : round($costBase, 2),
+            'tour_cost_tax' => $hideTourCost ? 0 : round($costTotal - $costBase, 2),
+            'tour_cost_total' => $hideTourCost ? 0 : round($costTotal, 2),
+
+            'tour_selling_price' => $hideTourCost ? 0 : round($sellingPriceBase, 2),
+            'tour_extra_included_price' => $hideTourCost ? 0 : round($baseExtraIncludedBase, 2),
+
+            'tour_extra_excluded_price' => $hideExtraSelling ? 0 : round($baseExtraExcludedBase, 2),
+            'tour_selling_tax' => $hideExtraSelling ? 0 : round($sellingTax, 2),
+            'tour_selling_total' => $hideExtraSelling ? 0 : round($sellingTotal, 2),
+
+            'transport_cost' => $hideTourCost ? 0 : round($transportCost, 2),
+
+            'profit' => round($sellingTotal - $costTotal, 2),
         ];
     }
+
+    private function calculateReportTotals(
+    bool $isExcludedFromPayment,
+    Collection $payments,
+    float $productPrice,
+    float $extraValue,
+    float $taxAmount,
+    float $discountAmount,
+    float $bookedAmount,
+    float $costBase,
+    float $costTotal,
+    float $sellingPriceBase,
+    float $baseExtraIncludedBase,
+    float $baseExtraExcludedBase,
+    float $sellingTax,
+    float $sellingTotal,
+    float $transportCost
+): array {
+
+    $grossTotal = ($productPrice + $extraValue + $taxAmount) - $discountAmount;
+
+    $excludedCommissionPayment = $payments
+        ->where('payment_type', 'EXCLUDED')
+        ->sum('amount');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Customer / Balance
+    |--------------------------------------------------------------------------
+    |
+    | Modify ONLY this section whenever business rules change.
+    |
+    */
+
+    if ($isExcludedFromPayment) {
+
+        // Current implementation.
+        // Change these rules whenever required.
+
+        $customerTotal = $grossTotal - $excludedCommissionPayment;
+
+        $excludeTotal = $grossTotal;
+
+        $balanceAmount = ($customerTotal + $excludedCommissionPayment) - $bookedAmount;
+
+        $paymentStatus = '-';
+
+    } else {
+
+        $customerTotal = $grossTotal;
+
+        $excludeTotal = 0;
+
+        $balanceAmount = $customerTotal - $bookedAmount;
+
+        if ((int) round($bookedAmount * 100) === 0) {
+            $paymentStatus = 'No';
+        } elseif ((int) round($bookedAmount * 100) === (int) round($customerTotal * 100)) {
+            $paymentStatus = 'Yes';
+        } elseif ((int) round($bookedAmount * 100) < (int) round($customerTotal * 100)) {
+            $paymentStatus = 'Partial Paid';
+        } else {
+            $paymentStatus = 'Over Paid';
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Display Rules
+    |--------------------------------------------------------------------------
+    */
+
+    $hideTourCost = $isExcludedFromPayment;
+
+    $hideExtraSelling = $isExcludedFromPayment && $extraValue == 0;
+
+    return [
+
+        // Payment
+        'customer_total' => $customerTotal,
+        'exclude_total' => $excludeTotal,
+        'excluded_commission_payment' => $excludedCommissionPayment,
+        'balance_amount' => $balanceAmount,
+        'payment_status' => $paymentStatus,
+
+        // Tour Cost
+        'tour_cost_price' => $hideTourCost ? 0 : round($costBase, 2),
+        'tour_cost_tax' => $hideTourCost ? 0 : round($costTotal - $costBase, 2),
+        'tour_cost_total' => $hideTourCost ? 0 : round($costTotal, 2),
+
+        // Selling
+        'tour_selling_price' => $hideTourCost ? 0 : round($sellingPriceBase, 2),
+        'tour_extra_included_price' => $hideTourCost ? 0 : round($baseExtraIncludedBase, 2),
+        'tour_extra_excluded_price' => $hideExtraSelling ? 0 : round($baseExtraExcludedBase, 2),
+        'tour_selling_tax' => $hideExtraSelling ? 0 : round($sellingTax, 2),
+        'tour_selling_total' => $hideExtraSelling ? 0 : round($sellingTotal, 2),
+
+        'transport_cost' => $hideTourCost ? 0 : round($transportCost, 2),
+
+        'profit' => round($sellingTotal - $costTotal, 2),
+    ];
+}
 
 
     }

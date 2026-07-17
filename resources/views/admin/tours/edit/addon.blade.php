@@ -33,7 +33,8 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                           <th width="200">Name</th>
                           <th>Description</th>
                           <th>Price</th>
-                          <th width="150">Customer choice</th>
+                          <th>Selling Price</th>
+                          <!-- <th width="150">Customer choice</th> -->
                       </tr>
                   </thead>
                   <tbody id="addon-table-body">
@@ -52,7 +53,19 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                               <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
                               <td>{{ substr($item->description,0,150) }}...</td>
                               <td>{{ price_format_with_currency($item->price, $item->currency) }}</td>
-                              <td>{{ $item->customer_choice }}</td>
+                              <!-- <td>{{ price_format_with_currency($item->selling_price, $item->currency) }}</td> -->
+
+                              <td>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    name="addons[{{ $item->id }}][selling_price]"
+                                    value="{{ $item->pivot->selling_price ?? $item->selling_price }}"
+                                    class="form-control"
+                                >
+                            </td>
+                              <!-- <td>{{ $item->customer_choice }}</td> -->
                                                     
                           </tr>
                         @php $index++; @endphp
