@@ -188,8 +188,6 @@
         @endcan 
 
         @can('show_orders') 
-
-
         <li class="nav-item">
             <a href="javascript:void(0);" class="nav-link">
                 <i class="nav-icon fas fa-briefcase"></i>
@@ -226,8 +224,6 @@
         @endcan
 
         @can('show_orders') 
-
-
         <li class="nav-item">
             <a href="javascript:void(0);" class="nav-link">
                 <i class="nav-icon fas fa-chart-bar"></i>
@@ -377,6 +373,7 @@
             </ul>
         </li>
         @endcan 
+
         @can('show_orders') 
         <li class="nav-item">
             <a href="{{ route('admin.business-expenses.index') }}"
@@ -385,7 +382,18 @@
                 <p>{{ translate('Bussiness Expenses') }}</p>
             </a>
         </li>
-        @endcan   
+        @endcan 
+        
+        @can('show_orders') 
+        <li class="nav-item">
+            <a href="{{ route('admin.tour-gallery.index') }}"
+                class="nav-link {{ areActiveRoutes(['admin.tour-gallery.index']) }}">
+                <i class="nav-icon fas fa-images"></i>
+                <p>{{ translate("Client's Gallery") }}</p>
+            </a>
+        </li>
+        @endcan 
+
         @can('show_medias')
             <li class="nav-item">
                 <a href="{{ route('admin.uploaded-files.index') }}"
