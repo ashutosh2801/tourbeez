@@ -49,9 +49,6 @@ use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Controllers\TourGalleryController;
 
-use App\Http\Controllers\TourGalleryController;
-
-
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
 
     Route::get('/tour/{slug}/fetch_one', [APITourController::class, 'fetch_one'])->name('tour.fetch_one');

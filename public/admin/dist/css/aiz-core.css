@@ -1,8 +1,6 @@
 /*
-
 Don't modify this file.
 use custom-style.css
-
 */
 
 :root {
@@ -11928,8 +11926,6 @@ table.dataTable {
     color: #666;
 }
 
-<<<<<<< HEAD
-=======
 .tour-main-body .select2-container .select2-selection--single .select2-selection__rendered {
     padding-left: 0;
     padding-right: 0;
@@ -11949,7 +11945,6 @@ table.dataTable {
     font-size: 14px;
 }
 
->>>>>>> 17e007d433fc57c892f5e542ef8aca3ca5db82fa
 @media(max-width:767px) {
 
     .tour-search-filter .filter-sidebar{
