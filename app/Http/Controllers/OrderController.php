@@ -1098,7 +1098,7 @@ class OrderController extends Controller
             'tour_startdate.*' => 'required|date',
 
             'tour_starttime'   => 'nullable|array',
-            'tour_starttime.*' => 'nullable|string|max:10',
+            'tour_starttime.*' => 'nullable|string|max:40',
         ],
         [
             'order_status.required'   => 'Please select order status',
