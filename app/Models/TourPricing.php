@@ -15,7 +15,7 @@ class TourPricing extends Model
     use LogsActivity;
     use SoftDeletes;
 
-    protected $fillable = ['tour_id', 'label', 'price', 'quantity_used', 'selling_price'];
+    protected $fillable = ['tour_id', 'label', 'price', 'quantity_used', 'selling_price', 'extra_included'];
 
 
     public function getActivitylogOptions(): LogOptions

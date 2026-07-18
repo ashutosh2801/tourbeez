@@ -11928,6 +11928,28 @@ table.dataTable {
     color: #666;
 }
 
+<<<<<<< HEAD
+=======
+.tour-main-body .select2-container .select2-selection--single .select2-selection__rendered {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.tour-search-filter .filter-body label {
+    margin: 0;
+}
+
+.tour-search-filter .active-filters .badge {
+    background: #a8a8a8 !important;
+    margin-bottom: 7px;
+}
+
+.tour-search-filter .alert {
+    padding: 10px;
+    font-size: 14px;
+}
+
+>>>>>>> 17e007d433fc57c892f5e542ef8aca3ca5db82fa
 @media(max-width:767px) {
 
     .tour-search-filter .filter-sidebar{

@@ -864,6 +864,20 @@ $expectEmails = ['order_pending'];
                                                 <td class="text-right cummulative-total total-due"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
                                             @endif
                                         </tr>
+
+
+                                        @php
+                                            $commission = $order->payments
+                                                ->where('payment_type', 'COMMISSION');
+                                        @endphp
+                                        @if($commission->isNotEmpty() && $commission->sum('amount') > 0)
+                                            <tr class="commission" style="color: green">
+                                                <td><b>Commision From {{ $order->partner?->name}}</b></td>
+
+                                                    <td style="text-align: right !important;"><b>{{ price_format_with_currency($commission->sum('amount'), $order->currency) }}</b></td>
+                                                
+                                            </tr>
+                                        @endif
                                     </table>
                                 </div>
                             </div>

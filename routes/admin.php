@@ -47,6 +47,7 @@ use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Controllers\TourGalleryController;
 
 use App\Http\Controllers\TourGalleryController;
 
@@ -422,11 +423,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/remove-driver', [ManifestController::class, 'removeDriver'])->name('remove.driver');
     Route::post('/tour-itinerary',[ManifestController::class, 'getTourItinerary'])->name('tour.itinerary');
 
+    Route::resource('business-expenses', BusinessExpenseController::class);
+
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
-
-    Route::resource('business-expenses', BusinessExpenseController::class);
 
     Route::get(
         '/tour-gallery',
