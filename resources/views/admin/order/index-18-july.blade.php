@@ -1,22 +1,55 @@
 <x-admin>
     <style>
+        body.sidebar-open {
+            overflow: hidden;
+        }
         .text-orange {
             color: #fd7e14;
         }
-        .filter-panel {
-            display: none;
-            animation: fadeSlide 0.3s ease-in-out;
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #fd7e14;
+            border: none;
+            color: #fff;
+            border-radius: 12px;
+            padding: 2px 8px;
+            margin: 0;
+            line-height: 1.6;
         }
 
-        @keyframes fadeSlide {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
+        #excludeProductFilter + .select2-container .select2-selection--multiple .select2-selection__choice {
+            background-color: #dc3545; /* red for excluded, orange for included */
+        }
+
+        @media(min-width:767px) {
+
+            .daterangepicker.show-calendar {
+                top: 245px !important;
+                left: auto;
+                right: 430px !important;
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+
+            .daterangepicker.show-calendar:before,
+            .daterangepicker.show-calendar:after {
+                left: 595px;
+                border-bottom-color: #999;
+                rotate: 90deg;
+                top: 200px;
             }
+
+            .daterangepicker.show-calendar:nth-of-type(2):before,
+            .daterangepicker.show-calendar:nth-of-type(2):after {
+                top: 140px;
+            }
+        }
+
+        @media(max-width:767px) {
+
+            .daterangepicker.show-calendar {
+                height: 200px;
+                overflow-y: scroll;
+            }
+
         }
 
     </style>
@@ -25,13 +58,15 @@
     <div class="card-primary mb-3">
         <div class="card-header order-list-head">
             <div class="row">
-                <div class="col-md-8 col-6">
-                    <h3 class="card-title text-white">Order List</h3>
+                <div class="col-md-6 col-6">
+                    <form method="GET" action="{{ route('admin.orders.index') }}">
+                        <input type="text" name="search" class="form-control" placeholder="Order ID/Customer First/Last Name/Email and press Enter button" value="{{ request('search') }}">
+                    </form>
                 </div>
-                <div class="col-md-4 col-6">
+                <div class="col-md-6 col-6">
                     <div class="card-tools">
                         <button type="button" class="btn btn-secondary" id="toggleFilter">
-                            <i class="fas fa-filter"></i> Filters
+                            <i class="fas fa-filter"></i> More Filters
                         </button>
                     </div>
                 </div>
@@ -39,6 +74,7 @@
         </div>
     </div>
 
+    
     <div class="order-list-body card rounded-lg-custom border">
         @php
             $statuses = config('constants.status_with_code');
@@ -62,7 +98,18 @@
                                 </select>
                             </div> -->
                             <div class="col-md-4 col-6">
-                                <select id="productFilter" name="product" class="form-control"></select>
+                                <select id="productFilter" name="product[]" class="form-control" multiple>
+                                    @foreach($selectedProducts as $sp)
+                                        <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
+                                    @foreach($excludedProducts as $ep)
+                                        <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="col-md-2 col-6">
                                 <select name="payment_status" class="form-control" >
@@ -138,6 +185,20 @@
                             </div> */ ?>
 
                             <div class="col-md-2 col-6">
+                                <select name="source" class="form-control">
+                                    <option value="">Source</option>
+
+                                    @foreach (source_list_db() as $source)
+                                        <option value="{{ $source->key }}"
+                                            {{ request('source') == $source->key ? 'selected' : '' }}>
+                                            {{ $source->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+
+                            <div class="col-md-2 col-6">
                                 <select name="per_page" class="form-control">
                                     @foreach ([10, 25, 50, 100, 500] as $number)
                                         <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
@@ -158,7 +219,96 @@
                 </div>
             </div>
         </form>
-        
+
+        @php
+            $hasActiveFilters =
+                request('search') ||
+                request()->filled('payment_status') ||
+                request('order_status') ||
+                request('tour_start_date') ||
+                request('order_created_date') ||
+                request('source') ||
+                $selectedProducts->isNotEmpty() ||
+                $excludedProducts->isNotEmpty();
+        @endphp
+
+        @if($hasActiveFilters)
+        <div class="active-filters m-4">
+            <div class="d-flex flex-wrap gap-2">
+
+                {{-- Search --}}
+                @if(request('search'))
+                    <span class="badge badge-dark mr-2 mt-2 mt-2 text-white">
+                        Search: {{ request('search') }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['search' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Payment --}}
+                @if(request()->filled('payment_status'))
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Payment: {{ request('payment_status') ? 'Paid' : 'Unpaid' }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['payment_status' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Order Status --}}
+                @if(request('order_status'))
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Status: {{ $statuses[request('order_status')] }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['order_status' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Tour Date --}}
+                @if(request('tour_start_date'))
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Tour Date: {{ request('tour_start_date') }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['tour_start_date' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Created Date --}}
+                @if(request('order_created_date'))
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Created: {{ request('order_created_date') }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['order_created_date' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Source --}}
+                @if(request('source'))
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Source: {{ source_list(request('source')) }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['source' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Selected Tour --}}
+                @if($selectedProducts->isNotEmpty())
+                    @php $p = $selectedProducts->first(); @endphp
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Tour: {{ $p->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['product' => null]) }}">✕</a>
+                    </span>
+                @endif
+
+                {{-- Excluded Tours --}}
+                @foreach($excludedProducts as $ep)
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Excluded: {{ $ep->title }}
+                        <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery([
+                            'exclude_product' => collect(request('exclude_product'))
+                                ->reject(fn($id) => $id == $ep->id)
+                                ->values()
+                                ->all(),
+                        ]) }}">✕</a>
+                    </span>
+                @endforeach
+
+            </div>
+        </div>
+        @endif        
 
         {{-- Bulk Delete --}}
         <form id="bulkDeleteForm" method="POST" action="{{ route('admin.order.bulkDelete') }}">
@@ -235,7 +385,7 @@
             @endif
             
             <div class="card-body p-0 order-table table-responsive">
-                <table class="table table-striped" id="OrderTable" style="table-layout:fixed; width:100%;">
+                <table class="table table-striped" id="OrderTable" style="width:100%;">
                     <thead>
                         <tr>
                             <th style="width:4%;">
@@ -282,27 +432,16 @@
                                 <td>
                                     <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink">{{ $order->order_number }}</a>
                                 </td>
-                                <td>{!! order_status($order->order_status) !!}</td>
+                                <td class="text-center">{!! order_status($order->order_status) !!} <br> <small>{{  $order->latestPaymentLog?->status ? in_array($order->latestPaymentLog?->status, ['success', 'authorized', 'failed', 'cancelled']) ? ucwords($order->latestPaymentLog?->status) : 'Failed' : '' }}</small></td>
                                 <td class="">
                                     @foreach ($order->orderTours as $order_tour)
-
-                                    @if($order->sub_tour_id && $order->subTour)
-                                            <div style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                                <a href="{{ route('admin.tour.edit', encrypt($order->tour->id)) }}"
-                                                   class="alink text-small"
-                                                   target="_blank"
-                                                   style="font-size:small;">
-                                                    {{ $order->tour?->title }} 
-                                                </a>
-                                            </div>
-                                        @endif
 
                                         <div style="display:flex; justify-content:space-start; align-items:center;">
                                             <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour_id)) }}"
                                                class="alink"
                                                target="_blank"
                                                style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">
-                                                {{ $order_tour->tour?->title }}
+                                                {{ $order->tour?->title }}
                                             </a>
                                             @if($loop->iteration == 1)
                                             <span class="font-bold ml-1">
@@ -311,7 +450,16 @@
                                             @endif
                                         </div>
 
-                                        
+                                        @if($order->sub_tour_id && $order->subTour)
+                                            <div style="max-width:85%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                                <a href="{{ route('admin.tour.edit', encrypt($order_tour->tour->id)) }}"
+                                                   class="alink text-small"
+                                                   target="_blank"
+                                                   style="font-size:small;">
+                                                    {{ $order_tour->tour?->title }}
+                                                </a>
+                                            </div>
+                                        @endif
 
                                     @endforeach
                                 </td>
@@ -333,8 +481,11 @@
                                     
                                     <br>
                                     {{ str_contains($order->customer?->phone, '+') || ($order->customer?->phone == 'N/A') ? '' : '+' }}{{ $order->customer?->phone }}
+                                    <br>
+                                    {{ $order->customer?->email }}
                                 </td>
-                                @php
+                                <!-- @php
+
                                     $total = round($order->total_amount);
                                    // $paid = round($order->booked_amount) ?? 0; 
 
@@ -362,6 +513,99 @@
 
                                     <span class="{{ $amountClass }}">{{ price_format_with_currency($order->total_amount, $order->currency) }}</span>
                                 <!-- </td> -->
+
+                                @php
+
+                                    $total = $order->total_amount;
+
+
+
+                                    $paid = 
+
+                                        $order->payments->where('status', 'succeeded')->sum('amount')
+
+                                        - $order->payments->where('status', 'refunded')->sum('amount')
+
+                                        + $order->payments->where('status', 'partial_refunded')->sum('amount');
+
+
+
+                                    $balance = max(0, $total - $paid);
+
+
+
+                                    $hasUncaptured = $order->payments->contains('status', 'uncaptured');
+
+
+
+                                    if ($paid < $total) {
+
+                                        if ($paid == 0 && $hasUncaptured) {
+
+                                            $amountClass = 'text-orange';
+
+                                        } else {
+
+                                            $amountClass = 'text-danger'; // red
+
+                                        }
+
+                                    } else {
+
+                                        $amountClass = 'text-success'; // green
+
+                                    }
+
+
+
+                                    if ($order->order_status == 6) {
+
+                                        $amountClass = 'text-secondary'; // grey
+
+                                    }
+
+                                @endphp
+
+
+
+                                <td>
+
+                                    @php
+    $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
+
+    $isExcludedSource = in_array(
+        strtolower($order->source ?? ''),
+        $excludedPaymentSources
+    );
+
+    $hasCommission = $order->payments
+        ->where('payment_type', 'COMMISSION')
+        ->isNotEmpty();
+@endphp
+
+@if($isExcludedSource && $hasCommission)
+    @php
+        $excludedCommissionPayment = $order->payments
+            ->where('payment_type', 'EXCLUDED')
+            ->sum('amount');
+
+        $totalPaymentAmount = $order->payments
+            ->where('status', 'succeeded')
+            ->sum('amount') - $excludedCommissionPayment;
+    @endphp
+
+    <span class="text-success">
+        {{ price_format_with_currency($totalPaymentAmount, $order->currency) }}
+    </span>
+@else
+    <span class="{{ $amountClass }}">
+        @if($amountClass == 'text-danger')
+            {{ price_format_with_currency($balance, $order->currency) }}
+        @else
+            {{ price_format_with_currency($order->total_amount, $order->currency) }}
+        @endif
+    </span>
+@endif
                                 <br>
                                 <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "N/A" }}</span>
                                 
@@ -402,7 +646,7 @@
                                         $created = \Carbon\Carbon::parse($order->created_at);
                                     @endphp
 
-                                    {{ $created->format('M  , Y') }} <br>
+                                    {{ $created->format('M d, Y') }} <br>
                                     {{ $created->format('h:i A') }}
                                     <!-- {{ optional($order->created_at)->format('M d, Y') }} <br>
                                     {{ optional($order->created_at)->format('h:i A') }} -->
@@ -471,24 +715,32 @@
 
     @section('js')
     <script>
-        let filterOpen = false;
+        $('#toggleFilter').click(function () {
 
-        $('#toggleFilter').on('click', function () {
-            $('#filterPanel').slideToggle(250);
+            $('#filterSidebar').addClass('show');
 
-            filterOpen = !filterOpen;
+            $('#filterOverlay').addClass('show');
 
-            if (filterOpen) {
-                $(this)
-                    .removeClass('btn-secondary')
-                    .addClass('btn-danger')
-                    .html('<i class="fas fa-times"></i> Hide Filters');
-            } else {
-                $(this)
-                    .removeClass('btn-danger')
-                    .addClass('btn-secondary')
-                    .html('<i class="fas fa-filter"></i> Filters');
-            }
+            $('body').addClass('sidebar-open');
+
+            $(this)
+                .removeClass('btn-secondary')
+                .addClass('btn-danger')
+                .html('<i class="fas fa-times"></i> Filters');
+        });
+
+        $('#closeFilter,#filterOverlay').click(function () {
+
+            $('#filterSidebar').removeClass('show');
+
+            $('#filterOverlay').removeClass('show');
+
+            $('body').removeClass('sidebar-open');
+
+            $('#toggleFilter')
+                .removeClass('btn-danger')
+                .addClass('btn-secondary')
+                .html('<i class="fas fa-filter"></i> Filters');
         });
     </script>
     <script>
@@ -529,29 +781,69 @@
         });
 
         // ✅ Select2 (optimized)
-        $('#productFilter').select2({
-            placeholder: 'Select Tour',
-            minimumInputLength: 4,
-            ajax: {
-                url: '{{ route("admin.tours.tours-list") }}',
-                dataType: 'json',
-                delay: 0,
-                cache: true,
-                data: function (params) {
-                    return { q: params.term };
-                },
-                processResults: function (data) {
-                    return {
-                        results: data.map(tour => ({
-                            id: tour.id,
-                            text: tour.title
-                        }))
-                    };
+        // $('#productFilter').select2({
+        //     placeholder: 'Select Tour',
+        //     minimumInputLength: 4,
+        //     ajax: {
+        //         url: '{{ route("admin.tours.tours-list") }}',
+        //         dataType: 'json',
+        //         delay: 0,
+        //         cache: true,
+        //         data: function (params) {
+        //             return { q: params.term };
+        //         },
+        //         processResults: function (data) {
+        //             return {
+        //                 results: data.map(tour => ({
+        //                     id: tour.id,
+        //                     text: tour.title
+        //                 }))
+        //             };
+        //         }
+        //     }
+        // });
+
+        function initTourSelect(selector, isMultiple, placeholderText) {
+            $(selector).select2({
+                placeholder: placeholderText,
+                minimumInputLength: 4,
+                multiple: isMultiple,
+                dropdownParent: $('#filterSidebar'),
+                ajax: {
+                    url: '{{ route("admin.tours.tours-list") }}',
+                    dataType: 'json',
+                    delay: 0,
+                    cache: true,
+                    data: params => ({ q: params.term }),
+                    processResults: data => ({
+                        results: data.map(tour => ({ id: tour.id, text: tour.title }))
+                    })
                 }
-            }
-        });
+            });
+        }
+
+initTourSelect('#productFilter', true, 'Select Tour');
+initTourSelect('#excludeProductFilter', true, 'Exclude tours');
+
+// initTourSelect('#productFilter');
+
 
     });
+
+@if($selectedProducts->count())
+
+let option = new Option(
+    "{{ $selectedProducts->first()->title }}",
+    "{{ $selectedProducts->first()->id }}",
+    true,
+    true
+);
+
+$('#productFilter')
+    .append(option)
+    .trigger('change');
+
+@endif
     </script>
 
 @endsection

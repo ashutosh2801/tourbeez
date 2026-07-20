@@ -308,7 +308,6 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-
         $request->merge([
             'customer_id' => $request->customer_id ?: null
         ]);    
@@ -468,6 +467,8 @@ class OrderController extends Controller
         }
 
         // dd($tourIds);
+
+        
         DB::beginTransaction();
         try {
             // ===== Create Order =====
@@ -484,6 +485,7 @@ class OrderController extends Controller
                 'internal_notes'    => $request->internal_notes ?? '',
                 'created_by'        => auth()->user()->id,
                 'source'            => $request->source ?? "internal",
+                'created_at'        => $request->order_date ? Carbon::parse($request->order_date)->format('Y-m-d') : now()
             ]);
 
             // ===== Customer =====

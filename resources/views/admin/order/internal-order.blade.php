@@ -63,7 +63,25 @@
                 </div>
                 
                 <div class="d-flex">
-                    <!-- <input type="hidden" name="currency" id="order_currency" value="CAD" /> -->
+                    <div class="input-group mr-2">
+                                <input type="text" 
+                                    class="aiz-date-range form-control tour_startdate_field"
+                                    id="order_date"
+                                    name="order_date"
+                                    placeholder="Order Date" 
+                                    data-format="ddd MMM DD, YYYY"
+                                    data-single="true"
+                                    autocomplete="off" 
+                                    data-show-dropdown="true" 
+                                    value="">
+
+                                <div class="input-group-append">
+                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                </div>
+                            </div>
+                            <!-- <div>
+                                <input type="text" class="tour_startdate_display border-0" readonly>
+                            </div> -->
                    <select readonly name="currency" id="order_currency" class="form-control mr-2">
                         @foreach(config('constants.currencies') as $code => $country)
                             <option @if($code === 'CAD') selected @endif value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
