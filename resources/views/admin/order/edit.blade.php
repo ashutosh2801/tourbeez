@@ -1012,6 +1012,9 @@ $expectEmails = ['order_pending'];
     ->latest()
     ->first();
 
+                                                $reservePayment = $order->payments()
+                                                ->where('status', 'reserve')->first();
+
                                                 //echo '<pre>'; print_r($latestPayment->payment_intent_id); echo '</pre>'; 
                                             @endphp
 
@@ -1035,7 +1038,11 @@ $expectEmails = ['order_pending'];
                                                 </div>
                                             @endif
                                             <div class="col-12 col-md-2">
-                                                @if($latestPayment)
+                                                @if($latestPayment || $reservePayment)
+
+                                                   @php
+                                                    $latestPayment = $latestPayment ?:$reservePayment;
+                                                   @endphp
 
                                                     @if(str_contains( $latestPayment->payment_intent_id, 'pm_') || str_contains( $latestPayment->payment_method_id, 'pm_'))
                                                     <a id="chargeSavedCard" type="button" class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">

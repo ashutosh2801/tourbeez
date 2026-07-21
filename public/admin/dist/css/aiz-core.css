@@ -10847,6 +10847,14 @@ table.dataTable {
     background: #01228b !important;
 }
 
+.reports-head .card-tools {
+    float: right;
+}
+
+.reports-head .btn {
+    padding: 7px 20px;
+}
+
 .reports-head .row {
     display: flex;
     justify-content: space-between;
@@ -11531,6 +11539,7 @@ table.dataTable {
     .dashboard-body .performance-chart-card{
         width:100%;
     }
+    
 
     .dashboard-body .performance-table{
         display:block;
@@ -11943,6 +11952,7 @@ table.dataTable {
 .tour-search-filter .alert {
     padding: 10px;
     font-size: 14px;
+    margin: 0;
 }
 
 @media(max-width:767px) {

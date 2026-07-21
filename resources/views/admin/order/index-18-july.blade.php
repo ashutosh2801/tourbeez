@@ -1,85 +1,56 @@
 <x-admin>
     <style>
+        body.sidebar-open {
+            overflow: hidden;
+        }
         .text-orange {
             color: #fd7e14;
         }
-        .filter-panel {
-            display: none;
-            animation: fadeSlide 0.3s ease-in-out;
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #fd7e14;
+            border: none;
+            color: #fff;
+            border-radius: 12px;
+            padding: 2px 8px;
+            margin: 0;
+            line-height: 1.6;
         }
 
-        @keyframes fadeSlide {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
+        #excludeProductFilter + .select2-container .select2-selection--multiple .select2-selection__choice {
+            background-color: #dc3545; /* red for excluded, orange for included */
+        }
+
+        @media(min-width:767px) {
+
+            .daterangepicker.show-calendar {
+                top: 245px !important;
+                left: auto;
+                right: 430px !important;
             }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+
+            .daterangepicker.show-calendar:before,
+            .daterangepicker.show-calendar:after {
+                left: 595px;
+                border-bottom-color: #999;
+                rotate: 90deg;
+                top: 200px;
+            }
+
+            .daterangepicker.show-calendar:nth-of-type(2):before,
+            .daterangepicker.show-calendar:nth-of-type(2):after {
+                top: 140px;
             }
         }
-        /* Single & Multiple same height */
 
-.select2-container--default .select2-selection--multiple {
-    border: 1px solid #ced4da;
-    border-radius: .25rem;
-    min-height: calc(2.25rem + 2px);
-    padding: .25rem .35rem;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-}
-.select2-container--default .select2-selection--multiple .select2-selection__rendered {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 0;
-}
-.select2-container--default .select2-selection--multiple .select2-selection__choice {
-    background-color: #fd7e14;
-    border: none;
-    color: #fff;
-    border-radius: 12px;
-    padding: 2px 8px;
-    margin: 0;
-    line-height: 1.6;
-}
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-    color: #fff;
-    margin-right: 6px;
-    font-weight: bold;
-}
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-    color: #ffe0c2;
-}
-#excludeProductFilter + .select2-container .select2-selection--multiple .select2-selection__choice {
-    background-color: #dc3545; /* red for excluded, orange for included */
-}
-.select2-container--default .select2-search--inline .select2-search__field {
-    margin-top: 2px;
-}
+        @media(max-width:767px) {
 
-.select2-container {
-    width: 100% !important;
-}
-.select2-container--default .select2-selection--multiple {
-    border: 1px solid #ced4da !important;
-    border-radius: .25rem;
-    min-height: calc(2.25rem + 2px);
-    padding: .25rem .35rem;
-    background-color: #fff;
-}
-.select2-selection__rendered {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    padding: 0 !important;
-}
-.select2-search--inline .select2-search__field {
-    margin-top: 4px !important;
-    border: none !important;
-    outline: none !important;
-}
+            .daterangepicker.show-calendar {
+                height: 200px;
+                overflow-y: scroll;
+            }
+
+        }
 
     </style>
     @section('title', 'Orders List')
@@ -89,17 +60,13 @@
             <div class="row">
                 <div class="col-md-6 col-6">
                     <form method="GET" action="{{ route('admin.orders.index') }}">
-                        <div class="search-options" style="display:flex">
-                            <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name/Email" value="{{ request('search') }}" style="margin-bottom:0">
-                            <button type="submit" class="btn btn-warning" style="width: 132px;
-    margin-left: 5px;"> <i class="fas fa-search"></i> Search</button>
-                        </div>
+                        <input type="text" name="search" class="form-control" placeholder="Order ID/Customer First/Last Name/Email and press Enter button" value="{{ request('search') }}">
                     </form>
                 </div>
                 <div class="col-md-6 col-6">
                     <div class="card-tools">
                         <button type="button" class="btn btn-secondary" id="toggleFilter">
-                            <i class="fas fa-filter"></i> Filters
+                            <i class="fas fa-filter"></i> More Filters
                         </button>
                     </div>
                 </div>
@@ -107,6 +74,7 @@
         </div>
     </div>
 
+    
     <div class="order-list-body card rounded-lg-custom border">
         @php
             $statuses = config('constants.status_with_code');
@@ -265,7 +233,7 @@
         @endphp
 
         @if($hasActiveFilters)
-        <div class="active-filters m-0">
+        <div class="active-filters m-4">
             <div class="d-flex flex-wrap gap-2">
 
                 {{-- Search --}}
@@ -416,7 +384,7 @@
                 @endif
             @endif
             
- <div class="card-body p-0 order-table table-responsive">
+            <div class="card-body p-0 order-table table-responsive">
                 <table class="table table-striped" id="OrderTable" style="width:100%;">
                     <thead>
                         <tr>
@@ -570,7 +538,7 @@
 
 
 
-                                    if (round($paid) < round($total)) {
+                                    if ($paid < $total) {
 
                                         if ($paid == 0 && $hasUncaptured) {
 
@@ -603,41 +571,41 @@
                                 <td>
 
                                     @php
-                                        $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
+    $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
 
-                                        $isExcludedSource = in_array(
-                                            strtolower($order->source ?? ''),
-                                            $excludedPaymentSources
-                                        );
+    $isExcludedSource = in_array(
+        strtolower($order->source ?? ''),
+        $excludedPaymentSources
+    );
 
-                                        $hasCommission = $order->payments
-                                            ->where('payment_type', 'COMMISSION')
-                                            ->isNotEmpty();
-                                    @endphp
+    $hasCommission = $order->payments
+        ->where('payment_type', 'COMMISSION')
+        ->isNotEmpty();
+@endphp
 
-                                    @if($isExcludedSource && $hasCommission)
-                                        @php
-                                            $excludedCommissionPayment = $order->payments
-                                                ->where('payment_type', 'EXCLUDED')
-                                                ->sum('amount');
+@if($isExcludedSource && $hasCommission)
+    @php
+        $excludedCommissionPayment = $order->payments
+            ->where('payment_type', 'EXCLUDED')
+            ->sum('amount');
 
-                                            $totalPaymentAmount = $order->payments
-                                                ->where('status', 'succeeded')
-                                                ->sum('amount') - $excludedCommissionPayment;
-                                        @endphp
+        $totalPaymentAmount = $order->payments
+            ->where('status', 'succeeded')
+            ->sum('amount') - $excludedCommissionPayment;
+    @endphp
 
-                                        <span class="text-success">
-                                            {{ price_format_with_currency($totalPaymentAmount, $order->currency) }}
-                                        </span>
-                                    @else
-                                        <span class="{{ $amountClass }}">
-                                            @if($amountClass == 'text-danger')
-                                                {{ price_format_with_currency($balance, $order->currency) }}
-                                            @else
-                                                {{ price_format_with_currency($order->total_amount, $order->currency) }} 
-                                            @endif
-                                        </span>
-                                    @endif
+    <span class="text-success">
+        {{ price_format_with_currency($totalPaymentAmount, $order->currency) }}
+    </span>
+@else
+    <span class="{{ $amountClass }}">
+        @if($amountClass == 'text-danger')
+            {{ price_format_with_currency($balance, $order->currency) }}
+        @else
+            {{ price_format_with_currency($order->total_amount, $order->currency) }}
+        @endif
+    </span>
+@endif
                                 <br>
                                 <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "N/A" }}</span>
                                 
@@ -711,7 +679,6 @@
         </form>
     </div>
 
-
     <div id="importOrderModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-md modal-dialog-centered">
             <div class="modal-content">
@@ -748,24 +715,32 @@
 
     @section('js')
     <script>
-        let filterOpen = false;
+        $('#toggleFilter').click(function () {
 
-        $('#toggleFilter').on('click', function () {
-            $('#filterPanel').slideToggle(250);
+            $('#filterSidebar').addClass('show');
 
-            filterOpen = !filterOpen;
+            $('#filterOverlay').addClass('show');
 
-            if (filterOpen) {
-                $(this)
-                    .removeClass('btn-secondary')
-                    .addClass('btn-danger')
-                    .html('<i class="fas fa-times"></i> Hide Filters');
-            } else {
-                $(this)
-                    .removeClass('btn-danger')
-                    .addClass('btn-secondary')
-                    .html('<i class="fas fa-filter"></i> Filters');
-            }
+            $('body').addClass('sidebar-open');
+
+            $(this)
+                .removeClass('btn-secondary')
+                .addClass('btn-danger')
+                .html('<i class="fas fa-times"></i> Filters');
+        });
+
+        $('#closeFilter,#filterOverlay').click(function () {
+
+            $('#filterSidebar').removeClass('show');
+
+            $('#filterOverlay').removeClass('show');
+
+            $('body').removeClass('sidebar-open');
+
+            $('#toggleFilter')
+                .removeClass('btn-danger')
+                .addClass('btn-secondary')
+                .html('<i class="fas fa-filter"></i> Filters');
         });
     </script>
     <script>
@@ -829,22 +804,23 @@
         // });
 
         function initTourSelect(selector, isMultiple, placeholderText) {
-    $(selector).select2({
-        placeholder: placeholderText,
-        minimumInputLength: 4,
-        multiple: isMultiple,
-        ajax: {
-            url: '{{ route("admin.tours.tours-list") }}',
-            dataType: 'json',
-            delay: 0,
-            cache: true,
-            data: params => ({ q: params.term }),
-            processResults: data => ({
-                results: data.map(tour => ({ id: tour.id, text: tour.title }))
-            })
+            $(selector).select2({
+                placeholder: placeholderText,
+                minimumInputLength: 4,
+                multiple: isMultiple,
+                dropdownParent: $('#filterSidebar'),
+                ajax: {
+                    url: '{{ route("admin.tours.tours-list") }}',
+                    dataType: 'json',
+                    delay: 0,
+                    cache: true,
+                    data: params => ({ q: params.term }),
+                    processResults: data => ({
+                        results: data.map(tour => ({ id: tour.id, text: tour.title }))
+                    })
+                }
+            });
         }
-    });
-}
 
 initTourSelect('#productFilter', true, 'Select Tour');
 initTourSelect('#excludeProductFilter', true, 'Exclude tours');
