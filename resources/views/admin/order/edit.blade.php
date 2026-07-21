@@ -835,6 +835,20 @@ $expectEmails = ['order_pending'];
                                                 <td class="text-right cummulative-total total-due"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
                                             @endif
                                         </tr>
+
+
+                                        @php
+                                            $commission = $order->payments
+                                                ->where('payment_type', 'COMMISSION');
+                                        @endphp
+                                        @if($commission->isNotEmpty() && $commission->sum('amount') > 0)
+                                            <tr class="commission" style="color: green">
+                                                <td><b>Commision From {{ $order->partner?->name}}</b></td>
+
+                                                    <td style="text-align: right !important;"><b>{{ price_format_with_currency($commission->sum('amount'), $order->currency) }}</b></td>
+                                                
+                                            </tr>
+                                        @endif
                                     </table>
                                 </div>
                             </div>
@@ -966,6 +980,9 @@ $expectEmails = ['order_pending'];
                                                 ->latest()
                                                 ->first();
 
+                                                $reservePayment = $order->payments()
+                                                ->where('status', 'reserve')->first();
+
                                                 //echo '<pre>'; print_r($latestPayment->payment_intent_id); echo '</pre>'; 
                                             @endphp
 
@@ -989,7 +1006,11 @@ $expectEmails = ['order_pending'];
                                                 </div>
                                             @endif
                                             <div class="col-12 col-md-2">
-                                                @if($latestPayment)
+                                                @if($latestPayment || $reservePayment)
+
+                                                   @php
+                                                    $latestPayment = $latestPayment ?:$reservePayment;
+                                                   @endphp
 
                                                     @if(str_contains( $latestPayment->payment_intent_id, 'pm_') || str_contains( $latestPayment->payment_method_id, 'pm_'))
                                                     <a id="chargeSavedCard" type="button" class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">

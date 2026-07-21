@@ -289,174 +289,160 @@
 </div>
 
 {{-- FILTERS --}}
-<div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
+<div class="tour-search-filter">
+    <div id="filterSidebar" class="filter-sidebar">
+        <div class="filter-header">
+            <h5><i class="fas fa-filter"></i> Filters</h5>
+            <button type="button" id="closeFilter">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
         <form method="GET">
+            <div class="filter-body">
+                <div class="row">
 
-            <div class="row">
+                    {{-- BOOKING DATE --}}
+                    @php
+                        $hasFilter = request()->hasAny([
+                            'booking_date',
+                            'tour_date',
+                            'product',
+                            'order_status',
+                            'payment_status',
+                            'partner',
+                            'action_type',
+                            'exclude_product'
+                        ]);
+                    @endphp
+                    <div class="col-12 position-relative">
+                        <div class="form-group">
+                            <label class="filter-label">Order Date</label>
 
-                {{-- BOOKING DATE --}}
-                @php
-                    $hasFilter = request()->hasAny([
-                        'booking_date',
-                        'tour_date',
-                        'product',
-                        'order_status',
-                        'payment_status',
-                        'partner',
-                        'action_type',
-                        'exclude_product'
-                    ]);
-                @endphp
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <div class="form-group">
-                        <label class="filter-label">Order Date</label>
-                        <input 
-                            type="text" 
-                            name="booking_date"
-                            
-                            class="form-control aiz-date-range"
-                            data-advanced-range="true"
-                            data-separator=" - "
-                            data-show-dropdown="true"
-                            placeholder="Select date range"
-                            autocomplete="off"
-                            value="{{ request('booking_date') }}"
-                        >
-                        @if(request('booking_date'))
-                            <span class="clear-btn" onclick="clearBooking()">✕</span>
-                        @endif
+                            <input 
+                                type="text" 
+                                name="booking_date"
+                                
+                                class="form-control aiz-date-range"
+                                data-advanced-range="true"
+                                data-separator=" - "
+                                data-show-dropdown="true"
+                                placeholder="Select date range"
+                                autocomplete="off"
+                                value="{{ request('booking_date') }}"
+                            >
+
+                            @if(request('booking_date'))
+                                <span class="clear-btn" onclick="clearBooking()">✕</span>
+                            @endif
+                        </div>
                     </div>
 
-                {{-- TOUR DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <div class="form-group">
-                        <label class="filter-label">Tour Date</label>
-                        <input 
-                            type="text" 
-                            name="tour_date"
-                            class="form-control aiz-date-range"
-                            data-advanced-range="true"
-                            data-separator=" - "
-                            data-show-dropdown="true"
-                            placeholder="Select date range"
-                            autocomplete="off"
-                            value="{{ request('tour_date') }}"
-                        >
-                        @if(request('tour_date'))
-                            <span class="clear-btn" onclick="clearTour()">✕</span>
-                        @endif
+                    {{-- TOUR DATE --}}
+                    <div class="col-12 position-relative">
+                        <div class="form-group">
+                            <label class="filter-label">Tour Date</label>
+
+                            <input 
+                                type="text" 
+                                name="tour_date"
+                                
+                                class="form-control aiz-date-range"
+                                data-advanced-range="true"
+                                data-separator=" - "
+                                data-show-dropdown="true"
+                                placeholder="Select date range"
+                                autocomplete="off"
+                                value="{{ request('tour_date') }}"
+                            >
+
+                            @if(request('tour_date'))
+                                <span class="clear-btn" onclick="clearTour()">✕</span>
+                            @endif
+                        </div>
                     </div>
 
-                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Booking Date</label>
-
-                        <input type="text" id="booking_range" class="form-control"
-                            placeholder="Select date range" autocomplete="off">
-
-                    
-                        <span class="clear-btn" onclick="clearBooking()">✕</span>
-                    
-
-                    <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
-                    <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
-                </div> -->
-
-                {{-- TOUR DATE --}}
-                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">     Date</label>
-
-                        <input type="text" id="tour_range" class="form-control"
-                            placeholder="Select date range" autocomplete="off">
-
-                   
-                        <span class="clear-btn" onclick="clearTour()">✕</span>
-                   
-
-                    <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
-                    <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
-                    </div> -->
-                    <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Products</label>
-                    <select id="productFilter" name="product" class="form-control"></select>
-                </div>  -->
-
-                {{-- PRODUCTS --}}
-                <div class="col-md-3 col-6">
-                    <label class="filter-label">Products</label>
-                    <select id="productFilter" name="product[]" class="form-control" multiple>
-                        @foreach($selectedProducts as $sp)
-                            <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3 col-6">
-                    <label class="filter-label">Excluded Products</label>
-                    <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
-                        @foreach($excludedProducts as $ep)
-                            <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-
-                {{-- ORDER STATUS --}}
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="form-group">
-                        <label class="filter-label">Order Status</label>
-                        <select name="order_status" class="form-control">
-                            <option value="">All</option>
-                            @php
-                            $status_with_code = [
-                                        
-                                        3 => 'Pending supplier',
-                                        4 => 'Pending customer',
-                                        5 => 'Confirmed',
-                                        
-                                ];
-                            @endphp
-                            @foreach($status_with_code as $key => $val)
-                                <option value="{{ $key }}"
-                                    {{ request('order_status') == $key ? 'selected' : '' }}>
-                                    {{ $val }}
-                                </option>
-                            @endforeach
-                        </select>
+                    {{-- PRODUCTS --}}
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label class="filter-label">Products</label>
+                            <select id="productFilter" name="product[]" class="form-control" multiple>
+                                @foreach($selectedProducts as $sp)
+                                    <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
-                </div>
 
-                {{-- PAY TYPE --}}
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="form-group">
-                        <label class="filter-label">Pay Type</label>
-                        <select name="action_type" class="form-control">
-                            <option value="">All</option>
-                            <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
-                            <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
-                        </select>
+                    {{-- EXCLUDED PRODUCTS --}}
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label class="filter-label">Excluded Products</label>
+                            <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
+                                @foreach($excludedProducts as $ep)
+                                    <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
-                </div>
 
-                {{-- SOURCE --}}
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="form-group">
-                        <label class="filter-label">Source</label>
-                        <select name="partner" class="form-control">
-                            <option value="">All</option>
-                            
-                            
-                            @foreach($partners as $partner)
-                                <option value="{{ ucfirst($partner->slug) }}"
-                                    {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
-                                    {{ $partner->name }}
-                                </option>
-                            @endforeach
-                            <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
-                            <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
-                        </select>
+                    {{-- ORDER STATUS --}}
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label class="filter-label">Order Status</label>
+                            <select name="order_status" class="form-control">
+                                <option value="">All</option>
+                                @php
+                                $status_with_code = [
+                                            
+                                            3 => 'Pending supplier',
+                                            4 => 'Pending customer',
+                                            5 => 'Confirmed',
+                                            
+                                    ];
+                                @endphp
+                                @foreach($status_with_code as $key => $val)
+                                    <option value="{{ $key }}"
+                                        {{ request('order_status') == $key ? 'selected' : '' }}>
+                                        {{ $val }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="form-group">
+
+                    {{-- PAY TYPE --}}
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label class="filter-label">Pay Type</label>
+                            <select name="action_type" class="form-control">
+                                <option value="">All</option>
+                                <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
+                                <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- SOURCE --}}
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label class="filter-label">Source</label>
+                            <select name="partner" class="form-control">
+                                <option value="">All</option>
+                                @foreach($partners as $partner)
+                                    <option value="{{ ucfirst($partner->slug) }}"
+                                        {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
+                                        {{ $partner->name }}
+                                    </option>
+                                @endforeach
+                                <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                                <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- SORT BY --}}
+                    <div class="col-12">
+                        <div class="form-group">
                             <label class="filter-label">Sort By</label>
                             <select name="order_by" id="order_by" class="form-control">
                                 <option value="">Sort By</option>
@@ -481,15 +467,6 @@
                                     Booking Date (Oldest First)
                                 </option>
 
-                                <!-- <option value="revenue_desc"
-                                    {{ request('order_by') == 'revenue_desc' ? 'selected' : '' }}>
-                                    Revenue (High → Low)
-                                </option>
-
-                                <option value="revenue_asc"
-                                    {{ request('order_by') == 'revenue_asc' ? 'selected' : '' }}>
-                                    Revenue (Low → High)
-                                </option> -->
                             </select>
                         </div>
                     </div>
@@ -504,11 +481,88 @@
 
                 </div>
             </div>
+            <div class="filter-footer">
+                <button class="btn btn-search">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <a href="{{ route('admin.report.price_schedule') }}" class="btn btn-clear">
+                    <i class="fas fa-times"></i> Clear Search
+                </a>
+            </div>
         </form>
     </div>
-@if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type', 'exclude_product']))
-        <div class="alert alert-info">
-            Please apply filters to view report data.
+    <div id="filterOverlay"></div>
+</div>
+
+<div class="active-filters mb-3">
+    @if(request()->hasAny([
+        'booking_date','tour_date','product',
+        'order_status','action_type','partner', 'exclude_product'
+    ]))
+        <div class="d-flex flex-wrap gap-2">
+
+            {{-- BOOKING DATE --}}
+            @if(request('booking_date'))
+                <span class="badge bg-dark">
+                    Booking: {{ request('booking_date') }}
+                    <a href="{{ request()->fullUrlWithQuery(['booking_date' => null]) }}" class="remove-filter" data-filter="booking_date"><span class="ml-2">✕</span></a>
+                </span>
+            @endif
+
+            {{-- TOUR DATE --}}
+            @if(request('tour_date'))
+                <span class="badge bg-dark ml-2">
+                    Tour: {{ request('tour_date') }}
+                    <a href="{{ request()->fullUrlWithQuery(['tour_date' => null]) }}" class="remove-filter" data-filter="tour_date"><span class="ml-2">✕</span></a>
+                </span>
+            @endif
+
+            {{-- PRODUCT --}}
+            
+
+            {{-- STATUS --}}
+            @if(request('order_status'))
+                <span class="badge bg-dark  ml-2">
+                    Status: {{ $status_with_code[request('order_status')] ?? request('order_status') }}
+                    <a href="{{ request()->fullUrlWithQuery(['order_status' => null]) }}" class="remove-filter" data-filter="order_status"><span class="ml-2">✕</span></a>
+                </span>
+            @endif
+
+            {{-- PAY TYPE --}}
+            @if(request('action_type'))
+                <span class="badge bg-dark ml-2">
+                    Pay: {{ request('action_type') }}
+                    <a href="{{ request()->fullUrlWithQuery(['action_type' => null]) }}" class="remove-filter" data-filter="action_type"><span class="ml-2">✕</span></a>
+                </span>
+            @endif
+                @if(request('partner'))
+                <span class="badge bg-dark ml-2">
+                    Pay: {{ request('partner') }}
+                    <a href="{{ request()->fullUrlWithQuery(['partner' => null]) }}" class="remove-filter" data-filter="action_type"><span class="ml-2">✕</span></a>
+                </span>
+            @endif
+
+            @if($selectedProducts->isNotEmpty())
+                @php $p = $selectedProducts->first(); @endphp
+                <span class="badge badge-dark ml-2">
+                    Tour: {{ $p->title }}
+                    <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['product' => null]) }}">✕</a>
+                </span>
+            @endif
+
+            {{-- Excluded Tours --}}
+            @foreach($excludedProducts as $ep)
+                <span class="badge badge-dark ml-2">
+                    Excluded: {{ $ep->title }}
+                    <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery([
+                        'exclude_product' => collect(request('exclude_product'))
+                            ->reject(fn($id) => $id == $ep->id)
+                            ->values()
+                            ->all(),
+                    ]) }}">✕</a>
+                </span>
+            @endforeach
+
         </div>
     @endif
 </div>
@@ -782,318 +836,145 @@
                             <br>
                     
 
-    {{-- No --}}
-    <td>{{ $row['no'] ?? '' }}</td>
-
-    {{-- Order --}}
-    <td >
-
-        <strong>
-            <a href="{{ route('admin.orders.edit', encrypt($row['order_id'])) }}" target="_blank">
-                {{ $row['order_number'] }}
-            </a>
-        </strong>
-
-        <br>
-
-        <small class="text-muted">
-            Order :
-            {{ \Carbon\Carbon::parse($row['order_date'])->format('Y-m-d') }}
-        </small>
-
-        <br>
-
-        <small>
-            Fulfilment :
-            {{ $row['fulfilment_date'] }}
-        </small>
-
-    </td>
-
-    {{-- Customer --}}
-    <td>
-
-        <strong>{{ $row['customer_name'] }}</strong>
-
-        <br>
-
-        <small>
-            Adult :
-            {{ $row['adult'] }}
-            |
-            Child :
-            {{ $row['child'] }}
-            |
-            Infant :
-            {{ $row['infant'] }}
-            |
-            Senior :
-            {{ $row['senior'] }}
-        </small>
-
-        <br>
-
-        <small>
-            Qty :
-            {{ $row['adult'] + $row['child'] + $row['infant'] + $row['other'] + $row['senior'] }}
-        </small>
-
-        <br>
-
-        
-
-    </td>
-    <td class="product-name" style="word-wrap: ;">
-            {{ $row['product_name'] }}
-
-    </td>
-
-    <td align="right">{{ number_format_with_currency($row['product_price'],2) }}</td>
-
-    <td align="right">{{ number_format_with_currency($row['extra_amount'],2) }}</td>
-
-    <td align="right">{{ number_format_with_currency($row['tax_amount'],2) }}</td>
-
-    <td align="right">{{ number_format_with_currency($row['discount_amount'],2) }}</td>
-
-    <td class="col-total" align="right">{{ number_format_with_currency($row['customer_total'],2) }} 
-
-    @if($row['excluded_commission_payment'] > 0)
-      <p class="text-danger">(<small>{{$row['customer_total'] + $row['excluded_commission_payment'] }}  - {{$row['excluded_commission_payment']}}</small>)</p>
-    @endif
-
-  </td>
-    <!-- <td align="right">{{ number_format_with_currency($row['exclude_total'],2) }}  </td> -->
-
-    <td align="right">{{ $row['excluded_balance_amount'] ? number_format_with_currency($row['excluded_balance_amount'],2) :  number_format_with_currency($row['balance_amount'],2) }}</td>
-
-    <!-- <td align="right">{{ number_format_with_currency($row['transport_cost'],2) }}</td> -->
-
-    <td align="right">{{ number_format_with_currency($row['tour_selling_price'],2) }}</td>
-    <td align="right">{{ number_format_with_currency($row['tour_extra_included_price'],2) }} </td>
-    <td align="right">{{ number_format_with_currency($row['tour_extra_excluded_price'],2) }} </td>
-    <!-- <td align="right"> Extra Excluded</td> -->
-
-    <td align="right">{{ number_format_with_currency($row['tour_selling_tax'],2) }}</td>
-
-    <!-- <td align="right">0</td> -->
-
-    <td class="col-total" align="right">
-        {{ number_format_with_currency(($row['tour_selling_total'] + $row['transport_cost']),2) }}
-    </td>
-
-    <td class="col-profit" align="right">
-
-        @if($row['customer_total'] == 0)
-            0
-        @else
-           {{ number_format_with_currency(($row['customer_total'] - $row['balance_amount'] - $row['tour_selling_total'] - $row['transport_cost']),2) }}
-        @endif
-    </td>
-
-    <td>@foreach($addonKeys as $key)
-
-
-
-
-<!-- <td > -->
-
-    @if(
-        !empty($row[$key.'_desc']) ||
-        !empty($row[$key.'_quant']) ||
-        !empty($row[$key.'_price']) ||
-        !empty($row[$key.'_tax']) ||
-        !empty($row[$key.'_fee']) ||
-        !empty($row[$key.'_total'])
-    )
-        @php
-
-
-          $totalAddonQnty += $row[$key.'_quant'];
-          $totalAddonPrice += $row[$key.'_total'];
-
-        @endphp
-        <strong>{{ $row[$key.'_desc'] ?? '-' }}</strong><br>
-
-        Qty :
-        {{ $row[$key.'_quant'] ?? 0 }} |
-
-        <!-- <br> -->
-
-        <!-- Price :
-        {{ number_format_with_currency($row[$key.'_price'] ?? 0,2) }} --> 
-
-        Total :
-        <strong>
-            {{ number_format_with_currency($row[$key.'_total'] ?? 0,2) }}
-        </strong>
-        <br>
-   
-
-    @endif
-
-<!-- </td> -->
-
-@endforeach</td>
-
-
-    {{-- Dynamic Addons --}}
-
-</tr>
-
-
-    @empty
-    <tr>
-        <td colspan="{{ 8 + (count($addonKeys) * 5) }}" class="text-center">
-            No Data Found
-        </td>
-    </tr>
-    @endforelse
-    @if($rows)
-    <tr style="background:#eef2f7;font-weight:700;">
-    <td colspan="4" style="position: sticky;
-    background: #fff;
-    z-index: 50;">Grand Total</td>
-
-
-    <td align="right">{{ number_format_with_currency($totals['product_price'],2) }}</td>
-    <td align="right">{{ number_format_with_currency($totals['extra_amount'],2) }}</td>
-    <td align="right">{{ number_format_with_currency($totals['tax_amount'],2) }}</td>
-    <td align="right">{{ number_format_with_currency($totals['discount_amount'],2) }}</td>
-    <td class="col-total" align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
-    <!-- <td align="right">{{ number_format_with_currency($totals['exclude_total'],2) }}</td> -->
-    <td align="right">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>
-    <!-- <td align="right">{{ number_format_with_currency($totals['transport_cost'],2) }}</td> -->
-    <td align="right">{{ number_format_with_currency($totals['tour_selling_price'],2) }}</td>
-    <td align="right">{{ number_format_with_currency($totals['tour_extra_included_price'],2) }} </td>
-    <td align="right">{{ number_format_with_currency($totals['tour_extra_excluded_price'],2) }} </td>
-    <td align="right">{{ number_format_with_currency($totals['tour_selling_tax'],2) }}</td>
-
-    <!-- <td align="center">-</td> -->
-
-    <td class="col-total" align="right">{{ number_format_with_currency($totals['net_total'],2) }}</td>
-
-    <td class="col-profit" align="right">{{ number_format_with_currency($totals['profit'] - $totals['balance_amount'],2) }}</td>
-
-    <td>
-    <strong>Qty:</strong>
-    {{ $totalAddonQnty }}
-
-    <!-- <br> -->
-
-    <!-- <strong>Price:</strong> -->
-    <!-- {{ number_format_with_currency($totals['addonTotals']['price'], 2) }} -->
-
-    <br>
-
-    <strong>Total:</strong>
-    {{ number_format_with_currency($totalAddonPrice, 2) }}
-</td>
-</tr>
-
-
-
-
-
-@endif
-</tbody>
-@if($rows)
-<tfoot class="table-footer">
-
-
-        <tr class="summary-total">
-            <td colspan="4" class="summary-label">
-                Total Product Amount
-            </td>
-
-            <td align="right">
-                {{ number_format_with_currency($totals['customer_total'],2) }}
-            </td>
-
-            <td colspan="13"></td>
-        </tr>
-        <tr class="summary-total">
-            <td colspan="4" class="summary-label">
-                Total Pending Balance
-            </td>
-
-            <td align="right">
-                {{ number_format_with_currency($totals['balance_amount'],2) }}
-            </td>
-
-            <td colspan="13"></td>
-        </tr>
-        <!-- @foreach($businessExpense['expenses'] as $expense)
-        <tr class="summary-expense">
-            <td colspan="4" class="summary-label">
-                {{ ucwords($expense->category) }}
-            </td>
-
-            <td align="right">
-                {{ number_format_with_currency($expense->amount,2) }}
-            </td>
-
-            <td colspan="13"></td>
-        </tr>
-        @endforeach -->
-        <tr class="summary-total">
-            <td colspan="4" class="summary-label">
-                Supplier Total Expense
-            </td>
-
-            <td align="right">
-               {{ number_format_with_currency($totals['net_total'],2) }}
-            </td>
-
-            <td colspan="13"></td>
-        </tr>
-
-        <tr class="summary-total">
-            <td colspan="4" class="summary-label">
-                Total Ads Expense
-            </td>
-
-            <td align="right">
-                {{ number_format_with_currency($businessExpense['total'],2) }}
-            </td>
-
-            <td colspan="13"></td>
-        </tr>
-        
-
-        <!-- <tr class="summary-net">
-            <td colspan="4" class="summary-label">
-                Total Expense <small>(Supplier Total + Ads Expense)</small>
-            </td>
-
-            <td align="right">
-                {{ number_format_with_currency($totals['net_total'] + $businessExpense['total'],2) }}
-            </td>
-
-            <td colspan="13"></td>
-        </tr> -->
-
-        <tr class="summary-profit">
-            <td colspan="4" class="summary-label">
-                Final Profit <small>(Customer Total - Expenses)</small>
-            </td>
-
-            <td align="right">
-                {{ number_format_with_currency(
-                    $totals['customer_total']- $totals['balance_amount'] - ($totals['net_total'] + $businessExpense['total']),
-                    2
-                ) }}
-            </td>
-
-            <td colspan="13"></td>
-        </tr>
-    </tfoot>
-    @endif
-          </table>
-
-
-          {{-- PAGINATION --}}
-          @if($orders instanceof \Illuminate\Contracts\Pagination\Paginator)
+                        @endif
+
+                        <!-- </td> -->
+
+                        @endforeach
+                    </td>
+
+                </tr>
+
+                @empty
+                <tr>
+                    <td colspan="{{ 8 + (count($addonKeys) * 5) }}" class="text-center">
+                        No Data Found
+                    </td>
+                </tr>
+                @endforelse
+
+                @if($rows)
+                    <tr style="background:#eef2f7;font-weight:700;">
+                        <td colspan="4" style="position: sticky; background: #fff; z-index: 50;">Grand Total</td>
+                        <td align="right">{{ number_format_with_currency($totals['product_price'],2) }}</td>
+                        <td align="right">{{ number_format_with_currency($totals['extra_amount'],2) }}</td>
+                        <td align="right">{{ number_format_with_currency($totals['tax_amount'],2) }}</td>
+                        <td align="right">{{ number_format_with_currency($totals['discount_amount'],2) }}</td>
+                        <td align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
+                        <!-- <td align="right">{{ number_format_with_currency($totals['exclude_total'],2) }}</td> -->
+                        <td align="right">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>
+                        <!-- <td align="right">{{ number_format_with_currency($totals['transport_cost'],2) }}</td> -->
+                        <td align="right">{{ number_format_with_currency($totals['tour_selling_price'],2) }}</td>
+                        <td align="right">{{ number_format_with_currency($totals['tour_extra_included_price'],2) }} </td>
+                        <td align="right">{{ number_format_with_currency($totals['tour_extra_excluded_price'],2) }} </td>
+                        <td align="right">{{ number_format_with_currency($totals['tour_selling_tax'],2) }}</td>
+
+                        <!-- <td align="center">-</td> -->
+
+                        <td align="right">{{ number_format_with_currency($totals['net_total'],2) }}</td>
+
+                        <td align="right">{{ number_format_with_currency($totals['profit'],2) }}</td>
+
+                        <td>
+                            <strong>Qty:</strong>
+                            {{ $totalAddonQnty }}
+
+                            <!-- <br> -->
+
+                            <!-- <strong>Price:</strong> -->
+                            <!-- {{ number_format_with_currency($totals['addonTotals']['price'], 2) }} -->
+
+                            <br>
+
+                            <strong>Total:</strong>
+                            {{ number_format_with_currency($totalAddonPrice, 2) }}
+                        </td>
+                    </tr>
+                @endif
+            </tbody>
+            @if($rows)
+            <tfoot class="table-footer">
+
+                <tr class="summary-total">
+                    <td colspan="4" class="summary-label">
+                        Total Customer Total
+                    </td>
+
+                    <td align="right">
+                        {{ number_format_with_currency($totals['customer_total'],2) }}
+                    </td>
+
+                    <td colspan="13"></td>
+                </tr>
+                @foreach($businessExpense['expenses'] as $expense)
+                <tr class="summary-expense">
+                    <td colspan="4" class="summary-label">
+                        {{ ucwords($expense->category) }}
+                    </td>
+
+                    <td align="right">
+                        {{ number_format_with_currency($expense->amount,2) }}
+                    </td>
+
+                    <td colspan="13"></td>
+                </tr>
+                @endforeach
+
+                <tr class="summary-total">
+                    <td colspan="4" class="summary-label">
+                        Total Ads Expense
+                    </td>
+
+                    <td align="right">
+                        {{ number_format_with_currency($businessExpense['total'],2) }}
+                    </td>
+
+                    <td colspan="13"></td>
+                </tr>
+                <tr class="summary-total">
+                    <td colspan="4" class="summary-label">
+                        Supplier Total Expense
+                    </td>
+
+                    <td align="right">
+                    {{ number_format_with_currency($totals['net_total'],2) }}
+                    </td>
+
+                    <td colspan="13"></td>
+                </tr>
+
+                <tr class="summary-net">
+                    <td colspan="4" class="summary-label">
+                        Total Expense <small>(Supplier Total + Ads Expense)</small>
+                    </td>
+
+                    <td align="right">
+                        {{ number_format_with_currency($totals['net_total'] + $businessExpense['total'],2) }}
+                    </td>
+
+                    <td colspan="13"></td>
+                </tr>
+
+                <tr class="summary-profit">
+                    <td colspan="4" class="summary-label">
+                        Final Profit <small>(Customer Total - Expenses)</small>
+                    </td>
+
+                    <td align="right">
+                        {{ number_format_with_currency(
+                            $totals['customer_total'] - ($totals['net_total'] + $businessExpense['total']),
+                            2
+                        ) }}
+                    </td>
+
+                    <td colspan="13"></td>
+                </tr>
+            </tfoot>
+            @endif
+        </table>
+
+        {{-- PAGINATION --}}
+        @if($orders instanceof \Illuminate\Contracts\Pagination\Paginator)
             <div class="text-center">
                 {{ $orders->links() }}
             </div>

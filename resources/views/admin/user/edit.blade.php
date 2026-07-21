@@ -71,25 +71,37 @@
 
                 {{-- ===== USER BASIC INFO ===== --}}
                 <div class="row">
-                    <div class="col-lg-6">
-                        <label>Name* </label>
-                        <input type="text" class="form-control" name="name" required value="{{ $user->name }}">
-                        <x-error>name</x-error>
+                    <div class="col-lg-4">
+                        <label>First Name* </label>
+                        <input type="text" class="form-control" name="first_name" required value="{{ $user->first_name ?? $user->name }}" placeholder="eg: John">
+                        <x-error>first_name</x-error>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
+                        <label>Last Name* </label>
+                        <input type="text" class="form-control" name="last_name" required value="{{ $user->last_name }}" placeholder="eg: Roy">
+                        <x-error>last_name</x-error>
+                    </div>
+
+                    <div class="col-lg-4">
                         <label>Email*</label>
-                        <input type="email" class="form-control" name="email" required value="{{ $user->email }}">
+                        <input type="email" class="form-control" name="email" required value="{{ $user->email }}" placeholder="eg: johnroy@example.com">
                         <x-error>email</x-error>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
+                        <label>Phone*</label>
+                        <input type="text" class="form-control" name="phone" required value="{{ $user->phone }}" placeholder="eg: +1 416-456-1234">
+                        <x-error>phone</x-error>
+                    </div>
+
+                    <div class="col-lg-4">
                         <label>Password</label>
                         <input type="password" class="form-control" name="password">
                         <x-error>password</x-error>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
                         <label>Role*</label>
                         <select name="role" id="role" class="form-control" required>
                             <option value="" disabled>Select role</option>
@@ -103,6 +115,7 @@
                         </select>
                         <x-error>role</x-error>
                     </div>
+                    
                     <div class="col-lg-6 mt-3">
                         <div class="form-group">
                             <label class="form-label d-block mb-2">Email Notification:</label>

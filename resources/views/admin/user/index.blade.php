@@ -4,11 +4,11 @@
         <div class="card-header suppliers-head">
             <div class="row">
                 <div class="col-md-8 col-6">
-                    <h3 class="card-title">User Table</h3>
+                    <h3 class="card-title">Users</h3>
                 </div>
                 <div class="col-md-4 col-6">
                     <div class="card-tools">
-                        <a href="{{ route('admin.user.create') }}" class="btn btn-sm btn-success"> + Add Users</a>
+                        <a href="{{ route('admin.user.create') }}" class="btn btn-sm btn-success"> + Add User</a>
                     </div>
                 </div>
             </div>
@@ -44,17 +44,44 @@
             </div>
         </form>
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped" id="userTable">
-                    <thead>
+            <table class="table table-striped" id="userTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Role</th>
+                        <th>Created</th>
+                        <th>Action</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($data as $user)
                         <tr>
-                            <th>#</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Created</th>
-                            <th>Action</th>
-                            <th></th>
+                            <td>{{ $user->id }}</td>
+                            <td>{{ $user->name }}</td>
+                            <td>{{ $user->email }}</td>
+                            <td>{{ $user->phone }}</td>
+                            <td>{{ $user->role }}</td>
+                            <td>{{ $user->created_at }}</td>
+                            <td>
+                                <a href="{{ route('admin.user.edit', encrypt($user->id)) }}" class="btn btn-sm btn-edit"><i class="far fa-edit"></i></a>
+                            </td>
+                            <td>
+                                
+
+                                <form action="{{ route('admin.user.destroy', encrypt($user->id)) }}"
+                                          method="POST"
+                                          class="delete-form">
+                                        @method('DELETE')
+                                        @csrf
+                                        <button type="button" class="btn btn-danger delete-btn">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                            </td>
                         </tr>
                     </thead>
                     <tbody>

@@ -48,6 +48,16 @@
     <div class="collapse navbar-collapse" id="navbarCollapse">
         <ul class="navbar-nav ml-auto" id="mainNavbarActions">
 
+        <li>
+            <form method="GET" action="{{ route('admin.orders.index') }}">
+                <div class="search-options" style="display:flex;width: 407px;    margin-top: 5px;">
+                    <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name/Email" value="{{ request('search') }}" style="margin-bottom:0">
+                    <button type="submit" class="btn btn-warning" style="width: 132px;
+margin-left: 5px;"> <i class="fas fa-search"></i> Search</button>
+                </div>
+            </form>
+        </li>
+
             {{-- Notifications Dropdown --}}
             @php
                 use App\Models\Notification;

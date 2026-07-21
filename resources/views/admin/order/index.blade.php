@@ -1,56 +1,85 @@
 <x-admin>
     <style>
-        body.sidebar-open {
-            overflow: hidden;
-        }
         .text-orange {
             color: #fd7e14;
         }
-
-        .select2-container--default .select2-selection--multiple .select2-selection__choice {
-            background-color: #fd7e14;
-            border: none;
-            color: #fff;
-            border-radius: 12px;
-            padding: 2px 8px;
-            margin: 0;
-            line-height: 1.6;
+        .filter-panel {
+            display: none;
+            animation: fadeSlide 0.3s ease-in-out;
         }
 
-        #excludeProductFilter + .select2-container .select2-selection--multiple .select2-selection__choice {
-            background-color: #dc3545; /* red for excluded, orange for included */
-        }
-
-        @media(min-width:767px) {
-
-            .daterangepicker.show-calendar {
-                top: 245px !important;
-                left: auto;
-                right: 430px !important;
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
             }
-
-            .daterangepicker.show-calendar:before,
-            .daterangepicker.show-calendar:after {
-                left: 595px;
-                border-bottom-color: #999;
-                rotate: 90deg;
-                top: 200px;
-            }
-
-            .daterangepicker.show-calendar:nth-of-type(2):before,
-            .daterangepicker.show-calendar:nth-of-type(2):after {
-                top: 140px;
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
+        /* Single & Multiple same height */
 
-        @media(max-width:767px) {
+.select2-container--default .select2-selection--multiple {
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    min-height: calc(2.25rem + 2px);
+    padding: .25rem .35rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #fd7e14;
+    border: none;
+    color: #fff;
+    border-radius: 12px;
+    padding: 2px 8px;
+    margin: 0;
+    line-height: 1.6;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #fff;
+    margin-right: 6px;
+    font-weight: bold;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #ffe0c2;
+}
+#excludeProductFilter + .select2-container .select2-selection--multiple .select2-selection__choice {
+    background-color: #dc3545; /* red for excluded, orange for included */
+}
+.select2-container--default .select2-search--inline .select2-search__field {
+    margin-top: 2px;
+}
 
-            .daterangepicker.show-calendar {
-                height: 200px;
-                overflow-y: scroll;
-            }
-
-        }
+.select2-container {
+    width: 100% !important;
+}
+.select2-container--default .select2-selection--multiple {
+    border: 1px solid #ced4da !important;
+    border-radius: .25rem;
+    min-height: calc(2.25rem + 2px);
+    padding: .25rem .35rem;
+    background-color: #fff;
+}
+.select2-selection__rendered {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 !important;
+}
+.select2-search--inline .select2-search__field {
+    margin-top: 4px !important;
+    border: none !important;
+    outline: none !important;
+}
 
     </style>
     @section('title', 'Orders List')
@@ -60,13 +89,17 @@
             <div class="row">
                 <div class="col-md-6 col-6">
                     <form method="GET" action="{{ route('admin.orders.index') }}">
-                        <input type="text" name="search" class="form-control" placeholder="Order ID/Customer First/Last Name/Email and press Enter button" value="{{ request('search') }}">
+                        <div class="search-options" style="display:flex">
+                            <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name/Email" value="{{ request('search') }}" style="margin-bottom:0">
+                            <button type="submit" class="btn btn-warning" style="width: 132px;
+    margin-left: 5px;"> <i class="fas fa-search"></i> Search</button>
+                        </div>
                     </form>
                 </div>
                 <div class="col-md-6 col-6">
                     <div class="card-tools">
                         <button type="button" class="btn btn-secondary" id="toggleFilter">
-                            <i class="fas fa-filter"></i> More Filters
+                            <i class="fas fa-filter"></i> Filters
                         </button>
                     </div>
                 </div>
@@ -80,159 +113,144 @@
         @endphp
 
         {{-- Filter/Search Form --}}
-        <div class="tour-search-filter">
-            <div id="filterSidebar" class="filter-sidebar">
-                <div class="filter-header">
-                    <h5><i class="fas fa-filter"></i> Filters</h5>
-                    <button type="button" id="closeFilter">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
+        <form method="GET" action="{{ route('admin.orders.index') }}">
+            <div class="filter-panel" id="filterPanel">
+                <div class="card-header">
+                    <div class="search-options">
+                        <div class="row">
+                            <div class="col-md-4 col-6">
+                                <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name/Email" value="{{ request('search') }}">
+                            </div>
+                            <!-- <div class="col-md-4 col-6">
+                                <select name="product" class="form-control aiz-selectpicker" data-live-search="true">
+                                    <option value="">Select Tour</option>
+                                    @foreach ($products->sortBy('title') as $product)
+                                        <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>{{ $product->title }}</option>
+                                    @endforeach
+                                </select>
+                            </div> -->
+                            <div class="col-md-4 col-6">
+                                <select id="productFilter" name="product[]" class="form-control" multiple>
+                                    @foreach($selectedProducts as $sp)
+                                        <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
+                                    @foreach($excludedProducts as $ep)
+                                        <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="payment_status" class="form-control" >
+                                    <option value="">Payment Status</option>
+                                    <option value="1" {{ request('payment_status') === '1' ? 'selected' : '' }}>Paid</option>
+                                    <option value="0" {{ request('payment_status') === '0' ? 'selected' : '' }}>Unpaid</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="order_status" class="form-control" >
+                                    <option value="">Order Status</option>
+                                    @foreach ($statuses as $key => $label)
+                                    <option value="{{ $key }}" {{ request('order_status') == $key ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
 
-                <form method="GET" action="{{ route('admin.orders.index') }}">
-                    <div class="filter-body">
-                        <div class="search-options">
-                            <div class="row">
-                                <div class="col-md-12 col-12">
-                                    <input type="text" name="search" class="form-control" placeholder="Order # / Customer First / Last Name / Email" value="{{ request('search') }}">
-                                </div>
-                                <!-- <div class="col-md-4 col-6">
-                                    <select name="product" class="form-control aiz-selectpicker" data-live-search="true">
-                                        <option value="">Select Tour</option>
-                                        @foreach ($products->sortBy('title') as $product)
-                                            <option value="{{ $product->id }}" {{ request('product') == $product->id ? 'selected' : '' }}>{{ $product->title }}</option>
-                                        @endforeach
-                                    </select>
-                                </div> -->
-                                <div class="col-md-12 col-12">
-                                    <select id="productFilter" name="product[]" class="form-control" multiple>
-                                        @foreach($selectedProducts as $sp)
-                                            <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-12 col-12">
-                                    <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
-                                        @foreach($excludedProducts as $ep)
-                                            <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-12 col-12">
-                                    <select name="payment_status" class="form-control" >
-                                        <option value="">Payment Status</option>
-                                        <option value="1" {{ request('payment_status') === '1' ? 'selected' : '' }}>Paid</option>
-                                        <option value="0" {{ request('payment_status') === '0' ? 'selected' : '' }}>Unpaid</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-12 col-12">
-                                    <select name="order_status" class="form-control" >
-                                        <option value="">Order Status</option>
-                                        @foreach ($statuses as $key => $label)
-                                        <option value="{{ $key }}" {{ request('order_status') == $key ? 'selected' : '' }}>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                            <div class="col-md-2 col-6"> 
+                                <input 
+                                    type="text" 
+                                    name="tour_start_date" 
+                                    class="form-control aiz-date-range" 
+                                    data-advanced-range="true" 
+                                    data-separator=" - " 
+                                    data-show-dropdown="true"
+                                    data-tomorrow="true"
+                                    data-yesterday="false"
+                                    placeholder="Filter by Tour Date"
+                                    autocapitalize="off" autocomplete="off" 
 
-                                <div class="col-md-12 col-12"> 
-                                    <input 
-                                        type="text" 
-                                        name="tour_start_date" 
-                                        class="form-control aiz-date-range" 
-                                        data-advanced-range="true" 
-                                        data-separator=" - " 
-                                        data-show-dropdown="true"
-                                        data-tomorrow="true"
-                                        data-yesterday="false"
-                                        placeholder="Filter by Tour Date"
-                                        autocapitalize="off" autocomplete="off" 
+                                    value="{{ request('tour_start_date') }}"
+                                >
+                            </div> 
 
-                                        value="{{ request('tour_start_date') }}"
-                                    >
-                                </div> 
+                            <div class="col-md-2 col-6"> 
+                                <input 
+                                    type="text" 
+                                    name="order_created_date" 
+                                    class="form-control aiz-date-range" data-advanced-range="true" data-separator=" - " data-show-dropdown="true"
+                                    placeholder="Filter by Order Created"
+                                    autocapitalize="off" autocomplete="off" 
+                                    value="{{ request('order_created_date') }}"
+                                >
+                            </div> 
+                            
+                            <?php /* <div class="col-md-2 col-6">
+                                <select name="date_filter" class="form-control" >
+                                    <option value="">Filter by Order Created</option>
+                                    <option value="today" {{ request('date_filter') == 'today' ? 'selected' : '' }}>Today</option>
+                                    <option value="yesterday" {{ request('date_filter') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
+                                    <option value="last_7" {{ request('date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
+                                    <option value="last_15" {{ request('date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
+                                    <option value="this_month" {{ request('date_filter') == 'this_month' ? 'selected' : '' }}>This Month</option>
+                                    <option value="last_90" {{ request('date_filter') == 'last_90' ? 'selected' : '' }}>Last 90 Days</option>
+                                    <option value="last_6_months" {{ request('date_filter') == 'last_6_months' ? 'selected' : '' }}>Last 6 Months</option>
+                                    <option value="this_year" {{ request('date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="tour_date_filter" class="form-control" >
+                                    <option value="">All Tour Dates</option>
+                                    <option value="today" {{ request('tour_date_filter') == 'today' ? 'selected' : '' }}>Today</option>
 
-                                <div class="col-md-12 col-12"> 
-                                    <input 
-                                        type="text" 
-                                        name="order_created_date" 
-                                        class="form-control aiz-date-range" data-advanced-range="true" data-separator=" - " data-show-dropdown="true"
-                                        placeholder="Filter by Order Created"
-                                        autocapitalize="off" autocomplete="off" 
-                                        value="{{ request('order_created_date') }}"
-                                    >
-                                </div> 
+                                    <option value="yesterday" {{ request('tour_date_filter') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
+
+                                    <option value="last_7" {{ request('tour_date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
+                                    <option value="last_15" {{ request('tour_date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
+                                    <option value="this_month" {{ request('tour_date_filter') == 'this_month' ? 'selected' : '' }}>This Month</option>
+                                    <option value="last_90" {{ request('tour_date_filter') == 'last_90' ? 'selected' : '' }}>Last 90 Days</option>
+                                    <option value="last_6_months" {{ request('tour_date_filter') == 'last_6_months' ? 'selected' : '' }}>Last 6 Months</option>
+                                    <option value="this_year" {{ request('tour_date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
+                                </select>
+                            </div> */ ?>
+
+                            <div class="col-md-2 col-6">
+                                <select name="source" class="form-control">
+                                    <option value="">Source</option>
+
+                                    @foreach (source_list_db() as $source)
+                                        <option value="{{ $source->key }}"
+                                            {{ request('source') == $source->key ? 'selected' : '' }}>
+                                            {{ $source->name }}
+                                        </option>
+                                    @endforeach
+
+                                </select>
+                            </div>
+
+                            <div class="col-md-2 col-6">
+                                <select name="per_page" class="form-control">
+                                    @foreach ([10, 25, 50, 100, 500] as $number)
+                                        <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                            {{ $number }} per page
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                                 
-                                <?php 
-                                    /* <div class="col-md-2 col-6">
-                                        <select name="date_filter" class="form-control" >
-                                            <option value="">Filter by Order Created</option>
-                                            <option value="today" {{ request('date_filter') == 'today' ? 'selected' : '' }}>Today</option>
-                                            <option value="yesterday" {{ request('date_filter') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
-                                            <option value="last_7" {{ request('date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
-                                            <option value="last_15" {{ request('date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
-                                            <option value="this_month" {{ request('date_filter') == 'this_month' ? 'selected' : '' }}>This Month</option>
-                                            <option value="last_90" {{ request('date_filter') == 'last_90' ? 'selected' : '' }}>Last 90 Days</option>
-                                            <option value="last_6_months" {{ request('date_filter') == 'last_6_months' ? 'selected' : '' }}>Last 6 Months</option>
-                                            <option value="this_year" {{ request('date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2 col-6">
-                                        <select name="tour_date_filter" class="form-control" >
-                                            <option value="">All Tour Dates</option>
-                                            <option value="today" {{ request('tour_date_filter') == 'today' ? 'selected' : '' }}>Today</option>
-
-                                            <option value="yesterday" {{ request('tour_date_filter') == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
-
-                                            <option value="last_7" {{ request('tour_date_filter') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
-                                            <option value="last_15" {{ request('tour_date_filter') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
-                                            <option value="this_month" {{ request('tour_date_filter') == 'this_month' ? 'selected' : '' }}>This Month</option>
-                                            <option value="last_90" {{ request('tour_date_filter') == 'last_90' ? 'selected' : '' }}>Last 90 Days</option>
-                                            <option value="last_6_months" {{ request('tour_date_filter') == 'last_6_months' ? 'selected' : '' }}>Last 6 Months</option>
-                                            <option value="this_year" {{ request('tour_date_filter') == 'this_year' ? 'selected' : '' }}>This Year</option>
-                                        </select>
-                                    </div> */ 
-                                ?>
-
-                                <div class="col-md-12 col-12">
-                                    <select name="source" class="form-control">
-                                        <option value="">Source</option>
-
-                                        @foreach (source_list_db() as $source)
-                                            <option value="{{ $source->key }}"
-                                                {{ request('source') == $source->key ? 'selected' : '' }}>
-                                                {{ $source->name }}
-                                            </option>
-                                        @endforeach
-
-                                    </select>
-                                </div>
-
-                                <div class="col-md-12 col-12">
-                                    <select name="per_page" class="form-control">
-                                        @foreach ([10, 25, 50, 100, 500] as $number)
-                                            <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                                                {{ $number }} per page
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                            <div class="col-md-2 col-6">
+                                <button type="submit" class="btn btn-search"> <i class="fas fa-search"></i> Search</button>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <a href="{{ route('admin.orders.index') }}" class="btn btn-clear" > <i class="fas fa-times"></i> Clear Search</a>
                             </div>
                         </div>
                     </div>
-                    <div class="filter-footer">
-                        <button type="submit" class="btn btn-search">
-                            <i class="fas fa-search"></i> Search
-                        </button>
-
-                        <a href="{{ route('admin.orders.index') }}" class="btn btn-clear">
-                            <i class="fas fa-times"></i> Clear Search
-                        </a>
-                    </div>
-                </form>
-                
+                </div>
             </div>
-            <div id="filterOverlay"></div>
-        </div>
+        </form>
 
         @php
             $hasActiveFilters =
@@ -247,7 +265,7 @@
         @endphp
 
         @if($hasActiveFilters)
-        <div class="active-filters">
+        <div class="active-filters m-0">
             <div class="d-flex flex-wrap gap-2">
 
                 {{-- Search --}}
@@ -398,7 +416,7 @@
                 @endif
             @endif
             
-            <div class="card-body p-0 order-table table-responsive">
+ <div class="card-body p-0 order-table table-responsive">
                 <table class="table table-striped" id="OrderTable" style="width:100%;">
                     <thead>
                         <tr>
@@ -584,23 +602,42 @@
 
                                 <td>
 
+                                    @php
+    $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
 
+    $isExcludedSource = in_array(
+        strtolower($order->source ?? ''),
+        $excludedPaymentSources
+    );
 
+    $hasCommission = $order->payments
+        ->where('payment_type', 'COMMISSION')
+        ->isNotEmpty();
+@endphp
 
+@if($isExcludedSource && $hasCommission)
+    @php
+        $excludedCommissionPayment = $order->payments
+            ->where('payment_type', 'EXCLUDED')
+            ->sum('amount');
 
-                                <span class="{{ $amountClass }}">
+        $totalPaymentAmount = $order->payments
+            ->where('status', 'succeeded')
+            ->sum('amount') - $excludedCommissionPayment;
+    @endphp
 
-                                        @if($amountClass == 'text-danger')
-
-                                            {{ price_format_with_currency($balance, $order->currency) }}
-
-                                        @else
-
-                                            {{ price_format_with_currency($order->total_amount, $order->currency) }}
-
-                                        @endif
-
-                                    </span>
+    <span class="text-success">
+        {{ price_format_with_currency($totalPaymentAmount, $order->currency) }}
+    </span>
+@else
+    <span class="{{ $amountClass }}">
+        @if($amountClass == 'text-danger')
+            {{ price_format_with_currency($balance, $order->currency) }}
+        @else
+            {{ price_format_with_currency($order->total_amount, $order->currency) }}
+        @endif
+    </span>
+@endif
                                 <br>
                                 <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "N/A" }}</span>
                                 
@@ -674,6 +711,7 @@
         </form>
     </div>
 
+
     <div id="importOrderModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-md modal-dialog-centered">
             <div class="modal-content">
@@ -710,32 +748,24 @@
 
     @section('js')
     <script>
-        $('#toggleFilter').click(function () {
+        let filterOpen = false;
 
-            $('#filterSidebar').addClass('show');
+        $('#toggleFilter').on('click', function () {
+            $('#filterPanel').slideToggle(250);
 
-            $('#filterOverlay').addClass('show');
+            filterOpen = !filterOpen;
 
-            $('body').addClass('sidebar-open');
-
-            $(this)
-                .removeClass('btn-secondary')
-                .addClass('btn-danger')
-                .html('<i class="fas fa-times"></i> Filters');
-        });
-
-        $('#closeFilter,#filterOverlay').click(function () {
-
-            $('#filterSidebar').removeClass('show');
-
-            $('#filterOverlay').removeClass('show');
-
-            $('body').removeClass('sidebar-open');
-
-            $('#toggleFilter')
-                .removeClass('btn-danger')
-                .addClass('btn-secondary')
-                .html('<i class="fas fa-filter"></i> Filters');
+            if (filterOpen) {
+                $(this)
+                    .removeClass('btn-secondary')
+                    .addClass('btn-danger')
+                    .html('<i class="fas fa-times"></i> Hide Filters');
+            } else {
+                $(this)
+                    .removeClass('btn-danger')
+                    .addClass('btn-secondary')
+                    .html('<i class="fas fa-filter"></i> Filters');
+            }
         });
     </script>
     <script>
@@ -799,23 +829,22 @@
         // });
 
         function initTourSelect(selector, isMultiple, placeholderText) {
-            $(selector).select2({
-                placeholder: placeholderText,
-                minimumInputLength: 4,
-                multiple: isMultiple,
-                dropdownParent: $('#filterSidebar'),
-                ajax: {
-                    url: '{{ route("admin.tours.tours-list") }}',
-                    dataType: 'json',
-                    delay: 0,
-                    cache: true,
-                    data: params => ({ q: params.term }),
-                    processResults: data => ({
-                        results: data.map(tour => ({ id: tour.id, text: tour.title }))
-                    })
-                }
-            });
+    $(selector).select2({
+        placeholder: placeholderText,
+        minimumInputLength: 4,
+        multiple: isMultiple,
+        ajax: {
+            url: '{{ route("admin.tours.tours-list") }}',
+            dataType: 'json',
+            delay: 0,
+            cache: true,
+            data: params => ({ q: params.term }),
+            processResults: data => ({
+                results: data.map(tour => ({ id: tour.id, text: tour.title }))
+            })
         }
+    });
+}
 
 initTourSelect('#productFilter', true, 'Select Tour');
 initTourSelect('#excludeProductFilter', true, 'Exclude tours');

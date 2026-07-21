@@ -68,15 +68,20 @@
 
                 <div class="row">
                     {{-- ================= BASIC USER INFO ================= --}}
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="name" class="form-label">Name:*</label>
-                            <input type="text" class="form-control" name="name" required value="{{ old('name') }}">
-                            <x-error>name</x-error>
-                        </div>
+
+                    <div class="col-lg-4">
+                        <label>First Name* </label>
+                        <input type="text" class="form-control" name="first_name" required value="{{ old('first_name') }}" placeholder="eg: John">
+                        <x-error>first_name</x-error>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
+                        <label>Last Name* </label>
+                        <input type="text" class="form-control" name="last_name" required value="{{ old('last_name') }}" placeholder="eg: Roy">
+                        <x-error>last_name</x-error>
+                    </div>
+
+                    <div class="col-lg-4">
                         <div class="form-group">
                             <label for="Email" class="form-label">Email:*</label>
                             <input type="email" class="form-control" name="email" required value="{{ old('email') }}">
@@ -84,15 +89,19 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="Password" class="form-label">Password:*</label>
-                            <input type="password" class="form-control" name="password" required>
-                            <x-error>password</x-error>
-                        </div>
+                    <div class="col-lg-4">
+                        <label>Phone*</label>
+                        <input type="text" class="form-control" name="phone" required value="{{ old('phone') }}" placeholder="eg: +1 416-456-1234">
+                        <x-error>phone</x-error>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
+                        <label>Password</label>
+                        <input type="password" class="form-control" name="password">
+                        <x-error>password</x-error>
+                    </div>
+
+                    <div class="col-lg-4">
                         <div class="form-group">
                             <label for="role" class="form-label">Role:*</label>
                             <select name="role" id="role" class="form-control" required>

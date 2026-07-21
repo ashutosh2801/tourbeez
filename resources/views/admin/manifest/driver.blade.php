@@ -238,7 +238,7 @@ thead th:first-child {
     position: relative;
 }
 .order-wrapper {border-top: 1px dotted #f9f9f9;line-height: 3rem;}
-.order-wrapper span:first-child {width: 70px; display: inline-block; font-size: 14px;}
+.order-wrapper span:first-child {width: 75px; display: inline-block; font-size: 14px;}
 .order-wrapper span:nth-child(2) {width: 40px; display: inline-block; font-size: 14px;}
 .order-wrapper span:nth-child(3) {width: 65px; display: inline-block; font-size: 14px;}
 .order-wrapper span:nth-child(4) {display: inline-block; font-size: 14px;}
@@ -290,6 +290,95 @@ thead th:first-child {
 }
 .pickup-mail-hidden {
     display: none !important;
+}
+.swal2-container,
+.swal2-popup,
+.swal2-html-container {
+    pointer-events: auto !important;
+}
+
+.swal2-container textarea {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 9999;
+}
+
+/* FIX SweetAlert input blocking */
+.swal2-container {
+    pointer-events: auto !important;
+    z-index: 999999 !important;
+}
+
+.swal2-popup {
+    pointer-events: auto !important;
+}
+
+.swal2-html-container {
+    pointer-events: auto !important;
+}
+
+.swal2-html-container textarea {
+    pointer-events: auto !important;
+    user-select: text !important;
+    z-index: 999999 !important;
+}
+
+/* Passenger itinerary editor */
+.passenger-itinerary-table {
+    width: 100%;
+    min-width: 0 !important;
+    margin-bottom: 0;
+    user-select: auto;
+}
+
+.passenger-itinerary-table th,
+.passenger-itinerary-table td {
+    min-width: 0 !important;
+    white-space: normal;
+}
+
+.passenger-itinerary-table thead th {
+    position: static !important;
+    background: #212529 !important;
+    color: #fff !important;
+    cursor: default;
+    user-select: none;
+}
+
+.passenger-itinerary-table thead th:first-child,
+.passenger-itinerary-table tbody td:first-child {
+    position: static !important;
+    left: auto !important;
+    min-width: 130px !important;
+    width: 130px !important;
+}
+
+.passenger-itinerary-row td {
+    vertical-align: top !important;
+    background: #fff;
+}
+
+.itinerary-drag-handle {
+    cursor: grab !important;
+}
+
+.itinerary-drag-handle:active {
+    cursor: grabbing !important;
+}
+
+.itinerary-sortable-ghost td {
+    opacity: .45;
+    background: #e2e8f0 !important;
+}
+
+.itinerary-sortable-chosen td {
+    box-shadow: inset 0 0 0 2px #94a3b8;
+}
+.passenger-itinerary-row .itinerary-time, 
+.passenger-itinerary-row .itinerary-description {
+    border: 0;
+    color: #000;
+    font-size: 15px;
 }
 </style>
 
@@ -586,37 +675,37 @@ thead th:first-child {
                                                 data-date="{{ $dateKey }}"
                                                 data-orders='@json($cellOrders)'
                                                 data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}"
-                                                data-is-show-mail-button="{{!($nextGroup !== $currentGroup && $currentGroup === 1)}}"
-
+                                                data-isshowmailbutton="{{($currentGroup === 1) ? '0' : '1'}}"
+                                                data-isshowassignbutton="1"
                                                 >                                        
 
-                                        @foreach($cellOrders as $order)
-                                            @if($order['tour_assignable'] != '1')
-                                                @continue
-                                            @endif
-                                            @php
+                                            @foreach($cellOrders as $order)
+                                                @if($order['tour_assignable'] != '1')
+                                                    @continue
+                                                @endif
+                                                @php
 
 
-                                                $driver = !empty($order['driver_names'])
-                                                    ? implode(', ', array_unique($order['driver_names']))
-                                                    : 'NA';
+                                                    $driver = !empty($order['driver_names'])
+                                                        ? implode(', ', array_unique($order['driver_names']))
+                                                        : 'NA';
 
-                                                $vehicle = !empty($order['vehicle_names'])
-                                                    ? implode(', ', array_unique($order['vehicle_names']))
-                                                    : 'NA';
-                                            @endphp
+                                                    $vehicle = !empty($order['vehicle_names'])
+                                                        ? implode(', ', array_unique($order['vehicle_names']))
+                                                        : 'NA';
+                                                @endphp
 
-                                            <div class="order-wrapper">                                            
-                                            <span class="font-bold">{{ $order['order_number'] }}</span>
-                                            -
-                                            <span ><i class="fas fa-users"></i> {{ $order['guest_count'] }}</span>
-                                            -
-                                           <span class="text-success"><i class="fas fa-user-tie"></i>  {{ $driver }}</span>
-                                            -
-                                            <span class="text-primary"><i class="fas fa-shuttle-van"></i> {{ $vehicle }}</span>
-                                            </div>
+                                                <div class="order-wrapper">                                            
+                                                <span class="font-bold">{{ $order['order_number'] }}</span>
+                                                -
+                                                <span ><i class="fas fa-users"></i> {{ $order['guest_count'] }}</span>
+                                                -
+                                                <span class="text-success"><i class="fas fa-user-tie"></i>  {{ $driver }}</span>
+                                                -
+                                                <span class="text-primary"><i class="fas fa-shuttle-van"></i> {{ $vehicle }}</span>
+                                                </div>
 
-                                        @endforeach
+                                            @endforeach
 
                                         </div>
 
@@ -661,7 +750,7 @@ thead th:first-child {
                                         });
 
                                     $groupTotal += $orders->sum('guest_count');
-                                     foreach ($orders as $order) {
+                                    foreach ($orders as $order) {
                                         $groupOrders[] = $order;
                                     }
                                 }
@@ -669,20 +758,18 @@ thead th:first-child {
 
                             <td class="text-center">
                                 <div style="display:flex;gap:10px;align-items:center;">
-                                    <strong>{{ $groupTotal }}</strong>
-
-
-                                        
+                                    <strong>{{ $groupTotal }}</strong>                                        
 
                                         <button
                                             type="button"
                                             id="pickupMailDropdown"
                                             class="btn btn-warning btn-sm manifest-cell {{ $groupTotal ? 'has-orders' : '' }}"
                                                 data-tour="Send Pickup Mail"
-                                                data-date="{{ $_COOKIE['manifest_date'] ?? $date }}"
+                                                data-date="{{ $d->toDateString() }}"
                                                 data-orders='@json($groupOrders ?? [])'
                                                 data-assignable="1"
-                                                data-is-show-mail-button="1"
+                                                data-isshowmailbutton="1"
+                                                data-isshowassignbutton="0"
                                         >
                                             Send Pickup Mail
                                         </button>
@@ -756,12 +843,16 @@ thead th:first-child {
             <div class="modal-body">
                 <input type="hidden" id="modal_date">
 
-                <label class="form-label">Orders - <span class="text-muted" id="modal_date_display"></span></label>
-                <button type="button"
-                        class="btn btn-primary btn-sm"
-                        id="bulkAssignBtn">
-                    Assign Driver & Vehicle to All Orders
-                </button>
+                <div class="flex justify-content-between align-items-center mb-3" style="display:flex">
+                    <label class="form-label">Orders - <span class="text-muted" id="modal_date_display"></span></label>
+                    <div class="pickupAssignWrapper">
+                        <button type="button"
+                                class="btn btn-primary btn-sm"
+                                id="bulkAssignBtn">
+                            Assign Driver & Vehicle to All Orders
+                        </button>
+                    </div>
+                </div>
 
                 <div id="bulkAssignPanel" class="border rounded p-3 mt-3" style="display:none;">
 
@@ -822,6 +913,7 @@ thead th:first-child {
 
             </div>
             <div class="modal-footer ">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <div class="dropdown pickupMailWrapper">
                     <button
                         class="btn btn-warning dropdown-toggle"
@@ -845,9 +937,9 @@ thead th:first-child {
                         </li>
                     </ul>
                 </div>
-
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" id="assignDriver">Assign</button>
+                <div class="pickupAssignWrapper">
+                    <button type="button" class="btn btn-success" id="assignDriver">Assign</button>
+                </div>
             </div>
         </div>
     </div>
@@ -856,6 +948,7 @@ thead th:first-child {
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
@@ -878,7 +971,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ====================================
     // Calendar
     // ====================================
-    if (dateInput) {let me 
+    if (dateInput) {
 
         dateInput.addEventListener('click', function () {
             if (this.showPicker) {
@@ -950,6 +1043,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     updateExportUrl();
 
+    function escapeHtml(text) {
+        if (text === null || text === undefined) {
+            return '';
+        }
+
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     // ====================================
     // Driver Filter
     // ====================================
@@ -1014,7 +1120,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
             const assignable = this.dataset.assignable === '1';
-            const isShowMailButton = this.dataset.isShowMailButton === '1';
+            const isShowMailButton = this.dataset.isshowmailbutton === '1';
+            const isShowAssignButton = this.dataset.isshowassignbutton === '1';
 
 
             if (isShowMailButton) {
@@ -1023,6 +1130,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('.pickupMailWrapper').addClass('pickup-mail-hidden');
             }
 
+            if (isShowAssignButton) {
+                $('.pickupAssignWrapper').removeClass('hidden');
+            } else {
+                $('.pickupAssignWrapper').addClass('hidden');
+            }
 
             const orders = JSON.parse(this.dataset.orders);
             const date = this.dataset.date;
@@ -1050,6 +1162,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // ====================================
             // Render Orders
             // ====================================
+            console.log("Rendering Orders", orders);
 
             orders.forEach(function (o) {
 
@@ -1060,99 +1173,147 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 container.innerHTML += `
 
-                <div class="order-content mb-2 p-2 border rounded"
-                data-assignment-type="${o.assignment_type}">
+                    <div
+                        class="order-content p-2"
+                        data-assignment-type="${o.assignment_type || ''}"
+                        data-tour-id="${o.tour_id || ''}"
+                        data-tour-name="${escapeHtml(o.tour_name || '')}"
+                    >
 
-                <div class="row align-items-center">
+                        <div class="row align-items-center">
 
-                    <!-- Order Details -->
-                    <div class="col-md-2">
+                            <!-- Order Details -->
+                            <div class="col-md-2">
 
-                        <input
-                            type="checkbox"
-                            class="order-checkbox"
-                            value="${o.order_id}" style="width:20px; height:20px;"
-                            checked>
+                                <input
+                                    type="checkbox"
+                                    class="order-checkbox"
+                                    value="${o.order_id}"
+                                    style="width:20px; height:20px;"
+                                    checked
+                                >
 
-                        <a href="${orderUrl}" target="_blank">
-                            <strong>#${o.order_number}</strong>
-                        </a>
+                                <a href="${orderUrl}" target="_blank">
+                                    <strong>
+                                        #${escapeHtml(o.order_number)}
+                                    </strong>
+                                </a>
 
-                        <br>
+                                <br>
 
-                        <small class="text-muted">${o.customer ?? ''}</small>
+                                <small class="text-muted">
+                                    ${escapeHtml(o.customer || '')}
+                                </small>
 
-                        <br>
+                                <br>
 
-                        <small><i class="fas fa-users"></i> ${o.guest_count} Pax            
+                                <small>
+                                    <i class="fas fa-users"></i>
 
-                        <span
-                            class="ml-2 order-info-btn" style="cursor:pointer;"
-                            data-order='${JSON.stringify(o)}'>
-                            <i class="bi bi-info-circle"></i> Info
-                        </span>
-                    </small>
+                                    ${o.guest_count || 0} Pax
+
+                                    <span
+                                        class="ml-2 order-info-btn"
+                                        style="cursor:pointer;"
+                                        data-order='${JSON.stringify(o)}'
+                                    >
+                                        <i class="bi bi-info-circle"></i>
+                                        Info
+                                    </span>
+                                </small>
+
+                            </div>
+
+                            <!-- Pickup Time -->
+                            <div class="col-md-3">
+
+                                <label class="small text-muted mb-1">
+                                    Pickup Time
+                                </label>
+
+                                <input
+                                    type="time"
+                                    step="300"
+                                    class="
+                                        form-control
+                                        order-pickup-time
+                                        mb-3
+                                    "
+                                    value="${
+                                        o.pickup_time
+                                            ? o.pickup_time.substring(0, 5)
+                                            : ''
+                                    }"
+                                    data-order-id="${o.order_id}"
+                                >
+
+                            </div>
+
+                            <!-- Driver -->
+                            <div class="col-md-4">
+
+                                <label class="small text-muted mb-1">
+                                    Driver
+                                </label>
+
+                                <select
+                                    class="
+                                        form-control
+                                        order-driver-select
+                                    "
+                                    multiple
+                                    data-order-id="${o.order_id}"
+                                >
+                                    ${driversHtml}
+                                </select>
+
+                            </div>
+
+                            <!-- Vehicle -->
+                            <div class="col-md-3">
+
+                                <label class="small text-muted mb-1">
+                                    Vehicle
+                                </label>
+
+                                <select
+                                    class="
+                                        form-control
+                                        aiz-selectpicker
+                                        order-vehicle-select
+                                        mb-3
+                                    "
+                                    data-live-search="true"
+                                    data-order-id="${o.order_id}"
+                                >
+                                    ${vehiclesHtml}
+                                </select>
+
+                            </div>
+
+                            <div class="col-md-12">
+
+                                <p class="text-muted">
+                                    ${
+                                        o.pickup_time
+                                            ? o.pickup_time.substring(0, 5)
+                                            : ''
+                                    }
+
+                                    -
+
+                                    ${escapeHtml(
+                                        o.pickup_location || ''
+                                    )}
+                                </p>
+
+                            </div>
+
+                        </div>
+
                     </div>
-
-                    <!-- Pickup Time -->
-                    <div class="col-md-3">
-
-                        <label class="small text-muted mb-1">
-                            Pickup Time
-                        </label>
-
-                        <input
-                            type="time" step="300"
-                            class="form-control order-pickup-time mb-3"
-                            value="${o.pickup_time ? o.pickup_time.substring(0,5) : ''}"
-                            data-order-id="${o.order_id}">
-
-                    </div>
-
-                    <!-- Driver -->
-                    <div class="col-md-4">
-
-                        <label class="small text-muted mb-1">
-                            Driver
-                        </label>
-
-                        <select
-                            class="form-control order-driver-select "
-                            multiple
-                            data-order-id="${o.order_id}">
-
-                            ${driversHtml}
-
-                        </select>
-
-                    </div>
-
-                    <!-- Vehicle -->
-                    <div class="col-md-3">
-
-                        <label class="small text-muted mb-1">
-                            Vehicle
-                        </label>
-
-                        <select
-                            class="form-control aiz-selectpicker order-vehicle-select mb-3"
-                            data-live-search="true"
-                            data-order-id="${o.order_id}">
-
-                            ${vehiclesHtml}
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-            </div>
-
                 `;
-
             });
-
 
             // ====================================
             // Initialise Select2 (Drivers)
@@ -1371,10 +1532,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // =========================
-    // ASSIGN DRIVER (FIXED)
-    // =========================
-   // ========================================
+    // ========================================
     // ASSIGN DRIVER
     // ========================================
 
@@ -1472,7 +1630,7 @@ document.addEventListener('DOMContentLoaded', function () {
             Swal.fire({
                 icon: 'error',
                 title: 'Save Failed',
-                text: 'Unable to assign driver.'
+                text: 'Unable to save data. Please check (Pickup time, Driver, Vehicle) '
             });
 
         } finally {
@@ -1490,10 +1648,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     $(document).on('click', '#pickupMailDriver', async function () {
 
-        let checkedOrders = [];
+        const checkedOrders = [];
 
         $('.order-content').each(function () {
-
             const row = $(this);
             const checkbox = row.find('.order-checkbox');
 
@@ -1501,107 +1658,448 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            const orderId = parseInt(checkbox.val());
+            const vehicleSelect = row.find('.order-vehicle-select');
+            let vehicleValue = null;
 
-            const orderNumber = row
-                .find('a strong')
-                .text()
-                .replace('#', '')
-                .trim();
+            if (
+                vehicleSelect.length &&
+                vehicleSelect.hasClass('aiz-selectpicker')
+            ) {
+                vehicleValue = vehicleSelect.selectpicker('val');
+            } else {
+                vehicleValue = vehicleSelect.val();
+            }
 
-            const pickupTime = row
-                .find('.order-pickup-time')
-                .val();
-
-            const driverIds = row
-                .find('.order-driver-select')
-                .val() || [];
-
-            const vehicleId = row
-                .find('.order-vehicle-select')
-                .val() || null;
+            if (Array.isArray(vehicleValue)) {
+                vehicleValue = vehicleValue[0] || null;
+            }
 
             checkedOrders.push({
-                order_id: orderId,
-                order_number: orderNumber,
-                pickup_time: pickupTime,
-                driver_ids: driverIds.map(Number),
-                vehicle_id: vehicleId ? Number(vehicleId) : null
+                order_id: Number(checkbox.val()),
+                order_number: row
+                    .find('a strong')
+                    .first()
+                    .text()
+                    .replace('#', '')
+                    .trim(),
+                tour_id: Number(row.attr('data-tour-id')) || null,
+                tour_name: row.attr('data-tour-name') || '',
+                pickup_time: row.find('.order-pickup-time').val() || null,
+                driver_ids: (row.find('.order-driver-select').val() || []).map(Number),
+                vehicle_id: vehicleValue ? Number(vehicleValue) : null
             });
         });
 
         if (!checkedOrders.length) {
-            Swal.fire({
+            await Swal.fire({
                 icon: 'warning',
                 title: 'No Orders Selected',
                 text: 'Please select at least one order.'
             });
-
             return;
         }
 
-        const ordersList = checkedOrders.map(order => {
-            return `<div>Order #${order.order_number}</div>`;
-        }).join('');
+        const tourIds = [
+            ...new Set(
+                checkedOrders
+                    .map(function (order) {
+                        return order.tour_id;
+                    })
+                    .filter(Boolean)
+            )
+        ];
+
+        if (!tourIds.length) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Tour Missing',
+                text: 'Tour ID was not found for the selected orders.'
+            });
+            return;
+        }
+
+        const ordersListHtml = checkedOrders
+            .map(function (order) {
+                return `
+                    <span class="py-1">
+                        <strong>#${escapeHtml(order.order_number)}</strong>
+                    </span>
+                `;
+            })
+            .join(', ');
+
+        const modalElement = document.getElementById('driverModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+
+        Swal.fire({
+            title: 'Loading Itinerary',
+            text: 'Retrieving itinerary for the selected tour...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: function () {
+                isSwalOpen = true;
+                Swal.showLoading();
+            }
+        });
+
+        let itineraryText = '';
+
+        try {
+            const itineraryResponse = await fetch(
+                "{{ route('admin.tour.itinerary') }}",
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                    },
+                    body: JSON.stringify({
+                        tour_ids: tourIds
+                    })
+                }
+            );
+
+            let itineraryResult;
+
+            try {
+                itineraryResult = await itineraryResponse.json();
+            } catch (jsonError) {
+                throw new Error('The server returned an invalid response.');
+            }
+
+            if (!itineraryResponse.ok) {
+                if (
+                    itineraryResponse.status === 422 &&
+                    itineraryResult.errors
+                ) {
+                    throw new Error(
+                        Object.values(itineraryResult.errors)
+                            .flat()
+                            .join('\n')
+                    );
+                }
+
+                throw new Error(
+                    itineraryResult.message ||
+                    'Unable to load itinerary.'
+                );
+            }
+
+            itineraryText = itineraryResult.itinerary || '';
+        } catch (error) {
+            console.error('Driver itinerary loading failed:', error);
+
+            await Swal.fire({
+                icon: 'error',
+                title: 'Itinerary Loading Failed',
+                text: error.message || 'Unable to load itinerary.'
+            });
+
+            if (modalElement) {
+                bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            }
+            return;
+        }
 
         const confirmResult = await Swal.fire({
             title: 'Send Pickup Mail to Driver',
+            width: 900,
+            customClass: {
+                title: 'text-left',
+                htmlContainer: 'text-left'
+            },
             html: `
                 <div class="text-start">
-                    <p>
-                        Please make sure the correct orders and drivers are
-                        selected before sending the pickup mail.
+                    <p class="text-success">
+                        Please review and edit the itinerary before sending.
                     </p>
 
-                    <div class="border rounded p-2 mt-2">
-                        <strong>Selected Orders:</strong>
-                        ${ordersList}
+                    <div class="border rounded p-2 mb-3">
+                        <strong>Selected Orders (${checkedOrders.length})</strong>
+                        <div class="mt-2">${ordersListHtml}</div>
+                    </div>
+
+                    <div class="mt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label
+                                for="driver-itinerary"
+                                class="form-label fw-bold mb-0"
+                            >
+                                Itinerary
+                            </label>
+
+                            <button
+                                type="button"
+                                id="add-extra-driver-itinerary"
+                                class="btn btn-primary btn-sm"
+                            >
+                                <i class="fas fa-plus"></i>
+                                Add Extra
+                            </button>
+                        </div>
+
+                        <div
+                            id="driver-itinerary"
+                            style="
+                                width:100%;
+                                min-height:300px;
+                                max-height:450px;
+                                overflow:auto;
+                                padding:10px;
+                                border:1px solid #ced4da;
+                                border-radius:5px;
+                                background:#f8fafc;
+                                text-align:left;
+                            "
+                        ></div>
+
+                        <small class="text-muted text-danger">
+                            <strong>Note:</strong>
+                            The header cannot be edited. You can edit, remove,
+                            add or reorder itinerary body rows.
+                        </small>
                     </div>
                 </div>
             `,
-            icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Send Now',
-            cancelButtonText: 'Cancel'
+            cancelButtonText: 'Cancel',
+            focusConfirm: false,
+            allowOutsideClick: false,
+            stopKeydownPropagation: false,
+
+            didOpen: function () {
+                isSwalOpen = true;
+
+                const editor = document.getElementById('driver-itinerary');
+
+                if (!editor) {
+                    return;
+                }
+
+                const itineraryBody = loadItineraryEditor(
+                    editor,
+                    itineraryText
+                );
+
+                if (
+                    itineraryBody &&
+                    typeof Sortable !== 'undefined'
+                ) {
+                    Sortable.create(itineraryBody, {
+                        animation: 180,
+                        handle: '.itinerary-drag-handle',
+                        draggable: '.passenger-itinerary-row',
+                        ghostClass: 'itinerary-sortable-ghost',
+                        chosenClass: 'itinerary-sortable-chosen'
+                    });
+                }
+
+                const addButton = document.getElementById(
+                    'add-extra-driver-itinerary'
+                );
+
+                if (addButton && itineraryBody) {
+                    addButton.addEventListener('click', function () {
+                        itineraryBody.insertAdjacentHTML(
+                            'beforeend',
+                            itineraryRowHtml('', '')
+                        );
+
+                        editor.scrollTop = editor.scrollHeight;
+
+                        const rows = itineraryBody.querySelectorAll(
+                            '.passenger-itinerary-row'
+                        );
+                        const lastRow = rows[rows.length - 1];
+
+                        if (lastRow) {
+                            const timeInput = lastRow.querySelector(
+                                '.itinerary-time'
+                            );
+
+                            if (timeInput) {
+                                timeInput.focus();
+                            }
+                        }
+                    });
+                }
+
+                if (itineraryBody) {
+                    itineraryBody.addEventListener('click', function (event) {
+                        const removeButton = event.target.closest(
+                            '.remove-itinerary-row'
+                        );
+
+                        if (!removeButton) {
+                            return;
+                        }
+
+                        const row = removeButton.closest(
+                            '.passenger-itinerary-row'
+                        );
+
+                        if (row) {
+                            row.remove();
+                        }
+
+                        if (
+                            !itineraryBody.querySelector(
+                                '.passenger-itinerary-row'
+                            )
+                        ) {
+                            itineraryBody.insertAdjacentHTML(
+                                'beforeend',
+                                itineraryRowHtml('', '')
+                            );
+                        }
+                    });
+                }
+            },
+
+            willClose: function () {
+                isSwalOpen = false;
+            },
+
+            preConfirm: function () {
+                const editor = document.getElementById('driver-itinerary');
+
+                if (!editor) {
+                    Swal.showValidationMessage(
+                        'Itinerary editor was not found.'
+                    );
+                    return false;
+                }
+
+                const itineraryItems = [];
+
+                editor
+                    .querySelectorAll('.passenger-itinerary-row')
+                    .forEach(function (row) {
+                        const timeInput = row.querySelector('.itinerary-time');
+                        const descriptionEditor = row.querySelector(
+                            '.itinerary-description'
+                        );
+
+                        const time = timeInput
+                            ? timeInput.value.trim()
+                            : '';
+                        const descriptionHtml = descriptionEditor
+                            ? descriptionEditor.innerHTML.trim()
+                            : '';
+                        const descriptionText = descriptionEditor
+                            ? descriptionEditor.innerText.trim()
+                            : '';
+
+                        if (time === '' && descriptionText === '') {
+                            return;
+                        }
+
+                        itineraryItems.push({
+                            time: time,
+                            descriptionHtml: descriptionHtml
+                        });
+                    });
+
+                if (!itineraryItems.length) {
+                    Swal.showValidationMessage(
+                        'Please enter at least one itinerary item.'
+                    );
+                    return false;
+                }
+
+                const header = editor.querySelector(
+                    '.passenger-itinerary-table thead'
+                );
+                const headerClone = header
+                    ? header.cloneNode(true)
+                    : null;
+
+                const rowsHtml = itineraryItems
+                    .map(function (item) {
+                        return `
+                            <tr>
+                                <td align="center" style="
+                                    vertical-align:middle;
+                                    width:100px;
+                                    min-width:100px;
+                                    font-weight:bold;
+                                    background:#ffffff;
+                                ">
+                                    ${escapeHtml(item.time || '')}
+                                </td>
+
+                                <td style="
+                                    vertical-align:middle;
+                                    font-size:15px;
+                                    background:#ffffff;
+                                ">
+                                    ${item.descriptionHtml}
+                                </td>
+                            </tr>
+                        `;
+                    })
+                    .join('');
+
+                const itineraryHtml = `
+                    <table border="1" cellpadding="5" style="
+                        width:100%;
+                        border-collapse:collapse;
+                    ">
+                        ${headerClone ? headerClone.outerHTML : ''}
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                `;
+
+                return {
+                    customMessage: itineraryHtml
+                };
+            }
         });
 
         if (!confirmResult.isConfirmed) {
+            if (modalElement) {
+                bootstrap.Modal.getOrCreateInstance(modalElement).show();
+            }
             return;
         }
+
+        const customMessage = confirmResult.value.customMessage;
 
         Swal.fire({
             title: 'Sending Driver Pickup Mail',
             html: `
                 <div class="text-start">
                     <p id="driverMailStatus">
-                        Preparing selected orders...
+                        Sending ${checkedOrders.length} selected orders...
                     </p>
 
                     <div class="progress" style="height:20px;">
                         <div
                             id="driverMailProgress"
                             class="progress-bar progress-bar-striped progress-bar-animated"
-                            style="width:10%">
-                            10%
+                            style="width:50%"
+                        >
+                            50%
                         </div>
                     </div>
                 </div>
             `,
             allowOutsideClick: false,
             allowEscapeKey: false,
-            showConfirmButton: false
+            showConfirmButton: false,
+            didOpen: function () {
+                isSwalOpen = true;
+            }
         });
 
         try {
-
-            $('#driverMailStatus').html(
-                `Sending ${checkedOrders.length} selected orders...`
-            );
-
-            $('#driverMailProgress')
-                .css('width', '50%')
-                .text('50%');
-
             const response = await fetch(
                 "{{ route('admin.driver.pickup.mail') }}",
                 {
@@ -1613,206 +2111,1119 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                     body: JSON.stringify({
                         date: $('#modal_date').val(),
-                        orders: checkedOrders
+                        orders: checkedOrders,
+                        customMessage: customMessage
                     })
                 }
             );
 
-            const result = await response.json();
+            let result;
+
+            try {
+                result = await response.json();
+            } catch (jsonError) {
+                throw new Error('The server returned an invalid response.');
+            }
 
             if (!response.ok || !result.success) {
+                if (response.status === 422 && result.errors) {
+                    throw new Error(
+                        Object.values(result.errors)
+                            .flat()
+                            .join('\n')
+                    );
+                }
+
                 throw new Error(
-                    result.message || 'Unable to send driver pickup mail.'
+                    result.message ||
+                    'Unable to send driver pickup mail.'
                 );
             }
 
             $('#driverMailProgress')
                 .css('width', '100%')
+                .removeClass('progress-bar-animated')
                 .text('100%');
 
-            await new Promise(resolve => setTimeout(resolve, 400));
+            const sentDrivers = (result.sent || []).map(function (item) {
+                return `
+                    <div class="text-success mb-1">
+                        <i class="fas fa-check-circle"></i>
+                        ${escapeHtml(item.driver_name || '')} —
+                        ${escapeHtml(item.email || '')}
+                        (${item.orders_count || 0} orders)
+                    </div>
+                `;
+            }).join('');
 
-            const sentDrivers = (result.sent || []).map(item => `
-                <div class="text-success mb-1">
-                    <i class="fas fa-check-circle"></i>
-                    ${item.driver_name} — ${item.email}
-                    (${item.orders_count} orders)
-                </div>
-            `).join('');
+            const failedDrivers = (result.failed || []).map(function (item) {
+                return `
+                    <div class="text-danger mb-1">
+                        <i class="fas fa-times-circle"></i>
+                        ${escapeHtml(item.driver_name || 'Unknown Driver')} —
+                        ${escapeHtml(item.message || 'Email failed')}
+                    </div>
+                `;
+            }).join('');
 
-            const failedDrivers = (result.failed || []).map(item => `
-                <div class="text-danger mb-1">
-                    <i class="fas fa-times-circle"></i>
-                    ${item.driver_name || 'Unknown Driver'}
-                    — ${item.message}
-                </div>
-            `).join('');
-
-            Swal.fire({
+            await Swal.fire({
                 icon: result.failed_count > 0 ? 'warning' : 'success',
                 title: 'Driver Pickup Mail Completed',
                 html: `
                     <div class="text-start">
                         <p>
-                            <strong>Sent:</strong> ${result.sent_count}
+                            <strong>Sent:</strong> ${result.sent_count || 0}
                             &nbsp; | &nbsp;
-                            <strong>Failed:</strong> ${result.failed_count}
+                            <strong>Failed:</strong> ${result.failed_count || 0}
                         </p>
-
                         ${sentDrivers}
-
                         ${failedDrivers}
                     </div>
                 `,
-                confirmButtonText: 'OK'
+                confirmButtonText: 'OK',
+                willClose: function () {
+                    isSwalOpen = false;
+                }
             });
-
         } catch (error) {
+            console.error('Driver mail error:', error);
 
-            Swal.fire({
+            await Swal.fire({
                 icon: 'error',
-                title: 'Mail Failed',
-                text: error.message || 'Unable to send driver pickup mail.'
+                title: 'Error',
+                text: error.message || 'Unable to send driver pickup mail.',
+                willClose: function () {
+                    isSwalOpen = false;
+                }
             });
         }
     });
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Passenger itinerary editor helpers
+    |--------------------------------------------------------------------------
+    */
+
+    function itineraryRowHtml(time = '', description = '') {
+        return `
+            <tr class="passenger-itinerary-row">
+                <td style="width:130px;min-width:130px !important;">
+                    <div class="d-flex align-items-center gap-2">
+                        <button
+                            type="button"
+                            class="btn btn-light btn-sm itinerary-drag-handle"
+                            title="Drag to reorder"
+                            aria-label="Drag to reorder"
+                        >
+                            <i class="fas fa-grip-vertical"></i>
+                        </button>
+
+                        <input
+                            type="text"
+                            class="form-control form-control-sm itinerary-time"
+                            value="${escapeHtml(time)}"
+                            placeholder="Time"
+                        >
+                    </div>
+                </td>
+
+                <td>
+                    <div
+                        class="form-control form-control-sm itinerary-description"
+                        contenteditable="true"
+                        style="
+                            min-height:38px;
+                            height:auto;
+                            white-space:normal;
+                            overflow-wrap:anywhere;
+                            background:#ffffff;
+                        "
+                    >${description}</div>
+                </td>
+
+                <td style="width:55px;text-align:center;">
+                    <button
+                        type="button"
+                        class="btn btn-danger btn-sm remove-itinerary-row"
+                        title="Remove"
+                        aria-label="Remove itinerary row"
+                    >
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+
+    function loadItineraryEditor(editor, itineraryHtml) {
+        editor.innerHTML = '';
+
+        const temporaryContainer = document.createElement('div');
+        temporaryContainer.innerHTML = itineraryHtml || '';
+
+        const sourceTable = temporaryContainer.querySelector('table');
+        const sourceHeader = sourceTable
+            ? sourceTable.querySelector('thead')
+            : null;
+
+        let headerHtml = '';
+
+        if (sourceHeader) {
+            headerHtml = sourceHeader.innerHTML;
+        } else if (sourceTable) {
+            const firstHeaderRow = sourceTable.querySelector('tr:has(th)');
+
+            if (firstHeaderRow) {
+                headerHtml = firstHeaderRow.outerHTML;
+            }
+        }
+
+        /*
+         * Header is copied exactly from the server and remains non-editable.
+         * A fallback header is used only when the server returns no header.
+         */
+        if (!headerHtml) {
+            headerHtml = `
+                <tr>
+                    <th>Time</th>
+                    <th>Itinerary</th>
+                </tr>
+            `;
+        }
+
+        editor.innerHTML = `
+            <table class="table table-bordered table-sm passenger-itinerary-table">
+                <thead>${headerHtml}</thead>
+                <tbody id="passenger-itinerary-body"></tbody>
+            </table>
+        `;
+
+        const body = editor.querySelector('#passenger-itinerary-body');
+
+        let sourceRows = [];
+
+        if (sourceTable) {
+            sourceRows = Array.from(
+                sourceTable.querySelectorAll('tbody tr')
+            );
+
+            if (!sourceRows.length) {
+                sourceRows = Array.from(sourceTable.querySelectorAll('tr'))
+                    .filter(function (row) {
+                        return !row.querySelector('th');
+                    });
+            }
+        } else {
+            sourceRows = Array.from(
+                temporaryContainer.querySelectorAll('tr')
+            ).filter(function (row) {
+                return !row.querySelector('th');
+            });
+        }
+
+        sourceRows.forEach(function (row) {
+            const cells = row.querySelectorAll('td');
+
+            if (!cells.length) {
+                return;
+            }
+
+            const time = cells[0]
+                ? cells[0].innerText.trim()
+                : '';
+
+            const description = cells[1]
+                ? cells[1].innerHTML.trim()
+                : '';
+
+            body.insertAdjacentHTML(
+                'beforeend',
+                itineraryRowHtml(time, description)
+            );
+        });
+
+        if (!body.querySelector('.passenger-itinerary-row')) {
+            const plainText = temporaryContainer.innerText.trim();
+
+            body.insertAdjacentHTML(
+                'beforeend',
+                itineraryRowHtml(
+                    '',
+                    plainText ? temporaryContainer.innerHTML : ''
+                )
+            );
+        }
+
+        return body;
+    }
 
     $(document).on('click', '#pickupMailPassenger', async function () {
 
-        Swal.fire({
-            title: 'Send Pickup Mail to the Passenger',
-            text: 'Please make sure to select the correct recipient before sending the pickup mail.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Send Now',
-            cancelButtonText: 'Cancel'
-        }).then(async (result) => {
+            const checkedOrders = [];
 
-            if (!result.isConfirmed) return;
-
-            const date = $('#modal_date').val();
-
-            let orders = [];
+            /*
+            |--------------------------------------------------------------------------
+            | Collect checked orders
+            |--------------------------------------------------------------------------
+            */
 
             $('.order-content').each(function () {
 
-                let checkbox = $(this).find('.order-checkbox');
+                const row = $(this);
+
+                const checkbox =
+                    row.find('.order-checkbox');
 
                 if (!checkbox.is(':checked')) {
                     return;
                 }
 
-                orders.push({
-                    order_id: parseInt(checkbox.val()),
-                    order_number: $(this).find('a strong').text().replace('#', '')
+                const orderId =
+                    Number(checkbox.val());
+
+                const orderNumber = row
+                    .find('a strong')
+                    .first()
+                    .text()
+                    .replace('#', '')
+                    .trim();
+
+                const tourId =
+                    Number(row.attr('data-tour-id')) || null;
+
+                const tourName =
+                    row.attr('data-tour-name') || '';
+
+                const pickupTime = row
+                    .find('.order-pickup-time')
+                    .val() || null;
+
+                const driverIds = (
+                    row
+                        .find('.order-driver-select')
+                        .val() || []
+                ).map(Number);
+
+                const vehicleSelect =
+                    row.find('.order-vehicle-select');
+
+                let vehicleValue = null;
+
+                if (
+                    vehicleSelect.length &&
+                    vehicleSelect.hasClass(
+                        'aiz-selectpicker'
+                    )
+                ) {
+                    vehicleValue =
+                        vehicleSelect.selectpicker('val');
+                } else {
+                    vehicleValue =
+                        vehicleSelect.val();
+                }
+
+                if (Array.isArray(vehicleValue)) {
+                    vehicleValue =
+                        vehicleValue[0] || null;
+                }
+
+                const vehicleId = vehicleValue
+                    ? Number(vehicleValue)
+                    : null;
+
+                checkedOrders.push({
+                    order_id: orderId,
+                    order_number: orderNumber,
+                    tour_id: tourId,
+                    tour_name: tourName,
+                    pickup_time: pickupTime,
+                    driver_ids: driverIds,
+                    vehicle_id: vehicleId
                 });
             });
 
-            if (!orders.length) {
+            console.log('Checked Orders:', checkedOrders);
 
-                Swal.fire(
-                    'No Orders',
-                    'No orders found to send mail.',
-                    'warning'
-                );
+            /*
+            |--------------------------------------------------------------------------
+            | Check selected orders
+            |--------------------------------------------------------------------------
+            */
+
+            if (!checkedOrders.length) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'No Orders Selected',
+                    text: 'Please select at least one order.'
+                });
 
                 return;
             }
 
-            let html = `
-                <div class="text-start">
-                    <p><strong>Total Orders:</strong> ${orders.length}</p>
-                    <div id="mailProgressList"></div>
-                </div>
-            `;
+            /*
+            |--------------------------------------------------------------------------
+            | Extract unique tour IDs
+            |--------------------------------------------------------------------------
+            */
+
+            const tourIds = [
+                ...new Set(
+                    checkedOrders
+                        .map(function (order) {
+                            return order.tour_id;
+                        })
+                        .filter(Boolean)
+                )
+            ];
+
+            if (!tourIds.length) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Tour Missing',
+                    text:
+                        'Tour ID was not found for the selected orders.'
+                });
+
+                return;
+            }
+
+            const ordersListHtml = checkedOrders
+                .map(function (order) {
+
+                    return `
+                        <span
+                            class="py-1"
+                        >
+                            <strong>
+                                #${escapeHtml(
+                                    order.order_number
+                                )}
+                            </strong>                            
+                        </span>
+                    `;
+                })
+                .join(', ');
+
+            /*
+            |--------------------------------------------------------------------------
+            | Hide Bootstrap modal
+            |--------------------------------------------------------------------------
+            */
+
+            const modalElement =
+                document.getElementById('driverModal');
+
+            const modalInstance =
+                bootstrap.Modal.getInstance(modalElement);
+
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Show itinerary loader
+            |--------------------------------------------------------------------------
+            */
 
             Swal.fire({
-                title: 'Sending Passenger Pickup Mail',
-                html: html,
+                title: 'Loading Itinerary',
+
+                text:
+                    'Retrieving itinerary for the selected tour...',
+
                 allowOutsideClick: false,
+                allowEscapeKey: false,
                 showConfirmButton: false,
-                didOpen: async () => {
 
-                    let sent = 0;
-                    let failed = 0;
-
-                    for (let i = 0; i < orders.length; i++) {
-
-                        let order = orders[i];
-                        let orderId = order.order_id;
-                        let orderNumber = order.order_number;
-
-                        $('#mailProgressList').append(`
-                            <div id="mail-row-${orderId}">
-                                ⏳ Order #${orderNumber} - Sending...
-                            </div>
-                        `);
-
-                        try {
-
-                            const response = await fetch(
-                                "{{ route('admin.passenger.pickup.mail') }}",
-                                {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/json",
-                                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                                    },
-                                    body: JSON.stringify({
-                                        date: date,
-                                        order_id: orderId
-                                    })
-                                }
-                            );
-
-                            const result = await response.json();
-
-                            if (result.success) {
-
-                                sent++;
-
-                                $(`#mail-row-${orderId}`).html(`
-                                    ✅ Order #${orderNumber} - Sent
-                                `);
-
-                            } else {
-
-                                failed++;
-
-                                $(`#mail-row-${orderId}`).html(`
-                                    ❌ Order #${orderNumber}
-                                    - Request failed
-                                `);
-                            }
-
-                        } catch (error) {
-
-                            failed++;
-
-                            $(`#mail-row-${orderId}`).html(`
-                                ❌ Order ID ${orderId}
-                                - Request failed
-                            `);
-                        }
-
-                        // Slow down sending
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-
-                    Swal.fire({
-                        icon: failed > 0 ? 'warning' : 'success',
-                        title: 'Pickup Mail Completed',
-                        html: `
-                            <p><strong>Sent:</strong> ${sent}</p>
-                            <p><strong>Failed:</strong> ${failed}</p>
-                        `,
-                        confirmButtonText: 'OK'
-                    });
+                didOpen: function () {
+                    isSwalOpen = true;
+                    Swal.showLoading();
                 }
             });
-        });
-    });
 
+            let itineraryText = '';
+            let itineraryLoadError = null;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Load itinerary from server
+            |--------------------------------------------------------------------------
+            */
+
+            try {
+                const itineraryResponse = await fetch(
+                    "{{ route('admin.tour.itinerary') }}",
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+
+                            'Accept':
+                                'application/json',
+
+                            'X-CSRF-TOKEN':
+                                "{{ csrf_token() }}"
+                        },
+
+                        body: JSON.stringify({
+                            tour_ids: tourIds
+                        })
+                    }
+                );
+
+                let itineraryResult;
+
+                try {
+                    itineraryResult =
+                        await itineraryResponse.json();
+                } catch (jsonError) {
+                    throw new Error(
+                        'The server returned an invalid response.'
+                    );
+                }
+
+                if (!itineraryResponse.ok) {
+
+                    if (
+                        itineraryResponse.status === 422 &&
+                        itineraryResult.errors
+                    ) {
+                        throw new Error(
+                            Object
+                                .values(
+                                    itineraryResult.errors
+                                )
+                                .flat()
+                                .join('\n')
+                        );
+                    }
+
+                    throw new Error(
+                        itineraryResult.message ||
+                        'Unable to load itinerary.'
+                    );
+                }
+
+                itineraryText =
+                    itineraryResult.itinerary || '';
+
+            } catch (error) {
+                console.error(
+                    'Itinerary loading failed:',
+                    error
+                );
+
+                itineraryLoadError =
+                    error.message ||
+                    'Unable to load itinerary.';
+
+                itineraryText = '';
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Open Swal with populated itinerary
+            |--------------------------------------------------------------------------
+            */
+
+            const confirmResult = await Swal.fire({
+                title: 'Send Pickup Mail to Passenger',
+                width: 900,
+                customClass: {
+                    title: 'text-left',
+                    htmlContainer: 'text-left' 
+                },
+
+                html: `
+                    <div class="text-start">
+
+                        <p class="text-success">
+                            Please review and edit the itinerary before sending.
+                        </p>
+
+                        <div class="border rounded p-2 mb-3">
+                            <strong>
+                                Selected Orders (${checkedOrders.length})
+                            </strong>
+
+                            <div class="mt-2">
+                                ${ordersListHtml}
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label
+                                    for="passenger-itinerary"
+                                    class="form-label fw-bold mb-0"
+                                >
+                                    Itinerary
+                                </label>
+
+                                <button
+                                    type="button"
+                                    id="add-extra-itinerary"
+                                    class="btn btn-primary btn-sm"
+                                >
+                                    <i class="fas fa-plus"></i>
+                                    Add Extra
+                                </button>
+                            </div>
+
+                            <div
+                                id="passenger-itinerary"
+                                style="
+                                    width:100%;
+                                    min-height:300px;
+                                    max-height:450px;
+                                    overflow:auto;
+                                    padding:10px;
+                                    border:1px solid #ced4da;
+                                    border-radius:5px;
+                                    background:#f8fafc;
+                                    text-align:left;
+                                "
+                            ></div>
+
+                            <small class="text-muted text-danger">
+                                <strong>Note:</strong> You can edit, remove or add itinerary items before sending.
+                            </small>
+
+                        </div>
+
+                    </div>
+                `,
+
+                confirmButtonText: 'Send Now',
+                cancelButtonText: 'Cancel',
+
+                showCancelButton: true,
+                focusConfirm: false,
+                allowOutsideClick: false,
+                stopKeydownPropagation: false,
+
+                didOpen: function () {
+                    isSwalOpen = true;
+
+                    const editor = document.getElementById(
+                        'passenger-itinerary'
+                    );
+
+                    if (!editor) {
+                        return;
+                    }
+
+                    const itineraryBody = loadItineraryEditor(
+                        editor,
+                        itineraryText
+                    );
+
+                    /*
+                     * Only tbody rows are draggable.
+                     * The table header is outside this Sortable container.
+                     */
+                    if (
+                        itineraryBody &&
+                        typeof Sortable !== 'undefined'
+                    ) {
+                        Sortable.create(itineraryBody, {
+                            animation: 180,
+                            handle: '.itinerary-drag-handle',
+                            draggable: '.passenger-itinerary-row',
+                            ghostClass: 'itinerary-sortable-ghost',
+                            chosenClass: 'itinerary-sortable-chosen'
+                        });
+                    }
+
+                    const addExtraButton = document.getElementById(
+                        'add-extra-itinerary'
+                    );
+
+                    if (addExtraButton && itineraryBody) {
+                        addExtraButton.addEventListener('click', function () {
+                            itineraryBody.insertAdjacentHTML(
+                                'beforeend',
+                                itineraryRowHtml('', '')
+                            );
+
+                            editor.scrollTop = editor.scrollHeight;
+
+                            const rows = itineraryBody.querySelectorAll(
+                                '.passenger-itinerary-row'
+                            );
+
+                            const lastRow = rows[rows.length - 1];
+
+                            if (lastRow) {
+                                const timeInput = lastRow.querySelector(
+                                    '.itinerary-time'
+                                );
+
+                                if (timeInput) {
+                                    timeInput.focus();
+                                }
+                            }
+                        });
+                    }
+
+                    if (itineraryBody) {
+                        itineraryBody.addEventListener(
+                            'click',
+                            function (event) {
+                                const removeButton = event.target.closest(
+                                    '.remove-itinerary-row'
+                                );
+
+                                if (!removeButton) {
+                                    return;
+                                }
+
+                                const row = removeButton.closest(
+                                    '.passenger-itinerary-row'
+                                );
+
+                                if (row) {
+                                    row.remove();
+                                }
+
+                                if (
+                                    !itineraryBody.querySelector(
+                                        '.passenger-itinerary-row'
+                                    )
+                                ) {
+                                    itineraryBody.insertAdjacentHTML(
+                                        'beforeend',
+                                        itineraryRowHtml('', '')
+                                    );
+                                }
+                            }
+                        );
+                    }
+
+                    setTimeout(function () {
+                        const firstInput = editor.querySelector(
+                            '.itinerary-time'
+                        );
+
+                        if (firstInput) {
+                            firstInput.focus();
+                        }
+                    }, 100);
+                },
+
+                willClose: function () {
+                    isSwalOpen = false;
+                },
+
+                preConfirm: function () {
+                    const editor = document.getElementById(
+                        'passenger-itinerary'
+                    );
+
+                    if (!editor) {
+                        Swal.showValidationMessage(
+                            'Itinerary editor was not found.'
+                        );
+
+                        return false;
+                    }
+
+                    const itineraryItems = [];
+
+                    editor
+                        .querySelectorAll('.passenger-itinerary-row')
+                        .forEach(function (row) {
+                            const timeInput = row.querySelector(
+                                '.itinerary-time'
+                            );
+
+                            const descriptionEditor = row.querySelector(
+                                '.itinerary-description'
+                            );
+
+                            const time = timeInput
+                                ? timeInput.value.trim()
+                                : '';
+
+                            const descriptionHtml = descriptionEditor
+                                ? descriptionEditor.innerHTML.trim()
+                                : '';
+
+                            const descriptionText = descriptionEditor
+                                ? descriptionEditor.innerText.trim()
+                                : '';
+
+                            if (time === '' && descriptionText === '') {
+                                return;
+                            }
+
+                            itineraryItems.push({
+                                time: time,
+                                descriptionHtml: descriptionHtml
+                            });
+                        });
+
+                    if (!itineraryItems.length) {
+                        Swal.showValidationMessage(
+                            'Please enter at least one itinerary item.'
+                        );
+
+                        return false;
+                    }
+
+                    /*
+                     * Preserve the original table header exactly as loaded.
+                     * Only the edited/reordered tbody rows are rebuilt.
+                     */
+                    const header = editor.querySelector(
+                        '.passenger-itinerary-table thead'
+                    );
+
+                    const headerClone = header
+                        ? header.cloneNode(true)
+                        : null;
+
+                    const rowsHtml = itineraryItems
+                        .map(function (item) {
+                            return `
+                                <tr>
+                                    <td align="center" style="
+                                        vertical-align:middle;
+                                        width:100px;
+                                        min-width:100px;
+                                        font-weight:bold;
+                                        background:#ffffff;
+                                    ">
+                                        ${escapeHtml(item.time || '')}
+                                    </td>
+
+                                    <td style="
+                                        vertical-align:middle;
+                                        font-size:15px;
+                                        background:#ffffff;
+                                    ">
+                                        ${item.descriptionHtml}
+                                    </td>
+                                </tr>
+                            `;
+                        })
+                        .join('');
+
+                    const itineraryHtml = `
+                        <table border="1" cellpadding="5" style="
+                            width:100%;
+                            border-collapse:collapse;
+                        ">
+                            ${headerClone ? headerClone.outerHTML : ''}
+                            <tbody>${rowsHtml}</tbody>
+                        </table>
+                    `;
+
+                    return {
+                        customMessage: itineraryHtml
+                    };
+                }
+            });
+
+            if (!confirmResult.isConfirmed) {
+
+                /*
+                * Reopen original modal after cancel.
+                */
+                if (modalElement) {
+
+                    const newModalInstance =
+                        bootstrap.Modal.getOrCreateInstance(
+                            modalElement
+                        );
+
+                    newModalInstance.show();
+                }
+
+                return;
+            }
+
+            const customMessage = confirmResult.value.customMessage;
+            const date = $('#modal_date').val();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Show sending loader
+            |--------------------------------------------------------------------------
+            */
+
+            Swal.fire({
+                title:
+                    'Sending Passenger Pickup Mail',
+
+                html: `
+                    <div class="text-start">
+
+                        <p>
+                            Sending
+                            <strong>
+                                ${checkedOrders.length}
+                            </strong>
+                            passenger email(s)...
+                        </p>
+
+                        <div
+                            class="progress"
+                            style="height:22px;"
+                        >
+                            <div
+                                id="passenger-mail-progress"
+                                class="
+                                    progress-bar
+                                    progress-bar-striped
+                                    progress-bar-animated
+                                "
+                                style="width:50%;"
+                            >
+                                Processing
+                            </div>
+                        </div>
+
+                    </div>
+                `,
+
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+
+                didOpen: function () {
+                    isSwalOpen = true;
+                }
+            });
+
+            /*
+            |--------------------------------------------------------------------------
+            | Send one request
+            |--------------------------------------------------------------------------
+            */
+
+            try {
+                const response = await fetch(
+                    "{{ route('admin.passenger.pickup.mail') }}",
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+
+                            'Accept':
+                                'application/json',
+
+                            'X-CSRF-TOKEN':
+                                "{{ csrf_token() }}"
+                        },
+
+                        body: JSON.stringify({
+                            date: date,
+                            orders: checkedOrders,
+                            customMessage:
+                                customMessage
+                        })
+                    }
+                );
+
+                let result;
+
+                try {
+                    result = await response.json();
+                } catch (jsonError) {
+                    throw new Error(
+                        'The server returned an invalid response.'
+                    );
+                }
+
+                if (!response.ok) {
+
+                    if (
+                        response.status === 422 &&
+                        result.errors
+                    ) {
+                        throw new Error(
+                            Object
+                                .values(result.errors)
+                                .flat()
+                                .join('<br>')
+                        );
+                    }
+
+                    throw new Error(
+                        result.message ||
+                        'Unable to send passenger pickup mail.'
+                    );
+                }
+
+                $('#passenger-mail-progress')
+                    .css('width', '100%')
+                    .removeClass(
+                        'progress-bar-animated'
+                    )
+                    .text('Completed');
+
+                const sentHtml = (
+                    result.sent || []
+                )
+                    .map(function (item) {
+
+                        return `
+                            <div
+                                class="
+                                    text-success
+                                    border-bottom
+                                    py-2
+                                "
+                            >
+                                <i
+                                    class="
+                                        fas
+                                        fa-check-circle
+                                        me-1
+                                    "
+                                ></i>
+
+                                Order
+
+                                <strong>
+                                    #${escapeHtml(
+                                        item.order_number
+                                    )}
+                                </strong>
+
+                                -
+
+                                ${escapeHtml(
+                                    item.email
+                                )}
+                            </div>
+                        `;
+                    })
+                    .join('');
+
+                const failedHtml = (
+                    result.failed || []
+                )
+                    .map(function (item) {
+
+                        return `
+                            <div
+                                class="
+                                    text-danger
+                                    border-bottom
+                                    py-2
+                                "
+                            >
+                                <i
+                                    class="
+                                        fas
+                                        fa-times-circle
+                                        me-1
+                                    "
+                                ></i>
+
+                                Order
+
+                                <strong>
+                                    #${escapeHtml(
+                                        item.order_number ||
+                                        item.order_id
+                                    )}
+                                </strong>
+
+                                -
+
+                                ${escapeHtml(
+                                    item.message ||
+                                    'Email failed'
+                                )}
+                            </div>
+                        `;
+                    })
+                    .join('');
+
+                await Swal.fire({
+                    icon:
+                        result.failed_count > 0
+                            ? 'warning'
+                            : 'success',
+
+                    title:
+                        'Passenger Pickup Mail Completed',
+
+                    width: 700,
+
+                    html: `
+                        <div class="text-start">
+
+                            <p>
+                                <strong>Sent:</strong>
+                                ${result.sent_count || 0}
+
+                                &nbsp; | &nbsp;
+
+                                <strong>Failed:</strong>
+                                ${result.failed_count || 0}
+                            </p>
+
+                            <div
+                                style="
+                                    max-height:350px;
+                                    overflow-y:auto;
+                                "
+                            >
+                                ${sentHtml}
+                                ${failedHtml}
+                            </div>
+
+                        </div>
+                    `,
+
+                    confirmButtonText: 'OK',
+
+                    willClose: function () {
+                        isSwalOpen = false;
+                    }
+                });
+
+            } catch (error) {
+
+                console.error(
+                    'Passenger mail error:',
+                    error
+                );
+
+                await Swal.fire({
+                    icon: 'error',
+
+                    title:
+                        'Email Sending Failed',
+
+                    html: `
+                        <div class="text-start">
+                            ${
+                                error.message ||
+                                'Unable to send passenger pickup mail.'
+                            }
+                        </div>
+                    `,
+
+                    willClose: function () {
+                        isSwalOpen = false;
+                    }
+                });
+            }
+        }
+    );
+    
     // =========================
     // DRIVER FILTER
     // =========================
@@ -1925,12 +3336,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const tableWrapper = document.getElementById("tableWrapper");
 
     let isDragging = false;
+    let isSwalOpen = false;
     let startX = 0;
     let startY = 0;
     let scrollLeft = 0;
     let scrollTop = 0;
 
     tableWrapper.addEventListener("mousedown", function (e) {
+
+      if (isSwalOpen) return;
+
       isDragging = true;
       tableWrapper.classList.add("active");
 
