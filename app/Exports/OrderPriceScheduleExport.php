@@ -103,7 +103,7 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
                 number_format($r['tour_selling_tax'] ?? 0,2,'.',''),
 
                 number_format($r['tour_selling_total'] ?? 0,2,'.',''),
-                number_format(($r['customer_total'] - $r['tour_selling_total']) ?? 0,2,'.',''),
+                number_format(($r['customer_total'] - $r['balance_amount'] - $r['tour_selling_total']) ?? 0,2,'.',''),
 
                 $r['product_name'] ?? '',
             ];
@@ -145,7 +145,7 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
             number_format($this->totals['tour_extra_excluded_price'],2,'.',''),
             number_format($this->totals['tour_selling_tax'],2,'.',''),
             number_format($this->totals['net_total'],2,'.',''),
-            number_format($this->totals['profit'],2,'.',''),
+            number_format($this->totals['profit'] - $this->totals['balance_amount'],2,'.',''),
 
             '',
             ''
