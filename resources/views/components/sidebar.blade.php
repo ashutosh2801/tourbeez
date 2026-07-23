@@ -4,6 +4,7 @@
 <nav class="mt-2">
 
     <ul class="nav nav-pills nav-sidebar flex-column aiz-side-nav-list" data-toggle="aiz-side-menu" data-widget="treeview" role="menu" data-accordion="false">
+        @can('dashboard')
         <li class="nav-item">
             
             <a href="javascript:void(0);" class="nav-link">
@@ -36,6 +37,7 @@
             
 
         </li>
+        @endcan
         @can('show_tours')       
         <li class="nav-item">
             <a href="javascript:void(0);" class="nav-link">
@@ -100,7 +102,7 @@
                 </li>
                 @endcan
 
-                 @can('show_categories') 
+                @can('show_promos') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.promos.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.promos.index') ? 'active' : '' }}">
@@ -113,7 +115,7 @@
                 @endcan
                 
 
-                 @can('show_categories') 
+                @can('show_vouchers') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.vouchers.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.vouchers.index') ? 'active' : '' }}">
@@ -135,6 +137,7 @@
                         </p>
                         
                     </a>
+                    @can('show_countries')
                     <ul class="aiz-side-nav-list level-3">
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('admin.countries.index') }}"
@@ -164,9 +167,10 @@
                             </a>
                         </li>
                     </ul>
+                    @endcan
                 </li>
                 @endcan
-                @can('show_categories') 
+                @can('show_partners') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.partners.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.partners.index') ? 'active' : '' }}">
@@ -190,7 +194,7 @@
         </li>
         @endcan 
 
-        @can('show_orders') 
+        @can('show_manifest')
         <li class="nav-item">
             <a href="javascript:void(0);" class="nav-link">
                 <i class="nav-icon fas fa-briefcase"></i>
@@ -229,7 +233,7 @@
         </li>
         @endcan
 
-        @can('show_orders') 
+        @can('show_reports') 
         <li class="nav-item">
             <a href="javascript:void(0);" class="nav-link">
                 <i class="nav-icon fas fa-chart-bar"></i>
@@ -311,7 +315,7 @@
                     </a>
                 </li>
                 @endcan
-                @can('show_users') 
+                @can('show_suppliers')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.supplier.index') }}"
                         class="aiz-side-nav-link nav-link {{ areActiveRoutes(['customers.index']) }}">
@@ -322,7 +326,7 @@
                     </a>
                 </li>
                 @endcan
-                @can('show_users') 
+                @can('show_drivers') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.driver.index') }}"
                         class="aiz-side-nav-link nav-link {{ areActiveRoutes(['customers.index']) }}">
@@ -344,7 +348,7 @@
                     </a>
                 </li>
                 @endcan
-                @can('show_users')
+                @can('show_vehicles')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.vehicles.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.vehicles.index') ? 'active' : '' }}">
@@ -357,6 +361,7 @@
                 @endcan    
                   
                 @role('Super Admin')
+                @can('show_roles')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.role.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.role.index') ? 'active' : '' }}">
@@ -366,6 +371,8 @@
                         </p>
                     </a>
                 </li>
+                @endcan
+                @can('show_permissions')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.permission.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.permission.index') ? 'active' : '' }}">
@@ -375,12 +382,13 @@
                         </p>
                     </a>
                 </li>
+                @endcan
                 @endrole
             </ul>
         </li>
         @endcan 
 
-        @can('show_orders') 
+        @can('show_business_expenses') 
         <li class="nav-item">
             <a href="{{ route('admin.business-expenses.index') }}"
                 class="nav-link {{ areActiveRoutes(['admin.business-expenses.index', 'admin.business-expenses.create']) }}">
@@ -390,7 +398,7 @@
         </li>
         @endcan 
         
-        @can('show_orders') 
+        @can('show_gallery') 
         <li class="nav-item">
             <a href="{{ route('admin.tour-gallery.index') }}"
                 class="nav-link {{ areActiveRoutes(['admin.tour-gallery.index']) }}">
@@ -427,7 +435,7 @@
                     </a>
                 </li>
                 @endcan   
-                @can('general_settings')
+                @can('payment_settings')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.payment_method_settings') }}" class="aiz-side-nav-link nav-link">
                         <i class="nav-icon fas fa-money-check"></i>
@@ -435,7 +443,7 @@
                     </a>
                 </li>
                 @endcan 
-                @can('general_settings')
+                @can('third_party_settings')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.third_party_settings') }}" class="aiz-side-nav-link nav-link">
                         <i class="nav-icon fas fa-toolbox"></i>
@@ -459,7 +467,7 @@
                     </a>
                 </li>
                 @endcan   
-                @can('general_settings')
+                @can('show_taxes')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.taxes.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.taxes.index') ? 'active' : '' }}">
@@ -470,7 +478,7 @@
                     </a>
                 </li>
                 @endcan 
-                 @can('general_settings')
+                 @can('show_banners')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.banner.index') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.banner.index') ? 'active' : '' }}">
@@ -484,7 +492,7 @@
             </ul>
         </li>
         @endcan   
-        @can('activity_logs')
+        @can('show_contacts')
         <li class="nav-item">
             <a href="{{ route('admin.contacts.index') }}" class="nav-link {{ Route::is('admin.contacts.index') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-phone-alt"></i>

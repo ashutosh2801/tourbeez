@@ -1534,7 +1534,6 @@ public function invoiceWithDetails(Request $request)
                 'customer_total'     => 0,
                 'exclude_total'     => 0,
                 'balance_amount'     => 0,
-                'excluded_balance_amount'     => 0,
                 'transport_cost'     => 0,
                 'tour_selling_price' => 0,
                 'tour_extra_included_price'=> 0,
@@ -1547,8 +1546,11 @@ public function invoiceWithDetails(Request $request)
             ];
 
 
-            if (!$hasFilter) {
-                return $paginate
+            if (
+                        !$request->filled('booking_date')
+                        && !$request->filled('tour_date')
+                    ) {
+                        return $paginate
                     ? [
                         'rows' => [],
                         'pagination' => new LengthAwarePaginator([], 0, 20),
@@ -1777,6 +1779,8 @@ public function invoiceWithDetails(Request $request)
                 strtolower($order->source ?? ''),
                 $excludedPaymentSources
             );
+
+
             
             $extras = json_decode($order->tour_extra, true) ?? [];
 
@@ -1945,19 +1949,30 @@ public function invoiceWithDetails(Request $request)
             $totalPaymentAmount = 0;
             $hideSuplierExcludeExtraCost = false;
             $excludedBalance = 0;
+
+
+            $payments = $orderPayments[$order->id] ?? collect();
+
+            $excludedCommissionPayment = $payments
+                ->where('payment_type', 'EXCLUDED')
+                ->sum('amount');
+
+            $totalPaymentAmount = $payments
+                ->where('status', 'succeeded')
+                ->sum('amount') - $excludedCommissionPayment;
             // $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
 
             if ($isExcludedFromPayment) {
 
-                $payments = $orderPayments[$order->id] ?? collect();
+                // $payments = $orderPayments[$order->id] ?? collect();
 
-                $excludedCommissionPayment = $payments
-                    ->where('payment_type', 'EXCLUDED')
-                    ->sum('amount');
+                // $excludedCommissionPayment = $payments
+                //     ->where('payment_type', 'EXCLUDED')
+                //     ->sum('amount');
 
-                $totalPaymentAmount = $payments
-                    ->where('status', 'succeeded')
-                    ->sum('amount') - $excludedCommissionPayment;
+                // $totalPaymentAmount = $payments
+                //     ->where('status', 'succeeded')
+                //     ->sum('amount') - $excludedCommissionPayment;
 
 
                 $excludeTotal =  ($product_price + $extraValue + $tax_amount) - $discount_amount;
@@ -2139,7 +2154,7 @@ public function invoiceWithDetails(Request $request)
                 'customer_total' =>   round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
                 'exclude_total' =>  $isExcludedFromPayment ? round(currencyConvertWithoutRound($excludeTotal, $order->currency, 'CAD'), 2) :0,
                 'excluded_commission_payment' => round(currencyConvertWithoutRound($excludedCommissionPayment, $order->currency, 'CAD'), 2),
-                'balance_amount' => round(currencyConvertWithoutRound(($customerTotal + $excludedCommissionPayment) - $order->booked_amount, $order->currency, 'CAD'), 2),
+                'balance_amount' => round(currencyConvertWithoutRound(($customerTotal) - $totalPaymentAmount, $order->currency, 'CAD'), 2),
                 'excluded_balance_amount' => $hideSuplierExcludeExtraCost ? $excludedBalance : 0,
 
                 /*
@@ -2165,9 +2180,9 @@ public function invoiceWithDetails(Request $request)
                 |--------------------------------------------------------------------------
                 */
 
-                'profit' => ($customerTotal == 0) ? 0 :  round($row['customer_total'] - $row['balance_amount'] - $row['tour_selling_total'] - $row['transport_cost']),//      round($sellingTotal - $costTotal, 2),
+                'profit' => ($customerTotal == 0) ? 0 : round($sellingTotal - $costTotal, 2),
 
-                
+
                 /*
                 |--------------------------------------------------------------------------
                 | 🔥 TOUR PRICING BREAKDOWN
@@ -2194,15 +2209,16 @@ public function invoiceWithDetails(Request $request)
 
                 // 'profit' => $displayTotals['profit'],
             ];
-            // dd($profit, $row['excluded_balance_amount']);
+            // dd($customerTotal,$excludedCommissionPayment, $totalPaymentAmount, $sellingTotal , $costTotal);
+
+            // dd($row['customer_total'],$profit,$row['excluded_balance_amount'], ($row['customer_total'] == 0), $row['balance_amount']);
             $totals['product_price']      += $row['product_price'];
             $totals['extra_amount']       += $row['extra_amount'];
             $totals['tax_amount']         += $row['tax_amount'];
             $totals['discount_amount']    += $row['discount_amount'];
             $totals['customer_total']     += $row['customer_total'];
-            $totals['exclude_total']     +=  $row['exclude_total'];
-            $totals['balance_amount']     += $row['balance_amount'] + $row['excluded_balance_amount'];
-            $totals['excluded_balance_amount']     += $row['excluded_balance_amount'];
+            $totals['exclude_total']      +=  $row['exclude_total'];
+            $totals['balance_amount']     += $row['balance_amount'];
             $totals['transport_cost']     += $row['transport_cost'];
             $totals['tour_selling_price'] += $row['tour_selling_price'];
             $totals['tour_extra_included_price'] += $row['tour_extra_included_price'];
@@ -2213,8 +2229,9 @@ public function invoiceWithDetails(Request $request)
             $profit   = $row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost'];
 
             $totals['net_total'] += $netTotal;
-            $totals['profit']    += ($row['customer_total'] == 0) ? 0 : $profit;
-
+            $totals['profit']    += $profit;
+            // $totals['profit']    += ($row['customer_total'] == 0) ? 0 : $profit;
+            
             // attach all addon columns consistently
             // dd($allAddonKeys);
             foreach ($allAddonKeys as $key) {
@@ -2234,7 +2251,7 @@ public function invoiceWithDetails(Request $request)
             // dd($row);
             $rows[] = $row;
         }
-        // dd($rows, $totals);
+        // dd($rows);
         return $paginate
             ? ['rows' => $rows, 'pagination' => $orders, 'totals' => $totals]
             : ['rows' => $rows, 'totals' => $totals];
@@ -2524,7 +2541,7 @@ public function exportCustomer(Request $request)
 
         ini_set('memory_limit', '1024M');
         $data = $this->getInvoiceWithDetailsData($request, false);
-        dd($data);
+
         return Excel::download(
             new OrderPriceScheduleExport($data['rows'], $data['totals']),
             'price_schedule_' . now()->format('Ymd_His') . '.xlsx'

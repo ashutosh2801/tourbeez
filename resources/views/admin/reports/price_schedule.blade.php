@@ -506,12 +506,16 @@
             </div>
         </form>
     </div>
-@if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type', 'exclude_product']))
-        <div class="alert alert-info">
-            Please apply filters to view report data.
-        </div>
-    @endif
-</div>
+@if(!request()->filled('booking_date') && !request()->filled('tour_date'))
+    <div class="alert alert-info">
+        Please apply at least one date filter (Booking Date or Tour Date) to view the report.
+    </div>
+@endif
+<div class="active-filters mb-3">
+        @if(request()->hasAny([
+            'booking_date','tour_date','product',
+            'order_status','action_type','partner', 'exclude_product'
+        ]))
 
 {{-- TABLE --}}
 <div class="card card-primary bg-white border rounded-lg-custom report-table">
