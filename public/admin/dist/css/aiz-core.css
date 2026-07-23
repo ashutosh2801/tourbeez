@@ -8074,11 +8074,6 @@ a.dropdown-footer:hover {
     transform: none;
 }
 
-/* Prevent double borders or overlaps */
-.search-options .select2-selection {
-    border: none !important;
-}
-
 .search-options .drag-handle {
     cursor: move;
     font-size: 18px;
@@ -10866,20 +10861,6 @@ table.dataTable {
     justify-content: space-between;
     width: 100%;
     align-items: center;
-}
-
-.report-filter-box {
-    padding: 16px 20px;
-}
-
-.report-filter-box .clear-btn {
-    position: absolute;
-    right: 15px;
-    top: 34px;
-    cursor: pointer;
-    font-size: 14px;
-    color: #999;
-    padding: 5px;
 }
 
 .report-filter-box .filter-label {
