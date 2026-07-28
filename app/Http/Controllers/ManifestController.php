@@ -1533,7 +1533,6 @@ class ManifestController extends Controller
 
     public function exportVehicleManifest(Request $request)
     {
-        dd(33242);
         $request->validate([
             'date' => 'required|date',
         ]);
