@@ -28,9 +28,13 @@ class RoleController extends Controller
         ]);
         $role = Role::create(['name' => $request->name]);
 
-        $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
+        if($request->permissions){
+
+            $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
+            $role->syncPermissions($permissions);
+        }
         
-        $role->syncPermissions($permissions);
+        
 
         return redirect()->route('admin.role.index')->with('success','Role created successfully.');
     }
@@ -42,6 +46,7 @@ class RoleController extends Controller
         if($data->name=='Super Admin'){
             abort(403, 'SUPER ADMIN ROLE CAN NOT BE EDITED');
         }
+
 
         $permissions = Permission::all();
         $rolePermissions = DB::table("role_has_permissions")->where("role_id",$data->id)
@@ -60,9 +65,15 @@ class RoleController extends Controller
 
         $role->update($input);
 
-        $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
+        if($request->permissions){
+            $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
 
-        $role->syncPermissions($permissions);
+            $role->syncPermissions($permissions);
+        } else {
+            $role->syncPermissions([]);
+        }
+
+        
 
         return redirect()->back()->with('success','Role updated successfully.');
     }

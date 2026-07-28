@@ -49,6 +49,7 @@ use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Controllers\TourGalleryController;
 
+
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
 
     Route::get('/tour/{slug}/fetch_one', [APITourController::class, 'fetch_one'])->name('tour.fetch_one');
@@ -86,14 +87,19 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('/vehicles',VehicleController::class);
 
     Route::get('/customers/{id}/{source}/edit',[CustomerController::class, 'editFromSource'])->name('customers.edit.source');
-    Route::put('/customers-source/{id}/{source}',[CustomerController::class, 'updateSource'])->name('customers.source.update');
-    Route::post('/customer/update_details', [CustomerController::class, 'updateOrderCustomerDetails'])->name('customer.update_details');
+    Route::put(
+    '/customers-source/{id}/{source}',
+    [CustomerController::class, 'updateSource']
+)->name('customers.source.update');
+
+    Route::post('/admin/customer/update_details', [CustomerController::class, 'updateOrderCustomerDetails'])->name('customer.update_details');
     
     Route::resource('/role',RoleController::class);
     Route::resource('/permission',PermissionController::class);
     Route::resource('/category',CategoryController::class);
 
-    Route::post('/category/{id}/clone', [CategoryController::class, 'clone'])->name('category.clone');
+    Route::post('/category/{id}/clone', [CategoryController::class, 'clone'])
+    ->name('category.clone');
     
     Route::resource('/tour_type',TourTypeController::class);
     Route::resource('/collection',CollectionController::class);
@@ -109,6 +115,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('toursmanifest/download', [OrderController::class, 'downloadTourManifest'])->name('orders.tour.manifest.download');
 
     Route::delete('/order/destroy/{id}', [OrderController::class, 'destroy'])->name('order.destroy');
+
     
     // Country
     Route::resource('/countries', CountryController::class);
@@ -160,13 +167,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/tour/{id}/edit/reminder', [TourController::class, 'editReminder'])->name('tour.edit.message.reminder');
     Route::get('/tour/{id}/edit/followup', [TourController::class, 'editFollowup'])->name('tour.edit.message.followup');
     Route::get('/tour/{id}/edit/paymentrequest', [TourController::class, 'editPaymentRequest'])->name('tour.edit.message.paymentrequest');
-    Route::get('/city-search', [TourController::class, 'citySearch'])->name('city.search');
-    Route::get('/category-search', [TourController::class, 'categorySearch'])->name('category.search');
+    Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
+    Route::get('/admin/category-search', [TourController::class, 'categorySearch'])->name('category.search');
     Route::get('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit.special.deposit');
     Route::get('/tour/{id}/edit/review', [TourController::class, 'review'])->name('tour.edit.review');
     Route::get('/tour/{id}/edit/schedule-calendar', [TourController::class, 'scheduleCalendar'])->name('tour.edit.schedule-calendar');
     Route::get('/tour/{id}/edit/shedule-pricing', [TourController::class, 'schedulePricing'])->name('tour.edit.schedule-pricing');
     Route::get('/tour/{id}/edit/schedule-calendar-event', [TourController::class, 'scheduleCalendarEvent'])->name('tour.edit.schedule-calendar-event');
+    Route::get('/admin/city-search', [TourController::class, 'citySearch'])->name('city.search');
+    Route::get('/admin/category-search', [TourController::class, 'categorySearch'])->name('category.search');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
     Route::post('/schedule-delete-slots', [TourController::class, 'storeDeleteSlot'])->name('tour.delete-slots.store');
     Route::get('/export-tours', [TourController::class, 'exportTours'])->name('tours.export');
@@ -216,10 +225,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');
     Route::post('/tours/toggle-status', [TourController::class, 'toggleStatus'])->name('tour.toggleStatus');
     Route::post('/tours/import-price', [TourController::class, 'importPrice'])->name('tours.importPrice');
-    Route::delete('/tours/tour-bulkDelete', [TourController::class, 'bulkDelete'])->name('tour.bulkDelete');
+
+    // Route::post('/tour/{id}/edit/specialdeposit', [TourController::class, 'specialdeposit'])->name('tour.edit..special.deposit');
     Route::put('/tour/special-deposit/{id}', [TourController::class, 'specialDepositUpdate'])->name('tour.special-deposit');
     Route::post('/tour/shedule-pricing/{id}', [TourController::class, 'schedulePricingUpdate'])->name('tour.shedule-pricing');
+
     Route::put('/tour/review/{id}', [TourController::class, 'reviewUpdate'])->name('tour.review');
+
     Route::put('/tour/parent-tour/{id}', [TourController::class, 'parentUpdate'])
     ->name('tour.parent');
     Route::get('/tours/{id}/sub-create', [TourController::class, 'createSubTour'])->name('tours.sub-create');
@@ -316,7 +328,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/orders/{order}/payment-details', [OrderController::class, 'getPaymentDetails'])->name('orders.payment-details');
     Route::post('orders/{order}/refund', [OrderController::class, 'refundPayment'])
     ->name('orders.refundPayment');
-    Route::post('/orders/{order}/refund-multiple', [OrderController::class, 'refundMultiple'])->name('orders.refundMultiple');
+    Route::post('/admin/orders/{order}/refund-multiple', [OrderController::class, 'refundMultiple'])->name('orders.refundMultiple');
     Route::post('orders/{order}/refund2322', [OrderController::class, 'refundPayment'])->name('orders.refund');
 
     Route::post('/orders/{order}/remove-card', [OrderController::class, 'removeCard'])
@@ -325,10 +337,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     ->name('orders.add-card');
 
 
-    Route::post('/orders/{order}/add-payment', [OrderController::class, 'addStripePayment'])
+    Route::post('/admin/orders/{order}/add-payment', [OrderController::class, 'addStripePayment'])
     ->name('orders.addPayment');
 
-    Route::post('/orders/order_tour/delete', [OrderController::class, 'removeOrderTour'])
+    Route::post('/admin/orders/order_tour/delete', [OrderController::class, 'removeOrderTour'])
     ->name('order_tour.delete');
 
 
@@ -380,10 +392,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');
 
 
-    Route::get('/orders/sample-excel', [OrderController::class, 'sampleExcel'])
+    Route::get('/admin/orders/sample-excel', [OrderController::class, 'sampleExcel'])
     ->name('orders.sample-excel');
 
-    Route::post('/orders/import-orders', [OrderController::class, 'importOrders'])
+    Route::post('/admin/orders/import-orders', [OrderController::class, 'importOrders'])
     ->name('orders.import');
 
     Route::resource('partners', PartnerController::class);
@@ -410,9 +422,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/schedule-pricing-export', [ReportController::class, 'schedulePricingExport'])
     ->name('report.schedule.export');
     Route::get('report/price_schedule', [ReportController::class, 'reportPriceSchedule'])->name('report.price_schedule');
-    Route::get('/reports/price-schedule/export', [ReportController::class, 'exportPriceSchedule'])->name('report.price_schedule.export');
+    Route::get('/reports/price-schedule/export', [ReportController::class, 'exportPriceSchedule'])
+    ->name('report.price_schedule.export');    
+
 
     Route::get('/driver-manifest', [ManifestController::class, 'driverManifest'])->name('driver.manifest');
+    Route::get('/vehicle-manifest', [ManifestController::class, 'vehicleManifest'])->name('vehicle.manifest');
+    Route::get('/vehicle-manifest/export', [ManifestController::class, 'exportVehicleManifest'])->name('vehicle.manifest.export');
+
+
     Route::get('/driver-manifest/export', [ManifestController::class, 'exportDriverManifest'])->name('driver.manifest.export');
     Route::post('/passenger-pickup-mail', [ManifestController::class, 'passengerPickupMail'])->name('passenger.pickup.mail');
     Route::post('/driver-pickup-mail', [ManifestController::class, 'driverPickupMail'])->name('driver.pickup.mail');
