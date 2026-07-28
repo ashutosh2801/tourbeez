@@ -683,6 +683,8 @@
         <th>Extra Amount</th>
         <th>Tax Amount</th>
         <th>Discount</th>
+        <th>Excluded</th>
+        <th>Excluded Balance</th>
         <th class="col-total">Customer Total</th>
         <!-- <th>Excluded Total</th> -->
         <th>Order Balance</th>
@@ -789,6 +791,8 @@
     <td align="right">{{ number_format_with_currency($row['tax_amount'],2) }}</td>
 
     <td align="right">{{ number_format_with_currency($row['discount_amount'],2) }}</td>
+    <!-- <td align="right">{{ number_format_with_currency($row['exclude_total'],2) }}</td> -->
+    <td align="right">{{ number_format_with_currency($row['excluded_commission_payment'],2) }}</td>
 
     <td class="col-total" align="right">{{ number_format_with_currency($row['customer_total'],2) }} 
 
@@ -894,6 +898,9 @@
     <td align="right">{{ number_format_with_currency($totals['extra_amount'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['tax_amount'],2) }}</td>
     <td align="right">{{ number_format_with_currency($totals['discount_amount'],2) }}</td>
+    <td align="right">{{ number_format_with_currency($totals['excluded_commission_payment'],2) }}</td>
+
+
     <td class="col-total" align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
     <!-- <td align="right">{{ number_format_with_currency($totals['exclude_total'],2) }}</td> -->
     <td align="right">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>

@@ -83,7 +83,7 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
         $headers = [
             'No.', 'Order #', 'Customer', 'Order Date', 'Fulfilment',
             'Quantity', 'Adult', 'Child', 'Infant', 'Senior',
-            'Product Price', 'Extra Amount', 'Tax Amount', 'Discount',
+            'Product Price', 'Extra Amount', 'Tax Amount', 'Discount','Excluded',
             'Customer Total', 'Order Balance',
             'Supplier Price',
             'Extra Included', 'Extra Excluded', 'Supplier Tax',
@@ -117,6 +117,7 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
                 number_format($r['extra_amount'] ?? 0, 2, '.', ''),
                 number_format($r['tax_amount'] ?? 0, 2, '.', ''),
                 number_format($r['discount_amount'] ?? 0, 2, '.', ''),
+                number_format($r['excluded_commission_payment'] ?? 0, 2, '.', ''),
                 number_format($r['customer_total'] ?? 0, 2, '.', ''),
                 number_format($r['balance_amount'] ?? 0, 2, '.', ''),
 
@@ -163,6 +164,7 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
                             number_format($this->totals['extra_amount'] ?? 0, 2, '.', ''),
                             number_format($this->totals['tax_amount'] ?? 0, 2, '.', ''),
                             number_format($this->totals['discount_amount'] ?? 0, 2, '.', ''),
+                            number_format($this->totals['excluded_commission_payment'] ?? 0, 2, '.', ''),
                             number_format($this->totals['customer_total'] ?? 0, 2, '.', ''),
                             number_format($this->totals['balance_amount'] ?? 0, 2, '.', ''),
 
@@ -197,7 +199,7 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
                 $staticHeaders = [
                     'No.', 'Order #', 'Customer', 'Order Date', 'Fulfilment',
                     'Quantity', 'Adult', 'Child', 'Infant', 'Senior',
-                    'Product Price', 'Extra Amount', 'Tax Amount', 'Discount',
+                    'Product Price', 'Extra Amount', 'Tax Amount', 'Discount','Excluded',
                     'Customer Total', 'Order Balance',
                     'Supplier Price',
                     'Extra Included', 'Extra Excluded', 'Supplier Tax',

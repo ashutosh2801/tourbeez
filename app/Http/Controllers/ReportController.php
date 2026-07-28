@@ -1542,6 +1542,8 @@ public function invoiceWithDetails(Request $request)
                 'tour_selling_tax'   => 0,
                 'net_total'          => 0,
                 'profit'             => 0,
+                'excluded_commission_payment'             => 0,
+                
                 'addonTotals'        => $addonTotals,
 
             ];
@@ -2243,6 +2245,10 @@ public function invoiceWithDetails(Request $request)
             $totals['tour_extra_included_price'] += $row['tour_extra_included_price'];
             $totals['tour_extra_excluded_price'] += $row['tour_extra_excluded_price'];
             $totals['tour_selling_tax']   += $row['tour_selling_tax'];
+            $totals['excluded_commission_payment']   += $row['excluded_commission_payment'];
+
+
+
 
             $netTotal = $row['tour_selling_total'] + $row['transport_cost'];
             $profit   = $row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost'];
