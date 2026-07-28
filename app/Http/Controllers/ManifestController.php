@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\DriverManifestExport;
+use App\Exports\VehicleExport;
 use App\Mail\DriverPickupMail;
 use App\Mail\EmailManager;
 use App\Mail\PassengerPickupMail;
@@ -1405,6 +1406,144 @@ class ManifestController extends Controller
             'tourReportGroupMap',
             'groupedGrid'
         ));
+    }
+
+
+   public function vehicleManifest(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        $startOfWeek = Carbon::parse($date);
+        $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
+
+        $selectedVehicle = $request->vehicle_id;
+
+        $assignments = OrderDriver::with([
+            'vehicle',
+            'driver',
+            'order.customer',
+            'order.tour',
+            'order.subTour',
+            'order.orderTours.tour.detail'
+        ])
+        ->whereBetween('assigned_date', [
+            $startOfWeek->toDateString(),
+            $endOfWeek->toDateString()
+        ])
+        ->when($selectedVehicle, function ($q) use ($selectedVehicle) {
+            $q->where('vehicle_id', $selectedVehicle);
+        })
+        ->get();
+
+        $grid = [];
+        $vehicleTotals = [];
+        $dateRange = [];
+
+        $d = $startOfWeek->copy();
+
+        while ($d->lte($endOfWeek)) {
+
+            $day = $d->toDateString();
+
+            $dateRange[] = $d->copy();
+
+            $vehicleTotals[$day] = [];
+
+            $d->addDay();
+        }
+
+        foreach ($assignments as $assignment) {
+
+            $order = $assignment->order;
+
+            if (!$order) {
+                continue;
+            }
+
+            foreach ($order->orderTours as $tour) {
+
+                if ($tour->tour_date != $assignment->assigned_date) {
+                    continue;
+                }
+
+                $guestCount = collect(
+                    json_decode($tour->tour_pricing, true) ?? []
+                )->sum('quantity');
+
+                $vehicleName = $assignment->vehicle?->name ?? 'NA';
+
+                if ($order->sub_tour_id && $order->subTour) {
+
+                    $tourTitle =
+                        $order->tour?->title .
+                        '<br><small>' .
+                        $tour->tour->title .
+                        '</small>';
+
+                } else {
+
+                    $tourTitle = $tour->tour->title ?? 'Unknown Tour';
+                }
+
+                $grid[$vehicleName][$assignment->assigned_date][] = [
+
+                    'order_id' => $order->id,
+                    'order_encrypt_id' => encrypt($order->id),
+                    'order_number' => $order->order_number,
+                    'customer' => $order->customer?->name,
+                    'guest_count' => $guestCount,
+
+                    'driver_name' => $assignment->driver?->name,
+                    'vehicle_name' => $vehicleName,
+
+                    'pickup_time' => $assignment->pickup_time,
+                    'pickup_location' => $assignment->pickup_location,
+
+                    'assignment_type' => $assignment->assignment_type,
+
+                    'tour_title' => $tourTitle,
+
+                    'internal_notes' => $order->internal_notes,
+
+                ];
+
+                $vehicleTotals[$assignment->assigned_date][$vehicleName] =
+                    ($vehicleTotals[$assignment->assigned_date][$vehicleName] ?? 0)
+                    + $guestCount;
+            }
+        }
+
+        ksort($grid);
+
+        $vehicles = Vehicle::orderBy('name')->get();
+
+        return view(
+            'admin.manifest.vehicle',
+            compact(
+                'grid',
+                'dateRange',
+                'vehicles',
+                'selectedVehicle',
+                'vehicleTotals',
+                'date'
+            )
+        );
+    }
+
+
+    public function exportVehicleManifest(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        return Excel::download(
+            new VehicleExport(
+                $request->date,
+                $request->vehicle_id
+            ),
+            'Vehicle_Manifest_'.\Carbon\Carbon::parse($request->date)->format('d_M_Y').'.xlsx'
+        );
     }
 
     /**

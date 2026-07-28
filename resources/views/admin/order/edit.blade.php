@@ -832,8 +832,12 @@ $expectEmails = ['order_pending'];
                                             <td class="cummulative-total"><strong>Total</strong></td>
                                             <td class="text-right" style="font-weight:bold;"><strong>{{ price_format_with_currency($order->total_amount, $order->currency) }}</strong></td>
                                         </tr>
+                                        @php
+                                            $commission = $order->payments
+                                                ->where('payment_type', 'COMMISSION');
+                                        @endphp
 
-
+                                        @if(!($commission->isNotEmpty() && $commission->sum('amount') > 0))
                                         <tr><td class="total-paid hidden">{{$paid}}</td></tr>
                                         @if($outsidePayment > 0)
                                         <tr class="text-success">
@@ -864,12 +868,10 @@ $expectEmails = ['order_pending'];
                                                 <td class="text-right cummulative-total total-due"><b>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</b></td>
                                             @endif
                                         </tr>
+                                        @endif
 
 
-                                        @php
-                                            $commission = $order->payments
-                                                ->where('payment_type', 'COMMISSION');
-                                        @endphp
+                                        
                                         @if($commission->isNotEmpty() && $commission->sum('amount') > 0)
                                             <tr class="commission" style="color: green">
                                                 <td><b>Commision From {{ $order->partner?->name}}</b></td>
@@ -1003,60 +1005,48 @@ $expectEmails = ['order_pending'];
 
                                             @php
 
-                                                //$latestPayment = $order->payments()->latest()->first();
-                                                $latestPayment = $order->payments()
-                                                ->where('status', 'succeeded')
-                                                ->latest()
-                                                ->first();
+                                            //$latestPayment = $order->payments()->latest()->first();
+                                            //'pending','succeeded','failed','refunded','partial_refunded','uncaptured','reserve','capture_canceled'
+                                            $latestPayment = $order->payments()
+                                            ->where(function ($q) {
+                                                $q->where('status', 'succeeded')
+                                                ->orWhere('status', 'refunded')
+                                                ->orWhere('status', 'partial_refunded')
+                                                ->orWhere('status', 'capture_canceled')
+                                                ->orWhere('status', 'reserve');
+                                            })
+                                            ->latest()
+                                            ->first();
 
-                                                $reservePayment = $order->payments()
-                                                ->where('status', 'reserve')->first();
-
-                                                //echo '<pre>'; print_r($latestPayment->payment_intent_id); echo '</pre>'; 
                                             @endphp
 
-
-                                            @if($order->payment_intent_id)
+                                            @if(isset($order->payment_intent_id))
                                                 <div class="col-12 col-md-2">
                                                     @if($latestPayment && $latestPayment->card_last4)
-
                                                         {!! cardSvg($latestPayment->card_brand) !!} 
-
                                                         {{ $latestPayment->card_last4 }} ({{ strtoupper($latestPayment->card_brand) }})
-
                                                     @else
-
                                                         <svg class="SVGInline-svg SVGInline--cleaned-svg SVG-svg BrandIcon-svg BrandIcon--size--20-svg" height="20" width="20" viewBox="0 0 32 32" fill="none">
                                                             <path fill="#00D66F" d="M0 0h32v32H0z"></path>
                                                             <path fill="#011E0F" d="M15.144 6H10c1 4.18 3.923 7.753 7.58 10C13.917 18.246 11 21.82 10 26h5.144c1.275-3.867 4.805-7.227 9.142-7.914v-4.18c-4.344-.68-7.874-4.04-9.142-7.906Z"></path>
                                                         </svg> Link
-
                                                     @endif
                                                 </div>
-                                            @endif
-                                            <div class="col-12 col-md-2">
-                                                @if($latestPayment || $reservePayment)
+                                           
+                                                <div class="col-12 col-md-2">
+                                                    
+                                                    @if(isset($latestPayment->payment_intent_id) && (str_contains( $latestPayment->payment_intent_id, 'pm_') || str_contains( $latestPayment->payment_method_id, 'pm_')))
+                                                        <a id="chargeSavedCard" type="button" class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
+                                                            Charge Now
+                                                        </a>
 
-                                                   @php
-                                                    $latestPayment = $latestPayment ?:$reservePayment;
-                                                   @endphp
-
-                                                    @if(str_contains( $latestPayment->payment_intent_id, 'pm_') || str_contains( $latestPayment->payment_method_id, 'pm_'))
-                                                    <a id="chargeSavedCard" type="button" class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}">
-                                                        Charge Now
-                                                    </a>
-
-
-                                                    @elseif(str_contains( $latestPayment->payment_intent_id, 'pi_'))
-                                                    <a class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
-                                                        Charge Now
-                                                    </a>
+                                                    @elseif(isset($latestPayment->payment_intent_id) && str_contains( $latestPayment->payment_intent_id, 'pi_'))
+                                                        <a class="charge-btn" data-order-id="{{ $order->id }}" data-customer-name="{{ $order->customer?->name }}" data-balance="{{ $order->balance_amount }}" type="button">
+                                                            Charge Now
+                                                        </a>
                                                     @endif
-
-                                                @endif
-                                                
-                                            </div>
-                                            @if($order->payment_intent_id)
+                                                    
+                                                </div>
                                                 <div class="col-12 col-md-2">
                                                     <a href="javascript:void(0)" onclick="removeCard({{ $order->id }})" class="remove-card-btn">
                                                        Remove Credit Card
@@ -1064,13 +1054,8 @@ $expectEmails = ['order_pending'];
                                                 </div>
                                             @endif
                                         </div>
-                                    </div>
-                                    @else
-
-                                        
-                                                
+                                    </div>                                  
                                     @endif
-
 
                                     @if(!$order->payment_intent_id || $order->payments->isEmpty())
                                     <label><input type="checkbox" value="1" name="add_ccnow" id="add_ccnow" > Add a credit card to this order</label>

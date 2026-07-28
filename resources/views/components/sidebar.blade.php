@@ -223,6 +223,13 @@
                         <p>{{ translate('Driver Manifest') }}</p>
                     </a>
                 </li>
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.vehicle.manifest') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.vehicle.manifest') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tasks"></i>
+                        <p>{{ translate('Vehicle Manifest') }}</p>
+                    </a>
+                </li>
             </ul>
             </li>
         @endcan
