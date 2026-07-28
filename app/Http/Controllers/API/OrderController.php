@@ -679,6 +679,21 @@ class OrderController extends Controller
         return $stripeCustomer;
     }
 
+    public function stripeAmount($amount, $currency)
+    {
+        $zeroDecimalCurrencies = [
+            'bif','clp','djf','gnf','jpy','JP¥','kmf',
+            'krw','mga','pyg','rwf','ugx',
+            'vnd','vuv','xaf','xof','xpf'
+        ];
+
+        if (in_array(strtolower($currency), $zeroDecimalCurrencies)) {
+            return (int) round($amount);
+        }
+
+        return (int) round($amount * 100);
+    }
+
     /**
      * Update cart
      */
@@ -1090,7 +1105,7 @@ class OrderController extends Controller
                     if(!$pi || ($pi->status !== "requires_capture" && $pi->status !== 'succeeded')) {
                         $pi = \Stripe\PaymentIntent::create([
                             'customer'  => $stripeCustomer->id,
-                            'amount' => intval(round($chargeAmount * 100)),
+                            'amount' => $this->stripeAmount($chargeAmount, $order->currency),
                             'currency' => $order->currency,
                             // 'receipt_email' => $data['email'],
                             'description' => '#' . $order->order_number . ' - ' . $tour->title,
@@ -1218,7 +1233,7 @@ class OrderController extends Controller
                     if(!$pi || ($pi->status !== "requires_capture" && $pi->status !== 'succeeded')) {
                         $pi = \Stripe\PaymentIntent::create([
                             'customer'  => $stripeCustomer->id,
-                            'amount' => intval(round($order->total_amount * 100)),
+                            'amount' => $this->stripeAmount($order->total_amount, $order->currency),
                             'currency' => $order->currency,
                             // 'receipt_email' => $data['email'],
                             'description' => '#' . $order->order_number . ' - ' . $tour->title,
@@ -1319,7 +1334,7 @@ class OrderController extends Controller
                 
                 $pi = \Stripe\PaymentIntent::create([
                     'customer' => $stripeCustomer->id,
-                    'amount'   => intval(round($chargeAmount * 100)),
+                    'amount'   => $this->stripeAmount($chargeAmount, $order->currency),
                     'currency' => $order->currency,
                     // 'receipt_email' => $data['email'],
                     'description' => '#' . $order->order_number . ' - ' . $tour->title . ' (Remaining Balance)',

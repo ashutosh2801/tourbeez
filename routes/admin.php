@@ -427,6 +427,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
 
     Route::get('/driver-manifest', [ManifestController::class, 'driverManifest'])->name('driver.manifest');
+    Route::get('/vehicle-manifest', [ManifestController::class, 'vehicleManifest'])->name('vehicle.manifest');
+    Route::get('/vehicle-manifest/export', [ManifestController::class, 'exportVehicleManifest'])->name('vehicle.manifest.export');
+
+
     Route::get('/driver-manifest/export', [ManifestController::class, 'exportDriverManifest'])->name('driver.manifest.export');
     Route::post('/passenger-pickup-mail', [ManifestController::class, 'passengerPickupMail'])->name('passenger.pickup.mail');
     Route::post('/driver-pickup-mail', [ManifestController::class, 'driverPickupMail'])->name('driver.pickup.mail');

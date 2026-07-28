@@ -1,5 +1,5 @@
 <x-admin>
-@section('title', 'Driver Manifest')
+@section('title', 'Vehicle Manifest')
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
@@ -302,6 +302,9 @@ thead th:first-child {
     color: #000;
     font-size: 15px;
 }
+.table-scroll-wrapper.expanded {
+    height: 700px;
+}
 </style>
 
 <div class="card-primary mb-3">
@@ -323,12 +326,7 @@ thead th:first-child {
                         </button>
                     </div>
                 </div>
-                <select id="driverFilter" class="form-control driver-filter">
-                    <option value="">All Drivers</option>
-                    @foreach($drivers as $driver)
-                        <option value="{{ $driver->id }}" {{request()->input('driver_id') == $driver->id ? 'Selected' : ''}}>{{ $driver->name }}</option>
-                    @endforeach
-                </select>
+                <!--  -->
                 <select id="vehicleFilter" class="form-control vehicle-filter">
                     <option value="">All Vehicle</option>
                     @foreach($vehicles as $vehicle)
@@ -338,9 +336,8 @@ thead th:first-child {
             </div>
            
 
-                <a href="{{ route('admin.driver.manifest.export', [
+                <a href="{{ route('admin.vehicle.manifest.export', [
                     'date' => $date,
-                    'driver_id' => request('driver_id'),
                     'vehicle_id' => request('vehicle_id')
                 ]) }}" 
                 class="btn btn-download btn-sm">
@@ -352,405 +349,155 @@ thead th:first-child {
 
 <div class="card-primary bg-white border rounded-lg-custom">
     <div class="card-body table-responsive p-0" id="tableWrapper">
-        <table class="table table-bordered table-sm manifest-grid">
-            <thead>
-                <tr>
-                    <th>Tours</th>
-                    @foreach($dateRange as $d)
-                    <th class="text-center">
-                        {{ $d->format('j-M-Y') }}<br>
-                        <small>{{ $d->format('l') }}</small>
-                    </th>
-                    @endforeach
-                </tr>
-            </thead>
-            <tbody>
-                @php
-                    $previousReportGroup = null;
-                    $tourKeys = array_keys($sortedGrid);
-                @endphp
-               @forelse($sortedGrid as $tourTitle => $dates)
-
-                    @php
-                        $currentIndex = array_search($tourTitle, $tourKeys);
-
-                        $currentGroup = $tourReportGroupMap[$tourTitle] ?? 99;
-
-                        $nextTour = $tourKeys[$currentIndex + 1] ?? null;
-
-                        $nextGroup = $nextTour
-                            ? ($tourReportGroupMap[$nextTour] ?? 99)
-                            : null;
-
-                        $totalCellOrders = [];
-                    @endphp
-                    <tr>
-                        <td>
-                            <p>{!! $tourTitle !!}</p>
-                            @if(isset($tourTimes[$tourTitle]))
-                                <!-- <br><small class="text-muted">{{ $tourTimes[$tourTitle] }}</small> -->
-                            @endif
-                        </td>
-                        @foreach($dateRange as $d)
-                            @php
-                                $dateKey = $d->toDateString();
-
-                                $cellOrders = collect($dates[$dateKey] ?? [])
-                                    ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
-
-                                        $driverMatch = !$selectedDriver ||
-                                            in_array($selectedDriver, $o['driver_ids'] ?? []);
-
-                                        $vehicleMatch = !$selectedVehicle ||
-                                            in_array($selectedVehicle, $o['vehicle_ids'] ?? []);
-
-                                        return $driverMatch && $vehicleMatch;
-                                    })
-                                    ->values();
-
-                                $totalGuests = collect($cellOrders)->sum('guest_count');
-                                $totalCellOrders[] = $cellOrders;
-                                $driverNames = collect($cellOrders)
-                                    ->flatMap(function ($o) use ($selectedDriver, $selectedVehicle) {
-
-                                        $driverIds = collect($o['driver_ids'] ?? []);
-                                        $vehicleIds = collect($o['vehicle_ids'] ?? []);
-
-                                        if ($selectedVehicle && !$vehicleIds->contains($selectedVehicle)) {
-                                            return [];
-                                        }
-
-                                        if ($selectedDriver) {
-                                            return $driverIds->filter(fn($id) => $id == $selectedDriver);
-                                        }
-
-                                        return $driverIds;
-                                    })
-                                    ->unique()
-                                    ->map(function ($driverId) use ($driverNameMap) {
-                                        return $driverNameMap[$driverId] ?? null;
-                                    })
-                                    ->filter()
-                                    ->implode(', ');
-
-
-                                $vehicleNames = collect($cellOrders)
-                                    ->flatMap(function ($o) use ($selectedVehicle) {
-
-                                        $vehicles = collect($o['vehicle_ids'] ?? []);
-
-                                        if ($selectedVehicle) {
-                                            return $vehicles->filter(fn($id) => $id == $selectedVehicle);
-                                        }
-
-                                        return $vehicles;
-                                    })
-                                    ->unique()
-                                    ->map(function ($vehicleId) use ($vehicleNameMap) {
-                                        return $vehicleNameMap[$vehicleId] ?? null;
-                                    })
-                                    ->filter()
-                                    ->implode(', ');
-
-
-                            @endphp
-                            <td style="cursor: {{ count($cellOrders) ? 'pointer' : 'grab' }};">
-
-                                @if(count($cellOrders))
-
-                                    <div class="main-order-wrapper">                                        
-
-                                        @php
-                                        $driverSummary = collect($cellOrders)
-                                            ->flatMap(function ($order) use ($selectedDriver, $selectedVehicle) {
-                                                $drivers = $order['driver_ids'] ?? [];
-                                                $driverNames = $order['driver_names'] ?? [];
-                                                $vehicles = $order['vehicle_names'] ?? [];
-                                                $guestCount = $order['guest_count'] ?? 0;
-                                                if (empty($driverNames)) {
-                                                    return [[
-                                                        'driver'  => 'NA',
-                                                        'vehicle' => 'NA',
-                                                        'pax'     => 0,
-                                                    ]];
-                                                }
-
-                                                $rows = [];
-
-
-
-                                                foreach ($drivers as $index => $driverId) {
-
-                                                    // Driver filter
-                                                    if ($selectedDriver && $driverId != $selectedDriver) {
-                                                        continue;
-                                                    }
-
-                                                    // Vehicle filter
-                                                    $vehicleId = $order['vehicle_ids'][$index] ?? null;
-
-                                                    if ($selectedVehicle && $vehicleId != $selectedVehicle) {
-                                                        continue;
-                                                    }
-
-                                                    $driverName = trim($driverNames[$index] ?? '');
-                                                    $driverName = ($driverName === '' || strtoupper($driverName) === 'NA')
-                                                        ? 'NA'
-                                                        : $driverName;
-
-                                                    $vehicleName = trim($vehicles[$index] ?? '');
-                                                    $vehicleName = ($vehicleName === '' || strtoupper($vehicleName) === 'NA')
-                                                        ? 'NA'
-                                                        : $vehicleName;
-
-                                                    $rows[] = [
-                                                        'driver'  => $driverName,
-                                                        'vehicle' => $vehicleName,
-                                                        'pax'     => $guestCount,
-                                                    ];
-                                                }
-
-                                                return $rows;
-                                            })
-                                            ->groupBy('driver')
-                                            ->map(function ($items, $driver) {
-
-                                                $driverTotal = $items->sum('pax');
-
-                                                $busSummary = $items
-                                                    ->groupBy('vehicle')
-                                                    ->map(function ($busItems, $bus) {
-                                                        return '<i class="fas fa-shuttle-van"></i> '.$bus.' x'.$busItems->sum('pax');
-                                                    })
-                                                    ->implode(', ');
-
-                                                return '<i class="fas fa-user-tie"></i> '.$driverTotal.' - '.$driver.' ('.$busSummary.')';
-                                            });
-                                    @endphp
-
-                                    <div class="d-flex align-items-center justify-content-between toggle-orders" style="cursor:pointer;">
-                                        <div class="flex align-items-center text-truncate" style="font-size:13px; display: flex; gap: 10px; align-items: center;">
-                                            <div><strong>{{ $totalGuests }} </strong></div>
-                                            <div>
-                                            @if($driverSummary)
-                                                {!! collect($cellOrders)
-                                                    ->flatMap(function ($order) use ($selectedDriver, $selectedVehicle) {
-                                                        $drivers = $order['driver_ids'] ?? [];
-                                                        $driverNames = $order['driver_names'] ?? [];
-                                                        $vehicles = $order['vehicle_names'] ?? [];
-                                                        $guestCount = $order['guest_count'] ?? 0;
-
-                                                        if (empty($drivers)) {
-                                                                return [[
-                                                                    'driver'  => 'NA',
-                                                                    'vehicle' => 'NA',
-                                                                    'pax'     => 0,
-                                                                ]];
-                                                            }
-
-                                                        $rows = [];
-
-                                                        foreach ($drivers as $index => $driverId) {
-
-                                                            if ($selectedDriver && $driverId != $selectedDriver) {
-                                                                continue;
-                                                            }
-
-                                                            $vehicleId = $vehicleIds[$index] ?? null;
-
-                                                            if ($selectedVehicle && $vehicleId != $selectedVehicle) {
-                                                                continue;
-                                                            }
-                                                            $rows[] = [
-                                                                'driver' => $driverNames[$index] ?? 'Unknown',
-                                                                'vehicle' => $vehicles[$index] ?? 'NA',
-                                                                'pax' => $guestCount,
-                                                            ];
-                                                        }
-
-                                                        return $rows;
-                                                    })
-                                                    ->groupBy('driver')
-                                                    ->map(function ($items, $driver) {
-
-                                                        $driverTotal = $items->sum('pax');
-
-                                                        $busSummary = $items
-                                                            ->groupBy('vehicle')
-                                                            ->map(function ($busItems, $bus) {
-                                                                return '<span><i class="fas fa-shuttle-van"></i> '.$bus.' x '.$busItems->sum('pax').'</span>';
-                                                            })
-                                                            ->implode(', ');
-
-                                                        return '<div class="summary-wra"><span><i class="fas fa-user-tie"></i> '.$driverTotal.' - '.$driver.'</span> - '.$busSummary.'</div>';
-                                                    })
-                                                    ->implode('') !!}
-                                            @endif
-                                            </div>
-                                            <div><i class="fas fa-chevron-down ms-2 icon" style="cursor:pointer;"></i></div>
-                                        </div>
-
-                                    </div>
-
-                                        <div class="orders-container mt-2 text-center manifest-cell {{ count($cellOrders) ? 'has-orders' : '' }}"
-                                                data-tour="{{ $tourTitle }}"
-                                                data-date="{{ $dateKey }}"
-                                                data-orders='@json($cellOrders)'
-                                                data-assignable="{{ $cellOrders[0]['tour_assignable'] ?? false }}"
-                                                data-isshowmailbutton="{{($currentGroup === 1) ? '0' : '1'}}"
-                                                data-isshowassignbutton="1"
-                                                >                                        
-
-                                            @foreach($cellOrders as $order)
-                                                @if($order['tour_assignable'] != '1')
-                                                    @continue
-                                                @endif
-                                                @php
-
-
-                                                    $driver = !empty($order['driver_names'])
-                                                        ? implode(', ', array_unique($order['driver_names']))
-                                                        : 'NA';
-
-                                                    $vehicle = !empty($order['vehicle_names'])
-                                                        ? implode(', ', array_unique($order['vehicle_names']))
-                                                        : 'NA';
-                                                @endphp
-
-                                                <div class="order-wrapper">                                            
-                                                <span class="font-bold">{{ $order['order_number'] }}</span>
-                                                -
-                                                <span ><i class="fas fa-users"></i> {{ $order['guest_count'] }}</span>
-                                                -
-                                                <span class="text-success"><i class="fas fa-user-tie"></i>  {{ $driver }}</span>
-                                                -
-                                                <span class="text-primary"><i class="fas fa-shuttle-van"></i> {{ $vehicle }}</span>
-                                                </div>
-
-                                            @endforeach
-
-                                        </div>
-
-                                    </div>
-
-                                @endif
-
-
-                            </td>
-                        @endforeach
-                    </tr>
-
-                    @if($nextGroup !== $currentGroup && $currentGroup === 1)
-
-                    <tr style="background:#eef2f7;font-weight:700;">
-                        <td>
-                            Total {{ report_group_tour_status($currentGroup) }} 
-                        </td>
-
-                        @foreach($dateRange as $d)
+       <table class="table table-bordered table-sm manifest-grid">
+    <thead>
+        <tr>
+            <th width="220">Vehicle</th>
+
+            @foreach($dateRange as $date)
+                <th class="text-center">
+                    {{ $date->format('D') }}<br>
+                    {{ $date->format('d M') }}
+                </th>
+            @endforeach
+        </tr>
+    </thead>
+
+    <tbody>
+
+@foreach($grid as $vehicleName => $dates)
+
+<tr>
+
+    <td>
+        <p>{{ $vehicleName }}</p>
+    </td>
+
+    @foreach($dateRange as $date)
+
+        @php
+            $dateKey = $date->toDateString();
+
+            $cellOrders = collect($dates[$dateKey] ?? [])->values();
+
+            $totalGuests = $cellOrders->sum('guest_count');
+
+            $driverSummary = $cellOrders
+                ->groupBy(function ($order) {
+                    return !empty($order['driver_name']) ? $order['driver_name'] : 'NA';
+                })
+                ->map(function ($items, $driver) {
+
+                    $driverTotal = $items->sum('guest_count');
+
+                    $vehicleSummary = $items
+                        ->groupBy(function ($item) {
+                            return $item['vehicle_name'] ?? 'NA';
+                        })
+                        ->map(function ($busItems, $bus) {
+                            return '<span><i class="fas fa-shuttle-van"></i> '.$bus.' x '.$busItems->sum('guest_count').'</span>';
+                        })
+                        ->implode(', ');
+
+                    return '<div class="summary-wra">
+                                <span><i class="fas fa-user-tie"></i> '.$driverTotal.' - '.$driver.'</span>
+                                - '.$vehicleSummary.'
+                            </div>';
+                });
+        @endphp
+
+        <td style="cursor: {{ count($cellOrders) ? 'pointer' : 'default' }};">
+
+            @if($cellOrders->count())
+
+                <div class="main-order-wrapper">
+
+                    {{-- Summary --}}
+                    <div class="d-flex align-items-center justify-content-between toggle-orders" style="cursor:pointer;">
+
+                        <div class="flex align-items-center text-truncate"
+                             style="font-size:13px;display:flex;gap:10px;align-items:center;">
+
+                            <div>
+                                <strong>{{ $totalGuests }}</strong>
+                            </div>
+
+                            <div>
+                                {!! $driverSummary->implode('') !!}
+                            </div>
+
+                            <div>
+                                <i class="fas fa-chevron-down ms-2 icon"></i>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    {{-- Orders --}}
+                    <div class="orders-container mt-2 text-center manifest-cell has-orders"
+                         data-tour="{{ $vehicleName }}"
+                         data-date="{{ $dateKey }}"
+                         data-orders='@json($cellOrders)'
+                         data-assignable="1"
+                         data-isshowmailbutton="0"
+                         data-isshowassignbutton="1">
+
+                        @foreach($cellOrders as $order)
 
                             @php
-                                $groupTotal = 0;
-                                $groupOrders = [];
-
-                                foreach ($sortedGrid as $title => $tourDates) {
-
-                                    if (($tourReportGroupMap[$title] ?? 99) != $currentGroup) {
-                                        continue;
-                                    }
-
-                                    $orders = collect($tourDates[$d->toDateString()] ?? [])
-                                        ->filter(function ($o) use ($selectedDriver, $selectedVehicle) {
-
-                                            $driverMatch = !$selectedDriver ||
-                                                in_array($selectedDriver, $o['driver_ids'] ?? []);
-
-                                            $vehicleMatch = !$selectedVehicle ||
-                                                in_array($selectedVehicle, $o['vehicle_ids'] ?? []);
-
-                                            return $driverMatch && $vehicleMatch;
-                                        });
-
-                                    $groupTotal += $orders->sum('guest_count');
-                                    foreach ($orders as $order) {
-                                        $groupOrders[] = $order;
-                                    }
-                                }
+                                $driver = $order['driver_name'] ?? 'NA';
+                                $vehicle = $order['vehicle_name'] ?? $vehicleName;
                             @endphp
 
-                            <td class="text-center">
-                                <div style="display:flex;gap:10px;align-items:center;">
-                                    <strong>{{ $groupTotal }}</strong>                                        
+                            <div class="order-wrapper">
 
-                                        <button
-                                            type="button"
-                                            id="pickupMailDropdown"
-                                            class="btn btn-warning btn-sm manifest-cell {{ $groupTotal ? 'has-orders' : '' }}"
-                                                data-tour="Send Pickup Mail"
-                                                data-date="{{ $d->toDateString() }}"
-                                                data-orders='@json($groupOrders ?? [])'
-                                                data-assignable="1"
-                                                data-isshowmailbutton="1"
-                                                data-isshowassignbutton="0"
-                                        >
-                                            Send Pickup Mail
-                                        </button>
+                                <span class="font-bold">
+                                    {{ $order['order_number'] }}
+                                </span>
 
-                                        
-                                    </div>
-                                </div>
-                            </td>
+                                -
+
+                                <span>
+                                    <i class="fas fa-users"></i>
+                                    {{ $order['guest_count'] }}
+                                </span>
+
+                                -
+
+                                <span class="text-success">
+                                    <i class="fas fa-user-tie"></i>
+                                    {{ $driver }}
+                                </span>
+
+                                -
+
+                                <span class="text-primary">
+                                    <i class="fas fa-shuttle-van"></i>
+                                    {{ $vehicle }}
+                                </span>
+
+                            </div>
 
                         @endforeach
-                    </tr>
 
-                    @endif
+                    </div>
 
-                    @empty
-                    <tr>
-                        <td colspan="{{ count($dateRange) + 1 }}" class="text-center text-muted">
-                            No tours found for this week.
-                        </td>
-                    </tr>
-                @endforelse
-                    <tr style="background:#f8f9fa; font-weight:600;">
-                        <td>Total Pax</td>
-                        @foreach($dateRange as $d)
-                            <td class="text-center total-pax" data-date="{{ $d->toDateString() }}">
-                                {{ $totalPaxPerDay[$d->toDateString()] ?? 0 }}
-                            </td>
-                        @endforeach
-                    </tr>
+                </div>
 
-                   
-                    <tr style="font-weight:600;">
-                        <td>Assigned Pax</td>
-                        @foreach($dateRange as $d)
-                            @php $day = $d->toDateString(); @endphp
+            @endif
 
-                            <td class="text-center assigned-pax text-success" data-date="{{ $day }}">
+        </td>
 
-                                <div>
-                                    <strong>{{ $assignedPaxPerDay[$day] ?? 0 }}</strong>
-                                </div>
+    @endforeach
 
-                                @if(isset($driverPaxPerDay[$day]))
-                                    <div style="margin-top:5px;">
-                                        @foreach($driverPaxPerDay[$day] as $driverId => $pax)
-                                            <div style="font-size:12px; color:#374151;">
-                                                {{ $driverNameMap[$driverId] ?? 'Unknown' }}: 
-                                                <strong>{{ $pax }}</strong>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
+</tr>
 
-                            </td>
-                        @endforeach
-                    </tr>
+@endforeach
 
-            </tbody>
-        </table>
+</tbody>
+
+</table>
     </div>
 </div>
 
@@ -876,8 +623,7 @@ thead th:first-child {
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-window.allDrivers = @json($drivers);
-let driversList = @json($drivers);
+
 let vehiclesList = @json($vehicles);
 const orderEditRoute = "{{ route('admin.orders.edit', ':id') }}";
 </script>
@@ -885,7 +631,7 @@ const orderEditRoute = "{{ route('admin.orders.edit', ':id') }}";
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const driverFilter = document.getElementById('driverFilter');
+    // const driverFilter = document.getElementById('driverFilter');
     const exportBtn = document.querySelector('.btn-download');
     const dateInput = document.getElementById('filter-date');
     let vehicleFilter = document.getElementById('vehicleFilter');
@@ -946,21 +692,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateExportUrl() {
 
-        let selectedDriver  = driverFilter.value;
+        // let selectedDriver  = driverFilter.value;
         let selectedVehicle = vehicleFilter.value;
         let date            = dateInput.value;
 
         let url = `?date=${date}`;
 
-        if (selectedDriver) {
-            url += `&driver_id=${selectedDriver}`;
-        }
+        // if (selectedDriver) {
+        //     url += `&driver_id=${selectedDriver}`;
+        // }
 
         if (selectedVehicle) {
             url += `&vehicle_id=${selectedVehicle}`;
         }
 
-        exportBtn.href = "{{ route('admin.driver.manifest.export') }}" + url;
+        exportBtn.href = "{{ route('admin.vehicle.manifest.export') }}" + url;
     }
 
     updateExportUrl();
@@ -982,41 +728,41 @@ document.addEventListener('DOMContentLoaded', function () {
     // Driver Filter
     // ====================================
 
-    driverFilter.addEventListener('change', function () {
+    // driverFilter.addEventListener('change', function () {
 
-        const url = new URL(window.location.href);
+    //     const url = new URL(window.location.href);
 
-        url.searchParams.set('date', dateInput.value);
+    //     url.searchParams.set('date', dateInput.value);
 
-        if (this.value) {
+    //     if (this.value) {
 
-            url.searchParams.set(
-                'driver_id',
-                this.value
-            );
+    //         url.searchParams.set(
+    //             'driver_id',
+    //             this.value
+    //         );
 
-        } else {
+    //     } else {
 
-            url.searchParams.delete('driver_id');
+    //         url.searchParams.delete('driver_id');
 
-        }
+    //     }
 
-        window.location.href = url.toString();
+    //     window.location.href = url.toString();
 
-    });
+    // });
 
     function applyFilters() {
 
         let date = dateInput.value;
 
-        let driver  = driverFilter.value;
+        // let driver  = driverFilter.value;
         let vehicle = vehicleFilter.value;
 
         let url = `?date=${date}`;
 
-        if (driver) {
-            url += `&driver_id=${driver}`;
-        }
+        // if (driver) {
+        //     url += `&driver_id=${driver}`;
+        // }
 
         if (vehicle) {
             url += `&vehicle_id=${vehicle}`;
@@ -1025,7 +771,7 @@ document.addEventListener('DOMContentLoaded', function () {
         window.location.href = url;
     }
 
-    driverFilter.addEventListener('change', applyFilters);
+    // driverFilter.addEventListener('change', applyFilters);
     vehicleFilter.addEventListener('change', applyFilters);
 
     // ====================================
@@ -1069,9 +815,9 @@ document.addEventListener('DOMContentLoaded', function () {
             container.innerHTML = '';
 
             let driversHtml = '';
-            driversList.forEach(function (driver) {
-                driversHtml +=`<option value="${driver.id}">${driver.name}</option>`;
-            });
+            // driversList.forEach(function (driver) {
+            //     driversHtml +=`<option value="${driver.id}">${driver.name}</option>`;
+            // });
 
             let vehiclesHtml = `<option value="">Select Vehicle</option>`;
             vehiclesList.forEach(function (vehicle) {
@@ -1390,12 +1136,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let driverHtml = '';
 
-        window.allDrivers.forEach(function(driver) {
-            driverHtml += `
-                <option value="${driver.id}">
-                    ${driver.name}
-                </option>`;
-        });
+        // window.allDrivers.forEach(function(driver) {
+        //     driverHtml += `
+        //         <option value="${driver.id}">
+        //             ${driver.name}
+        //         </option>`;
+        // });
 
         $('#bulkDriver').html(driverHtml);
 
@@ -3149,18 +2895,18 @@ document.addEventListener('DOMContentLoaded', function () {
     // =========================
     // DRIVER FILTER
     // =========================
-    driverFilter.addEventListener('change', function () {
+    // driverFilter.addEventListener('change', function () {
 
-        let selectedDriver = this.value;
-        let date = dateInput.value;
-        let url = `?date=${date}`;
+    //     let selectedDriver = this.value;
+    //     let date = dateInput.value;
+    //     let url = `?date=${date}`;
 
-        if (selectedDriver) {
-            url += `&driver_id=${selectedDriver}`;
-        }
+    //     if (selectedDriver) {
+    //         url += `&driver_id=${selectedDriver}`;
+    //     }
 
-        window.location.href = url;
-    });
+    //     window.location.href = url;
+    // });
 
     updateExportUrl();
 
@@ -3203,7 +2949,6 @@ $(document).on('click', '.orders-container', function (e) {
     e.stopPropagation();
 });
 });
-
 </script>
 <script>
     /*document.getElementById('today-date').addEventListener('click', function() {

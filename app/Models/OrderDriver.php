@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Order;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,5 +31,9 @@ class OrderDriver extends Model
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class, 'vehicle_id');
+    }
+    public function order()
+    {
+        return $this->belongsTo(Order::class, 'order_id');
     }
 }

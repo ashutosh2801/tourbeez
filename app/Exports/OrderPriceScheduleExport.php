@@ -21,11 +21,37 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
 
 
         // 🔥 detect addons dynamically
-        if (!empty($this->rows)) {
-            $this->addonKeys = collect($this->rows[0])
-                ->keys()
+       if (!empty($this->rows)) {
+
+            // Step 1: get all possible addon keys from all rows
+            $allAddonKeys = collect($this->rows)
+                ->flatMap(fn($row) => array_keys($row))
                 ->filter(fn($k) => str_ends_with($k, '_desc'))
                 ->map(fn($k) => str_replace('_desc', '', $k))
+                ->unique()
+                ->values();
+
+            // Step 2: keep only addons that have at least one non-empty value
+            $this->addonKeys = $allAddonKeys
+                ->filter(function ($key) {
+
+                    return collect($this->rows)->contains(function ($row) use ($key) {
+
+                        $desc  = trim((string)($row[$key.'_desc']  ?? ''));
+                        $quant = (float)($row[$key.'_quant'] ?? 0);
+                        $price = (float)($row[$key.'_price'] ?? 0);
+                        $tax   = (float)($row[$key.'_tax'] ?? 0);
+                        $fee   = (float)($row[$key.'_fee'] ?? 0);
+                        $total = (float)($row[$key.'_total'] ?? 0);
+
+                        return $desc !== ''
+                            || $quant != 0
+                            || $price != 0
+                            || $tax != 0
+                            || $fee != 0
+                            || $total != 0;
+                    });
+                })
                 ->values()
                 ->toArray();
         }
@@ -121,35 +147,41 @@ class OrderPriceScheduleExport implements FromArray, WithEvents, WithCustomChunk
             $data[] = $row;
         }
         
-        $data[] = [
-            '',
-            '',
-            '',
-            'Grand Total',
-            '-',
-            '-',
-            '-',
-            '-',
-            '-',
-            '-',
+        $grandTotalRow = [
+                            '',
+                            '',
+                            '',
+                            'Grand Total',
+                            '-',
+                            '-',
+                            '-',
+                            '-',
+                            '-',
+                            '-',
 
-            number_format($this->totals['product_price'],2,'.',''),
-            number_format($this->totals['extra_amount'],2,'.',''),
-            number_format($this->totals['tax_amount'],2,'.',''),
-            number_format($this->totals['discount_amount'],2,'.',''),
-            number_format($this->totals['customer_total'],2,'.',''),
-            number_format($this->totals['balance_amount'],2,'.',''),
+                            number_format($this->totals['product_price'] ?? 0, 2, '.', ''),
+                            number_format($this->totals['extra_amount'] ?? 0, 2, '.', ''),
+                            number_format($this->totals['tax_amount'] ?? 0, 2, '.', ''),
+                            number_format($this->totals['discount_amount'] ?? 0, 2, '.', ''),
+                            number_format($this->totals['customer_total'] ?? 0, 2, '.', ''),
+                            number_format($this->totals['balance_amount'] ?? 0, 2, '.', ''),
 
-            number_format($this->totals['tour_selling_price'],2,'.',''),
-            number_format($this->totals['tour_extra_included_price'],2,'.',''),
-            number_format($this->totals['tour_extra_excluded_price'],2,'.',''),
-            number_format($this->totals['tour_selling_tax'],2,'.',''),
-            number_format($this->totals['net_total'],2,'.',''),
-            number_format($this->totals['profit'] - $this->totals['balance_amount'],2,'.',''),
+                            number_format($this->totals['tour_selling_price'] ?? 0, 2, '.', ''),
+                            number_format($this->totals['tour_extra_included_price'] ?? 0, 2, '.', ''),
+                            number_format($this->totals['tour_extra_excluded_price'] ?? 0, 2, '.', ''),
+                            number_format($this->totals['tour_selling_tax'] ?? 0, 2, '.', ''),
+                            number_format($this->totals['net_total'] ?? 0, 2, '.', ''),
+                            number_format(($this->totals['profit'] ?? 0) - ($this->totals['balance_amount'] ?? 0), 2, '.', ''),
 
-            '',
-            ''
-        ];
+                            '',
+                        ];
+
+                        // Add empty cells for every visible addon (6 columns each)
+                        foreach ($this->addonKeys as $key) {
+                            $grandTotalRow = array_merge($grandTotalRow, array_fill(0, 6, ''));
+                        }
+
+                        $data[] = $grandTotalRow;
         
         return $data;
     }

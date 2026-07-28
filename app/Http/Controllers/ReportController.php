@@ -10,6 +10,7 @@ use App\Exports\RevenueExport;
 use App\Models\BusinessExpense;
 use App\Models\Category;
 use App\Models\Order;
+use App\Models\OrderPayment;
 use App\Models\Partner;
 use App\Models\Tour;
 use App\Models\User;
@@ -1600,8 +1601,15 @@ public function invoiceWithDetails(Request $request)
             | QUERY
             |--------------------------------------------------------------------------
             */
+
+            
+
+            
             $query = DB::table('orders')
-                ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
+                ->leftJoin('order_tours', function ($join) {
+                    $join->on('orders.id', '=', 'order_tours.order_id')
+                         ->whereNull('order_tours.deleted_at');
+                })
                 ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
                 ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
                 ->whereNull('orders.deleted_at')
@@ -1766,12 +1774,17 @@ public function invoiceWithDetails(Request $request)
             ->groupBy('tour_id');
 
 
-        $orderPayments = DB::table('order_payments')
-        ->whereIn('order_id', $collection->pluck('id'))
-        ->whereNull('deleted_at')
-        ->orderBy('id')
-        ->get()
-        ->groupBy('order_id');
+        // $orderPayments = DB::table('order_payments')
+        // ->whereIn('order_id', $collection->pluck('id'))
+        // ->whereNull('deleted_at')
+        // ->orderBy('id')
+        // ->get()
+        // ->groupBy('order_id');
+
+        $orderPayments = OrderPayment::whereIn('order_id', $collection->pluck('id'))
+                        ->orderBy('id')
+                        ->get()
+                        ->groupBy('order_id');
 
         foreach ($collection as $order) {
 
@@ -1936,14 +1949,14 @@ public function invoiceWithDetails(Request $request)
                                                 
             foreach ($taxesfees as $key => $item)  {
 
-                $price      = get_tax($subtotal, $item['type'], $item['value']);
+                $price      = get_tax($subtotal, $item['type'], 13);
                 $tax        = $price ?? 0;
                 $subtotal   = $subtotal + $tax; 
                 $tax_amount = $tax;
                 }
             }
-
-
+            // dd($tax_amount, currencyConvertWithoutRound($tax_amount, $order->currency, 'CAD'));
+            // $tax_amount = currencyConvertWithoutRound($tax_amount, $order->currency, 'CAD');
 
             $excludedCommissionPayment = 0;
             $totalPaymentAmount = 0;
@@ -1957,9 +1970,15 @@ public function invoiceWithDetails(Request $request)
                 ->where('payment_type', 'EXCLUDED')
                 ->sum('amount');
 
+            $totalRefundAmount = $payments
+                ->where('status', 'refunded')
+                ->sum('amount');
+
             $totalPaymentAmount = $payments
                 ->where('status', 'succeeded')
-                ->sum('amount') - $excludedCommissionPayment;
+                ->sum('amount') - $excludedCommissionPayment-$totalRefundAmount;
+
+            
             // $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
 
             if ($isExcludedFromPayment) {
@@ -2154,7 +2173,7 @@ public function invoiceWithDetails(Request $request)
                 'customer_total' =>   round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
                 'exclude_total' =>  $isExcludedFromPayment ? round(currencyConvertWithoutRound($excludeTotal, $order->currency, 'CAD'), 2) :0,
                 'excluded_commission_payment' => round(currencyConvertWithoutRound($excludedCommissionPayment, $order->currency, 'CAD'), 2),
-                'balance_amount' => round(currencyConvertWithoutRound(($customerTotal) - $totalPaymentAmount, $order->currency, 'CAD'), 2),
+                'balance_amount' => round(currencyConvertWithoutRound(round($customerTotal) - round($totalPaymentAmount), $order->currency, 'CAD'), 2),
                 'excluded_balance_amount' => $hideSuplierExcludeExtraCost ? $excludedBalance : 0,
 
                 /*
@@ -2211,7 +2230,7 @@ public function invoiceWithDetails(Request $request)
             ];
             // dd($customerTotal,$excludedCommissionPayment, $totalPaymentAmount, $sellingTotal , $costTotal);
 
-            // dd($row['customer_total'],$profit,$row['excluded_balance_amount'], ($row['customer_total'] == 0), $row['balance_amount']);
+            // dd($row['customer_total'],$row['balance_amount'], $totalPaymentAmount);
             $totals['product_price']      += $row['product_price'];
             $totals['extra_amount']       += $row['extra_amount'];
             $totals['tax_amount']         += $row['tax_amount'];
