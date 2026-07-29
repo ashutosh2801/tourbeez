@@ -292,7 +292,7 @@
                             {{-- ✅ MONEY (FROM FIXED BACKEND LOGIC) --}}
                             <td>{{ number_format($order->total_amount, 2) }}</td>
                             <td>{{ number_format($order->paid_amount, 2) }}</td>
-                            <td>{{ number_format($order->balance, 2) }}</td>
+                            <td class="{{ $order->balance > 0.01 ? 'text-danger font-weight-bold' : 'text-success' }}">{{ number_format($order->balance, 2) }}</td>
 
                             {{-- Fees (keep 0 if not calculated yet) --}}
                             <td>{{ number_format($order->booking_fee ?? 0, 2) }}</td>

@@ -4,11 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-<<<<<<< HEAD
     "content-hash": "e6b9dc3950170c6c5b675a18f5ee12ce",
-=======
-    "content-hash": "b19c7621eaa85a6444e554bdc6affc6e",
->>>>>>> 17e007d433fc57c892f5e542ef8aca3ca5db82fa
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -1158,7 +1154,6 @@
         },
         {
             "name": "endroid/qr-code",
-<<<<<<< HEAD
             "version": "6.1.3",
             "source": {
                 "type": "git",
@@ -1169,36 +1164,16 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/endroid/qr-code/zipball/5fa534856ed95649d67c0eab0cabc03ab1d8e0e2",
                 "reference": "5fa534856ed95649d67c0eab0cabc03ab1d8e0e2",
-=======
-            "version": "6.0.9",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/endroid/qr-code.git",
-                "reference": "21e888e8597440b2205e2e5c484b6c8e556bcd1a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/endroid/qr-code/zipball/21e888e8597440b2205e2e5c484b6c8e556bcd1a",
-                "reference": "21e888e8597440b2205e2e5c484b6c8e556bcd1a",
->>>>>>> 17e007d433fc57c892f5e542ef8aca3ca5db82fa
                 "shasum": ""
             },
             "require": {
                 "bacon/bacon-qr-code": "^3.0",
-<<<<<<< HEAD
                 "php": "^8.4"
-=======
-                "php": "^8.2"
->>>>>>> 17e007d433fc57c892f5e542ef8aca3ca5db82fa
             },
             "require-dev": {
                 "endroid/quality": "dev-main",
                 "ext-gd": "*",
-<<<<<<< HEAD
                 "khanamiryan/qrcode-detector-decoder": "^2.0.3",
-=======
-                "khanamiryan/qrcode-detector-decoder": "^2.0.2",
->>>>>>> 17e007d433fc57c892f5e542ef8aca3ca5db82fa
                 "setasign/fpdf": "^1.8.2"
             },
             "suggest": {
@@ -1239,11 +1214,7 @@
             ],
             "support": {
                 "issues": "https://github.com/endroid/qr-code/issues",
-<<<<<<< HEAD
                 "source": "https://github.com/endroid/qr-code/tree/6.1.3"
-=======
-                "source": "https://github.com/endroid/qr-code/tree/6.0.9"
->>>>>>> 17e007d433fc57c892f5e542ef8aca3ca5db82fa
             },
             "funding": [
                 {
@@ -1251,11 +1222,7 @@
                     "type": "github"
                 }
             ],
-<<<<<<< HEAD
             "time": "2026-02-05T07:01:58+00:00"
-=======
-            "time": "2025-07-13T19:59:45+00:00"
->>>>>>> 17e007d433fc57c892f5e542ef8aca3ca5db82fa
         },
         {
             "name": "ezyang/htmlpurifier",

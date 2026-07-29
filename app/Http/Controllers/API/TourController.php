@@ -2347,9 +2347,16 @@ public function singleCalendar(Request $request)
 {
     $tour = Tour::find($request->id);
 
-    $orderTour = OrderTour::where('order_id', $request->order_id)->where('tour_id', $request->id)->first();
+    $orderTour = OrderTour::query()
+        ->where('order_id', $request->order_id)
+        ->where('tour_id', $request->id)
+        ->when(
+            $request->filled('order_tour_id'),
+            fn ($query) => $query->whereKey($request->order_tour_id)
+        )
+        ->first();
 
-    if (!$tour) {
+    if (!$tour || !$orderTour) {
         return response()->json(['error' => 'Not found'], 404);
     }
 

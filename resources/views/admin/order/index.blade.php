@@ -3,6 +3,9 @@
         .text-orange {
             color: #fd7e14;
         }
+        .text-dark-orange {
+            color: #b54708 !important;
+        }
         .filter-panel {
             display: none;
             animation: fadeSlide 0.3s ease-in-out;
@@ -562,38 +565,26 @@
 
 
 
-                                    $balance = max(0, $total - $paid);
+                                    $balance = max(0, (float) $order->canonical_balance);
+                                    $authorized = max(0, (float) $order->canonical_authorized);
+                                    $captured = max(0, (float) $order->canonical_paid);
 
-
-
-                                    $hasUncaptured = $order->payments->contains('status', 'uncaptured');
-
-
-
-                                    if ($paid < $total) {
-
-                                        if ($paid == 0 && $hasUncaptured) {
-
-                                            $amountClass = 'text-orange';
-
-                                        } else {
-
-                                            $amountClass = 'text-danger'; // red
-
-                                        }
-
+                                    if ($authorized > 0.01) {
+                                        $amountClass = 'text-dark-orange';
+                                        $paymentDisplayAmount = $authorized;
+                                        $paymentDisplayLabel = 'Requires Capture';
+                                    } elseif ($balance > 0.01) {
+                                        $amountClass = 'text-danger';
+                                        $paymentDisplayAmount = $balance;
+                                        $paymentDisplayLabel = 'Balance';
+                                    } elseif ($captured > 0.01) {
+                                        $amountClass = 'text-success';
+                                        $paymentDisplayAmount = $captured;
+                                        $paymentDisplayLabel = 'Captured';
                                     } else {
-
-                                        $amountClass = 'text-success'; // green
-
-                                    }
-
-
-
-                                    if ($order->order_status == 6) {
-
-                                        $amountClass = 'text-secondary'; // grey
-
+                                        $amountClass = $balance > 0.01 ? 'text-danger' : 'text-success';
+                                        $paymentDisplayAmount = $balance;
+                                        $paymentDisplayLabel = 'Balance';
                                     }
 
                                 @endphp
@@ -601,43 +592,10 @@
 
 
                                 <td>
-
-                                    @php
-    $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
-
-    $isExcludedSource = in_array(
-        strtolower($order->source ?? ''),
-        $excludedPaymentSources
-    );
-
-    $hasCommission = $order->payments
-        ->where('payment_type', 'COMMISSION')
-        ->isNotEmpty();
-@endphp
-
-@if($isExcludedSource && $hasCommission)
-    @php
-        $excludedCommissionPayment = $order->payments
-            ->where('payment_type', 'EXCLUDED')
-            ->sum('amount');
-
-        $totalPaymentAmount = $order->payments
-            ->where('status', 'succeeded')
-            ->sum('amount') - $excludedCommissionPayment;
-    @endphp
-
-    <span class="text-success">
-        {{ price_format_with_currency($totalPaymentAmount, $order->currency) }}
-    </span>
-@else
-    <span class="{{ $amountClass }}">
-        @if($amountClass == 'text-danger')
-            {{ price_format_with_currency($balance, $order->currency) }}
-        @else
-            {{ price_format_with_currency($order->total_amount, $order->currency) }}
-        @endif
-    </span>
-@endif
+                                    <span class="{{ $amountClass }} font-weight-bold">
+                                        {{ price_format_with_currency($paymentDisplayAmount, $order->currency) }}
+                                    </span>
+                                    <small class="{{ $amountClass }}">({{ $paymentDisplayLabel }})</small>
                                 <br>
                                 <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "N/A" }}</span>
                                 

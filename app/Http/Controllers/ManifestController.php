@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\DriverManifestExport;
+use App\Exports\VehicleExport;
 use App\Mail\DriverPickupMail;
 use App\Mail\EmailManager;
 use App\Mail\PassengerPickupMail;
@@ -31,569 +32,510 @@ class ManifestController extends Controller
      */
 
     public function driverPickupMail(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'date' => [
-                'required',
-                'date',
-            ],
+{
+    $validator = Validator::make($request->all(), [
+        'date' => [
+            'required',
+            'date',
+        ],
 
-            'orders' => [
-                'required',
-                'array',
-                'min:1',
-            ],
+        'orders' => [
+            'required',
+            'array',
+            'min:1',
+        ],
 
-            'orders.*.order_id' => [
-                'required',
-                'integer',
-                'distinct',
-                'exists:orders,id',
-            ],
+        'orders.*.order_id' => [
+            'required',
+            'integer',
+            'distinct',
+            'exists:orders,id',
+        ],
 
-            'orders.*.order_number' => [
-                'nullable',
-                'string',
-            ],
+        'orders.*.order_number' => [
+            'nullable',
+            'string',
+        ],
 
-            'orders.*.tour_id' => [
-                'nullable',
-                'integer',
-                'exists:tours,id',
-            ],
+        'orders.*.tour_id' => [
+            'nullable',
+            'integer',
+            'exists:tours,id',
+        ],
 
-            'orders.*.pickup_time' => [
-                'nullable',
-                'date_format:H:i',
-            ],
+        'orders.*.pickup_time' => [
+            'nullable',
+            'date_format:H:i',
+        ],
 
-            'orders.*.driver_ids' => [
-                'required',
-                'array',
-                'min:1',
-            ],
+        'orders.*.driver_ids' => [
+            'required',
+            'array',
+            'min:1',
+        ],
 
-            'orders.*.driver_ids.*' => [
-                'required',
-                'integer',
-                'exists:users,id',
-            ],
+        'orders.*.driver_ids.*' => [
+            'required',
+            'integer',
+            'exists:users,id',
+        ],
 
-            'orders.*.vehicle_id' => [
-                'nullable',
-                'integer',
-                'exists:vehicles,id',
-            ],
+        'orders.*.vehicle_id' => [
+            'nullable',
+            'integer',
+            'exists:vehicles,id',
+        ],
 
-            'customMessage' => [
-                'nullable',
-                'string',
-                'max:20000',
-            ],
-        ]);
+        'customMessage' => [
+            'nullable',
+            'string',
+            'max:20000',
+        ],
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed.',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed.',
+            'errors' => $validator->errors(),
+        ], 422);
+    }
 
-        $validated = $validator->validated();
+    $validated = $validator->validated();
 
-        $date = $validated['date'];
+    $date = $validated['date'];
 
-        $customMessage = $validated['customMessage'] ?? null;
+    $customMessage = $validated['customMessage'] ?? null;
 
-        $requestedOrders = collect(
-            $validated['orders']
-        );
+    $requestedOrders = collect(
+        $validated['orders']
+    );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Load Order IDs
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Load Order IDs
+    |--------------------------------------------------------------------------
+    */
 
-        $orderIds = $requestedOrders
-            ->pluck('order_id')
-            ->map(fn ($id) => (int) $id)
-            ->filter()
-            ->unique()
-            ->values();
+    $orderIds = $requestedOrders
+        ->pluck('order_id')
+        ->map(fn ($id) => (int) $id)
+        ->filter()
+        ->unique()
+        ->values();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Load Driver IDs
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Load Driver IDs
+    |--------------------------------------------------------------------------
+    */
 
-        $driverIds = $requestedOrders
-            ->flatMap(function ($item) {
-                return collect(
-                    $item['driver_ids'] ?? []
-                )->map(fn ($id) => (int) $id);
-            })
-            ->filter()
-            ->unique()
-            ->values();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Load Vehicle IDs
-        |--------------------------------------------------------------------------
-        */
-
-        $vehicleIds = $requestedOrders
-            ->pluck('vehicle_id')
-            ->filter()
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Load Orders
-        |--------------------------------------------------------------------------
-        */
-
-        $orders = Order::with([
-            'user',
-            'customer',
-            'orderTours.tour',
-        ])
-            ->whereIn('id', $orderIds)
-            ->get()
-            ->keyBy('id');
-
-        /*
-        |--------------------------------------------------------------------------
-        | Load Selected Drivers
-        |--------------------------------------------------------------------------
-        */
-
-        $drivers = User::query()
-            ->whereIn('id', $driverIds)
-            ->where('role', 'Driver')
-            ->get()
-            ->keyBy('id');
-
-        /*
-        |--------------------------------------------------------------------------
-        | Load Selected Vehicles
-        |--------------------------------------------------------------------------
-        */
-
-        $vehicles = Vehicle::query()
-            ->whereIn('id', $vehicleIds)
-            ->get()
-            ->keyBy('id');
-
-        /*
-        |--------------------------------------------------------------------------
-        | Group Orders by Driver
-        |--------------------------------------------------------------------------
-        */
-
-        $driverOrderGroups = [];
-
-        foreach ($requestedOrders as $item) {
-            $orderId = (int) $item['order_id'];
-
-            $order = $orders->get($orderId);
-
-            if (!$order) {
-                continue;
-            }
-
-            $selectedDriverIds = collect(
+    $driverIds = $requestedOrders
+        ->flatMap(function ($item) {
+            return collect(
                 $item['driver_ids'] ?? []
-            )
-                ->map(fn ($id) => (int) $id)
-                ->filter()
-                ->unique()
-                ->values();
+            )->map(fn ($id) => (int) $id);
+        })
+        ->filter()
+        ->unique()
+        ->values();
 
-            $vehicleId = !empty($item['vehicle_id'])
-                ? (int) $item['vehicle_id']
-                : null;
+    /*
+    |--------------------------------------------------------------------------
+    | Load Vehicle IDs
+    |--------------------------------------------------------------------------
+    */
 
-            $selectedVehicle = $vehicleId
-                ? $vehicles->get($vehicleId)
-                : null;
+    $vehicleIds = $requestedOrders
+        ->pluck('vehicle_id')
+        ->filter()
+        ->map(fn ($id) => (int) $id)
+        ->unique()
+        ->values();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Generate Gallery Upload URL and QR Code per Order
-            |--------------------------------------------------------------------------
-            */
+    /*
+    |--------------------------------------------------------------------------
+    | Load Orders
+    |--------------------------------------------------------------------------
+    */
 
-            $galleryUploadUrl = null;
-            $galleryQrUrl = null;
+    $orders = Order::with([
+        'user',
+        'customer',
+        'orderTours.tour',
+    ])
+        ->whereIn('id', $orderIds)
+        ->get()
+        ->keyBy('id');
 
-            try {
-                $galleryQr = generateQRCodeForPassengerPickup($order);
+    /*
+    |--------------------------------------------------------------------------
+    | Load Selected Drivers
+    |--------------------------------------------------------------------------
+    */
 
-                $galleryUploadUrl = $galleryQr[0] ?? null;
-                $galleryQrUrl = $galleryQr[1] ?? null;
-            } catch (\Throwable $e) {
-                /*
-                * QR generation failure should not stop the complete driver email.
-                */
-                Log::warning(
-                    'Driver pickup QR generation failed',
-                    [
-                        'order_id' => $order->id,
-                        'order_number' => $order->order_number,
-                        'error' => $e->getMessage(),
-                    ]
-                );
-            }
+    $drivers = User::query()
+        ->whereIn('id', $driverIds)
+        ->where('role', 'Driver')
+        ->get()
+        ->keyBy('id');
 
-            foreach ($selectedDriverIds as $driverId) {
-                $driverOrderGroups[$driverId][] = [
-                    'order' => $order,
+    /*
+    |--------------------------------------------------------------------------
+    | Load Selected Vehicles
+    |--------------------------------------------------------------------------
+    */
 
-                    'order_number' =>
-                        $order->order_number,
+    $vehicles = Vehicle::query()
+        ->whereIn('id', $vehicleIds)
+        ->get()
+        ->keyBy('id');
 
-                    'customer_name' =>
-                        $order->customer?->name ?? 'N/A',
+    /*
+    |--------------------------------------------------------------------------
+    | Group Orders by Driver
+    |--------------------------------------------------------------------------
+    */
 
-                    'customer_email' =>
-                        $order->customer?->email,
+    $driverOrderGroups = [];
 
-                    'customer_phone' =>
-                        $order->customer?->phone,
+    foreach ($requestedOrders as $item) {
+        $orderId = (int) $item['order_id'];
 
-                    'guest_count' =>
-                        getManifestOrderGuestCount(
-                            $order,
-                            $date
-                        ),
+        $order = $orders->get($orderId);
 
-                    'pickup_time' =>
-                        $item['pickup_time'] ?? null,
-
-                    'pickup_location' =>
-                        getManifestPickupLocation($order),
-
-                    'instruction' =>
-                        $order->customer?->instructions,
-
-                    'internal_notes' =>
-                        $order->internal_notes,
-
-                    'vehicle' =>
-                        $selectedVehicle,
-
-                    'addons' => $order->orderTours
-    ->flatMap(function ($orderTour) {
-
-        $tourExtras = $orderTour->tour_extra;
-
-        if (empty($tourExtras)) {
-            return [];
+        if (!$order) {
+            continue;
         }
 
-        if (is_string($tourExtras)) {
-            $tourExtras = json_decode(
-                $tourExtras,
-                true
+        $selectedDriverIds = collect(
+            $item['driver_ids'] ?? []
+        )
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $vehicleId = !empty($item['vehicle_id'])
+            ? (int) $item['vehicle_id']
+            : null;
+
+        $selectedVehicle = $vehicleId
+            ? $vehicles->get($vehicleId)
+            : null;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Generate Gallery Upload URL and QR Code per Order
+        |--------------------------------------------------------------------------
+        */
+
+        $galleryUploadUrl = null;
+        $galleryQrUrl = null;
+
+        try {
+            $galleryQr = generateQRCodeForPassengerPickup($order);
+
+            $galleryUploadUrl = $galleryQr[0] ?? null;
+            $galleryQrUrl = $galleryQr[1] ?? null;
+        } catch (\Throwable $e) {
+            /*
+             * QR generation failure should not stop the complete driver email.
+             */
+            Log::warning(
+                'Driver pickup QR generation failed',
+                [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'error' => $e->getMessage(),
+                ]
             );
         }
 
-        if (!is_array($tourExtras)) {
-            return [];
-        }
+        foreach ($selectedDriverIds as $driverId) {
+            $driverOrderGroups[$driverId][] = [
+                'order' => $order,
 
-        return collect($tourExtras)
-            ->map(function ($addon) {
-                return [
-                    'id' => isset($addon['tour_extra_id'])
-                        ? (int) $addon['tour_extra_id']
-                        : null,
+                'order_number' =>
+                    $order->order_number,
 
-                    'tour_id' => isset($addon['tour_id'])
-                        ? (int) $addon['tour_id']
-                        : null,
+                'customer_name' =>
+                    $order->customer?->name ?? 'N/A',
 
-                    'label' => trim(
-                        $addon['label'] ?? ''
+                'customer_email' =>
+                    $order->customer?->email,
+
+                'customer_phone' =>
+                    $order->customer?->phone,
+
+                'guest_count' =>
+                    getManifestOrderGuestCount(
+                        $order,
+                        $date
                     ),
 
-                    'quantity' => isset($addon['quantity'])
-                        ? (int) $addon['quantity']
-                        : 1,
+                'pickup_time' =>
+                    $item['pickup_time'] ?? null,
 
-                    'price' => isset($addon['price'])
-                        ? (float) $addon['price']
-                        : 0,
+                'pickup_location' =>
+                    getManifestPickupLocation($order),
 
-                    'total_price' => isset($addon['total_price'])
-                        ? (float) $addon['total_price']
-                        : 0,
-                ];
-            })
-            ->filter(function ($addon) {
-                return !empty($addon['id']) &&
-                    $addon['label'] !== '';
-            });
-    })
-    ->unique(function ($addon) {
-        return $addon['quantity'] . '-' . $addon['label'];
-    })
-    ->values()
-    ->all(),   
+                'instruction' =>
+                    $order->customer?->instructions,
 
-                    /*
-                    * QR and gallery details for this order.
-                    */
-                    'gallery_upload_url' =>
-                        $galleryUploadUrl,
+                'internal_notes' =>
+                    $order->internal_notes,
 
-                    'gallery_qr_url' =>
-                        $galleryQrUrl,
-                ];
-            }
+                'vehicle' =>
+                    $selectedVehicle,
+
+                /*
+                 * QR and gallery details for this order.
+                 */
+                'gallery_upload_url' =>
+                    $galleryUploadUrl,
+
+                'gallery_qr_url' =>
+                    $galleryQrUrl,
+            ];
+        }
+    }
+
+    $sent = [];
+    $failed = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Send One Email Per Driver
+    |--------------------------------------------------------------------------
+    */
+
+    foreach ($driverOrderGroups as $driverId => $driverOrders) {
+        $driver = $drivers->get(
+            (int) $driverId
+        );
+
+        if (!$driver) {
+            $failed[] = [
+                'driver_id' => $driverId,
+                'message' => 'Driver not found.',
+            ];
+
+            continue;
         }
 
-        $sent = [];
-        $failed = [];
+        if (!$driver->email) {
+            foreach ($driverOrders as $driverOrder) {
+                OrderEmailHistory::create([
+                    'order_id' =>
+                        $driverOrder['order']->id,
 
-        /*
-        |--------------------------------------------------------------------------
-        | Send One Email Per Driver
-        |--------------------------------------------------------------------------
-        */
+                    'to_email' =>
+                        null,
 
-        foreach ($driverOrderGroups as $driverId => $driverOrders) {
-            $driver = $drivers->get(
-                (int) $driverId
+                    'from_email' =>
+                        config('mail.from.address'),
+
+                    'subject' =>
+                        'Driver Pickup Mail',
+
+                    'body' =>
+                        'Driver email missing.',
+
+                    'status' =>
+                        'failed',
+
+                    'message_id' =>
+                        null,
+                ]);
+            }
+
+            $failed[] = [
+                'driver_id' => $driver->id,
+                'driver_name' => $driver->name,
+                'message' => 'Driver email missing.',
+            ];
+
+            continue;
+        }
+
+        try {
+            $driverOrdersCollection = collect(
+                $driverOrders
             );
 
-            if (!$driver) {
-                $failed[] = [
-                    'driver_id' => $driverId,
-                    'message' => 'Driver not found.',
-                ];
-
-                continue;
-            }
-
-            if (!$driver->email) {
-                foreach ($driverOrders as $driverOrder) {
-                    OrderEmailHistory::create([
-                        'order_id' =>
-                            $driverOrder['order']->id,
-
-                        'to_email' =>
-                            null,
-
-                        'from_email' =>
-                            config('mail.from.address'),
-
-                        'subject' =>
-                            'Driver Pickup Mail',
-
-                        'body' =>
-                            'Driver email missing.',
-
-                        'status' =>
-                            'failed',
-
-                        'message_id' =>
-                            null,
-                    ]);
-                }
-
-                $failed[] = [
-                    'driver_id' => $driver->id,
-                    'driver_name' => $driver->name,
-                    'message' => 'Driver email missing.',
-                ];
-
-                continue;
-            }
-
-            try {
-                $driverOrdersCollection = collect(
-                    $driverOrders
+            $sentMessage = Mail::mailer('mailgun')
+                ->to($driver->email)
+                ->send(
+                    new DriverPickupMail(
+                        driver: $driver,
+                        orders: $driverOrdersCollection,
+                        date: $date,
+                        customMessage: $customMessage
+                    )
                 );
 
-                $sentMessage = Mail::mailer('mailgun')
-                    ->to($driver->email)
-                    ->send(
-                        new DriverPickupMail(
-                            driver: $driver,
-                            orders: $driverOrdersCollection,
-                            date: $date,
-                            customMessage: $customMessage
-                        )
-                    );
+            $messageId = null;
 
-                $messageId = null;
+            if (
+                $sentMessage instanceof
+                \Illuminate\Mail\SentMessage
+            ) {
+                $symfonySentMessage =
+                    $sentMessage->getSymfonySentMessage();
 
                 if (
-                    $sentMessage instanceof
-                    \Illuminate\Mail\SentMessage
+                    $symfonySentMessage &&
+                    method_exists(
+                        $symfonySentMessage,
+                        'getMessageId'
+                    )
                 ) {
-                    $symfonySentMessage =
-                        $sentMessage->getSymfonySentMessage();
+                    $rawMessageId =
+                        $symfonySentMessage->getMessageId();
 
-                    if (
-                        $symfonySentMessage &&
-                        method_exists(
-                            $symfonySentMessage,
-                            'getMessageId'
-                        )
-                    ) {
-                        $rawMessageId =
-                            $symfonySentMessage->getMessageId();
-
-                        $messageId = $rawMessageId
-                            ? trim($rawMessageId, '<>')
-                            : null;
-                    }
+                    $messageId = $rawMessageId
+                        ? trim($rawMessageId, '<>')
+                        : null;
                 }
-
-                foreach ($driverOrders as $driverOrder) {
-                    OrderEmailHistory::create([
-                        'order_id' =>
-                            $driverOrder['order']->id,
-
-                        'to_email' =>
-                            $driver->email,
-
-                        'from_email' =>
-                            config('mail.from.address'),
-
-                        'subject' =>
-                            'Driver Pickup Mail',
-
-                        'body' =>
-                            'Driver pickup mail sent successfully to ' .
-                            $driver->name . '.',
-
-                        'status' =>
-                            'sent',
-
-                        'message_id' =>
-                            $messageId,
-                    ]);
-                }
-
-                $sent[] = [
-                    'driver_id' =>
-                        $driver->id,
-
-                    'driver_name' =>
-                        $driver->name,
-
-                    'email' =>
-                        $driver->email,
-
-                    'orders_count' =>
-                        count($driverOrders),
-
-                    'orders' => collect($driverOrders)
-                        ->map(function ($driverOrder) {
-                            return [
-                                'order_id' =>
-                                    $driverOrder['order']->id,
-
-                                'order_number' =>
-                                    $driverOrder['order_number'],
-
-                                'gallery_upload_url' =>
-                                    $driverOrder['gallery_upload_url'],
-
-                                'gallery_qr_url' =>
-                                    $driverOrder['gallery_qr_url'],
-                            ];
-                        })
-                        ->values()
-                        ->all(),
-                ];
-            } catch (\Throwable $e) {
-                Log::error(
-                    'Driver pickup mail failed',
-                    [
-                        'driver_id' => $driver->id,
-                        'driver_name' => $driver->name,
-                        'driver_email' => $driver->email,
-                        'error' => $e->getMessage(),
-                    ]
-                );
-
-                foreach ($driverOrders as $driverOrder) {
-                    OrderEmailHistory::create([
-                        'order_id' =>
-                            $driverOrder['order']->id,
-
-                        'to_email' =>
-                            $driver->email,
-
-                        'from_email' =>
-                            config('mail.from.address'),
-
-                        'subject' =>
-                            'Driver Pickup Mail',
-
-                        'body' =>
-                            $e->getMessage(),
-
-                        'status' =>
-                            'failed',
-
-                        'message_id' =>
-                            null,
-                    ]);
-                }
-
-                $failed[] = [
-                    'driver_id' =>
-                        $driver->id,
-
-                    'driver_name' =>
-                        $driver->name,
-
-                    'email' =>
-                        $driver->email,
-
-                    'message' =>
-                        $e->getMessage(),
-                ];
             }
 
-            usleep(500000);
+            foreach ($driverOrders as $driverOrder) {
+                OrderEmailHistory::create([
+                    'order_id' =>
+                        $driverOrder['order']->id,
+
+                    'to_email' =>
+                        $driver->email,
+
+                    'from_email' =>
+                        config('mail.from.address'),
+
+                    'subject' =>
+                        'Driver Pickup Mail',
+
+                    'body' =>
+                        'Driver pickup mail sent successfully to ' .
+                        $driver->name . '.',
+
+                    'status' =>
+                        'sent',
+
+                    'message_id' =>
+                        $messageId,
+                ]);
+            }
+
+            $sent[] = [
+                'driver_id' =>
+                    $driver->id,
+
+                'driver_name' =>
+                    $driver->name,
+
+                'email' =>
+                    $driver->email,
+
+                'orders_count' =>
+                    count($driverOrders),
+
+                'orders' => collect($driverOrders)
+                    ->map(function ($driverOrder) {
+                        return [
+                            'order_id' =>
+                                $driverOrder['order']->id,
+
+                            'order_number' =>
+                                $driverOrder['order_number'],
+
+                            'gallery_upload_url' =>
+                                $driverOrder['gallery_upload_url'],
+
+                            'gallery_qr_url' =>
+                                $driverOrder['gallery_qr_url'],
+                        ];
+                    })
+                    ->values()
+                    ->all(),
+            ];
+        } catch (\Throwable $e) {
+            Log::error(
+                'Driver pickup mail failed',
+                [
+                    'driver_id' => $driver->id,
+                    'driver_name' => $driver->name,
+                    'driver_email' => $driver->email,
+                    'error' => $e->getMessage(),
+                ]
+            );
+
+            foreach ($driverOrders as $driverOrder) {
+                OrderEmailHistory::create([
+                    'order_id' =>
+                        $driverOrder['order']->id,
+
+                    'to_email' =>
+                        $driver->email,
+
+                    'from_email' =>
+                        config('mail.from.address'),
+
+                    'subject' =>
+                        'Driver Pickup Mail',
+
+                    'body' =>
+                        $e->getMessage(),
+
+                    'status' =>
+                        'failed',
+
+                    'message_id' =>
+                        null,
+                ]);
+            }
+
+            $failed[] = [
+                'driver_id' =>
+                    $driver->id,
+
+                'driver_name' =>
+                    $driver->name,
+
+                'email' =>
+                    $driver->email,
+
+                'message' =>
+                    $e->getMessage(),
+            ];
         }
 
-        $sentCount = count($sent);
-        $failedCount = count($failed);
-
-        return response()->json([
-            'success' => $sentCount > 0,
-
-            'message' => $sentCount > 0
-                ? $sentCount .
-                    ' driver pickup email(s) sent successfully.'
-                : 'No driver pickup emails were sent.',
-
-            'sent_count' =>
-                $sentCount,
-
-            'failed_count' =>
-                $failedCount,
-
-            'sent' =>
-                $sent,
-
-            'failed' =>
-                $failed,
-        ], $sentCount > 0 ? 200 : 422);
+        usleep(500000);
     }
+
+    $sentCount = count($sent);
+    $failedCount = count($failed);
+
+    return response()->json([
+        'success' => $sentCount > 0,
+
+        'message' => $sentCount > 0
+            ? $sentCount .
+                ' driver pickup email(s) sent successfully.'
+            : 'No driver pickup emails were sent.',
+
+        'sent_count' =>
+            $sentCount,
+
+        'failed_count' =>
+            $failedCount,
+
+        'sent' =>
+            $sent,
+
+        'failed' =>
+            $failed,
+    ], $sentCount > 0 ? 200 : 422);
+}
 
     /**
      * Send pickup mail to passengers for selected orders on a specific date.
@@ -1466,6 +1408,144 @@ class ManifestController extends Controller
         ));
     }
 
+
+   public function vehicleManifest(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        $startOfWeek = Carbon::parse($date);
+        $endOfWeek   = Carbon::parse($date)->copy()->addDays(6);
+
+        $selectedVehicle = $request->vehicle_id;
+
+        $assignments = OrderDriver::with([
+            'vehicle',
+            'driver',
+            'order.customer',
+            'order.tour',
+            'order.subTour',
+            'order.orderTours.tour.detail'
+        ])
+        ->whereBetween('assigned_date', [
+            $startOfWeek->toDateString(),
+            $endOfWeek->toDateString()
+        ])
+        ->when($selectedVehicle, function ($q) use ($selectedVehicle) {
+            $q->where('vehicle_id', $selectedVehicle);
+        })
+        ->get();
+
+        $grid = [];
+        $vehicleTotals = [];
+        $dateRange = [];
+
+        $d = $startOfWeek->copy();
+
+        while ($d->lte($endOfWeek)) {
+
+            $day = $d->toDateString();
+
+            $dateRange[] = $d->copy();
+
+            $vehicleTotals[$day] = [];
+
+            $d->addDay();
+        }
+
+        foreach ($assignments as $assignment) {
+
+            $order = $assignment->order;
+
+            if (!$order) {
+                continue;
+            }
+
+            foreach ($order->orderTours as $tour) {
+
+                if ($tour->tour_date != $assignment->assigned_date) {
+                    continue;
+                }
+
+                $guestCount = collect(
+                    json_decode($tour->tour_pricing, true) ?? []
+                )->sum('quantity');
+
+                $vehicleName = $assignment->vehicle?->name ?? 'NA';
+
+                if ($order->sub_tour_id && $order->subTour) {
+
+                    $tourTitle =
+                        $order->tour?->title .
+                        '<br><small>' .
+                        $tour->tour->title .
+                        '</small>';
+
+                } else {
+
+                    $tourTitle = $tour->tour->title ?? 'Unknown Tour';
+                }
+
+                $grid[$vehicleName][$assignment->assigned_date][] = [
+
+                    'order_id' => $order->id,
+                    'order_encrypt_id' => encrypt($order->id),
+                    'order_number' => $order->order_number,
+                    'customer' => $order->customer?->name,
+                    'guest_count' => $guestCount,
+
+                    'driver_name' => $assignment->driver?->name,
+                    'vehicle_name' => $vehicleName,
+
+                    'pickup_time' => $assignment->pickup_time,
+                    'pickup_location' => $assignment->pickup_location,
+
+                    'assignment_type' => $assignment->assignment_type,
+
+                    'tour_title' => $tourTitle,
+
+                    'internal_notes' => $order->internal_notes,
+
+                ];
+
+                $vehicleTotals[$assignment->assigned_date][$vehicleName] =
+                    ($vehicleTotals[$assignment->assigned_date][$vehicleName] ?? 0)
+                    + $guestCount;
+            }
+        }
+
+        ksort($grid);
+
+        $vehicles = Vehicle::orderBy('name')->get();
+
+        return view(
+            'admin.manifest.vehicle',
+            compact(
+                'grid',
+                'dateRange',
+                'vehicles',
+                'selectedVehicle',
+                'vehicleTotals',
+                'date'
+            )
+        );
+    }
+
+
+    public function exportVehicleManifest(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+        ]);
+
+        return Excel::download(
+            new VehicleExport(
+                $request->date,
+                $request->vehicle_id
+            ),
+            'Vehicle_Manifest_'.\Carbon\Carbon::parse($request->date)->format('d_M_Y').'.xlsx'
+        );
+    }
+
     /**
      * Assign drivers to orders for a specific date.
      */
@@ -1748,5 +1828,476 @@ class ManifestController extends Controller
             return trim((string) $time);
         }
     }
-    
+
+    /**
+     * Generate driver manifest for a specific date.
+    */
+    public function driverManifest123(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        $selectedDriver  = $request->input('driver_id');
+        $selectedVehicle = $request->input('vehicle_id');
+
+        $startOfWeek = Carbon::parse($date);
+        $endOfWeek   = Carbon::parse($date)->copy()->addDays(4);
+
+        $driverPaxPerDay = [];
+        $driverNameMap   = [];
+
+        $dateRange = [];
+        $totalPaxPerDay = [];
+        $assignedPaxPerDay = [];
+        $reportGroupTotals = [];
+
+        $d = $startOfWeek->copy();
+
+        while ($d->lte($endOfWeek)) {
+            $day = $d->toDateString();
+
+            $dateRange[] = $d->copy();
+            $totalPaxPerDay[$day] = 0;
+            $assignedPaxPerDay[$day] = 0;
+
+            $d->addDay();
+        }
+
+        $orders = Order::with([
+                'customer',
+                'tour',
+                'subTour',
+                'orderTours.tour.detail'
+            ])
+            ->where('order_status', 5)
+            ->whereHas('orderTours', function ($q) use ($startOfWeek, $endOfWeek) {
+                $q->whereBetween('tour_date', [
+                    $startOfWeek->toDateString(),
+                    $endOfWeek->toDateString()
+                ]);
+            })
+            ->get();
+
+        $orderDriverMap = OrderDriver::with(['driver', 'vehicle'])
+            ->whereBetween('assigned_date', [
+                $startOfWeek->toDateString(),
+                $endOfWeek->copy()->addDay()->toDateString()
+            ])
+            ->get()
+            ->groupBy(function ($item) {
+                return $item->order_id . '_' . $item->assigned_date . '_' . $item->assignment_type;
+            });
+
+        $pickupLocationIds = $orders
+            ->pluck('customer.pickup_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $pickupLocations = PickupLocation::whereIn('id', $pickupLocationIds)
+            ->get()
+            ->keyBy('id');
+
+        $grid = [];
+
+        $tourTimes = [];
+        $tourAssignableMap = [];
+        $tourReportGroupMap = [];
+        $tourPaxMap = [];
+
+        foreach ($orders as $order) {
+
+            $encryptedOrderId = encrypt($order->id);
+
+            foreach ($order->orderTours as $ot) {
+
+                $tourDate = $ot->tour_date;
+
+                if (!$tourDate) {
+                    continue;
+                }
+
+                if ($order->sub_tour_id && $order->subTour) {
+                    $tourTitle = $order->tour?->title . '<br><small>' . ($ot->tour?->title ?? '') . '</small>';
+                    $sortTitle = $order->tour?->report_group ?? 99;
+                } else {
+                    $tourTitle = $ot->tour?->title ?? 'Unknown Tour';
+                    $sortTitle = $ot->tour?->report_group ?? 99;
+                }
+
+                $slotTime = $ot->tour_time ?? '00:00 AM';
+
+                $guestCount = collect(
+                    json_decode($ot->tour_pricing, true) ?? []
+                )->sum('quantity');
+
+                $driverKey = $order->id . '_' . $tourDate . '_tour';
+
+                $orderDrivers = $orderDriverMap[$driverKey] ?? collect();
+
+                $driverIds = $orderDrivers->pluck('driver_id')->filter()->values()->toArray();
+                $vehicleIds = $orderDrivers->pluck('vehicle_id')->filter()->values()->toArray();
+
+                $driverNames = $orderDrivers
+                    ->pluck('driver.name')
+                    ->filter()
+                    ->values()
+                    ->toArray();
+
+                $vehicleNames = $orderDrivers
+                    ->pluck('vehicle.name')
+                    ->filter()
+                    ->values()
+                    ->toArray();
+
+                $totalPaxPerDay[$tourDate] =
+                    ($totalPaxPerDay[$tourDate] ?? 0) + $guestCount;
+
+                if (
+                    (!$selectedDriver || in_array($selectedDriver, $driverIds)) &&
+                    (!$selectedVehicle || in_array($selectedVehicle, $vehicleIds))
+                ) {
+                    foreach ($orderDrivers as $driver) {
+
+                        if ($selectedDriver && $driver->driver_id != $selectedDriver) {
+                            continue;
+                        }
+
+                        if ($selectedVehicle && $driver->vehicle_id != $selectedVehicle) {
+                            continue;
+                        }
+
+                        $driverId = $driver->driver_id;
+
+                        if (!$driverId) {
+                            continue;
+                        }
+
+                        $driverNameMap[$driverId] = $driver->driver?->name;
+
+                        $driverPaxPerDay[$tourDate][$driverId] =
+                            ($driverPaxPerDay[$tourDate][$driverId] ?? 0) + $guestCount;
+                    }
+                }
+
+                $matchDriver = !$selectedDriver || in_array($selectedDriver, $driverIds);
+                $matchVehicle = !$selectedVehicle || in_array($selectedVehicle, $vehicleIds);
+
+                if (
+                    $matchDriver &&
+                    $matchVehicle &&
+                    !empty($driverIds) &&
+                    !empty($vehicleIds)
+                ) {
+                    $assignedPaxPerDay[$tourDate] =
+                        ($assignedPaxPerDay[$tourDate] ?? 0) + $guestCount;
+                }
+
+                $reportGroup = $sortTitle ?? 99;
+
+                $reportGroupTotals[$reportGroup][$tourDate] =
+                    ($reportGroupTotals[$reportGroup][$tourDate] ?? 0) + $guestCount;
+
+                $tourDetail = $ot->tour?->detail;
+                //$pickupTime = optional($orderDrivers->first())->pickup_time;
+
+                $pickName = '';
+                $instruction = '';
+                $pickLocationTime = null;
+
+                if ($order->customer && $order->customer->pickup_name) {
+
+                    $pickName = $order->customer->pickup_name;
+                    $instruction = $order->customer->instructions;
+
+                } elseif ($order->customer && $order->customer->pickup_id) {
+
+                    $pickLocation = $pickupLocations[$order->customer->pickup_id] ?? null;
+
+                    $pickName = trim(
+                        ($pickLocation?->location ?? '') .
+                        ' - ' .
+                        ($pickLocation?->address ?? '') .
+                        ' - ' .
+                        ($pickLocation?->time ?? '')
+                    );
+                    $pickLocationTime = convertTo24HourFormat($pickLocation?->time);
+                    $instruction = $order->customer->instructions;
+                }
+
+                $pickupTime = optional($orderDrivers->first())->pickup_time ?? $pickLocationTime;
+
+                $grid[$tourTitle][$tourDate][] = [
+                    'order_id'         => $order->id,
+                    'order_encrypt_id' => $encryptedOrderId,
+                    'order_number'     => $order->order_number,
+                    'customer'         => $order->customer?->name,
+                    'guest_count'      => $guestCount,
+                    'driver_ids'       => $driverIds,
+                    'driver_names'     => $driverNames,
+                    'vehicle_ids'      => $vehicleIds,
+                    'vehicle_names'    => $vehicleNames,
+                    'tour_assignable'  => $tourDetail?->assign_driver ?? false,
+                    'assignment_type'  => 'tour',
+                    'pickup_time'      => $pickupTime,
+                    'pickup_location'  => $pickName,
+                    'instruction'      => $instruction,
+                    'internal_notes'   => $order->internal_notes,
+                ];
+
+                $tourTimes[$tourTitle] = $slotTime;
+
+                $tourAssignableMap[$tourTitle] = $tourDetail?->assign_driver ?? false;
+
+                $tourReportGroupMap[$tourTitle] = $sortTitle ?? 999;
+
+                $tourPaxMap[$tourTitle] =
+                    ($tourPaxMap[$tourTitle] ?? 0) + $guestCount;
+
+                /*
+                |--------------------------------------------------------------------------
+                | Next Day Pick Up
+                |--------------------------------------------------------------------------
+                */
+
+                $extras = json_decode($ot->tour_extra, true) ?? [];
+
+                foreach ($extras as $extra) {
+
+                    if (
+                        !isset($extra['label']) ||
+                        stripos($extra['label'], 'Next Day Pick Up') === false
+                    ) {
+                        continue;
+                    }
+
+                    $extraDate = Carbon::parse($tourDate)
+                        ->addDay()
+                        ->toDateString();
+
+                    $extraDriverKey = $order->id . '_' . $extraDate . '_next_day_pickup';
+
+                    $extraOrderDrivers = $orderDriverMap[$extraDriverKey] ?? collect();
+
+                    $extraDriverIds = $extraOrderDrivers
+                        ->pluck('driver_id')
+                        ->filter()
+                        ->values()
+                        ->toArray();
+
+                    $extraVehicleIds = $extraOrderDrivers
+                        ->pluck('vehicle_id')
+                        ->filter()
+                        ->values()
+                        ->toArray();
+
+                    $extraDriverNames = $extraOrderDrivers
+                        ->pluck('driver.name')
+                        ->filter()
+                        ->values()
+                        ->toArray();
+
+                    $extraVehicleNames = $extraOrderDrivers
+                        ->pluck('vehicle.name')
+                        ->filter()
+                        ->values()
+                        ->toArray();
+
+                    $extraGuestCount = (int) ($extra['quantity'] ?? 0);
+
+                    $totalPaxPerDay[$extraDate] =
+                        ($totalPaxPerDay[$extraDate] ?? 0) + $extraGuestCount;
+
+                    $assignedPaxPerDay[$extraDate] =
+                        $assignedPaxPerDay[$extraDate] ?? 0;
+
+                    if (
+                        (!$selectedDriver || in_array($selectedDriver, $extraDriverIds)) &&
+                        (!$selectedVehicle || in_array($selectedVehicle, $extraVehicleIds))
+                    ) {
+                        foreach ($extraOrderDrivers as $driver) {
+
+                            if ($selectedDriver && $driver->driver_id != $selectedDriver) {
+                                continue;
+                            }
+
+                            if ($selectedVehicle && $driver->vehicle_id != $selectedVehicle) {
+                                continue;
+                            }
+
+                            $driverId = $driver->driver_id;
+
+                            if (!$driverId) {
+                                continue;
+                            }
+
+                            $driverNameMap[$driverId] = $driver->driver?->name;
+
+                            $driverPaxPerDay[$extraDate][$driverId] =
+                                ($driverPaxPerDay[$extraDate][$driverId] ?? 0) + $extraGuestCount;
+                        }
+                    }
+
+                    $matchExtraDriver = !$selectedDriver || in_array($selectedDriver, $extraDriverIds);
+                    $matchExtraVehicle = !$selectedVehicle || in_array($selectedVehicle, $extraVehicleIds);
+
+                    if (
+                        $matchExtraDriver &&
+                        $matchExtraVehicle &&
+                        !empty($extraDriverIds) &&
+                        !empty($extraVehicleIds)
+                    ) {
+                        $assignedPaxPerDay[$extraDate] =
+                            ($assignedPaxPerDay[$extraDate] ?? 0) + $extraGuestCount;
+                    }
+
+                    $extraReportGroup = 999;
+
+                    $reportGroupTotals[$extraReportGroup][$extraDate] =
+                        ($reportGroupTotals[$extraReportGroup][$extraDate] ?? 0) + $extraGuestCount;
+
+                    $extraPickupTime = optional($extraOrderDrivers->first())->pickup_time;
+
+                    $grid['Next Day Pick Up'][$extraDate][] = [
+                        'order_id'         => $order->id,
+                        'order_encrypt_id' => $encryptedOrderId,
+                        'order_number'     => $order->order_number,
+                        'customer'         => $order->customer?->name,
+                        'guest_count'      => $extraGuestCount,
+                        'driver_ids'       => $extraDriverIds,
+                        'driver_names'     => $extraDriverNames,
+                        'vehicle_ids'      => $extraVehicleIds,
+                        'vehicle_names'    => $extraVehicleNames,
+                        'tour_assignable'  => true,
+                        'assignment_type'  => 'next_day_pickup',
+                        'pickup_time'      => $extraPickupTime,
+                        'pickup_location'  => $pickName,
+                        'instruction'      => $instruction,
+                        'internal_notes'   => $order->internal_notes,
+                    ];
+
+                    $tourTimes['Next Day Pick Up'] = '00:00 AM';
+                    $tourAssignableMap['Next Day Pick Up'] = true;
+                    $tourReportGroupMap['Next Day Pick Up'] = $extraReportGroup;
+
+                    $tourPaxMap['Next Day Pick Up'] =
+                        ($tourPaxMap['Next Day Pick Up'] ?? 0) + $extraGuestCount;
+                }
+            }
+        }
+
+        $sortedGrid = collect($grid)
+            ->sortBy(function ($dates, $tour) use (
+                $tourReportGroupMap,
+                $tourAssignableMap,
+                $tourPaxMap,
+                $tourTimes
+            ) {
+                $reportGroup = $tourReportGroupMap[$tour] ?? 99;
+
+                $assignableSort = ($tourAssignableMap[$tour] ?? false) ? 0 : 1;
+
+                $hasPax = ($tourPaxMap[$tour] ?? 0) > 0 ? 0 : 1;
+
+                try {
+                    $timeSort = Carbon::parse(
+                        $tourTimes[$tour] ?? '00:00 AM'
+                    )->format('Hi');
+                } catch (\Exception $e) {
+                    $timeSort = 9999;
+                }
+
+                return sprintf(
+                    '%04d_%d_%d_%s',
+                    $reportGroup,
+                    $assignableSort,
+                    $hasPax,
+                    $timeSort
+                );
+            })
+            ->toArray();
+
+        $groupedGrid = collect($sortedGrid)->groupBy(function ($dates, $tourTitle) use ($tourReportGroupMap) {
+            return $tourReportGroupMap[$tourTitle] ?? 99;
+        });
+
+        $drivers = User::where('role', 'Driver')
+            ->orderBy('name')
+            ->get();
+
+        $vehicles = Vehicle::orderBy('id')->get();
+
+        $vehicleNameMap = Vehicle::pluck('name', 'id')->toArray();
+
+        return view('admin.manifest.driver', compact(
+            'sortedGrid',
+            'dateRange',
+            'tourTimes',
+            'drivers',
+            'vehicles',
+            'vehicleNameMap',
+            'date',
+            'totalPaxPerDay',
+            'assignedPaxPerDay',
+            'driverPaxPerDay',
+            'driverNameMap',
+            'selectedDriver',
+            'selectedVehicle',
+            'reportGroupTotals',
+            'tourReportGroupMap',
+            'groupedGrid'
+        ));
+    }
+
+    /**
+     * Summary of assignDriver
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function assignDriver123(Request $request)
+    {
+        $request->validate([
+            'orders' => 'required|array',
+            'orders.*.order_id' => 'required|integer',
+            'orders.*.driver_ids' => 'nullable|array',
+            'orders.*.vehicle_ids' => 'nullable|array',
+            'orders.*.pickup_time' => 'required|date_format:H:i:s',
+            'orders.*.assignment_type' => 'nullable|string',
+            'date' => 'required|date',
+        ]);
+
+        foreach ($request->orders as $item) {
+
+            $orderId          = $item['order_id'];
+            $selectedDrivers  = $item['driver_ids'] ?? [];
+            $selectedVehicles = $item['vehicle_ids'] ?? [];
+            $selectedTime     = $item['pickup_time'] ?? null;
+            $assignmentType   = $item['assignment_type'] ?? 'tour';
+
+            OrderDriver::where('order_id', $orderId)
+                ->whereDate('assigned_date', $request->date)
+                ->where('assignment_type', $assignmentType)
+                ->delete();
+
+            foreach ($selectedDrivers as $index => $driverId) {
+
+                if (!$driverId) {
+                    continue;
+                }
+
+                OrderDriver::create([
+                    'order_id'        => $orderId,
+                    'driver_id'       => $driverId,
+                    'vehicle_id'      => $selectedVehicles[$index] ?? $selectedVehicles[0] ?? null,
+                    'assigned_date'   => $request->date,
+                    'pickup_time'     => $selectedTime,
+                    'assignment_type' => $assignmentType,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Driver assignment saved successfully.',
+        ]);
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Promo;
+use App\Models\Tour;
 use Carbon\Carbon;
 
 class PromoController extends Controller
@@ -13,7 +14,9 @@ class PromoController extends Controller
     {
         $request->validate([
             'code' => 'required|string',
-            'cart_total' => 'required|numeric|min:0'
+            'cart_total' => 'required|numeric|min:0',
+            'selected_date' => 'required|date',
+            'tour_id' => 'required|integer|exists:tours,id',
         ]);
 
         $promo = Promo::where('code', $request->code)->first();
@@ -26,18 +29,48 @@ class PromoController extends Controller
             return response()->json(['message' => 'Promo inactive'], 400);
         }
 
-        if ($promo->expires_at && Carbon::now()->gt($promo->expires_at)) {
+        $today = Carbon::today();
+        $tourDate = Carbon::parse($request->selected_date)->startOfDay();
+        if (
+            ($promo->issue_date && $today->lt(Carbon::parse($promo->issue_date)))
+            || ($promo->expiry_date && $today->gt(Carbon::parse($promo->expiry_date)))
+            || ($promo->travel_from_date && $tourDate->lt(Carbon::parse($promo->travel_from_date)))
+            || ($promo->travel_to_date && $tourDate->gt(Carbon::parse($promo->travel_to_date)))
+        ) {
             return response()->json(['message' => 'Promo expired'], 400);
         }
 
-        if ($promo->usage_limit && $promo->used_count >= $promo->usage_limit) {
+        if ($promo->max_uses && $promo->used_count >= $promo->max_uses) {
             return response()->json(['message' => 'Usage limit exceeded'], 400);
         }
 
-        if ($promo->min_cart_value && $request->cart_total < $promo->min_cart_value) {
+        if ($promo->min_amount && $request->cart_total < $promo->min_amount) {
             return response()->json([
                 'message' => 'Minimum cart value not met'
             ], 400);
+        }
+
+        $validDays = array_map('intval', $promo->valid_days ?? []);
+        if (!empty($validDays) && !in_array($tourDate->isoWeekday(), $validDays, true)) {
+            return response()->json(['message' => 'Promo is not valid for this travel day'], 400);
+        }
+
+        if ($promo->internal && strtolower((string) $request->source) !== 'internal') {
+            return response()->json(['message' => 'Promo is restricted to internal orders'], 400);
+        }
+
+        $tour = Tour::find($request->tour_id);
+        if (
+            str_contains($promo->value_type, 'LIMITPRODUCT')
+            && (int) $promo->product_id !== (int) $tour->id
+        ) {
+            return response()->json(['message' => 'Promo is not valid for this tour'], 400);
+        }
+        if (
+            str_contains($promo->value_type, 'LIMITCATEGORY')
+            && !$tour->categories()->whereKey($promo->category_id)->exists()
+        ) {
+            return response()->json(['message' => 'Promo is not valid for this tour category'], 400);
         }
 
         $discountableTotal = (float) $request->input('discountable_cart_total', $request->cart_total);

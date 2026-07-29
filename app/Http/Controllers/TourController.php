@@ -33,6 +33,7 @@ use App\Traits\TourScheduleHelper;
 use App\Upload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Maatwebsite\Excel\Facades\Excel;
@@ -2763,6 +2764,11 @@ $pickupHtml .= '</div>';
             ['tour_id' => $tour->id],
             $payload
         );
+
+        // Checkout reads this rule through two API paths. Invalidate both
+        // cache-key formats so updated discounts apply immediately.
+        Cache::forget('deposit_rule_' . $tour->id);
+        Cache::forget('depositRule_' . $tour->id);
 
         /*
         |--------------------------------------------------------------------------

@@ -778,7 +778,7 @@
                     <td align="right">{{ number_format_with_currency($row['customer_total'],2) }}</td>
                     <!-- <td align="right">{{ number_format_with_currency($row['exclude_total'],2) }}  </td> -->
 
-                    <td align="right">{{ number_format_with_currency($row['balance_amount'],2) }}</td>
+                    <td align="right" class="{{ $row['balance_amount'] > 0.01 ? 'text-danger font-weight-bold' : 'text-success' }}">{{ number_format_with_currency($row['balance_amount'],2) }}</td>
 
                     <!-- <td align="right">{{ number_format_with_currency($row['transport_cost'],2) }}</td> -->
 
@@ -862,7 +862,7 @@
                         <td align="right">{{ number_format_with_currency($totals['discount_amount'],2) }}</td>
                         <td align="right">{{ number_format_with_currency($totals['customer_total'],2) }}</td>
                         <!-- <td align="right">{{ number_format_with_currency($totals['exclude_total'],2) }}</td> -->
-                        <td align="right">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>
+                        <td align="right" class="{{ $totals['balance_amount'] > 0.01 ? 'text-danger font-weight-bold' : 'text-success' }}">{{ number_format_with_currency($totals['balance_amount'],2) }}</td>
                         <!-- <td align="right">{{ number_format_with_currency($totals['transport_cost'],2) }}</td> -->
                         <td align="right">{{ number_format_with_currency($totals['tour_selling_price'],2) }}</td>
                         <td align="right">{{ number_format_with_currency($totals['tour_extra_included_price'],2) }} </td>

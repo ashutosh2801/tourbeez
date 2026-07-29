@@ -261,7 +261,8 @@
                                     name="source" 
                                     class="form-control col-12 col-md-6 aiz-selectpicker border">
                                     @foreach($sources as $source)
-                                        <option value="{{ $source->key }}">{{ $source->name }}</option>  
+                                        <option @if ($source->key ==='internal') echo 'selected'                                     
+                                        @endif value="{{ $source->key }}">{{ $source->name }}</option>  
                                     @endforeach
                                 </select>
                             </div>

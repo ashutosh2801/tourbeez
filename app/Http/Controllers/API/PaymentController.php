@@ -13,10 +13,13 @@ use App\Models\OrderEmailHistory;
 use App\Models\OrderPayment;
 use App\Models\Pickup;
 use App\Models\PickupLocation;
+use App\Models\Promo;
 use App\Models\StripeWebhookLog;
+use App\Models\StripeWebhookReceipt;
 use App\Models\TourPricing;
 use App\Models\User;
 use App\Notifications\NewOrderNotification;
+use App\Services\OrderPaymentSummaryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -38,6 +41,14 @@ class PaymentController extends Controller
         $sigHeader  = $request->header('Stripe-Signature');
         $secret     = env('STRIPE_WEBHOOK_SECRET');
 
+        if (blank($secret)) {
+            Log::critical('Stripe webhook rejected because STRIPE_WEBHOOK_SECRET is not configured.');
+
+            return response()->json([
+                'error' => 'Stripe webhook is not configured',
+            ], 503);
+        }
+
         orderLogAdvanced(null, 'webhook', 'entry', 'info', 'Webhook received', [
             'payload' => $payload
         ]);
@@ -50,15 +61,40 @@ class PaymentController extends Controller
             'status' => 'received',
             'message' => null
         ];
-
-        // ✅ Verify signature
-        $event = Webhook::constructEvent(
-            $payload,
-            $sigHeader,
-            $secret
-        );
+        $order = null;
+        $orderId = null;
+        $receipt = null;
 
         try {
+            $event = Webhook::constructEvent(
+                $payload,
+                $sigHeader,
+                $secret
+            );
+
+            $receipt = StripeWebhookReceipt::firstOrCreate(
+                ['event_id' => $event->id],
+                [
+                    'event_type' => $event->type,
+                    'status' => 'processing',
+                ]
+            );
+            $processingIsFresh = $receipt->status === 'processing'
+                && $receipt->updated_at
+                && $receipt->updated_at->gt(now()->subMinutes(5));
+            if (!$receipt->wasRecentlyCreated && ($receipt->status === 'processed' || $processingIsFresh)) {
+                return response()->json([
+                    'status' => 'duplicate',
+                    'event_id' => $event->id,
+                ]);
+            }
+            if (!$receipt->wasRecentlyCreated) {
+                $receipt->update([
+                    'event_type' => $event->type,
+                    'status' => 'processing',
+                    'processed_at' => null,
+                ]);
+            }
             
             $eventObject = $event->data->object;
             Stripe::setApiKey(env('STRIPE_SECRET'));
@@ -130,6 +166,7 @@ class PaymentController extends Controller
                 case 'charge.refunded':
 
                     $order->failure_message = 'Payment refunded';
+                    $this->syncRefundFromWebhook($eventObject, $order);
                     $logData['status']  = 'refunded';
                     $logData['message'] = 'Payment refunded';
                     break;
@@ -144,6 +181,7 @@ class PaymentController extends Controller
 
                     $this->saveCardDetails( $eventObject );
                     $this->syncPaymentStatusFromWebhook($eventObject);
+                    $this->redeemPromoOnce($order);
 
                     $logData['status'] = 'success';
                     $logData['message'] = 'Payment successful';
@@ -193,6 +231,7 @@ class PaymentController extends Controller
                     $logData['order_id']= $order->id;
 
                     StripeWebhookLog::create($logData);
+                    $receipt->update(['status' => 'processed', 'processed_at' => now()]);
 
                     return response()->json(['status' => 'ignored']);
             }
@@ -206,6 +245,7 @@ class PaymentController extends Controller
 
             $logData['order_id'] = $order->id;
             StripeWebhookLog::create($logData);
+            $receipt->update(['status' => 'processed', 'processed_at' => now()]);
 
             return response()->json(['status' => 'success']);
 
@@ -218,6 +258,7 @@ class PaymentController extends Controller
             $logData['order_id'] = $order->id ?? $orderId;
 
             StripeWebhookLog::create($logData);
+            $receipt?->update(['status' => 'failed']);
 
             return response()->json(['error' => 'Invalid signature'], 400);
 
@@ -230,6 +271,7 @@ class PaymentController extends Controller
             $logData['order_id'] = $order->id ?? $orderId;
 
             StripeWebhookLog::create($logData);
+            $receipt?->update(['status' => 'failed']);
 
             return response()->json(['error' => 'Server error'], 500);
         }
@@ -250,9 +292,7 @@ class PaymentController extends Controller
                 $params['payment_method_types'] = ['card'];
             }
 
-            $setupIntent = SetupIntent::create([
-                $params
-            ]);
+            $setupIntent = SetupIntent::create($params);
 
             return response()->json([
                 'clientSecret' => $setupIntent->client_secret,
@@ -270,13 +310,38 @@ class PaymentController extends Controller
     {
         Log::info('createOrUpdate');
 
-        return $this->createSetupIntent($request->action);
-        
         try {
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
-            $amount     = floatval($request->amount) * 100; // cents
-            $currency   = $request->currency ?? 'CAD';
+            if ($request->action !== 'paynow') {
+                $order = Order::withoutGlobalScopes()->find($request->order_id);
+                if (!$order) {
+                    return response()->json(['error' => 'Invalid order ID'], 404);
+                }
+
+                $params = [
+                    'automatic_payment_methods' => ['enabled' => true],
+                    'usage' => 'off_session',
+                    'metadata' => [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                    ],
+                ];
+                if ($order->stripe_customer_id) {
+                    $params['customer'] = $order->stripe_customer_id;
+                }
+
+                $setupIntent = SetupIntent::create($params);
+                $order->payment_intent_id = $setupIntent->id;
+                $order->payment_intent_client_secret = $setupIntent->client_secret;
+                $order->save();
+
+                return response()->json([
+                    'clientSecret' => $setupIntent->client_secret,
+                    'setupIntentId' => $setupIntent->id,
+                ]);
+            }
+
             $order_id   = $request->order_id;
             $order_num  = $request->order_number;
             $description= $request->description;
@@ -290,6 +355,18 @@ class PaymentController extends Controller
                     'error' => 'Invalid order ID'
                 ], 404);
             }
+            $paymentSummary = (new OrderPaymentSummaryService())->summarize(
+                $order->payments()->get()
+            );
+            $grossAmount = round((float) $order->orderTours()->sum('total_amount'), 2);
+            $payableAmount = round(max($grossAmount - $paymentSummary['total_credits'], 0), 2);
+            if ($payableAmount <= 0.01) {
+                return response()->json([
+                    'error' => 'Order is already fully paid',
+                ], 422);
+            }
+            $amount = $this->stripeAmount($payableAmount, $order->currency);
+            $currency = strtolower((string) ($order->currency ?: 'CAD'));
 
             $params = [
                 'amount' => $amount,
@@ -304,6 +381,8 @@ class PaymentController extends Controller
 
             if ($request->action === 'paynow' ) { 
                 $params['automatic_payment_methods'] = ['enabled' => true];
+                $params['capture_method'] = 'manual';
+                $params['setup_future_usage'] = 'off_session';
             }
             else {
                 $params['payment_method_types'] = ['card'];
@@ -316,8 +395,10 @@ class PaymentController extends Controller
                     if ($paymentIntent->status === 'requires_payment_method') {
                         // Update amount if needed
                         if ($paymentIntent->amount !== $amount) {
-                            $paymentIntent->amount = $amount;
-                            $paymentIntent->save();
+                            $paymentIntent = PaymentIntent::update(
+                                $paymentIntent->id,
+                                ['amount' => $amount]
+                            );
                         }
                     } else {
                         // Create new PaymentIntent if status is not reusable
@@ -343,6 +424,8 @@ class PaymentController extends Controller
 
             return response()->json([
                 'clientSecret' => $paymentIntent->client_secret,
+                'paymentIntentId' => $paymentIntent->id,
+                'amount' => $payableAmount,
             ]);
 
         } catch (\Exception $e) {
@@ -465,10 +548,16 @@ class PaymentController extends Controller
                             'payment_intent_id' => $paymentIntent->id,
                         ],
                         [
+                            'order_id'          => $booking->id,
                             'payment_intent_id' => $paymentIntent->id,
                             'transaction_id'    => $paymentIntent->latest_charge ?? null,
                             'payment_type'      => strtoupper($paymentMethod->type),
                             'payment_method'    => $paymentMethod->type,
+                            'amount'            => round(
+                                ((float) ($paymentIntent->amount_received ?: $paymentIntent->amount)) / 100,
+                                2
+                            ),
+                            'currency'          => strtoupper((string) ($paymentIntent->currency ?: $booking->currency)),
                             'card_brand'        => $paymentMethod->card->brand ?? null,
                             'card_last4'        => $paymentMethod->card->last4 ?? null,
                             'card_exp_month'    => $paymentMethod->card->exp_month ?? null,
@@ -479,6 +568,18 @@ class PaymentController extends Controller
                             'collection_date'   => now(),
                         ]
                     );
+                }
+
+                if (isset($paymentIntent) && in_array($paymentIntent->status, ['requires_capture', 'succeeded'], true)) {
+                    $summary = (new OrderPaymentSummaryService())->summarize(
+                        $booking->payments()->get()
+                    );
+                    $grossAmount = round((float) $booking->orderTours()->sum('total_amount'), 2);
+                    $balance_amount = round(max($grossAmount - $summary['total_credits'], 0), 2);
+                    $booked_amount = $summary['paid_amount'];
+                    $payment_status = $paymentIntent->status === 'requires_capture'
+                        ? 3
+                        : ($balance_amount <= 0.01 ? 1 : 0);
                 }
             } catch (\Exception $e) {
                 \Log::warning(
@@ -590,17 +691,116 @@ class PaymentController extends Controller
             \Log::warning("B====================================");
 
             /* If already partially paid or added discount/promo etc in backend */
-            $paidAmount = $booking->payments()
-                        ->where('status', 'succeeded')
-                        ->where('payment_type', '<>', 'PROMO_CODE')
-                        ->sum('amount');
-                
-            $promoCode  = $booking->payments()
-                        ->where('status', 'succeeded')
-                        ->where('payment_type', 'PROMO_CODE')
-                        ->sum('amount');    
+            $paymentSummary = (new OrderPaymentSummaryService())->summarize(
+                $booking->payments()->get()
+            );
+            $paidAmount = $paymentSummary['paid_amount'];
+            $ledgerPaymentAmount = round(
+                $paymentSummary['paid_amount'] + $paymentSummary['authorized_amount'],
+                2
+            );
+            $promoCode = $paymentSummary['promo_discount'];
+            $currentPaymentAmount = 0.0;
+            $currentPaymentIsInLedger = false;
+            if (isset($paymentIntent) && in_array(
+                $paymentIntent->status,
+                ['succeeded', 'requires_capture'],
+                true
+            )) {
+                $currentPaymentRow = $booking->payments()
+                    ->where('payment_intent_id', $paymentIntent->id)
+                    ->whereIn('status', ['succeeded', 'uncaptured', 'requires_capture'])
+                    ->first();
 
-            $totalPaid  = $paidAmount + $promoCode;                   
+                if ($currentPaymentRow && !in_array(
+                    strtoupper((string) $currentPaymentRow->payment_type),
+                    ['BOOKINGFEE', 'DISCOUNT', 'PROMOCODE', 'REFUND'],
+                    true
+                )) {
+                    $currentPaymentAmount = round(max(
+                        (float) $currentPaymentRow->amount - (float) $currentPaymentRow->refund_amount,
+                        0
+                    ), 2);
+                    $currentPaymentIsInLedger = true;
+                } else {
+                    // Stripe has confirmed the payment, but the webhook/ledger
+                    // write may still be completing. Use the verified intent for
+                    // the success-screen figures in the meantime.
+                    $currentPaymentAmount = round(max(
+                        ((float) ($paymentIntent->amount_received ?: $paymentIntent->amount)) / 100,
+                        0
+                    ), 2);
+                }
+            }
+            $previouslyPaid = round(max(
+                $ledgerPaymentAmount - ($currentPaymentIsInLedger ? $currentPaymentAmount : 0),
+                0
+            ), 2);
+            $totalPaymentAmount = round(
+                $previouslyPaid + $currentPaymentAmount,
+                2
+            );
+            $currentPayment = $previouslyPaid > 0.01
+                ? $currentPaymentAmount
+                : 0.0;
+            $totalPaid = round(
+                $totalPaymentAmount
+                + $paymentSummary['special_discount']
+                + $paymentSummary['promo_discount'],
+                2
+            );
+            $grossAmount = round((float) $booking->orderTours()->sum('total_amount'), 2);
+            $balanceAmount = round(max($grossAmount - $totalPaid, 0), 2);
+            $paymentHistory = $booking->payments()
+                ->orderBy('collection_date')
+                ->orderBy('created_at')
+                ->get()
+                ->filter(function ($payment) {
+                    $status = strtolower((string) $payment->status);
+
+                    return in_array($status, [
+                        'succeeded',
+                        'uncaptured',
+                        'requires_capture',
+                        'discount',
+                        'partial_refunded',
+                        'refunded',
+                    ], true);
+                })
+                ->map(function ($payment) {
+                    $type = strtoupper((string) $payment->payment_type);
+                    $labels = [
+                        'PROMOCODE' => 'Promo Code',
+                        'DISCOUNT' => 'Special Discount',
+                        'CASH' => 'Cash',
+                        'CREDITCARD' => 'Credit Card',
+                        'CARD' => 'Card',
+                        'BOOKINGFEE' => 'Booking Fee',
+                        'REFUND' => 'Refund',
+                    ];
+                    $isDiscount = in_array($type, ['PROMOCODE', 'DISCOUNT'], true);
+                    $occurredAt = $payment->collection_date ?: $payment->created_at;
+
+                    return [
+                        'id' => $payment->id,
+                        'type' => $type,
+                        'label' => $labels[$type] ?? ucfirst(strtolower((string) $payment->payment_method ?: $type)),
+                        'status' => $payment->status,
+                        'amount' => round((float) $payment->amount, 2),
+                        'currency' => $payment->currency,
+                        'reference' => $payment->transaction_id ?: $payment->payment_intent_id,
+                        'payment_method' => $payment->payment_method,
+                        'card_brand' => $payment->card_brand,
+                        'card_last4' => $payment->card_last4,
+                        'collection_type' => $payment->collection_type,
+                        'occurred_at' => $occurredAt
+                            ? date(DATE_ATOM, strtotime((string) $occurredAt))
+                            : null,
+                        'is_discount' => $isDiscount,
+                        'is_refund' => $type === 'REFUND',
+                    ];
+                })
+                ->values();
 
             $detail = [
                 'id'                => $booking->order_number,
@@ -608,10 +808,21 @@ class PaymentController extends Controller
                 'order_number'      => $booking->order_number,
                 'number_of_guests'  => $booking->number_of_guests,
                 'paid_amount'       => $paidAmount ?? 0,
+                'total_payment_amount' => $totalPaymentAmount,
+                'previously_paid'   => $previouslyPaid,
+                'current_payment'   => $currentPayment,
                 'promo_code'        => $promoCode ?? 0,
+                'promo_code_value'  => $paymentSummary['promo_code'],
                 'total_paid'        => $totalPaid ?? 0,
-                'total_amount'      => $booking->total_amount ?? 0,
-                'balance_amount'    => $booking->balance_amount ?? 0,
+                'total_amount'      => $grossAmount,
+                'gross_amount'      => $grossAmount,
+                'balance_amount'    => $balanceAmount,
+                'payment_summary'   => [
+                    ...$paymentSummary,
+                    'gross_amount' => $grossAmount,
+                    'balance_amount' => $balanceAmount,
+                ],
+                'payment_history'   => $paymentHistory,
                 'currency'          => $booking->currency,
                 'payment_method'    => ucfirst($booking->payment_method),
                 'customer'          => $booking->customer,
@@ -633,44 +844,55 @@ class PaymentController extends Controller
             ];
             \Log::warning("C====================================");
             
-            if ($booking && !$booking->tour?->order_email && !$booking->email_sent) {                    
-                $mailsent = self::sendOrderDetailMail($detail, $action_name);
-                $order_actions = [
-                    'order_id'         => $booking->id,
-                    'performed_by'     => $booking->customer->id,
-                    'notes'            => $booking->customer->name." Pending order mail sent {$booking->order_number}",
-                    'created_at'       => now(),
-                    'updated_at'       => now()
-                ];
-                OrderActions::insert($order_actions);
-                
-                $booking->email_sent = true;
-                // $booking->save();
+            // Atomically claim each email. A concurrent callback or thank-you
+            // page refresh will see the claimed flag and will not send again.
+            $customerEmailClaimed = Order::withoutGlobalScopes()
+                ->whereKey($booking->id)
+                ->where(fn ($query) => $query->where('email_sent', false)->orWhereNull('email_sent'))
+                ->update(['email_sent' => true]) === 1;
+
+            if ($customerEmailClaimed) {
+                if (self::sendOrderDetailMail($detail, $action_name)) {
+                    OrderActions::insert([
+                        'order_id' => $booking->id,
+                        'performed_by' => $booking->customer->id,
+                        'notes' => $booking->customer->name." Pending order mail sent {$booking->order_number}",
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $booking->email_sent = true;
+                } else {
+                    Order::withoutGlobalScopes()->whereKey($booking->id)->update(['email_sent' => false]);
+                    $booking->email_sent = false;
+                }
             }
 
-            if ($booking && !$booking->admin_email_sent) {                    
-                $mailsent = self::sendOrderDetailMail($detail, 'admin');
+            $adminEmailClaimed = Order::withoutGlobalScopes()
+                ->whereKey($booking->id)
+                ->where(fn ($query) => $query->where('admin_email_sent', false)->orWhereNull('admin_email_sent'))
+                ->update(['admin_email_sent' => true]) === 1;
 
-                $order_actions = [
-                    'order_id'         => $booking->id,
-                    'performed_by'     => $booking->customer->id,
-                    'notes'            => " New order mail sent to Admin {$booking->order_number}",
-                    'created_at'       => now(),
-                    'updated_at'       => now()
-                ];
-                OrderActions::insert($order_actions);
-                
-                Log::info('admin email sent' . $booking->admin_email_sent);
-                $booking->admin_email_sent = true;
-                // $booking->save();
+            if ($adminEmailClaimed) {
+                if (self::sendOrderDetailMail($detail, 'admin')) {
+                    OrderActions::insert([
+                        'order_id' => $booking->id,
+                        'performed_by' => $booking->customer->id,
+                        'notes' => " New order mail sent to Admin {$booking->order_number}",
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $booking->admin_email_sent = true;
+
+                    $admin = User::find($booking->tour?->user_id);
+                    if ($admin) {
+                        $admin->notify(new NewOrderNotification($booking));
+                        Log::info('NewOrderNotification');
+                    }
+                } else {
+                    Order::withoutGlobalScopes()->whereKey($booking->id)->update(['admin_email_sent' => false]);
+                    $booking->admin_email_sent = false;
+                }
             }
-            $booking->save();
-            
-            $admin_id = $booking->tour->user_id;
-            $admin = User::findorFail($admin_id);
-            $admin->notify(new NewOrderNotification($booking));
-            
-            Log::info('NewOrderNotification');
             return response()->json([
                     'status'  => 'succeeded',
                     'booking' => $detail,
@@ -799,10 +1021,7 @@ class PaymentController extends Controller
             if(!$customer){
                 // $customer = User::find(4);
                 orderLogAdvanced($order?->id, 'email', 'customer_missing', 'error', 'Customer not found');
-                return response()->json([
-                    'success' => false,
-                    'message' => "customer not found"
-                ], 404);
+                return false;
             }
 
             orderLogAdvanced($order?->id, 'email', 'customer_loaded', 'success', 'Customer resolved', [
@@ -819,7 +1038,46 @@ class PaymentController extends Controller
             orderLogAdvanced($order?->id, 'email', 'tour_loaded', 'success', 'Tour data loaded', [
                 'tour_id' => $orderTour->tour_id ?? null
             ]);
-            $TOUR_PAYMENT_HISTORY =    '
+            $emailPaymentSummary = (new OrderPaymentSummaryService())->summarize(
+                $order->payments()->get()
+            );
+            $emailGrossTotal = round((float) $order->orderTours()->sum('total_amount'), 2);
+            $emailSubTotal = 0.0;
+
+            foreach ($order->orderTours as $summaryOrderTour) {
+                foreach (json_decode($summaryOrderTour->tour_pricing ?: '[]', true) ?: [] as $pricingRow) {
+                    $quantity = (int) ($pricingRow['quantity'] ?? 0);
+                    $actualPrice = (float) ($pricingRow['actual_price'] ?? $pricingRow['price'] ?? 0);
+                    $emailSubTotal += ($pricingRow['price_type'] ?? 'PER_PERSON') === 'FIXED'
+                        ? ($quantity > 0 ? $actualPrice : 0)
+                        : $quantity * $actualPrice;
+                }
+
+                foreach (json_decode($summaryOrderTour->tour_extra ?: '[]', true) ?: [] as $extraRow) {
+                    $emailSubTotal += (float) ($extraRow['total_price']
+                        ?? ((int) ($extraRow['quantity'] ?? 0) * (float) ($extraRow['price'] ?? 0)));
+                }
+            }
+
+            $emailSubTotal = round($emailSubTotal, 2);
+            $emailDiscount = (float) $emailPaymentSummary['special_discount'];
+            $emailPromo = (float) $emailPaymentSummary['promo_discount'];
+            $emailBookingFee = (float) ($emailPaymentSummary['booking_fee'] > 0
+                ? $emailPaymentSummary['booking_fee']
+                : ($order->booking_fee ?? $order->bookingFee->value('value') ?? 0));
+            $emailHst = round(max(
+                $emailGrossTotal - ($emailSubTotal - $emailDiscount - $emailPromo + $emailBookingFee),
+                0
+            ), 2);
+            $emailBalance = round(max(
+                $emailGrossTotal - (float) $emailPaymentSummary['total_credits'],
+                0
+            ), 2);
+            $emailPromoLabel = 'Promo Code' . ($emailPaymentSummary['promo_code']
+                ? ' (' . e($emailPaymentSummary['promo_code']) . ')'
+                : '');
+
+            $TOUR_PAYMENT_HISTORY = '
             <style>
             @media only screen and (max-width: 640px) {
                 .wrapper {
@@ -846,7 +1104,7 @@ class PaymentController extends Controller
             <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:100%; max-width:640px;">
                 <tr>
                 <td style="padding: 30px 30px 15px;">
-                    <h3 style="font-size:19px; margin: 0;"><strong>Payment History</strong></h3>
+                    <h3 style="font-size:19px; margin: 0;"><strong>Payment Summary</strong></h3>
                 </td>
                 </tr>
             </table>
@@ -854,32 +1112,41 @@ class PaymentController extends Controller
             <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-collapse:collapse; background-color:#fff; width:100%; max-width:640px; border-left:30px solid #fff; border-right:30px solid #fff; border-bottom:30px solid #fff;">
                 <tbody>
                 <tr>
-                    <td style="width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
+                    <td style="border-top:1pt solid #000; text-align:left; padding:5px 0;">
+                        <small style="font-size:14px; text-transform:uppercase;">Sub Total</small>
                     </td>
-                    <td style="width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
+                    <td style="border-top:1pt solid #000; text-align:right;">
+                        <strong>' . price_format_with_currency($emailSubTotal, $order->currency) . '</strong>
                     </td>
-                    <td style="width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
-                    </td>
+                </tr>'
+                . ($emailDiscount > 0 ? '<tr style="color:red;">
+                    <td style="border-top:1pt solid #000; text-align:left; padding:5px 0;"><small style="font-size:14px; text-transform:uppercase;">Discount</small></td>
+                    <td style="border-top:1pt solid #000; text-align:right;"><strong>-' . price_format_with_currency($emailDiscount, $order->currency) . '</strong></td>
+                </tr>' : '')
+                . ($emailPromo > 0 ? '<tr style="color:red;">
+                    <td style="border-top:1pt solid #000; text-align:left; padding:5px 0;"><small style="font-size:14px; text-transform:uppercase;">' . $emailPromoLabel . '</small></td>
+                    <td style="border-top:1pt solid #000; text-align:right;"><strong>-' . price_format_with_currency($emailPromo, $order->currency) . '</strong></td>
+                </tr>' : '')
+                . ($emailBookingFee > 0 ? '<tr>
+                    <td style="border-top:1pt solid #000; text-align:left; padding:5px 0;"><small style="font-size:14px; text-transform:uppercase;">Booking Fee</small></td>
+                    <td style="border-top:1pt solid #000; text-align:right;"><strong>' . price_format_with_currency($emailBookingFee, $order->currency) . '</strong></td>
+                </tr>' : '')
+                . '<tr>
+                    <td style="border-top:1pt solid #000; text-align:left; padding:5px 0;"><small style="font-size:14px; text-transform:uppercase;">HST / Tax</small></td>
+                    <td style="border-top:1pt solid #000; text-align:right;"><strong>' . price_format_with_currency($emailHst, $order->currency) . '</strong></td>
                 </tr>
-
                 <tr>
-                    <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
-                    <td style="border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . $detail["created_at"] . '</td>
-                    <td style="border-top:1pt solid #000; text-align: right;padding: 5px 0px; font-size:11px;" valign="top"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency) . '</strong></td>
-                </tr>
-
-                <tr>
-                    <td style="border-top:2pt solid #000; border-bottom:2pt solid #000;">&nbsp;</td>
-                    <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
+                    <td style="border-top:2pt solid #000; text-align:left; padding:5px 0;">
+                        <small style="font-size:14px; text-transform:uppercase;">Total</small>
                     </td>
-                    <td style="border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                    <h3 style="color: #000;font-size:15px; margin:0;"><strong>' . price_format_with_currency($detail["total_amount"], $order->currency). '</strong></h3>
+                    <td style="border-top:2pt solid #000; text-align:right;">
+                        <h3 style="font-size:19px; margin:0;"><strong>' . price_format_with_currency($emailGrossTotal, $order->currency) . '</strong></h3>
                     </td>
-                </tr>
+                </tr>'
+                . ($emailBalance > 0.01 ? '<tr style="color:red;">
+                    <td style="border-top:1pt solid #000; text-align:left; padding:5px 0;"><small style="font-size:14px; text-transform:uppercase;">Balance</small></td>
+                    <td style="border-top:1pt solid #000; text-align:right;"><strong>' . price_format_with_currency($emailBalance, $order->currency) . '</strong></td>
+                </tr>' : '') . '
                 </tbody>
             </table>';
 
@@ -1079,13 +1346,14 @@ class PaymentController extends Controller
                     </tr>'; 
                 }
                 
-                $paid = $order->total_amount - $order->balance_amount;
-
-                $promoPayment = $order->payments()->where('collection_type', 'Outside')->where('payment_type', 'PROMO_CODE')->sum('amount');
+                $paymentSummary = (new OrderPaymentSummaryService())->summarize(
+                    $order->payments()->get()
+                );
+                $paid = $paymentSummary['paid_amount'];
+                $promoPayment = $paymentSummary['promo_discount'];
 
 
                 if ($promoPayment > 0) {   
-                   $paid = $paid - $promoPayment;                 
                     // paid amount
                     $TOUR_ITEM_SUMMARY .= '
                     <tr>
@@ -1150,7 +1418,10 @@ class PaymentController extends Controller
                 $tourLocationAddress = $tour->location->address;
 
             }
-            $order_paid = $order->total_amount - $order->balance_amount;
+            $orderPaymentSummary = (new OrderPaymentSummaryService())->summarize(
+                $order->payments()->get()
+            );
+            $order_paid = $orderPaymentSummary['paid_amount'];
             $replacements = [   
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
@@ -1236,41 +1507,33 @@ class PaymentController extends Controller
             ];
 
             // Merge both lists and remove duplicates
-            $recipients = array_unique(array_merge($defaultEmails, $notifiableAdmins));
+            $recipients = array_values(array_filter(array_unique(array_merge($defaultEmails, $notifiableAdmins))));
 
                 $mailSend = self::order_mail_send($recipients,$subject, $header,  $body, $footer, $event, 'admin', $order?->id);
             } else{
-                $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event, $order?->id);
+                $mailSend = self::order_mail_send($customer->email,$subject, $header,  $body, $footer, $event, 'customer', $order?->id);
+            }
+
+            if ($mailSend === false) {
+                return false;
             }
             
             orderLogAdvanced($order?->id, 'email', 'mail_sent', 'success', 'Email sent successfully', [
                 'message_id' => $mailSend
             ]);
             Log::info('OrderEmailHistorythishere' . $mailSend);
-            if(true){
-                Log::info('OrderEmailHistory' . $mailSend);
-                OrderEmailHistory::create([
-                    'order_id'  => $order->id,
-                    'to_email'  => $action_name == 'admin' ? 'Admin' : $customer->email,
-                    'from_email'=> env('MAIL_FROM_ADDRESS'),
-                    'subject'   => $subject,
-                    'body'      => $header.$body.$footer,
-                    'message_id' => $mailSend
-                ]);
-                orderLogAdvanced($order?->id, 'email', 'history_saved', 'success', 'Email history stored');
+            Log::info('OrderEmailHistory' . $mailSend);
+            OrderEmailHistory::create([
+                'order_id'  => $order->id,
+                'to_email'  => $action_name == 'admin' ? 'Admin' : $customer->email,
+                'from_email'=> env('MAIL_FROM_ADDRESS'),
+                'subject'   => $subject,
+                'body'      => $header.$body.$footer,
+                'message_id' => $mailSend
+            ]);
+            orderLogAdvanced($order?->id, 'email', 'history_saved', 'success', 'Email history stored');
 
-            }
-            return response()->json([
-                    'success' => false,
-                    'message' => $mailSend
-                ], 404);
- 
-
-            if($mailSend){
-                return true;
-            } else {
-                return false;
-            }
+            return true;
         }
         catch(\Exception $e){
             
@@ -1279,10 +1542,7 @@ class PaymentController extends Controller
             orderLogAdvanced($order?->id ?? null, 'email', 'failed', 'error', 'Email sending failed', [
                 'error' => $e->getMessage()
             ]);
-            return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage()
-                ], 404);
+            return false;
         }
  
     }
@@ -1345,18 +1605,22 @@ class PaymentController extends Controller
                  orderLogAdvanced($orderId, 'mail', 'sent', 'success', 'Email sent successfully', [
                     'message_id' => $messageId
                 ]);
-                return $messageId;
+                // Some transports successfully send without exposing a
+                // provider message ID.
+                return $messageId ?: 'sent';
                 
                  
             } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'error'
-                ], 404);
-                dd($e);
+                Log::error('Order email send failed', [
+                    'order_id' => $orderId,
+                    'recipient' => $recipient,
+                    'error' => $e->getMessage(),
+                ]);
+                return false;
             }
         } else {
             orderLogAdvanced($orderId, 'mail', 'config_missing', 'error', 'MAIL_FROM_ADDRESS missing');
+            return false;
         }
        
     }
@@ -1548,6 +1812,8 @@ class PaymentController extends Controller
                 'order_status' => 3,
             ]);
 
+            $this->reconcileOrderBalance($order, true);
+
             orderLogAdvanced(
                 $order,
                 'payment',
@@ -1574,6 +1840,129 @@ class PaymentController extends Controller
                 "Payment status updated to {$status}."
             );
         }
+
+        if (in_array($intent->status, ['requires_capture', 'succeeded'], true)) {
+            $this->reconcileOrderBalance(
+                $order,
+                $intent->status === 'requires_capture'
+            );
+        }
+    }
+
+    private function reconcileOrderBalance(Order $order, bool $isAuthorized = false): void
+    {
+        $summary = (new OrderPaymentSummaryService())->summarize(
+            $order->payments()->get()
+        );
+        $grossAmount = round((float) $order->orderTours()->sum('total_amount'), 2);
+        $balance = round(max($grossAmount - $summary['total_credits'], 0), 2);
+
+        $order->update([
+            'booked_amount' => $summary['paid_amount'],
+            'balance_amount' => $balance,
+            'payment_status' => $isAuthorized ? 3 : ($balance <= 0.01 ? 1 : 0),
+        ]);
+
+        orderLogAdvanced($order, 'payment', 'balance_reconciled', 'success', 'Order balance reconciled', [
+            'paid_amount' => $summary['paid_amount'],
+            'authorized_amount' => $summary['authorized_amount'],
+            'discounts' => $summary['special_discount'] + $summary['promo_discount'],
+            'balance_amount' => $balance,
+        ]);
+    }
+
+    private function syncRefundFromWebhook(mixed $charge, Order $order): void
+    {
+        $paymentIntentId = $charge->payment_intent ?? null;
+        $payment = $paymentIntentId
+            ? $order->payments()->where('payment_intent_id', $paymentIntentId)->first()
+            : null;
+
+        if (!$payment) {
+            return;
+        }
+
+        $refundedAmount = round(((float) ($charge->amount_refunded ?? 0)) / 100, 2);
+        $refundedAmount = min($refundedAmount, (float) $payment->amount);
+        $refund = collect($charge->refunds->data ?? [])->last();
+        $refundId = $refund->id ?? null;
+        $refundAmount = round(((float) ($refund->amount ?? 0)) / 100, 2);
+
+        $payment->update([
+            'refund_id' => $refundId ?? $payment->refund_id,
+            'refund_amount' => $refundedAmount,
+            'refunded_at' => now(),
+            'refund_reason' => $refund->reason ?? $payment->refund_reason,
+            'status' => $refundedAmount >= (float) $payment->amount
+                ? 'refunded'
+                : 'partial_refunded',
+        ]);
+
+        if ($refundId) {
+            OrderPayment::updateOrCreate(
+                [
+                    'transaction_id' => $refundId,
+                    'payment_type' => 'REFUND',
+                ],
+                [
+                    'order_id' => $order->id,
+                    'payment_intent_id' => $paymentIntentId,
+                    'transaction_id' => $refundId,
+                    'payment_method' => $payment->payment_method,
+                    'payment_type' => 'REFUND',
+                    'amount' => $refundAmount,
+                    'currency' => strtoupper((string) ($charge->currency ?? $order->currency)),
+                    'status' => 'refunded',
+                    'action' => 'refund',
+                    'reason' => $refund->reason ?? null,
+                    'response_payload' => json_encode($refund),
+                    'collection_date' => now(),
+                ]
+            );
+        }
+
+        $this->reconcileOrderBalance($order);
+    }
+
+    private function redeemPromoOnce(Order $order): void
+    {
+        $promoPayment = $order->payments()
+            ->where('payment_type', 'PROMOCODE')
+            ->where('status', 'discount')
+            ->where(function ($query) {
+                $query->whereNull('action')
+                    ->orWhere('action', '!=', 'redeemed');
+            })
+            ->first();
+
+        if (!$promoPayment || !$promoPayment->transaction_id) {
+            return;
+        }
+
+        $promo = Promo::where('code', $promoPayment->transaction_id)->first();
+        if (!$promo) {
+            return;
+        }
+
+        $promo->increment('used_count');
+        $promoPayment->update(['action' => 'redeemed']);
+
+        orderLogAdvanced($order, 'promo', 'redeemed', 'success', 'Promo redemption finalized', [
+            'promo_code' => $promo->code,
+        ]);
+    }
+
+    private function stripeAmount(float $amount, string $currency): int
+    {
+        $zeroDecimalCurrencies = [
+            'bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf',
+            'krw', 'mga', 'pyg', 'rwf', 'ugx',
+            'vnd', 'vuv', 'xaf', 'xof', 'xpf',
+        ];
+
+        return in_array(strtolower($currency), $zeroDecimalCurrencies, true)
+            ? (int) round($amount)
+            : (int) round($amount * 100);
     }
     
 }
