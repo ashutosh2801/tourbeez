@@ -7,12 +7,60 @@ use App\Models\TourGalleryUpload;
 use App\Upload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Laravel\Facades\Image;
 
 class TourGalleryController extends Controller
 {
+    public function showOrderVerification(Request $request, Order $order)
+    {
+        abort_unless(
+            $request->hasValidSignature(),
+            403,
+            'This verification link is invalid or has expired.'
+        );
+
+        return view('tour-gallery.required-order-id', [
+            'order' => $order,
+            'verificationUrl' => $request->fullUrl(),
+        ]);
+    }
+
+    public function verifyOrderId(Request $request, Order $order)
+    {
+        abort_unless(
+            $request->hasValidSignature(),
+            403,
+            'This verification link is invalid or has expired.'
+        );
+
+        $validated = $request->validate([
+            'order_id' => ['required', 'string', 'max:50'],
+        ], [
+            'order_id.required' => 'Please enter your Order ID.',
+        ]);
+
+        $verifiedOrder = Order::withoutGlobalScopes()
+            ->where('order_number', trim($validated['order_id']))
+            ->first();
+
+        if (!$verifiedOrder) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'order_id' => 'The Order ID is not valid.',
+                ]);
+        }
+
+        return redirect()->to(URL::temporarySignedRoute(
+            'tour-gallery.show',
+            now()->addDays(30),
+            ['order' => $verifiedOrder->id]
+        ));
+    }
+
     /**
      * Summary of index
      * @param Request $request

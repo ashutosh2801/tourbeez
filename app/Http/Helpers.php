@@ -26,10 +26,15 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 
 if(!function_exists('generateQRCodeForPassengerPickup')) {
-    function generateQRCodeForPassengerPickup(Order $order)
+    function generateQRCodeForPassengerPickup(
+        Order $order,
+        bool $requireOrderVerification = true
+    )
     {
         $galleryUploadUrl = URL::temporarySignedRoute(
-            'tour-gallery.show',
+            $requireOrderVerification
+                ? 'tour-gallery.required-order-id'
+                : 'tour-gallery.show',
             now()->addDays(30),
             [
                 'order' => $order->id,

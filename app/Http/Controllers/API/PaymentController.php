@@ -182,6 +182,7 @@ class PaymentController extends Controller
                     $this->saveCardDetails( $eventObject );
                     $this->syncPaymentStatusFromWebhook($eventObject);
                     $this->redeemPromoOnce($order);
+                    $this->recordInternalPaymentAction($order, $eventObject, 'succeeded');
 
                     $logData['status'] = 'success';
                     $logData['message'] = 'Payment successful';
@@ -190,6 +191,12 @@ class PaymentController extends Controller
                 case 'payment_intent.payment_failed':
 
                     $order->failure_message = $eventObject->last_payment_error->message ?? 'Payment failed';
+                    $this->recordInternalPaymentAction(
+                        $order,
+                        $eventObject,
+                        'failed',
+                        $order->failure_message
+                    );
 
                     $logData['status']  = 'failed';
                     $logData['message'] = $order->failure_message;
@@ -217,6 +224,7 @@ class PaymentController extends Controller
 
                     $this->saveCardDetails( $eventObject );
                     $this->syncPaymentStatusFromWebhook($eventObject);
+                    $this->recordInternalPaymentAction($order, $eventObject, 'authorized');
 
                     $logData['status'] = 'authorized';
                     $logData['message'] = 'Payment authorized, awaiting capture';
@@ -275,6 +283,43 @@ class PaymentController extends Controller
 
             return response()->json(['error' => 'Server error'], 500);
         }
+    }
+
+    private function recordInternalPaymentAction(
+        Order $order,
+        mixed $intent,
+        string $result,
+        ?string $failureReason = null
+    ): void {
+        if (strtolower((string) $order->source) !== 'internal') {
+            return;
+        }
+
+        $customer = $order->customer;
+        $customerName = $customer?->name ?: 'Customer';
+        $currency = strtoupper((string) ($intent->currency ?? $order->currency ?? ''));
+        $stripeAmount = $result === 'succeeded'
+            ? ($intent->amount_received ?? $intent->amount ?? 0)
+            : ($intent->amount ?? 0);
+        $amount = number_format(((float) $stripeAmount) / 100, 2, '.', '');
+
+        $notes = match ($result) {
+            'authorized' => "{$customerName} paid {$currency} {$amount} for order {$order->order_number} (payment authorized)",
+            'succeeded' => "{$customerName} payment of {$currency} {$amount} was successful for order {$order->order_number}",
+            'failed' => "{$customerName} payment of {$currency} {$amount} failed for order {$order->order_number}: "
+                . ($failureReason ?: 'Payment failed'),
+            default => null,
+        };
+
+        if (!$notes) {
+            return;
+        }
+
+        OrderActions::create([
+            'order_id' => $order->id,
+            'performed_by' => $customer?->id,
+            'notes' => $notes,
+        ]);
     }
 
     public function createSetupIntent($action = 'paynow')

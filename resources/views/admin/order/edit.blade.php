@@ -6,7 +6,7 @@
     .accordion .fa,
     .accordion .fas {
         margin-right: 0.5rem;
-        font-size: 24px;
+        font-size: 19px;
         font-weight: bold;
         position: relative;
         top: 2px;
@@ -156,6 +156,57 @@
     .modal-wide {
         max-width: 70% !important;
         margin: 10px auto !important;   /* center horizontally */
+    }
+
+    /* Browser-independent increment/decrement controls for order quantities. */
+    .order-quantity-control {
+        display: inline-flex;
+        align-items: stretch;
+        width: 88px;
+        height: 38px;
+    }
+    .order-quantity-input {
+        width: 60px !important;
+        min-width: 0;
+        height: 38px;
+        padding: 4px;
+        border-radius: .25rem 0 0 .25rem;
+        appearance: textfield;
+        -moz-appearance: textfield;
+    }
+    .order-quantity-input::-webkit-inner-spin-button,
+    .order-quantity-input::-webkit-outer-spin-button {
+        margin: 0;
+        -webkit-appearance: none;
+    }
+    .order-quantity-buttons {
+        display: flex;
+        flex: 0 0 28px;
+        flex-direction: column;
+    }
+    .order-quantity-step {
+        display: flex;
+        flex: 1;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 1px solid #ced4da;
+        border-left: 0;
+        background: #f8f9fa;
+        color: #495057;
+        font-size: 10px;
+        line-height: 1;
+        cursor: pointer;
+    }
+    .order-quantity-step:first-child {
+        border-radius: 0 .25rem 0 0;
+    }
+    .order-quantity-step:last-child {
+        border-top: 0;
+        border-radius: 0 0 .25rem 0;
+    }
+    .order-quantity-step:hover {
+        background: #e2e6ea;
     }
 </style>
 <style>
@@ -534,6 +585,11 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                                 <h4 style="font-size:17px; font-weight:600; margin:0;">
                                                                 {{ $order_tour->tour?->title }}
                                                                 </h4>
+
+                                                                <div class="w-100 mt-3">
+                                                                    <input type="text" class="tour_startdate_display border-0" readonly style="background:inherit; width: 130px;text-align:center">                                                                    
+                                                                    <input type="text" class="tour_startdate_time_display border-0" readonly style="background:inherit; margin-left: 15px;text-align:center">
+                                                                </div>
                                                             </th>
 
                                                         </tr>
@@ -549,7 +605,6 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                         <td style="border:none;">
                                                             <div style="background:#f9f9f9; padding:15px; border-radius:10px; display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
 
-
                                                                 <div style="flex:1; min-width:200px;">
                                                                     <div class="input-group">
                                                                         <input type="text"
@@ -560,7 +615,7 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                                             data-format="ddd MMM DD, YYYY"
                                                                             data-show-dropdown="true"
                                                                             data-saved-date="{{ $order_tour->tour_date }}"
-                                                                            value="{{ $order_tour->tour_date }}">
+                                                                            value="{{ date('D M d, Y', strtotime($order_tour->tour_date)) }}">
                                                                         <div class="input-group-append">
                                                                             <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                                                         </div>
@@ -587,20 +642,13 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                                     <button type="button" onClick="removeTour('{{ $order_tour->id }}')" class="btn btn-danger btn-sm px-3" style="border-radius:6px;font-size: 22px;">-</button>
                                                                 </div>
 
-                                                                <div class="w-100">
-                                                                    <input type="text" class="tour_startdate_display border-0" readonly style="background:#f9f9f9; width: 120px;">
-                                                                    -
-                                                                    <input type="text" class="tour_startdate_time_display border-0" readonly style="background:#f9f9f9; margin-left: 15px;">
-                                                                </div>
+                                                                
 
                                                             </div>
-                                                        </div>
-
-                                                        
-                                                    </td>
-
-                                                    
-                                                </tr>
+                                                            </div>                                                        
+                                                        </td>                                                    
+                                                    </tr>
+                                                </tbody>
                                             </table>
 
                                             <table class="table table-bordered m-0" style="background:#f7f7f7">
@@ -667,9 +715,15 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
 
                                                                     @endphp
                                                                     <tr>
-                                                                        <td width="60">
+                                                                        <td width="100">
                                                                             <input type="hidden" name="tour_pricing_id_{{$_tourId}}[]" value="{{ $pricing->id }}" />  
-                                                                            <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" data-initial-qty="{{ $result['quantity'] ?? 0 }}" style="width:60px" class="form-contorl text-center">
+                                                                            <div class="order-quantity-control">
+                                                                                <input type="number" name="tour_pricing_qty_{{$_tourId}}[]" value="{{ $result['quantity'] ?? 0 }}" data-initial-qty="{{ $result['quantity'] ?? 0 }}" min="0" step="1" class="form-control text-center order-quantity-input">
+                                                                                <span class="order-quantity-buttons">
+                                                                                    <button type="button" class="order-quantity-step order-quantity-up" aria-label="Increase quantity">&#9650;</button>
+                                                                                    <button type="button" class="order-quantity-step order-quantity-down" aria-label="Decrease quantity">&#9660;</button>
+                                                                                </span>
+                                                                            </div>
                                                                             <input type="hidden" name="tour_pricing_price_{{$_tourId}}[]" value="{{ $price }}" />  
                                                                             <input type="hidden" name="tour_pricing_actual_price_{{$_tourId}}[]" value="{{ $actual_price }}" />  
                                                                             <input type="hidden" name="tour_pricing_discount_{{$_tourId}}[]" value="{{ $discount }}" />  
@@ -725,16 +779,22 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                                         @endphp
 
                                                                         <tr>
-                                                                            <td width="60">
+                                                                            <td width="100">
                                                                                 <input type="hidden" name="tour_extra_id_{{$_tourId}}[]" value="{{ $extra->id }}" />
 
-                                                                                <input type="number"
-                                                                                       name="tour_extra_qty_{{$_tourId}}[]"
-                                                                                       value="{{ $extra->quantity }}"
-                                                                                       data-initial-qty="{{ $extra->quantity }}"
-                                                                                       style="width:60px"
-                                                                                       min="0"
-                                                                                       class="form-contorl text-center">
+                                                                                <div class="order-quantity-control">
+                                                                                    <input type="number"
+                                                                                           name="tour_extra_qty_{{$_tourId}}[]"
+                                                                                           value="{{ $extra->quantity }}"
+                                                                                           data-initial-qty="{{ $extra->quantity }}"
+                                                                                           min="0"
+                                                                                           step="1"
+                                                                                           class="form-control text-center order-quantity-input">
+                                                                                    <span class="order-quantity-buttons">
+                                                                                        <button type="button" class="order-quantity-step order-quantity-up" aria-label="Increase quantity">&#9650;</button>
+                                                                                        <button type="button" class="order-quantity-step order-quantity-down" aria-label="Decrease quantity">&#9660;</button>
+                                                                                    </span>
+                                                                                </div>
 
                                                                                 <input type="hidden"
                                                                                        name="tour_extra_price_{{$_tourId}}[]"
@@ -3185,16 +3245,17 @@ function calculateRowTotal(row) {
     row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
 
         let qty = parseFloat(qtyInput.value) || 0;
+        const quantityCell = qtyInput.closest('td');
 
-        const actualPriceInput = qtyInput.parentElement.querySelector(
+        const actualPriceInput = quantityCell.querySelector(
             'input[name^="tour_pricing_actual_price_"]'
         );
 
-        const priceTypeInput = qtyInput.parentElement.querySelector(
+        const priceTypeInput = quantityCell.querySelector(
             'input[name^="tour_pricing_type_"]'
         );
 
-        const fallbackPriceInput = qtyInput.parentElement.querySelector(
+        const fallbackPriceInput = quantityCell.querySelector(
             'input[name^="tour_pricing_price_"]'
         );
         const actualPrice = parseFloat(actualPriceInput?.value ?? fallbackPriceInput?.value) || 0;
@@ -3229,8 +3290,9 @@ function calculateRowTotal(row) {
     row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
 
         const qty = parseFloat(qtyInput.value) || 0;
+        const quantityCell = qtyInput.closest('td');
 
-        const priceInput = qtyInput.parentElement.querySelector(
+        const priceInput = quantityCell.querySelector(
             'input[name^="tour_extra_price_"]'
         );
 
@@ -3315,12 +3377,13 @@ function calculateRowTotal23423(row, hide) {
     // -----------------------------------------
     row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
         let qty = parseFloat(qtyInput.value) || 0;
+        const quantityCell = qtyInput.closest('td');
 
-        const priceInput = qtyInput.parentElement.querySelector(
+        const priceInput = quantityCell.querySelector(
             'input[name^="tour_pricing_price_"]'
         );
 
-        const priceTypeInput = qtyInput.parentElement.querySelector(
+        const priceTypeInput = quantityCell.querySelector(
             'input[name^="tour_pricing_type_"]'
         );
 
@@ -3363,8 +3426,9 @@ function calculateRowTotal23423(row, hide) {
     // -----------------------------------------
     row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
         const qty = parseFloat(qtyInput.value) || 0;
+        const quantityCell = qtyInput.closest('td');
 
-        const priceInput = qtyInput.parentElement.querySelector(
+        const priceInput = quantityCell.querySelector(
             'input[name^="tour_extra_price_"]'
         );
 
@@ -3507,6 +3571,18 @@ function calculateFinalTotal() {
 // =====================================================
 // EVENT LISTENERS — trigger on every quantity change
 // =====================================================
+
+$(document).on("click", ".order-quantity-step", function () {
+    const input = this.closest(".order-quantity-control").querySelector(".order-quantity-input");
+
+    if (this.classList.contains("order-quantity-up")) {
+        input.stepUp();
+    } else {
+        input.stepDown();
+    }
+
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+});
 
 $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']", function () {
     // const row = this.closest("[id^='row_']");

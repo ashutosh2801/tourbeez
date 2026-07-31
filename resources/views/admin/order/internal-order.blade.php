@@ -58,30 +58,40 @@
             <!-- ================= Balance + Status ================= -->
             <div class="d-flex justify-content-between align-items-center rounded-lg-custom balance-bar border">
                 <div>
+                    <div><small>Balance</small></div>
                     <strong id="totalDue">0.00</strong>
-                    <small>Balance</small>
                 </div>
                 
                 <div class="d-flex">
-                    <div class="input-group mr-2">
-                                <input type="text" 
-                                    class="aiz-date-range form-control tour_startdate_field"
-                                    id="order_date"
-                                    name="order_date"
-                                    placeholder="Order Date" 
-                                    data-format="ddd MMM DD, YYYY"
-                                    data-single="true"
-                                    autocomplete="off" 
-                                    data-show-dropdown="true" 
-                                    value="">
+                    @php $sources = source_list_db(); @endphp
+                    <select 
+                        name="source" 
+                        class="form-control mr-2">
+                        <option value="">Select source</option>  
+                        @foreach($sources as $source)
+                            <option @if($source->key === 'internal') selected @endif value="{{ $source->key }}">{{ $source->name }}</option>  
+                        @endforeach
+                    </select>
 
-                                <div class="input-group-append">
-                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                </div>
-                            </div>
-                            <!-- <div>
-                                <input type="text" class="tour_startdate_display border-0" readonly>
-                            </div> -->
+                    <div class="input-group mr-2">
+                        <input type="text" 
+                            class="aiz-date-range form-control tour_startdate_field"
+                            id="order_date"
+                            name="order_date"
+                            placeholder="Order Date" 
+                            data-format="ddd MMM DD, YYYY"
+                            data-single="true"
+                            autocomplete="off" 
+                            data-show-dropdown="true" 
+                            value="">
+
+                        <div class="input-group-append">
+                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                        </div>
+                    </div>
+                    <!-- <div>
+                        <input type="text" class="tour_startdate_display border-0" readonly>
+                    </div> -->
                    <select readonly name="currency" id="order_currency" class="form-control mr-2">
                         @foreach(config('constants.currencies') as $code => $country)
                             <option @if($code === 'CAD') selected @endif value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
@@ -251,7 +261,7 @@
                             </div>
                         </div>
 
-                        <div class="card-body row">
+                        <?php /* <div class="card-body row">
                             <div class="col-12 col-md-6">
                                 <div><label for="customer">Select Source</label></div>
                                 @php
@@ -261,7 +271,7 @@
                                     name="source" 
                                     class="form-control col-12 col-md-6 aiz-selectpicker border">
                                     @foreach($sources as $source)
-                                        <option @if ($source->key ==='internal') echo 'selected'                                     
+                                        <option @if ($source->key ==='internal') selected                                     
                                         @endif value="{{ $source->key }}">{{ $source->name }}</option>  
                                     @endforeach
                                 </select>
@@ -269,7 +279,7 @@
                             <div class="col-12 col-md-6">
                                 
                             </div>
-                        </div>
+                        </div> */ ?>
                     </div>
                 </div>
 
@@ -288,7 +298,7 @@
 
                         <div class="card-total p-3 mb-3" style="background: #edf3ff;">
                             Total: <b id="totalPayment">0.00</b>
-                            <input type="text" id="total_amount" class="form-control" readonly placeholder="0.00">
+                            <input type="hidden" id="total_amount" class="form-control" readonly placeholder="0.00">
 
                         </div>
                         <div class="card-body pt-0">

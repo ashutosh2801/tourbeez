@@ -163,29 +163,6 @@
                                     @endif
                                     
                                 </td>
-                                <td>
-                                    <a
-                                        href="{{ $galleryUploadUrl }}"
-                                        target="_blank"
-                                        style="text-decoration:none;"
-                                    >
-                                        <img
-                                            src="{{ $galleryQrUrl }}"
-                                            width="125"
-                                            height="125"
-                                            alt="Upload Tour Photos"
-                                            style="
-                                                width:125px;
-                                                height:125px;
-                                                display:block;
-                                                margin:0 auto;
-                                                padding:5px;
-                                                border:0;
-                                                background:#ffffff;
-                                            "
-                                        >
-                                    </a>
-                                </td>
                             </tr>
                         </tbody></table>
                     </td>
@@ -438,6 +415,74 @@
 
                         </ul>
 
+                    </td>
+                </tr>
+
+                {{-- Tour Photo Upload --}}
+                <tr>
+                    <td style="padding:20px;">
+                        <table
+                            width="100%"
+                            cellpadding="0"
+                            cellspacing="0"
+                            role="presentation"
+                            style="
+                                border-collapse:collapse;
+                                background:#f8fafc;
+                                border:1px solid #dbe4f0;
+                            "
+                        >
+                            <tr>
+                                <td
+                                    align="center"
+                                    style="padding:22px;text-align:center;"
+                                >
+                                    <h2
+                                        style="
+                                            margin:0 0 6px;
+                                            color:#01228c;
+                                            font-size:20px;
+                                        "
+                                    >
+                                        Upload Tour Photos
+                                    </h2>
+
+                                    <p
+                                        style="
+                                            margin:0 0 15px;
+                                            color:#475569;
+                                            font-size:14px;
+                                            line-height:1.5;
+                                        "
+                                    >
+                                        Scan the QR code and enter your Order ID to upload photos.
+                                    </p>
+
+                                    <a
+                                        href="{{ $galleryUploadUrl }}"
+                                        target="_blank"
+                                        style="display:inline-block;text-decoration:none;"
+                                    >
+                                        <img
+                                            src="{{ $galleryQrUrl }}"
+                                            width="180"
+                                            height="180"
+                                            alt="Upload Tour Photos"
+                                            style="
+                                                display:block;
+                                                width:180px;
+                                                max-width:100%;
+                                                height:auto;
+                                                margin:0 auto;
+                                                padding:8px;
+                                                border:1px solid #dddddd;
+                                                background:#ffffff;
+                                            "
+                                        >
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
                     </td>
                 </tr>
 

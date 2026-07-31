@@ -1370,7 +1370,9 @@ class OrderController extends Controller
             $order->adv_deposite       = $adv_deposite;
             $order->currency           = $request->currency;
             $order->current_rate       = $request->current_rate;
-            $order->source             = $request->source ? strtolower($request->source) : 'tourbeez';
+            $order->source             = $request->filled('source')
+                ? strtolower((string) $request->source)
+                : ($order->source ?: 'tourbeez');
             $order->updated_at         = now();
             $order->save();
 
@@ -1856,14 +1858,19 @@ class OrderController extends Controller
             $order->stripe_customer_id = $stripeCustomer->id;
             $order->save();
 
-            $order_actions = [
-                'order_id'         => $order->id,
-                'performed_by'     => $customer->id,
-                'notes'            => $order_actions_notes ?? $customer->name." placed a new order {$order->order_number}",
-                'created_at'       => now(),
-                'updated_at'       => now()
-            ];
-            OrderActions::insert($order_actions);
+            // An internal order already exists before the customer opens the
+            // payment link. Its action must be recorded only after Stripe
+            // reports the actual payment result, not while preparing payment.
+            if (strtolower((string) $order->source) !== 'internal') {
+                $order_actions = [
+                    'order_id'         => $order->id,
+                    'performed_by'     => $customer->id,
+                    'notes'            => $order_actions_notes ?? $customer->name." placed a new order {$order->order_number}",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ];
+                OrderActions::insert($order_actions);
+            }
 
             orderLogAdvanced($order, 'cart', 'completed', 'success', 'Cart updated successfully');           
 

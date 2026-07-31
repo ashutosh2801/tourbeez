@@ -224,34 +224,6 @@ class ManifestController extends Controller
             ? $vehicles->get($vehicleId)
             : null;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Generate Gallery Upload URL and QR Code per Order
-        |--------------------------------------------------------------------------
-        */
-
-        $galleryUploadUrl = null;
-        $galleryQrUrl = null;
-
-        try {
-            $galleryQr = generateQRCodeForPassengerPickup($order);
-
-            $galleryUploadUrl = $galleryQr[0] ?? null;
-            $galleryQrUrl = $galleryQr[1] ?? null;
-        } catch (\Throwable $e) {
-            /*
-             * QR generation failure should not stop the complete driver email.
-             */
-            Log::warning(
-                'Driver pickup QR generation failed',
-                [
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'error' => $e->getMessage(),
-                ]
-            );
-        }
-
         foreach ($selectedDriverIds as $driverId) {
             $driverOrderGroups[$driverId][] = [
                 'order' => $order,
@@ -288,15 +260,6 @@ class ManifestController extends Controller
 
                 'vehicle' =>
                     $selectedVehicle,
-
-                /*
-                 * QR and gallery details for this order.
-                 */
-                'gallery_upload_url' =>
-                    $galleryUploadUrl,
-
-                'gallery_qr_url' =>
-                    $galleryQrUrl,
             ];
         }
     }
@@ -364,6 +327,37 @@ class ManifestController extends Controller
                 $driverOrders
             );
 
+            /*
+             * The order verification page accepts any valid Order ID, so the
+             * driver email only needs one shared QR after the passenger list.
+             */
+            $galleryUploadUrl = null;
+            $galleryQrUrl = null;
+            $qrSourceOrder = $driverOrdersCollection
+                ->pluck('order')
+                ->filter()
+                ->first();
+
+            if ($qrSourceOrder) {
+                try {
+                    $galleryQr = generateQRCodeForPassengerPickup(
+                        $qrSourceOrder
+                    );
+
+                    $galleryUploadUrl = $galleryQr[0] ?? null;
+                    $galleryQrUrl = $galleryQr[1] ?? null;
+                } catch (\Throwable $e) {
+                    Log::warning(
+                        'Driver pickup QR generation failed',
+                        [
+                            'driver_id' => $driver->id,
+                            'order_id' => $qrSourceOrder->id,
+                            'error' => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
+
             $sentMessage = Mail::mailer('mailgun')
                 ->to($driver->email)
                 ->send(
@@ -371,7 +365,9 @@ class ManifestController extends Controller
                         driver: $driver,
                         orders: $driverOrdersCollection,
                         date: $date,
-                        customMessage: $customMessage
+                        customMessage: $customMessage,
+                        galleryUploadUrl: $galleryUploadUrl,
+                        galleryQrUrl: $galleryQrUrl
                     )
                 );
 
@@ -440,7 +436,10 @@ class ManifestController extends Controller
                     count($driverOrders),
 
                 'orders' => collect($driverOrders)
-                    ->map(function ($driverOrder) {
+                    ->map(function ($driverOrder) use (
+                        $galleryUploadUrl,
+                        $galleryQrUrl
+                    ) {
                         return [
                             'order_id' =>
                                 $driverOrder['order']->id,
@@ -449,10 +448,10 @@ class ManifestController extends Controller
                                 $driverOrder['order_number'],
 
                             'gallery_upload_url' =>
-                                $driverOrder['gallery_upload_url'],
+                                $galleryUploadUrl,
 
                             'gallery_qr_url' =>
-                                $driverOrder['gallery_qr_url'],
+                                $galleryQrUrl,
                         ];
                     })
                     ->values()
@@ -788,7 +787,10 @@ class ManifestController extends Controller
 
             try {
 
-                $galleryQr = generateQRCodeForPassengerPickup($order);
+                $galleryQr = generateQRCodeForPassengerPickup(
+                    $order,
+                    false
+                );
 
                 $sentMessage = Mail::mailer('mailgun')
                     ->to($email)

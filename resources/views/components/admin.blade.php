@@ -53,48 +53,48 @@
             font-style: normal;
             font-weight: 900;
             font-display: block;
-            src: url("/admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff2?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff2')) }}") format("woff2"),
-                 url("/admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff')) }}") format("woff");
+            src: url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff2?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff2')) }}") format("woff2"),
+                 url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff')) }}") format("woff");
         }
         @font-face {
             font-family: "Font Awesome 5 Free";
             font-style: normal;
             font-weight: 400;
             font-display: block;
-            src: url("/admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff2?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff2')) }}") format("woff2"),
-                 url("/admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff')) }}") format("woff");
+            src: url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff2?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff2')) }}") format("woff2"),
+                 url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff')) }}") format("woff");
         }
         @font-face {
             font-family: "Font Awesome 5 Brands";
             font-style: normal;
             font-weight: 400;
             font-display: block;
-            src: url("/admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff2?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff2')) }}") format("woff2"),
-                 url("/admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff')) }}") format("woff");
+            src: url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff2?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff2')) }}") format("woff2"),
+                 url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff')) }}") format("woff");
         }
         @font-face {
             font-family: "Line Awesome Free";
             font-style: normal;
             font-weight: 400;
             font-display: block;
-            src: url("/admin/dist/fonts/la-regular-400.woff2?v={{ filemtime(public_path('admin/dist/fonts/la-regular-400.woff2')) }}") format("woff2"),
-                 url("/admin/dist/fonts/la-regular-400.woff?v={{ filemtime(public_path('admin/dist/fonts/la-regular-400.woff')) }}") format("woff");
+            src: url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-regular-400.woff2?v={{ filemtime(public_path('admin/dist/fonts/la-regular-400.woff2')) }}") format("woff2"),
+                 url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-regular-400.woff?v={{ filemtime(public_path('admin/dist/fonts/la-regular-400.woff')) }}") format("woff");
         }
         @font-face {
             font-family: "Line Awesome Free";
             font-style: normal;
             font-weight: 900;
             font-display: block;
-            src: url("/admin/dist/fonts/la-solid-900.woff2?v={{ filemtime(public_path('admin/dist/fonts/la-solid-900.woff2')) }}") format("woff2"),
-                 url("/admin/dist/fonts/la-solid-900.woff?v={{ filemtime(public_path('admin/dist/fonts/la-solid-900.woff')) }}") format("woff");
+            src: url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-solid-900.woff2?v={{ filemtime(public_path('admin/dist/fonts/la-solid-900.woff2')) }}") format("woff2"),
+                 url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-solid-900.woff?v={{ filemtime(public_path('admin/dist/fonts/la-solid-900.woff')) }}") format("woff");
         }
         @font-face {
             font-family: "Line Awesome Brands";
             font-style: normal;
             font-weight: 400;
             font-display: block;
-            src: url("/admin/dist/fonts/la-brands-400.woff2?v={{ filemtime(public_path('admin/dist/fonts/la-brands-400.woff2')) }}") format("woff2"),
-                 url("/admin/dist/fonts/la-brands-400.woff?v={{ filemtime(public_path('admin/dist/fonts/la-brands-400.woff')) }}") format("woff");
+            src: url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-brands-400.woff2?v={{ filemtime(public_path('admin/dist/fonts/la-brands-400.woff2')) }}") format("woff2"),
+                 url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-brands-400.woff?v={{ filemtime(public_path('admin/dist/fonts/la-brands-400.woff')) }}") format("woff");
         }
         .fa,
         .fas {
