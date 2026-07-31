@@ -145,6 +145,65 @@ gap:10px;
     color:#312e81;
 }
 
+.tour-filter-panel{background:linear-gradient(180deg,#f8fafc 0%,#fff 100%);border-bottom:1px solid #e5e7eb;padding:20px;}
+.tour-filter-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;}
+.tour-filter-heading h5{margin:0 0 3px;color:#172033;font-size:17px;font-weight:700;}
+.tour-filter-heading p{margin:0;color:#6b7280;font-size:13px;}
+.tour-filter-count{display:inline-flex;align-items:center;white-space:nowrap;padding:5px 10px;border-radius:999px;background:#e0e7ff;color:#3730a3;font-size:12px;font-weight:600;}
+.tour-filter-heading-actions{display:flex;align-items:center;gap:9px;}
+.tour-filter-toggle{height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border:1px solid #c7d2fe;border-radius:7px;background:#fff;color:#4338ca;font-size:13px;font-weight:600;cursor:pointer;}
+.tour-filter-toggle:hover{background:#eef2ff;}
+.tour-filter-toggle .fa-chevron-down{font-size:10px;transition:transform .2s ease;}
+.tour-filter-panel.is-expanded .tour-filter-toggle .fa-chevron-down{transform:rotate(180deg);}
+.tour-filter-grid,.tour-filter-panel .search-options>.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0;}
+.tour-filter-panel .search-options>.row>[class*=col-]{width:100%;max-width:none;padding:0;}
+.tour-filter-field--search{grid-column:span 2;}
+.tour-filter-panel:not(.is-expanded) .tour-filter-field--advanced{display:none;}
+.tour-filter-panel:not(.is-expanded) .tour-filter-field--search{grid-column:span 4;}
+.tour-filter-panel:not(.is-expanded) .tour-filter-body{display:block;}
+.tour-filter-panel:not(.is-expanded) .search-options{flex:1;min-width:0;}
+.tour-filter-panel:not(.is-expanded) .tour-filter-actions{display:none;}
+.tour-filter-field label{display:block;margin:0 0 6px;color:#374151;font-size:12px;font-weight:600;}
+.tour-filter-field .form-control,.tour-filter-field .select2-container .select2-selection--single,.tour-filter-field .bootstrap-select>.dropdown-toggle{min-height:40px;border-color:#d7dce3;border-radius:7px;background-color:#fff;font-size:13px;}
+.tour-filter-field .form-control:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12);}
+.tour-filter-field .select2-container,.tour-filter-field .bootstrap-select{width:100%!important;}
+.tour-filter-field .select2-container .select2-selection--single{height:40px;}
+.tour-filter-field .select2-selection__rendered{line-height:38px!important;padding-left:12px!important;}
+.tour-filter-field .select2-selection__arrow{height:38px!important;}
+.tour-search-wrap{position:relative;}
+.tour-search-wrap i{position:absolute;top:50%;left:13px;z-index:1;color:#9ca3af;transform:translateY(-50%);}
+.tour-search-wrap .form-control{padding-left:37px;}
+.tour-search-inline{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:stretch;gap:10px;}
+.tour-search-inline-submit{display:none;min-width:120px;height:40px;align-items:center;justify-content:center;gap:7px;border:1px solid #4f46e5;border-radius:7px;background:#4f46e5;color:#fff;font-size:13px;font-weight:600;}
+.tour-search-inline-submit:hover{border-color:#4338ca;background:#4338ca;color:#fff;}
+.tour-filter-panel:not(.is-expanded) .tour-search-inline-submit{display:inline-flex;}
+.tour-filter-panel.is-expanded .tour-search-inline{display:block;}
+.tour-filter-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb;}
+.tour-filter-actions .btn{min-width:120px;height:40px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:7px;font-size:13px;font-weight:600;}
+.tour-filter-actions .btn-apply-filter{border-color:#4f46e5;background:#4f46e5;color:#fff;}
+.tour-filter-actions .btn-apply-filter:hover{border-color:#4338ca;background:#4338ca;color:#fff;}
+
+/* Tour management toolbar */
+.tour-action-toolbar{padding:16px 20px!important;border-bottom:1px solid #e5e7eb!important;background:#fff;}
+.tour-toolbar-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.tour-toolbar-heading h6{margin:0;color:#1f2937;font-size:14px;font-weight:700;}
+.tour-toolbar-heading span{color:#6b7280;font-size:12px;}
+.tour-main-body .tour-action-toolbar .btn-options{display:flex;flex-wrap:wrap;gap:8px;width:100%;}
+.tour-main-body .tour-action-toolbar .btn-options .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;margin:0!important;padding:8px 12px;border:1px solid transparent;border-radius:7px;box-shadow:none;font-size:12px;font-weight:600;line-height:1.2;transition:background-color .15s ease,border-color .15s ease,transform .15s ease;}
+.tour-main-body .tour-action-toolbar .btn-options .btn:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(15,23,42,.12);}
+.tour-main-body .tour-action-toolbar .btn-options .btn i{margin:0;}
+.tour-main-body .tour-action-toolbar .btn-create{background:#16a34a;border-color:#16a34a;}
+.tour-main-body .tour-action-toolbar .btn-UpdatePrice{background:#fff7ed;border-color:#fdba74;color:#c2410c!important;}
+.tour-main-body .tour-action-toolbar .btn-MarkReview{background:#f0fdf4;border-color:#86efac;color:#15803d!important;}
+.tour-main-body .tour-action-toolbar .btn-enable{background:#ecfeff;border-color:#a5f3fc;color:#0e7490!important;}
+.tour-main-body .tour-action-toolbar .btn-discount{background:#fefce8;border-color:#fde047;color:#a16207!important;}
+.tour-main-body .tour-action-toolbar .btn-save{background:#eef2ff;border-color:#c7d2fe;color:#4338ca!important;}
+.tour-main-body .tour-action-toolbar .btn-ExpoImpo{background:#f8fafc;border-color:#cbd5e1;color:#475569!important;}
+.tour-main-body .tour-action-toolbar .btn-delete{margin-left:auto!important;background:#fff1f2;border-color:#fda4af;color:#be123c!important;}
+.tour-table .tour-list-thumbnail{display:block;width:48px;height:48px;border:1px solid #e5e7eb;border-radius:7px;object-fit:cover;background:#f8fafc;}
+@media(max-width:991.98px){.tour-filter-grid,.tour-filter-panel .search-options>.row{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:575.98px){.tour-filter-panel{padding:16px}.tour-filter-heading{display:block}.tour-filter-heading-actions{margin-top:10px;justify-content:space-between}.tour-filter-grid,.tour-filter-panel .search-options>.row{grid-template-columns:1fr}.tour-filter-field--search,.tour-filter-panel:not(.is-expanded) .tour-filter-field--search{grid-column:span 1}.tour-filter-actions{align-items:stretch;flex-direction:column-reverse}.tour-filter-actions .btn{width:100%}.tour-search-inline-submit{min-width:100px}.tour-toolbar-heading{display:block}.tour-toolbar-heading span{display:block;margin-top:3px}.tour-main-body .tour-action-toolbar .btn-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.tour-main-body .tour-action-toolbar .btn-options .btn{width:100%!important}.tour-main-body .tour-action-toolbar .btn-options .btn-delete{margin-left:0!important}}
+
 </style>
   
 @section('title','Tours')
@@ -152,32 +211,60 @@ gap:10px;
 
     <!-- Search Form (GET) -->
     <form class="my-0" id="filterForm" method="GET" action="{{ route('admin.tour.index') }}">
-        <div class="card-header">
+        @php
+            $advancedTourFilterKeys = ['city', 'category', 'author', 'status', 'special_deposit', 'schedule', 'trustpilot_review', 'schedule_expiry', 'last_updated', 'has_sub_tour'];
+            $tourFilterKeys = ['search', ...$advancedTourFilterKeys];
+            $activeTourFilters = collect($tourFilterKeys)->filter(fn ($key) => request()->filled($key))->count();
+            $advancedTourFiltersActive = collect($advancedTourFilterKeys)->contains(fn ($key) => request()->filled($key));
+        @endphp
+        <div class="tour-filter-panel {{ $advancedTourFiltersActive ? 'is-expanded' : '' }}" id="tour-filter-panel">
+            <div class="tour-filter-heading">
+                <div>
+                    <h5><i class="fas fa-sliders-h mr-2 text-primary"></i>Find tours</h5>
+                    <p>Search by tour name or SKU, then narrow the results with filters.</p>
+                </div>
+                <div class="tour-filter-heading-actions">
+                    @if($activeTourFilters)
+                        <span class="tour-filter-count">{{ $activeTourFilters }} active {{ Str::plural('filter', $activeTourFilters) }}</span>
+                    @endif
+                    <button type="button" class="tour-filter-toggle" id="tour-filter-toggle" aria-controls="tour-advanced-filters" aria-expanded="{{ $advancedTourFiltersActive ? 'true' : 'false' }}">
+                        <i class="fas fa-filter"></i> Filters <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="tour-filter-body">
             <div class="search-options">
                 <div class="row">
-                    <div class="col-md-2 col-6">
-                        <input type="text" name="search" class="form-control" placeholder="Search tour" value="{{ request('search') }}" />
-                    </div>                        
-                    <div class="col-md-2 col-6">
-                        <input placeholder="date range" class="form-control datarange-pickur" type="text" />
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--search">
+                        <label for="tour-search">Tour name or SKU</label>
+                        <div class="tour-search-inline">
+                            <div class="tour-search-wrap">
+                                <i class="fas fa-search"></i>
+                                <input id="tour-search" type="search" name="search" class="form-control" placeholder="e.g. Niagara Falls or SKU-1024" value="{{ request('search') }}" />
+                            </div>
+                            <button type="submit" class="tour-search-inline-submit"><i class="fas fa-search"></i> Apply filters</button>
+                        </div>
                     </div>
-                    <div class="col-md-2 col-6">
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced" id="tour-advanced-filters">
+                        <label for="city-select">City</label>
                         <select name="city" id="city-select" class="form-control">
                             @if(request('city'))
                                 <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
                             @endif
                         </select>
                     </div>
-                    <div class="col-md-2 col-6">
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced">
+                        <label for="category-select">Category</label>
                         <select name="category" id="category-select" class="form-control">
                             @if(request('category'))
                                 <option value="{{ request('category') }}" selected>{{ ucwords(optional(\App\Models\Category::find(request('category')))->name) }}</option>
                             @endif
                         </select>
                     </div>
-                    <div class="col-md-2 col-6">
-                        <select name="author" class="form-control aiz-selectpicker" data-live-search="true">
-                            <option value="">Select Author</option>
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced">
+                        <label for="tour-author">Author</label>
+                        <select id="tour-author" name="author" class="form-control aiz-selectpicker" data-live-search="true">
+                            <option value="">All authors</option>
                                 @foreach ($users as $author)
                                     <option value="{{ $author->id }}" {{ request('author') == $author->id ? 'selected' : '' }}>
                                         {{ ucwords($author->name) }}
@@ -186,20 +273,22 @@ gap:10px;
                             
                         </select>
                     </div>
-                    <div class="col-md-2 col-6">
-                        <select name="status" class="form-control" onchange="this.form.submit()">
-                            <option value="">All Status</option>
-                                <option value="0" {{ request('staus') === 0 ? 'selected' : '' }}>
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced">
+                        <label for="tour-status">Status</label>
+                        <select id="tour-status" name="status" class="form-control">
+                            <option value="">All statuses</option>
+                                <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>
                                     Pending
                                 </option>
-                                <option value="1" {{ request('staus') === 1 ? 'selected' : '' }}>
+                                <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>
                                     Active
                                 </option>
                         </select>
                     </div>
-                    <div class="col-md-2 col-6">
-                        <select name="special_deposit" class="form-control">
-                            <option value="">Special Deposit</option>
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced">
+                        <label for="special-deposit">Special deposit</label>
+                        <select id="special-deposit" name="special_deposit" class="form-control">
+                            <option value="">Any deposit status</option>
                             @foreach (['Active','Not_Active'] as $special_deposit)
                                 <option value="{{ strtolower($special_deposit) }}" {{ request('special_deposit') == strtolower($special_deposit) ? 'selected' : '' }}>
                                     {{ str_replace('_', ' ', $special_deposit) }} 
@@ -207,9 +296,10 @@ gap:10px;
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-2 col-6">
-                        <select name="schedule" class="form-control">
-                            <option value="">Schedule</option>
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced">
+                        <label for="tour-schedule">Schedule</label>
+                        <select id="tour-schedule" name="schedule" class="form-control">
+                            <option value="">Any schedule status</option>
                             @foreach (['Active','Not_Active'] as $schedule)
                                 <option value="{{ strtolower($schedule) }}" {{ request('schedule') == strtolower($schedule) ? 'selected' : '' }}>
                                     {{ str_replace('_', ' ', $schedule) }} 
@@ -217,20 +307,22 @@ gap:10px;
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-2 col-6">
-                        <select name="trustpilot_review" class="form-control" onchange="this.form.submit()">
-                            <option value="">TrustPilot Review</option>
-                                <option value="0" {{ request('trustpilot_review') === 0 ? 'selected' : '' }}>
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced">
+                        <label for="trustpilot-review">Trustpilot review</label>
+                        <select id="trustpilot-review" name="trustpilot_review" class="form-control">
+                            <option value="">Any review status</option>
+                                <option value="0" {{ request('trustpilot_review') === '0' ? 'selected' : '' }}>
                                     No
                                 </option>
-                                <option value="1" {{ request('trustpilot_review') === 1 ? 'selected' : '' }}>
+                                <option value="1" {{ request('trustpilot_review') === '1' ? 'selected' : '' }}>
                                     Yes
                                 </option>
                         </select>
                     </div>
-                    <div class="col-md-2 col-6">
-                        <select name="schedule_expiry" class="form-control">
-                            <option value="">Schedule Expiry</option>
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced">
+                        <label for="schedule-expiry">Schedule expiry</label>
+                        <select id="schedule-expiry" name="schedule_expiry" class="form-control">
+                            <option value="">Any expiry date</option>
                             <option value="today" {{ request('schedule_expiry') == 'today' ? 'selected' : '' }}>Today</option>
                             <option value="last_7" {{ request('schedule_expiry') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
                             <option value="last_15" {{ request('schedule_expiry') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
@@ -240,9 +332,10 @@ gap:10px;
                         </select>
                     </div>
                     
-                    <div class="col-md-2 col-6">
-                        <select name="last_updated" class="form-control">
-                            <option value="">Last updated</option>
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced">
+                        <label for="last-updated">Last updated</label>
+                        <select id="last-updated" name="last_updated" class="form-control">
+                            <option value="">Any update date</option>
                             <option value="today" {{ request('last_updated') == 'today' ? 'selected' : '' }}>Today</option>
                             <option value="last_7" {{ request('last_updated') == 'last_7' ? 'selected' : '' }}>Last 7 Days</option>
                             <option value="last_15" {{ request('last_updated') == 'last_15' ? 'selected' : '' }}>Last 15 Days</option>
@@ -252,38 +345,51 @@ gap:10px;
                         </select>
                     </div>
                     
-                    <div class="col-md-2 col-6">
-                        <select name="has_sub_tour" class="form-control">
-                            <option value="">Has Sub Tour</option>
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced">
+                        <label for="has-sub-tour">Sub tours</label>
+                        <select id="has-sub-tour" name="has_sub_tour" class="form-control">
+                            <option value="">With or without sub tours</option>
                             @foreach (['Yes','No'] as $hasSubTour)
                                 <option value="{{ strtolower($hasSubTour) }}" {{ request('has_sub_tour') == strtolower($hasSubTour) ? 'selected' : '' }}>
-                                    {{ str_replace('_', ' ', $hasSubTour) }} 
+                                    {{ $hasSubTour === 'Yes' ? 'Has sub tours' : 'No sub tours' }}
                                 </option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-2 col-6">
-                        <select name="per_page" class="form-control">
+                    <div class="col-md-2 col-6 tour-filter-field tour-filter-field--advanced">
+                        <label for="per-page">Results per page</label>
+                        <select id="per-page" name="per_page" class="form-control">
                             @foreach (['All',10, 25, 50, 100] as $number)
                                 <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                                    {{ $number }} per page
+                                    {{ $number === 'All' ? 'Show all' : $number.' tours' }}
                                 </option>
                             @endforeach
                         </select>
-                    </div>
-                    <div class="col-md-2 col-6">
-                        <button type="submit" class="btn btn-search mb-2"> <i class="fas fa-search"></i> Search</button>
-                    </div>
-                    <div class="col-md-2 col-6">
-                        <a href="{{ route('admin.tour.index')}}" class="btn-clear"> <i class="fas fa-times"></i> Clear Search</a>
                     </div>
                 </div>
             </div>
+            <div class="tour-filter-actions">
+                <a href="{{ route('admin.tour.index')}}" class="btn btn-outline-secondary"><i class="fas fa-undo-alt"></i> Reset filters</a>
+                <button type="submit" class="btn btn-apply-filter"><i class="fas fa-search"></i> Apply filters</button>
+            </div>
+            </div>
         </div>
     </form>
+
+    <script>
+        document.getElementById('tour-filter-toggle').addEventListener('click', function () {
+            const panel = document.getElementById('tour-filter-panel');
+            const expanded = panel.classList.toggle('is-expanded');
+            this.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        });
+    </script>
     
-    <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center w-100">
+    <div class="card-header tour-action-toolbar">
+        <div class="w-100">
+            <div class="tour-toolbar-heading">
+                <h6><i class="fas fa-tools mr-2 text-primary"></i>Tour management</h6>
+                <span>Select tours from the table before using bulk actions.</span>
+            </div>
             <div class="card-tools btn-options">
                 @can('add_tour') 
                 <a href="{{ route('admin.tour.create') }}" class="btn btn-success btn-create"> <i class="fas fa-calendar-plus"></i> Create New Tour</a>

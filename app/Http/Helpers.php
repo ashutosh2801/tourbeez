@@ -559,13 +559,18 @@ if (!function_exists('uploaded_asset')) {
 if (!function_exists('main_image_html')) {
     function main_image_html($id, $type='thumb')
     {
-        $image = uploaded_asset($id);
-        if($image != null) {
-            $img = '<img class="img-md" src="'. $image .'" height="45px"  alt="'. translate('photo') .'">';
-        }
-        else {
-            $img = '<img class="img-md" src="'. static_asset('assets/img/avatar-place.png') .'" height="45px"  alt="'. translate('photo') .'">';
-        }
+        $asset = Upload::find($id);
+        $imagePath = $asset
+            ? ($type === 'thumb'
+                ? ($asset->thumb_name ?: $asset->medium_name ?: $asset->file_name)
+                : ($type === 'medium'
+                    ? ($asset->medium_name ?: $asset->file_name)
+                    : $asset->file_name))
+            : null;
+        $image = $imagePath
+            ? static_asset($imagePath)
+            : static_asset('assets/img/avatar-place.png');
+        $img = '<img class="img-md tour-list-thumbnail" src="'. $image .'" width="48" height="48" loading="lazy" alt="'. translate('photo') .'">';
 
         // $data = $this->hasOne(TourImage::class)->where('is_main', 1);
         // if(isset($data->image) && public_path('tour/' . $data->image) ) {
