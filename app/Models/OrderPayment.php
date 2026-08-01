@@ -40,6 +40,27 @@ class OrderPayment extends Model
         'refunded_at',
     ];
 
+    protected $casts = [
+        'current_rate' => 'decimal:8',
+    ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (OrderPayment $payment): void {
+            $currentRate = (float) $payment->current_rate;
+
+            if ($currentRate <= 0 && $payment->order_id) {
+                $currentRate = (float) Order::withoutGlobalScopes()
+                    ->whereKey($payment->order_id)
+                    ->value('current_rate');
+            }
+
+            $payment->current_rate = $currentRate > 0
+                ? $currentRate
+                : 1;
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

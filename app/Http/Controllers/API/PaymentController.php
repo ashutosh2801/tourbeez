@@ -986,9 +986,26 @@ class PaymentController extends Controller
         }
         
 
+        $order = Order::find($order_id);
         $payment = OrderPayment::where('order_id', $order_id)
-        ->latest()
-        ->first();
+            ->whereNotIn('payment_type', ['PROMOCODE', 'DISCOUNT', 'BOOKINGFEE'])
+            ->when(
+                $order?->payment_intent_id,
+                fn ($query, $intentId) => $query->where('payment_intent_id', $intentId)
+            )
+            ->latest('id')
+            ->first();
+
+        // Older/in-flight checkouts may not yet have copied the intent ID to
+        // the order. Still restrict the fallback to an actual card payment row
+        // so promo and discount credits can never be overwritten.
+        if (!$payment) {
+            $payment = OrderPayment::where('order_id', $order_id)
+                ->whereNotIn('payment_type', ['PROMOCODE', 'DISCOUNT', 'BOOKINGFEE'])
+                ->whereIn('status', ['reserve', 'pending', 'uncaptured', 'requires_capture'])
+                ->latest('id')
+                ->first();
+        }
 
         if ($payment) {
             $payment->update([
@@ -1001,7 +1018,7 @@ class PaymentController extends Controller
                 'payment_type'      => $payment_type
             ]);
 
-            $order =  $payment->order;
+            $order = $order ?: $payment->order;
             $order->payment_method_id =  $request->payment_method_id;
             $order->save();
 
@@ -1086,8 +1103,8 @@ class PaymentController extends Controller
             $emailPaymentSummary = (new OrderPaymentSummaryService())->summarize(
                 $order->payments()->get()
             );
-            $emailGrossTotal = round((float) $order->orderTours()->sum('total_amount'), 2);
             $emailSubTotal = 0.0;
+            $emailTaxTotal = 0.0;
 
             foreach ($order->orderTours as $summaryOrderTour) {
                 foreach (json_decode($summaryOrderTour->tour_pricing ?: '[]', true) ?: [] as $pricingRow) {
@@ -1102,6 +1119,10 @@ class PaymentController extends Controller
                     $emailSubTotal += (float) ($extraRow['total_price']
                         ?? ((int) ($extraRow['quantity'] ?? 0) * (float) ($extraRow['price'] ?? 0)));
                 }
+
+                foreach (json_decode($summaryOrderTour->tour_fees ?: '[]', true) ?: [] as $feeRow) {
+                    $emailTaxTotal += (float) ($feeRow['price'] ?? 0);
+                }
             }
 
             $emailSubTotal = round($emailSubTotal, 2);
@@ -1110,14 +1131,22 @@ class PaymentController extends Controller
             $emailBookingFee = (float) ($emailPaymentSummary['booking_fee'] > 0
                 ? $emailPaymentSummary['booking_fee']
                 : ($order->booking_fee ?? $order->bookingFee->value('value') ?? 0));
-            $emailHst = round(max(
-                $emailGrossTotal - ($emailSubTotal - $emailDiscount - $emailPromo + $emailBookingFee),
+            $emailHst = round($emailTaxTotal, 2);
+            $emailGrossTotal = round(max(
+                $emailSubTotal - $emailDiscount - $emailPromo + $emailBookingFee + $emailHst,
                 0
             ), 2);
             $emailBalance = round(max(
-                $emailGrossTotal - (float) $emailPaymentSummary['total_credits'],
+                $emailGrossTotal
+                    - (float) $emailPaymentSummary['paid_amount']
+                    - (float) $emailPaymentSummary['authorized_amount'],
                 0
             ), 2);
+            $emailPaid = round(
+                (float) $emailPaymentSummary['paid_amount']
+                    + (float) $emailPaymentSummary['authorized_amount'],
+                2
+            );
             $emailPromoLabel = 'Promo Code' . ($emailPaymentSummary['promo_code']
                 ? ' (' . e($emailPaymentSummary['promo_code']) . ')'
                 : '');
@@ -1165,7 +1194,7 @@ class PaymentController extends Controller
                     </td>
                 </tr>'
                 . ($emailDiscount > 0 ? '<tr style="color:red;">
-                    <td style="border-top:1pt solid #000; text-align:left; padding:5px 0;"><small style="font-size:14px; text-transform:uppercase;">Discount</small></td>
+                    <td style="border-top:1pt solid #000; text-align:left; padding:5px 0;"><small style="font-size:14px; text-transform:uppercase;">Special Discount</small></td>
                     <td style="border-top:1pt solid #000; text-align:right;"><strong>-' . price_format_with_currency($emailDiscount, $order->currency) . '</strong></td>
                 </tr>' : '')
                 . ($emailPromo > 0 ? '<tr style="color:red;">
@@ -1187,24 +1216,34 @@ class PaymentController extends Controller
                     <td style="border-top:2pt solid #000; text-align:right;">
                         <h3 style="font-size:19px; margin:0;"><strong>' . price_format_with_currency($emailGrossTotal, $order->currency) . '</strong></h3>
                     </td>
-                </tr>'
-                . ($emailBalance > 0.01 ? '<tr style="color:red;">
+                </tr>
+                <tr style="color:green;">
+                    <td style="border-top:1pt solid #000; text-align:left; padding:5px 0;"><small style="font-size:14px; text-transform:uppercase;">Total Paid</small></td>
+                    <td style="border-top:1pt solid #000; text-align:right;"><strong>' . price_format_with_currency($emailPaid, $order->currency) . '</strong></td>
+                </tr>
+                <tr style="color:' . ($emailBalance > 0.01 ? 'red' : 'green') . ';">
                     <td style="border-top:1pt solid #000; text-align:left; padding:5px 0;"><small style="font-size:14px; text-transform:uppercase;">Balance</small></td>
                     <td style="border-top:1pt solid #000; text-align:right;"><strong>' . price_format_with_currency($emailBalance, $order->currency) . '</strong></td>
-                </tr>' : '') . '
+                </tr>
                 </tbody>
             </table>';
 
 
             $TOUR_ITEM_SUMMARY = '';
+            // Promo is an order-level credit. Allocate it only once when an
+            // order contains more than one tour.
+            $remainingEmailPromo = $emailPromo;
 
             foreach ($order->orderTours as $order_tour) {
                 $subtotal = 0;
                 $subtotal2 = 0;
+                $tourDiscountTotal = 0;
+                $adjustmentRows = '';
                 $_tourId = $order_tour->tour_id;
                 $tour_pricing = !empty($order_tour->tour_pricing) ? json_decode($order_tour->tour_pricing, true) : [];
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
                 $tour_discount = !empty($order_tour->discount) ? json_decode($order_tour->discount, true) : [];
+                $tour_fees = !empty($order_tour->tour_fees) ? json_decode($order_tour->tour_fees, true) : [];
 
                 if($order->tour && $order->sub_tour_id){
                     
@@ -1315,16 +1354,38 @@ class PaymentController extends Controller
                     $discount = $result['discount'] ?? 0;
                     $dis_total = $result['price_type'] === 'FIXED' ? $discount : ($discount * $qty);
                     if ($qty > 0 && $discount > 0) {
+                        $tourDiscountTotal += $dis_total;
                         $subTotalRequired = 1;
-                        $TOUR_ITEM_SUMMARY .= '
-                        <tr>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;color:#f64747;">Discount</td>
-                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;color:#f64747;">' . price_format_with_currency(($dis_total), $order->currency) . '</td>
-                        </tr>';
                     }
                 }
+
+                if ($tourDiscountTotal > 0) {
+                    $adjustmentRows .= '
+                    <tr>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;color:#f64747;">Special Discount</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;color:#f64747;">-' . price_format_with_currency($tourDiscountTotal, $order->currency) . '</td>
+                    </tr>';
+                }
+
+                $tourPromo = min(
+                    $remainingEmailPromo,
+                    max($subtotal - $tourDiscountTotal, 0)
+                );
+                $remainingEmailPromo = max($remainingEmailPromo - $tourPromo, 0);
+
+                if ($tourPromo > 0) {
+                    $subTotalRequired = 1;
+                    $adjustmentRows .= '
+                    <tr>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;color:#f64747;">' . $emailPromoLabel . '</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;color:#f64747;">-' . price_format_with_currency($tourPromo, $order->currency) . '</td>
+                    </tr>';
+                }
+
                 if($subTotalRequired){
                     $TOUR_ITEM_SUMMARY .= '
                         <tr>
@@ -1338,22 +1399,31 @@ class PaymentController extends Controller
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                                     ' . price_format_with_currency($subtotal, $order->currency) . '
                             </td>
-                        </tr>';
+                        </tr>' . $adjustmentRows;
 
                 }
 
-                // Taxes
+                // Discounts reduce the taxable base, while the displayed
+                // subtotal remains the original item subtotal.
+                $subtotal = max($subtotal - $tourDiscountTotal - $tourPromo, 0);
+
+                // Use the tax snapshot saved at checkout. Recalculating from
+                // the tour's current tax rules can change historical emails.
                 $taxRows = '';
-                if ($order_tour->tour->taxes_fees_resolved) {
-                    foreach ($order_tour->tour->taxes_fees_resolved as $tax) {
-                        $taxAmount = get_tax($subtotal, $tax->fee_type, $tax->tax_fee_value);
+                if (!empty($tour_fees)) {
+                    foreach ($tour_fees as $tax) {
+                        $taxAmount = (float) ($tax['price'] ?? 0);
                         $subtotal += $taxAmount;
+                        $taxLabel = e($tax['label'] ?? 'Tax');
+                        if (($tax['type'] ?? null) === 'PERCENT' && isset($tax['value'])) {
+                            $taxLabel .= ' (' . (float) $tax['value'] . '%)';
+                        }
                         $taxRows .= '
                         <tr>
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">' . $taxLabel . '</small>
                             </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                                 ' . price_format_with_currency($taxAmount, $order->currency) . '
@@ -1376,43 +1446,13 @@ class PaymentController extends Controller
                         </td>
                     </tr>';
 
-                if ($order->balance_amount > 0) {
-                    // balance amount
-                    $TOUR_ITEM_SUMMARY .= '
-                    <tr>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:red; margin:0; font-size:15px"><strong>Balance</strong></h3>
-                        </td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($order->balance_amount, $order->currency) . '</strong></h3>
-                        </td>
-                    </tr>'; 
-                }
-                
                 $paymentSummary = (new OrderPaymentSummaryService())->summarize(
                     $order->payments()->get()
                 );
-                $paid = $paymentSummary['paid_amount'];
-                $promoPayment = $paymentSummary['promo_discount'];
-
-
-                if ($promoPayment > 0) {   
-                    // paid amount
-                    $TOUR_ITEM_SUMMARY .= '
-                    <tr>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:green; margin:0; font-size:15px"><strong>Promo</strong></h3>
-                        </td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:green; margin:0; font-size:15px"><strong>' . price_format_with_currency($promoPayment, $order->currency) . '</strong></h3>
-                        </td>
-                    </tr>'; 
-                }
-
+                $paid = round(
+                    $paymentSummary['paid_amount'] + $paymentSummary['authorized_amount'],
+                    2
+                );
                 if ($paid > 0) {                    
                     // paid amount
                     $TOUR_ITEM_SUMMARY .= '
@@ -1420,13 +1460,26 @@ class PaymentController extends Controller
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:green; margin:0; font-size:15px"><strong>Paid</strong></h3>
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>Total Paid</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                             <h3 style="color:green; margin:0; font-size:15px"><strong>' . price_format_with_currency($paid, $order->currency) . '</strong></h3>
                         </td>
                     </tr>'; 
-                }    
+                }
+
+                $balanceColor = $emailBalance > 0.01 ? 'red' : 'green';
+                $TOUR_ITEM_SUMMARY .= '
+                <tr>
+                    <td>&nbsp;</td>
+                    <td>&nbsp;</td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                        <h3 style="color:' . $balanceColor . '; margin:0; font-size:15px"><strong>Balance</strong></h3>
+                    </td>
+                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                        <h3 style="color:' . $balanceColor . '; margin:0; font-size:15px"><strong>' . price_format_with_currency($emailBalance, $order->currency) . '</strong></h3>
+                    </td>
+                </tr>';
                 
                 $TOUR_ITEM_SUMMARY .=  '</tbody>
                 </table>';
@@ -1466,7 +1519,10 @@ class PaymentController extends Controller
             $orderPaymentSummary = (new OrderPaymentSummaryService())->summarize(
                 $order->payments()->get()
             );
-            $order_paid = $orderPaymentSummary['paid_amount'];
+            $order_paid = round(
+                $orderPaymentSummary['paid_amount'] + $orderPaymentSummary['authorized_amount'],
+                2
+            );
             $replacements = [   
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
@@ -1492,9 +1548,9 @@ class PaymentController extends Controller
                 "[[ORDER_STATUS]]"          => $order->status,
                 "[[ORDER_TOUR_DATE]]"       => $order->order_tour->tour_date ? date('l, F j, Y', strtotime($order->order_tour->tour_date)) : '',
                 "[[ORDER_TOUR_TIME]]"       => $order->order_tour->tour_time ? date('H:i A', strtotime($order->order_tour->tour_time)) : '',
-                "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
-                "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
-                "[[ORDER_BALANCE_COLOR]]"   => (abs($order->balance_amount) < 0.01) ? '008000' : 'f64747',
+                "[[ORDER_TOTAL]]"           => price_format_with_currency($emailGrossTotal, $order->currency) ?? '',
+                "[[ORDER_BALANCE]]"         => price_format_with_currency($emailBalance, $order->currency) ?? '',
+                "[[ORDER_BALANCE_COLOR]]"   => (abs($emailBalance) < 0.01) ? '008000' : 'f64747',
                 "[[ORDER_PAID]]"            => price_format_with_currency($order_paid, $order->currency) ?? '',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',

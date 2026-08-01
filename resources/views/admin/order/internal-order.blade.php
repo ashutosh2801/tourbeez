@@ -26,6 +26,57 @@
     border: 1px solid #ccc;
     border-radius: 4px;
 }
+
+/* Browser-independent increment/decrement controls for order quantities. */
+.order-quantity-control {
+    display: inline-flex;
+    align-items: stretch;
+    width: 88px;
+    height: 38px;
+}
+.order-quantity-input {
+    width: 60px !important;
+    min-width: 0;
+    height: 38px;
+    padding: 4px;
+    border-radius: .25rem 0 0 .25rem;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+.order-quantity-input::-webkit-inner-spin-button,
+.order-quantity-input::-webkit-outer-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+}
+.order-quantity-buttons {
+    display: flex;
+    flex: 0 0 28px;
+    flex-direction: column;
+}
+.order-quantity-step {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #ced4da;
+    border-left: 0;
+    background: #f8f9fa;
+    color: #495057;
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+}
+.order-quantity-step:first-child {
+    border-radius: 0 .25rem 0 0;
+}
+.order-quantity-step:last-child {
+    border-top: 0;
+    border-radius: 0 0 .25rem 0;
+}
+.order-quantity-step:hover {
+    background: #e2e6ea;
+}
 </style>
 
 @if ($errors->any())
@@ -948,6 +999,18 @@ function calculateRowTotal(row) {
 // =====================================================
 // EVENT LISTENERS — trigger on every quantity and extra change
 // =====================================================
+$(document).on("click", ".order-quantity-step", function () {
+    const input = this.closest(".order-quantity-control").querySelector(".order-quantity-input");
+
+    if (this.classList.contains("order-quantity-up")) {
+        input.stepUp();
+    } else {
+        input.stepDown();
+    }
+
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+
 $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']", function () {
     const row = this.closest("[id^='row_']");
     calculateRowTotal(row);

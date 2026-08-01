@@ -852,23 +852,13 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                     
                                                     <th class="text-right withouttax-box"> {{ price_format_with_currency($subtotal2, $order->currency) }} </th>
                                                 </tr>
-                                                @if(!empty($discounts))
-                                                    @foreach ($discounts as $item)
-                                                        @php $discountAmount = (float) ($item->price ?? 0); @endphp
-                                                        @if($discountAmount > 0)
-                                                            <tr class="discount-row" data-base-amount="{{ $discountAmount }}">
-                                                                <td class="text-danger">
-                                                                    Discount 
-                                                                    @if($item->type === 'PERCENT')
-                                                                        ({{ $item->discount }}%)
-                                                                    @endif
-                                                                </td>
-                                                                <td class="text-right text-danger">
-                                                                     -{{ price_format_with_currency($discountAmount, $order->currency) }}
-                                                                </td>
-                                                            </tr>
-                                                        @endif
-                                                    @endforeach
+                                                @if($discountAmountTotal > 0)
+                                                    <tr class="discount-row" data-base-amount="{{ $discountAmountTotal }}">
+                                                        <td class="text-danger">Special Discount</td>
+                                                        <td class="text-right text-danger">
+                                                            -{{ price_format_with_currency($discountAmountTotal, $order->currency) }}
+                                                        </td>
+                                                    </tr>
                                                 @endif
 
                                                 @if($rowPromoAmount > 0)
@@ -2000,6 +1990,7 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                             <select 
                                 name="source" 
                                 class="form-control">
+                                <option value="">Select source</option>  
                                 @foreach($sources as $source)
                                     <option @if($order->source == $source->key) selected @endif value="{{ $source->key }}">{{ $source->name }}</option>  
                                 @endforeach

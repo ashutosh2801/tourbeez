@@ -17,7 +17,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/admin/dist/img/fav.png">
     <link rel="manifest" href="/admin/favicon/site.webmanifest">
 
-    <title>Upload Tour Photos || TourBeez</title>
+    <title>Upload Tour Photos & Videos || TourBeez</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
@@ -161,7 +161,8 @@
             margin-top: 18px;
         }
 
-        .preview-container img {
+        .preview-container img,
+        .preview-container video {
             width: 100%;
             height: 120px;
             object-fit: cover;
@@ -267,7 +268,8 @@
     margin-top: 20px;
 }
 
-.preview-container img {
+.preview-container img,
+.preview-container video {
     width: 100%;
     height: 120px;
     object-fit: cover;
@@ -307,8 +309,8 @@
 
     <div class="upload-body">
 
-        <h1 class="page-title">Upload Tour Photos</h1>
-        <p class="page-subtitle">Share your favorite moments from your TourBeez experience.</p>
+        <h1 class="page-title">Upload Tour Photos & Videos</h1>
+        <p class="page-subtitle">Share your favorite moments from your TourBeez experience. Videos are securely uploaded to our YouTube channel.</p>
         <div
             id="uploadMessage"
             class="message"
@@ -361,27 +363,27 @@
     </h3>
 
     <p class="upload-subtitle">
-        Upload your favorite photos.
-        You can select multiple photos at once.
+        Upload your favorite photos and videos.
+        You can select multiple files at once.
     </p>
 
-    <label for="galleryPhotos" class="custom-upload-btn">
+    <label for="galleryMedia" class="custom-upload-btn">
         <i class="fas fa-camera"></i>
-        Choose Photos
+        Choose Photos or Videos
     </label>
 
     <input
         type="file"
-        name="photos[]"
-        id="galleryPhotos"
-        accept="image/*"
+        name="media[]"
+        id="galleryMedia"
+        accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/x-msvideo,video/webm,video/x-matroska,video/x-m4v"
         multiple
         required
         hidden
     >
 
     <div class="upload-note">
-        JPG, PNG, WEBP • Maximum 10 photos • 10MB each
+        Images: JPG, PNG, WEBP (10MB each) • Videos: MP4, MOV, AVI, WebM, MKV, M4V (500MB each) • Maximum 10 files
     </div>
 
 </div>
@@ -397,7 +399,7 @@
                 id="uploadButton"
                 disabled
             >
-                Upload Photos
+                Upload Media
             </button>
         </form>
 
@@ -409,8 +411,8 @@
         'tourGalleryUploadForm'
     );
 
-    const photoInput = document.getElementById(
-        'galleryPhotos'
+    const mediaInput = document.getElementById(
+        'galleryMedia'
     );
 
     const previewContainer = document.getElementById(
@@ -433,7 +435,7 @@
         messageBox.style.display = 'block';
     }
 
-    photoInput.addEventListener('change', function () {
+    mediaInput.addEventListener('change', function () {
         previewContainer.innerHTML = '';
         uploadButton.disabled = false;
 
@@ -442,22 +444,25 @@
             .slice(0, 10);
 
         files.forEach(function (file) {
-            if (!file.type.startsWith('image/')) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                const image = document.createElement('img');
+                image.src = event.target.result;
+                image.alt = file.name;
+                previewContainer.appendChild(image);
+                };
+                reader.readAsDataURL(file);
                 return;
             }
 
-            const reader = new FileReader();
-
-            reader.onload = function (event) {
-                const image = document.createElement('img');
-
-                image.src = event.target.result;
-                image.alt = file.name;
-
-                previewContainer.appendChild(image);
-            };
-
-            reader.readAsDataURL(file);
+            if (file.type.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = URL.createObjectURL(file);
+                video.controls = true;
+                video.preload = 'metadata';
+                previewContainer.appendChild(video);
+            }
         });
     });
 
@@ -466,9 +471,9 @@
         async function (event) {
             event.preventDefault();
 
-            if (!photoInput.files.length) {
+            if (!mediaInput.files.length) {
                 showMessage(
-                    'Please select at least one photo.',
+                    'Please select at least one photo or video.',
                     'error'
                 );
 
@@ -498,7 +503,7 @@
                 if (!response.ok || !result.status) {
                     let message =
                         result.message ||
-                        'Photos could not be uploaded.';
+                        'Media could not be uploaded.';
 
                     if (result.errors) {
                         message = Object
@@ -522,13 +527,13 @@
             } catch (error) {
                 showMessage(
                     error.message ||
-                    'Photos could not be uploaded.',
+                    'Media could not be uploaded.',
                     'error'
                 );
             } finally {
                     
 
-                uploadButton.textContent = 'Upload Photos';
+                uploadButton.textContent = 'Upload Media';
             }
         }
     );
@@ -537,7 +542,7 @@
 document.addEventListener('DOMContentLoaded', function () {
 
     Swal.fire({
-        title: 'Photo Upload Consent',
+        title: 'Media Upload Consent',
         customClass: {
             title: 'text-left',
             htmlContainer: 'text-left',
@@ -551,15 +556,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 margin-bottom:15px;
                 border-radius:4px; line-height:1.6rem
             ">
-                Thank you for traveling with TourBeez! We would love to feature your photos from this tour. Please review and accept the consent below before uploading.
+                Thank you for traveling with TourBeez! We would love to feature your photos and videos from this tour. Please review and accept the consent below before uploading.
             </div>
             <div style="text-align:left;">
                 <p>
-                    By uploading photos, you agree that:
+                    By uploading media, you agree that:
                 </p>
 
                 <ul style="text-align:left;line-height:1.8;">
-                    <li>You own the photos or have permission to share them.</li>
+                    <li>You own the photos/videos or have permission to share them.</li>
                     <li>TourBeez may use them for marketing and promotional purposes.</li>
                     <li>No compensation will be provided.</li>
                     <li>Photos may be reviewed before publication.</li>

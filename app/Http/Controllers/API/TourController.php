@@ -2235,7 +2235,13 @@ public function single(Request $request)
                                         $str .= '<tr>
                                             <td width="60">
                                                 <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
-                                                <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" style="width:60px" class="form-contorl text-center" min="0" data-min="'.$minQuantity.'" max="'.$maxQuantity.'" data-optional="'.($isOptional ? 1 : 0).'">
+                                                <div class="order-quantity-control">
+                                                    <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" class="form-control text-center order-quantity-input" min="0" step="1" data-min="'.$minQuantity.'" max="'.$maxQuantity.'" data-optional="'.($isOptional ? 1 : 0).'">
+                                                    <span class="order-quantity-buttons">
+                                                        <button type="button" class="order-quantity-step order-quantity-up" aria-label="Increase quantity">&#9650;</button>
+                                                        <button type="button" class="order-quantity-step order-quantity-down" aria-label="Decrease quantity">&#9660;</button>
+                                                    </span>
+                                                </div>
                                                 <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$convertedPricingPrice.'" /> 
                                                 <input type="hidden" name="tour_pricing_type_'.$_tourId.'[]" value="'.$data->price_type.'" /> 
                                                 <input type="hidden" name="tour_pricing_min_'.$_tourId.'[]" value="'.$pricing->quantity_used.'">
@@ -2267,7 +2273,13 @@ public function single(Request $request)
                                         $str.= '<tr>
                                             <td width="60">
                                                 <input type="hidden" name="tour_extra_id_'.$_tourId.'[]" value="'. $extra->id .'" />  
-                                                <input type="number" name="tour_extra_qty_'.$_tourId.'[]" value="0" style="width:60px" min="0" class="form-contorl text-center">
+                                                <div class="order-quantity-control">
+                                                    <input type="number" name="tour_extra_qty_'.$_tourId.'[]" value="0" min="0" step="1" class="form-control text-center order-quantity-input">
+                                                    <span class="order-quantity-buttons">
+                                                        <button type="button" class="order-quantity-step order-quantity-up" aria-label="Increase quantity">&#9650;</button>
+                                                        <button type="button" class="order-quantity-step order-quantity-down" aria-label="Decrease quantity">&#9660;</button>
+                                                    </span>
+                                                </div>
                                                 <input type="hidden" name="tour_extra_price_'.$_tourId.'[]" value="'.$price.'" /> 
                                             </td>
                                             <td>'.$extra->name.' ('.price_format_with_currency($extra->price, $extra->currency, $orderCurrency).')</td>

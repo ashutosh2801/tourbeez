@@ -966,7 +966,6 @@ class OrderController extends Controller
             $discountService = new CheckoutDiscountService();
             $specialDiscountEligible = $order->action_name !== 'reserve'
                 && $request->action_name === 'book'
-                && ($adv_deposite === 'deposit' || $hasSettledPayments)
                 && $discountService->isSpecialDiscountEligible(
                     $depositRule,
                     Carbon::parse($validated['selectedDate']),
@@ -1062,7 +1061,7 @@ class OrderController extends Controller
 
                         $discount[] = [
                             'tour_id'  => $request->subTourId ?? $request->tourId,
-                            'label'    => 'Discount',
+                            'label'    => 'Special Discount',
                             'type'     => $depositRule->discount_type,
                             'quantity' => $discountQty,
                             'discount' => $depositRule->discount_value ?? 0,
@@ -1392,7 +1391,11 @@ class OrderController extends Controller
                 'totalAmount'   => $order->total_amount
             ];
 
-            if ($adv_deposite === "deposit") {
+            // A reserve (Book Now & Pay Later) always saves the customer's
+            // payment method with a SetupIntent and must never create/confirm
+            // a full-payment PaymentIntent. This is independent of whether the
+            // tour's special-deposit rule is NONE, deposit, or full.
+            if ($adv_deposite === "deposit" || $request->action_name === "reserve") {
                 orderLogAdvanced($order, 'payment', 'deposit_mode', 'info', 'Deposit flow started');
                 
                 $chargeAmount = 0;              
@@ -2015,7 +2018,7 @@ class OrderController extends Controller
                     $discounts[] = [
                         'tour_id'  => $request->subTourId ?? $request->tourId,
                         'discount' => $depositRule->discount_value ?? 0,
-                        'label'    => 'Discount',
+                        'label'    => 'Special Discount',
                         'type'     => $depositRule->discount_type,
                         'price'    => ($discount_price * $qty),
                     ];

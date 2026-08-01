@@ -633,7 +633,7 @@ class OrderController extends Controller
                     //             'tour_id'  => $tour->id,
                     //             'discount' => $deposite_rule->discount_value ?? 0,
                     //             'quantity' => $qty ?? 1,
-                    //             'label'    => 'Discount',
+                    //             'label'    => 'Special Discount',
                     //             'type'     => $deposite_rule->discount_type,
                     //             'price'    => ($discount * $qty),
                     //         ];
@@ -754,6 +754,7 @@ class OrderController extends Controller
                                 'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
                                 'amount'            => $subtotal - $amount,
                                 'currency'          => $order->currency,
+                                'current_rate'      => (float) ($order->current_rate ?: 1),
                                 'status'            => 'succeeded',
                                 'created_at'        => now(),
                                 'updated_at'        => now(),
@@ -769,6 +770,7 @@ class OrderController extends Controller
                                 'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
                                 'amount'            => $amount,
                                 'currency'          => $order->currency,
+                                'current_rate'      => (float) ($order->current_rate ?: 1),
                                 'status'            => 'succeeded',
                                 'created_at'        => now(),
                                 'updated_at'        => now(),
@@ -1262,6 +1264,13 @@ class OrderController extends Controller
                     && Carbon::parse($startDate)->startOfDay()->gte(
                         Carbon::today()->addDays((int) ($depositRule->notice_days ?? 0))
                     );
+                // Preserve a discount already committed to the order snapshot,
+                // but never accept a new/stale form discount when the rule or
+                // selected tour date is not eligible.
+                $hasSavedSpecialDiscount = !empty($savedSpecialDiscount)
+                    || $specialDiscountTotal > 0;
+                $specialDiscountAllowed = $specialDiscountEligible
+                    || $hasSavedSpecialDiscount;
                 $effectiveDiscountType = $hasSettledPayments
                     ? ($savedSpecialDiscount['type'] ?? $depositRule?->discount_type)
                     : $depositRule?->discount_type;
@@ -1300,6 +1309,9 @@ class OrderController extends Controller
                     $price  = isset($pricingPrice[$key]) ? (float)$pricingPrice[$key] : 0;
                     $actualPrice  = isset($pricingActualPrice[$key]) ? (float)$pricingActualPrice[$key] : 0;
                     $discount_price  = isset($pricingDiscount[$key]) ? (float)$pricingDiscount[$key] : 0;
+                    if (!$hasSettledPayments && !$specialDiscountAllowed) {
+                        $discount_price = 0;
+                    }
                     $previousLine = $previousPricing->get((int) $pricingId, []);
                     $previousQty = (int) ($previousLine['quantity'] ?? 0);
                     $qtyDelta = $qty - $previousQty;
@@ -1364,7 +1376,12 @@ class OrderController extends Controller
                    $discountEntryAmount = $hasSettledPayments
                         ? $addedDiscount
                         : $lineDiscountTotal;
-                   if($order->action_name == "book" && $order->adv_deposite && $discountEntryAmount > 0){
+                   if(
+                        $specialDiscountAllowed
+                        && $order->action_name == "book"
+                        && $order->adv_deposite
+                        && $discountEntryAmount > 0
+                    ){
                     $depositRule = TourSpecialDeposit::where('use_deposit', 1)
                                     ->where('tour_id', $tour->id)
                                     ->first();
@@ -1377,7 +1394,7 @@ class OrderController extends Controller
                         $discount[] = [
                             'tour_id'  => $tourId,
                             'discount' => $effectiveDiscountValue,
-                            'label'    => 'Discount',
+                            'label'    => 'Special Discount',
                             'type'     => $effectiveDiscountType,
                             'price'    => round($discountEntryAmount, 2),
                         ];
@@ -1453,7 +1470,7 @@ class OrderController extends Controller
                         $discount = [[
                             'tour_id' => $tourId,
                             'discount' => $effectiveDiscountValue,
-                            'label' => 'Discount',
+                            'label' => 'Special Discount',
                             'type' => $effectiveDiscountType,
                             'price' => $currentDiscountTotal,
                         ]];
@@ -2199,7 +2216,11 @@ class OrderController extends Controller
             $rawSubTotal = round($rawSubTotal, 2);
             $discountAmount = (float) $paymentSummary['special_discount'];
             $promoAmount = (float) $paymentSummary['promo_discount'];
-            $paidAmount = (float) $paymentSummary['paid_amount'];
+            $paidAmount = round(
+                (float) $paymentSummary['paid_amount']
+                    + (float) $paymentSummary['authorized_amount'],
+                2
+            );
             $bookingFee = (float) ($paymentSummary['booking_fee'] > 0
                 ? $paymentSummary['booking_fee']
                 : ($order->booking_fee ?? $order->bookingFee->value('value') ?? 0));
@@ -2235,7 +2256,7 @@ class OrderController extends Controller
                      $TOUR_PAYMENT_HISTORY .= '
                         <tr style="color:red;">
                         <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
-                            <small style="font-size:14px; text-transform:uppercase;">Discount</small>
+                            <small style="font-size:14px; text-transform:uppercase;">Special Discount</small>
                         </td>
                         <td style="text-align:right; border-top:1pt solid #000;">
                             <strong>-' . price_format_with_currency($discountAmount, $order->currency) . '</strong>
@@ -2288,23 +2309,22 @@ class OrderController extends Controller
                             </h3>
                         </td>
                     </tr>
-                    ' . ($paidAmount > 0 ? '
                     <tr style="color:green;">
                         <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
-                            <small style="font-size:14px; text-transform:uppercase;">Paid</small>
+                            <small style="font-size:14px; text-transform:uppercase;">Total Paid</small>
                         </td>
                         <td style="text-align:right; border-top:1pt solid #000;">
                             <strong>' . price_format_with_currency($paidAmount, $order->currency) . '</strong>
                         </td>
-                    </tr>' : '') . '
-                    ' . ($balanceAmountValue > 0.01 ? '<tr style="color:red;">
+                    </tr>
+                    <tr style="color:' . ($balanceAmountValue > 0.01 ? 'red' : 'green') . ';">
                         <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
                             <small style="font-size:14px; text-transform:uppercase;">Balance</small>
                         </td>
                         <td style="text-align:right; border-top:1pt solid #000;">
                             <strong>' . price_format_with_currency($balanceAmountValue, $order->currency) . '</strong>
                         </td>
-                    </tr>' : '') . '
+                    </tr>
 
                 </tbody>
             </table>';
@@ -2317,6 +2337,7 @@ class OrderController extends Controller
             foreach ($order->orderTours as $order_tour) {
                 $subtotal = 0;
                 $subtotal2 = 0;
+                $adjustmentRows = '';
                 $_tourId = $order_tour->tour_id;
                 $tour_pricing = !empty($order_tour->tour_pricing) ? json_decode($order_tour->tour_pricing, true) : [];
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
@@ -2422,30 +2443,32 @@ class OrderController extends Controller
                     }
                 }
 
-                // Discount
-                foreach ($tour_pricing as $i => $result) {
-                    
+                foreach ($tour_pricing as $result) {
                     $qty = $result['quantity'] ?? 0;
                     $number_of_guests += $qty;
-                    $discount = $result['discount'] ?? 0;
-                    $dis_total = $discount;
-                    if ($qty > 0 && $discount > 0 && $i == 0) {
+                }
+
+                $tourDiscountAmount = !$paymentDetailsAddedToItemSummary ? $discountAmount : 0;
+                $tourPromoAmount = !$paymentDetailsAddedToItemSummary ? $promoAmount : 0;
+                $promoLabel = 'Promo Code' . ($paymentSummary['promo_code']
+                    ? ' (' . e($paymentSummary['promo_code']) . ')'
+                    : '');
+
+                foreach ([
+                    ['label' => 'Special Discount', 'amount' => $tourDiscountAmount],
+                    ['label' => $promoLabel, 'amount' => $tourPromoAmount],
+                ] as $adjustment) {
+                    if ($adjustment['amount'] > 0) {
                         $subTotalRequired = 1;
-
-                        $subtotal2 = $subtotal2 - $discountAmount;
-
-                        if($discountAmount && $discountAmount > 0){
-                            $TOUR_ITEM_SUMMARY .= '
-                                <tr>
-                                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
-                                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;"></td>
-                                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;color:#f64747;">Discount</td>
-                                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;color:#f64747;">' . price_format_with_currency(($discountAmount), $order->currency) . '</td>
-                                </tr>';
-                        }
-                        
+                        $adjustmentRows .= '
+                        <tr>
+                            <td></td><td></td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align:left; padding:5px 0; color:#f64747;">' . $adjustment['label'] . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align:right; padding:5px 0; color:#f64747;">-' . price_format_with_currency($adjustment['amount'], $order->currency) . '</td>
+                        </tr>';
                     }
                 }
+
                 if($subTotalRequired){
                     $TOUR_ITEM_SUMMARY .= '
                         <tr>
@@ -2459,8 +2482,10 @@ class OrderController extends Controller
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                                     ' . price_format_with_currency($subtotal2, $order->currency) . '
                             </td>
-                        </tr>';
+                        </tr>' . $adjustmentRows;
                 }
+
+                $subtotal2 = max($subtotal2 - $tourDiscountAmount - $tourPromoAmount, 0);
 
                 // Taxes
                 $taxRows = '';
@@ -2521,24 +2546,6 @@ class OrderController extends Controller
                 // $paid = $order->total_amount - $order->balance_amount;
 
                 $paid = $paidAmount;
-                $promoPayment = $promoAmount;
-
-
-                if (!$paymentDetailsAddedToItemSummary && $promoPayment > 0) {
-                    // paid amount
-                    $TOUR_ITEM_SUMMARY .= '
-                    <tr>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:#f64747; margin:0; font-size:15px"><strong>Promo Code</strong></h3>
-                        </td>
-                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:#f64747; margin:0; font-size:15px"><strong>-' . price_format_with_currency($promoPayment, $order->currency) . '</strong></h3>
-                        </td>
-                    </tr>'; 
-                } 
-
                 if (!$paymentDetailsAddedToItemSummary && $paid > 0) {
                     // paid amount
                     $TOUR_ITEM_SUMMARY .= '
@@ -2546,7 +2553,7 @@ class OrderController extends Controller
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:green; margin:0; font-size:15px"><strong>Paid</strong></h3>
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>Total Paid</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                             <h3 style="color:green; margin:0; font-size:15px"><strong>' . price_format_with_currency($paid, $order->currency) . '</strong></h3>
@@ -2554,17 +2561,18 @@ class OrderController extends Controller
                     </tr>'; 
                 }  
                 $balance_amount = $balanceAmountValue;
-                if (!$paymentDetailsAddedToItemSummary && $balance_amount > 0) {
+                if (!$paymentDetailsAddedToItemSummary) {
+                    $balanceColor = $balance_amount > 0.01 ? 'red' : 'green';
                     // balance amount
                     $TOUR_ITEM_SUMMARY .= '
                     <tr>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                            <h3 style="color:red; margin:0; font-size:15px"><strong>Balance</strong></h3>
+                            <h3 style="color:' . $balanceColor . '; margin:0; font-size:15px"><strong>Balance</strong></h3>
                         </td>
                         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                            <h3 style="color:red; margin:0; font-size:15px"><strong>' . price_format_with_currency($balance_amount, $order->currency)  . '</strong></h3>
+                            <h3 style="color:' . $balanceColor . '; margin:0; font-size:15px"><strong>' . price_format_with_currency($balance_amount, $order->currency)  . '</strong></h3>
                         </td>
                     </tr>'; 
                 }  
