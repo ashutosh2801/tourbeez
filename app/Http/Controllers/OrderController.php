@@ -68,6 +68,12 @@ class OrderController extends Controller
             $query->whereRaw('LOWER(source) = ?', [strtolower($source)]);
         }
 
+        if ($excluded_source = $request->input('excluded_source')) {
+            $excluded_source = array_map('strtolower', $excluded_source);
+
+            $query->whereNotIn(DB::raw('LOWER(source)'), $excluded_source);
+        }
+
         // Filter by tour product
         // if ($product = $request->input('product')) {
         //     $query->whereHas('orderTours', function ($q) use ($product) {

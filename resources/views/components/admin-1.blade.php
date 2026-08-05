@@ -29,16 +29,10 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('admin/dist/img/fav.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('admin/dist/img/fav.png') }}">
     <link rel="manifest" href="{{ asset('admin/favicon/site.webmanifest') }}">
+    
 
     <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
-
-    
-    <!-- <link rel="stylesheet" href="/admin/plugins/fontawesome-free/css/all.min.css?v={{ filemtime(public_path('admin/plugins/fontawesome-free/css/all.min.css')) }}">
-    <link rel="stylesheet" href="/admin/plugins/fontawesome-free/css/v4-shims.min.css?v={{ filemtime(public_path('admin/plugins/fontawesome-free/css/v4-shims.min.css')) }}"> -->
-
-
-    <link rel="stylesheet" href="{{ asset('admin/plugins/fontawesome-free/css/all.min.css') }}?v={{ filemtime(public_path('admin/plugins/fontawesome-free/css/all.min.css')) }}">
-<link rel="stylesheet" href="{{ asset('admin/plugins/fontawesome-free/css/v4-shims.min.css') }}?v={{ filemtime(public_path('admin/plugins/fontawesome-free/css/v4-shims.min.css')) }}">
+    <link rel="stylesheet" href="{{ asset('admin/plugins/fontawesome-free/css/all.min.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/plugins/jqvmap/jqvmap.min.css') }}">
@@ -53,94 +47,6 @@
     <link rel="stylesheet" href="{{ asset('admin/dist/css/adminlte.min.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/dist/css/vendors.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/dist/css/aiz-core.css') }}">
-    <style>
-        @font-face {
-            font-family: "Font Awesome 5 Free";
-            font-style: normal;
-            font-weight: 900;
-            font-display: block;
-            src: url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff2?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff2')) }}") format("woff2"),
-                 url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-solid-900.woff')) }}") format("woff");
-        }
-        @font-face {
-            font-family: "Font Awesome 5 Free";
-            font-style: normal;
-            font-weight: 400;
-            font-display: block;
-            src: url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff2?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff2')) }}") format("woff2"),
-                 url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-regular-400.woff')) }}") format("woff");
-        }
-        @font-face {
-            font-family: "Font Awesome 5 Brands";
-            font-style: normal;
-            font-weight: 400;
-            font-display: block;
-            src: url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff2?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff2')) }}") format("woff2"),
-                 url("{{ env('ASSET_URL') }}/admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff?v={{ filemtime(public_path('admin/plugins/fontawesome-free/webfonts/fa-brands-400.woff')) }}") format("woff");
-        }
-        @font-face {
-            font-family: "Line Awesome Free";
-            font-style: normal;
-            font-weight: 400;
-            font-display: block;
-            src: url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-regular-400.woff2?v={{ filemtime(public_path('admin/dist/fonts/la-regular-400.woff2')) }}") format("woff2"),
-                 url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-regular-400.woff?v={{ filemtime(public_path('admin/dist/fonts/la-regular-400.woff')) }}") format("woff");
-        }
-        @font-face {
-            font-family: "Line Awesome Free";
-            font-style: normal;
-            font-weight: 900;
-            font-display: block;
-            src: url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-solid-900.woff2?v={{ filemtime(public_path('admin/dist/fonts/la-solid-900.woff2')) }}") format("woff2"),
-                 url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-solid-900.woff?v={{ filemtime(public_path('admin/dist/fonts/la-solid-900.woff')) }}") format("woff");
-        }
-        @font-face {
-            font-family: "Line Awesome Brands";
-            font-style: normal;
-            font-weight: 400;
-            font-display: block;
-            src: url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-brands-400.woff2?v={{ filemtime(public_path('admin/dist/fonts/la-brands-400.woff2')) }}") format("woff2"),
-                 url("{{ env('ASSET_URL') }}/admin/dist/fonts/la-brands-400.woff?v={{ filemtime(public_path('admin/dist/fonts/la-brands-400.woff')) }}") format("woff");
-        }
-        .fa,
-        .fas {
-            font-family: "Font Awesome 5 Free" !important;
-            font-style: normal !important;
-            font-weight: 900 !important;
-        }
-        .far {
-            font-family: "Font Awesome 5 Free" !important;
-            font-style: normal !important;
-            font-weight: 400 !important;
-        }
-        .fab {
-            font-family: "Font Awesome 5 Brands" !important;
-            font-style: normal !important;
-            font-weight: 400 !important;
-        }
-        .la,
-        .lar {
-            font-family: "Line Awesome Free" !important;
-            font-style: normal !important;
-            font-weight: 400 !important;
-        }
-        .las {
-            font-family: "Line Awesome Free" !important;
-            font-style: normal !important;
-            font-weight: 900 !important;
-        }
-        .lab {
-            font-family: "Line Awesome Brands" !important;
-            font-style: normal !important;
-            font-weight: 400 !important;
-        }
-        .aiz-side-nav-list .aiz-side-nav-arrow::after,
-        .dropdown-toggle::after {
-            font-family: "Line Awesome Free" !important;
-            font-style: normal !important;
-            font-weight: 900 !important;
-        }
-    </style>
     @yield('css')
 
     <script>
@@ -281,10 +187,10 @@
         })();
 
         // Toastr alerts
-        // toastr.options = {
-        //     "progressBar": true,
-        //     "closeButton": true,
-        // }
+        toastr.options = {
+            "progressBar": true,
+            "closeButton": true,
+        }
     </script>
 
     <script src="{{ asset('admin/dist/js/vendor.js') }}"></script>

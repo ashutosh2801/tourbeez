@@ -874,7 +874,7 @@ $expectEmails = ['order_pending'];
                                         
                                         @if($commission->isNotEmpty() && $commission->sum('amount') > 0)
                                             <tr class="commission" style="color: green">
-                                                <td><b>Commision From {{ $order->partner?->name}}</b></td>
+                                                <td><b>Net Payout from {{ $order->partner?->name}}</b></td>
 
                                                     <td style="text-align: right !important;"><b>{{ price_format_with_currency($commission->sum('amount'), $order->currency) }}</b></td>
                                                 
