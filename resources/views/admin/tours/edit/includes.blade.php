@@ -23,16 +23,17 @@
             <div class="card-body">
                 
                 @php
-                $InclusionOptions = old('InclusionOptions', $data->inclusions?->map(function ($item) {
+                $InclusionOptions = old('InclusionOptions', $data->inclusions?->map(function ($item, $index) {
                                                 return [
                                                     'id'     => $item->id,
                                                     'name'   => $item->name,
+                                                    'order'  => $item->sort_by ?? ($index + 1),
                                                 ];
                                         })->filter()->values()->toArray());
                             
                 $count = count($InclusionOptions);
                 if($count == 0){
-                    $InclusionOptions = old('InclusionOptions', [ ['id' => '', 'name' => '', 'type' => ''] ]);
+                    $InclusionOptions = old('InclusionOptions', [ ['id' => '', 'name' => '', 'type' => '', 'order' => 1] ]);
                     $count = 1;
                 }
                 @endphp
@@ -44,7 +45,7 @@
                     value="{{ old("InclusionOptions.$index.id", $option['id']) }}" class="form-control" />
 
                     <div class="row">
-                        @if ($count == 1)                        
+                        <?php /* @if ($count == 1)                        
                         <div class="col-lg-12">
                             <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
                                 <label for="include_name" class="form-label">Tour Inclusions</label>
@@ -56,9 +57,17 @@
                                 </select>
                             </div>
                         </div>
-                        @endif
-
-                        <div class="col-lg-12">
+                        @endif */ ?>
+                        <div class="col-lg-1">
+                            <div class="form-group">
+                                <input type="number" name="InclusionOptions[{{ $index }}][order]" id="inclusion_order_{{ $index }}" value="{{ old("InclusionOptions.$index.order", $option['order']) }}"
+                                    class="form-control text-center" min="1" placeholder="Enter order">
+                                @error('inclusion_order')
+                                    <small class="form-text text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="col-lg-11">
                             <div class="form-group mb-2">
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
@@ -66,8 +75,10 @@
                                     </div>
                                     <input type="text" name="InclusionOptions[{{ $index }}][name]" id="include_name_{{ $index }}" value="{{ old("InclusionOptions.$index.name", $option['name']) }}"
                                         class="form-control  mr-2" placeholder="Enter name">
-                                    <button type="button" class="btn btn-sm btn-success mr-2" onclick="addInclude()"><i class="fa fa-plus"></i></button>
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeInclude({{ $index }})"><i class="fa fa-minus"></i></button>
+                                    @if ( count($InclusionOptions) == ($index + 1))
+                                    <button type="button" class="btn btn-sm btn-success mr-2" onclick="addInclude()"><i class="fa fa-plus"></i></button>                                    
+                                    @endif
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeInclude({{ $index }})"><i class="fa fa-minus"></i> </button>
                                 </div>
                             </div>
                         </div>
@@ -111,7 +122,7 @@ function addInclude() {
         <div class="col-lg-12">
             <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
                 <label for="include_name" class="form-label">Tour Inclusions</label>
-                <select class="form-control" data-live-search="true" id="include"  onchange="fetchInclude(this.value, ${includeCount})">
+                <select class="form-control aiz-selectpicker" data-live-search="true" id="include"  onchange="fetchInclude(this.value, ${includeCount})">
                     <option value="">Select one</option>
                     @foreach ($data->inclusions as $item)
                     <option value="{{ $item->id }}">{{ $item->name }}</option>
@@ -121,14 +132,19 @@ function addInclude() {
         </div>
         <input type="hidden" name="InclusionOptions[${includeCount}][type]" id="InclusionOptions_type_${includeCount}" 
                     value="" class="form-control" />
-        <div class="col-lg-12">
+        <div class="col-lg-1">
+            <div class="form-group">
+                <input type="number" name="InclusionOptions[${includeCount}][order]" id="inclusion_order_${includeCount}" value="" class="form-control text-center" min="1" placeholder="Sort order number">
+            </div>
+        </div>            
+        <div class="col-lg-11">
             <div class="form-group mb-2">
                 <div class="input-group mb-3">
                     <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fa fa-pencil-alt"></i></span>
                     </div>
                     <input type="text" name="InclusionOptions[${includeCount}][name]" id="include_name_${includeCount}" value=""
-                        class="form-control mr-2" placeholder="Enter name">
+                        class="form-control mr-2" placeholder="Enter name" required>
                     <button type="button" class="btn btn-sm btn-success mr-2" onclick="addInclude()"><i class="fa fa-plus"></i></button>
                     <button type="button" class="btn btn-sm btn-danger" onclick="removeInclude(${includeCount})"><i class="fa fa-minus"></i></button>
                 </div>
@@ -137,7 +153,9 @@ function addInclude() {
     </div>`;
 
     container.appendChild(newRow);
+    $(`#inclusion_order_${includeCount}`).val( includeCount + 1 );
     includeCount++;
+    TB.plugins.bootstrapSelect();
 }
 
 function removeInclude(id) {

@@ -23,10 +23,21 @@ use Illuminate\Support\Str;
 require('auth.php');
 require('admin.php');
 
-// Test / Utility Routes
-Route::get('/export', [ExportController::class, 'index']);
+Route::get('/export', [TestController::class, 'index']);
 Route::get('/seotest', [TestController::class, 'seotest']);
 Route::get('/formtest', [TestController::class, 'formtest']);
+
+Route::get('/sitemap/index.xml', [SitemapController::class, 'index']);
+Route::get('/sitemap/categories.xml', [SitemapController::class, 'categories']);
+Route::get('/sitemap/destinations.xml', [SitemapController::class, 'destinations']);
+Route::get('/sitemap/tours-{page}.xml', [SitemapController::class, 'tours']);
+Route::get('/sitemap/pages.xml', [SitemapController::class, 'pages']);
+
+Route::get('/ror/index.xml', [RorController::class, 'index']);
+Route::get('/ror/categories.xml', [RorController::class, 'categories']);
+Route::get('/ror/destinations.xml', [RorController::class, 'destinations']);
+Route::get('/ror/tours-{page}.xml', [RorController::class, 'tours']);
+Route::get('/ror/pages.xml', [RorController::class, 'pages']);
 
 // Sitemap Routes
 Route::get('/sitemap/sitemap.xml', [SitemapController::class, 'index']);
@@ -43,11 +54,10 @@ Route::get('/ror/tours-{page}.xml', [RorController::class, 'tours']);
 Route::get('/ror/pages.xml', [RorController::class, 'pages']);
 
 // SPA fallback
-Route::get('/{any}', function () {
-    return file_get_contents(public_path('index.html'));
-})->where('any', '.*');
+// Route::get('/{any}', function () {
+//     return file_get_contents(public_path('index.html'));
+// })->where('any', '.*');
 
-// Webhooks & APIs
 Route::post('/mailgun/events/{event}', [EmailController::class, 'handle']);
 Route::post('/tour/single', [\App\Http\Controllers\API\TourController::class,'single'])->name('tour.single');
 Route::post('/tour/calendar', [\App\Http\Controllers\API\TourController::class,'singleCalendar'])->name('tour.calendar');

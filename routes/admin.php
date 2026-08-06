@@ -466,16 +466,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
 });
 
-Route::get(
-    '/tour-gallery/{order}/upload',
-    [TourGalleryController::class, 'show']
-)
-    ->name('tour-gallery.show')
-    ->middleware('signed');
+Route::get('/tour-gallery/{order}/upload', [TourGalleryController::class, 'show'])
+    ->name('tour-gallery.show')->middleware('signed');
 
-Route::post(
-    '/tour-gallery/{order}/upload',
-    [TourGalleryController::class, 'store']
-)
-    ->name('tour-gallery.store')
-    ->middleware('signed');
+Route::post('/tour-gallery/{order}/upload', [TourGalleryController::class, 'store'])
+    ->name('tour-gallery.store')->middleware('signed');
+
+Route::get('/required-order-id/{order}', [TourGalleryController::class, 'showOrderVerification'])
+    ->name('tour-gallery.required-order-id')->middleware('signed');
+
+Route::post('/required-order-id/{order}', [TourGalleryController::class, 'verifyOrderId'])
+    ->name('tour-gallery.verify-order-id')->middleware('signed');

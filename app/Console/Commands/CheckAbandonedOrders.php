@@ -88,8 +88,8 @@ class CheckAbandonedOrders extends Command
                     "[[ORDER_TOUR_DATE]]" => $order->order_tour->tour_date ? date('l, F j, Y', strtotime($order->order_tour->tour_date)) : '',
                     "[[ORDER_TOUR_TIME]]" => $order->order_tour->tour_time ? date('H:i A', strtotime($order->order_tour->tour_time)) : '',
                     "[[TOUR_MAP]]" => $pickup_address,
-                    "[[ORDER_BALANCE]]"         => ($order->payment_status === 3) ? price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) : price_format_with_currency($order->balance_amount, $order->currency),
-                    "[[ORDER_BALANCE_COLOR]]"   => (abs($order->payment_status === 3? $order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'): $order->balance_amount) < 0.01) ? '008000' : 'f64747',
+                    "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency),
+                    "[[ORDER_BALANCE_COLOR]]"   => (abs($order->balance_amount) < 0.01) ? '008000' : 'f64747',
                 ];
 
                 $subject = strtr($emailTemplate->subject ?? 'Reminder: Your Booking is Pending', $placeholders);

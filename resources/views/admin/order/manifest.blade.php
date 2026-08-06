@@ -124,7 +124,7 @@
                                                 <td>{{ $order->customer?->phone }}</td>
                                                 <td>{{ $order->guest_summary }}</td>
                                                 <td>{{ $order->extras_summary }}</td>
-                                                <td class="text-danger">{{ price_format_with_currency($total-$paid, $order->currency) }}</td>
+                                                <td class="{{ $order->balance_amount > 0.01 ? 'text-danger' : 'text-success' }}">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
                                                 <td>{{ price_format_with_currency($total, $order->currency) }}</td>
                                                 <td class="{{ $amountClass}}">{{ price_format_with_currency($paid, $order->currency) }}</td>
                                                 <td class="px-1">{{ $pickName }}</td>

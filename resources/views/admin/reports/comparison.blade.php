@@ -67,29 +67,30 @@
     .select2-container {
         width: 100% !important;
     }
+    .comparison-search-panel{padding:20px!important;border:1px solid #e5e7eb!important;border-radius:10px!important;background:linear-gradient(180deg,#f8fafc,#fff)!important;}
+    .comparison-search-heading{margin-bottom:16px}.comparison-search-heading h5{margin:0 0 3px;color:#172033;font-size:17px;font-weight:700}.comparison-search-heading p{margin:0;color:#6b7280;font-size:13px}
+    .comparison-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:end}.comparison-filter-field{min-width:0}.comparison-filter-field label{display:block;margin:0 0 6px;color:#374151;font-size:12px;font-weight:600}.comparison-filter-field .form-control{height:42px;border-color:#d7dce3;border-radius:7px}.comparison-filter-apply{width:100%;height:42px;border:0;border-radius:7px;background:#4f46e5;color:#fff;font-size:13px;font-weight:600}
+    .comparison-active-filters{grid-column:1/-1}.comparison-filter-actions{display:flex;gap:10px}.comparison-filter-reset{height:42px;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;border:1px solid #d1d5db;border-radius:7px;background:#fff;color:#4b5563;font-size:13px;font-weight:600}
+    @media(max-width:991px){.comparison-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:575px){.comparison-filter-grid{grid-template-columns:1fr}.comparison-filter-actions{display:grid;grid-template-columns:1fr 1fr}}
 </style>
 
 <div class="comparison-body">
-    <div class="card card-primary bg-white border rounded-lg-custom mb-3 top-search-bar">
-        <div class="row">
-            <div class="col-xl-12 col-12">
-                <b class="text-sm">Compare performance between two Order dates</b>
-            </div>
+    <div class="card card-primary mb-3 top-search-bar comparison-search-panel">
+        <div class="comparison-search-heading"><h5><i class="fas fa-balance-scale mr-2 text-primary"></i>Compare order performance</h5><p>Choose two order dates and optionally narrow the comparison.</p></div>
+        <div class="comparison-filter-grid">
 
-            <div class="col-xl-4 col-md-3 col-12">
-            <div class="form-group">
+            <div class="comparison-filter-field">
+                <label for="date1">First order date</label>
                 <input type="text" id="date1" class="form-control" placeholder="Order Date 1" autocomplete="off" required>
-            </div>
         </div>
 
-        <div class="col-xl-4 col-md-3 col-12">
-            <div class="form-group">
+        <div class="comparison-filter-field">
+                <label for="date2">Second order date</label>
                 <input type="text" id="date2" class="form-control" placeholder="Order Date 2" autocomplete="off" required>
-            </div>
         </div>
 
-            <div class="col-xl-4 col-md-3 col-12">
-                <div class="form-group">
+            <div class="comparison-filter-field">
+                    <label for="productFilter">Product</label>
                     <select id="productFilter" name="product" class="form-control">
                         @if(request('product') && request('product_text'))
                             <option value="{{ request('product') }}" selected>
@@ -97,46 +98,44 @@
                             </option>
                         @endif
                     </select>
-                </div>
+                    <input type="hidden" id="product_text" value="{{ request('product_text') }}">
             </div>
 
-            <div class="col-xl-3 col-md-3 col-12">
-                <div class="form-group">
+            <div class="comparison-filter-field">
+                    <label for="order_status">Order status</label>
                     <select name="order_status" id="order_status" class="form-control">
                         <option value="">All</option>
                         <option value="3">Pending supplier</option>
                         <option value="4">Pending customer</option>
                         <option value="5">Confirmed</option>
                     </select>
-                </div>
             </div>
 
-            <div class="col-xl-3 col-md-3 col-12">
-                <div class="form-group">
+            <div class="comparison-filter-field">
+                    <label for="action_type">Pay type</label>
                     <select name="action_type" id="action_type" class="form-control">
                         <option value="">All</option>
                         <option value="pay_now">Pay Now</option>
                         <option value="pay_later">Pay Later</option>
                     </select>
-                </div>
             </div>
 
-            <div class="col-xl-3 col-md-3 col-12">
-                <div class="form-group">
+            <div class="comparison-filter-field">
+                    <label for="partner">Channel</label>
                     <select id="partner" class="form-control">
                         <option value="">All Channels</option>
                         @foreach($partners as $p)
                             <option value="{{ $p->name }}">{{ $p->name }}</option>
                         @endforeach
                     </select>
-                </div>
             </div>
 
-            <div class="col-xl-3 col-md-12 col-12">
-                <button id="applyBtn" class="btn btn-search">Apply</button>
+            <div class="comparison-filter-field comparison-filter-actions">
+                <a href="{{ route('admin.report.comparison') }}" class="comparison-filter-reset">Reset</a>
+                <button id="applyBtn" class="comparison-filter-apply"><i class="fas fa-search mr-1"></i> Compare</button>
             </div>
 
-            <div class="col-12">
+            <div class="comparison-active-filters">
                 <div id="activeFilters" class="mb-2"></div>
             </div>
         </div>
@@ -541,6 +540,7 @@ document.getElementById('applyBtn').onclick = function () {
     const date1 = document.getElementById('date1').value;
     const date2 = document.getElementById('date2').value;
     const product = document.getElementById('productFilter').value;
+    const productText = document.getElementById('product_text').value;
     const partner = document.getElementById('partner').value;
     const order_status  = document.getElementById('order_status').value;
     const action_type   = document.getElementById('action_type').value;
@@ -556,6 +556,7 @@ document.getElementById('applyBtn').onclick = function () {
     params.set('date2', date2);
 
     if (product) params.set('product', product);
+    if (product && productText) params.set('product_text', productText);
     if (partner) params.set('partner', partner);
     if (order_status) params.set('order_status', order_status);
     if (action_type) params.set('action_type', action_type);
@@ -652,6 +653,7 @@ function renderFilters() {
         date1: params.get('date1'),
         date2: params.get('date2'),
         product: params.get('product'),
+        product_text: params.get('product_text'),
         partner: params.get('partner'),
         order_status: params.get('order_status'),
         action_type: params.get('action_type'),
@@ -677,7 +679,7 @@ function renderFilters() {
     html += badge('Date 2', formatDate(filters.date2), 'date2');
 
     if (filters.product && filters.product !== 'null') {
-        html += badge('Product', filters.product, 'product');
+        html += badge('Product', filters.product_text || filters.product, 'product');
     }
 
     if (filters.partner && filters.partner !== 'null') {

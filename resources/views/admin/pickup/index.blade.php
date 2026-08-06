@@ -23,8 +23,8 @@
                             <th>Name</th>
                             <th>From and To locations</th>
                             <th width="150">Total locations</th>
-                            <th width="120">Used by</th>
-                            <th>Price</th>
+                            <!-- <th width="120">Used by</th> -->
+                            <!-- <th>Price</th> -->
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -35,14 +35,15 @@
                                 <td><a href="{{ route('admin.pickups.edit', encrypt($item->id)) }}" class="text-info text-sm">{{ $item->name }}</a></td>
                                 <td>
                                     @foreach ($item->locations as $location)
-                                        <p class="m-0 text-sm text-gray-100">{{ $location->location }}, {{ $location->address }}</p>
+                                        <p class="m-0 text-sm text-gray-100 border-b border-gray-600 p-2">{{ $location->location }}, {{ $location->address }} - <span class="font-bold">{{ price_format_with_currency($location->pickup_charge) }}</span></p>
                                     @endforeach
                                 </td>
                                 <td>{{ count($item->locations) }}</td>
-                                <td>{{ count($item->locations) }}</td>
-                                <td>{{ price_format_with_currency($item->price) }}</td>
+                                <!-- <td>{{ count($item->locations) }}</td>
+                                <td>{{ price_format_with_currency($item->pickup_charge) }}</td> -->
                                 <td width="60">
-                                    <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.pickup.destroy', encrypt($item->id)) }}"> <i class="fas fa-trash-alt"></i></a>
+                                    <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.pickup.destroy', encrypt($item->id)) }}"> <i class="fas fa-trash-alt"></i>
+                                    {{translate('Delete')}}</a>
                                 </td>                            
                             </tr>
                         @endforeach

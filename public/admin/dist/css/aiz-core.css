@@ -1,8 +1,6 @@
 /*
-
 Don't modify this file.
 use custom-style.css
-
 */
 
 :root {
@@ -10578,10 +10576,6 @@ table.dataTable {
     font-weight: bold;
 }
 
-.order-list-body .active-filters {
-    padding: 12px 25px;
-}
-
 @media (max-width: 767px) {
 
     .order-list-body .btn-options .card-tools {
@@ -11965,20 +11959,6 @@ table.dataTable {
 
     .tour-search-filter .filter-sidebar{
         width: 100%;
-    }
-
-    .comparison-body .tour-main-head .card-tools,
-    .dashboard-body .tour-main-head .card-tools {
-        float: left;
-        margin-top: 10px;
-    }
-
-}
-
-@media (max-width: 1500px) and (min-width: 1024px) {
-
-    .tour-search-filter .filter-body{
-        height: 400px;
     }
 
 }

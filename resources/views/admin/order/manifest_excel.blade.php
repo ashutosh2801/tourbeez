@@ -22,7 +22,7 @@
                     <td>{{ $order->customer?->phone }}</td>
                     <td>{{ $order->guest_summary }}</td>
                     <td>{{ $order->extras_summary }}</td>
-                    <td>{{ number_format($order->balance_amount, 2) }}</td>
+                    <td style="{{ $order->balance_amount > 0.01 ? 'color: #dc3545; font-weight: 700;' : 'color: #198754;' }}">{{ number_format($order->balance_amount, 2) }}</td>
                     <td>{{ number_format($order->total_amount, 2) }}</td>
                     <td>{{ number_format($order->paid_amount, 2) }}</td>
                 </tr>

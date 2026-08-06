@@ -829,25 +829,6 @@
         @endif
     </td>
 
-    <td>@foreach($addonKeys as $key)
-
-
-
-
-<!-- <td > -->
-
-    @if(
-        !empty($row[$key.'_desc']) ||
-        !empty($row[$key.'_quant']) ||
-        !empty($row[$key.'_price']) ||
-        !empty($row[$key.'_tax']) ||
-        !empty($row[$key.'_fee']) ||
-        !empty($row[$key.'_total'])
-    )
-        @php
-
-
-          $totalAddonQnty += $row[$key.'_quant'];
           $totalAddonPrice += $row[$key.'_total'];
 
         @endphp
