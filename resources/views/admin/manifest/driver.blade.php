@@ -153,10 +153,21 @@ thead th:first-child {
     font-size:13px;
     line-height:1.9;
     background-color:#01228b;
-    color: #fff;
+    
     padding:10px;
     border-radius:10px;
     position: relative;
+}
+
+
+
+.main-bg-color{
+    background-color:#01228b;
+    color: #fff;
+}
+.secondary-bg-color{
+    background-color:#ffb703;
+    color:#000;
 }
 .order-wrapper {border-top: 1px dotted #f9f9f9;line-height: 3rem;text-align: left;}
 .order-wrapper span:first-child {min-width: 75px; display: inline-block; font-size: 14px;}
@@ -458,7 +469,7 @@ thead th:first-child {
 
                                 @if(count($cellOrders))
 
-                                    <div class="main-order-wrapper">                                        
+                                    <div class="main-order-wrapper {{ $cellOrders[0]['tour_assignable'] ? 'main-bg-color' : 'secondary-bg-color' }}">                                        
 
                                         @php
                                         $driverSummary = collect($cellOrders)

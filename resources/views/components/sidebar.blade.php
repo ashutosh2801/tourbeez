@@ -27,7 +27,7 @@
 
     <ul class="nav nav-pills nav-sidebar flex-column aiz-side-nav-list" data-toggle="aiz-side-menu" data-widget="treeview" role="menu" data-accordion="false">
         @can('dashboard')
-        <li class="nav-item {{ $dashboardMenuActive ? 'menu-open' : '' }}">
+        <li class="nav-item">
             
             <a href="javascript:void(0);" class="nav-link {{ $dashboardMenuActive ? 'active' : '' }}">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -217,8 +217,8 @@
         @endcan 
 
         @can('show_manifest')
-        <li class="nav-item {{ $manifestMenuActive ? 'menu-open' : '' }}">
-            <a href="javascript:void(0);" class="nav-link {{ $manifestMenuActive ? 'active' : '' }}">
+        <li class="nav-item">
+            <a href="javascript:void(0);" class="nav-link">
                 <i class="nav-icon fas fa-briefcase"></i>
                 <p>{{ translate('Manifest') }}
                     <span class="aiz-side-nav-arrow right"></span>
@@ -250,7 +250,7 @@
                 </li>
                 <li class="aiz-side-nav-list">
                     <a href="{{ route('admin.vehicle.manifest') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.vehicle.manifest*', 'admin.orders.vehicle.manifest*') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.vehicle.manifest') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-tasks"></i>
                         <p>{{ translate('Vehicle Manifest') }}</p>
                     </a>
@@ -260,8 +260,8 @@
         @endcan
 
         @can('show_reports') 
-        <li class="nav-item {{ $reportsMenuActive ? 'menu-open' : '' }}">
-            <a href="javascript:void(0);" class="nav-link {{ $reportsMenuActive ? 'active' : '' }}">
+        <li class="nav-item">
+            <a href="javascript:void(0);" class="nav-link">
                 <i class="nav-icon fas fa-chart-bar"></i>
                 <p>{{ translate('Reports') }}
                     <span class="aiz-side-nav-arrow right"></span>

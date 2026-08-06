@@ -71,7 +71,8 @@ class Order extends Model
         'redzy_order_id',
         'is_discount',
         'source',
-        'failure_message'
+        'failure_message',
+        'created_at'
     ];
 
     public function tour_detail($id, $label='all') {
