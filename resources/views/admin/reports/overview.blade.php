@@ -485,6 +485,54 @@
                     </div>
                 </div>
             </div>
+
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                <div class="info-stats4">
+                    <div class="info-icon">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <div class="sale-num">
+                        <h3 > {{ $performance['adult'] }}</h3>
+                        <div class="stat-title">Adults</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                <div class="info-stats4">
+                    <div class="info-icon">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <div class="sale-num">
+                        <h3 > {{ $performance['child'] }}</h3>
+                        <div class="stat-title">Childs</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                <div class="info-stats4">
+                    <div class="info-icon">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <div class="sale-num">
+                        <h3 > {{ $performance['infant'] }}</h3>
+                        <div class="stat-title">Infants</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
+                <div class="info-stats4">
+                    <div class="info-icon">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <div class="sale-num">
+                        <h3 > {{ $performance['other'] }}</h3>
+                        <div class="stat-title">Senior Citigen</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
