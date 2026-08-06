@@ -26,7 +26,11 @@ class ReportController extends Controller
 public function overview(Request $request)
 {
     $excludedStatuses = [1, 2, 6, 7];
-    $excludedPaymentSources = excluded_payment_sources(); 
+    $excludedPaymentSources = excluded_payment_sources();
+    $adult = 0;
+    $child = 0;
+    $infant = 0;
+    $other = 0; 
 
     /*
     |--------------------------------------------------------------------------
@@ -78,6 +82,10 @@ public function overview(Request $request)
                     'pending_amount' => 0,
                     'refund' => 0,
                     'net_sales' => 0,
+                    'adult'            => $adult,
+                    'child'            => $child,
+                    'infant'           => $infant,
+                    'other'            => $other,
                 ],
                 'partners' => Partner::get(),
                 'selectedProducts' => $selectedProducts,
@@ -279,14 +287,48 @@ public function overview(Request $request)
             $discounts = json_decode($tour->discount, true) ?? [];
 
             // Pricing
+            // foreach ($pricing as $p) {
+            //     $qty = $p['quantity'] ?? 0;
+            //     $price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+            //     if ($qty > 0) {
+            //         $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
+            //             ? $price
+            //             : $price * $qty;
+            //     }
+            // }
+
+
+            
+
             foreach ($pricing as $p) {
-                $qty = $p['quantity'] ?? 0;
+                $qty = (int) ($p['quantity'] ?? 0);
+                $label = strtolower($p['label'] ?? '');
+                $priceType = $p['price_type'] ?? '';
+
+                // ✅ FIXED → treat as Adults
+                if ($priceType === 'FIXED') {
+                    $adult += $qty;
+                    continue;
+                }
+
+                // $qty = $p['quantity'] ?? 0;
                 $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
                 if ($qty > 0) {
                     $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
                         ? $price
                         : $price * $qty;
+                }
+
+                if (str_contains($label, 'adult')) {
+                    $adult += $qty;
+                } elseif (str_contains($label, 'child')) {
+                    $child += $qty;
+                } elseif (str_contains($label, 'infant')) {
+                    $infant += $qty;
+                } else {
+                    $other += $qty;
                 }
             }
 
@@ -410,6 +452,11 @@ public function overview(Request $request)
         'pending_amount'   => round($totalBalanceAll, 2),
         'refund'           => round($refund, 2),
         'net_sales'        => round($gross - $refund, 2),
+        'adult'            => $adult,
+        'child'            => $child,
+        'infant'           => $infant,
+        'other'            => $other,
+
     ];
 
     $partners = Partner::get();
