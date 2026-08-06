@@ -227,6 +227,17 @@
                                         </option>
                                     @endforeach
 
+
+                                </select>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <select name="excluded_source[]" class="form-control aiz-selectpicker" multiple>
+                                    @foreach (source_list_db() as $source)
+                                        <option value="{{ $source->key }}"
+                                            {{ in_array($source->key, (array) request('excluded_source', [])) ? 'selected' : '' }}>
+                                            {{ $source->name }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
 
@@ -261,7 +272,7 @@
                 request('order_created_date') ||
                 request('source') ||
                 $selectedProducts->isNotEmpty() ||
-                $excludedProducts->isNotEmpty();
+                $excludedProducts->isNotEmpty() || request('excluded_source', []);
         @endphp
 
         @if($hasActiveFilters)
@@ -315,6 +326,19 @@
                         <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['source' => null]) }}">✕</a>
                     </span>
                 @endif
+
+                @foreach((array) request('excluded_source', []) as $source)
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Excluded Source: {{ source_list($source) }}
+                        <a class="text-white ml-1"
+                           href="{{ request()->fullUrlWithQuery([
+                               'excluded_source' => collect(request('excluded_source'))
+                                   ->reject(fn($item) => $item === $source)
+                                   ->values()
+                                   ->all()
+                           ]) }}">✕</a>
+                    </span>
+                @endforeach
 
                 {{-- Selected Tour --}}
                 @if($selectedProducts->isNotEmpty())
