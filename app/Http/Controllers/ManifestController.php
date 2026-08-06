@@ -32,509 +32,509 @@ class ManifestController extends Controller
      */
 
     public function driverPickupMail(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'date' => [
-            'required',
-            'date',
-        ],
+    {
+        $validator = Validator::make($request->all(), [
+            'date' => [
+                'required',
+                'date',
+            ],
 
-        'orders' => [
-            'required',
-            'array',
-            'min:1',
-        ],
+            'orders' => [
+                'required',
+                'array',
+                'min:1',
+            ],
 
-        'orders.*.order_id' => [
-            'required',
-            'integer',
-            'distinct',
-            'exists:orders,id',
-        ],
+            'orders.*.order_id' => [
+                'required',
+                'integer',
+                'distinct',
+                'exists:orders,id',
+            ],
 
-        'orders.*.order_number' => [
-            'nullable',
-            'string',
-        ],
+            'orders.*.order_number' => [
+                'nullable',
+                'string',
+            ],
 
-        'orders.*.tour_id' => [
-            'nullable',
-            'integer',
-            'exists:tours,id',
-        ],
+            'orders.*.tour_id' => [
+                'nullable',
+                'integer',
+                'exists:tours,id',
+            ],
 
-        'orders.*.pickup_time' => [
-            'nullable',
-            'date_format:H:i',
-        ],
+            'orders.*.pickup_time' => [
+                'nullable',
+                'date_format:H:i',
+            ],
 
-        'orders.*.driver_ids' => [
-            'required',
-            'array',
-            'min:1',
-        ],
+            'orders.*.driver_ids' => [
+                'required',
+                'array',
+                'min:1',
+            ],
 
-        'orders.*.driver_ids.*' => [
-            'required',
-            'integer',
-            'exists:users,id',
-        ],
+            'orders.*.driver_ids.*' => [
+                'required',
+                'integer',
+                'exists:users,id',
+            ],
 
-        'orders.*.vehicle_id' => [
-            'nullable',
-            'integer',
-            'exists:vehicles,id',
-        ],
+            'orders.*.vehicle_id' => [
+                'nullable',
+                'integer',
+                'exists:vehicles,id',
+            ],
 
-        'customMessage' => [
-            'nullable',
-            'string',
-            'max:20000',
-        ],
-    ]);
+            'customMessage' => [
+                'nullable',
+                'string',
+                'max:20000',
+            ],
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Validation failed.',
-            'errors' => $validator->errors(),
-        ], 422);
-    }
-
-    $validated = $validator->validated();
-
-    $date = $validated['date'];
-
-    $customMessage = $validated['customMessage'] ?? null;
-
-    $requestedOrders = collect(
-        $validated['orders']
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | Load Order IDs
-    |--------------------------------------------------------------------------
-    */
-
-    $orderIds = $requestedOrders
-        ->pluck('order_id')
-        ->map(fn ($id) => (int) $id)
-        ->filter()
-        ->unique()
-        ->values();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Load Driver IDs
-    |--------------------------------------------------------------------------
-    */
-
-    $driverIds = $requestedOrders
-        ->flatMap(function ($item) {
-            return collect(
-                $item['driver_ids'] ?? []
-            )->map(fn ($id) => (int) $id);
-        })
-        ->filter()
-        ->unique()
-        ->values();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Load Vehicle IDs
-    |--------------------------------------------------------------------------
-    */
-
-    $vehicleIds = $requestedOrders
-        ->pluck('vehicle_id')
-        ->filter()
-        ->map(fn ($id) => (int) $id)
-        ->unique()
-        ->values();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Load Orders
-    |--------------------------------------------------------------------------
-    */
-
-    $orders = Order::with([
-        'user',
-        'customer',
-        'orderTours.tour',
-    ])
-        ->whereIn('id', $orderIds)
-        ->get()
-        ->keyBy('id');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Load Selected Drivers
-    |--------------------------------------------------------------------------
-    */
-
-    $drivers = User::query()
-        ->whereIn('id', $driverIds)
-        ->where('role', 'Driver')
-        ->get()
-        ->keyBy('id');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Load Selected Vehicles
-    |--------------------------------------------------------------------------
-    */
-
-    $vehicles = Vehicle::query()
-        ->whereIn('id', $vehicleIds)
-        ->get()
-        ->keyBy('id');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Group Orders by Driver
-    |--------------------------------------------------------------------------
-    */
-
-    $driverOrderGroups = [];
-
-    foreach ($requestedOrders as $item) {
-        $orderId = (int) $item['order_id'];
-
-        $order = $orders->get($orderId);
-
-        if (!$order) {
-            continue;
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $selectedDriverIds = collect(
-            $item['driver_ids'] ?? []
-        )
+        $validated = $validator->validated();
+
+        $date = $validated['date'];
+
+        $customMessage = $validated['customMessage'] ?? null;
+
+        $requestedOrders = collect(
+            $validated['orders']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Load Order IDs
+        |--------------------------------------------------------------------------
+        */
+
+        $orderIds = $requestedOrders
+            ->pluck('order_id')
             ->map(fn ($id) => (int) $id)
             ->filter()
             ->unique()
             ->values();
 
-        $vehicleId = !empty($item['vehicle_id'])
-            ? (int) $item['vehicle_id']
-            : null;
+        /*
+        |--------------------------------------------------------------------------
+        | Load Driver IDs
+        |--------------------------------------------------------------------------
+        */
 
-        $selectedVehicle = $vehicleId
-            ? $vehicles->get($vehicleId)
-            : null;
+        $driverIds = $requestedOrders
+            ->flatMap(function ($item) {
+                return collect(
+                    $item['driver_ids'] ?? []
+                )->map(fn ($id) => (int) $id);
+            })
+            ->filter()
+            ->unique()
+            ->values();
 
-        foreach ($selectedDriverIds as $driverId) {
-            $driverOrderGroups[$driverId][] = [
-                'order' => $order,
+        /*
+        |--------------------------------------------------------------------------
+        | Load Vehicle IDs
+        |--------------------------------------------------------------------------
+        */
 
-                'order_number' =>
-                    $order->order_number,
+        $vehicleIds = $requestedOrders
+            ->pluck('vehicle_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
 
-                'customer_name' =>
-                    $order->customer?->name ?? 'N/A',
+        /*
+        |--------------------------------------------------------------------------
+        | Load Orders
+        |--------------------------------------------------------------------------
+        */
 
-                'customer_email' =>
-                    $order->customer?->email,
+        $orders = Order::with([
+            'user',
+            'customer',
+            'orderTours.tour',
+        ])
+            ->whereIn('id', $orderIds)
+            ->get()
+            ->keyBy('id');
 
-                'customer_phone' =>
-                    $order->customer?->phone,
+        /*
+        |--------------------------------------------------------------------------
+        | Load Selected Drivers
+        |--------------------------------------------------------------------------
+        */
 
-                'guest_count' =>
-                    getManifestOrderGuestCount(
-                        $order,
-                        $date
-                    ),
+        $drivers = User::query()
+            ->whereIn('id', $driverIds)
+            ->where('role', 'Driver')
+            ->get()
+            ->keyBy('id');
 
-                'pickup_time' =>
-                    $item['pickup_time'] ?? null,
+        /*
+        |--------------------------------------------------------------------------
+        | Load Selected Vehicles
+        |--------------------------------------------------------------------------
+        */
 
-                'pickup_location' =>
-                    getManifestPickupLocation($order),
+        $vehicles = Vehicle::query()
+            ->whereIn('id', $vehicleIds)
+            ->get()
+            ->keyBy('id');
 
-                'instruction' =>
-                    $order->customer?->instructions,
+        /*
+        |--------------------------------------------------------------------------
+        | Group Orders by Driver
+        |--------------------------------------------------------------------------
+        */
 
-                'internal_notes' =>
-                    $order->internal_notes,
+        $driverOrderGroups = [];
 
-                'vehicle' =>
-                    $selectedVehicle,
-            ];
-        }
-    }
+        foreach ($requestedOrders as $item) {
+            $orderId = (int) $item['order_id'];
 
-    $sent = [];
-    $failed = [];
+            $order = $orders->get($orderId);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Send One Email Per Driver
-    |--------------------------------------------------------------------------
-    */
-
-    foreach ($driverOrderGroups as $driverId => $driverOrders) {
-        $driver = $drivers->get(
-            (int) $driverId
-        );
-
-        if (!$driver) {
-            $failed[] = [
-                'driver_id' => $driverId,
-                'message' => 'Driver not found.',
-            ];
-
-            continue;
-        }
-
-        if (!$driver->email) {
-            foreach ($driverOrders as $driverOrder) {
-                OrderEmailHistory::create([
-                    'order_id' =>
-                        $driverOrder['order']->id,
-
-                    'to_email' =>
-                        null,
-
-                    'from_email' =>
-                        config('mail.from.address'),
-
-                    'subject' =>
-                        'Driver Pickup Mail',
-
-                    'body' =>
-                        'Driver email missing.',
-
-                    'status' =>
-                        'failed',
-
-                    'message_id' =>
-                        null,
-                ]);
+            if (!$order) {
+                continue;
             }
 
-            $failed[] = [
-                'driver_id' => $driver->id,
-                'driver_name' => $driver->name,
-                'message' => 'Driver email missing.',
-            ];
+            $selectedDriverIds = collect(
+                $item['driver_ids'] ?? []
+            )
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->values();
 
-            continue;
+            $vehicleId = !empty($item['vehicle_id'])
+                ? (int) $item['vehicle_id']
+                : null;
+
+            $selectedVehicle = $vehicleId
+                ? $vehicles->get($vehicleId)
+                : null;
+
+            foreach ($selectedDriverIds as $driverId) {
+                $driverOrderGroups[$driverId][] = [
+                    'order' => $order,
+
+                    'order_number' =>
+                        $order->order_number,
+
+                    'customer_name' =>
+                        $order->customer?->name ?? 'N/A',
+
+                    'customer_email' =>
+                        $order->customer?->email,
+
+                    'customer_phone' =>
+                        $order->customer?->phone,
+
+                    'guest_count' =>
+                        getManifestOrderGuestCount(
+                            $order,
+                            $date
+                        ),
+
+                    'pickup_time' =>
+                        $item['pickup_time'] ?? null,
+
+                    'pickup_location' =>
+                        getManifestPickupLocation($order),
+
+                    'instruction' =>
+                        $order->customer?->instructions,
+
+                    'internal_notes' =>
+                        $order->internal_notes,
+
+                    'vehicle' =>
+                        $selectedVehicle,
+                ];
+            }
         }
 
-        try {
-            $driverOrdersCollection = collect(
-                $driverOrders
+        $sent = [];
+        $failed = [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Send One Email Per Driver
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($driverOrderGroups as $driverId => $driverOrders) {
+            $driver = $drivers->get(
+                (int) $driverId
             );
 
-            /*
-             * The order verification page accepts any valid Order ID, so the
-             * driver email only needs one shared QR after the passenger list.
-             */
-            $galleryUploadUrl = null;
-            $galleryQrUrl = null;
-            $qrSourceOrder = $driverOrdersCollection
-                ->pluck('order')
-                ->filter()
-                ->first();
+            if (!$driver) {
+                $failed[] = [
+                    'driver_id' => $driverId,
+                    'message' => 'Driver not found.',
+                ];
 
-            if ($qrSourceOrder) {
-                try {
-                    $galleryQr = generateQRCodeForPassengerPickup(
-                        $qrSourceOrder
-                    );
+                continue;
+            }
 
-                    $galleryUploadUrl = $galleryQr[0] ?? null;
-                    $galleryQrUrl = $galleryQr[1] ?? null;
-                } catch (\Throwable $e) {
-                    Log::warning(
-                        'Driver pickup QR generation failed',
-                        [
-                            'driver_id' => $driver->id,
-                            'order_id' => $qrSourceOrder->id,
-                            'error' => $e->getMessage(),
-                        ]
-                    );
+            if (!$driver->email) {
+                foreach ($driverOrders as $driverOrder) {
+                    OrderEmailHistory::create([
+                        'order_id' =>
+                            $driverOrder['order']->id,
+
+                        'to_email' =>
+                            null,
+
+                        'from_email' =>
+                            config('mail.from.address'),
+
+                        'subject' =>
+                            'Driver Pickup Mail',
+
+                        'body' =>
+                            'Driver email missing.',
+
+                        'status' =>
+                            'failed',
+
+                        'message_id' =>
+                            null,
+                    ]);
                 }
-            }
 
-            $sentMessage = Mail::mailer('mailgun')
-                ->to($driver->email)
-                ->send(
-                    new DriverPickupMail(
-                        driver: $driver,
-                        orders: $driverOrdersCollection,
-                        date: $date,
-                        customMessage: $customMessage,
-                        galleryUploadUrl: $galleryUploadUrl,
-                        galleryQrUrl: $galleryQrUrl
-                    )
-                );
-
-            $messageId = null;
-
-            if (
-                $sentMessage instanceof
-                \Illuminate\Mail\SentMessage
-            ) {
-                $symfonySentMessage =
-                    $sentMessage->getSymfonySentMessage();
-
-                if (
-                    $symfonySentMessage &&
-                    method_exists(
-                        $symfonySentMessage,
-                        'getMessageId'
-                    )
-                ) {
-                    $rawMessageId =
-                        $symfonySentMessage->getMessageId();
-
-                    $messageId = $rawMessageId
-                        ? trim($rawMessageId, '<>')
-                        : null;
-                }
-            }
-
-            foreach ($driverOrders as $driverOrder) {
-                OrderEmailHistory::create([
-                    'order_id' =>
-                        $driverOrder['order']->id,
-
-                    'to_email' =>
-                        $driver->email,
-
-                    'from_email' =>
-                        config('mail.from.address'),
-
-                    'subject' =>
-                        'Driver Pickup Mail',
-
-                    'body' =>
-                        'Driver pickup mail sent successfully to ' .
-                        $driver->name . '.',
-
-                    'status' =>
-                        'sent',
-
-                    'message_id' =>
-                        $messageId,
-                ]);
-            }
-
-            $sent[] = [
-                'driver_id' =>
-                    $driver->id,
-
-                'driver_name' =>
-                    $driver->name,
-
-                'email' =>
-                    $driver->email,
-
-                'orders_count' =>
-                    count($driverOrders),
-
-                'orders' => collect($driverOrders)
-                    ->map(function ($driverOrder) use (
-                        $galleryUploadUrl,
-                        $galleryQrUrl
-                    ) {
-                        return [
-                            'order_id' =>
-                                $driverOrder['order']->id,
-
-                            'order_number' =>
-                                $driverOrder['order_number'],
-
-                            'gallery_upload_url' =>
-                                $galleryUploadUrl,
-
-                            'gallery_qr_url' =>
-                                $galleryQrUrl,
-                        ];
-                    })
-                    ->values()
-                    ->all(),
-            ];
-        } catch (\Throwable $e) {
-            Log::error(
-                'Driver pickup mail failed',
-                [
+                $failed[] = [
                     'driver_id' => $driver->id,
                     'driver_name' => $driver->name,
-                    'driver_email' => $driver->email,
-                    'error' => $e->getMessage(),
-                ]
-            );
+                    'message' => 'Driver email missing.',
+                ];
 
-            foreach ($driverOrders as $driverOrder) {
-                OrderEmailHistory::create([
-                    'order_id' =>
-                        $driverOrder['order']->id,
-
-                    'to_email' =>
-                        $driver->email,
-
-                    'from_email' =>
-                        config('mail.from.address'),
-
-                    'subject' =>
-                        'Driver Pickup Mail',
-
-                    'body' =>
-                        $e->getMessage(),
-
-                    'status' =>
-                        'failed',
-
-                    'message_id' =>
-                        null,
-                ]);
+                continue;
             }
 
-            $failed[] = [
-                'driver_id' =>
-                    $driver->id,
+            try {
+                $driverOrdersCollection = collect(
+                    $driverOrders
+                );
 
-                'driver_name' =>
-                    $driver->name,
+                /*
+                * The order verification page accepts any valid Order ID, so the
+                * driver email only needs one shared QR after the passenger list.
+                */
+                $galleryUploadUrl = null;
+                $galleryQrUrl = null;
+                $qrSourceOrder = $driverOrdersCollection
+                    ->pluck('order')
+                    ->filter()
+                    ->first();
 
-                'email' =>
-                    $driver->email,
+                if ($qrSourceOrder) {
+                    try {
+                        $galleryQr = generateQRCodeForPassengerPickup(
+                            $qrSourceOrder
+                        );
 
-                'message' =>
-                    $e->getMessage(),
-            ];
+                        $galleryUploadUrl = $galleryQr[0] ?? null;
+                        $galleryQrUrl = $galleryQr[1] ?? null;
+                    } catch (\Throwable $e) {
+                        Log::warning(
+                            'Driver pickup QR generation failed',
+                            [
+                                'driver_id' => $driver->id,
+                                'order_id' => $qrSourceOrder->id,
+                                'error' => $e->getMessage(),
+                            ]
+                        );
+                    }
+                }
+
+                $sentMessage = Mail::mailer('mailgun')
+                    ->to($driver->email)
+                    ->send(
+                        new DriverPickupMail(
+                            driver: $driver,
+                            orders: $driverOrdersCollection,
+                            date: $date,
+                            customMessage: $customMessage,
+                            galleryUploadUrl: $galleryUploadUrl,
+                            galleryQrUrl: $galleryQrUrl
+                        )
+                    );
+
+                $messageId = null;
+
+                if (
+                    $sentMessage instanceof
+                    \Illuminate\Mail\SentMessage
+                ) {
+                    $symfonySentMessage =
+                        $sentMessage->getSymfonySentMessage();
+
+                    if (
+                        $symfonySentMessage &&
+                        method_exists(
+                            $symfonySentMessage,
+                            'getMessageId'
+                        )
+                    ) {
+                        $rawMessageId =
+                            $symfonySentMessage->getMessageId();
+
+                        $messageId = $rawMessageId
+                            ? trim($rawMessageId, '<>')
+                            : null;
+                    }
+                }
+
+                foreach ($driverOrders as $driverOrder) {
+                    OrderEmailHistory::create([
+                        'order_id' =>
+                            $driverOrder['order']->id,
+
+                        'to_email' =>
+                            $driver->email,
+
+                        'from_email' =>
+                            config('mail.from.address'),
+
+                        'subject' =>
+                            'Driver Pickup Mail',
+
+                        'body' =>
+                            'Driver pickup mail sent successfully to ' .
+                            $driver->name . '.',
+
+                        'status' =>
+                            'sent',
+
+                        'message_id' =>
+                            $messageId,
+                    ]);
+                }
+
+                $sent[] = [
+                    'driver_id' =>
+                        $driver->id,
+
+                    'driver_name' =>
+                        $driver->name,
+
+                    'email' =>
+                        $driver->email,
+
+                    'orders_count' =>
+                        count($driverOrders),
+
+                    'orders' => collect($driverOrders)
+                        ->map(function ($driverOrder) use (
+                            $galleryUploadUrl,
+                            $galleryQrUrl
+                        ) {
+                            return [
+                                'order_id' =>
+                                    $driverOrder['order']->id,
+
+                                'order_number' =>
+                                    $driverOrder['order_number'],
+
+                                'gallery_upload_url' =>
+                                    $galleryUploadUrl,
+
+                                'gallery_qr_url' =>
+                                    $galleryQrUrl,
+                            ];
+                        })
+                        ->values()
+                        ->all(),
+                ];
+            } catch (\Throwable $e) {
+                Log::error(
+                    'Driver pickup mail failed',
+                    [
+                        'driver_id' => $driver->id,
+                        'driver_name' => $driver->name,
+                        'driver_email' => $driver->email,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+
+                foreach ($driverOrders as $driverOrder) {
+                    OrderEmailHistory::create([
+                        'order_id' =>
+                            $driverOrder['order']->id,
+
+                        'to_email' =>
+                            $driver->email,
+
+                        'from_email' =>
+                            config('mail.from.address'),
+
+                        'subject' =>
+                            'Driver Pickup Mail',
+
+                        'body' =>
+                            $e->getMessage(),
+
+                        'status' =>
+                            'failed',
+
+                        'message_id' =>
+                            null,
+                    ]);
+                }
+
+                $failed[] = [
+                    'driver_id' =>
+                        $driver->id,
+
+                    'driver_name' =>
+                        $driver->name,
+
+                    'email' =>
+                        $driver->email,
+
+                    'message' =>
+                        $e->getMessage(),
+                ];
+            }
+
+            usleep(500000);
         }
 
-        usleep(500000);
+        $sentCount = count($sent);
+        $failedCount = count($failed);
+
+        return response()->json([
+            'success' => $sentCount > 0,
+
+            'message' => $sentCount > 0
+                ? $sentCount .
+                    ' driver pickup email(s) sent successfully.'
+                : 'No driver pickup emails were sent.',
+
+            'sent_count' =>
+                $sentCount,
+
+            'failed_count' =>
+                $failedCount,
+
+            'sent' =>
+                $sent,
+
+            'failed' =>
+                $failed,
+        ], $sentCount > 0 ? 200 : 422);
     }
-
-    $sentCount = count($sent);
-    $failedCount = count($failed);
-
-    return response()->json([
-        'success' => $sentCount > 0,
-
-        'message' => $sentCount > 0
-            ? $sentCount .
-                ' driver pickup email(s) sent successfully.'
-            : 'No driver pickup emails were sent.',
-
-        'sent_count' =>
-            $sentCount,
-
-        'failed_count' =>
-            $failedCount,
-
-        'sent' =>
-            $sent,
-
-        'failed' =>
-            $failed,
-    ], $sentCount > 0 ? 200 : 422);
-}
 
     /**
      * Send pickup mail to passengers for selected orders on a specific date.
@@ -1564,7 +1564,7 @@ class ManifestController extends Controller
             'orders.*.order_id' => 'required|integer',
             'orders.*.driver_ids' => 'nullable|array',
             'orders.*.vehicle_ids' => 'nullable|array',
-            'orders.*.pickup_time' => 'required|date_format:H:i',
+            'orders.*.pickup_time' => 'nullable|date_format:H:i',
             'orders.*.assignment_type' => 'nullable|string',
             'date' => 'required|date',
         ],[
