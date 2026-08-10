@@ -132,7 +132,7 @@ class OrderController extends Controller
             $pricing=[]; $total = 0;
             foreach($tour_pricing as $tp) {
                 $tourPricing = TourPricing::find($tp->tour_pricing_id);
-                $total = ($tp->quantity * $tp->price);
+                $total = (float) ($tp->gross_total_price ?? $tp->total_price ?? ($tp->quantity * $tp->price));
                 $pricing[] = [
                     'lable' => $tourPricing->label,
                     'qty'   => $tp->quantity,
@@ -147,7 +147,7 @@ class OrderController extends Controller
             $extra=[]; $total = 0;
             foreach($extra_pricing as $ep) {
                 $extraAddon = Addon::find($ep->tour_extra_id);
-                $total = ($ep->quantity * $ep->price);
+                $total = (float) ($ep->gross_total_price ?? $ep->total_price ?? ($ep->quantity * $ep->price));
                 $extra[] = [
                     'lable' => $extraAddon->name,
                     'qty'   => $ep->quantity,
@@ -205,18 +205,17 @@ class OrderController extends Controller
                 $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
             }
 
-            /* If already partially paid or added discount/promo etc in backend */
-            $paidAmount = $booking->payments()
-                        ->where('status', 'succeeded')
-                        ->where('payment_type', '<>', 'PROMOCODE')
-                        ->sum('amount');
-                
-            $promoCode  = $booking->payments()
-                        ->where('status', 'succeeded')
-                        ->where('payment_type', 'PROMOCODE')
-                        ->sum('amount');    
-
-            $totalPaid  = $paidAmount + $promoCode;    
+            /*
+             * Promo credits are stored as payment_type=PROMOCODE with
+             * status=discount. Keep this endpoint on the same accounting
+             * contract used by checkout, invoice and email rendering.
+             */
+            $paymentSummary = (new OrderPaymentSummaryService())->summarize(
+                $booking->payments()->get()
+            );
+            $paidAmount = $paymentSummary['paid_amount'];
+            $promoCode = $paymentSummary['promo_discount'];
+            $totalPaid = $paymentSummary['total_credits'];
 
             $detail = [
                 'order_number'      => $booking->order_number,
@@ -300,6 +299,11 @@ class OrderController extends Controller
                 'qty_used'      => 1,
                 'quantity'      => $tp->quantity,
                 'newly_added_quantity' => (int) ($tp->newly_added_quantity ?? 0),
+                'newly_added_price' => currencyConvert(
+                    (float) ($tp->newly_added_price ?? $actual_price),
+                    $order->currency,
+                    'CAD'
+                ),
                 'is_newly_added' => (bool) ($tp->is_newly_added ?? false),
             ];
         }
@@ -307,6 +311,10 @@ class OrderController extends Controller
         $paymentSummary = (new OrderPaymentSummaryService())->summarize(
             $order->payments()->get()
         );
+        $isCommissionOrder = $order->payments()
+            ->whereIn('payment_type', ['COMMISSION', 'EXCLUDED'])
+            ->where('status', 'succeeded')
+            ->exists();
         $promoAmount = $paymentSummary['promo_discount'];
         $discountAmount = $paymentSummary['special_discount'];
         
@@ -321,6 +329,11 @@ class OrderController extends Controller
                 "label"     => $extraAddon->name,
                 "quantity"  => $ep->quantity,
                 "newly_added_quantity" => (int) ($ep->newly_added_quantity ?? 0),
+                "newly_added_price" => currencyConvert(
+                    (float) ($ep->newly_added_price ?? $ep->price),
+                    $order->currency,
+                    'CAD'
+                ),
                 "is_newly_added" => (bool) ($ep->is_newly_added ?? false),
             ];
         }
@@ -404,6 +417,7 @@ class OrderController extends Controller
             "promo_code_value"  => $paymentSummary['promo_code'],
             "paid_amount"       => currencyConvert( $paidAmount, $order->currency, 'CAD'),
             "total_paid"        => currencyConvert( $totalPaid, $order->currency, 'CAD'),
+            "is_commission_order" => $isCommissionOrder,
             'payment_by'        => 'customer',
             "orderId"           => $order->id,
             "tourId"            => $order->tour_id,
@@ -933,12 +947,30 @@ class OrderController extends Controller
                 ->keyBy(fn ($item) => (int) ($item['tour_extra_id'] ?? 0));
             $previousFees = json_decode($previousTour?->tour_fees ?: '[]', true) ?: [];
             $previousDiscounts = json_decode($previousTour?->discount ?: '[]', true) ?: [];
+            $hasAdjustedLines = $previousPricing->contains(fn ($item) =>
+                    (bool) ($item['is_newly_added'] ?? false)
+                    || (int) ($item['newly_added_quantity'] ?? 0) > 0
+                )
+                || $previousExtras->contains(fn ($item) =>
+                    (bool) ($item['is_newly_added'] ?? false)
+                    || (int) ($item['newly_added_quantity'] ?? 0) > 0
+                )
+                || collect($previousFees)->contains(fn ($fee) =>
+                    (float) ($fee['newly_added_amount'] ?? 0) > 0
+                );
+            $discountsLocked = $hasSettledPayments
+                || $existingPaymentSummary['authorized_amount'] > 0
+                || strtolower((string) $order->action_name) === 'reserve'
+                || $hasAdjustedLines;
 
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
             orderLogAdvanced($order, 'payment', 'stripe_init', 'success', 'Stripe initialized');
 
-            $promo = $request->filled('promo_code') ? $this->savePromo($request) : [];
+            $promoAllowed = !$discountsLocked;
+            $promo = $request->filled('promo_code') && $promoAllowed
+                ? $this->savePromo($request)
+                : [];
             $customer = $this->saveCustomer($request, $order, $data);
             $stripeCustomer = $this->saveStripeCustomer($request, $order, $data);            
 
@@ -950,11 +982,12 @@ class OrderController extends Controller
             $pricing    = [];
             $extra      = [];
             $fees       = [];
-            $discount   = $hasSettledPayments ? $previousDiscounts : [];
+            $discount   = $discountsLocked ? $previousDiscounts : [];
             $discounts  = [];
             $diskounts  = [];
             $item_total = 0;
             $promo_total= 0;
+            $promoEligibleItemsTotal = 0;
 
             $depositRule = TourSpecialDeposit::where('use_deposit', 1)
                 ->where('tour_id', $tour->id)
@@ -1009,11 +1042,16 @@ class OrderController extends Controller
                         $tour->currency ?? 'CAD',
                         $request->currency ?? 'CAD'
                     );
-                $discount_price = (!$hasSettledPayments && $specialDiscountEligible)
+                $previousLine = $previousPricing->get((int) $item['id']);
+                if ($discountsLocked && $previousLine) {
+                    $actual_price = (float) data_get($previousLine, 'actual_price', $actual_price);
+                }
+                $isDiscountablePricing = $discountService->isDiscountablePricingLabel($storedPricing->label);
+                $discount_price = (!$discountsLocked && $specialDiscountEligible && $isDiscountablePricing)
                     ? $discountService->specialDiscount($actual_price, $depositRule)
                     : 0;
                 $previousQty = (int) data_get($previousPricing->get((int) $item['id']), 'quantity', 0);
-                $discountQty = $hasSettledPayments ? 0 : $qty;
+                $discountQty = $discountsLocked ? 0 : $qty;
                 $linePriceType = $storedPricing->pricing_type
                     ?? $item['price_type']
                     ?? $tour->price_type;
@@ -1028,10 +1066,22 @@ class OrderController extends Controller
                     : $discount_price * $discountQty;
                 $storedUnitDiscount = $storedDiscountTotal / $lineUnits;
                 $price = max($actual_price - $storedUnitDiscount, 0);
-                $total = $linePriceType === 'PER_PERSON'
-                    ? $actual_price * $qty
-                    : $actual_price;
+                $total = $discountsLocked && $previousQty === $qty
+                    ? (float) data_get(
+                        $previousLine,
+                        'gross_total_price',
+                        $linePriceType === 'PER_PERSON' ? $actual_price * $qty : $actual_price
+                    )
+                    : ($linePriceType === 'PER_PERSON' ? $actual_price * $qty : $actual_price);
                 $item_total    += $total;
+                if ($isDiscountablePricing) {
+                    $promoEligibleItemsTotal += max(
+                        $total - ($linePriceType === 'PER_PERSON'
+                            ? $storedUnitDiscount * $qty
+                            : $storedUnitDiscount),
+                        0
+                    );
+                }
                 $quantity      += $qty;
 
                 $pricing[] = [
@@ -1044,6 +1094,7 @@ class OrderController extends Controller
                     'price'             => $price,
                     'discount'          => round($storedUnitDiscount, 2),
                     'total_price'       => $total,
+                    'gross_total_price' => $total,
                     'newly_added_quantity' => (int) data_get(
                         $previousPricing->get((int) $item['id']),
                         'newly_added_quantity',
@@ -1054,6 +1105,8 @@ class OrderController extends Controller
                         'is_newly_added',
                         false
                     ),
+                    'newly_added_price' => (float) data_get($previousLine, 'newly_added_price', $actual_price),
+                    'newly_added_rate' => (float) data_get($previousLine, 'newly_added_rate', $order->current_rate ?: 1),
                 ];                
                 
                 if ($discount_price > 0 && $discountQty > 0) {
@@ -1113,7 +1166,7 @@ class OrderController extends Controller
                 $cartDiskount = $discountPayment['amount'];
                 $cartItemsTotal = max($cartItemsTotal - $cartDiskount, 0);
             }
-            else if (!$hasSettledPayments) {
+            else if (!$discountsLocked) {
                 Log::info('Discounts does not acceptable because it\'s not in date range');
                 $this->deleteDiscountFromPayment($order->id);
             }
@@ -1121,20 +1174,22 @@ class OrderController extends Controller
             /* IF Valid */
             $cartPromo = 0;
             $discountedItemsTotal = $cartItemsTotal;
-            if ($hasSettledPayments && $existingPaymentSummary['promo_discount'] > 0) {
+            if ($discountsLocked && $existingPaymentSummary['promo_discount'] > 0) {
                 // A redeemed promo is part of the settled order snapshot. Do
                 // not recalculate it against newly added items.
                 $cartPromo = $existingPaymentSummary['promo_discount'];
                 $discountedItemsTotal = max($cartItemsTotal - $cartPromo, 0);
             }
-            else if($promo && $request->filled('promo_code')) {
+            else if($promoAllowed && $promo && $request->filled('promo_code')) {
                 Log::info('promo requested and available');
                 ['success' => $success, 'discount' => $discountAmount, 'item_total' => $itemTotal] 
-                        = $this->addPromo($request, $promo, $order, $cartItemsTotal);
+                        = $this->addPromo($request, $promo, $order, $promoEligibleItemsTotal);
                 $cartPromo = $discountAmount;
-                $discountedItemsTotal = $itemTotal;
+                // addPromo calculates the credit from eligible guest lines;
+                // non-eligible item lines still remain fully payable.
+                $discountedItemsTotal = max($cartItemsTotal - $cartPromo, 0);
             }
-            else if($order && !$hasSettledPayments) {
+            else if($order && !$discountsLocked) {
                 Log::info('promo not requested but available');
                 $this->deletePromoFromPayment($order->id);
             }
@@ -1158,6 +1213,18 @@ class OrderController extends Controller
                                 $request->currency ?? 'CAD'
                             );
                         $addonTotal = round($addonPrice * (int) $addon['quantity'], 2);
+                        $previousAddon = $previousExtras->get((int) $addon['id']);
+                        if (
+                            $discountsLocked
+                            && (int) data_get($previousAddon, 'quantity', 0) === (int) $addon['quantity']
+                        ) {
+                            $addonPrice = (float) data_get($previousAddon, 'price', $addonPrice);
+                            $addonTotal = (float) data_get(
+                                $previousAddon,
+                                'gross_total_price',
+                                data_get($previousAddon, 'total_price', $addonTotal)
+                            );
+                        }
 
                         $extra[] = [
                             'tour_id'           => $request->subTourId ?? $request->tourId,
@@ -1166,6 +1233,7 @@ class OrderController extends Controller
                             'label'             => $storedAddon->name,
                             'price'             => round($addonPrice, 2),
                             'total_price'       => $addonTotal,
+                            'gross_total_price' => $addonTotal,
                             'newly_added_quantity' => (int) data_get(
                                 $previousExtras->get((int) $addon['id']),
                                 'newly_added_quantity',
@@ -1176,6 +1244,8 @@ class OrderController extends Controller
                                 'is_newly_added',
                                 false
                             ),
+                            'newly_added_price' => (float) data_get($previousAddon, 'newly_added_price', $addonPrice),
+                            'newly_added_rate' => (float) data_get($previousAddon, 'newly_added_rate', $order->current_rate ?: 1),
                         ];
                         $item_total += $addonTotal;
                         $cartAddons += $addonTotal;

@@ -469,6 +469,10 @@ if (! function_exists('getMergedTourExtrasData')) {
                 'price' => $result->price ?? $extra->price,
                 'currency' => $extra->currency,
                 'quantity' => $result->quantity ?? 0,
+                'gross_total_price' => $result->gross_total_price ?? null,
+                'newly_added_quantity' => $result->newly_added_quantity ?? 0,
+                'newly_added_price' => $result->newly_added_price ?? null,
+                'newly_added_rate' => $result->newly_added_rate ?? null,
             ];
         });
 
@@ -482,6 +486,10 @@ if (! function_exists('getMergedTourExtrasData')) {
                 'price' => $item->price,
                 'currency' => null,
                 'quantity' => $item->quantity ?? 0,
+                'gross_total_price' => $item->gross_total_price ?? $item->total_price ?? null,
+                'newly_added_quantity' => $item->newly_added_quantity ?? 0,
+                'newly_added_price' => $item->newly_added_price ?? null,
+                'newly_added_rate' => $item->newly_added_rate ?? null,
             ];
         });
 
@@ -501,7 +509,11 @@ if (! function_exists('getTourPricingDetails')) {
                     'quantity' => $item->quantity,
                     'price' => $item->price,
                     'actual_price' => isset($item->actual_price) ? $item->actual_price : $item->price,
-                    'discount'    => isset($item->discount) ? $item->discount : 0
+                    'discount' => isset($item->discount) ? $item->discount : 0,
+                    'gross_total_price' => $item->gross_total_price ?? null,
+                    'newly_added_quantity' => $item->newly_added_quantity ?? 0,
+                    'newly_added_price' => $item->newly_added_price ?? null,
+                    'newly_added_rate' => $item->newly_added_rate ?? null,
                 ];
             }
         }

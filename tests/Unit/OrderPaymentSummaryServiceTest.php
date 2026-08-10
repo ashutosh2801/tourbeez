@@ -75,4 +75,17 @@ class OrderPaymentSummaryServiceTest extends TestCase
         $this->assertSame(70.0, $summary['paid_amount']);
         $this->assertSame(70.0, $summary['total_credits']);
     }
+
+    public function test_excluded_and_commission_entries_are_not_customer_paid_amounts(): void
+    {
+        $summary = (new OrderPaymentSummaryService())->summarize([
+            ['status' => 'succeeded', 'payment_type' => 'EXCLUDED', 'amount' => 100.0035],
+            ['status' => 'succeeded', 'payment_type' => 'COMMISSION', 'amount' => 32.15],
+            ['status' => 'succeeded', 'payment_type' => 'CARD', 'amount' => 20],
+        ]);
+
+        $this->assertSame(20.0, $summary['paid_amount']);
+        $this->assertSame(132.15, $summary['non_customer_credit']);
+        $this->assertSame(152.15, $summary['total_credits']);
+    }
 }

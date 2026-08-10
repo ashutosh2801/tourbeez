@@ -119,7 +119,7 @@
     <div class="order-list-body card rounded-lg-custom border">
         @php
             $statuses = config('constants.status_with_code');
-            $advancedOrderFilterKeys = ['product', 'exclude_product', 'payment_status', 'order_status', 'tour_start_date', 'order_created_date', 'source'];
+            $advancedOrderFilterKeys = ['product', 'exclude_product', 'payment_status', 'order_status', 'tour_start_date', 'order_created_date', 'source', 'excluded_source'];
             $activeOrderFilterCount = collect(['search', ...$advancedOrderFilterKeys])->filter(function ($key) {
                 $value = request($key);
                 return is_array($value) ? count(array_filter($value)) > 0 : request()->filled($key);
@@ -277,8 +277,9 @@
 
                                 </select>
                             </div>
-                            <div class="col-md-2 col-6">
-                                <select name="excluded_source[]" class="form-control aiz-selectpicker" multiple>
+                            <div class="order-filter-field order-filter-field--advanced">
+                                <label for="excluded-source">Exclude sources</label>
+                                <select id="excluded-source" name="excluded_source[]" class="form-control aiz-selectpicker" multiple>
                                     @foreach (source_list_db() as $source)
                                         <option value="{{ $source->key }}"
                                             {{ in_array($source->key, (array) request('excluded_source', [])) ? 'selected' : '' }}>

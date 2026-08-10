@@ -19,6 +19,104 @@ class CheckoutRulesIntegrationTest extends TestCase
         'discount_value' => 10,
     ];
 
+    public function test_t44uqbw_admin_additions_keep_original_promo_in_the_hst_base(): void
+    {
+        $totals = new CheckoutTotalService();
+        $taxes = new CheckoutTaxService();
+
+        $originalGross = 69.00 + 33.00;
+        $addedGross = 59.10 + 47.95;
+        $specialDiscount = 10.00;
+        $promoDiscount = 5.90;
+        $paid = 97.29;
+
+        $taxable = $totals->discountAdjustedTaxableSubtotal(
+            $originalGross + $addedGross,
+            $specialDiscount,
+            $promoDiscount
+        );
+        $hst = $taxes->calculate($taxable, 'PERCENT', 13);
+        $grossAfterDiscountsAndTax = round($taxable + $hst, 2);
+        $balance = round($grossAfterDiscountsAndTax - $paid, 2);
+        $originalTaxable = $originalGross - $specialDiscount - $promoDiscount;
+        $originalHst = $taxes->calculate($originalTaxable, 'PERCENT', 13);
+        $addedHst = round($hst - $originalHst, 2);
+
+        $this->assertSame(193.15, $taxable);
+        $this->assertSame(25.11, $hst);
+        $this->assertSame(13.92, $addedHst);
+        $this->assertSame(120.97, $balance);
+    }
+
+    public function test_each_paid_admin_adjustment_starts_a_fresh_display_cycle(): void
+    {
+        $totals = new CheckoutTotalService();
+
+        // Quantity 2 contains one original and one previously-added unit.
+        // After that addition is paid, increasing to 3 exposes only one unit.
+        $this->assertSame(1, $totals->nextAdjustmentQuantity(2, 3, 1, true));
+        // Before payment, another increase remains cumulative for the same link.
+        $this->assertSame(2, $totals->nextAdjustmentQuantity(2, 3, 1, false));
+
+        // Previous full HST 25.11 included 13.92 from the paid first addition.
+        // A second addition raises full HST to 30.76; only 5.65 is new now.
+        $this->assertSame(5.65, $totals->nextAdjustmentTax(25.11, 30.76, 13.92, true));
+        // An unpaid edit continues from the original booking tax of 11.19.
+        $this->assertSame(19.57, $totals->nextAdjustmentTax(25.11, 30.76, 13.92, false));
+    }
+
+    public function test_paid_adjustment_is_detected_even_with_a_stale_order_balance(): void
+    {
+        $totals = new CheckoutTotalService();
+        $adjustment = $totals->adjustmentAmount(
+            [['actual_price' => 59.10, 'newly_added_quantity' => 1]],
+            [['price' => 47.95, 'newly_added_quantity' => 1]],
+            [['newly_added_amount' => 13.92]]
+        );
+
+        $this->assertSame(120.97, $adjustment);
+        $this->assertTrue($totals->hasMatchingAdjustmentPayment($adjustment, [
+            ['payment_type' => 'CARD', 'status' => 'succeeded', 'amount' => 97.29],
+            ['payment_type' => 'CARD', 'status' => 'succeeded', 'amount' => 120.97],
+        ]));
+        $this->assertFalse($totals->hasMatchingAdjustmentPayment($adjustment, [
+            ['payment_type' => 'CARD', 'status' => 'succeeded', 'amount' => 120.94],
+        ]));
+    }
+
+    public function test_tbqbmwo_email_uses_only_the_current_adjustment_total(): void
+    {
+        $totals = new CheckoutTotalService();
+        $adjustment = $totals->adjustmentAmount(
+            [],
+            [['price' => 47.95, 'newly_added_quantity' => 2]],
+            [['newly_added_amount' => 12.46]]
+        );
+
+        $this->assertSame(108.36, $adjustment);
+        $this->assertTrue($totals->hasMatchingAdjustmentPayment($adjustment, [
+            ['payment_type' => 'CARD', 'status' => 'succeeded', 'amount' => 184.52],
+            ['payment_type' => 'CARD', 'status' => 'succeeded', 'amount' => 108.36],
+        ]));
+    }
+
+    public function test_paid_currency_prices_lock_while_new_unpaid_units_use_today_rate(): void
+    {
+        $totals = new CheckoutTotalService();
+
+        $firstAddition = $totals->currencySnapshotLine(1, 2, 50, 0, 0, 20, true);
+        $this->assertSame(1, $firstAddition['new_quantity']);
+        $this->assertSame(70.0, $firstAddition['gross_total']);
+        $this->assertSame(20.0, $firstAddition['new_unit_price']);
+
+        // Five years later the original 50 and paid add-on 20 remain locked;
+        // only the third, still-unpaid unit uses today's price of 25.
+        $secondAddition = $totals->currencySnapshotLine(2, 3, 70, 1, 20, 25, true);
+        $this->assertSame(1, $secondAddition['new_quantity']);
+        $this->assertSame(95.0, $secondAddition['gross_total']);
+        $this->assertSame(25.0, $secondAddition['new_unit_price']);
+    }
+
     public function test_tjcdhpe_values_produce_the_persisted_checkout_snapshot(): void
     {
         $totals = new CheckoutTotalService();

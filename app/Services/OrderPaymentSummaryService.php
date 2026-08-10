@@ -6,6 +6,8 @@ use Illuminate\Support\Arr;
 
 class OrderPaymentSummaryService
 {
+    private const NON_CUSTOMER_PAYMENT_TYPES = ['EXCLUDED', 'COMMISSION'];
+
     /**
      * Build the accounting credits applied to an order.
      *
@@ -22,6 +24,7 @@ class OrderPaymentSummaryService
             'promo_discount' => 0.0,
             'promo_code' => '',
             'refunded_amount' => 0.0,
+            'non_customer_credit' => 0.0,
         ];
         $grossPayments = 0.0;
         $refundLedgerAmount = 0.0;
@@ -45,7 +48,7 @@ class OrderPaymentSummaryService
 
             if ($status !== 'succeeded') {
                 if (in_array($status, ['uncaptured', 'requires_capture'], true)) {
-                    if (!in_array($type, ['BOOKINGFEE', 'REFUND'], true)) {
+                    if (!in_array($type, ['BOOKINGFEE', 'REFUND', ...self::NON_CUSTOMER_PAYMENT_TYPES], true)) {
                         $summary['authorized_amount'] += $amount;
                     }
                     continue;
@@ -65,6 +68,14 @@ class OrderPaymentSummaryService
                 continue;
             }
 
+            // EXCLUDED represents a third-party marketplace collection and
+            // COMMISSION is the marketplace/supplier settlement. Neither is
+            // money paid by the customer directly against this order.
+            if (in_array($type, self::NON_CUSTOMER_PAYMENT_TYPES, true)) {
+                $summary['non_customer_credit'] += $amount;
+                continue;
+            }
+
             $grossPayments += $amount;
             $paymentRefundAmount += min(
                 max((float) $this->value($payment, 'refund_amount'), 0),
@@ -75,14 +86,15 @@ class OrderPaymentSummaryService
         $summary['refunded_amount'] = max($paymentRefundAmount, $refundLedgerAmount);
         $summary['paid_amount'] = max($grossPayments - $summary['refunded_amount'], 0);
 
-        foreach (['paid_amount', 'authorized_amount', 'booking_fee', 'special_discount', 'promo_discount', 'refunded_amount'] as $key) {
+        foreach (['paid_amount', 'authorized_amount', 'booking_fee', 'special_discount', 'promo_discount', 'refunded_amount', 'non_customer_credit'] as $key) {
             $summary[$key] = round($summary[$key], 2);
         }
 
         $summary['total_credits'] = round(
             $summary['paid_amount']
             + $summary['special_discount']
-            + $summary['promo_discount'],
+            + $summary['promo_discount']
+            + $summary['non_customer_credit'],
             2
         );
 
