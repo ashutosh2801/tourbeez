@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\Order;
 use App\Models\OrderActions;
 use App\Models\Partner;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 class OrderObserver
@@ -14,6 +15,7 @@ class OrderObserver
     public function created(Order $order): void
     {
         $this->saveSourceAction($order);
+        $this->saveCreationAction($order);
     }
 
     public function updated(Order $order): void
@@ -51,5 +53,32 @@ class OrderObserver
 
         $action->notes = self::SOURCE_ACTION_PREFIX . ' ' . $sourceLabel;
         $action->save();
+    }
+
+    private function saveCreationAction(Order $order): void
+    {
+        if (empty($order->created_by)) {
+            return;
+        }
+
+        $creator = User::query()->find($order->created_by);
+        $creatorName = $creator?->name ?: $creator?->first_name ?: 'Staff';
+
+        $note = 'Order created by ' . trim($creatorName) . '.';
+
+        $exists = OrderActions::query()
+            ->where('order_id', $order->id)
+            ->where('notes', $note)
+            ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        OrderActions::create([
+            'order_id' => $order->id,
+            'performed_by' => $order->created_by,
+            'notes' => $note,
+        ]);
     }
 }

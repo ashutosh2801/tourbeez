@@ -269,6 +269,9 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
             <div class="row">
                 <div class="col-md-12">
                     <h5 class="m-0">Created on {{ date__format($order->created_at) }} online on your booking form</h5>
+                    @if($order->creator)
+                        <p class="mb-0 mt-1 text-muted">Created by <strong>{{ $order->creator->name ?: $order->creator->first_name }}</strong></p>
+                    @endif
                 </div>
             
             </div>

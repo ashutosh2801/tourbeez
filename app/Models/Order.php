@@ -192,6 +192,11 @@ class Order extends Model
         return $this->hasMany(OrderActions::class);
     }
 
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function latestPayment()
     {
         return $this->hasOne(OrderPayment::class)
