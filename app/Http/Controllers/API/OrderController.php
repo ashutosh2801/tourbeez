@@ -284,6 +284,20 @@ class OrderController extends Controller
             ], 404);
         }
 
+        $snapshotRate = (float) ($order->current_rate ?: 1);
+        $fromOrderCurrency = static function (float $amount) use ($order, $snapshotRate): float {
+            if (strtoupper((string) $order->currency) === 'CAD') {
+                return $amount;
+            }
+
+            // Cart amounts were persisted with the exact frontend rate used
+            // when the customer booked. Reverse that snapshot instead of
+            // using a potentially newer server rate.
+            return $snapshotRate > 0
+                ? $amount / $snapshotRate
+                : currencyConvert($amount, $order->currency, 'CAD');
+        };
+
         $tour_pricing = $order->order_tour->tour_pricing ? json_decode($order->order_tour->tour_pricing) : [];
         $cartItems=[];
         foreach($tour_pricing as $tp) {
@@ -291,18 +305,16 @@ class OrderController extends Controller
             $discount = isset($tp->discount) ? $tp->discount : 0;
             $cartItems[] = [
                 'id'            => $tp->tour_pricing_id,
-                'price'         => currencyConvert($tp->price, $order->currency, 'CAD'),
+                'price'         => $fromOrderCurrency((float) $tp->price),
                 'label'         => $tp->label,
                 'price_type'    => $tp->price_type ?? '',
-                'actual_price'  => currencyConvert( $actual_price, $order->currency, 'CAD'),
-                'discount'      => currencyConvert( $discount, $order->currency, 'CAD'),
+                'actual_price'  => $fromOrderCurrency((float) $actual_price),
+                'discount'      => $fromOrderCurrency((float) $discount),
                 'qty_used'      => 1,
                 'quantity'      => $tp->quantity,
                 'newly_added_quantity' => (int) ($tp->newly_added_quantity ?? 0),
-                'newly_added_price' => currencyConvert(
-                    (float) ($tp->newly_added_price ?? $actual_price),
-                    $order->currency,
-                    'CAD'
+                'newly_added_price' => $fromOrderCurrency(
+                    (float) ($tp->newly_added_price ?? $actual_price)
                 ),
                 'is_newly_added' => (bool) ($tp->is_newly_added ?? false),
             ];
@@ -325,14 +337,12 @@ class OrderController extends Controller
             $extraAddon = Addon::find($ep->tour_extra_id);
             $cartAdons[] = [
                 "id"        => $ep->tour_extra_id,
-                "price"     => currencyConvert($ep->price, $order->currency, 'CAD'),
+                "price"     => $fromOrderCurrency((float) $ep->price),
                 "label"     => $extraAddon->name,
                 "quantity"  => $ep->quantity,
                 "newly_added_quantity" => (int) ($ep->newly_added_quantity ?? 0),
-                "newly_added_price" => currencyConvert(
-                    (float) ($ep->newly_added_price ?? $ep->price),
-                    $order->currency,
-                    'CAD'
+                "newly_added_price" => $fromOrderCurrency(
+                    (float) ($ep->newly_added_price ?? $ep->price)
                 ),
                 "is_newly_added" => (bool) ($ep->is_newly_added ?? false),
             ];
@@ -347,9 +357,11 @@ class OrderController extends Controller
                     "id"    => $tf->tour_taxes_id,
                     "label" => $tf->label ?? '',
                     "type"  => $tf->type ?? '',
-                    "value" => $tf->value ?? 0,
-                    "calculated_amount" => (float) ($tf->price ?? 0),
-                    "newly_added_amount" => (float) ($tf->newly_added_amount ?? 0),
+                    "value" => strtoupper((string) ($tf->type ?? '')) === 'PERCENT'
+                        ? (float) ($tf->value ?? 0)
+                        : $fromOrderCurrency((float) ($tf->value ?? 0)),
+                    "calculated_amount" => $fromOrderCurrency((float) ($tf->price ?? 0)),
+                    "newly_added_amount" => $fromOrderCurrency((float) ($tf->newly_added_amount ?? 0)),
                 ];
             }
         }
@@ -517,6 +529,7 @@ class OrderController extends Controller
             'session_id'    => $request->sessionId, // optional if using guest carts
             'order_number'  => unique_order(),
             'currency'      => $request->currency,
+            'current_rate'  => (float) ($request->current_rate ?: 1),
             'total_amount'  => $request->tourPrice,
             'action_name'   => $request->btnAction,
             'order_status'  => 1,
@@ -536,13 +549,31 @@ class OrderController extends Controller
             $addon_price  = 8;
             $extra_price  = 0;
             $item_total=0;
+            $snapshotRate = (float) ($request->current_rate ?: 0);
+            $toOrderCurrency = static function (float $amount) use ($order, $snapshotRate): float {
+                if (strtoupper((string) $order->currency) === 'CAD') {
+                    return $amount;
+                }
+
+                // Use the exact rate selected by the frontend for this order.
+                // Fall back to the server converter only for legacy clients.
+                return $snapshotRate > 0
+                    ? $amount * $snapshotRate
+                    : currencyConvert($amount, 'CAD', $order->currency);
+            };
 
             foreach ($validated['cartItems'] as $item) {
 
                 if(isset($item['id']) && isset($item['quantity'])) {
 
-                    $price          = floatval($item['price']);
-                    $actual_price   = isset($item['actual_price']) ? floatval($item['actual_price']) : $price;
+                    // Public tour APIs expose checkout inputs in the CAD base
+                    // currency. Persist every cart snapshot in the order's
+                    // selected currency so the checkout endpoint can safely
+                    // convert it back to CAD for display conversion.
+                    $price = $toOrderCurrency((float) $item['price']);
+                    $actual_price = $toOrderCurrency(
+                        (float) ($item['actual_price'] ?? $item['price'])
+                    );
                     $qty            = intval($item['quantity']);
 
                     $item_price  = $tour->price_type == 'PER_PERSON' ? $price * $qty : $price;
@@ -567,7 +598,7 @@ class OrderController extends Controller
                 foreach ($request->cartAddons as $addon) {
                     if(isset($addon['id']) && isset($addon['quantity'])) {
 
-                        $price  = floatval($addon['price']);
+                        $price = $toOrderCurrency((float) $addon['price']);
                         $qty    = intval($addon['quantity']);
 
                         $extra_price  = $price * $qty;
@@ -578,7 +609,7 @@ class OrderController extends Controller
                             'tour_extra_id'     => $addon['id'],
                             'quantity'          => $addon['quantity'],
                             'label'             => $addon['label'],
-                            'price'             => round($addon['price'], 2),
+                            'price'             => round($price, 2),
                             'total_price'       => round($extra_price, 2)
                         ];
                     }
@@ -590,7 +621,10 @@ class OrderController extends Controller
                     if(isset($fee['id']) && isset($fee['value'])) {
 
                         $type  = ($fee['type']);
-                        $value = is_numeric($fee['value']) ? intval($fee['value']) : 0;
+                        $value = is_numeric($fee['value']) ? (float) $fee['value'] : 0;
+                        if ($type !== 'PERCENT') {
+                            $value = $toOrderCurrency($value);
+                        }
 
                         $tax_fee    = $type === "PERCENT" ? ($item_total * $value)/100 : $value;
                         $item_total+= $tax_fee;
@@ -996,11 +1030,43 @@ class OrderController extends Controller
                 $depositRule = TourSpecialDeposit::where('type', 'global')->first();
             }
 
+            $orderRate = (float) ($request->current_rate ?: $order->current_rate ?: 1);
+            $toOrderCurrency = static function (
+                float $amount,
+                ?string $sourceCurrency
+            ) use ($order, $orderRate): float {
+                $source = strtoupper((string) ($sourceCurrency ?: 'CAD'));
+                $target = strtoupper((string) ($order->currency ?: 'CAD'));
+
+                if ($source === $target) {
+                    return $amount;
+                }
+                if ($source === 'CAD' && $orderRate > 0) {
+                    return $amount * $orderRate;
+                }
+
+                return currencyConvert($amount, $source, $target);
+            };
+            $discountRuleForOrder = $depositRule ? clone $depositRule : null;
+            if (
+                $discountRuleForOrder
+                && strtoupper((string) $discountRuleForOrder->discount_type) === 'FIXED'
+                && strtoupper((string) $order->currency) !== 'CAD'
+            ) {
+                // Fixed special-discount values are configured in the CAD
+                // base currency. Percentage values are dimensionless and must
+                // never be currency-converted.
+                $discountRuleForOrder->discount_value = round(
+                    (float) $discountRuleForOrder->discount_value * $orderRate,
+                    2
+                );
+            }
+
             $discountService = new CheckoutDiscountService();
             $specialDiscountEligible = $order->action_name !== 'reserve'
                 && $request->action_name === 'book'
                 && $discountService->isSpecialDiscountEligible(
-                    $depositRule,
+                    $discountRuleForOrder,
                     Carbon::parse($validated['selectedDate']),
                     Carbon::today()
                 );
@@ -1037,10 +1103,9 @@ class OrderController extends Controller
 
                 $actual_price = $isInternalOrder
                     ? (float) ($item['actual_price'] ?? $item['price'])
-                    : currencyConvert(
+                    : $toOrderCurrency(
                         (float) $storedPricing->price,
-                        $tour->currency ?? 'CAD',
-                        $request->currency ?? 'CAD'
+                        $tour->currency ?? 'CAD'
                     );
                 $previousLine = $previousPricing->get((int) $item['id']);
                 if ($discountsLocked && $previousLine) {
@@ -1048,7 +1113,7 @@ class OrderController extends Controller
                 }
                 $isDiscountablePricing = $discountService->isDiscountablePricingLabel($storedPricing->label);
                 $discount_price = (!$discountsLocked && $specialDiscountEligible && $isDiscountablePricing)
-                    ? $discountService->specialDiscount($actual_price, $depositRule)
+                    ? $discountService->specialDiscount($actual_price, $discountRuleForOrder)
                     : 0;
                 $previousQty = (int) data_get($previousPricing->get((int) $item['id']), 'quantity', 0);
                 $discountQty = $discountsLocked ? 0 : $qty;
@@ -1110,14 +1175,14 @@ class OrderController extends Controller
                 ];                
                 
                 if ($discount_price > 0 && $discountQty > 0) {
-                    if ($depositRule && $depositRule->is_discount && $depositRule->charge === 'NONE') {
+                    if ($discountRuleForOrder && $discountRuleForOrder->is_discount && $discountRuleForOrder->charge === 'NONE') {
 
                         $discount[] = [
                             'tour_id'  => $request->subTourId ?? $request->tourId,
                             'label'    => 'Special Discount',
-                            'type'     => $depositRule->discount_type,
+                            'type'     => $discountRuleForOrder->discount_type,
                             'quantity' => $discountQty,
-                            'discount' => $depositRule->discount_value ?? 0,
+                            'discount' => $discountRuleForOrder->discount_value ?? 0,
                             'price'    => $linePriceType === 'PER_PERSON'
                                 ? round($discount_price * $discountQty, 2)
                                 : round($discount_price, 2),
@@ -1207,10 +1272,9 @@ class OrderController extends Controller
                         }
                         $addonPrice = $isInternalOrder
                             ? (float) $addon['price']
-                            : currencyConvert(
+                            : $toOrderCurrency(
                                 (float) $storedAddon->price,
-                                $storedAddon->currency ?? $tour->currency ?? 'CAD',
-                                $request->currency ?? 'CAD'
+                                $storedAddon->currency ?? $tour->currency ?? 'CAD'
                             );
                         $addonTotal = round($addonPrice * (int) $addon['quantity'], 2);
                         $previousAddon = $previousExtras->get((int) $addon['id']);
