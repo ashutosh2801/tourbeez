@@ -269,6 +269,9 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
             <div class="row">
                 <div class="col-md-12">
                     <h5 class="m-0">Created on {{ date__format($order->created_at) }} online on your booking form</h5>
+                    @if($order->creator)
+                        <p class="mb-0 mt-1 text-muted">Created by <strong>{{ $order->creator->name ?: $order->creator->first_name }}</strong></p>
+                    @endif
                 </div>
             
             </div>
@@ -689,19 +692,20 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                                             $actual_price = (isset($result['actual_price']) && $result['actual_price'] != 0) ? $result['actual_price'] : $result['price'];
                                                                             $discount = isset($result['discount']) ? $result['discount'] : 0;
                                                                             
-                                                                            $gt_total = $actual_price * $qty;
+                                                                            $gt_total = $result['gross_total_price']
+                                                                                ?? ($actual_price * $qty);
 
 
 
                                                                             if($order_tour->tour?->price_type =='FIXED'){
                                                                                 $subtotal = $subtotal + $price;
-                                                                                $subtotal2 = $subtotal2 + $actual_price;
-                                                                                $itemsSubtotal2 += $actual_price;
+                                                                                $subtotal2 += $gt_total;
+                                                                                $itemsSubtotal2 += $gt_total;
 
                                                                             } else{
                                                                                 $subtotal = $subtotal + ($qty * $price);
-                                                                                $subtotal2 = $subtotal2 + ($qty * $actual_price);
-                                                                                $itemsSubtotal2 += ($qty * $actual_price);
+                                                                                $subtotal2 += $gt_total;
+                                                                                $itemsSubtotal2 += $gt_total;
 
                                                                             }
                                                                             
@@ -732,7 +736,14 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                                             <input type="hidden" name="tour_pricing_type_{{$_tourId}}[]" value="{{ $order_tour->tour->price_type }}" /> 
                                                                             <input type="hidden" name="tour_pricing_min_{{$_tourId}}[]" value="{{$pricing->quantity_used}}">
                                                                         </td>
-                                                                        <td>{{ $pricing->label }} ({{ price_with_currency_no_round($actual_price, $order->currency) }}) </td>
+                                                                        <td>
+                                                                            {{ $pricing->label }} ({{ price_with_currency_no_round($actual_price, $order->currency) }})
+                                                                            @if(($result['newly_added_quantity'] ?? 0) > 0 && isset($result['newly_added_price']))
+                                                                                <small class="text-info d-block">
+                                                                                    New unpaid: {{ price_with_currency_no_round($result['newly_added_price'], $order->currency) }} each
+                                                                                </small>
+                                                                            @endif
+                                                                        </td>
                                                                     </tr>
                                                                     @endforeach
                                                                     @endif
@@ -766,9 +777,11 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                                             $price = $extra->price;
 
                                                                             if ($extra->quantity > 0) {
-                                                                                $subtotal += ($extra->quantity * $price);
-                                                                                $subtotal2 += ($extra->quantity * $price);
-                                                                                $addonsSubtotal += ($extra->quantity * $price);
+                                                                                $extraGrossTotal = $extra->gross_total_price
+                                                                                    ?? ($extra->quantity * $price);
+                                                                                $subtotal += $extraGrossTotal;
+                                                                                $subtotal2 += $extraGrossTotal;
+                                                                                $addonsSubtotal += $extraGrossTotal;
                                                                             } else {
                                                                                 $price = currencyConvertWithoutRound(
                                                                                     $price,
@@ -804,6 +817,11 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                                             <td>
                                                                                 {{ $extra->name }}
                                                                                 ({{ price_with_currency_no_round($price, $order->currency) }})
+                                                                                @if(($extra->newly_added_quantity ?? 0) > 0 && isset($extra->newly_added_price))
+                                                                                    <small class="text-info d-block">
+                                                                                        New unpaid: {{ price_with_currency_no_round($extra->newly_added_price, $order->currency) }} each
+                                                                                    </small>
+                                                                                @endif
                                                                             </td>
                                                                         </tr>
                                                                     @endforeach
@@ -1622,21 +1640,24 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                     <div class="row">
                                         <div class="col-12">
                                             <div class="tab-content" id="v-pills-tabContent">
-                                                    <div class="form-group row sendMailbutton">
-                                                        <label class="col-md-12 col-form-label">To</label>
-                                                        <div class="col-md-12">
-                                                            <input type="text" name="email"  id="email"  class="form-control" placeholder="{{translate('TO')}}" required>
+                                                    <div class="form-group sendMailbutton">
+                                                        <div class="d-flex align-items-center mb-1">
+                                                            <label for="email" class="col-form-label mb-0">To</label>
+                                                            <div class="ml-auto">
+                                                                <button type="button" class="btn btn-link btn-sm p-0 mr-2 mail-recipient-toggle" data-target="#cc-mail-field" aria-expanded="false">CC</button>
+                                                                <button type="button" class="btn btn-link btn-sm p-0 mail-recipient-toggle" data-target="#bcc-mail-field" aria-expanded="false">BCC</button>
+                                                            </div>
                                                         </div>
+                                                        <input type="text" name="email" id="email" class="form-control" placeholder="{{translate('TO')}}" required>
                                                     </div>
-                                                    <div class="form-group row sendMailbutton">
-                                                        <label class="col-md-12 col-form-label">{{translate('CC Mail')}}</label>
-                                                        <div class="col-md-12 sendMailbutton">
+
+                                                    <div id="optional-mail-recipients" class="form-group row sendMailbutton d-none">
+                                                        <div id="cc-mail-field" class="col-md-6 d-none">
+                                                            <label for="cc_mail" class="col-form-label">{{translate('CC Mail')}}</label>
                                                             <input type="text" name="cc_mail" id="cc_mail" class="form-control" placeholder="{{translate('CC Mail')}}">
                                                         </div>
-                                                    </div>
-                                                    <div class="form-group row sendMailbutton">
-                                                        <label class="col-md-12 col-form-label">{{translate('BCC Mail')}}</label>
-                                                        <div class="col-md-12">
+                                                        <div id="bcc-mail-field" class="col-md-6 d-none">
+                                                            <label for="bcc_mail" class="col-form-label">{{translate('BCC Mail')}}</label>
                                                             <input type="text" name="bcc_mail" id="bcc_mail" class="form-control" placeholder="{{translate('BCC Mail')}}">
                                                         </div>
                                                     </div>
@@ -2743,6 +2764,29 @@ $('#chargeForm').on('submit', function(e) {
 
 <script>
 $(document).ready(function(){    
+    function resetOptionalMailRecipients() {
+        $('#cc-mail-field, #bcc-mail-field').addClass('d-none');
+        $('#optional-mail-recipients').addClass('d-none');
+        $('.mail-recipient-toggle').attr('aria-expanded', 'false');
+    }
+
+    $(document).on('click', '.mail-recipient-toggle', function () {
+        const $button = $(this);
+        const $field = $($button.data('target'));
+        const willShow = $field.hasClass('d-none');
+
+        $field.toggleClass('d-none', !willShow);
+        $button.attr('aria-expanded', willShow ? 'true' : 'false');
+
+        const hasVisibleRecipient = $('#cc-mail-field, #bcc-mail-field')
+            .toArray()
+            .some(function (field) { return !field.classList.contains('d-none'); });
+
+        $('#optional-mail-recipients').toggleClass('d-none', !hasVisibleRecipient);
+    });
+
+    $('#order_template_modal').on('hidden.bs.modal', resetOptionalMailRecipients);
+
     //Order Email Modal
     $('#email_template_name').change(function() {
         showLoader("Loading… Please wait");
@@ -2784,6 +2828,7 @@ $(document).ready(function(){
                 $('#subject').val(response.email_template.subject);
                 $('#event').val(JSON.stringify(response.event));
                 $('#body').summernote('code', response.body);
+                resetOptionalMailRecipients();
                 $('#order_template_modal').modal("show");
                 $('#email_template_name').val('');
             },
@@ -2834,6 +2879,7 @@ $(document).ready(function(){
                 $('#event').val(JSON.stringify(response.event));
                 $('#body').summernote('code', response.body);
 
+                resetOptionalMailRecipients();
                 $('#order_template_modal').modal("show");
                 
                 $('#print_template_name').val('');
@@ -3524,37 +3570,19 @@ function calculateFinalTotal() {
     });
     let balance = Math.max(grandTotal - paidTotal, 0);
 
-    const balanceTd = document.querySelector(".cummulative-total tr:last-child td.text-right");
+    const balanceTd = document.querySelector(".cummulative-total tr .total-due");
     const balanceTotalDueElements = document.querySelectorAll(".total-due");
-    // console.log(balanceTotalDue);
-    if (balanceTd) {
-        balanceTd.innerHTML = "<b> " + ORDER_CURRENCY + ' ' + Math.abs(balance).toFixed(2) + "</b>";
 
-       // balanceTotalDue.innerHTML = "<b> " + ORDER_CURRENCY + ' ' + balance.toFixed(2) + "</b>";
-        const formatted = ORDER_CURRENCY + ' ' + Math.abs(balance).toFixed(2);
-       balanceTotalDueElements.forEach(el => {
+    const formatted = ORDER_CURRENCY + ' ' + Math.abs(balance).toFixed(2);
+    balanceTotalDueElements.forEach(el => {
         el.innerHTML = "<b>" + formatted + "</b>";
-
         el.classList.remove("text-danger", "text-success");
-
-        if (balance > 0) {
-            el.classList.add("text-danger");
-        } else {
-            el.classList.add("text-success");
-        }
+        el.classList.add(balance > 0 ? "text-danger" : "text-success");
     });
 
-
+    if (balanceTd) {
         balanceTd.classList.remove("text-danger", "text-success");
-        // balanceTotalDue.classList.remove("text-danger", "text-success");/
-
-        if (balance > 0) {
-            balanceTd.classList.add("text-danger");
-            // balanceTotalDue.classList.add("text-danger");
-        } else {
-            balanceTd.classList.add("text-success");
-            // balanceTotalDue.classList.add("text-success");
-        }
+        balanceTd.classList.add(balance > 0 ? "text-danger" : "text-success");
     }
 }
 

@@ -8,6 +8,19 @@ use PHPUnit\Framework\TestCase;
 
 class CheckoutDiscountServiceTest extends TestCase
 {
+    public function test_only_guest_pricing_labels_are_discountable(): void
+    {
+        $service = new CheckoutDiscountService();
+
+        foreach (['Adult', 'Adults 18+', 'Child', 'Children', 'Senior', 'Seniors', 'Group', 'Participants'] as $label) {
+            $this->assertTrue($service->isDiscountablePricingLabel($label), $label);
+        }
+
+        foreach (['Infant', 'Vehicle', 'Private upgrade', 'Lunch', 'Add-on'] as $label) {
+            $this->assertFalse($service->isDiscountablePricingLabel($label), $label);
+        }
+    }
+
     public function test_special_discount_requires_an_eligible_tour_date(): void
     {
         $service = new CheckoutDiscountService();

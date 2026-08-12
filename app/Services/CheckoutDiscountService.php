@@ -6,6 +6,14 @@ use Carbon\CarbonInterface;
 
 class CheckoutDiscountService
 {
+    public function isDiscountablePricingLabel(?string $label): bool
+    {
+        return preg_match(
+            '/(^|[^a-z])(adults?|child(?:ren)?|seniors?|groups?|participants?)([^a-z]|$)/i',
+            (string) $label
+        ) === 1;
+    }
+
     public function isSpecialDiscountEligible(
         mixed $rule,
         CarbonInterface $tourDate,

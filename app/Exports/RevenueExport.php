@@ -236,9 +236,10 @@ class RevenueExport implements FromCollection, WithHeadings
             $actual_price = $p['actual_price'] ?? $p['price'] ?? 0;
 
             if ($qty > 0) {
-                $productValue += ($p['price_type'] == 'FIXED')
-                    ? $actual_price
-                    : $actual_price * $qty;
+                $productValue += (float) ($p['gross_total_price']
+                    ?? (($p['price_type'] == 'FIXED')
+                        ? $actual_price
+                        : $actual_price * $qty));
             }
         }
 

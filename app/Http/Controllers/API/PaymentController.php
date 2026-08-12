@@ -20,6 +20,7 @@ use App\Models\TourPricing;
 use App\Models\User;
 use App\Notifications\NewOrderNotification;
 use App\Services\OrderPaymentSummaryService;
+use App\Services\CheckoutTotalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -95,7 +96,7 @@ class PaymentController extends Controller
                     'processed_at' => null,
                 ]);
             }
-            
+
             $eventObject = $event->data->object;
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
@@ -672,7 +673,11 @@ class PaymentController extends Controller
                         'price'         => $tp->price,
                         'actual_price'  => isset($tp->actual_price) ? $tp->actual_price : $tp->price,
                         'discount'      => isset($tp->discount) ? $tp->discount : 0,
-                        'total'         => $tp->total_price
+                        'total'         => $tp->total_price,
+                        'gross_total_price' => (float) ($tp->gross_total_price ?? $tp->total_price),
+                        'newly_added_quantity' => (int) ($tp->newly_added_quantity ?? 0),
+                        'newly_added_price' => (float) ($tp->newly_added_price ?? $tp->actual_price ?? $tp->price),
+                        'is_newly_added' => (bool) ($tp->is_newly_added ?? false),
                     ];
                 }
             }
@@ -687,7 +692,11 @@ class PaymentController extends Controller
                         'lable' => $extraAddon->name,
                         'qty'   => $ep->quantity,
                         'price' => $ep->price,
-                        'total' => $ep->total_price
+                        'total' => $ep->total_price,
+                        'gross_total_price' => (float) ($ep->gross_total_price ?? $ep->total_price),
+                        'newly_added_quantity' => (int) ($ep->newly_added_quantity ?? 0),
+                        'newly_added_price' => (float) ($ep->newly_added_price ?? $ep->price),
+                        'is_newly_added' => (bool) ($ep->is_newly_added ?? false),
                     ];
                 }
             }
@@ -702,7 +711,8 @@ class PaymentController extends Controller
                     $fees[] = [
                         'lable' => $labelText, // fixed spelling
                         'price' => $fp->price,
-                        'total' => $fp->price
+                        'total' => $fp->price,
+                        'newly_added_amount' => round((float) ($fp->newly_added_amount ?? 0), 2),
                     ];
                 }
             }
@@ -785,7 +795,17 @@ class PaymentController extends Controller
                 $previouslyPaid + $currentPaymentAmount,
                 2
             );
-            $currentPayment = $previouslyPaid > 0.01
+            $hasNewlyAddedLines = collect($pricing)->contains(
+                    fn ($item) => (int) ($item['newly_added_quantity'] ?? 0) > 0
+                )
+                || collect($extra)->contains(
+                    fn ($item) => (int) ($item['newly_added_quantity'] ?? 0) > 0
+                )
+                || collect($fees)->contains(
+                    fn ($item) => (float) ($item['newly_added_amount'] ?? 0) > 0
+                );
+            $isAdditionalPayment = $hasNewlyAddedLines && $currentPaymentAmount > 0;
+            $currentPayment = ($isAdditionalPayment || $previouslyPaid > 0.01)
                 ? $currentPaymentAmount
                 : 0.0;
             $totalPaid = round(
@@ -856,6 +876,7 @@ class PaymentController extends Controller
                 'total_payment_amount' => $totalPaymentAmount,
                 'previously_paid'   => $previouslyPaid,
                 'current_payment'   => $currentPayment,
+                'is_additional_payment' => $isAdditionalPayment,
                 'promo_code'        => $promoCode ?? 0,
                 'promo_code_value'  => $paymentSummary['promo_code'],
                 'total_paid'        => $totalPaid ?? 0,
@@ -1075,8 +1096,7 @@ class PaymentController extends Controller
 
             $customer = $detail['customer'];
             // dd($customer );
-            if(!$customer){
-                
+            if(!$customer) {
                 $customer = $order->orderUser;
             }
  
@@ -1092,7 +1112,7 @@ class PaymentController extends Controller
             Log::info('sendOrderDetailMail identifier');
             $orderTour  = $order->orderTours()->first();
 
-            
+
             $tour       = $orderTour->tour;
             //echo '<pre>'; print_r($orderTour->tour); exit;
             $payment = $detail['payment_method'];
@@ -1105,25 +1125,42 @@ class PaymentController extends Controller
             );
             $emailSubTotal = 0.0;
             $emailTaxTotal = 0.0;
+            $emailAdjustmentSubTotal = 0.0;
+            $emailAdjustmentTaxTotal = 0.0;
 
             foreach ($order->orderTours as $summaryOrderTour) {
                 foreach (json_decode($summaryOrderTour->tour_pricing ?: '[]', true) ?: [] as $pricingRow) {
                     $quantity = (int) ($pricingRow['quantity'] ?? 0);
                     $actualPrice = (float) ($pricingRow['actual_price'] ?? $pricingRow['price'] ?? 0);
-                    $emailSubTotal += ($pricingRow['price_type'] ?? 'PER_PERSON') === 'FIXED'
-                        ? ($quantity > 0 ? $actualPrice : 0)
-                        : $quantity * $actualPrice;
+                    $emailSubTotal += (float) ($pricingRow['gross_total_price']
+                        ?? (($pricingRow['price_type'] ?? 'PER_PERSON') === 'FIXED'
+                            ? ($quantity > 0 ? $actualPrice : 0)
+                            : $quantity * $actualPrice));
+                    $emailAdjustmentSubTotal += max(
+                        (int) ($pricingRow['newly_added_quantity'] ?? 0),
+                        0
+                    ) * (float) ($pricingRow['newly_added_price'] ?? $actualPrice);
                 }
 
                 foreach (json_decode($summaryOrderTour->tour_extra ?: '[]', true) ?: [] as $extraRow) {
                     $emailSubTotal += (float) ($extraRow['total_price']
                         ?? ((int) ($extraRow['quantity'] ?? 0) * (float) ($extraRow['price'] ?? 0)));
+                    $emailAdjustmentSubTotal += max(
+                        (int) ($extraRow['newly_added_quantity'] ?? 0),
+                        0
+                    ) * max((float) ($extraRow['newly_added_price'] ?? $extraRow['price'] ?? 0), 0);
                 }
 
                 foreach (json_decode($summaryOrderTour->tour_fees ?: '[]', true) ?: [] as $feeRow) {
                     $emailTaxTotal += (float) ($feeRow['price'] ?? 0);
+                    $emailAdjustmentTaxTotal += max(
+                        (float) ($feeRow['newly_added_amount'] ?? 0),
+                        0
+                    );
                 }
             }
+
+            Log::info('EmailPaymentSummary', $emailPaymentSummary);
 
             $emailSubTotal = round($emailSubTotal, 2);
             $emailDiscount = (float) $emailPaymentSummary['special_discount'];
@@ -1147,6 +1184,32 @@ class PaymentController extends Controller
                     + (float) $emailPaymentSummary['authorized_amount'],
                 2
             );
+            $emailAdjustmentSubTotal = round($emailAdjustmentSubTotal, 2);
+            $emailAdjustmentTaxTotal = round($emailAdjustmentTaxTotal, 2);
+            $emailAdjustmentTotal = round(
+                $emailAdjustmentSubTotal + $emailAdjustmentTaxTotal,
+                2
+            );
+            $isAdjustmentEmail = $emailAdjustmentTotal > 0.01 && (
+                $emailPaymentSummary['paid_amount'] > 0
+                || $emailPaymentSummary['authorized_amount'] > 0
+                || strtolower((string) $order->action_name) === 'reserve'
+            );
+            if ($isAdjustmentEmail) {
+                $adjustmentWasPaid = (new CheckoutTotalService())
+                    ->hasMatchingAdjustmentPayment(
+                        $emailAdjustmentTotal,
+                        $order->payments()->get()
+                    );
+                $emailSubTotal = $emailAdjustmentSubTotal;
+                $emailDiscount = 0.0;
+                $emailPromo = 0.0;
+                $emailBookingFee = 0.0;
+                $emailHst = $emailAdjustmentTaxTotal;
+                $emailGrossTotal = $emailAdjustmentTotal;
+                $emailPaid = $adjustmentWasPaid ? $emailAdjustmentTotal : 0.0;
+                $emailBalance = $adjustmentWasPaid ? 0.0 : $emailAdjustmentTotal;
+            }
             $emailPromoLabel = 'Promo Code' . ($emailPaymentSummary['promo_code']
                 ? ' (' . e($emailPaymentSummary['promo_code']) . ')'
                 : '');
@@ -1244,6 +1307,33 @@ class PaymentController extends Controller
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
                 $tour_discount = !empty($order_tour->discount) ? json_decode($order_tour->discount, true) : [];
                 $tour_fees = !empty($order_tour->tour_fees) ? json_decode($order_tour->tour_fees, true) : [];
+                if ($isAdjustmentEmail) {
+                    $tour_pricing = collect($tour_pricing)
+                        ->filter(fn ($row) => (int) ($row['newly_added_quantity'] ?? 0) > 0)
+                        ->map(function ($row) {
+                            $row['quantity'] = (int) $row['newly_added_quantity'];
+                            $row['price'] = (float) ($row['newly_added_price'] ?? $row['actual_price'] ?? $row['price'] ?? 0);
+                            $row['actual_price'] = $row['price'];
+                            $row['discount'] = 0;
+                            $row['total_price'] = $row['quantity'] * $row['price'];
+                            return $row;
+                        })->values()->all();
+                    $tour_extra = collect($tour_extra)
+                        ->filter(fn ($row) => (int) ($row['newly_added_quantity'] ?? 0) > 0)
+                        ->map(function ($row) {
+                            $row['quantity'] = (int) $row['newly_added_quantity'];
+                            $row['price'] = (float) ($row['newly_added_price'] ?? $row['price'] ?? 0);
+                            $row['total_price'] = $row['quantity'] * $row['price'];
+                            return $row;
+                        })->values()->all();
+                    $tour_fees = collect($tour_fees)
+                        ->filter(fn ($row) => (float) ($row['newly_added_amount'] ?? 0) > 0)
+                        ->map(function ($row) {
+                            $row['price'] = (float) $row['newly_added_amount'];
+                            return $row;
+                        })->values()->all();
+                    $tour_discount = [];
+                }
 
                 if($order->tour && $order->sub_tour_id){
                     
@@ -1295,7 +1385,8 @@ class PaymentController extends Controller
                     $actual_price = isset($result['actual_price']) ? $result['actual_price'] : $result['price'];
                     $discount = $result['discount'] ?? 0;
                     $total = $result['total_price'] ?? 0;
-                    $gt_total = $result['price_type'] === 'FIXED' ? $actual_price : $actual_price * $qty;
+                    $gt_total = (float) ($result['gross_total_price']
+                        ?? ($result['price_type'] === 'FIXED' ? $actual_price : $actual_price * $qty));
                     if ($qty > 0) {
                         $rowCount++;
                         $subtotal += $total;
@@ -1557,8 +1648,7 @@ class PaymentController extends Controller
                 "[[YEAR]]"                  => date('Y'),
             ];
 
-
-            Log::info('order_email_sentqwwqdwq' . 477);
+            Log::info('order_email_sent' . 477);
             $body = strtr($template, $replacements);
             $footer = strtr($template_footer, $replacements);
             $subject = strtr($template_subject, $replacements);

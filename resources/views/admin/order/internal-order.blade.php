@@ -110,7 +110,7 @@
             <div class="d-flex justify-content-between align-items-center rounded-lg-custom balance-bar border">
                 <div>
                     <div><small>Balance</small></div>
-                    <strong id="totalDue">0.00</strong>
+                    <strong id="totalDue" class="text-danger">0.00</strong>
                 </div>
                 
                 <div class="d-flex">
@@ -285,7 +285,8 @@
                             </table>
                             <div id="tour_details_0"></div>
                             <div id="tourContainer"></div>
-                            <button type="button" onclick="addTour()" class="btn btn-md btn-success px-5 mt-3">+ Add Tour</button>
+                            {{-- Temporarily hidden; keep addTour() available for re-enabling later. --}}
+                            <button type="button" onclick="addTour()" class="btn btn-md btn-success px-5 mt-3 d-none">+ Add Tour</button>
                         </div>
                     </div>
                 </div>
@@ -475,14 +476,25 @@
 
     
 let tourCount = 1;
+const availableTours = {{ Illuminate\Support\Js::from(
+    $tours->map(fn ($tour) => ['id' => $tour->id, 'title' => $tour->title])->values()
+) }};
+
+function escapeOptionText(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
 // ================= Tour Options =================
 function tourOptions() {
-    let options = '';
-    @foreach($tours as $tour)
-        options += `<option value="{{ $tour->id }}">{{ $tour->title }}</option>`;
-    @endforeach
-    return options;
+    return availableTours.map(function (tour) {
+        return '<option value="' + escapeOptionText(tour.id) + '">' +
+            escapeOptionText(tour.title) + '</option>';
+    }).join('');
 }
 
 function addTour(savedTourId = null, index = null, silentMode = false) {
@@ -539,7 +551,10 @@ function addTour(savedTourId = null, index = null, silentMode = false) {
 // ================= Remove Tour Row =================
 function removeTour(id) {
     const row = document.getElementById(id);
-    if(row) row.remove();
+    if(row) {
+        row.remove();
+        updateOrderGrandTotal();
+    }
 }
 
 // ================= Load Single Tour Details =================
@@ -617,9 +632,7 @@ function loadTourDetails(tourId, count) {
                     hideLoader();
 
                 }, 250);
-                $("input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']").each(function () {
-                    handleQtyInput.call(this);
-                });
+                calculateRowTotal($container.get(0));
 
             } else {
                 console.warn("Date input NOT FOUND for row:", count);
@@ -633,7 +646,7 @@ function loadTourDetails(tourId, count) {
 }
 
 function handleQtyInput() {
-    const row = this.closest("[id^='row_']");
+    const row = getTourCalculationContainer(this);
     calculateRowTotal(row);
 }
 
@@ -890,7 +903,30 @@ document.addEventListener("change", function(e){
 // =====================================================
 
 
+function getTourCalculationContainer(element) {
+    return element.closest("[id^='row_']")
+        || element.closest("[id^='tour_details_']");
+}
+
+function updateOrderGrandTotal() {
+    let total = 0;
+
+    document.querySelectorAll('.subtotal-box').forEach((box) => {
+        const rawTotal = box.dataset.rawTotal !== undefined
+            ? box.dataset.rawTotal
+            : box.textContent.replace(/,/g, '');
+        total += parseFloat(rawTotal) || 0;
+    });
+
+    document.getElementById("totalDue").innerText = total.toFixed(2);
+    document.getElementById("totalPayment").innerText = total.toFixed(2);
+    document.getElementById("total_amount").value = total.toFixed(2);
+    document.getElementById("addPaymentAmount").value = total.toFixed(2);
+}
+
 function calculateRowTotal(row) {
+
+    if (!row) return;
 
     let subtotal = 0;
     let withouttax = 0;
@@ -901,16 +937,19 @@ function calculateRowTotal(row) {
     row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
         let qty = parseFloat(qtyInput.value) || 0;
 
-        const priceInput = qtyInput.parentElement.querySelector(
+        const quantityCell = qtyInput.closest('td');
+        if (!quantityCell) return;
+
+        const priceInput = quantityCell.querySelector(
             'input[name^="tour_pricing_price_"]'
         );
 
-        const priceTypeInput = qtyInput.parentElement.querySelector(
+        const priceTypeInput = quantityCell.querySelector(
             'input[name^="tour_pricing_type_"]'
         );
 
-        const price = parseFloat(priceInput.value) || 0;
-        const priceType = priceTypeInput.value;
+        const price = parseFloat(priceInput ? priceInput.value : 0) || 0;
+        const priceType = priceTypeInput ? priceTypeInput.value : 'PER_PERSON';
 
         // -----------------------------------------
         // ADDITION: ENFORCE MIN/MAX IF FIXED
@@ -944,11 +983,14 @@ function calculateRowTotal(row) {
     row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
         const qty = parseFloat(qtyInput.value) || 0;
 
-        const priceInput = qtyInput.parentElement.querySelector(
+        const quantityCell = qtyInput.closest('td');
+        if (!quantityCell) return;
+
+        const priceInput = quantityCell.querySelector(
             'input[name^="tour_extra_price_"]'
         );
 
-        const price = parseFloat(priceInput.value) || 0;
+        const price = parseFloat(priceInput ? priceInput.value : 0) || 0;
 
         subtotal += qty * price;
     });
@@ -959,8 +1001,8 @@ function calculateRowTotal(row) {
     // 3) TAXES — read tax rows & recalc live
     // -----------------------------------------
     row.querySelectorAll('.tax-row').forEach((taxRow) => {
-        const feeType = taxRow.dataset.type;
-        const feeValue = parseFloat(taxRow.dataset.value);
+        const feeType = (taxRow.dataset.type || '').trim().toUpperCase();
+        const feeValue = parseFloat(taxRow.dataset.value) || 0;
 
         let tax = 0;
 
@@ -989,11 +1031,11 @@ function calculateRowTotal(row) {
     }
     const subtotalBox = row.querySelector('.subtotal-box');
     if (subtotalBox) {
-        document.getElementById("totalDue").innerText = subtotal.toFixed(2);
-        document.getElementById("totalPayment").innerText = subtotal.toFixed(2);
-        document.getElementById("addPaymentAmount").value = subtotal.toFixed(2);
+        subtotalBox.dataset.rawTotal = subtotal.toFixed(2);
         subtotalBox.textContent = subtotal.toFixed(2);
     }
+
+    updateOrderGrandTotal();
 }
 
 // =====================================================
@@ -1012,7 +1054,7 @@ $(document).on("click", ".order-quantity-step", function () {
 });
 
 $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']", function () {
-    const row = this.closest("[id^='row_']");
+    const row = getTourCalculationContainer(this);
     calculateRowTotal(row);
 });
 </script>

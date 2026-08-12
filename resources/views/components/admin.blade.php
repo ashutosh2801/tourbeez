@@ -38,7 +38,7 @@
 
 
     <link rel="stylesheet" href="{{ asset('admin/plugins/fontawesome-free/css/all.min.css') }}?v={{ filemtime(public_path('admin/plugins/fontawesome-free/css/all.min.css')) }}">
-<link rel="stylesheet" href="{{ asset('admin/plugins/fontawesome-free/css/v4-shims.min.css') }}?v={{ filemtime(public_path('admin/plugins/fontawesome-free/css/v4-shims.min.css')) }}">
+    <link rel="stylesheet" href="{{ asset('admin/plugins/fontawesome-free/css/v4-shims.min.css') }}?v={{ filemtime(public_path('admin/plugins/fontawesome-free/css/v4-shims.min.css')) }}">
     <link rel="stylesheet" href="{{ asset('admin/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('admin/plugins/jqvmap/jqvmap.min.css') }}">

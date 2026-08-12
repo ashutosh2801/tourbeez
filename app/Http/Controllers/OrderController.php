@@ -25,6 +25,8 @@ use App\Models\TourSpecialDeposit;
 use App\Models\User;
 use App\Notifications\NewOrderNotification;
 use App\Services\OrderPaymentSummaryService;
+use App\Services\CheckoutDiscountService;
+use App\Services\CheckoutTotalService;
 use App\Services\TwilioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -1220,11 +1222,33 @@ class OrderController extends Controller
                     $order->payments()->get()
                 );
                 $hasSettledPayments = $paymentSummaryBeforeEdit['paid_amount'] > 0;
+                $checkoutTotals = new CheckoutTotalService();
+                $discountsLocked = $hasSettledPayments
+                    || $paymentSummaryBeforeEdit['authorized_amount'] > 0
+                    || strtolower((string) $order->action_name) === 'reserve';
                 $previousGross = (float) ($orderTour?->total_amount ?? 0);
                 $previousPricing = collect(json_decode($orderTour?->tour_pricing ?: '[]', true))
                     ->keyBy(fn ($item) => (int) ($item['tour_pricing_id'] ?? 0));
                 $previousExtras = collect(json_decode($orderTour?->tour_extra ?: '[]', true))
                     ->keyBy(fn ($item) => (int) ($item['tour_extra_id'] ?? 0));
+                $previousFeesForAdjustment = json_decode(
+                    $orderTour?->tour_fees ?: '[]',
+                    true
+                ) ?: [];
+                $previousAdjustmentAmount = $checkoutTotals->adjustmentAmount(
+                    $previousPricing->values()->all(),
+                    $previousExtras->values()->all(),
+                    $previousFeesForAdjustment
+                );
+                // A stale tax/rounding balance must not carry already-paid
+                // lines into the next customer payment request.
+                $previousAdjustmentSettled = $hasSettledPayments && (
+                    (float) $order->balance_amount <= 0.01
+                    || $checkoutTotals->hasMatchingAdjustmentPayment(
+                        $previousAdjustmentAmount,
+                        $order->payments()->get()
+                    )
+                );
                 $savedSpecialDiscount = collect(
                     json_decode($orderTour?->discount ?: '[]', true) ?: []
                 )->first();
@@ -1233,6 +1257,7 @@ class OrderController extends Controller
                 $addedSpecialDiscountDelta = 0.0;
                 $updatedFees = null;
                 $specialDiscountTotal = (float) $paymentSummaryBeforeEdit['special_discount'];
+                $promoDiscountTotal = (float) $paymentSummaryBeforeEdit['promo_discount'];
                 $minList = $request['tour_pricing_min_'.$tourId]; // you can send this hidden
                 $qtyList = $request['tour_pricing_qty_'.$tourId];
 
@@ -1315,20 +1340,30 @@ class OrderController extends Controller
                     $price  = isset($pricingPrice[$key]) ? (float)$pricingPrice[$key] : 0;
                     $actualPrice  = isset($pricingActualPrice[$key]) ? (float)$pricingActualPrice[$key] : 0;
                     $discount_price  = isset($pricingDiscount[$key]) ? (float)$pricingDiscount[$key] : 0;
-                    if (!$hasSettledPayments && !$specialDiscountAllowed) {
+                    if (!$discountsLocked && !$specialDiscountAllowed) {
                         $discount_price = 0;
                     }
                     $previousLine = $previousPricing->get((int) $pricingId, []);
                     $previousQty = (int) ($previousLine['quantity'] ?? 0);
                     $qtyDelta = $qty - $previousQty;
-                    $newlyAddedQuantity = min(
-                        $qty,
-                        max(
-                            (int) ($previousLine['newly_added_quantity'] ?? 0)
-                            + max($qtyDelta, 0),
-                            0
-                        )
+                    $tourPricing = TourPricing::findOrFail($pricingId);
+                    $currentUnitPrice = currencyConvertWithoutRound(
+                        (float) $tourPricing->price,
+                        $tour->currency,
+                        $order->currency
                     );
+                    $currencySnapshot = $checkoutTotals->currencySnapshotLine(
+                        $previousQty,
+                        $qty,
+                        (float) ($previousLine['gross_total_price']
+                            ?? (($previousLine['actual_price'] ?? $actualPrice) * $previousQty)),
+                        (int) ($previousLine['newly_added_quantity'] ?? 0),
+                        (float) ($previousLine['newly_added_price'] ?? $previousLine['actual_price'] ?? 0),
+                        $currentUnitPrice,
+                        $previousAdjustmentSettled
+                    );
+                    $newlyAddedQuantity = $currencySnapshot['new_quantity'];
+                    $actualPrice = $currencySnapshot['average_unit_price'];
                     $discountableQtyDelta = $tour->price_type == 'PER_PERSON'
                         ? max($qtyDelta, 0)
                         : (($qty > 0 ? 1 : 0) - ($previousQty > 0 ? 1 : 0));
@@ -1342,7 +1377,7 @@ class OrderController extends Controller
                     // Discounts belong to the original checkout snapshot.
                     // Quantities added later by an admin are always charged at
                     // their full price and taxed normally.
-                    if ($hasSettledPayments) {
+                    if ($discountsLocked) {
                         $lineUnits = $tour->price_type == 'PER_PERSON' ? max($qty, 1) : 1;
                         $lineDiscountTotal = round($previousLineDiscount + $addedDiscount, 2);
                         $discount_price = round($lineDiscountTotal / $lineUnits, 2);
@@ -1354,14 +1389,23 @@ class OrderController extends Controller
                         );
                     }
 
-                    $total_amount += $tour->price_type == 'PER_PERSON' ? (intval($qty) * floatval($actualPrice)) : floatval($actualPrice);
+                    $lineGrossTotal = $tour->price_type == 'PER_PERSON'
+                        ? $currencySnapshot['gross_total']
+                        : ($qty > 0 ? $currencySnapshot['gross_total'] : 0);
+                    $total_amount += $lineGrossTotal;
                     $nog += $qty;
 
                     // Skip all zero-quantity if needed
                     if ($qty <= 0) continue;
 
-                    $tourPricing = TourPricing::find($pricingId);
                     $label = str_ireplace('Group', 'Participants', $tourPricing->label);
+                    $isDiscountablePricing = (new CheckoutDiscountService())
+                        ->isDiscountablePricingLabel($tourPricing->label);
+                    if (!$isDiscountablePricing) {
+                        $discount_price = 0;
+                        $lineDiscountTotal = 0;
+                        $price = $actualPrice;
+                    }
 
                     $pricingDetails[] = [
                         'tour_id'           => $tourId,
@@ -1373,15 +1417,20 @@ class OrderController extends Controller
                         // 'discount'          => $discount_price * $qty,
                         'discount'          => $discount_price,
                         'quantity'          => $qty,
-                        'total_price'       => $tour->price_type == 'PER_PERSON' ? $price * $qty : $price,
+                        'total_price'       => round($lineGrossTotal - $lineDiscountTotal, 2),
+                        'gross_total_price' => $lineGrossTotal,
                         'newly_added_quantity' => $newlyAddedQuantity,
+                        'newly_added_price' => $currencySnapshot['new_unit_price'],
+                        'newly_added_rate' => (float) $tourPricing->price > 0
+                            ? round($currentUnitPrice / (float) $tourPricing->price, 8)
+                            : 1,
                         'is_newly_added'    => $newlyAddedQuantity > 0,
                     ];
 
 
-                   $discountEntryAmount = $hasSettledPayments
+                   $discountEntryAmount = $isDiscountablePricing && $discountsLocked
                         ? $addedDiscount
-                        : $lineDiscountTotal;
+                        : ($isDiscountablePricing ? $lineDiscountTotal : 0);
                    if(
                         $specialDiscountAllowed
                         && $order->action_name == "book"
@@ -1427,31 +1476,45 @@ class OrderController extends Controller
                     $price  = isset($extraPrice[$key]) ? (float)$extraPrice[$key] : 0;
                     $previousQty = (int) data_get($previousExtras->get((int) $extraId), 'quantity', 0);
                     $previousExtra = $previousExtras->get((int) $extraId, []);
-                    $newlyAddedQuantity = min(
-                        $qty,
-                        max(
-                            (int) ($previousExtra['newly_added_quantity'] ?? 0)
-                            + max($qty - $previousQty, 0),
-                            0
-                        )
+                    $extraAddon = Addon::findOrFail($extraId);
+                    $currentUnitPrice = currencyConvertWithoutRound(
+                        (float) $extraAddon->price,
+                        $extraAddon->currency ?? $tour->currency,
+                        $order->currency
                     );
+                    $currencySnapshot = $checkoutTotals->currencySnapshotLine(
+                        $previousQty,
+                        $qty,
+                        (float) ($previousExtra['gross_total_price']
+                            ?? $previousExtra['total_price']
+                            ?? ($previousQty * ($previousExtra['price'] ?? 0))),
+                        (int) ($previousExtra['newly_added_quantity'] ?? 0),
+                        (float) ($previousExtra['newly_added_price'] ?? $previousExtra['price'] ?? 0),
+                        $currentUnitPrice,
+                        $previousAdjustmentSettled
+                    );
+                    $newlyAddedQuantity = $currencySnapshot['new_quantity'];
+                    $price = $currencySnapshot['average_unit_price'];
                     $addonAmountDelta += ($qty - $previousQty) * $price;
 
-                    $total_amount += (intval($qty) * floatval($price));
+                    $total_amount += $currencySnapshot['gross_total'];
                     // $nog += $qty;
 
                     // Skip all zero-quantity if needed
                     if ($qty <= 0) continue;
-                    $extraAddon = Addon::find($extraId);
-
                     $extraDetails[] = [
                         'tour_id'       => $tourId,
                         'label'         => $extraAddon->name,
                         'tour_extra_id' => $extraId,
                         'quantity'      => $qty,
                         'price'         => $price,
-                        'total_price'   => $qty * $price,
+                        'total_price'   => $currencySnapshot['gross_total'],
+                        'gross_total_price' => $currencySnapshot['gross_total'],
                         'newly_added_quantity' => $newlyAddedQuantity,
+                        'newly_added_price' => $currencySnapshot['new_unit_price'],
+                        'newly_added_rate' => (float) $extraAddon->price > 0
+                            ? round($currentUnitPrice / (float) $extraAddon->price, 8)
+                            : 1,
                         'is_newly_added' => $newlyAddedQuantity > 0,
                     ];
 
@@ -1484,12 +1547,13 @@ class OrderController extends Controller
                     $bookingFeeForTour = $totalBeforeTour <= 0.01
                         ? (float) $order->booking_fee
                         : 0.0;
-                    $currentTaxableSubtotal = max(
-                        $currentRawSubtotal
-                        - $currentDiscountTotal
-                        + $bookingFeeForTour,
-                        0
-                    );
+                    $currentTaxableSubtotal = (new CheckoutTotalService())
+                        ->discountAdjustedTaxableSubtotal(
+                            $currentRawSubtotal,
+                            $currentDiscountTotal,
+                            $isSingleTourOrder ? $promoDiscountTotal : 0,
+                            $bookingFeeForTour
+                        );
                     $recalculatedTax = 0.0;
                     $updatedFees = json_decode($orderTour->tour_fees ?: '[]', true) ?: [];
 
@@ -1497,6 +1561,7 @@ class OrderController extends Controller
                         $feeType = strtoupper(trim((string) ($fee['type'] ?? '')));
                         $feeValue = (float) ($fee['value'] ?? 0);
                         $previousTaxAmount = (float) ($fee['price'] ?? 0);
+                        $previousAddedTaxAmount = (float) ($fee['newly_added_amount'] ?? 0);
                         $taxAmount = round(max(
                             (float) (get_tax(
                                 $currentTaxableSubtotal,
@@ -1507,10 +1572,11 @@ class OrderController extends Controller
                         ), 2);
 
                         $fee['price'] = $taxAmount;
-                        $fee['newly_added_amount'] = round(
-                            (float) ($fee['newly_added_amount'] ?? 0)
-                            + max($taxAmount - $previousTaxAmount, 0),
-                            2
+                        $fee['newly_added_amount'] = $checkoutTotals->nextAdjustmentTax(
+                            $previousTaxAmount,
+                            $taxAmount,
+                            $previousAddedTaxAmount,
+                            $previousAdjustmentSettled
                         );
                         $recalculatedTax += $taxAmount;
                     }
@@ -2205,18 +2271,32 @@ class OrderController extends Controller
                 0
             ), 2);
             $rawSubTotal = 0.0;
+            $adjustmentSubTotal = 0.0;
+            $adjustmentTaxTotal = 0.0;
             $number_of_guests = 0;
             foreach ($order->orderTours as $summaryOrderTour) {
                 foreach (json_decode($summaryOrderTour->tour_pricing ?: '[]', true) ?: [] as $pricingRow) {
                     $quantity = (int) ($pricingRow['quantity'] ?? 0);
                     $actualPrice = (float) ($pricingRow['actual_price'] ?? $pricingRow['price'] ?? 0);
-                    $rawSubTotal += ($pricingRow['price_type'] ?? 'PER_PERSON') === 'FIXED'
-                        ? ($quantity > 0 ? $actualPrice : 0)
-                        : $quantity * $actualPrice;
+                    $rawSubTotal += (float) ($pricingRow['gross_total_price']
+                        ?? (($pricingRow['price_type'] ?? 'PER_PERSON') === 'FIXED'
+                            ? ($quantity > 0 ? $actualPrice : 0)
+                            : $quantity * $actualPrice));
+                    $adjustmentSubTotal += max(
+                        (int) ($pricingRow['newly_added_quantity'] ?? 0),
+                        0
+                    ) * max((float) ($pricingRow['newly_added_price'] ?? $actualPrice), 0);
                 }
                 foreach (json_decode($summaryOrderTour->tour_extra ?: '[]', true) ?: [] as $extraRow) {
                     $rawSubTotal += (float) ($extraRow['total_price']
                         ?? ((int) ($extraRow['quantity'] ?? 0) * (float) ($extraRow['price'] ?? 0)));
+                    $adjustmentSubTotal += max(
+                        (int) ($extraRow['newly_added_quantity'] ?? 0),
+                        0
+                    ) * max((float) ($extraRow['newly_added_price'] ?? $extraRow['price'] ?? 0), 0);
+                }
+                foreach (json_decode($summaryOrderTour->tour_fees ?: '[]', true) ?: [] as $feeRow) {
+                    $adjustmentTaxTotal += max((float) ($feeRow['newly_added_amount'] ?? 0), 0);
                 }
             }
             $rawSubTotal = round($rawSubTotal, 2);
@@ -2234,6 +2314,32 @@ class OrderController extends Controller
                 $grossOrderTotal - ($rawSubTotal - $discountAmount - $promoAmount + $bookingFee),
                 0
             ), 2);
+            $adjustmentSubTotal = round($adjustmentSubTotal, 2);
+            $adjustmentTaxTotal = round($adjustmentTaxTotal, 2);
+            $adjustmentTotal = round($adjustmentSubTotal + $adjustmentTaxTotal, 2);
+            $isAdjustmentTemplate = in_array(
+                $email_template->identifier,
+                ['payment_request', 'payment_receipt'],
+                true
+            ) && $adjustmentTotal > 0.01 && (
+                $paymentSummary['paid_amount'] > 0
+                || $paymentSummary['authorized_amount'] > 0
+                || strtolower((string) $order->action_name) === 'reserve'
+            );
+            if ($isAdjustmentTemplate) {
+                $adjustmentPaid = (new CheckoutTotalService())->hasMatchingAdjustmentPayment(
+                    $adjustmentTotal,
+                    $order->payments
+                );
+                $rawSubTotal = $adjustmentSubTotal;
+                $discountAmount = 0.0;
+                $promoAmount = 0.0;
+                $bookingFee = 0.0;
+                $taxAmount = $adjustmentTaxTotal;
+                $grossOrderTotal = $adjustmentTotal;
+                $paidAmount = $adjustmentPaid ? $adjustmentTotal : 0.0;
+                $balanceAmountValue = $adjustmentPaid ? 0.0 : $adjustmentTotal;
+            }
 
             $TOUR_PAYMENT_HISTORY = '
             <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px; margin-left:0px">
@@ -2348,6 +2454,36 @@ class OrderController extends Controller
                 $tour_pricing = !empty($order_tour->tour_pricing) ? json_decode($order_tour->tour_pricing, true) : [];
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
                 $tour_discount = !empty($order_tour->discount) ? json_decode($order_tour->discount, true) : [];
+                $tour_fees = !empty($order_tour->tour_fees) ? json_decode($order_tour->tour_fees, true) : [];
+                if ($isAdjustmentTemplate) {
+                    $tour_pricing = collect($tour_pricing)
+                        ->filter(fn ($row) => (int) ($row['newly_added_quantity'] ?? 0) > 0)
+                        ->map(function ($row) {
+                            $row['quantity'] = (int) $row['newly_added_quantity'];
+                            $row['actual_price'] = (float) ($row['newly_added_price'] ?? $row['actual_price'] ?? $row['price'] ?? 0);
+                            $row['price'] = $row['actual_price'];
+                            $row['discount'] = 0;
+                            $row['gross_total_price'] = $row['quantity'] * $row['actual_price'];
+                            $row['total_price'] = $row['gross_total_price'];
+                            return $row;
+                        })->values()->all();
+                    $tour_extra = collect($tour_extra)
+                        ->filter(fn ($row) => (int) ($row['newly_added_quantity'] ?? 0) > 0)
+                        ->map(function ($row) {
+                            $row['quantity'] = (int) $row['newly_added_quantity'];
+                            $row['price'] = (float) ($row['newly_added_price'] ?? $row['price'] ?? 0);
+                            $row['gross_total_price'] = $row['quantity'] * $row['price'];
+                            $row['total_price'] = $row['gross_total_price'];
+                            return $row;
+                        })->values()->all();
+                    $tour_fees = collect($tour_fees)
+                        ->filter(fn ($row) => (float) ($row['newly_added_amount'] ?? 0) > 0)
+                        ->map(function ($row) {
+                            $row['price'] = (float) $row['newly_added_amount'];
+                            return $row;
+                        })->values()->all();
+                    $tour_discount = [];
+                }
                 // $totalFixedDiscount = 0;
                 // if($tour_discount){
                 //     foreach ($tour_discount as $discountFixed) {
@@ -2405,7 +2541,8 @@ class OrderController extends Controller
                     $actual_price = isset($result['actual_price']) ? $result['actual_price'] : $result['price'];
                     $discount = $result['discount'] ?? 0;
                     $total = $result['total_price'] ?? 0;
-                    $gt_total = $result['price_type'] == "FIXED" ? $actual_price :  $actual_price * $qty;
+                    $gt_total = (float) ($result['gross_total_price']
+                        ?? ($result['price_type'] == "FIXED" ? $actual_price : $actual_price * $qty));
                     if ($qty > 0) {
                         $rowCount++;
                         $subtotal += $total;
@@ -2497,17 +2634,21 @@ class OrderController extends Controller
                 $taxRows = '';
 
 
-                if ($order_tour->tour->taxes_fees_resolved) {
-                    foreach ($order_tour->tour->taxes_fees_resolved as $tax) {
-                        $taxAmount = get_tax($subtotal2, $tax->fee_type, $tax->tax_fee_value);
+                if (!empty($tour_fees)) {
+                    foreach ($tour_fees as $tax) {
+                        $taxAmount = (float) ($tax['price'] ?? 0);
                         $subtotal += $taxAmount;
                         $subtotal2 += $taxAmount;
+                        $taxLabel = e($tax['label'] ?? 'Tax');
+                        if (($tax['type'] ?? null) === 'PERCENT' && isset($tax['value'])) {
+                            $taxLabel .= ' (' . (float) $tax['value'] . '%)';
+                        }
                         $taxRows .= '
                         <tr>
                             <td>&nbsp;</td>
                             <td>&nbsp;</td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">' . $taxLabel . '</small>
                             </td>
                             <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
                                 ' . price_format_with_currency($taxAmount, $order->currency) . '
