@@ -834,13 +834,22 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
 
                                             <table class="table m-0">
                                                 @php
-                                                    $discounts = !empty($order_tour->discount)
-                                                        ? json_decode($order_tour->discount)
-                                                        : [];
-                                                    $discountAmountTotal = collect($discounts)->sum(
-                                                        fn ($item) => (float) ($item->price ?? 0)
-                                                    );
                                                     $applyOrderCredits = $row_id === 0;
+                                                    $discounts = !empty($order_tour->discount)
+                                                        ? json_decode($order_tour->discount, true)
+                                                        : [];
+                                                    if (is_array($discounts) && isset($discounts['price'])) {
+                                                        $discounts = [$discounts];
+                                                    }
+                                                    $discountAmountTotal = collect(is_array($discounts) ? $discounts : [])
+                                                        ->filter(fn ($item) => is_array($item))
+                                                        ->sum(fn ($item) => (float) ($item['price'] ?? 0));
+                                                    // The payment ledger is authoritative for a committed
+                                                    // order-level discount. Fall back to it when an older
+                                                    // admin update left the tour snapshot empty/malformed.
+                                                    if ($applyOrderCredits && $discountAmountTotal <= 0) {
+                                                        $discountAmountTotal = (float) ($paymentSummary['special_discount'] ?? 0);
+                                                    }
                                                     $rowPromoAmount = $applyOrderCredits
                                                         ? (float) $paymentSummary['promo_discount']
                                                         : 0;

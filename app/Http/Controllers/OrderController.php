@@ -1222,9 +1222,10 @@ class OrderController extends Controller
                     $order->payments()->get()
                 );
                 $hasSettledPayments = $paymentSummaryBeforeEdit['paid_amount'] > 0;
+                $hasCommittedPayments = $hasSettledPayments
+                    || $paymentSummaryBeforeEdit['authorized_amount'] > 0;
                 $checkoutTotals = new CheckoutTotalService();
-                $discountsLocked = $hasSettledPayments
-                    || $paymentSummaryBeforeEdit['authorized_amount'] > 0
+                $discountsLocked = $hasCommittedPayments
                     || strtolower((string) $order->action_name) === 'reserve';
                 $previousGross = (float) ($orderTour?->total_amount ?? 0);
                 $previousPricing = collect(json_decode($orderTour?->tour_pricing ?: '[]', true))
@@ -1249,9 +1250,17 @@ class OrderController extends Controller
                         $order->payments()->get()
                     )
                 );
-                $savedSpecialDiscount = collect(
-                    json_decode($orderTour?->discount ?: '[]', true) ?: []
-                )->first();
+                $savedDiscountRows = json_decode($orderTour?->discount ?: '[]', true) ?: [];
+                // Older admin updates could save one discount row as an object
+                // (or even a scalar) instead of a list. Normalize the snapshot
+                // before reading it so those orders remain editable.
+                if (is_array($savedDiscountRows) && isset($savedDiscountRows['price'])) {
+                    $savedDiscountRows = [$savedDiscountRows];
+                }
+                $savedDiscountRows = is_array($savedDiscountRows)
+                    ? array_values(array_filter($savedDiscountRows, 'is_array'))
+                    : [];
+                $savedSpecialDiscount = collect($savedDiscountRows)->first();
                 $itemAmountDelta = 0.0;
                 $addonAmountDelta = 0.0;
                 $addedSpecialDiscountDelta = 0.0;
@@ -1302,10 +1311,10 @@ class OrderController extends Controller
                     || $specialDiscountTotal > 0;
                 $specialDiscountAllowed = $specialDiscountEligible
                     || $hasSavedSpecialDiscount;
-                $effectiveDiscountType = $hasSettledPayments
+                $effectiveDiscountType = $hasCommittedPayments
                     ? ($savedSpecialDiscount['type'] ?? $depositRule?->discount_type)
                     : $depositRule?->discount_type;
-                $effectiveDiscountValue = (float) ($hasSettledPayments
+                $effectiveDiscountValue = (float) ($hasCommittedPayments
                     ? ($savedSpecialDiscount['discount'] ?? $depositRule?->discount_value ?? 0)
                     : ($depositRule?->discount_value ?? 0));
 
@@ -1328,8 +1337,8 @@ class OrderController extends Controller
 
 
                 $pricingDetails = [];
-                $discount = $hasSettledPayments
-                    ? (json_decode($orderTour?->discount ?: '[]', true) ?: [])
+                $discount = $hasCommittedPayments
+                    ? $savedDiscountRows
                     : [];
                 $total_amount = 0;
                 $nog = 0;
@@ -1527,7 +1536,7 @@ class OrderController extends Controller
 
 
                 // Update or create based on order_id + tour_id
-                if ($hasSettledPayments && $orderTour) {
+                if ($hasCommittedPayments && $orderTour) {
                     $currentRawSubtotal = round($total - $totalBeforeTour, 2);
                     $isSingleTourOrder = $order->orderTours()->count() === 1;
                     $currentDiscountTotal = $isSingleTourOrder
@@ -1607,11 +1616,12 @@ class OrderController extends Controller
                 }
 
                 if ($orderTour) {
-                    if(!$hasSettledPayments && $orderTour->discount){
-                        $discounts = json_decode($orderTour->discount, true);
-                        foreach ($discounts as $discount) {
-
-                            $discount_price = $discount['price'];
+                    if (!$hasCommittedPayments) {
+                        // Use the freshly recalculated rows. This preserves the
+                        // special discount when quantities change and keeps the
+                        // saved order total aligned with the updated snapshot.
+                        foreach ($discount as $currentDiscountRow) {
+                            $discount_price = (float) ($currentDiscountRow['price'] ?? 0);
                             $total = $total - $discount_price;
                             // dd($total, $discount_price);
                         }
@@ -1663,7 +1673,7 @@ class OrderController extends Controller
                     $orderTour = $order_tours;
                 }
 
-                if($tour && !$hasSettledPayments) {
+                if($tour && !$hasCommittedPayments) {
                     $taxesfees = $tour->taxes_fees;
 
                     $subtotal = 0;
