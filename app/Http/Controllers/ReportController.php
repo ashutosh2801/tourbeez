@@ -2149,6 +2149,9 @@ public function invoiceWithDetails(Request $request)
             
             
             $costTotal    = $costBase;
+            $sellingTax = 0;
+            $costTax = 0;
+            $costTax = 0;
             
             if (isset($allTaxes[$order->tour_id])) {
 
