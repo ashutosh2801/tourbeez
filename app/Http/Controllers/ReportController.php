@@ -316,9 +316,10 @@ public function overview(Request $request)
                 $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
                 if ($qty > 0) {
-                    $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                        ? $price
-                        : $price * $qty;
+                    $productValue += (float) ($p['gross_total_price']
+                        ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
+                            ? $price
+                            : $price * $qty));
                 }
 
                 if (str_contains($label, 'adult')) {
@@ -760,9 +761,10 @@ public function revenue(Request $request)
                 $actual_price = $p['actual_price'] ?? $p['price'] ?? 0;
 
                 if ($qty > 0) {
-                    $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                        ? $actual_price
-                        : $actual_price * $qty;
+                    $productValue += (float) ($p['gross_total_price']
+                        ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
+                            ? $actual_price
+                            : $actual_price * $qty));
                 }
             }
 
@@ -1404,9 +1406,10 @@ public function getInvoiceData($request, $paginate = false)
                 $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
                 if ($qty > 0) {
-                    $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                        ? $price
-                        : $price * $qty;
+                    $productValue += (float) ($p['gross_total_price']
+                        ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
+                            ? $price
+                            : $price * $qty));
                 }
             }
 
@@ -2662,7 +2665,7 @@ public function exportCustomer(Request $request)
         else $other += $qty;
 
         if ($qty > 0) {
-            $productValue += $price * $qty;
+            $productValue += (float) ($p['gross_total_price'] ?? ($price * $qty));
         }
     }
 

@@ -42,6 +42,13 @@ return [
         'redirect' => 'http://127.0.0.1:8000/oauth/google/login/callback',
     ],
 
+    'youtube' => [
+        'client_id' => env('YOUTUBE_CLIENT_ID', env('GOOGLE_CLIENT_ID')),
+        'client_secret' => env('YOUTUBE_CLIENT_SECRET', env('GOOGLE_CLIENT_SECRET')),
+        'refresh_token' => env('YOUTUBE_REFRESH_TOKEN'),
+        'privacy_status' => env('YOUTUBE_PRIVACY_STATUS', 'unlisted'),
+    ],
+
     'github' => [
         'client_id' => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),

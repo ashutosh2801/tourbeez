@@ -48,7 +48,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                       {{ $item->name }}
                                   </a>
                                   @foreach ($item->locations as $location)
-                                      <p class="m-0 text-sm text-gray-100">{{ $location->location }}, {{ $location->address }}</p>
+                                      <p class="m-0 text-sm text-gray-100 border-b border-gray-600 p-2">{{ $location->location }}, {{ $location->address }} - <span class="font-bold">{{ price_format_with_currency($location->pickup_charge) }}</span></p>
                                   @endforeach
 
                                   {{-- Only for pickup --}}

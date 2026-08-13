@@ -23,16 +23,17 @@
             <div class="card-body">
                 
                 @php
-                $optionalValue = old('optionalValue', $data->optionals?->map(function ($item) {
+                $optionalValue = old('optionalValue', $data->optionals?->map(function ($item, $index) {
                                                 return [
                                                     'id'     => $item->id,
                                                     'name'   => $item->name,
+                                                    'order'  => $item->sort_by ?? ($index + 1),
                                                 ];
                                         })->filter()->values()->toArray());
                             
                 $count = count($optionalValue);
                 if($count == 0){
-                    $optionalValue = old('optionalValue', [ ['id' => '', 'name' => '', 'type' => ''] ]);
+                    $optionalValue = old('optionalValue', [ ['id' => '', 'name' => '', 'type' => '', 'order' => 1] ]);
                     $count = 1;
                 }
                 @endphp
@@ -44,11 +45,11 @@
                     value="{{ old("optionalValue.$index.id", $option['id']) }}" class="form-control" />
 
                     <div class="row">
-                        @if ($count == 1)                        
+                        <?php /* @if ($count == 1)                        
                         <div class="col-lg-12">
                             <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
-                                <label for="include_name" class="form-label">Tour Inclusions</label>
-                                <select class="form-control" data-live-search="true" onchange="fetchInclude(this.value, {{ $index }})">
+                                <label for="optional_name" class="form-label">Tour Optionals</label>
+                                <select class="form-control" data-live-search="true" onchange="fetchOptional(this.value, {{ $index }})">
                                     <option value="">Select one</option>
                                     @foreach ($data->optionals as $item)
                                     <option value="{{ $item->id }}">{{ $item->name }}</option>
@@ -56,18 +57,29 @@
                                 </select>
                             </div>
                         </div>
-                        @endif
+                        @endif */ ?>
 
-                        <div class="col-lg-12">
+                        <div class="col-lg-1">
+                            <div class="form-group">
+                                <input type="number" name="optionalValue[{{ $index }}][order]" id="exclusion_order_{{ $index }}" value="{{ old("optionalValue.$index.order", $option['order']) }}"
+                                    class="form-control text-center" min="1" placeholder="Enter order">
+                                @error('exclusion_order')
+                                    <small class="form-text text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="col-lg-11">
                             <div class="form-group mb-2">
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><i class="fas fa-pencil-alt"></i></span>
                                     </div>
-                                    <input type="text" name="optionalValue[{{ $index }}][name]" id="include_name_{{ $index }}" value="{{ old("optionalValue.$index.name", $option['name']) }}"
+                                    <input type="text" name="optionalValue[{{ $index }}][name]" id="optional_name_{{ $index }}" value="{{ old("optionalValue.$index.name", $option['name']) }}"
                                         class="form-control  mr-2" placeholder="Enter name">
-                                    <button type="button" class="btn btn-sm btn-success mr-2" onclick="addInclude()"><i class="fa fa-plus"></i></button>
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeInclude({{ $index }})"><i class="fa fa-minus"></i></button>
+                                    @if ( count($optionalValue) == ($index + 1))
+                                    <button type="button" class="btn btn-sm btn-success mr-2" onclick="addOptional()"><i class="fa fa-plus"></i></button>
+                                    @endif
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeOptional({{ $index }})"><i class="fa fa-minus"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -75,7 +87,7 @@
                 </div>
                 @endforeach
 
-                <div id="includesContainer"></div>
+                <div id="optionalsContainer"></div>
 
             </div>
             <div class="card-footer" style="display:block">
@@ -97,66 +109,73 @@
 @section('js')
 @parent
 <script>
-let includeCount = {{ ($count > 1) ? $count : 1 }}
+let optionalCount = {{ ($count > 1) ? $count : 1 }}
 
-function addInclude() {
+function addOptional() {
 
-    const container = document.getElementById('includesContainer');
+    const container = document.getElementById('optionalsContainer');
 
     const newRow = document.createElement('div');
     newRow.classList.add('align-items-end', 'mb-2');
-    newRow.setAttribute('id', `FeatureRow_${includeCount}`);
+    newRow.setAttribute('id', `FeatureRow_${optionalCount}`);
 
     newRow.innerHTML = `<hr><div class="row">                    
         <div class="col-lg-12">
             <div class="form-group" style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
-                <label for="include_name" class="form-label">Tour Inclusions</label>
-                <select class="form-control" data-live-search="true" id="include"  onchange="fetchInclude(this.value, ${includeCount})">
+                <label for="optional_name" class="form-label">Tour Optionals</label>
+                <select class="form-control aiz-selectpicker" data-live-search="true" id="optional"  onchange="fetchOptional(this.value, ${optionalCount})">
                     <option value="">Select one</option>
-                    @foreach ($data->optionals as $item)
+                    @foreach ($optionals as $item)
                     <option value="{{ $item->id }}">{{ $item->name }}</option>
                     @endforeach
                 </select>
             </div>
         </div>
-        <input type="hidden" name="optionalValue[${includeCount}][type]" id="optionalValue_type_${includeCount}" 
+        <input type="hidden" name="optionalValue[${optionalCount}][type]" id="optionalValue_type_${optionalCount}" 
                     value="" class="form-control" />
-        <div class="col-lg-12">
+        <div class="col-lg-1">
+            <div class="form-group">
+                <input type="number" name="optionalValue[${optionalCount}][order]" id="optionalValue_order_${optionalCount}" value="" class="form-control text-center" min="1" placeholder="number">
+            </div>
+        </div>                    
+        <div class="col-lg-11">
             <div class="form-group mb-2">
                 <div class="input-group mb-3">
                     <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fa fa-pencil-alt"></i></span>
                     </div>
-                    <input type="text" name="optionalValue[${includeCount}][name]" id="include_name_${includeCount}" value=""
-                        class="form-control mr-2" placeholder="Enter name">
-                    <button type="button" class="btn btn-sm btn-success mr-2" onclick="addInclude()"><i class="fa fa-plus"></i></button>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="removeInclude(${includeCount})"><i class="fa fa-minus"></i></button>
+                    <input type="text" name="optionalValue[${optionalCount}][name]" id="optional_name_${optionalCount}" value=""
+                        class="form-control mr-2" placeholder="Enter name" required>
+                    <button type="button" class="btn btn-sm btn-success mr-2" onclick="addOptional()"><i class="fa fa-plus"></i></button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeOptional(${optionalCount})"><i class="fa fa-minus"></i></button>
                 </div>
             </div>
         </div>
     </div>`;
 
     container.appendChild(newRow);
-    includeCount++;
+    $(`#optionalValue_order_${optionalCount}`).val( optionalCount + 1 );
+    optionalCount++;
+    TB.plugins.bootstrapSelect();
 }
 
-function removeInclude(id) {
+function removeOptional(id) {
     const row = document.getElementById(`FeatureRow_${id}`);
     if (row) {
         row.remove();
-        includeCount--;
+        optionalCount--;
     }
 }
 
-function fetchInclude( selectedValue, num ) {
+function fetchOptional( selectedValue, num ) {
     $.post('{{ route('admin.optionals.single') }}', {
         _token: '{{ csrf_token() }}',
         feature_id: selectedValue,
         type: 'optionals'
     }, function(data) {
         console.log(num, data);
-        $(`#include_name_${num}`).val(data.name);
-        $(`#include_type_${num}`).val(data.type);
+        $(`#optional_name_${num}`).val(data.name);
+        $(`#optional_type_${num}`).val(data.type);
     });
 }
 </script>

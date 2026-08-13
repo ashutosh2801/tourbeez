@@ -38,7 +38,7 @@
               <path stroke-width="2" d="M19.5 10.5C19.5 16.299 12 21 12 21s-7.5-4.701-7.5-10.5a7.5 7.5 0 1115 0z"/>
             </svg>
             <span class="text-gray-700 text-xs lg:text-base mt-2 font-semibold">
-              1 Dundas Street West, Suite 2500, Toronto, ON M5G 1Z3
+              16 Arnold St, Toronto, ON M8Z 5A6
             </span>
           </div>
 
@@ -133,7 +133,7 @@
 
             <!-- MAP -->
             <div class="w-full md:w-1/2 mt-10 md:mt-0">
-              <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2886.625891885792!2d-79.38432228852672!3d43.65595127098142!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x882b34cb21fe551d%3A0x86ddbe27b966d2c!2s1%20Dundas%20St%20W%20%232500%2C%20Toronto%2C%20ON%20M6P%202A1%2C%20Canada!5e0!3m2!1sen!2slk!4v1751373975073!5m2!1sen!2slk" loading="lazy" class='w-full h-80 md:h-100 lg:h-130 border border-gray-200 rounded'></iframe>
+              <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2888.454628584217!2d-79.52459202382505!3d43.617895771103846!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x882b37d69149d6b1%3A0x6bd920a34f52c3b3!2s16%20Arnold%20St%2C%20Etobicoke%2C%20ON%20M8Z%205A6%2C%20Canada!5e0!3m2!1sen!2sin!4v1781784527872!5m2!1sen!2sin" loading="lazy" class='w-full h-80 md:h-100 lg:h-130 border border-gray-200 rounded'></iframe>
             </div>
 
           </div>

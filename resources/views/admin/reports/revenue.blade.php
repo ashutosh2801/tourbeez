@@ -545,7 +545,7 @@
                             {{-- ✅ MONEY (FROM FIXED BACKEND LOGIC) --}}
                             <td>{{ number_format_with_currency($order->total_amount_converted, 2) }}</td>
                             <td>{{ number_format_with_currency($order->paid_amount_converted, 2) }}</td>
-                            <td>{{ $order->balance_converted > 0 ?number_format_with_currency($order->balance_converted, 2) : 0 }}</td>
+                            <td class="{{ $order->balance_converted > 0.01 ? 'text-danger font-weight-bold' : 'text-success' }}">{{ $order->balance_converted > 0 ? number_format_with_currency($order->balance_converted, 2) : 0 }}</td>
 
                             {{-- Fees (keep 0 if not calculated yet) --}}
                             <td>{{ number_format_with_currency($order->booking_fee ?? 0, 2) }}</td>

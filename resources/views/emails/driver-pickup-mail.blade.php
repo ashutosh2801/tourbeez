@@ -40,7 +40,7 @@
                 cellspacing="0"
                 role="presentation"
                 style="
-                    max-width:900px;
+                    max-width:800px;
                     background:#ffffff;
                     border-radius:10px;
                     overflow:hidden;
@@ -101,39 +101,26 @@
 
                 {{-- SUMMARY --}}
                 <tr>
-                    <td style="padding:10px 20px 20px;">
-                        <table
-                            width="100%"
-                            cellpadding="0"
-                            cellspacing="0"
-                            role="presentation"
-                            style="
-                                background:#f8fafc;
-                                border:1px solid #e2e8f0;
-                                border-radius:6px;
-                            "
-                        >
-                            <tr>
-                                <td style="padding:12px;">
-                                    <strong>Total Orders:</strong>
-                                    {{ $orders->count() }}
-
-                                    <br>
-
-                                    <strong>Total Passengers:</strong>
-                                    {{ $orders->sum('guest_count') }}
+                    <td style="padding:10px 20px">
+                        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#eaf8ee;border-left:5px solid #198754">
+                            <tbody><tr>
+                                <td style="padding:15px">
+                                    <span style="font-size:18px;font-weight:bold;color:#146c43">
+                                        Total Passenger Count: {{ $orders->sum('guest_count') }}
+                                    </span>
                                 </td>
                             </tr>
-                        </table>
+                        </tbody></table>
                     </td>
                 </tr>
 
                 {{-- PICKUP SCHEDULE --}}
                 <tr>
                     <td style="padding:0 20px 20px;">
-                        <h3 style="margin:0 0 10px;">
+                        
+                        <h2 style="margin:0 0 12px;color:#01228c;font-size:21px">
                             Pickup Schedule
-                        </h3>
+                        </h2>
 
                         <table
                             width="100%"
@@ -148,10 +135,7 @@
                             "
                         >
                             <thead
-                                style="
-                                    background:#01228c;
-                                    color:#ffffff;
-                                "
+                                style="background:#198754;color:#ffffff"
                             >
                                 <tr>
                                     <th
@@ -238,9 +222,9 @@
                 @if(!empty($customMessage))
                     <tr>
                         <td style="padding:0 20px 20px;">
-                            <h3 style="margin:0 0 10px;">
+                            <h2 style="margin:0 0 8px;color:#01228c;font-size:21px">
                                 Tour Itinerary
-                            </h3>
+                            </h2>
 
                             <div
                                 style="
@@ -259,9 +243,9 @@
                 {{-- PASSENGER DETAILS --}}
                 <tr>
                     <td style="padding:0 20px 20px;">
-                        <h3 style="margin:0 0 10px;">
+                        <h2 style="margin:0 0 8px;color:#01228c;font-size:21px">
                             Passenger Details
-                        </h3>
+                        </h2>
 
                         @foreach(
                             $orders->sortBy('pickup_time')->values()
@@ -287,12 +271,6 @@
                                     $o['vehicle']
                                         ? $o['vehicle']->name
                                         : null;
-
-                                $galleryUploadUrl =
-                                    $o['gallery_upload_url'] ?? null;
-
-                                $galleryQrUrl =
-                                    $o['gallery_qr_url'] ?? null;
                             @endphp
 
                             <table
@@ -310,8 +288,9 @@
                                 <tr>
                                     <td
                                         style="
-                                            padding:14px;
+                                            padding:14px 14px 0 14px;
                                             border-left:4px solid #01228c;
+                                            font-size:15px;
                                         "
                                     >
                                         <strong>
@@ -321,7 +300,15 @@
 
                                             {{ $o['pickup_location'] ?? '-' }}
                                         </strong>
-
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="
+                                            padding:14px;
+                                            border-left:4px solid #01228c;
+                                        "
+                                    >
                                         <p style="margin:8px 0 4px;">
                                             <strong>
                                                 {{ $o['customer_name'] ?? 'N/A' }}
@@ -359,6 +346,38 @@
                                             </p>
                                         @endif
 
+@if(!empty($o['addons']))
+    <div
+        style="
+            margin-top:10px;
+            padding:10px;
+            background:#f0fdf4;
+            border-left:3px solid #16a34a;
+        "
+    >
+        <strong style="color:#166534;">
+            Purchased Add-ons:
+        </strong>
+
+        <ul
+            style="
+                margin:6px 0 0;
+                padding-left:20px;
+            "
+        >
+            @foreach($o['addons'] as $addon)
+                <li style="margin:3px 0;">
+                    {{ $addon['label'] }}
+
+                    @if(($addon['quantity'] ?? 1) > 1)
+                        × {{ $addon['quantity'] }}
+                    @endif
+                </li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
                                         @if(!empty($o['instruction']))
                                             <div
                                                 style="
@@ -393,119 +412,94 @@
                                                 </div>
                                             </div>
                                         @endif
-
-                                        {{-- GALLERY QR CODE --}}
-                                        @if(!empty($galleryQrUrl))
-                                            <table
-                                                width="100%"
-                                                cellpadding="0"
-                                                cellspacing="0"
-                                                role="presentation"
-                                                style="
-                                                    margin-top:15px;
-                                                    background:#f8fafc;
-                                                    border:1px solid #e2e8f0;
-                                                    border-collapse:collapse;
-                                                "
-                                            >
-                                                <tr>
-                                                    <td
-                                                        align="center"
-                                                        style="padding:15px;"
-                                                    >
-                                                        <p
-                                                            style="
-                                                                margin:0 0 10px;
-                                                                font-weight:bold;
-                                                                color:#01228c;
-                                                            "
-                                                        >
-                                                            Customer Tour Photo Upload
-                                                        </p>
-
-                                                        @if(!empty($galleryUploadUrl))
-                                                            <a
-                                                                href="{{ $galleryUploadUrl }}"
-                                                                target="_blank"
-                                                                style="
-                                                                    text-decoration:none;
-                                                                    display:inline-block;
-                                                                "
-                                                            >
-                                                                <img
-                                                                    src="{{ $galleryQrUrl }}"
-                                                                    alt="Gallery Upload QR Code"
-                                                                    width="170"
-                                                                    style="
-                                                                        display:block;
-                                                                        width:170px;
-                                                                        max-width:170px;
-                                                                        height:auto;
-                                                                        border:1px solid #dddddd;
-                                                                        padding:8px;
-                                                                        background:#ffffff;
-                                                                    "
-                                                                >
-                                                            </a>
-                                                        @else
-                                                            <img
-                                                                src="{{ $galleryQrUrl }}"
-                                                                alt="Gallery Upload QR Code"
-                                                                width="170"
-                                                                style="
-                                                                    display:block;
-                                                                    width:170px;
-                                                                    max-width:170px;
-                                                                    height:auto;
-                                                                    border:1px solid #dddddd;
-                                                                    padding:8px;
-                                                                    background:#ffffff;
-                                                                "
-                                                            >
-                                                        @endif
-
-                                                        <p
-                                                            style="
-                                                                margin:10px 0 5px;
-                                                                font-size:13px;
-                                                                color:#475569;
-                                                            "
-                                                        >
-                                                            Scan this QR code to upload photos
-                                                            for order
-                                                            <strong>
-                                                                {{ $o['order_number'] ?? '' }}
-                                                            </strong>.
-                                                        </p>
-
-                                                        @if(!empty($galleryUploadUrl))
-                                                            <a
-                                                                href="{{ $galleryUploadUrl }}"
-                                                                target="_blank"
-                                                                style="
-                                                                    display:inline-block;
-                                                                    margin-top:5px;
-                                                                    padding:9px 16px;
-                                                                    background:#01228c;
-                                                                    color:#ffffff;
-                                                                    text-decoration:none;
-                                                                    border-radius:5px;
-                                                                    font-size:13px;
-                                                                    font-weight:bold;
-                                                                "
-                                                            >
-                                                                Open Photo Upload Page
-                                                            </a>
-                                                        @endif
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        @endif
-
                                     </td>
                                 </tr>
                             </table>
                         @endforeach
+
+                        {{-- ONE SHARED GALLERY QR CODE --}}
+                        @if(!empty($galleryQrUrl) || !empty($galleryUploadUrl))
+                            <table
+                                width="100%"
+                                cellpadding="0"
+                                cellspacing="0"
+                                role="presentation"
+                                style="
+                                    margin-top:20px;
+                                    background:#f8fafc;
+                                    border:1px solid #dbe4f0;
+                                    border-collapse:collapse;
+                                "
+                            >
+                                <tr>
+                                    <td align="center" style="padding:22px;">
+                                        <p
+                                            style="
+                                                margin:0 0 5px;
+                                                color:#01228c;
+                                                font-size:18px;
+                                                font-weight:bold;
+                                            "
+                                        >
+                                            Upload Tour Photos
+                                        </p>
+                                        <p
+                                            style="
+                                                margin:0 0 14px;
+                                                color:#475569;
+                                                font-size:13px;
+                                            "
+                                        >
+                                            Scan the QR code and enter your Order ID to upload photos.
+                                        </p>
+
+                                        @if(!empty($galleryQrUrl))
+                                            @if(!empty($galleryUploadUrl))
+                                                <a
+                                                    href="{{ $galleryUploadUrl }}"
+                                                    target="_blank"
+                                                    style="display:inline-block;text-decoration:none;"
+                                                >
+                                            @endif
+                                                <img
+                                                    src="{{ $galleryQrUrl }}"
+                                                    alt="Tour photo upload QR code"
+                                                    width="190"
+                                                    style="
+                                                        display:block;
+                                                        width:190px;
+                                                        max-width:100%;
+                                                        height:auto;
+                                                        padding:8px;
+                                                        border:1px solid #dddddd;
+                                                        background:#ffffff;
+                                                    "
+                                                >
+                                            @if(!empty($galleryUploadUrl))
+                                                </a>
+                                            @endif
+                                        @elseif(!empty($galleryUploadUrl))
+                                            <a
+                                                href="{{ $galleryUploadUrl }}"
+                                                target="_blank"
+                                                style="
+                                                    display:inline-block;
+                                                    padding:11px 18px;
+                                                    background:#01228c;
+                                                    color:#ffffff;
+                                                    text-decoration:none;
+                                                    border-radius:5px;
+                                                    font-size:14px;
+                                                    font-weight:bold;
+                                                "
+                                            >
+                                                Open Photo Upload Page
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                        @endif
                     </td>
                 </tr>
 

@@ -250,6 +250,7 @@ class SitemapController extends Controller
             [ 'title' => 'Cancellation options', 'href' => '/cancellation-policy' ],
             [ 'title' => 'Privacy Policy', 'href' => '/privacy-policy' ],
             [ 'title' => 'Terms & Conditions', 'href' => '/terms-and-conditions' ],
+            [ 'title' => 'Niagara Falls Tours From Toronto', 'href' => '/niagara-falls-tour-from-toronto/381-c3' ],
         ];
 
         $sitemap = Sitemap::create();

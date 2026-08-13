@@ -70,6 +70,7 @@ class SendTourCompletedNotification extends Command
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? 0,
                 "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? 0,
+                "[[ORDER_BALANCE_COLOR]]"   => $order->balance_amount > 0.01 ? 'f64747' : '008000',
 
                 "[[APP_NAME]]"              => get_setting('site_name'),
                 "[[COMPANY_NAME]]"          => get_setting('site_name'),
