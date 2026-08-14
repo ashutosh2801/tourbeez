@@ -137,7 +137,7 @@
 
 {{-- FILTER SAME AS BEFORE --}}
 <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
-    <form method="GET">
+    <form method="GET" class="p-3">
 
         <div class="row">
             {{-- ACTIVITY DATE --}}

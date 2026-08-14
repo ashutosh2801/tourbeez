@@ -55,6 +55,9 @@
 
     .manifest-grid td, .manifest-grid th {
         vertical-align: middle;
+        min-width: 150px !important;
+        word-wrap: break-word;
+        white-space: normal;
     }
 
     .manifest-cell.has-orders:hover {
@@ -77,20 +80,13 @@
     cursor: grabbing;
 }
 
-table {
+.manifest-grid.table {
     min-width: 1000px;
     user-select: none;
     margin-bottom: 0;
 }
 
-th,
-td {
-    min-width: 150px !important;
-    white-space: nowrap;
-    vertical-align: middle;
-}
-
-thead th {
+.manifest-grid thead th {
     position: sticky;
     top: 0;
     z-index: 3;
@@ -98,8 +94,8 @@ thead th {
     color: #fff;
 }
 
-th:first-child,
-td:first-child {
+.manifest-grid th:first-child,
+.manifest-grid td:first-child {
     position: sticky;
     left: 0;
     z-index: 2;
@@ -109,7 +105,7 @@ td:first-child {
     background: #f1f5f9;
 }
 
-thead th:first-child {
+.manifest-grid thead th:first-child {
     z-index: 4;
 }
 
@@ -167,10 +163,6 @@ thead th:first-child {
     font-size: 15px;
     font-weight: 700;
     color: #16a34a;
-}
-
-.manifest-grid td, .manifest-grid th {
-    vertical-align: middle;
 }
 
 .select2-container {

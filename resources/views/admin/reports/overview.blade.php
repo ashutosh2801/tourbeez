@@ -20,6 +20,8 @@
 
     .search-options .select2-container--default .select2-search--inline .select2-search__field {
         font-size: 14px;
+        margin: 0;
+        border: 0;
     }
 
     .select2-container--default .select2-selection--multiple .select2-selection__choice {
@@ -45,6 +47,21 @@
         border: 1px solid #ced4da !important;
     }
 
+    .filter-panel {
+        display: none;
+        animation: fadeSlide 0.3s ease-in-out;
+    }
+
+    @keyframes fadeSlide {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
 </style>
 
@@ -53,19 +70,26 @@
 <div class="report-overview">
 
     <div class="card-primary mb-3">
-        <div class="card-header tour-main-head">
+        <div class="card-header reports-head">
             <div class="row">
-                <div class="col-12">
+                <div class="col-md-8 col-12">
                     <h3 class="card-title text-white">Reports Overview</h3>
+                </div>
+                <div class="col-md-4 col-12">
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-secondary" id="toggleFilter">
+                            <i class="fas fa-filter"></i> Filters
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     {{-- FILTER --}}
-    <div class="card rounded-lg-custom border report-filter-box">
-        <form method="GET">
-            <div class="filter-panel" id="filterPanel">
+    <div class="filter-panel" id="filterPanel">
+        <div class="card rounded-lg-custom border report-filter-box">
+            <form method="GET">
                 <div class="card-header">
                     <div class="search-options">
                         <div class="row">
@@ -264,8 +288,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 
     <div class="active-filters mb-3">
@@ -432,32 +456,24 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    $('#toggleFilter').click(function () {
+    let filterOpen = false;
 
-        $('#filterSidebar').addClass('show');
+    $('#toggleFilter').on('click', function () {
+        $('#filterPanel').slideToggle(250);
 
-        $('#filterOverlay').addClass('show');
+        filterOpen = !filterOpen;
 
-        $('body').addClass('sidebar-open');
-
-        $(this)
-            .removeClass('btn-secondary')
-            .addClass('btn-danger')
-            .html('<i class="fas fa-times"></i> Filters');
-    });
-
-    $('#closeFilter,#filterOverlay').click(function () {
-
-        $('#filterSidebar').removeClass('show');
-
-        $('#filterOverlay').removeClass('show');
-
-        $('body').removeClass('sidebar-open');
-
-        $('#toggleFilter')
-            .removeClass('btn-danger')
-            .addClass('btn-secondary')
-            .html('<i class="fas fa-filter"></i> Filters');
+        if (filterOpen) {
+            $(this)
+                .removeClass('btn-secondary')
+                .addClass('btn-danger')
+                .html('<i class="fas fa-times"></i> Hide Filters');
+        } else {
+            $(this)
+                .removeClass('btn-danger')
+                .addClass('btn-secondary')
+                .html('<i class="fas fa-filter"></i> Filters');
+        }
     });
 </script>
 

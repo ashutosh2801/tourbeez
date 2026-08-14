@@ -81,21 +81,64 @@
     outline: none !important;
 }
 
+.order-list-head .modern-search{
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+    height:45px;
+}
+
+.order-list-head .modern-search input{
+    flex:1;
+    border:none;
+    outline:none;
+    font-size:14px;
+}
+
+.order-list-head .modern-search button {
+    height: 100%;
+    border: none;
+    padding: 0 25px;
+    background: #8f97ab;
+    font-weight: 600;
+    transition: .25s;
+    color: #FFF;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+}
+
+.order-list-head .modern-search button:hover{
+    color: #fff;
+    background-color: #5a6268;
+}
+
     </style>
     @section('title', 'Orders List')
 
     <div class="card-primary mb-3">
         <div class="card-header order-list-head">
             <div class="row">
-                <div class="col-md-6 col-6">
+                <div class="col-md-5 col-6">
                     <form method="GET" action="{{ route('admin.orders.index') }}">
-                        <div class="search-options" style="display:flex">
-                            <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name/Email" value="{{ request('search') }}" style="margin-bottom:0">
-                            <button type="submit" class="btn btn-warning" style="width: 132px; margin-left: 5px;"> <i class="fas fa-search"></i> Search</button>
+                        <div class="modern-search">
+                            <input
+                                type="text"
+                                name="search"
+                                class="form-control"
+                                placeholder="Order # / Customer First / Last Name / Email"
+                                value="{{ request('search') }}"
+                            >
+                            <button type="submit" class="btn">
+                                <i class="fas fa-search fa-lg"></i>
+                            </button>
                         </div>
                     </form>
                 </div>
-                <div class="col-md-6 col-6">
+                <div class="col-md-7 col-6">
                     <div class="card-tools">
                         <button type="button" class="btn btn-secondary" id="toggleFilter">
                             <i class="fas fa-filter"></i> Filters

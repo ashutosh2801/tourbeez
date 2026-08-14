@@ -18,6 +18,10 @@
                 transform: translateY(0);
             }
         }
+        .tour-main-body .select2-container--default .select2-selection--single .select2-selection__clear {
+            height: auto !important;
+            margin-right: 10px;
+        }
     </style>
 
     <div class="card-primary mb-3">
@@ -43,20 +47,20 @@
                 <div class="card-header">
                     <div class="search-options">
                         <div class="row">
-                            <div class="col-md-2 col-6">
+                            <div class="col-md-4 col-6">
                                 <input type="text" name="search" class="form-control" placeholder="Search tour" value="{{ request('search') }}" />
                             </div>                        
                             <div class="col-md-2 col-6">
                                 <input placeholder="Date range" class="form-control datarange-pickur" type="text" />
                             </div>
-                            <div class="col-md-2 col-6">
+                            <div class="col-md-3 col-6">
                                 <select name="city" id="city-select" class="form-control">
                                     @if(request('city'))
                                         <option value="{{ request('city') }}" selected>{{ ucwords(optional(\App\Models\City::find(request('city')))->name) }}</option>
                                     @endif
                                 </select>
                             </div>
-                            <div class="col-md-2 col-6">
+                            <div class="col-md-3 col-6">
                                 <select name="category" id="category-select" class="form-control">
                                     @if(request('category'))
                                         <option value="{{ request('category') }}" selected>{{ ucwords(optional(\App\Models\Category::find(request('category')))->name) }}</option>
@@ -653,7 +657,6 @@ $(document).ready(function () {
     $('#city-select').select2({
         placeholder: 'Select a city',
         width: '100%',
-        dropdownParent: $('#filterSidebar'),
         minimumInputLength: 2,
 
         ajax: {
@@ -676,7 +679,6 @@ $(document).ready(function () {
     $('#category-select').select2({
         placeholder: 'Select a category',
         width: '100%',
-        dropdownParent: $('#filterSidebar'),
         minimumInputLength: 2,
         allowClear: true,
 

@@ -54,7 +54,7 @@
     </div>
 
     <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
-        <form method="GET">
+        <form method="GET" class="p-3">
             <div class="row">
                 {{-- ACTIVITY DATE --}}
                 <div class="col-xl-3 col-md-2 col-12 position-relative">
