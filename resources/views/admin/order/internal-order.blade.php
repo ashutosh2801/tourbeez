@@ -26,6 +26,57 @@
     border: 1px solid #ccc;
     border-radius: 4px;
 }
+
+/* Browser-independent increment/decrement controls for order quantities. */
+.order-quantity-control {
+    display: inline-flex;
+    align-items: stretch;
+    width: 88px;
+    height: 38px;
+}
+.order-quantity-input {
+    width: 60px !important;
+    min-width: 0;
+    height: 38px;
+    padding: 4px;
+    border-radius: .25rem 0 0 .25rem;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+.order-quantity-input::-webkit-inner-spin-button,
+.order-quantity-input::-webkit-outer-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+}
+.order-quantity-buttons {
+    display: flex;
+    flex: 0 0 28px;
+    flex-direction: column;
+}
+.order-quantity-step {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #ced4da;
+    border-left: 0;
+    background: #f8f9fa;
+    color: #495057;
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+}
+.order-quantity-step:first-child {
+    border-radius: 0 .25rem 0 0;
+}
+.order-quantity-step:last-child {
+    border-top: 0;
+    border-radius: 0 0 .25rem 0;
+}
+.order-quantity-step:hover {
+    background: #e2e6ea;
+}
 </style>
 
 @if ($errors->any())
@@ -58,30 +109,40 @@
             <!-- ================= Balance + Status ================= -->
             <div class="d-flex justify-content-between align-items-center rounded-lg-custom balance-bar border">
                 <div>
-                    <strong id="totalDue">0.00</strong>
-                    <small>Balance</small>
+                    <div><small>Balance</small></div>
+                    <strong id="totalDue" class="text-danger">0.00</strong>
                 </div>
                 
                 <div class="d-flex">
-                    <div class="input-group mr-2">
-                                <input type="text" 
-                                    class="aiz-date-range form-control tour_startdate_field"
-                                    id="order_date"
-                                    name="order_date"
-                                    placeholder="Order Date" 
-                                    data-format="ddd MMM DD, YYYY"
-                                    data-single="true"
-                                    autocomplete="off" 
-                                    data-show-dropdown="true" 
-                                    value="">
+                    @php $sources = source_list_db(); @endphp
+                    <select 
+                        name="source" 
+                        class="form-control mr-2">
+                        <option value="">Select source</option>  
+                        @foreach($sources as $source)
+                            <option @if($source->key === 'internal') selected @endif value="{{ $source->key }}">{{ $source->name }}</option>  
+                        @endforeach
+                    </select>
 
-                                <div class="input-group-append">
-                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                </div>
-                            </div>
-                            <!-- <div>
-                                <input type="text" class="tour_startdate_display border-0" readonly>
-                            </div> -->
+                    <div class="input-group mr-2">
+                        <input type="text" 
+                            class="aiz-date-range form-control tour_startdate_field"
+                            id="order_date"
+                            name="order_date"
+                            placeholder="Order Date" 
+                            data-format="ddd MMM DD, YYYY"
+                            data-single="true"
+                            autocomplete="off" 
+                            data-show-dropdown="true" 
+                            value="">
+
+                        <div class="input-group-append">
+                            <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                        </div>
+                    </div>
+                    <!-- <div>
+                        <input type="text" class="tour_startdate_display border-0" readonly>
+                    </div> -->
                    <select readonly name="currency" id="order_currency" class="form-control mr-2">
                         @foreach(config('constants.currencies') as $code => $country)
                             <option @if($code === 'CAD') selected @endif value="{{ $code }}">{{ $code }} - {{ $country }}</option> 
@@ -210,7 +271,8 @@
                             </table>
                             <div id="tour_details_0"></div>
                             <div id="tourContainer"></div>
-                            <button type="button" onclick="addTour()" class="btn btn-md btn-success px-5 mt-3">+ Add Tour</button>
+                            {{-- Temporarily hidden; keep addTour() available for re-enabling later. --}}
+                            <button type="button" onclick="addTour()" class="btn btn-md btn-success px-5 mt-3 d-none">+ Add Tour</button>
                         </div>
                     </div>
                 </div>
@@ -237,7 +299,7 @@
                             </div>
                         </div>
 
-                        <div class="card-body row">
+                        <?php /* <div class="card-body row">
                             <div class="col-12 col-md-6">
                                 <div><label for="customer">Select Source</label></div>
                                 @php
@@ -247,14 +309,15 @@
                                     name="source" 
                                     class="form-control col-12 col-md-6 aiz-selectpicker border">
                                     @foreach($sources as $source)
-                                        <option value="{{ $source->key }}">{{ $source->name }}</option>  
+                                        <option @if ($source->key ==='internal') selected                                     
+                                        @endif value="{{ $source->key }}">{{ $source->name }}</option>  
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-12 col-md-6">
                                 
                             </div>
-                        </div>
+                        </div> */ ?>
                     </div>
                 </div>
 
@@ -273,7 +336,8 @@
 
                         <div class="card-total p-3 mb-3" style="background: #edf3ff;">
                             Total: <b id="totalPayment">0.00</b>
-                            <input type="text" id="total_amount" class="form-control" readonly placeholder="0.00">
+                            <input type="hidden" id="total_amount" class="form-control" readonly placeholder="0.00">
+
                         </div>
                         <div class="card-body pt-0">
 
@@ -397,14 +461,25 @@
 
     
 let tourCount = 1;
+const availableTours = {{ Illuminate\Support\Js::from(
+    $tours->map(fn ($tour) => ['id' => $tour->id, 'title' => $tour->title])->values()
+) }};
+
+function escapeOptionText(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
 // ================= Tour Options =================
 function tourOptions() {
-    let options = '';
-    @foreach($tours as $tour)
-        options += `<option value="{{ $tour->id }}">{{ $tour->title }}</option>`;
-    @endforeach
-    return options;
+    return availableTours.map(function (tour) {
+        return '<option value="' + escapeOptionText(tour.id) + '">' +
+            escapeOptionText(tour.title) + '</option>';
+    }).join('');
 }
 
 function addTour(savedTourId = null, index = null, silentMode = false) {
@@ -461,7 +536,10 @@ function addTour(savedTourId = null, index = null, silentMode = false) {
 // ================= Remove Tour Row =================
 function removeTour(id) {
     const row = document.getElementById(id);
-    if(row) row.remove();
+    if(row) {
+        row.remove();
+        updateOrderGrandTotal();
+    }
 }
 
 // ================= Load Single Tour Details =================
@@ -539,9 +617,7 @@ function loadTourDetails(tourId, count) {
                     hideLoader();
 
                 }, 250);
-                $("input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']").each(function () {
-                    handleQtyInput.call(this);
-                });
+                calculateRowTotal($container.get(0));
 
             } else {
                 console.warn("Date input NOT FOUND for row:", count);
@@ -555,7 +631,7 @@ function loadTourDetails(tourId, count) {
 }
 
 function handleQtyInput() {
-    const row = this.closest("[id^='row_']");
+    const row = getTourCalculationContainer(this);
     calculateRowTotal(row);
 }
 
@@ -812,7 +888,30 @@ document.addEventListener("change", function(e){
 // =====================================================
 
 
+function getTourCalculationContainer(element) {
+    return element.closest("[id^='row_']")
+        || element.closest("[id^='tour_details_']");
+}
+
+function updateOrderGrandTotal() {
+    let total = 0;
+
+    document.querySelectorAll('.subtotal-box').forEach((box) => {
+        const rawTotal = box.dataset.rawTotal !== undefined
+            ? box.dataset.rawTotal
+            : box.textContent.replace(/,/g, '');
+        total += parseFloat(rawTotal) || 0;
+    });
+
+    document.getElementById("totalDue").innerText = total.toFixed(2);
+    document.getElementById("totalPayment").innerText = total.toFixed(2);
+    document.getElementById("total_amount").value = total.toFixed(2);
+    document.getElementById("addPaymentAmount").value = total.toFixed(2);
+}
+
 function calculateRowTotal(row) {
+
+    if (!row) return;
 
     let subtotal = 0;
     let withouttax = 0;
@@ -823,16 +922,19 @@ function calculateRowTotal(row) {
     row.querySelectorAll('input[name^="tour_pricing_qty_"]').forEach((qtyInput) => {
         let qty = parseFloat(qtyInput.value) || 0;
 
-        const priceInput = qtyInput.parentElement.querySelector(
+        const quantityCell = qtyInput.closest('td');
+        if (!quantityCell) return;
+
+        const priceInput = quantityCell.querySelector(
             'input[name^="tour_pricing_price_"]'
         );
 
-        const priceTypeInput = qtyInput.parentElement.querySelector(
+        const priceTypeInput = quantityCell.querySelector(
             'input[name^="tour_pricing_type_"]'
         );
 
-        const price = parseFloat(priceInput.value) || 0;
-        const priceType = priceTypeInput.value;
+        const price = parseFloat(priceInput ? priceInput.value : 0) || 0;
+        const priceType = priceTypeInput ? priceTypeInput.value : 'PER_PERSON';
 
         // -----------------------------------------
         // ADDITION: ENFORCE MIN/MAX IF FIXED
@@ -866,11 +968,14 @@ function calculateRowTotal(row) {
     row.querySelectorAll('input[name^="tour_extra_qty_"]').forEach((qtyInput) => {
         const qty = parseFloat(qtyInput.value) || 0;
 
-        const priceInput = qtyInput.parentElement.querySelector(
+        const quantityCell = qtyInput.closest('td');
+        if (!quantityCell) return;
+
+        const priceInput = quantityCell.querySelector(
             'input[name^="tour_extra_price_"]'
         );
 
-        const price = parseFloat(priceInput.value) || 0;
+        const price = parseFloat(priceInput ? priceInput.value : 0) || 0;
 
         subtotal += qty * price;
     });
@@ -881,8 +986,8 @@ function calculateRowTotal(row) {
     // 3) TAXES — read tax rows & recalc live
     // -----------------------------------------
     row.querySelectorAll('.tax-row').forEach((taxRow) => {
-        const feeType = taxRow.dataset.type;
-        const feeValue = parseFloat(taxRow.dataset.value);
+        const feeType = (taxRow.dataset.type || '').trim().toUpperCase();
+        const feeValue = parseFloat(taxRow.dataset.value) || 0;
 
         let tax = 0;
 
@@ -911,18 +1016,30 @@ function calculateRowTotal(row) {
     }
     const subtotalBox = row.querySelector('.subtotal-box');
     if (subtotalBox) {
-        document.getElementById("totalDue").innerText = subtotal.toFixed(2);
-        document.getElementById("totalPayment").innerText = subtotal.toFixed(2);
-        document.getElementById("addPaymentAmount").value = subtotal.toFixed(2);
+        subtotalBox.dataset.rawTotal = subtotal.toFixed(2);
         subtotalBox.textContent = subtotal.toFixed(2);
     }
+
+    updateOrderGrandTotal();
 }
 
 // =====================================================
 // EVENT LISTENERS — trigger on every quantity and extra change
 // =====================================================
+$(document).on("click", ".order-quantity-step", function () {
+    const input = this.closest(".order-quantity-control").querySelector(".order-quantity-input");
+
+    if (this.classList.contains("order-quantity-up")) {
+        input.stepUp();
+    } else {
+        input.stepDown();
+    }
+
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+
 $(document).on("input", "input[name^='tour_pricing_qty_'], input[name^='tour_extra_qty_']", function () {
-    const row = this.closest("[id^='row_']");
+    const row = getTourCalculationContainer(this);
     calculateRowTotal(row);
 });
 </script>

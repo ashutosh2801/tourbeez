@@ -45,9 +45,9 @@
                             @endphp
                             @foreach ($pickupOptions as $index => $option)  
                                 <div style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
-                                    <div class="row">
-                                        <div class="col-md-5">
-                                            <div class="form-group">
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-md-4">
                                                 <label for="pickup_location">Pickup location</label>
                                                 <input type="text" class="form-control" id="pickup_location" name="PickupLocations[{{ $index }}][location]"
                                                     placeholder="Enter pickup location" required value="{{ old('pickup_location') }}">
@@ -55,9 +55,7 @@
                                                     <small class="form-text text-danger">{{ $message }}</small>
                                                 @enderror
                                             </div>
-                                        </div>
-                                        <div class="col-md-5">
-                                            <div class="form-group">
+                                            <div class="col-md-4">
                                                 <label for="pickup_address">Pickup address</label>
                                                 <input type="text"  class="form-control autocomplete" id="pickup_address" name="PickupLocations[{{ $index }}][address]"
                                                 placeholder="Enter pickup address" required value="{{ old('pickup_address') }}">
@@ -79,6 +77,15 @@
                                                     @endfor
 
                                                 </select>
+                                                @error('pickup_time')
+                                                    <small class="form-text text-danger">{{ $message }}</small>
+                                                @enderror
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label for="pickup_time">Pickup charge</label>
+                                                <input type="text" class="form-control" id="pickup_charge" name="PickupLocations[{{ $index }}][pickup_charge]"
+                                                    placeholder="Pickup charge" required value="">
+
                                                 @error('pickup_time')
                                                     <small class="form-text text-danger">{{ $message }}</small>
                                                 @enderror
@@ -127,12 +134,12 @@ function addPickupLocation() {
         <div style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
             <div class="form-group">
                 <div class="row">
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <label for="pickup_location">Pickup location</label>
                         <input type="text" class="form-control" id="pickup_location" name="PickupLocations[${pickupLocationCount}][location]"
                             placeholder="Enter pickup location" required value="">
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <label for="pickup_address">Pickup address</label>
                         <input type="text"  class="form-control autocomplete" id="pickup_address" name="PickupLocations[${pickupLocationCount}][address]"
                             placeholder="Enter pickup address" required value="">
@@ -151,6 +158,15 @@ function addPickupLocation() {
                                 @endforeach
                             @endfor
                         </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="pickup_time">Pickup charge</label>
+                        <input type="text" class="form-control" id="pickup_charge" name="PickupLocations[{{ $index }}][pickup_charge]"
+                            placeholder="Pickup charge" required value="">
+
+                        @error('pickup_time')
+                            <small class="form-text text-danger">{{ $message }}</small>
+                        @enderror
                     </div>
                 </div>
             </div>
@@ -176,8 +192,7 @@ function removePickupLocation(id) {
 }
 
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&libraries=places" async
-  defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&libraries=places"></script>
 
 
 <script>

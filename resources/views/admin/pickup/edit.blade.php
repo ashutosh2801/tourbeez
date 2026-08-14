@@ -35,52 +35,67 @@
                             <input type="text" class="form-control" id="name" name="name"
                                 placeholder="Enter pickup name" required value="{{ old('name') ?? $data->name }}">
                         </div>
-                        @error('name')
-                            <small class="form-text text-danger">{{ $message }}</small>
-                        @enderror
-                        
-                        <div id="pickupLocationContainer">
-                        @php
-                        $pickupLocations = old('PickupLocations', $data->locations->map(function ($item) {
-                                            return [
-                                                'id'         => $item->id,
-                                                'location'   => $item->location,
-                                                'address'    => $item->address,
-                                                'time'       => $item->time,
-                                                'additional' => $item->additional,
-                                            ];
-                                        })->toArray());
-                        
-                        $count = count($pickupLocations);
-                        if($count == 0){
-                            $pickupLocations = [ ['id' => '', 'location' => '', 'address' => '', 'time' => '', 'additional' => ''] ];
-                            $count = 1;
-                        }
-                        @endphp
-                        @foreach ($pickupLocations as $index => $option)
+                    @endif
+                    <form class="needs-validation" novalidate action="{{ route('admin.pickups.update', encrypt($data->id)) }}" 
+                    method="POST" enctype="multipart/form-data">
+                        @method('PUT')
+                        @csrf
+                        <div class="card-body">
+                            <div class="form-group mb-10">
+                                <label for="name">Pickup name</label>
+                                <input type="text" class="form-control" id="name" name="name"
+                                    placeholder="Enter pickup name" required value="{{ old('name') ?? $data->name }}">
+                            </div>
+                            @error('name')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                            
+                            <div id="pickupLocationContainer">
+                            @php
+                            $pickupLocations = old('PickupLocations', $data->locations->map(function ($item) {
+                                                return [
+                                                    'id'         => $item->id,
+                                                    'location'   => $item->location,
+                                                    'address'    => $item->address,
+                                                    'time'       => $item->time,
+                                                    'pickup_charge'       => $item->pickup_charge,
+                                                    'additional' => $item->additional,
+                                                ];
+                                            })->toArray());
+                            
+                            $count = count($pickupLocations);
+                            if($count == 0){
+                                $pickupLocations = [ ['id' => '', 'location' => '', 'address' => '', 'time' => '', 'pickup_charge' => '', 'additional' => ''] ];
+                                $count = 1;
+                            }
+                            @endphp
+                            @foreach ($pickupLocations as $index => $option)
 
                         <input type="hidden" name="PickupLocations[{{ $index }}][id]" id="PickupLocations_id" 
                         value="{{ old("PickupLocations.$index.id", $option['id'] ?? '') }}" class="form-control" />
 
-                        <div style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
-                            <div class="form-group">
-                                <div class="row">
-                                    <div class="col-md-5">
-                                        <label for="pickup_location">Pickup location </label>
-                                        <input type="text" class="form-control" id="pickup_location" name="PickupLocations[{{ $index }}][location]"
-                                            placeholder="Enter pickup location" required value="{{ old("PickupLocations.$index.location", $option['location']) }}">
-                                        @error("PickupLocations.$index.location")
-                                            <small class="form-text text-danger">{{ $message }}</small>
-                                        @enderror
-                                    </div>
-                                    <div class="col-md-5">
-                                        <label for="pickup_address">Pickup address</label>
-                                        <input type="text"  class="form-control autocomplete" id="pickup_address" name="PickupLocations[{{ $index }}][address]"
-                                            placeholder="Enter pickup address" required value="{{ old("PickupLocations.$index.address", $option['address']) }}">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label for="pickup_time">Pickup time</label>
-                                        <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="PickupLocations[{{ $index }}][time]">
+                            <div style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
+                                <div class="form-group">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label for="pickup_location">Pickup location </label>
+                                            <input type="text" class="form-control" id="pickup_location" name="PickupLocations[{{ $index }}][location]"
+                                                placeholder="Enter pickup location" required value="{{ old("PickupLocations.$index.location", $option['location']) }}">
+                                            @error("PickupLocations.$index.location")
+                                                <small class="form-text text-danger">{{ $message }}</small>
+                                            @enderror
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="pickup_address">Pickup address</label>
+                                            <input type="text"  class="form-control autocomplete" id="pickup_address" name="PickupLocations[{{ $index }}][address]"
+                                                placeholder="Enter pickup address" required value="{{ old("PickupLocations.$index.address", $option['address']) }}">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="pickup_time">Pickup time</label>
+                                            <select class="form-control aiz-selectpicker"
+                                                data-live-search="true"
+                                                id="pickup_time"
+                                                name="PickupLocations[{{ $index }}][time]">
 
                                             <option value="">Select one</option>
 
@@ -102,7 +117,16 @@
                                                 @endfor
                                             @endfor
 
-                                        </select>
+                                            </select>
+
+                                            @error('pickup_time')
+                                                <small class="form-text text-danger">{{ $message }}</small>
+                                            @enderror
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="pickup_time">Pickup charge</label>
+                                            <input type="text" class="form-control" id="pickup_charge" name="PickupLocations[{{ $index }}][pickup_charge]"
+                                                placeholder="Pickup charge" required value="{{ old("PickupLocations.$index.pickup_charge", $option['pickup_charge']) }}">
 
                                         @error('pickup_time')
                                             <small class="form-text text-danger">{{ $message }}</small>

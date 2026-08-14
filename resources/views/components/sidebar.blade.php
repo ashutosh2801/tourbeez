@@ -3,11 +3,36 @@
 
 <nav class="mt-2">
 
+    @php
+        $dashboardMenuActive = Route::is('admin.dashboard', 'admin.report.tour-wise', 'admin.report.comparison');
+        $inventoryMenuActive = Route::is(
+            'admin.tour.*', 'admin.addon.*', 'admin.category.*', 'admin.pickups.*',
+            'admin.tour_type.*', 'admin.promos.*', 'admin.vouchers.*',
+            'admin.countries.*', 'admin.states.*', 'admin.cities.*', 'admin.partners.*'
+        );
+        $ordersMenuActive = (Route::is('admin.orders.*') || Route::is('admin.order.*'))
+            && !Route::is('admin.orders.*manifest*');
+        $manifestMenuActive = Route::is(
+            'admin.orders.manifest*', 'admin.orders.tour.manifest*',
+            'admin.driver.manifest*', 'admin.vehicle.manifest*', 'admin.orders.vehicle.manifest*'
+        );
+        $reportsMenuActive = Route::is('admin.report.*') && !$dashboardMenuActive;
+        $appearanceMenuActive = Route::is(
+            'admin.customers.*', 'admin.supplier.*', 'admin.driver.*', 'admin.user.*',
+            'admin.vehicles.*', 'admin.role.*', 'admin.permission.*'
+        ) && !$manifestMenuActive;
+        $settingsMenuActive = Route::is(
+            'admin.general_settings', 'admin.payment_method_settings', 'admin.third_party_settings',
+            'admin.smtp_settings', 'admin.email_settings', 'admin.email-templates.*',
+            'admin.languages.*', 'admin.currencies.*', 'admin.taxes.*', 'admin.banner.*'
+        );
+    @endphp
+
     <ul class="nav nav-pills nav-sidebar flex-column aiz-side-nav-list" data-toggle="aiz-side-menu" data-widget="treeview" role="menu" data-accordion="false">
         @can('dashboard')
         <li class="nav-item">
             
-            <a href="javascript:void(0);" class="nav-link">
+            <a href="javascript:void(0);" class="nav-link {{ $dashboardMenuActive ? 'active' : '' }}">
                 <i class="nav-icon fas fa-tachometer-alt"></i>
                 <p>{{  translate('Dashboard') }}
                     <span class="aiz-side-nav-arrow right"></span>
@@ -39,8 +64,8 @@
         </li>
         @endcan
         @can('show_tours')       
-        <li class="nav-item">
-            <a href="javascript:void(0);" class="nav-link">
+        <li class="nav-item {{ $inventoryMenuActive ? 'menu-open' : '' }}">
+            <a href="javascript:void(0);" class="nav-link {{ $inventoryMenuActive ? 'active' : '' }}">
                 <i class="nav-icon fas fa-taxi"></i>
                 <p>{{  translate('Inventory') }}
                     <span class="aiz-side-nav-arrow right"></span>
@@ -50,7 +75,7 @@
             <ul class="aiz-side-nav-list level-2">
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.tour.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.tour.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.tour.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-map-signs"></i>
                         <p>{{  translate('Tours') }}
                             <span class="badge badge-warning right">{{ $TourCount }}</span>
@@ -60,7 +85,7 @@
                 @can('show_addons')  
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.addon.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.addon.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.addon.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-umbrella-beach"></i>
                         <p>{{  translate('Extra ') }}
                             <span class="badge badge-warning right">{{ $AddonCount }}</span>
@@ -71,7 +96,7 @@
                 @can('show_categories')  
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.category.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.category.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.category.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fas fa-th"></i>
                         <p>{{  translate('Categories') }}
                             <span class="badge badge-warning right">{{ $CategoryCount }}</span>
@@ -82,7 +107,7 @@
                 @can('show_pickups') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.pickups.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.pickups.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.pickups.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-suitcase-rolling"></i>
                         <p>{{  translate('Pickups') }}
                             <span class="badge badge-warning right">{{ $PickupCount }}</span>
@@ -93,7 +118,7 @@
                 @can('show_tourtypes') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.tour_type.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.tour_type.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.tour_type.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-cannabis"></i>
                         <p>{{  translate('Tour Types') }}
                             <span class="badge badge-warning right">{{ $TourTypeCount }}</span>
@@ -105,7 +130,7 @@
                 @can('show_promos') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.promos.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.promos.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.promos.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-atom"></i>
                         <p>{{  translate('Promo Code') }}
                             <span class="badge badge-warning right">{{ $TourTypeCount }}</span>
@@ -118,7 +143,7 @@
                 @can('show_vouchers') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.vouchers.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.vouchers.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.vouchers.*') ? 'active' : '' }}">
                         <i class="nav-icon fab fa-codepen"></i>
                         <p>{{  translate('Vouchers Code') }}
                             <span class="badge badge-warning right">{{ $TourTypeCount }}</span>
@@ -129,8 +154,8 @@
 
 
                 @can('show_attributes') 
-                <li class="aiz-side-nav-item">
-                    <a href="javascript:void(0);" class="aiz-side-nav-link nav-link">
+                <li class="aiz-side-nav-item {{ Route::is('admin.countries.*', 'admin.states.*', 'admin.cities.*') ? 'menu-open' : '' }}">
+                    <a href="javascript:void(0);" class="aiz-side-nav-link nav-link {{ Route::is('admin.countries.*', 'admin.states.*', 'admin.cities.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-magic"></i>
                         <p>{{  translate('Attributes') }}
                             <span class="aiz-side-nav-arrow right"></span>
@@ -141,7 +166,7 @@
                     <ul class="aiz-side-nav-list level-3">
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('admin.countries.index') }}"
-                                class="aiz-side-nav-link nav-link {{ Route::is('admin.countries.index') ? 'active' : '' }}">
+                                class="aiz-side-nav-link nav-link {{ Route::is('admin.countries.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-globe-europe"></i>
                                 <p>{{  translate('Countries') }}
                                     <span class="badge badge-warning right">{{ $CountryCount }}</span>
@@ -150,7 +175,7 @@
                         </li>
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('admin.states.index') }}"
-                                class="aiz-side-nav-link nav-link {{ Route::is('admin.states.index') ? 'active' : '' }}">
+                                class="aiz-side-nav-link nav-link {{ Route::is('admin.states.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-flag"></i>
                                 <p>{{  translate('States') }}
                                     <span class="badge badge-warning right">{{ $StateCount }}</span>
@@ -159,7 +184,7 @@
                         </li>
                         <li class="aiz-side-nav-item">
                             <a href="{{ route('admin.cities.index') }}"
-                                class="aiz-side-nav-link nav-link {{ Route::is('admin.cities.index') ? 'active' : '' }}">
+                                class="aiz-side-nav-link nav-link {{ Route::is('admin.cities.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-city"></i>
                                 <p>{{  translate('Cities') }}
                                     <span class="badge badge-warning right">{{ $CityCount }}</span>
@@ -173,7 +198,7 @@
                 @can('show_partners') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.partners.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.partners.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.partners.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-handshake"></i>
                         <p>{{  translate('Partners') }}
                             <span class="badge badge-warning right">{{ $partnerCount }}</span>
@@ -187,7 +212,7 @@
         @can('show_orders') 
         <li class="nav-item">
             <a href="{{ route('admin.orders.index') }}"
-                class="nav-link {{ areActiveRoutes(['uploaded-files.create']) }}">
+                class="nav-link {{ $ordersMenuActive ? 'active' : '' }}">
                 <i class="nav-icon fas fa-file"></i>
                 <p>{{ translate('Orders') }}</p>
             </a>
@@ -206,7 +231,7 @@
             <ul class="aiz-side-nav-list level-2">
                 <li class="nav-item">
                     <a href="{{ route('admin.orders.manifest') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.manifest') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.manifest*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-tasks"></i>
                         <p>{{ translate('Order Manifest') }}</p>
                     </a>
@@ -214,21 +239,25 @@
 
                 <li class="aiz-side-nav-list">
                     <a href="{{ route('admin.orders.tour.manifest') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.tour.manifest') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.tour.manifest*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-tasks"></i>
                         <p>{{ translate('Tour Manifest') }}</p>
                     </a>
                 </li>
                 <li class="aiz-side-nav-list">
                     <a href="{{ route('admin.driver.manifest') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.tour.manifest') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.driver.manifest*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-tasks"></i>
                         <p>{{ translate('Driver Manifest') }}</p>
                     </a>
                 </li>
-                <div class="sidebar-calendar">
-                    <div id="calendar"></div>
-                </div>
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.vehicle.manifest') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.vehicle.manifest') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-tasks"></i>
+                        <p>{{ translate('Vehicle Manifest') }}</p>
+                    </a>
+                </li>
             </ul>
         </li>
         @endcan
@@ -245,7 +274,7 @@
             <ul class="aiz-side-nav-list level-2">
                 <li class="nav-item">
                     <a href="{{ route('admin.report.overview') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.overview') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.overview*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-chart-pie"></i>
                         <p>{{ translate('Overview') }} </p>
                     </a>
@@ -253,7 +282,7 @@
 
                 <li class="aiz-side-nav-list">
                     <a href="{{ route('admin.report.revenue') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.revenue') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.revenue*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-dollar-sign"></i>
                         <p>{{ translate('Revenue ') }}</p>
                     </a>
@@ -282,7 +311,7 @@
                 </li> -->
                 <li class="aiz-side-nav-list">
                     <a href="{{ route('admin.report.price_schedule') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.price_schedule') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.price_schedule*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-file-invoice-dollar"></i>
                         <p>{{ translate('Invoice') }}</p>
                     </a>
@@ -295,8 +324,8 @@
         @endcan
           
         @can('show_users')  
-        <li class="nav-item">
-            <a href="javascript:void(0);" class="nav-link">
+        <li class="nav-item {{ $appearanceMenuActive ? 'menu-open' : '' }}">
+            <a href="javascript:void(0);" class="nav-link {{ $appearanceMenuActive ? 'active' : '' }}">
                 <i class="nav-icon fas fa-user-cog"></i>
                 <p>{{ translate('Appearance')}}
                     <span class="aiz-side-nav-arrow right"></span>
@@ -307,7 +336,7 @@
                 @can('show_customers') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.customers.index') }}"
-                        class="aiz-side-nav-link nav-link {{ areActiveRoutes(['customers.index']) }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.customers.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user"></i>
                         <p>{{ translate('Customers') }} 
                             <span class="badge badge-warning right">{{ $customerCount }}</span>
@@ -318,7 +347,7 @@
                 @can('show_suppliers')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.supplier.index') }}"
-                        class="aiz-side-nav-link nav-link {{ areActiveRoutes(['customers.index']) }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.supplier.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user"></i>
                         <p>{{ translate('Suppliers') }} 
                             <span class="badge badge-warning right">{{ $supplierCount }}</span>
@@ -329,7 +358,7 @@
                 @can('show_drivers') 
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.driver.index') }}"
-                        class="aiz-side-nav-link nav-link {{ areActiveRoutes(['customers.index']) }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.driver.*') && !$manifestMenuActive ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user"></i>
                         <p>{{ translate('Driver') }} 
                             <span class="badge badge-warning right">{{ $driverCount }}</span>
@@ -340,7 +369,7 @@
                 @can('show_users')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.user.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.user.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.user.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user"></i>
                         <p>{{ translate('Staff')}}
                             <span class="badge badge-warning right">{{ $excludedUsers }}</span>
@@ -351,7 +380,7 @@
                 @can('show_vehicles')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.vehicles.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.vehicles.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.vehicles.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-car"></i>
                         <p>{{ translate('Vehicles')}}
                             <span class="badge badge-warning right">{{ $vehicleCount }}</span>
@@ -364,7 +393,7 @@
                 @can('show_roles')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.role.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.role.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.role.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-user-tag"></i>
                         <p>Role
                             <span class="badge badge-warning right">{{ $RoleCount }}</span>
@@ -375,7 +404,7 @@
                 @can('show_permissions')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.permission.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.permission.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.permission.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-hat-cowboy"></i>
                         <p>{{ translate('Permission') }}
                             <span class="badge badge-warning right">{{ $PermissionCount }}</span>
@@ -391,7 +420,7 @@
         @can('show_business_expenses') 
         <li class="nav-item">
             <a href="{{ route('admin.business-expenses.index') }}"
-                class="nav-link {{ areActiveRoutes(['admin.business-expenses.index', 'admin.business-expenses.create']) }}">
+                class="nav-link {{ Route::is('admin.business-expenses.*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-money-bill-wave"></i>
                 <p>{{ translate('Bussiness Expenses') }}</p>
             </a>
@@ -401,7 +430,7 @@
         @can('show_gallery') 
         <li class="nav-item">
             <a href="{{ route('admin.tour-gallery.index') }}"
-                class="nav-link {{ areActiveRoutes(['admin.tour-gallery.index']) }}">
+                class="nav-link {{ Route::is('admin.tour-gallery.*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-images"></i>
                 <p>{{ translate("Client's Gallery") }}</p>
             </a>
@@ -411,15 +440,15 @@
         @can('show_medias')
             <li class="nav-item">
                 <a href="{{ route('admin.uploaded-files.index') }}"
-                    class="nav-link {{ areActiveRoutes(['uploaded-files.create']) }}">
+                    class="nav-link {{ Route::is('admin.uploaded-files.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-photo-video"></i>
                     <p>{{ translate('Media') }}</p>
                 </a>
             </li>
         @endcan   
         @can('general_settings')
-        <li class="nav-item">
-            <a href="javascript:void(0);" class="nav-link">
+        <li class="nav-item {{ $settingsMenuActive ? 'menu-open' : '' }}">
+            <a href="javascript:void(0);" class="nav-link {{ $settingsMenuActive ? 'active' : '' }}">
                 <i class="nav-icon fas fa-cogs"></i>
                 <p>{{ translate('Settings') }}
                     <span class="aiz-side-nav-arrow right"></span>
@@ -429,7 +458,7 @@
             <ul class="aiz-side-nav-list level-2">
                 @can('general_settings')
                 <li class="aiz-side-nav-item">
-                    <a href="{{ route('admin.general_settings') }}" class="aiz-side-nav-link nav-link">
+                    <a href="{{ route('admin.general_settings') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.general_settings') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-sliders-h"></i>
                         <span class="aiz-side-nav-text">{{ translate('General Settings') }}</span>
                     </a>
@@ -437,7 +466,7 @@
                 @endcan   
                 @can('payment_settings')
                 <li class="aiz-side-nav-item">
-                    <a href="{{ route('admin.payment_method_settings') }}" class="aiz-side-nav-link nav-link">
+                    <a href="{{ route('admin.payment_method_settings') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.payment_method_settings') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-money-check"></i>
                         <span class="aiz-side-nav-text">{{ translate('Payment Settings') }}</span>
                     </a>
@@ -445,7 +474,7 @@
                 @endcan 
                 @can('third_party_settings')
                 <li class="aiz-side-nav-item">
-                    <a href="{{ route('admin.third_party_settings') }}" class="aiz-side-nav-link nav-link">
+                    <a href="{{ route('admin.third_party_settings') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.third_party_settings') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-toolbox"></i>
                         <span class="aiz-side-nav-text">{{ translate('Third Party Settings') }}</span>
                     </a>
@@ -453,7 +482,7 @@
                 @endcan
                 @can('smtp_settings')
                 <li class="aiz-side-nav-item">
-                    <a href="{{ route('admin.email_settings') }}" class="aiz-side-nav-link nav-link">
+                    <a href="{{ route('admin.email_settings') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.email_settings') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-inbox"></i>
                         <span class="aiz-side-nav-text">{{ translate('Mail Settings') }}</span>
                     </a>
@@ -461,7 +490,7 @@
                 @endcan   
                 @can('email_templates')
                 <li class="aiz-side-nav-item">
-                    <a href="{{ route('admin.email-templates.index') }}" class="aiz-side-nav-link nav-link">
+                    <a href="{{ route('admin.email-templates.index') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.email-templates.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-envelope-open-text"></i>
                         <span class="aiz-side-nav-text">{{ translate('Email Templates') }}</span>
                     </a>
@@ -470,7 +499,7 @@
                 @can('show_taxes')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.taxes.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.taxes.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.taxes.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-file-invoice-dollar"></i>
                         <p>{{  translate('Taxes and Fees') }}
                             <span class="badge badge-warning right">{{ $TaxesCount }}</span>
@@ -481,7 +510,7 @@
                  @can('show_banners')
                 <li class="aiz-side-nav-item">
                     <a href="{{ route('admin.banner.index') }}"
-                        class="aiz-side-nav-link nav-link {{ Route::is('admin.banner.index') ? 'active' : '' }}">
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.banner.*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-image"></i>
                         <p>{{  translate('Banner') }}
                             <!-- <span class="badge badge-warning right">{{ $TaxesCount }}</span> -->
@@ -494,7 +523,7 @@
         @endcan   
         @can('show_contacts')
         <li class="nav-item">
-            <a href="{{ route('admin.contacts.index') }}" class="nav-link {{ Route::is('admin.contacts.index') ? 'active' : '' }}">
+            <a href="{{ route('admin.contacts.index') }}" class="nav-link {{ Route::is('admin.contacts.*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-phone-alt"></i>
                 <p>Contacts</p>
             </a>

@@ -35,6 +35,7 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/home-listing',[CommonController::class,'home_listing']);
     Route::get('/popular-cities',[CommonController::class,'popular_cities']);
     Route::get('/popular-destinations',[CommonController::class,'popular_destinations']);
+    Route::get('/destinations',[CommonController::class,'destinations']);
     Route::get('/single-city/{id}',[CommonController::class,'single_city']);
     Route::post('/contact',[CommonController::class,'contact']);
     Route::post('/careers',[CommonController::class,'careers']);

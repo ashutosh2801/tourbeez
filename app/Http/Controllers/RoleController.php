@@ -47,6 +47,7 @@ class RoleController extends Controller
             abort(403, 'SUPER ADMIN ROLE CAN NOT BE EDITED');
         }
 
+
         $permissions = Permission::all();
         $rolePermissions = DB::table("role_has_permissions")->where("role_id",$data->id)
             ->pluck('permission_id')
@@ -68,6 +69,8 @@ class RoleController extends Controller
             $permissions = Permission::whereIn('id', $request->permissions)->get(['name'])->toArray();
 
             $role->syncPermissions($permissions);
+        } else {
+            $role->syncPermissions([]);
         }
 
         

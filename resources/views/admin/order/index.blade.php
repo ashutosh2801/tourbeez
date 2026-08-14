@@ -3,10 +3,42 @@
         .text-orange {
             color: #fd7e14;
         }
-        .filter-panel {
-            display: none;
-            animation: fadeSlide 0.3s ease-in-out;
+        .text-dark-orange {
+            color: #b54708 !important;
         }
+        .filter-panel {
+            display: block;
+        }
+
+        .order-filter-panel{padding:20px;border-bottom:1px solid #e5e7eb;background:linear-gradient(180deg,#f8fafc 0%,#fff 100%);}
+        .order-filter-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;}
+        .order-filter-heading h5{margin:0 0 3px;color:#172033;font-size:17px;font-weight:700;}
+        .order-filter-heading p{margin:0;color:#6b7280;font-size:13px;}
+        .order-filter-heading-actions{display:flex;align-items:center;gap:9px;}
+        .order-filter-count{padding:5px 10px;border-radius:999px;background:#e0e7ff;color:#3730a3;font-size:12px;font-weight:600;white-space:nowrap;}
+        .order-filter-toggle{height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border:1px solid #c7d2fe;border-radius:7px;background:#fff;color:#4338ca;font-size:13px;font-weight:600;}
+        .order-filter-toggle .fa-chevron-down{font-size:10px;transition:transform .2s ease;}
+        .order-filter-panel.is-expanded .order-filter-toggle .fa-chevron-down{transform:rotate(180deg);}
+        .order-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+        .order-filter-field{min-width:0;}
+        .order-filter-field--search{grid-column:span 2;}
+        .order-filter-field label{display:block;margin:0 0 6px;color:#374151;font-size:12px;font-weight:600;}
+        .order-filter-field .form-control{min-height:40px;border-color:#d7dce3;border-radius:7px;background:#fff;font-size:13px;}
+        .order-filter-panel:not(.is-expanded) .order-filter-field--advanced{display:none;}
+        .order-filter-panel:not(.is-expanded) .order-filter-field--search{grid-column:span 4;}
+        .order-search-inline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch;}
+        .order-search-wrap{position:relative;}
+        .order-search-wrap>i{position:absolute;top:50%;left:13px;color:#9ca3af;transform:translateY(-50%);z-index:1;}
+        .order-search-wrap .form-control{padding-left:37px;}
+        .order-search-submit{display:none;min-width:120px;height:40px;align-items:center;justify-content:center;gap:7px;border:1px solid #4f46e5;border-radius:7px;background:#4f46e5;color:#fff;font-size:13px;font-weight:600;}
+        .order-filter-panel:not(.is-expanded) .order-search-submit{display:inline-flex;}
+        .order-filter-panel.is-expanded .order-search-inline{display:block;}
+        .order-filter-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb;}
+        .order-filter-actions .btn{height:40px;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:120px;border-radius:7px;font-size:13px;font-weight:600;}
+        .order-filter-panel:not(.is-expanded) .order-filter-actions{display:none;}
+        .order-filter-apply{border-color:#4f46e5!important;background:#4f46e5!important;color:#fff!important;}
+        @media(max-width:991.98px){.order-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+        @media(max-width:575.98px){.order-filter-panel{padding:16px}.order-filter-heading{display:block}.order-filter-heading-actions{margin-top:10px;justify-content:space-between}.order-filter-grid{grid-template-columns:1fr}.order-filter-field--search,.order-filter-panel:not(.is-expanded) .order-filter-field--search{grid-column:span 1}.order-search-submit{min-width:100px}.order-filter-actions{flex-direction:column-reverse}.order-filter-actions .btn{width:100%}}
 
         @keyframes fadeSlide {
             from {
@@ -152,16 +184,45 @@
     <div class="order-list-body card rounded-lg-custom border">
         @php
             $statuses = config('constants.status_with_code');
+            $advancedOrderFilterKeys = ['product', 'exclude_product', 'payment_status', 'order_status', 'tour_start_date', 'order_created_date', 'source', 'excluded_source'];
+            $activeOrderFilterCount = collect(['search', ...$advancedOrderFilterKeys])->filter(function ($key) {
+                $value = request($key);
+                return is_array($value) ? count(array_filter($value)) > 0 : request()->filled($key);
+            })->count();
+            $advancedOrderFiltersActive = collect($advancedOrderFilterKeys)->contains(function ($key) {
+                $value = request($key);
+                return is_array($value) ? count(array_filter($value)) > 0 : request()->filled($key);
+            });
         @endphp
 
         {{-- Filter/Search Form --}}
         <form method="GET" action="{{ route('admin.orders.index') }}">
-            <div class="filter-panel" id="filterPanel">
-                <div class="card-header">
+            <div class="filter-panel order-filter-panel {{ $advancedOrderFiltersActive ? 'is-expanded' : '' }}" id="filterPanel">
+                <div class="order-filter-heading">
+                    <div>
+                        <h5><i class="fas fa-sliders-h mr-2 text-primary"></i>Find orders</h5>
+                        <p>Search by order number or customer, then narrow the results with filters.</p>
+                    </div>
+                    <div class="order-filter-heading-actions">
+                        @if($activeOrderFilterCount)
+                            <span class="order-filter-count">{{ $activeOrderFilterCount }} active {{ Str::plural('filter', $activeOrderFilterCount) }}</span>
+                        @endif
+                        <button type="button" class="order-filter-toggle" id="toggleFilter" aria-expanded="{{ $advancedOrderFiltersActive ? 'true' : 'false' }}">
+                            <i class="fas fa-filter"></i> Filters <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
                     <div class="search-options">
-                        <div class="row">
-                            <div class="col-md-4 col-6">
-                                <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name/Email" value="{{ request('search') }}">
+                        <div class="order-filter-grid">
+                            <div class="order-filter-field order-filter-field--search">
+                                <label for="order-search">Order or customer</label>
+                                <div class="order-search-inline">
+                                    <div class="order-search-wrap">
+                                        <i class="fas fa-search"></i>
+                                        <input id="order-search" type="search" name="search" class="form-control" placeholder="Order #, customer name or email" value="{{ request('search') }}">
+                                    </div>
+                                    <button type="submit" class="order-search-submit"><i class="fas fa-search"></i> Apply filters</button>
+                                </div>
                             </div>
                             <!-- <div class="col-md-4 col-6">
                                 <select name="product" class="form-control aiz-selectpicker" data-live-search="true">
@@ -171,29 +232,33 @@
                                     @endforeach
                                 </select>
                             </div> -->
-                            <div class="col-md-4 col-6">
+                            <div class="order-filter-field order-filter-field--advanced">
+                                <label for="productFilter">Include tours</label>
                                 <select id="productFilter" name="product[]" class="form-control" multiple>
                                     @foreach($selectedProducts as $sp)
                                         <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-4 col-6">
+                            <div class="order-filter-field order-filter-field--advanced">
+                                <label for="excludeProductFilter">Exclude tours</label>
                                 <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
                                     @foreach($excludedProducts as $ep)
                                         <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-2 col-6">
-                                <select name="payment_status" class="form-control" >
+                            <div class="order-filter-field order-filter-field--advanced">
+                                <label for="payment-status">Payment status</label>
+                                <select id="payment-status" name="payment_status" class="form-control" >
                                     <option value="">Payment Status</option>
                                     <option value="1" {{ request('payment_status') === '1' ? 'selected' : '' }}>Paid</option>
                                     <option value="0" {{ request('payment_status') === '0' ? 'selected' : '' }}>Unpaid</option>
                                 </select>
                             </div>
-                            <div class="col-md-2 col-6">
-                                <select name="order_status" class="form-control" >
+                            <div class="order-filter-field order-filter-field--advanced">
+                                <label for="order-status">Order status</label>
+                                <select id="order-status" name="order_status" class="form-control" >
                                     <option value="">Order Status</option>
                                     @foreach ($statuses as $key => $label)
                                     <option value="{{ $key }}" {{ request('order_status') == $key ? 'selected' : '' }}>{{ $label }}</option>
@@ -201,8 +266,10 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-2 col-6"> 
+                            <div class="order-filter-field order-filter-field--advanced">
+                                <label for="tour-start-date">Tour date</label>
                                 <input 
+                                    id="tour-start-date"
                                     type="text" 
                                     name="tour_start_date" 
                                     class="form-control aiz-date-range" 
@@ -218,8 +285,10 @@
                                 >
                             </div> 
 
-                            <div class="col-md-2 col-6"> 
+                            <div class="order-filter-field order-filter-field--advanced">
+                                <label for="order-created-date">Order created</label>
                                 <input 
+                                    id="order-created-date"
                                     type="text" 
                                     name="order_created_date" 
                                     class="form-control aiz-date-range" data-advanced-range="true" data-separator=" - " data-show-dropdown="true"
@@ -258,8 +327,9 @@
                                 </select>
                             </div> */ ?>
 
-                            <div class="col-md-2 col-6">
-                                <select name="source" class="form-control">
+                            <div class="order-filter-field order-filter-field--advanced">
+                                <label for="order-source">Source</label>
+                                <select id="order-source" name="source" class="form-control">
                                     <option value="">Source</option>
 
                                     @foreach (source_list_db() as $source)
@@ -269,11 +339,24 @@
                                         </option>
                                     @endforeach
 
+
+                                </select>
+                            </div>
+                            <div class="order-filter-field order-filter-field--advanced">
+                                <label for="excluded-source">Exclude sources</label>
+                                <select id="excluded-source" name="excluded_source[]" class="form-control aiz-selectpicker" multiple>
+                                    @foreach (source_list_db() as $source)
+                                        <option value="{{ $source->key }}"
+                                            {{ in_array($source->key, (array) request('excluded_source', [])) ? 'selected' : '' }}>
+                                            {{ $source->name }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
 
-                            <div class="col-md-2 col-6">
-                                <select name="per_page" class="form-control">
+                            <div class="order-filter-field order-filter-field--advanced">
+                                <label for="orders-per-page">Results per page</label>
+                                <select id="orders-per-page" name="per_page" class="form-control">
                                     @foreach ([10, 25, 50, 100, 500] as $number)
                                         <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
                                             {{ $number }} per page
@@ -282,15 +365,12 @@
                                 </select>
                             </div>
                                 
-                            <div class="col-md-2 col-6">
-                                <button type="submit" class="btn btn-search"> <i class="fas fa-search"></i> Search</button>
-                            </div>
-                            <div class="col-md-2 col-6">
-                                <a href="{{ route('admin.orders.index') }}" class="btn btn-clear" > <i class="fas fa-times"></i> Clear Search</a>
-                            </div>
                         </div>
                     </div>
-                </div>
+                    <div class="order-filter-actions">
+                        <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary"><i class="fas fa-undo-alt"></i> Reset filters</a>
+                        <button type="submit" class="btn order-filter-apply"><i class="fas fa-search"></i> Apply filters</button>
+                    </div>
             </div>
         </form>
 
@@ -303,7 +383,7 @@
                 request('order_created_date') ||
                 request('source') ||
                 $selectedProducts->isNotEmpty() ||
-                $excludedProducts->isNotEmpty();
+                $excludedProducts->isNotEmpty() || request('excluded_source', []);
         @endphp
 
         @if($hasActiveFilters)
@@ -357,6 +437,19 @@
                         <a class="text-white ml-1" href="{{ request()->fullUrlWithQuery(['source' => null]) }}">✕</a>
                     </span>
                 @endif
+
+                @foreach((array) request('excluded_source', []) as $source)
+                    <span class="badge badge-dark mr-2 mt-2">
+                        Excluded Source: {{ source_list($source) }}
+                        <a class="text-white ml-1"
+                           href="{{ request()->fullUrlWithQuery([
+                               'excluded_source' => collect(request('excluded_source'))
+                                   ->reject(fn($item) => $item === $source)
+                                   ->values()
+                                   ->all()
+                           ]) }}">✕</a>
+                    </span>
+                @endforeach
 
                 {{-- Selected Tour --}}
                 @if($selectedProducts->isNotEmpty())
@@ -604,38 +697,26 @@
 
 
 
-                                    $balance = max(0, $total - $paid);
+                                    $balance = max(0, (float) $order->canonical_balance);
+                                    $authorized = max(0, (float) $order->canonical_authorized);
+                                    $captured = max(0, (float) $order->canonical_paid);
 
-
-
-                                    $hasUncaptured = $order->payments->contains('status', 'uncaptured');
-
-
-
-                                    if (round($paid) < round($total)) {
-
-                                        if ($paid == 0 && $hasUncaptured) {
-
-                                            $amountClass = 'text-orange';
-
-                                        } else {
-
-                                            $amountClass = 'text-danger'; // red
-
-                                        }
-
+                                    if ($authorized > 0.01) {
+                                        $amountClass = 'text-dark-orange';
+                                        $paymentDisplayAmount = $authorized;
+                                        $paymentDisplayLabel = 'Requires Capture';
+                                    } elseif ($balance > 0.01) {
+                                        $amountClass = 'text-danger';
+                                        $paymentDisplayAmount = $balance;
+                                        $paymentDisplayLabel = 'Balance';
+                                    } elseif ($captured > 0.01) {
+                                        $amountClass = 'text-success';
+                                        $paymentDisplayAmount = $captured;
+                                        $paymentDisplayLabel = 'Captured';
                                     } else {
-
-                                        $amountClass = 'text-success'; // green
-
-                                    }
-
-
-
-                                    if ($order->order_status == 6) {
-
-                                        $amountClass = 'text-secondary'; // grey
-
+                                        $amountClass = $balance > 0.01 ? 'text-danger' : 'text-success';
+                                        $paymentDisplayAmount = $balance;
+                                        $paymentDisplayLabel = 'Balance';
                                     }
 
                                 @endphp
@@ -643,43 +724,10 @@
 
 
                                 <td>
-
-                                    @php
-                                        $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
-
-                                        $isExcludedSource = in_array(
-                                            strtolower($order->source ?? ''),
-                                            $excludedPaymentSources
-                                        );
-
-                                        $hasCommission = $order->payments
-                                            ->where('payment_type', 'COMMISSION')
-                                            ->isNotEmpty();
-                                    @endphp
-
-                                    @if($isExcludedSource && $hasCommission)
-                                        @php
-                                            $excludedCommissionPayment = $order->payments
-                                                ->where('payment_type', 'EXCLUDED')
-                                                ->sum('amount');
-
-                                            $totalPaymentAmount = $order->payments
-                                                ->where('status', 'succeeded')
-                                                ->sum('amount') - $excludedCommissionPayment;
-                                        @endphp
-
-                                        <span class="text-success">
-                                            {{ price_format_with_currency($totalPaymentAmount, $order->currency) }}
-                                        </span>
-                                    @else
-                                        <span class="{{ $amountClass }}">
-                                            @if($amountClass == 'text-danger')
-                                                {{ price_format_with_currency($balance, $order->currency) }}
-                                            @else
-                                                {{ price_format_with_currency($order->total_amount, $order->currency) }} 
-                                            @endif
-                                        </span>
-                                    @endif
+                                    <span class="{{ $amountClass }} font-weight-bold">
+                                        {{ price_format_with_currency($paymentDisplayAmount, $order->currency) }}
+                                    </span>
+                                    <small class="{{ $amountClass }}">({{ $paymentDisplayLabel }})</small>
                                 <br>
                                 <span>{{ $order->action_name ? $order->action_name == "book" ? "Pay Now" : "Pay Later" : "N/A" }}</span>
                                 
@@ -790,24 +838,10 @@
 
     @section('js')
     <script>
-        let filterOpen = false;
-
         $('#toggleFilter').on('click', function () {
-            $('#filterPanel').slideToggle(250);
-
-            filterOpen = !filterOpen;
-
-            if (filterOpen) {
-                $(this)
-                    .removeClass('btn-secondary')
-                    .addClass('btn-danger')
-                    .html('<i class="fas fa-times"></i> Hide Filters');
-            } else {
-                $(this)
-                    .removeClass('btn-danger')
-                    .addClass('btn-secondary')
-                    .html('<i class="fas fa-filter"></i> Filters');
-            }
+            const panel = document.getElementById('filterPanel');
+            const expanded = panel.classList.toggle('is-expanded');
+            this.setAttribute('aria-expanded', expanded ? 'true' : 'false');
         });
     </script>
     <script>

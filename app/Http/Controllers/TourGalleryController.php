@@ -4,15 +4,65 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\TourGalleryUpload;
+use App\Services\YouTubeUploadService;
 use App\Upload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Intervention\Image\Laravel\Facades\Image;
 
 class TourGalleryController extends Controller
 {
+    public function showOrderVerification(Request $request, Order $order)
+    {
+        abort_unless(
+            $request->hasValidSignature(),
+            403,
+            'This verification link is invalid or has expired.'
+        );
+
+        return view('tour-gallery.required-order-id', [
+            'order' => $order,
+            'verificationUrl' => $request->fullUrl(),
+        ]);
+    }
+
+    public function verifyOrderId(Request $request, Order $order)
+    {
+        abort_unless(
+            $request->hasValidSignature(),
+            403,
+            'This verification link is invalid or has expired.'
+        );
+
+        $validated = $request->validate([
+            'order_id' => ['required', 'string', 'max:50'],
+        ], [
+            'order_id.required' => 'Please enter your Order ID.',
+        ]);
+
+        $verifiedOrder = Order::withoutGlobalScopes()
+            ->where('order_number', trim($validated['order_id']))
+            ->first();
+
+        if (!$verifiedOrder) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'order_id' => 'The Order ID is not valid.',
+                ]);
+        }
+
+        return redirect()->to(URL::temporarySignedRoute(
+            'tour-gallery.show',
+            now()->addDays(30),
+            ['order' => $verifiedOrder->id]
+        ));
+    }
+
     /**
      * Summary of index
      * @param Request $request
@@ -78,7 +128,7 @@ class TourGalleryController extends Controller
 
         return back()->with(
             'success',
-            'Photo approved successfully.'
+            'Media approved successfully.'
         );
     }
     public function reject(
@@ -90,7 +140,7 @@ class TourGalleryController extends Controller
 
         return back()->with(
             'success',
-            'Photo moved to pending status.'
+            'Media moved to pending status.'
         );
     }
 
@@ -100,7 +150,7 @@ class TourGalleryController extends Controller
     try {
         $upload = $galleryUpload->upload;
 
-        if ($upload) {
+        if ($upload && $upload->type !== 'youtube') {
             $paths = array_filter([
                 $upload->file_name,
                 $upload->medium_name,
@@ -119,17 +169,18 @@ class TourGalleryController extends Controller
                 }
             }
 
-            /*
-             * Existing Upload model soft deletes use karta hai.
-             */
-            $upload->delete();
         }
 
         $galleryUpload->delete();
 
+        /* Existing Upload model soft deletes use karta hai. */
+        if ($upload) {
+            $upload->delete();
+        }
+
         return back()->with(
             'success',
-            'Gallery photo deleted successfully.'
+            'Gallery media deleted successfully.'
         );
     } catch (\Throwable $exception) {
         Log::error('Tour gallery delete failed', [
@@ -139,7 +190,7 @@ class TourGalleryController extends Controller
 
         return back()->with(
             'error',
-            'Photo could not be deleted.'
+            'Media could not be deleted.'
         );
     }
 }
@@ -176,7 +227,11 @@ class TourGalleryController extends Controller
     /**
      * Passenger ki selected images upload karega.
      */
-    public function store(Request $request, Order $order)
+    public function store(
+        Request $request,
+        Order $order,
+        YouTubeUploadService $youTubeUploadService
+    )
     {
         abort_unless(
             $request->hasValidSignature(),
@@ -193,46 +248,66 @@ class TourGalleryController extends Controller
         );
 
         $validated = $request->validate([
-            'photos' => [
+            'media' => [
                 'required',
                 'array',
                 'min:1',
                 'max:10',
             ],
 
-            'photos.*' => [
+            'media.*' => [
                 'required',
                 'file',
-                'image',
-                'mimes:jpg,jpeg,png,webp',
-                'max:10240',
+                'mimes:jpg,jpeg,png,webp,mp4,mov,avi,webm,mkv,m4v',
+                'max:512000',
             ],
         ], [
-            'photos.required' => 'Please select at least one photo.',
-            'photos.max'      => 'You can upload a maximum of 10 photos.',
-            'photos.*.image'  => 'Only image files are allowed.',
-            'photos.*.mimes'  => 'Only JPG, JPEG, PNG and WebP files are allowed.',
-            'photos.*.max'    => 'Each photo must be smaller than 10 MB.',
+            'media.required' => 'Please select at least one photo or video.',
+            'media.max'      => 'You can upload a maximum of 10 files.',
+            'media.*.mimes'  => 'Only JPG, JPEG, PNG, WebP, MP4, MOV, AVI, WebM, MKV and M4V files are allowed.',
+            'media.*.max'    => 'Each video must be smaller than 500 MB.',
         ]);
 
         $uploadedFiles = [];
 
         try {
-            foreach ($validated['photos'] as $file) {
-                $uploadedFiles[] = $this->saveGalleryImage(
+            foreach ($validated['media'] as $file) {
+                $mimeType = (string) $file->getMimeType();
+
+                if (str_starts_with($mimeType, 'image/')) {
+                    if ($file->getSize() > 10 * 1024 * 1024) {
+                        throw ValidationException::withMessages([
+                            'media' => 'Each photo must be smaller than 10 MB.',
+                        ]);
+                    }
+
+                    $uploadedFiles[] = $this->saveGalleryImage(
+                        file: $file,
+                        order: $order,
+                        tourId: $tourId
+                    );
+                    continue;
+                }
+
+                $uploadedFiles[] = $this->saveGalleryVideo(
                     file: $file,
                     order: $order,
-                    tourId: $tourId
+                    tourId: $tourId,
+                    youTubeUploadService: $youTubeUploadService
                 );
             }
 
             return response()->json([
                 'status'  => true,
                 'message' => count($uploadedFiles) .
-                    ' photo(s) uploaded successfully.',
+                    ' file(s) uploaded successfully.',
                 'data' => $uploadedFiles,
             ]);
         } catch (\Throwable $exception) {
+            if ($exception instanceof ValidationException) {
+                throw $exception;
+            }
+
             Log::error('Passenger tour gallery upload failed', [
                 'order_id' => $order->id,
                 'tour_id'  => $tourId,
@@ -241,9 +316,53 @@ class TourGalleryController extends Controller
 
             return response()->json([
                 'status'  => false,
-                'message' => 'Photos could not be uploaded. Please try again.',
+                'message' => $exception instanceof \RuntimeException
+                    ? $exception->getMessage()
+                    : 'Media could not be uploaded. Please try again.',
             ], 500);
         }
+    }
+
+    private function saveGalleryVideo(
+        $file,
+        Order $order,
+        int $tourId,
+        YouTubeUploadService $youTubeUploadService
+    ): array {
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $title = trim($originalName) ?: 'TourBeez tour video';
+        $youtube = $youTubeUploadService->upload(
+            $file,
+            $title,
+            "Uploaded by a passenger for TourBeez booking #{$order->order_number}."
+        );
+
+        $upload = new Upload();
+        $upload->file_original_name = $youtube['url'];
+        $upload->file_name = $youtube['id'];
+        $upload->medium_name = $youtube['medium_url'];
+        $upload->thumb_name = $youtube['thumb_url'];
+        $upload->extension = strtolower($file->getClientOriginalExtension());
+        $upload->type = 'youtube';
+        $upload->file_size = $file->getSize();
+        $upload->user_id = $this->getUploadOwnerId($order);
+        $upload->save();
+
+        $galleryUpload = TourGalleryUpload::create([
+            'upload_id'        => $upload->id,
+            'order_id'         => $order->id,
+            'tour_id'          => $tourId,
+            'uploaded_by_type' => 'passenger',
+            'is_approved'      => false,
+        ]);
+
+        return [
+            'gallery_id' => $galleryUpload->id,
+            'upload_id' => $upload->id,
+            'type' => 'youtube',
+            'youtube_url' => $youtube['url'],
+            'thumb_name' => $youtube['thumb_url'],
+        ];
     }
 
     /**

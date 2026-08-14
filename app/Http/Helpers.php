@@ -26,10 +26,15 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 
 if(!function_exists('generateQRCodeForPassengerPickup')) {
-    function generateQRCodeForPassengerPickup(Order $order)
+    function generateQRCodeForPassengerPickup(
+        Order $order,
+        bool $requireOrderVerification = true
+    )
     {
         $galleryUploadUrl = URL::temporarySignedRoute(
-            'tour-gallery.show',
+            $requireOrderVerification
+                ? 'tour-gallery.required-order-id'
+                : 'tour-gallery.show',
             now()->addDays(30),
             [
                 'order' => $order->id,
@@ -146,7 +151,7 @@ if(!function_exists('getManifestPickupLocation')) {
         return collect([
             $pickupLocation->location,
             $pickupLocation->address,
-            $pickupLocation->time,
+            //$pickupLocation->time,
         ])
             ->filter()
             ->implode(' - ');
@@ -464,6 +469,10 @@ if (! function_exists('getMergedTourExtrasData')) {
                 'price' => $result->price ?? $extra->price,
                 'currency' => $extra->currency,
                 'quantity' => $result->quantity ?? 0,
+                'gross_total_price' => $result->gross_total_price ?? null,
+                'newly_added_quantity' => $result->newly_added_quantity ?? 0,
+                'newly_added_price' => $result->newly_added_price ?? null,
+                'newly_added_rate' => $result->newly_added_rate ?? null,
             ];
         });
 
@@ -477,6 +486,10 @@ if (! function_exists('getMergedTourExtrasData')) {
                 'price' => $item->price,
                 'currency' => null,
                 'quantity' => $item->quantity ?? 0,
+                'gross_total_price' => $item->gross_total_price ?? $item->total_price ?? null,
+                'newly_added_quantity' => $item->newly_added_quantity ?? 0,
+                'newly_added_price' => $item->newly_added_price ?? null,
+                'newly_added_rate' => $item->newly_added_rate ?? null,
             ];
         });
 
@@ -496,7 +509,11 @@ if (! function_exists('getTourPricingDetails')) {
                     'quantity' => $item->quantity,
                     'price' => $item->price,
                     'actual_price' => isset($item->actual_price) ? $item->actual_price : $item->price,
-                    'discount'    => isset($item->discount) ? $item->discount : 0
+                    'discount' => isset($item->discount) ? $item->discount : 0,
+                    'gross_total_price' => $item->gross_total_price ?? null,
+                    'newly_added_quantity' => $item->newly_added_quantity ?? 0,
+                    'newly_added_price' => $item->newly_added_price ?? null,
+                    'newly_added_rate' => $item->newly_added_rate ?? null,
                 ];
             }
         }
@@ -554,13 +571,18 @@ if (!function_exists('uploaded_asset')) {
 if (!function_exists('main_image_html')) {
     function main_image_html($id, $type='thumb')
     {
-        $image = uploaded_asset($id);
-        if($image != null) {
-            $img = '<img class="img-md" src="'. $image .'" height="45px"  alt="'. translate('photo') .'">';
-        }
-        else {
-            $img = '<img class="img-md" src="'. static_asset('assets/img/avatar-place.png') .'" height="45px"  alt="'. translate('photo') .'">';
-        }
+        $asset = Upload::find($id);
+        $imagePath = $asset
+            ? ($type === 'thumb'
+                ? ($asset->thumb_name ?: $asset->medium_name ?: $asset->file_name)
+                : ($type === 'medium'
+                    ? ($asset->medium_name ?: $asset->file_name)
+                    : $asset->file_name))
+            : null;
+        $image = $imagePath
+            ? static_asset($imagePath)
+            : static_asset('assets/img/avatar-place.png');
+        $img = '<img class="img-md tour-list-thumbnail" src="'. $image .'" width="48" height="48" loading="lazy" alt="'. translate('photo') .'">';
 
         // $data = $this->hasOne(TourImage::class)->where('is_main', 1);
         // if(isset($data->image) && public_path('tour/' . $data->image) ) {

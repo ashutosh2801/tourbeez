@@ -10,6 +10,7 @@ use App\Exports\RevenueExport;
 use App\Models\BusinessExpense;
 use App\Models\Category;
 use App\Models\Order;
+use App\Models\OrderPayment;
 use App\Models\Partner;
 use App\Models\Tour;
 use App\Models\User;
@@ -25,7 +26,11 @@ class ReportController extends Controller
 public function overview(Request $request)
 {
     $excludedStatuses = [1, 2, 6, 7];
-    $excludedPaymentSources = excluded_payment_sources(); 
+    $excludedPaymentSources = excluded_payment_sources();
+    $adult = 0;
+    $child = 0;
+    $infant = 0;
+    $other = 0; 
 
     /*
     |--------------------------------------------------------------------------
@@ -77,6 +82,10 @@ public function overview(Request $request)
                     'pending_amount' => 0,
                     'refund' => 0,
                     'net_sales' => 0,
+                    'adult'            => $adult,
+                    'child'            => $child,
+                    'infant'           => $infant,
+                    'other'            => $other,
                 ],
                 'partners' => Partner::get(),
                 'selectedProducts' => $selectedProducts,
@@ -278,14 +287,49 @@ public function overview(Request $request)
             $discounts = json_decode($tour->discount, true) ?? [];
 
             // Pricing
+            // foreach ($pricing as $p) {
+            //     $qty = $p['quantity'] ?? 0;
+            //     $price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+            //     if ($qty > 0) {
+            //         $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
+            //             ? $price
+            //             : $price * $qty;
+            //     }
+            // }
+
+
+            
+
             foreach ($pricing as $p) {
-                $qty = $p['quantity'] ?? 0;
+                $qty = (int) ($p['quantity'] ?? 0);
+                $label = strtolower($p['label'] ?? '');
+                $priceType = $p['price_type'] ?? '';
+
+                // ✅ FIXED → treat as Adults
+                if ($priceType === 'FIXED') {
+                    $adult += $qty;
+                    continue;
+                }
+
+                // $qty = $p['quantity'] ?? 0;
                 $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
                 if ($qty > 0) {
-                    $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                        ? $price
-                        : $price * $qty;
+                    $productValue += (float) ($p['gross_total_price']
+                        ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
+                            ? $price
+                            : $price * $qty));
+                }
+
+                if (str_contains($label, 'adult')) {
+                    $adult += $qty;
+                } elseif (str_contains($label, 'child')) {
+                    $child += $qty;
+                } elseif (str_contains($label, 'infant')) {
+                    $infant += $qty;
+                } else {
+                    $other += $qty;
                 }
             }
 
@@ -409,6 +453,11 @@ public function overview(Request $request)
         'pending_amount'   => round($totalBalanceAll, 2),
         'refund'           => round($refund, 2),
         'net_sales'        => round($gross - $refund, 2),
+        'adult'            => $adult,
+        'child'            => $child,
+        'infant'           => $infant,
+        'other'            => $other,
+
     ];
 
     $partners = Partner::get();
@@ -712,9 +761,10 @@ public function revenue(Request $request)
                 $actual_price = $p['actual_price'] ?? $p['price'] ?? 0;
 
                 if ($qty > 0) {
-                    $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                        ? $actual_price
-                        : $actual_price * $qty;
+                    $productValue += (float) ($p['gross_total_price']
+                        ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
+                            ? $actual_price
+                            : $actual_price * $qty));
                 }
             }
 
@@ -1356,9 +1406,10 @@ public function getInvoiceData($request, $paginate = false)
                 $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
                 if ($qty > 0) {
-                    $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                        ? $price
-                        : $price * $qty;
+                    $productValue += (float) ($p['gross_total_price']
+                        ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
+                            ? $price
+                            : $price * $qty));
                 }
             }
 
@@ -1541,6 +1592,8 @@ public function invoiceWithDetails(Request $request)
                 'tour_selling_tax'   => 0,
                 'net_total'          => 0,
                 'profit'             => 0,
+                'excluded_commission_payment'             => 0,
+                
                 'addonTotals'        => $addonTotals,
 
             ];
@@ -1600,8 +1653,15 @@ public function invoiceWithDetails(Request $request)
             | QUERY
             |--------------------------------------------------------------------------
             */
+
+            
+
+            
             $query = DB::table('orders')
-                ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
+                ->leftJoin('order_tours', function ($join) {
+                    $join->on('orders.id', '=', 'order_tours.order_id')
+                         ->whereNull('order_tours.deleted_at');
+                })
                 ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
                 ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
                 ->whereNull('orders.deleted_at')
@@ -1766,12 +1826,17 @@ public function invoiceWithDetails(Request $request)
             ->groupBy('tour_id');
 
 
-        $orderPayments = DB::table('order_payments')
-        ->whereIn('order_id', $collection->pluck('id'))
-        ->whereNull('deleted_at')
-        ->orderBy('id')
-        ->get()
-        ->groupBy('order_id');
+        // $orderPayments = DB::table('order_payments')
+        // ->whereIn('order_id', $collection->pluck('id'))
+        // ->whereNull('deleted_at')
+        // ->orderBy('id')
+        // ->get()
+        // ->groupBy('order_id');
+
+        $orderPayments = OrderPayment::whereIn('order_id', $collection->pluck('id'))
+                        ->orderBy('id')
+                        ->get()
+                        ->groupBy('order_id');
 
         foreach ($collection as $order) {
 
@@ -1936,14 +2001,14 @@ public function invoiceWithDetails(Request $request)
                                                 
             foreach ($taxesfees as $key => $item)  {
 
-                $price      = get_tax($subtotal, $item['type'], $item['value']);
+                $price      = get_tax($subtotal, $item['type'], 13);
                 $tax        = $price ?? 0;
                 $subtotal   = $subtotal + $tax; 
                 $tax_amount = $tax;
                 }
             }
-
-
+            // dd($tax_amount, currencyConvertWithoutRound($tax_amount, $order->currency, 'CAD'));
+            // $tax_amount = currencyConvertWithoutRound($tax_amount, $order->currency, 'CAD');
 
             $excludedCommissionPayment = 0;
             $totalPaymentAmount = 0;
@@ -1957,9 +2022,15 @@ public function invoiceWithDetails(Request $request)
                 ->where('payment_type', 'EXCLUDED')
                 ->sum('amount');
 
+            $totalRefundAmount = $payments
+                ->where('status', 'refunded')
+                ->sum('amount');
+
             $totalPaymentAmount = $payments
                 ->where('status', 'succeeded')
-                ->sum('amount') - $excludedCommissionPayment;
+                ->sum('amount') - $excludedCommissionPayment-$totalRefundAmount;
+
+            
             // $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
 
             if ($isExcludedFromPayment) {
@@ -2081,6 +2152,9 @@ public function invoiceWithDetails(Request $request)
             
             
             $costTotal    = $costBase;
+            $sellingTax = 0;
+            $costTax = 0;
+            $costTax = 0;
             
             if (isset($allTaxes[$order->tour_id])) {
 
@@ -2154,7 +2228,7 @@ public function invoiceWithDetails(Request $request)
                 'customer_total' =>   round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2),
                 'exclude_total' =>  $isExcludedFromPayment ? round(currencyConvertWithoutRound($excludeTotal, $order->currency, 'CAD'), 2) :0,
                 'excluded_commission_payment' => round(currencyConvertWithoutRound($excludedCommissionPayment, $order->currency, 'CAD'), 2),
-                'balance_amount' => round(currencyConvertWithoutRound(($customerTotal) - $totalPaymentAmount, $order->currency, 'CAD'), 2),
+                'balance_amount' => round(currencyConvertWithoutRound(round($customerTotal) - round($totalPaymentAmount), $order->currency, 'CAD'), 2),
                 'excluded_balance_amount' => $hideSuplierExcludeExtraCost ? $excludedBalance : 0,
 
                 /*
@@ -2211,7 +2285,7 @@ public function invoiceWithDetails(Request $request)
             ];
             // dd($customerTotal,$excludedCommissionPayment, $totalPaymentAmount, $sellingTotal , $costTotal);
 
-            // dd($row['customer_total'],$profit,$row['excluded_balance_amount'], ($row['customer_total'] == 0), $row['balance_amount']);
+            // dd($row['customer_total'],$row['balance_amount'], $totalPaymentAmount);
             $totals['product_price']      += $row['product_price'];
             $totals['extra_amount']       += $row['extra_amount'];
             $totals['tax_amount']         += $row['tax_amount'];
@@ -2224,6 +2298,10 @@ public function invoiceWithDetails(Request $request)
             $totals['tour_extra_included_price'] += $row['tour_extra_included_price'];
             $totals['tour_extra_excluded_price'] += $row['tour_extra_excluded_price'];
             $totals['tour_selling_tax']   += $row['tour_selling_tax'];
+            $totals['excluded_commission_payment']   += $row['excluded_commission_payment'];
+
+
+
 
             $netTotal = $row['tour_selling_total'] + $row['transport_cost'];
             $profit   = $row['customer_total'] - $row['tour_selling_total'] - $row['transport_cost'];
@@ -2587,7 +2665,7 @@ public function exportCustomer(Request $request)
         else $other += $qty;
 
         if ($qty > 0) {
-            $productValue += $price * $qty;
+            $productValue += (float) ($p['gross_total_price'] ?? ($price * $qty));
         }
     }
 

@@ -1,8 +1,6 @@
 /*
-
 Don't modify this file.
 use custom-style.css
-
 */
 
 :root {
@@ -10577,10 +10575,6 @@ table.dataTable {
     color: #fff;
     margin-right: 6px;
     font-weight: bold;
-}
-
-.order-list-body .active-filters {
-    padding: 12px 25px;
 }
 
 @media (max-width: 767px) {

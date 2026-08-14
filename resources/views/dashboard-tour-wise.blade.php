@@ -103,185 +103,108 @@
     .select2-container {
         width: 100% !important;
     }
-
-    @media(min-width:767px) {
-
-        .daterangepicker.show-calendar {
-            top: 80px !important;
-            left: auto;
-            right: 430px !important;
-        }
-
-        .daterangepicker.show-calendar:before,
-        .daterangepicker.show-calendar:after {
-            left: 595px;
-            border-bottom-color: #999;
-            rotate: 90deg;
-            top: 130px;
-        }
-
-        .daterangepicker.show-calendar:nth-of-type(2):before,
-        .daterangepicker.show-calendar:nth-of-type(2):after {
-            top: 40px;
-        }
-    }
-
-    @media(max-width:767px) {
-
-        .daterangepicker.show-calendar {
-            height: 200px;
-            overflow-y: scroll;
-        }
-
-    }
+    .report-search-panel{padding:20px;border:1px solid #e5e7eb;border-radius:10px;background:linear-gradient(180deg,#f8fafc,#fff);margin-bottom:12px;}
+    .report-search-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;margin-bottom:16px;}
+    .report-search-head h5{margin:0 0 3px;font-size:17px;font-weight:700;color:#172033}.report-search-head p{margin:0;font-size:13px;color:#6b7280}
+    .report-filter-toggle{height:38px;padding:0 13px;border:1px solid #c7d2fe;border-radius:7px;background:#fff;color:#4338ca;font-size:13px;font-weight:600}
+    .report-primary-search{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}.report-primary-search label,.report-filter-grid label{display:block;margin:0 0 6px;font-size:12px;font-weight:600;color:#374151}
+    .report-primary-search .form-control,.report-filter-grid .form-control{height:42px;border-color:#d7dce3;border-radius:7px}.report-apply{height:42px;min-width:120px;border:0;border-radius:7px;background:#4f46e5;color:#fff;font-size:13px;font-weight:600}
+    .report-filter-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb}.report-filter-grid.is-hidden{display:none}
+    @media(max-width:991px){.report-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:575px){.report-search-head{display:block}.report-filter-toggle{margin-top:10px}.report-primary-search{grid-template-columns:1fr auto}.report-filter-grid{grid-template-columns:1fr}}
 </style>
 
 <div class="dashboard-body">
-
-    <div class="card-primary mb-3">
-        <div class="card-header tour-main-head">
-            <div class="row">
-                <div class="col-md-8 col-12">
-                    <h3 class="card-title text-white">Tour Wise Overview</h3>
-                </div>
-                <div class="col-md-4 col-12">
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-secondary" id="toggleFilter">
-                            <i class="fas fa-filter"></i> Filters
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <div class="report-search-panel">
+        <div class="report-search-head">
+            <div><h5><i class="fas fa-chart-pie mr-2 text-primary"></i>Tour-wise report</h5><p>Filter performance by booking date, tour and order details.</p></div>
+            <button type="button" id="toggleFilter" class="report-filter-toggle"><i class="fas fa-filter mr-1"></i> Filters</button>
         </div>
-    </div>
-
-    <div class="tour-search-filter">
-        <div id="filterSidebar" class="filter-sidebar">
-            <div class="filter-header">
-                <h5><i class="fas fa-filter"></i> Filters</h5>
-                <button type="button" id="closeFilter">
-                    <i class="fas fa-times"></i>
-                </button>
+        <div class="report-primary-search">
+            <div>
+                    <label for="bookingDate">Order date</label>
+                    <input 
+                        type="text" 
+                        name="booking_date"
+                        id="bookingDate"
+                        class="form-control aiz-date-range"
+                        placeholder="Order Date"
+                        autocomplete="off"
+                        data-advanced-range="true"
+                        data-separator=" - "
+                        value="{{ request('booking_date') }}"
+                    >
             </div>
-            <div class="filter-body">
-                <div class="row">
-
-                    <!-- BOOKING DATE -->
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label>Order Date</label>
-                            <input 
-                                type="text" 
-                                name="booking_date"
-                                id="bookingDate"
-                                class="form-control aiz-date-range"
-                                placeholder="Order Date"
-                                autocomplete="off"
-                                data-advanced-range="true"
-                                data-separator=" - "
-                                value="{{ request('booking_date') }}"
-                            >
-                        </div>
-                    </div>
-
-                    <!-- TOUR DATE -->
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label>Tour Date</label>
-                            <input 
-                                type="text" 
-                                name="tour_date"
-                                id="tourDate"
-                                autocomplete="off"
-                                class="form-control aiz-date-range"
-                                data-advanced-range="true"
-                                data-separator=" - "
-                                placeholder="Select tour date"
-                                value="{{ request('tour_date') }}"
-                            >
-                        </div>
-                    </div>
-
-                    <!-- PRODUCT -->
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label>Product</label>
-                            <select id="productFilter" name="product" class="form-control">
-                                @if(request('product') && request('product_text'))
-                                    <option value="{{ request('product') }}" selected>
-                                        {{ request('product_text') }}
-                                    </option>
-                                @endif
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- ORDER STATUS -->
-                    <div class="col-12">
-                        <div class="form-group">
-                        <label>Order Status</label>
-                        <select name="order_status" id="orderStatus" class="form-control">
-                            <option value="">All</option>
-                            <option value="3">Pending supplier</option>
-                            <option value="4">Pending customer</option>
-                            <option value="5">Confirmed</option>
-                        </select>
-                        </div>    
-                    </div>
-
-                    <!-- PAY TYPE -->
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label>Pay Type</label>
-                            <select name="action_type" id="actionType" class="form-control">
-                                <option value="">All</option>
-                                <option value="pay_now">Pay Now</option>
-                                <option value="pay_later">Pay Later</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- SOURCE -->
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label>Source</label>
-                            <select name="partner" id="partner" class="form-control">
-                                <option value="">All</option>
-                                @foreach($partners as $partner)
-                                    <option value="{{ ucfirst($partner->slug) }}">
-                                        {{ $partner->name }}
-                                    </option>
-                                @endforeach
-                                <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
-                                <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <div id="activeFilters" class="active-filters"></div>
-                    </div>
-
-                    <div class="col-12">
-                        <div id="noFilterAlert">
-                            <div class="alert alert-info">
-                                Please apply filters to view report data.
-                            </div>
-                        </div>
-                    </div>
-
-                </div>  
-            </div>
-            <div class="filter-footer">
-                <button type="submit" id="applyFilter" class="btn btn-search">
-                    <i class="fas fa-search"></i> Search
-                </button>
-                <a href="{{ route('admin.report.tour-wise') }}" class="btn btn-clear">
-                    <i class="fas fa-times"></i> Clear Search
-                </a>
-            </div>
+            <button type="button" id="applyFilter" class="report-apply"><i class="fas fa-search mr-1"></i> Apply</button>
         </div>
-        <div id="filterOverlay"></div>
+        <div id="filterPanel" class="report-filter-grid {{ request()->hasAny(['tour_date','product','order_status','action_type','partner']) ? '' : 'is-hidden' }}">
+
+                <!-- TOUR DATE -->
+                <div>
+                    <label>Tour Date</label>
+                    <input 
+                        type="text" 
+                        name="tour_date"
+                        id="tourDate"
+                        autocomplete="off"
+                        class="form-control aiz-date-range"
+                        data-advanced-range="true"
+                        data-separator=" - "
+                        placeholder="Select tour date"
+                        value="{{ request('tour_date') }}"
+                    >
+                </div>
+
+                <!-- PRODUCT -->
+                <div>
+                    <label>Product</label>
+                    <select id="productFilter" name="product" class="form-control">
+                        @if(request('product') && request('product_text'))
+                            <option value="{{ request('product') }}" selected>
+                                {{ request('product_text') }}
+                            </option>
+                        @endif
+                    </select>
+                    <input type="hidden" id="product_text" value="{{ request('product_text') }}">
+                </div>
+
+                <!-- ORDER STATUS -->
+                <div>
+                    <label>Order Status</label>
+                    <select name="order_status" id="orderStatus" class="form-control">
+                        <option value="">All</option>
+                        <option value="3" {{ request('order_status') === '3' ? 'selected' : '' }}>Pending supplier</option>
+                        <option value="4" {{ request('order_status') === '4' ? 'selected' : '' }}>Pending customer</option>
+                        <option value="5" {{ request('order_status') === '5' ? 'selected' : '' }}>Confirmed</option>
+                    </select>
+                </div>
+
+                <!-- PAY TYPE -->
+                <div>
+                    <label>Pay Type</label>
+                    <select name="action_type" id="actionType" class="form-control">
+                        <option value="">All</option>
+                        <option value="pay_now" {{ request('action_type') === 'pay_now' ? 'selected' : '' }}>Pay Now</option>
+                        <option value="pay_later" {{ request('action_type') === 'pay_later' ? 'selected' : '' }}>Pay Later</option>
+                    </select>
+                </div>
+
+                <!-- SOURCE -->
+                <div>
+                    <label>Source</label>
+                    <select name="partner" id="partner" class="form-control">
+                        <option value="">All</option>
+                        @foreach($partners as $partner)
+                            <option value="{{ ucfirst($partner->slug) }}" {{ request('partner') === ucfirst($partner->slug) ? 'selected' : '' }}>
+                                {{ $partner->name }}
+                            </option>
+                        @endforeach
+                        <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                        <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                    </select>
+                </div>
+
+        </div>
+        <div id="activeFilters" class="active-filters mt-2"></div>
     </div>
 
    <!--  @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
@@ -418,6 +341,7 @@ async function fetchDashboard() {
         booking_date: document.getElementById('bookingDate').value,
         tour_date: document.getElementById('tourDate').value,
         product: document.getElementById('productFilter').value,
+        product_text: document.getElementById('product_text').value,
         order_status: document.getElementById('orderStatus').value,
         action_type: document.getElementById('actionType').value,
         partner: document.getElementById('partner').value,
@@ -751,6 +675,7 @@ function removeFilter(key) {
 
     if (key === 'product') {
         document.getElementById('productFilter').value = '';
+        document.getElementById('product_text').value = '';
     }
 
     if (key === 'order_status') {
@@ -805,33 +730,12 @@ document.getElementById('applyFilter').onclick = fetchDashboard;
 // };
 </script>
 <script>
-    $('#toggleFilter').click(function () {
+document.getElementById('toggleFilter').onclick = function () {
+    const panel = document.getElementById('filterPanel');
+    panel.classList.toggle('is-hidden');
+    this.setAttribute('aria-expanded', panel.classList.contains('is-hidden') ? 'false' : 'true');
+};
 
-        $('#filterSidebar').addClass('show');
-
-        $('#filterOverlay').addClass('show');
-
-        $('body').addClass('sidebar-open');
-
-        $(this)
-            .removeClass('btn-secondary')
-            .addClass('btn-danger')
-            .html('<i class="fas fa-times"></i> Filters');
-    });
-    
-</script>
-<script>
-    function closeFilterSidebar() {
-        $('#filterSidebar').removeClass('show');
-        $('#filterOverlay').removeClass('show');
-        $('body').removeClass('sidebar-open');
-
-        $('#toggleFilter')
-            .removeClass('btn-danger')
-            .addClass('btn-secondary')
-            .html('<i class="fas fa-filter"></i> Filters');
-    }
-    $('#closeFilter, #filterOverlay').click(closeFilterSidebar);
 </script>
     <script>
 
@@ -862,6 +766,8 @@ document.getElementById('applyFilter').onclick = fetchDashboard;
                 }
             }
         });
+
+        renderFilters();
 
     });
     

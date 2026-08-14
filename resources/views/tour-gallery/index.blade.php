@@ -127,25 +127,31 @@
 
                 @php
                     $upload = $galleryPhoto->upload;
+                    $isYoutube = $upload?->type === 'youtube';
 
-                    $imagePath = $upload?->medium_name
-                        ?: $upload?->file_name;
-
-                    if ($imagePath) {
+                    if ($isYoutube) {
+                        $imageUrl = $upload->medium_name
+                            ?: $upload->thumb_name
+                            ?: asset('admin/dist/img/no-image.png');
+                        $mediaUrl = $upload->file_original_name
+                            ?: 'https://www.youtube.com/watch?v=' . $upload->file_name;
+                    } else {
+                        $imagePath = $upload?->medium_name ?: $upload?->file_name;
                         if (
-                            config('filesystems.default') === 's3' ||
-                            env('FILESYSTEM_DRIVER') === 's3'
+                            $imagePath && (
+                                config('filesystems.default') === 's3' ||
+                                env('FILESYSTEM_DRIVER') === 's3'
+                            )
                         ) {
                             $imageUrl = Storage::disk('s3')->url(
                                 $imagePath
                             );
-                        } else {
+                        } elseif ($imagePath) {
                             $imageUrl = asset($imagePath);
+                        } else {
+                            $imageUrl = asset('admin/dist/img/no-image.png');
                         }
-                    } else {
-                        $imageUrl = asset(
-                            'admin/dist/img/no-image.png'
-                        );
+                        $mediaUrl = $imageUrl;
                     }
                 @endphp
 
@@ -156,12 +162,12 @@
                         <div class="gallery-image-wrapper">
 
                             <a
-                                href="{{ $imageUrl }}"
+                                href="{{ $mediaUrl }}"
                                 target="_blank"
                             >
                                 <img
                                     src="{{ $imageUrl }}"
-                                    alt="{{ $upload?->file_original_name ?? 'Tour photo' }}"
+                                    alt="{{ $isYoutube ? 'Tour video' : ($upload?->file_original_name ?? 'Tour photo') }}"
                                     class="gallery-image"
                                 >
                             </a>
@@ -269,11 +275,11 @@
                                 @endif
 
                                 <a
-                                    href="{{ $imageUrl }}"
+                                    href="{{ $mediaUrl }}"
                                     target="_blank"
                                     class="btn btn-info btn-sm"
                                 >
-                                    View
+                                    {{ $isYoutube ? 'Watch Video' : 'View Photo' }}
                                 </a>
 
                                 <form

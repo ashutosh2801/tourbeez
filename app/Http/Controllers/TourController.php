@@ -33,6 +33,7 @@ use App\Traits\TourScheduleHelper;
 use App\Upload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Maatwebsite\Excel\Facades\Excel;
@@ -2764,6 +2765,11 @@ $pickupHtml .= '</div>';
             $payload
         );
 
+        // Checkout reads this rule through two API paths. Invalidate both
+        // cache-key formats so updated discounts apply immediately.
+        Cache::forget('deposit_rule_' . $tour->id);
+        Cache::forget('depositRule_' . $tour->id);
+
         /*
         |--------------------------------------------------------------------------
         | Last Minute Booking Logic
@@ -3292,7 +3298,85 @@ $pickupHtml .= '</div>';
         return back()->with('success', 'Prices updated successfully!');
     }
 
-    
+    public function updatePrices(Request $request)
+    {
+        try {
+            $request->validate([
+                'selected_tours'   => 'required|string',
+                // 'selected_tours.*' => 'exists:tours,id',
+                'price_action'     => 'required|in:INCREASE,DECREASE',
+                'price_type'       => 'required|in:PERCENT,FIXED',
+                'price_value'      => 'required|numeric|min:1',
+            ]);
+
+            $tourIds = explode(',', $request->selected_tours);
+            $invalidIds = Tour::whereIn('id', $tourIds)->count() != count($tourIds);
+
+            if ($invalidIds) {
+                return back()->withErrors([
+                    'selected_tours' => 'One or more selected tours are invalid.'
+                ]);
+            }
+
+            DB::transaction(function () use ($request, $tourIds) {
+
+                $action = $request->price_action;
+                $type   = $request->price_type;
+                $value  = (float) $request->price_value;
+                $updateInfant = $request->boolean('is_infant');
+
+                $calculatePrice = function ($oldPrice) use ($action, $type, $value) {
+                    $oldPrice = (float) $oldPrice;
+
+                    $change = $type === 'PERCENT'
+                        ? ($oldPrice * $value) / 100
+                        : $value;
+
+                    $newPrice = $action === 'INCREASE'
+                        ? $oldPrice + $change
+                        : $oldPrice - $change;
+
+                    return max(0, round($newPrice, 2));
+                };
+
+                Tour::whereIn('id', $tourIds)
+                    ->whereNull('deleted_at')
+                    ->get()
+                    ->each(function ($tour) use ($calculatePrice) {
+                        if ($tour->price !== null) {
+                            $tour->price = $calculatePrice($tour->price);
+                            $tour->save();
+                        }
+                    });
+
+                $pricings = TourPricing::whereIn('tour_id', $tourIds)
+                    ->whereNull('deleted_at');
+
+                if (!$request->boolean('is_infant')) {
+                    $pricings->where(function ($q) {
+                        $q->whereNull('label')
+                        ->orWhereRaw('LOWER(label) NOT LIKE ?', ['%infant%']);
+                    });
+                }
+
+                $pricings->get()->each(function ($pricing) use ($calculatePrice) {
+                    $pricing->price = $calculatePrice($pricing->price);
+
+                    if ($pricing->selling_price !== null) {
+                        $pricing->selling_price = $calculatePrice($pricing->selling_price);
+                    }
+
+                    $pricing->save();
+                });
+            });
+
+            return redirect()->back()->with('success', 'Selected tour prices updated successfully.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+
+            return redirect()->back()
+                ->with('error', collect($e->errors())->flatten()->first());
+        }
+    }
 
     public function markReview(Request $request)
     {

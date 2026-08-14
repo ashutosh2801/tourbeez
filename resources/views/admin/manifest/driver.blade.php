@@ -224,15 +224,26 @@
     font-size:13px;
     line-height:1.9;
     background-color:#01228b;
-    color: #fff;
+    
     padding:10px;
     border-radius:10px;
     position: relative;
 }
-.order-wrapper {border-top: 1px dotted #f9f9f9;line-height: 3rem;}
-.order-wrapper span:first-child {width: 75px; display: inline-block; font-size: 14px;}
-.order-wrapper span:nth-child(2) {width: 40px; display: inline-block; font-size: 14px;}
-.order-wrapper span:nth-child(3) {width: 65px; display: inline-block; font-size: 14px;}
+
+
+
+.main-bg-color{
+    background-color:#01228b;
+    color: #fff;
+}
+.secondary-bg-color{
+    background-color:#ffb703;
+    color:#000;
+}
+.order-wrapper {border-top: 1px dotted #f9f9f9;line-height: 3rem;text-align: left;}
+.order-wrapper span:first-child {min-width: 75px; display: inline-block; font-size: 14px;}
+.order-wrapper span:nth-child(2) {min-width: 40px; display: inline-block; font-size: 14px;}
+.order-wrapper span:nth-child(3) {min-width: 65px; display: inline-block; font-size: 14px;}
 .order-wrapper span:nth-child(4) {display: inline-block; font-size: 14px;}
 
 .summary-wra {border-bottom: 1px dotted #f9f9f9;line-height: 2rem;}
@@ -248,8 +259,9 @@
     overflow: visible;
     background: #9C27B0;
     z-index: 11;
-    width: 360px;
+    /* width: 360px; */
     border-radius: 8px;
+    padding: 0 8px;
 }
 
 .orders-container:hover {
@@ -528,7 +540,7 @@
 
                                 @if(count($cellOrders))
 
-                                    <div class="main-order-wrapper">                                        
+                                    <div class="main-order-wrapper {{ $cellOrders[0]['tour_assignable'] ? 'main-bg-color' : 'secondary-bg-color' }}">                                        
 
                                         @php
                                         $driverSummary = collect($cellOrders)
@@ -3235,27 +3247,43 @@ document.addEventListener('DOMContentLoaded', function () {
     updateExportUrl();
 
     $(document).on('click', '.toggle-orders', function (e) {
-        e.stopPropagation();
+    e.stopPropagation();
 
-        let wrapper = $(this).closest('.main-order-wrapper');
-        let currentContainer = wrapper.find('.orders-container');
-        let icon = $(this).find('.icon');
+    let wrapper = $(this).closest('.main-order-wrapper');
+    let currentContainer = wrapper.find('.orders-container');
+    let icon = $(this).find('.icon');
 
-        $('.orders-container').not(currentContainer).slideUp(300);
-        $('.toggle-orders .icon').not(icon).removeClass('active');
+    $('.orders-container').not(currentContainer).slideUp(300);
+    $('.toggle-orders .icon').not(icon).removeClass('active');
 
-        currentContainer.slideToggle(300);
-        icon.toggleClass('active');
+    currentContainer.slideToggle(300, function () {
+
+        if ($(this).is(':visible')) {
+
+            // Find the nearest scrollable container
+            let scrollWrapper = $(this).closest('.table-responsive, .table-scroll-wrapper');
+
+            if (scrollWrapper.length) {
+                scrollWrapper.animate({
+                    scrollTop: scrollWrapper.prop('scrollHeight')
+                }, 300);
+            }
+        }
     });
 
-    $(document).on('click', function () {
-        $('.orders-container').slideUp(300);
-        $('.toggle-orders .icon').removeClass('active');
-    });
+    icon.toggleClass('active');
+    $('.table-scroll-wrapper').addClass('expanded');
+});
 
-    $(document).on('click', '.orders-container', function (e) {
-        e.stopPropagation();
-    });
+$(document).on('click', function () {
+    $('.orders-container').slideUp(300);
+    $('.toggle-orders .icon').removeClass('active');
+    $('.table-scroll-wrapper').removeClass('expanded');
+});
+
+$(document).on('click', '.orders-container', function (e) {
+    e.stopPropagation();
+});
 });
 
 </script>

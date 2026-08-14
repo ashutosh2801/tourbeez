@@ -882,53 +882,23 @@ updateUploaderFiles: function () {
                 var startDate = today;
                 var minDate = false;
                 var advncdRange = false;
-                var showYesterday = $this.data("yesterday") ?? true;
-                var showTomorrow = $this.data("tomorrow") ?? false;
-                // var ranges = {
-                //     // Today: [moment(), moment()],
-                //     // Yesterday: [
-                //     //     moment().subtract(1, "days"),
-                //     //     moment().subtract(1, "days"),
-                //     // ],
-                //     "Last 7 Days": [moment().subtract(6, "days"), moment()],
-                //     "Last 30 Days": [moment().subtract(29, "days"), moment()],
-                //     "This Month": [
-                //         moment().startOf("month"),
-                //         moment().endOf("month"),
-                //     ],
-                //     "Last Month": [
-                //         moment().subtract(1, "month").startOf("month"),
-                //         moment().subtract(1, "month").endOf("month"),
-                //     ],
-                // };
-                var ranges = {};
-                ranges["Today"] = [moment(), moment()];
-
-                // conditionally add
-                if (showYesterday) {
-                    ranges["Yesterday"] = [
+                var ranges = {
+                    Today: [moment(), moment()],
+                    Yesterday: [
                         moment().subtract(1, "days"),
                         moment().subtract(1, "days"),
-                    ];
-                }
-
-                if (showTomorrow) {
-                    ranges["Tomorrow"] = [
-                        moment().add(1, "days"),
-                        moment().add(1, "days"),
-                    ];
-                }
-
-                ranges["Last 7 Days"] = [moment().subtract(6, "days"), moment()];
-                ranges["Last 30 Days"] = [moment().subtract(29, "days"), moment()];
-                ranges["This Month"] = [
-                    moment().startOf("month"),
-                    moment().endOf("month"),
-                ];
-                ranges["Last Month"] = [
-                    moment().subtract(1, "month").startOf("month"),
-                    moment().subtract(1, "month").endOf("month"),
-                ];
+                    ],
+                    "Last 7 Days": [moment().subtract(6, "days"), moment()],
+                    "Last 30 Days": [moment().subtract(29, "days"), moment()],
+                    "This Month": [
+                        moment().startOf("month"),
+                        moment().endOf("month"),
+                    ],
+                    "Last Month": [
+                        moment().subtract(1, "month").startOf("month"),
+                        moment().subtract(1, "month").endOf("month"),
+                    ],
+                };
 
                 var single = $this.data("single");
                 var monthYearDrop = $this.data("show-dropdown");

@@ -13,7 +13,7 @@ use Requests;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class Tour_1 extends Model
+class Tour extends Model
 {
     use SoftDeletes, HasFactory;
     use LogsActivity;

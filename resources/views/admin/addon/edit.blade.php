@@ -62,6 +62,13 @@
                             </select>
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <select class="form-control" name="customer_choice" id="customer_choice">
+                                    <option value="">Customer's choice</option>
+                                    <option {{ old('customer_choice' ? 'selected' : '' ) }} value="FIXED">Per Order</option>
+                                    <option {{ old('customer_choice' ? 'selected' : '' ) }} value="QUANTITY">Per Quantity</option>
+                                </select>
+                            </div>
                             
                             
                         </div>
@@ -79,12 +86,14 @@
                                     placeholder="Enter price" required value="{{ old('price', $data->price) }}">
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <select class="form-control" name="customer_choice" id="customer_choice">
-                                    <option value="">Customer's choice</option>
-                                    <option {{ old('customer_choice' ? 'selected' : '' ) }} value="FIXED">Per Order</option>
-                                    <option {{ old('customer_choice' ? 'selected' : '' ) }} value="QUANTITY">Per Quantity</option>
-                                </select>
+                            <div class="col-md-6 price-input">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">$</span>
+                                    </div>
+                                    <input type="text" class="form-control" id="selling_price" name="selling_price"
+                                    placeholder="Enter selling price" required value="{{ old('selling_price', $data->selling_price) }}">
+                                </div>
                             </div>
                             
                         </div>
