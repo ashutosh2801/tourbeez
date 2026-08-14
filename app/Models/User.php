@@ -3,17 +3,22 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\OrderCustomer;
+use App\Models\UserDriver;
 use App\Models\UserSupplier;
 use App\Notifications\CustomResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
+    use LogsActivity;
     /**
      * The attributes that are mass assignable.
      *
@@ -56,6 +61,14 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('User')
+            ->setDescriptionForEvent(fn(string $eventName) => "User {$eventName}")
+            ->logAll(); // 🔥 important
+    }
+
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new CustomResetPasswordNotification($token));
@@ -67,5 +80,13 @@ class User extends Authenticatable
     }
     public function supplier() {
         return $this->hasOne(UserSupplier::class, 'user_id');
+    }
+
+    public function customer() {
+        return $this->hasOne(OrderCustomer::class, 'user_id');
+    }
+    public function driver()
+    {
+        return $this->hasOne(UserDriver::class);
     }
 }

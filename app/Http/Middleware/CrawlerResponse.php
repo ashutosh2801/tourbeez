@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\State;
+use App\Services\ApiService;
 use Closure;
 use Illuminate\Http\Request;
 use App\Models\Page;
@@ -26,32 +27,54 @@ class CrawlerResponse
      */
     public function handle(Request $request, Closure $next)
     {
+        // return $next($request);
         $ua = strtolower($request->userAgent());        
+        $ip = $request->ip();
+        $url = $request->fullUrl();
+
+        // logger()->info('UA LOG', [
+        //     'ua'  => $ua,
+        //     'ip'  => $ip,
+        //     'url' => $url,
+        // ]);
+
         
+        // $bots = [
+        //     // Social
+        //     'facebookexternalhit', 'facebot', 'twitterbot', 'linkedinbot',
+        //     'pinterest', 'slackbot', 'discordbot', 'whatsapp',
+        //     'telegrambot', 'skypeuripreview', 'teamsbot',
+
+        //     // iOS / Apple Preview (CRITICAL)
+        //     'applebot', 'cfnetwork', 'darwin',
+
+        //     // Search Engines
+        //     'googlebot', 'bingbot', 'duckduckbot',
+        //     'baiduspider', 'yandex', 'sogou', 'petalbot',
+
+        //     // Schema / Rich Results Validators
+        //     'google-structured-data-testing-tool', 'schema-markup-validator',
+        //     'google rich results test',
+        //     'lighthouse',
+        //     'googlebot-image', 'googlebot-video',
+
+        //     // Others
+        //     'applebot', 'embedly', 'quora link preview',
+        //     'outbrain', 'rogerbot', 'ahrefsbot', 'semrushbot'
+        // ];
         $bots = [
-            // Social
+            'lighthouse',
+            'googlebot', 'bingbot',
             'facebookexternalhit', 'facebot', 'twitterbot', 'linkedinbot',
             'pinterest', 'slackbot', 'discordbot', 'whatsapp',
             'telegrambot', 'skypeuripreview', 'teamsbot',
-
-            // Search Engines
-            'googlebot', 'bingbot', 'duckduckbot',
-            'baiduspider', 'yandex', 'sogou', 'petalbot',
-
-            // Schema / Rich Results Validators
-            'google-structured-data-testing-tool', 'schema-markup-validator',
-            'google rich results test',
-            'lighthouse',
-            'googlebot-image', 'googlebot-video',
-
-            // Others
-            'applebot', 'embedly', 'quora link preview',
-            'outbrain', 'rogerbot', 'ahrefsbot', 'semrushbot'
         ];
 
         foreach ($bots as $bot) {
             
             if (strpos($ua, $bot) !== false) {
+
+                // logger()->info('bot', ['bot' => $bot, 'ip'  => $ip, 'url' => $url ]);
 
                 // ----- Adjust for /tbadmin/ subfolder -----
                 $path = $request->path();
@@ -62,39 +85,96 @@ class CrawlerResponse
 
                 $segments = explode('/', $path);
 
-                // Homepage
+                // Home Page
                 if ($path === '' || $path === '/') {
 
-                    $data = Cache::remember('cities_home_list', 86400, function () {
-                        return DB::table('tour_locations as tl')
-                                ->join('tours as t', 't.id', '=', 'tl.tour_id')
-                                ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                                ->join('uploads as u', 'u.id', '=', 'c.upload_id')
-                                ->select('c.id', 'c.name', 'c.upload_id')
-                                ->groupBy('c.id', 'c.name', 'c.upload_id')
-                                ->orderByRaw('RAND()')
-                                ->where('c.upload_id', '>=', 1)
-                                ->whereExists(function ($query) {
+                    $apiService = new ApiService();
+                    $response = $apiService->request(
+                                    'get',
+                                    'https://tourbeez.com/api/home-listing',
+                                    [],
+                                    [
+                                        //'Authorization' => 'Bearer TOKEN',
+                                        'apiKey' => 'eyJpdiI6Ill5T0I5WGRNcHowVDFvYU51eHRUQkE9PSIsInZhbHVlIjoiT3'
+                                    ]
+                                );
+    
+                    return response()->view('share.seo', [
+                        'title' => 'Tours, Activities & Travel Experiences Worldwide | TourBeez',
+                        'description' => 'Discover unforgettable travel experiences with TourBeez. Book tours, activities, and tickets to top global destinations with ease and confidence. Explore, adventure, and enjoy every moment',
+                        'keywords' => 'International Tour Packages, Best Travel Deals Worldwide, World Tours And Trips, Customizable Holiday Packages,  Budget-friendly Travel',
+                        'image' => 'https://tourbeez.com/public/slides/02.jpg',
+                        // 'page' => 'home',
+                        'file' => 'home',
+                        'tours' => $response['home_tours'], 
+                        'cities' => $response['popular_cities'], 
+                        'blogs' => $response['home_blogs']
+                    ]);
+                }
+                else if ($path === 'destinations') {
+
+                    $query = DB::table('tour_locations as tl')
+                        ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                        ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                        ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
+                        ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
+                        ->select(
+                            'c.id',
+                            'c.name',
+                            'c.upload_id',
+                            'tl.state_id',
+                            'tl.country_id',
+                            's.name as state_name',
+                            'co.name as country_name',
+                            DB::raw('(
+                                SELECT COUNT(DISTINCT t2.id)
+                                FROM tours t2
+                                JOIN tour_locations tl2 ON tl2.tour_id = t2.id
+                                WHERE tl2.city_id = c.id
+                                AND t2.status = 1
+                                AND t2.deleted_at IS NULL
+                                AND EXISTS (
+                                    SELECT 1
+                                    FROM tour_schedules ts2
+                                    WHERE ts2.tour_id = t2.id
+                                        AND ts2.until_date >= CURDATE()
+                                )
+                            ) as total_tours')
+                        )
+                        ->distinct()
+                        ->where('c.upload_id' , '>=', 1)
+                        ->whereExists(function ($query) {
                                     $query->select(DB::raw(1))
                                         ->from('tour_schedules as ts')
                                         ->whereColumn('ts.tour_id', 't.id')
                                         ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
                                 })
-                                ->limit(50)
-                                ->get();
-                    });
+                        ->orderByRaw('RAND()');
+                    $paginated = $query->paginate(50, ['*'], 'page', 1);
 
                     $cities = [];
-                    foreach($data as $d) {
+                    foreach ($paginated->items() as $d) {
                         $cities[] = [
                             'id'    => $d->id,
-                            'name'  => ucfirst( $d->name ),
-                            'url'   => '/'.Str::slug( $d->name ).'/'.$d->id.'/c1',
-                            'image' => uploaded_asset( $d->upload_id ),
-                            'extra' => ''
+                            'name'  => 'Things to do in ' . ucfirst($d->name),
+                            'url'   => '/' . Str::slug($d->name) . '/' . $d->id . '/c1',
+                            'image' => uploaded_asset($d->upload_id),
+                            'extra' => ucwords($d->state_name) . ', ' . ucwords($d->country_name),
+                            'total_tours' => $d->total_tours
                         ];
                     }                    
-
+                
+                    return response()->view('share.seo', [
+                        'title' => 'Top Travel Destinations, Tours & Activities Worldwide | TourBeez',
+                        'description' => 'Browse top travel destinations, tours and activities with TourBeez. Find and book great experiences now with easy booking and best ticket deals.',
+                        'keywords' => 'Top Travel Destinations, City Tours and Activities, Travel Experiences, Adventure Tours and Activities',
+                        'image' => "https://tourbeez.com/public/slides/01.jpg",
+                        // 'page' => 'destinations',
+                        'file' => 'destinations',
+                        'cities' => $cities, 
+                    ]);
+                }
+                else if ($path === 'tickets') {
                     //Tours
                     $tour_data = Cache::remember('tours_home_list', 86400, function () {
                         return DB::table(DB::raw("( 
@@ -108,7 +188,8 @@ class CrawlerResponse
                                 u.upload_id
                             FROM tours t
                             JOIN tour_upload u ON u.tour_id = t.id
-                            JOIN tour_locations l ON l.tour_id = t.id
+                            LEFT JOIN tour_locations l ON l.tour_id = t.id
+                            LEFT JOIN category_tour ct ON ct.tour_id = t.id
                             WHERE t.status = 1 
                             AND t.deleted_at IS NULL
                             AND l.city_id IS NOT NULL 
@@ -119,9 +200,10 @@ class CrawlerResponse
                                 WHERE s.tour_id = t.id
                                     AND s.until_date >= CURDATE()
                             )
+                            AND ct.category_id IN (97)
                             GROUP BY t.unique_code
                             ORDER BY t.sort_order DESC
-                            LIMIT 14
+                            LIMIT 25
                         ) as sub"))  // ✅ NO semicolon here
                         ->get();
                     });
@@ -137,88 +219,32 @@ class CrawlerResponse
                             'sku'   => $d->unique_code,
                         ];
                     }  
-                    
-                    //Blog
-                    $blog_data = Cache::remember('blog_home_list', 86400, function () {
-                        return DB::table('tb_posts as p')
-                            ->leftJoin('tb_postmeta as pm', 'pm.post_id', '=', 'p.ID')
-                            ->select('p.ID as id', 'p.post_title as name', 'p.post_name as slug', 'p.post_date', 'p.guid')
-                            ->where('p.post_type', 'post')
-                            ->where('p.post_status', 'publish')
-                            ->distinct()
-                            ->orderBy('p.post_date', 'desc')
-                            ->limit(25)
-                            ->get();
-                    });
 
-                    $blogs = [];
-                    foreach ($blog_data as $b) {
-
-                        // Get the featured image ID from post meta
-                        $image_id = DB::table('tb_postmeta')
-                            ->where('post_id', $b->id)
-                            ->where('meta_key', '_thumbnail_id')
-                            ->value('meta_value');
-
-                        // Get the image URL using the image ID (from tb_posts.guid)
-                        $image_url = null;
-                        if ($image_id) {
-                            $image_url = DB::table('tb_posts')
-                                ->where('ID', $image_id)
-                                ->value('guid');
-                        }
-
-                        $blogs[] = [
-                            'id'    => $b->id,
-                            'title'  => ucfirst($b->name),
-                            'url'   => ('https://tourbeez.com/blog/' . $b->slug), // or $b->guid if using permalink
-                            'image' => $image_url,
-                            'date' => date('d M, Y', strtotime($b->post_date))
-                        ];
-                    }
-
-    
                     return response()->view('share.seo', [
-                        'title' => 'Your Gateway To Amazing Tours & Tickets Worldwide | TourBeez - Going Beeyond',
-                        'description' => 'Discover unforgettable travel experiences with TourBeez. Book tours, activities, and tickets to top global destinations with ease and confidence. Explore, adventure, and enjoy every moment',
-                        'keywords' => 'travel tours, book tickets online, destination experiences, tour booking site, top travel activities',
-                        'image' => asset('public/512x512.jpg'),
-                        'page' => 'home',
+                        'title' => 'Book Tickets for Tours & Experiences, Fast Online Booking | TourBeez',
+                        'description' => 'Get tickets for tours, attractions and activities with TourBeez. Book now with easy booking and great deals on top experiences.',
+                        'keywords' => 'TourBeez Tickets, Book Tickets for Tours & Experiences',
+                        'image' => "https://tourbeez.com/public/slides/03.jpg",
+                        'page' => 'tickets',
                         'tours' => $tours, 
-                        'cities' => $cities, 
-                        'blogs' => $blogs
-                    ]);
-                }
-                else if ($path === 'destinations') {
-                    return response()->view('share.seo', [
-                        'title' => 'Explore Places Around The World | TourBeez Destinations',
-                        'description' => 'Browse TourBeez’s curated list of destinations worldwide. Find travel inspiration, destination guides, and the best tours in every city you want to visit',
-                        'keywords' => 'destinations, travel destinations, places to visit, holiday destinations, top destinations tours',
-                        'image' => asset('public/images/destination.jpg'),
-                    ]);
-                }
-                else if ($path === 'tickets') {
-                    return response()->view('share.seo', [
-                        'title' => 'Book Your Tour & Activity Tickets Easily | TourBeez Tickets',
-                        'description' => 'Buy tickets for tours, shows, and attractions via TourBeez. Find the best-priced tickets with secure booking and skip-the-line options for popular events',
-                        'keywords' => 'tour tickets, attraction tickets, show tickets, book tickets online, skip line tickets',
-                        'image' => asset('public/images/tickets.jpg'),
                     ]);
                 }
                 else if ($path === 'about-us') {
                     return response()->view('share.seo', [
-                        'title' => 'Our Story & Mission In Travel & Tours | About TourBeez',
-                        'description' => 'Learn about TourBeez: our mission, values, and dedication to providing exceptional travel experiences. Meet the team behind the tours and tickets you love',
-                        'keywords' => 'about TourBeez, travel company story, our mission, tour booking platform, company values, travel partner',
+                        'title' => 'Meet TourBeez, Expert Tour & Activity Booking Service',
+                        'description' => 'Get to know TourBeez and our mission for easy tour and activity bookings. Book top experiences with great prices today.',
+                        'keywords' => 'About TourBeez',
                         'image' => asset('public/images/about-us.jpg'),
+                        'file' => 'about-us'
                     ]);
                 }
                 else if ($path === 'contact-us') {
                     return response()->view('share.seo', [
-                        'title' => 'Get In Touch For Tour Help & Support | Contact TourBeez',
-                        'description' => 'Need assistance or have questions? Reach out to TourBeez. We’re here to help you with bookings, suggestions, and any travel-related support',
-                        'keywords' => 'contact TourBeez, customer support, travel assistance, tour help, get in touch',
+                        'title' => 'Contact TourBeez, Get Help with Tours & Bookings',
+                        'description' => 'Reach out to TourBeez for support on tours, bookings and tickets. Contact us now for quick assistance and easy travel help.',
+                        'keywords' => 'Contact TourBeez',
                         'image' => asset('public/images/contact-us.jpg'),
+                        'file' => 'contact-us'
                     ]);
                 }
                 else if ($path === 'wishlist') {
@@ -231,26 +257,29 @@ class CrawlerResponse
                 }
                 else if ($path === 'terms-and-conditions') {
                     return response()->view('share.seo', [
-                        'title' => 'TourBeez Booking Rules & Agreements | Terms & Conditions',
-                        'description' => 'Review the terms and conditions governing the use of TourBeez. Includes booking rules, user responsibilities, and service agreements',
-                        'keywords' => 'terms and conditions, booking terms, user agreement, service terms, legal terms',
+                        'title' => 'Terms and Conditions, Booking Rules & User Agreement | TourBeez',
+                        'description' => 'Read TourBeez terms and conditions for bookings, usage and responsibilities. Get clear info on rules and agreements before you book.',
+                        'keywords' => 'TourBeez Terms and Conditions',
                         'image' => asset('public/images/terms-condition.jpg'),
+                        'file' => 'terms-and-conditions'
                     ]);
                 }
                 else if ($path === 'privacy-policy') {
                     return response()->view('share.seo', [
-                        'title' => 'How TourBeez Protects Your Data | Privacy Policy',
-                        'description' => 'Read TourBeez\'s privacy policy. Learn how we collect, use, and protect your personal data when you book tours or use our services',
-                        'keywords' => 'privacy policy, data protection, user privacy, personal information, TourBeez security',
+                        'title' => 'Privacy Policy, Data Protection & User Privacy | TourBeez',
+                        'description' => 'Read TourBeez privacy policy to understand how we protect your data and personal information. Get clear details on privacy practices today.',
+                        'keywords' => 'TourBeez Privacy Policy',
                         'image' => asset('public/images/privacy-policy.jpg'),
+                        'file' => 'privacy-policy'
                     ]);
                 }
                 else if ($path === 'cancellation-policy') {
                     return response()->view('share.seo', [
-                        'title' => 'TourBeez Bookings & Refunds | Cancellation Policy',
-                        'description' => 'View TourBeez\'s cancellation policy. Understand how booking changes, refunds, and cancellations are handled for tours and tickets',
-                        'keywords' => 'cancellation policy, refund policy, tour cancellation, booking changes, ticket refund',
+                        'title' => 'Cancellation Policy, Refund Terms & Booking Changes | TourBeez',
+                        'description' => 'Read TourBeez cancellation policy and refund terms. Get clear info on booking changes, refunds and how to cancel tours with ease.',
+                        'keywords' => 'TourBeez Cancellation Policy, Reschedule Tour',
                         'image' => asset('public/images/cancel-policy.jpg'),
+                        'file' => 'cancellation-policy'
                     ]);
                 }
                 else if ($path === 'login') {
@@ -259,23 +288,134 @@ class CrawlerResponse
                         'description' => 'Log in to your TourBeez account to view and manage your tours, tickets, and wishlist. Secure access for fast booking history, updates, and personalized deals',
                         'keywords' => 'TourBeez login, account login, manage bookings, user account, tour booking account',
                         'image' => asset('public/images/login-banner.jpg'),
+                        'file' => 'login'
+                    ]);
+                }
+                else if($path === 'sitemap') {
+                    $perPage = 500;
+                    $page = 1;
+                    $cities = [];
+                    $cacheKey = "destinations_page_{$page}";
+                    $cacheTtl = now()->addHours(12); // adjust if needed       
+                    $data = Cache::remember($cacheKey, $cacheTtl, function () use ($perPage) {
+
+                        $query = DB::table('tour_locations as tl')
+                            ->join('tours as t', 't.id', '=', 'tl.tour_id')
+                            ->join('cities as c', 'c.id', '=', 'tl.city_id')
+                            ->leftJoin('states as s', 's.id', '=', 'tl.state_id')
+                            ->leftJoin('countries as co', 'co.id', '=', 'tl.country_id')
+                            ->select(
+                                'c.id',
+                                'c.name',
+                                'c.upload_id',
+                                'tl.state_id',
+                                'tl.country_id',
+                                's.name as state_name',
+                                'co.name as country_name',
+                                DB::raw('(
+                                    SELECT COUNT(DISTINCT t2.id)
+                                    FROM tours t2
+                                    JOIN tour_locations tl2 ON tl2.tour_id = t2.id
+                                    WHERE tl2.city_id = c.id
+                                    AND t2.status = 1
+                                    AND t2.deleted_at IS NULL
+                                    AND EXISTS (
+                                        SELECT 1 FROM tour_schedules ts2
+                                        WHERE ts2.tour_id = t2.id
+                                            AND ts2.until_date >= CURDATE()
+                                    )
+                                ) as total_tours')
+                            )
+                            ->where('c.upload_id', '>=', 1)
+                            ->where('t.status', 1)
+                            ->whereNull('t.deleted_at')
+                            ->whereExists(function ($q) {
+                                $q->select(DB::raw(1))
+                                ->from('tour_schedules as ts')
+                                ->whereColumn('ts.tour_id', 't.id')
+                                ->whereDate('ts.until_date', '>=', now());
+                            })
+                            ->groupBy(
+                                'c.id','c.name','c.upload_id',
+                                'tl.state_id','tl.country_id',
+                                's.name','co.name'
+                            )
+                            ->orderBy('c.name', 'ASC');
+
+                        $paginated = $query->paginate($perPage);
+
+                        foreach ($paginated->items() as $d) {
+                            $cities[] = [
+                                'title' => ucfirst($d->name) . ', ' .
+                                        ucwords($d->state_name) . ', ' .
+                                        ucwords($d->country_name),
+                                'href'  => '/' . Str::slug($d->name) . '/' . $d->id . '/c1',
+                            ];
+                        }   
+
+                        return $cities;
+                    });
+
+                    $sitemapData = [
+                        [
+                            'title' => 'TourBeez',
+                            'children' => [
+                                ['title' => 'Home', 'href' => '/'],
+                                ['title' => 'Destinations', 'href' => '/destinations'],
+                                ['title' => 'Tickets', 'href' => '/tickets'],
+                            ],
+                        ],
+                        [
+                            'title' => 'Company',
+                            'children' => [
+                                ['title' => 'Our Story', 'href' => '/about'],
+                                [
+                                    'title' => 'Careers',
+                                    'href' => 'https://www.indeed.com/cmp/Tour-Beez-Inc',
+                                    'external' => true
+                                ],
+                                ['title' => 'Blog', 'href' => '/blog'],
+                                ['title' => 'Wishlist', 'href' => '/wishlist'],
+                                ['title' => 'Suppliers', 'href' => '/supplier'],
+                            ],
+                        ],
+                        [
+                            'title' => 'Support',
+                            'children' => [
+                                ['title' => 'Contact Us', 'href' => '/contact'],
+                                ['title' => 'Cancellation options', 'href' => '/cancellation-policy'],
+                                ['title' => 'Privacy Policy', 'href' => '/privacy-policy'],
+                                ['title' => 'Terms & Conditions', 'href' => '/terms-and-conditions'],
+                            ],
+                        ],
+                        [
+                            'title' => 'Things To Do In',
+                            'children' => $data,
+                        ],
+                    ];
+
+                    return response()->view('share.seo', [
+                        'title' => 'Sitemap | TourBeez',
+                        'description' => 'Sitemap',
+                        'keywords' => 'Sitemap',
+                        'image' => asset('public/images/login-banner.jpg'),
+                        'sitemapData' => $sitemapData,
+                        'file' => 'sitemap'
                     ]);
                 }
                 else if ($path === 'supplier') {
                     return response()->view('share.seo', [
-                        'title' => 'Become a Supplier | TourBeez — Partner with Us for Tours & Experiences',
-                        'description' => 'Join TourBeez as a supplier. List your tours, experiences, and travel services on our platform to reach travelers worldwide. Partner with us today.',
-                        'keywords' => 'tour supplier, travel supplier, partner with TourBeez, list tours, travel experiences, tour operators, supplier portal, travel partners',
+                        'title' => 'Partner with TourBeez, Supplier & Tour Provider Opportunities | TourBeez',
+                        'description' => 'Join TourBeez as a supplier to list your tours and activities. Partner now for more bookings and easy platform access.',
+                        'keywords' => 'TourBeez Supplier, Tour Provider',
                         'image' => asset('public/images/supplier.jpg'),
+                        'file' => 'supplier'
                     ]);
                 }
-
                 // ----- Tour Page -----
                 else if (str_starts_with($path, 'tour/')) {
                     $slug = explode('/', $path)[1];
-                    //$tour = Tour::where('slug', $slug)->first();
 
-                    //$slug = $request->input('slug');
                     $cacheKey = 'tour_detail_' . $slug;
 
                     $tour = Tour::where('slug', $slug)
@@ -401,10 +541,7 @@ class CrawlerResponse
                         }
                     }
                     if ($tour) {
-                        //$image      = uploaded_asset($tour->main_image->id);
-                        //$medium_url = str_replace($tour->main_image->file_name, $tour->main_image->medium_name, $image);
-                        //$thumb_url  = str_replace($tour->main_image->file_name, $tour->main_image->thumb_name, $image);
-                        $thumb_url  = $galleries[0]['thumb_url'] ?? asset('public/512x512.jpg');
+                        $thumb_url  = $galleries[0]['thumb_url'] ?? asset('public/tourbeez-logo.jpg');
 
                         $formattedTour = [
                             'id'            => $tour->id,
@@ -446,10 +583,13 @@ class CrawlerResponse
                         ]);
                     }
                 }
-                else if (count($segments) == 3) {
-                    $citySlug = $segments[0];   // toronto
-                    $id       = $segments[1];   // 10519
-                    $type     = $segments[2];   // c1
+                // ----- Listing Page -----
+                else if (count($segments) == 2) {
+                    $citySlug = $segments[0];   // things-to-do-in-toronto
+                    $slug_id  = explode("-",$segments[1]);   // 10519-c1
+                    $id       = $slug_id[0];
+                    $type     = $slug_id[1] ?? null;   // c1
+
                     $d = null;
                     if ($type === 'c1') {
                         $d = City::findOrFail( $id );
@@ -526,7 +666,7 @@ class CrawlerResponse
 
                         // dd(getFullSql($query));
 
-                        $paginated = Cache::tags(['tours'])->remember($cacheKey, 86400, fn() => $query->paginate(12));
+                        $paginated = Cache::tags(['tours'])->remember($cacheKey, 86400, fn() => $query->paginate(24));
 
                         // Transform response
                         $items = $paginated->map(fn($d) => [
@@ -535,11 +675,11 @@ class CrawlerResponse
                             'slug'            => $d->slug,
                             'unique_code'     => $d->unique_code,
                             'all_images'      => $d->formatted_images,
-                            'description'       => $d->detail->description,
-                            'galleries'     => $d->galleries->map(fn($img) => [
-                                'original_url'  => uploaded_asset($img->id),
-                                'medium_url'    => str_replace($img->file_name, $img->medium_name, uploaded_asset($img->id)),
-                                'thumb_url'     => str_replace($img->file_name, $img->thumb_name, uploaded_asset($img->id))
+                            'description'     => $d->detail->description,
+                            'galleries'       => $d->galleries->map(fn($img) => [
+                                'original_url'=> uploaded_asset($img->id),
+                                'medium_url'  => str_replace($img->file_name, $img->medium_name, uploaded_asset($img->id)),
+                                'thumb_url'   => str_replace($img->file_name, $img->thumb_name, uploaded_asset($img->id))
                             ]),
                             'price'           => price_format($d->price),
                             'original_price'  => $d->discounted_data['original_price'],
@@ -550,29 +690,39 @@ class CrawlerResponse
                             'offer_ends_in'   => $d->offer_ends_in,    
                         ]);
 
+                        // $items2 = $paginated->map(fn($d) => [
+                        //     'galleries' => $d->galleries->map(fn($img) => [
+                        //         'thumb_url'   => str_replace($img->file_name, $img->thumb_name, uploaded_asset($img->id))
+                        //     ])
+                        // ]);
+                        $thumbUrl = optional( optional($items->first())['galleries'] ?? collect() )->first()['thumb_url'] ?? null;
+
+                        $name = ucfirst( $d->name );
+                        if($d->upload_id) {
+                            $image = uploaded_asset( $d->upload_id );
+                        }
+                        elseif ($thumbUrl) {
+                            $image = $thumbUrl;
+                        }
+                        else {
+                            $image = asset('tourbeez-logo.jpg');
+                        }
 
 
-                        return response()->view('share.tour', [
-                            'title' => countThingsToDo($id, $type).' Things To Do In ' .ucfirst( $d->name ).' | ' .env('APP_NAME') ,
-                            'description' => 'Discover tour in '.ucfirst( $d->name ).'. Enjoy unforgettable experiences, attractions, and adventures with TourBeez.',
-                            'image' => uploaded_asset( $d->upload_id ) ?? asset('public/512x512.jpg'),
+                        return response()->view('share.seo', [
+                            'title' => 'Top Things to Do in '.$name.' Tours & Attractions | TourBeez' ,
+                            'description' => 'Enjoy unforgettable experiences in '.$name.'. Explore tours, attractions & activities with TourBeez. Reserve your perfect '.$name.' trip today.',
+                            'keywords' => 'Things To Do In '.$name,
+                            'image' => $image,
                             'url' => url()->current(),
                             'items' => $items,
+                            'city' => $d,
+                            'file' => 'listing',
+                            'heading' => "All $name Tours & Excursions in 2026"
                         ]); 
                     }
                                        
                 }               
-
-                // ----- Static pages -----
-                // $page = Page::where('slug', $path)->first();
-                // if ($page) {
-                //     return response()->view('seo', [
-                //         'title' => $page->meta_title,
-                //         'description' => $page->meta_description,
-                //         'image' => asset('demo/assets/logo-DYnsi7vK.jpg'),
-                //         'url' => url()->current(),
-                //     ]);
-                // }             
             }
         }
 

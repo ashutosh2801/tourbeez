@@ -17,10 +17,23 @@ class SupplierController extends Controller
 
     public function index()
     {
+        $query = User::where('role', 'Supplier')
+            ->where('role', '<>', 'Super Admin');
 
-         $data = User::where('role', 'Supplier')->where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();   
-        
-        // $data = User::where('role', '<>', 'Super Admin')->orderBy('id','DESC')->get();
+        // Filters
+        if ($name = request('name')) {
+            $query->where('name', 'like', "%$name%");
+        }
+
+        if ($email = request('email')) {
+            $query->where('email', 'like', "%$email%");
+        }
+
+        // Pagination count
+        $perPage = request('per_page', 10);
+
+        $data = $query->orderBy('id', 'DESC')->paginate($perPage)->withQueryString();
+
         return view('admin.user.index', compact('data'));
     }
 
@@ -54,7 +67,6 @@ class SupplierController extends Controller
 
         $logoFile = $request->hasFile('company_logo') ? 
             $request->file('company_logo')->store('suppliers/logos', 'public') : null;
-
         $serviceImages = [];
         if ($request->hasFile('service_images')) {
             foreach ($request->file('service_images') as $image) {

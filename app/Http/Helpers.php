@@ -4,23 +4,159 @@ use App\Models\Addon;
 use App\Models\Currency;
 use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Models\OrderLog;
+use App\Models\Partner;
+use App\Models\PickupLocation;
 use App\Models\Setting;
 use App\Models\SmsTemplate;
 use App\Models\Tour;
-use App\Models\Translation;
 use App\Models\TourUpload;
+use App\Models\Translation;
 use App\Upload;
 use App\User;
-use Illuminate\Support\Facades\Http;
-
-// use App\Models\EmailTemplate;
-// use App\Models\SmsTemplate;
-// use App\Models\Notification;
 use Ashutosh2801\Colorcodeconverter\Colorcodeconverter;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 //use Illuminate\Support\Facades\Storage;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+
+if(!function_exists('generateQRCodeForPassengerPickup')) {
+    function generateQRCodeForPassengerPickup(
+        Order $order,
+        bool $requireOrderVerification = true
+    )
+    {
+        $galleryUploadUrl = URL::temporarySignedRoute(
+            $requireOrderVerification
+                ? 'tour-gallery.required-order-id'
+                : 'tour-gallery.show',
+            now()->addDays(30),
+            [
+                'order' => $order->id,
+            ]
+        );
+
+        $writer = new PngWriter();
+
+        $qrCode = new QrCode(
+            data: $galleryUploadUrl,
+            size: 250,
+            margin: 10
+        );
+
+        $qrResult = $writer->write($qrCode);
+
+        $qrDirectory = 'uploads/tour-gallery-qrcodes';
+
+        $qrFileName = 'order-' .
+            $order->id .
+            '-' .
+            md5($galleryUploadUrl) .
+            '.png';
+
+        $qrPath = $qrDirectory . '/' . $qrFileName;
+
+        Storage::disk('s3')->put(
+            $qrPath,
+            $qrResult->getString(),
+            [
+                'visibility' => 'public',
+                'ContentType' => 'image/png',
+            ]
+        );
+
+        $galleryQrUrl = Storage::disk('s3')->url($qrPath);
+        return [$galleryUploadUrl, $galleryQrUrl];
+    }
+}
+
+if(!function_exists('getManifestOrderGuestCount')) {
+    function getManifestOrderGuestCount( Order $order, string $date ): int {
+        $orderTour = $order->orderTours
+            ->first(function ($orderTour) use ($date) {
+                return Carbon::parse($orderTour->tour_date)
+                    ->toDateString() === Carbon::parse($date)
+                    ->toDateString();
+            });
+
+        if (!$orderTour) {
+            return 0;
+        }
+
+        return (int) collect(
+            json_decode($orderTour->tour_pricing, true) ?? []
+        )->sum('quantity');
+    }
+}
+
+if(!function_exists('getSinglePickupLocation')) {
+    function getSinglePickupLocation(Order $order): array
+    {
+        if (!$order->customer) {
+            return '';
+        }
+
+        if ($order->customer->pickup_name) {
+            return $order->customer->pickup_name;
+        }
+
+        if (!$order->customer->pickup_id) {
+            return '';
+        }
+
+        $pickupLocation = PickupLocation::find(
+            $order->customer->pickup_id
+        );
+
+        if (!$pickupLocation) {
+            return '';
+        }
+
+        return [
+            'location' => $pickupLocation->location,
+            'address'  => $pickupLocation->address,
+            'time'     => $pickupLocation->time,
+        ];
+    }
+}
+
+if(!function_exists('getManifestPickupLocation')) {
+    function getManifestPickupLocation(Order $order): string
+    {
+        if (!$order->customer) {
+            return '';
+        }
+
+        if ($order->customer->pickup_name) {
+            return $order->customer->pickup_name;
+        }
+
+        if (!$order->customer->pickup_id) {
+            return '';
+        }
+
+        $pickupLocation = PickupLocation::find(
+            $order->customer->pickup_id
+        );
+
+        if (!$pickupLocation) {
+            return '';
+        }
+
+        return collect([
+            $pickupLocation->location,
+            $pickupLocation->address,
+            //$pickupLocation->time,
+        ])
+            ->filter()
+            ->implode(' - ');
+    }
+}
 
 if(!function_exists('getFullSql')) {
     function getFullSql($query)
@@ -31,6 +167,126 @@ if(!function_exists('getFullSql')) {
             $sql = preg_replace('/\?/', $value, $sql, 1);
         }
         return $sql;
+    }
+}
+
+// group tour status
+if(!function_exists('report_group_tours')) {
+    function report_group_tours() {
+        return [
+            1 => 'Day Tour',
+            2 => 'Evening Tour',
+            6 => 'Helicopter Tour',
+            4 => 'Private Tour',
+            5 => 'Group Tour',
+            99=> 'Unknown'
+        ];
+    }
+}
+if(!function_exists('group_tour_status')) {
+    function report_group_tour_status($number) {
+        switch ($number) {
+            case 1:
+                return 'Day Tour';
+                break;
+            case 2:
+                return 'Evening Tour';
+                break;
+            case 3:
+                return 'Helicopter Tour';
+                break;
+            case 4:
+                return 'Private Tour';
+                break;
+            case 5:
+                return 'Group Tour';
+                break;
+            default:
+                return 'Unknown';
+                break;
+        }
+    }
+}
+
+if(!function_exists('source_list_db2324')) {
+    function source_list_db32432() {
+        $partners = Partner::select('id', 'slug', 'name')->orderBy('name', 'ASC')->get();
+        $p = $partners->map(function($item) {
+            return (object)['key' => $item->slug, 'name' => $item->name];
+        })->toArray();
+
+        return $p;
+        // return [
+        //     (object)['key'=> 'internal', 'name' => 'Internal', 'exclude_payment' => false],
+        //     (object)['key'=> 'getyourguide', 'name' => 'GetYourGuide (Excluding payment)', 'exclude_payment' => true],
+        //     (object)['key'=> 'niagarafallstour', 'name' => 'Niagara Falls Tour', 'exclude_payment' => false],
+        //     (object)['key'=> 'rezdy', 'name' => 'Rezdy (Excluding payment)', 'exclude_payment' => true],
+        //     (object)['key'=> 'toniagara', 'name' => 'Toniagara', 'exclude_payment' => false],
+        //     (object)['key'=> 'tourbeez', 'name' => 'Tourbeez', 'exclude_payment' => false],
+        //     (object)['key'=> 'tripadvisor', 'name' => 'TripAdvisor (Excluding payment)', 'exclude_payment' => true],
+        //     (object)['key'=> 'viator', 'name' => 'Viator (Excluding payment)', 'exclude_payment' => true],
+        // ];
+    }
+}
+
+if (!function_exists('source_list_db')) {
+    function source_list_db() {
+        $partners = Partner::select('id', 'slug', 'name', 'exclude_payment')
+            ->orderBy('name', 'ASC')
+            ->get();
+
+        return $partners->map(function ($item) {
+            return (object)[
+                'key' => $item->slug,
+                'name' => $item->name,
+                'exclude_payment' => (bool) $item->exclude_payment,
+            ];
+        })->toArray();
+    }
+}
+
+if(!function_exists('source_list')) {
+    function source_list($item) {
+        switch(strtolower($item)) {
+            case 'toniagara':
+                return 'TN';
+                break;
+            case 'niagarafallstour' :
+                return 'NFT';
+                break;
+            case 'tourbeez' :
+                return 'TB';
+                break;
+            case 'internal' :
+                return 'Internal';
+                break;
+            case 'getyourguide' :
+                return 'GYG';
+                break;
+            case 'viator' :
+                return 'Viator';
+                break;
+            case 'tripadvisor' :
+                return 'TripAdvisor';
+                break;
+            case 'rezdy' :
+                return 'Rezdy';
+                break;
+            default:
+                return $item;
+        }
+    }
+}
+function excluded_payment_sources() {
+    return collect(source_list_db())
+        ->where('exclude_payment', true)
+        ->pluck('key')
+        ->toArray();
+}
+
+if(!function_exists('remove_last_Tour_word')) {
+    function remove_last_Tour_word($string) {
+        return preg_replace('/\s+(tour|tours)$/i', '', $string);
     }
 }
 
@@ -118,7 +374,7 @@ if(!function_exists('price_format')) {
 
 
 if (!function_exists('price_format_with_currency')) {
-    function price_format_with_currency($amount, $currency = 'USD')
+    function price_format_with_currency($amount, $currency = 'USD', $tourCurrency=NULL)
     {
         // // Define currency symbols (add more as needed)
         // $symbols = [
@@ -132,8 +388,21 @@ if (!function_exists('price_format_with_currency')) {
         // ];
 
         //$symbol = $symbols[$currency] ?? $currency;
+        
+        $from = $currency;
 
-        return $currency . " " . number_format($amount, 2);
+        $currency = $currency;
+
+        if($tourCurrency){
+           $currency = $tourCurrency;
+        }
+        
+        // $converted = currencyConvert($amount, $from, $currency);
+
+
+        $converted = currencyConvertWithoutRound($amount, $from, $currency);
+
+        return $currency . " " . number_format($converted, 2);
     }
 }
 
@@ -177,6 +446,60 @@ if (! function_exists('getTourExtraDetails')) {
     }
 }
 
+if (! function_exists('getMergedTourExtrasData')) {
+    function getMergedTourExtrasData($order_tour)
+    {
+        $tour_extra = !empty($order_tour->tour_extra)
+            ? json_decode($order_tour->tour_extra)
+            : [];
+
+        // Map for fast lookup
+        $tourExtraMap = collect($tour_extra)->keyBy('tour_extra_id');
+
+        $addons = $order_tour->tour?->addons ?? collect();
+
+        // Step 1: Ensure all tour addons exist (with default qty = 0)
+        $addons = $addons->map(function ($extra) use ($tourExtraMap) {
+
+            $result = $tourExtraMap[$extra->id] ?? null;
+
+            return (object)[
+                'id' => $extra->id,
+                'name' => $extra->name,
+                'price' => $result->price ?? $extra->price,
+                'currency' => $extra->currency,
+                'quantity' => $result->quantity ?? 0,
+                'gross_total_price' => $result->gross_total_price ?? null,
+                'newly_added_quantity' => $result->newly_added_quantity ?? 0,
+                'newly_added_price' => $result->newly_added_price ?? null,
+                'newly_added_rate' => $result->newly_added_rate ?? null,
+            ];
+        });
+
+        // Step 2: Add extras from JSON not present in tour
+        $missingExtras = collect($tour_extra)->filter(function ($item) use ($addons) {
+            return !$addons->contains('id', $item->tour_extra_id);
+        })->map(function ($item) {
+            return (object)[
+                'id' => $item->tour_extra_id,
+                'name' => $item->label ?? 'Custom Extra',
+                'price' => $item->price,
+                'currency' => null,
+                'quantity' => $item->quantity ?? 0,
+                'gross_total_price' => $item->gross_total_price ?? $item->total_price ?? null,
+                'newly_added_quantity' => $item->newly_added_quantity ?? 0,
+                'newly_added_price' => $item->newly_added_price ?? null,
+                'newly_added_rate' => $item->newly_added_rate ?? null,
+            ];
+        });
+
+        // Final merged list
+        $finalExtras = $addons->concat($missingExtras);
+
+        return $finalExtras;
+    }
+}
+
 if (! function_exists('getTourPricingDetails')) {
     function getTourPricingDetails($data, $tour_pricing_id=0)
     {
@@ -185,6 +508,12 @@ if (! function_exists('getTourPricingDetails')) {
                 return [
                     'quantity' => $item->quantity,
                     'price' => $item->price,
+                    'actual_price' => isset($item->actual_price) ? $item->actual_price : $item->price,
+                    'discount' => isset($item->discount) ? $item->discount : 0,
+                    'gross_total_price' => $item->gross_total_price ?? null,
+                    'newly_added_quantity' => $item->newly_added_quantity ?? 0,
+                    'newly_added_price' => $item->newly_added_price ?? null,
+                    'newly_added_rate' => $item->newly_added_rate ?? null,
                 ];
             }
         }
@@ -242,13 +571,18 @@ if (!function_exists('uploaded_asset')) {
 if (!function_exists('main_image_html')) {
     function main_image_html($id, $type='thumb')
     {
-        $image = uploaded_asset($id);
-        if($image != null) {
-            $img = '<img class="img-md" src="'. $image .'" height="45px"  alt="'. translate('photo') .'">';
-        }
-        else {
-            $img = '<img class="img-md" src="'. static_asset('assets/img/avatar-place.png') .'" height="45px"  alt="'. translate('photo') .'">';
-        }
+        $asset = Upload::find($id);
+        $imagePath = $asset
+            ? ($type === 'thumb'
+                ? ($asset->thumb_name ?: $asset->medium_name ?: $asset->file_name)
+                : ($type === 'medium'
+                    ? ($asset->medium_name ?: $asset->file_name)
+                    : $asset->file_name))
+            : null;
+        $image = $imagePath
+            ? static_asset($imagePath)
+            : static_asset('assets/img/avatar-place.png');
+        $img = '<img class="img-md tour-list-thumbnail" src="'. $image .'" width="48" height="48" loading="lazy" alt="'. translate('photo') .'">';
 
         // $data = $this->hasOne(TourImage::class)->where('is_main', 1);
         // if(isset($data->image) && public_path('tour/' . $data->image) ) {
@@ -675,28 +1009,31 @@ if (! function_exists('order_status')) {
     {
         switch($val) {
             case 1:
-                return '<span class="badge badge-inline badge-abandoned text-green-800 bg-green-100 px-4 py-2  rounded-full">Abandoned</span>';
+                return '<span class="badge badge-inline badge-abandoned text-red-800 bg-red-100 px-2 py-2  rounded-full">Abandoned</span>';
                 break;
             case 2:
-                return '<span class="badge badge-inline badge-onHold text-red-800 bg-red-100 px-4 py-2  rounded-full">On Hold</span>';
+                return '<span class="badge badge-inline badge-onHold text-blue-800 bg-blue-100 px-2 py-2  rounded-full">On Hold</span>';
                 break;
             case 3:
-                return '<span class="badge badge-inline badge-pendingSupplier text-yellow-800 bg-yellow-100 px-4 py-2  rounded-full">Pending supplier</span>';
+                return '<span class="badge badge-inline badge-pendingSupplier text-yellow-800 bg-red-100 px-2 py-2  rounded-full">Pending supplier</span>';
                 break; 
             case 4:
-                return '<span class="badge badge-inline badge-pendingCustomer text-yellow-800 bg-yellow-100 px-4 py-2  rounded-full">Pending customer</span>';
+                return '<span class="badge badge-inline badge-pendingCustomer text-yellow-800 bg-red-100 px-2 py-2  rounded-full">Pending customer</span>';
                 break;
             case 5:
-                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-4 py-2  rounded-full">Confirmed</span>';
+                return '<span class="badge badge-inline badge-confirmed text-green-600 bg-green-100 px-2 py-2  rounded-full">Confirmed</span>';
                 break;
             case 6:
-                return '<span class="badge badge-inline badge-cancelled text-red-800 bg-red-100 px-4 py-2  rounded-full">Cancelled</span>';   
+                return '<span class="badge badge-inline badge-cancelled text-red-800 bg-red-100 px-2 py-2  rounded-full">Cancelled</span>';   
                 break;  
             case 7:
-                return '<span class="badge badge-inline badge-abandoned text-red-800 bg-red-100 px-4 py-2  rounded-full">Abandoned cart</span>';   
+                return '<span class="badge badge-inline badge-abandoned text-blue-800 bg-blue-100 px-2 py-2  rounded-full">Requires capture</span>';   
                 break; 
+            case 8:
+                return '<span class="badge badge-inline badge-confirmed text-green-800 bg-green-100 px-2 py-2  rounded-full">Trip completed</span>';
+                break;    
             default:
-                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-4 py-2  rounded-full">Not completed</span>';   
+                return '<span class="badge badge-inline badge-notCompleted text-gray-800 bg-gray-100 px-2 py-2  rounded-full">Abandoned</span>';   
                 break;   
         }
     }
@@ -706,13 +1043,14 @@ if (! function_exists('order_status_list')) {
     function order_status_list()
     {
         return [
-            1 => "New",
+            1 => "Abandoned",
             2 => "On Hold",
             3 => "Pending supplier",
             4 => "Pending customer",
             5 => "Confirmed",
             6 => "Cancelled",
-            7 => "Abandoned cart"
+            7 => "Requires capture",
+            8 => "Trip completed",
         ];
     }
 }
@@ -1281,13 +1619,15 @@ if (!function_exists('emailAlreadySent')) {
     }
 }
 if (!function_exists('currencyConvert')) {
-function currencyConvert(float $amount, string $from, string $to = 'USD')
+    function currencyConvert(?float $amount, string $from, string $to = 'USD')
     {
-        // Always uppercase currency codes
+        if ($amount === null) {
+            return 0.0;
+        }
+
         $from = strtoupper($from);
         $to   = strtoupper($to);
 
-        // Fetch conversion rates (cached for 12 hours)
         $rates = Cache::remember('conversion_rates', 43200, function () {
             $response = Http::get('https://tourbeez.com/public/data/conversion_rates.json');
             if ($response->ok()) {
@@ -1297,23 +1637,415 @@ function currencyConvert(float $amount, string $from, string $to = 'USD')
         });
 
         if (empty($rates)) {
-            return $amount; // fallback: return same amount if API fails
+            // return round($amount);
+            return (float) number_format($amount, 6, '.', '');
         }
 
-        // All rates are based on CAD
         $rateFrom = $rates[$from] ?? null;
         $rateTo   = $rates[$to] ?? null;
 
         if (!$rateFrom || !$rateTo) {
-            return $amount; // fallback: unknown currency
+            // return round($amount); 
+            return (float) number_format($amount, 6, '.', '');
+
         }
+        // dd($rateFrom, $rateTo, $amount);
+        // ✅ USD-based conversion (MATCHES FRONTEND)
+        $converted = ($amount / $rateFrom) * $rateTo;
 
-        // Convert from -> CAD -> to
-        $amountInCad = $amount / $rateFrom;
-        $converted   = $amountInCad * $rateTo;
+        // return round($converted);
+        return (float) number_format($converted, 6, '.', '');
 
-        // Round to 2 decimals
-        return round($converted, 2);
+        // return round($converted, 2);
     }
 }
+if (!function_exists('cardSvg')) {
+    function cardSvg($brand) {
+
+        $brand = strtolower($brand);
+
+        $svgs = [
+
+        'visa' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#1A1F71"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="12" font-weight="bold">VISA</text>
+        </svg>',
+
+        'mastercard' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <circle cx="20" cy="12" r="8" fill="#EB001B"/>
+        <circle cx="28" cy="12" r="8" fill="#F79E1B"/>
+        </svg>',
+
+        'amex' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#2E77BB"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">AMEX</text>
+        </svg>',
+
+        'discover' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#FF6000"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">DISC</text>
+        </svg>',
+
+        'default' => '<svg width="40" height="24" viewBox="0 0 48 24">
+        <rect width="48" height="24" rx="4" fill="#6c757d"/>
+        <text x="24" y="16" text-anchor="middle" fill="white" font-size="10">CARD</text>
+        </svg>'
+        ];
+
+        return $svgs[$brand] ?? $svgs['default'];
+
+    }
+}
+
+
+if (!function_exists('price_with_currency_no_round')) {
+    function price_with_currency_no_round($amount, $currency = 'USD', $tourCurrency=NULL)
+    {
+        $from = $currency;
+
+        $currency = $currency;
+
+        if($tourCurrency){
+           $currency = $tourCurrency;
+        }
+        
+        $converted = currencyConvertWithoutRound($amount, $from, $currency);
+
+        return $currency . " " . number_format($converted, 2);
+    }
+}
+
+if (!function_exists('currencyConvertWithoutRound')) {
+    function currencyConvertWithoutRound(?float $amount, string $from, string $to = 'USD')
+    {
+        if ($amount === null) {
+            return 0.0;
+        }
+
+        $from = strtoupper($from);
+        $to   = strtoupper($to);
+
+        $rates = Cache::remember('conversion_rates', 43200, function () {
+            $response = Http::get('https://tourbeez.com/public/data/conversion_rates.json');
+            if ($response->ok()) {
+                return $response->json()['conversion_rates'] ?? [];
+            }
+            return [];
+        });
+
+        if (empty($rates)) {
+            return number_format($amount, 6, '.', '');
+        }
+
+        $rateFrom = $rates[$from] ?? null;
+        $rateTo   = $rates[$to] ?? null;
+
+        if (!$rateFrom || !$rateTo) {
+            return number_format($amount, 6, '.', '');
+        }
+        // dd($rateFrom, $rateTo, $amount);
+        // ✅ USD-based conversion (MATCHES FRONTEND)
+        $converted = ($amount / $rateFrom) * $rateTo;
+
+        // return round($converted);
+        return (float) number_format($converted, 6, '.', '');
+
+        // return round($converted, 2);
+    }
+}
+    if (!function_exists('isOptionalPricing')) {
+        function isOptionalPricing($label) {
+            $label = strtolower($label);
+            return str_contains($label, 'child') || str_contains($label, 'infant');
+        }
+    }
+
+    if (! function_exists('formatActivityValue')) {
+        function formatActivityValue($key, $value)
+        {
+            // ✅ Order Status
+            if ($key == 'order_status') {
+                return order_status_list()[$value] ?? $value;
+            }
+            if (in_array($key, ['created_at', 'updated_at', 'deleted_at'])) {
+                return humanDate(\Carbon\Carbon::parse($value));
+            }
+
+            // ✅ Numeric values
+            if (is_numeric($value)) {
+                return number_format($value, 2);
+            }
+
+
+
+            return $value;
+        }
+    }
+
+    if (! function_exists('formatActivityKey')) {
+        function formatActivityKey($key)
+        {
+            return ucfirst(str_replace('_', ' ', $key));
+        }
+    }
+    if (! function_exists('humanDate')) {
+        function humanDate($date)
+        {
+            if (!$date) return '-';
+
+            return $date->diffForHumans() . ' (' . $date->format('d M Y, h:i A') . ')';
+        }
+    }
+
+        if (!function_exists('activity_models_list')) {
+        function activity_models_list()
+        {
+            return [
+                'App\Models\Addon' => 'Addon',
+                'App\Models\Category' => 'Category',
+                'App\Models\City' => 'City',
+                'App\Models\Collection' => 'Collection',
+                'App\Models\Country' => 'Country',
+                'App\Models\Contact' => 'Contact',
+                'App\Models\Exclusion' => 'Exclusion',
+                'App\Models\EmailTemplate' => 'Email Template',
+                'App\Models\Faq' => 'FAQ',
+                'App\Models\Feature' => 'Feature',
+                'App\Models\Inclusion' => 'Inclusion',
+                'App\Models\Itinerary' => 'Itinerary',
+                'App\Models\Optional' => 'Optional',
+                'App\Models\OptionalTour' => 'Optional Tour',
+                'App\Models\OrderCustomer' => 'Order Customer',
+                'App\Models\OrderPayment' => 'Order Payment',
+                'App\Models\OrderTour' => 'Order Tour',
+                'App\Models\Partner' => 'Partner',
+                'App\Models\PartnerTour' => 'Partner Tour',
+                'App\Models\Pickup' => 'Pickup',
+                'App\Models\PickupLocation' => 'Pickup Location',
+                'App\Models\ScheduleDeleteSlot' => 'Schedule Delete Slot',
+                'App\Models\State' => 'State',
+                'App\Models\SubCategory' => 'Sub Category',
+                'App\Models\TourImage' => 'Tour Image',
+                'App\Models\TourDetail' => 'Tour Detail',
+                'App\Models\Tour' => 'Tour',
+                'App\Models\TourLocation' => 'Tour Location',
+                'App\Models\TourMeta' => 'Tour Meta',
+                'App\Models\TourPricing' => 'Tour Pricing',
+                'App\Models\TourSchedule' => 'Tour Schedule',
+                'App\Models\TourScheduleRepeats' => 'Tour Schedule Repeats',
+                'App\Models\TourSpecialDeposit' => 'Tour Special Deposit',
+                'App\Models\Tourtype' => 'Tour Type',
+                'App\Models\TourUpload' => 'Tour Upload',
+                'App\Models\UserSupplier' => 'User Supplier',
+            ];
+        }
+    }
+
+    if (!function_exists('activity_description')) {
+
+        function activity_sentence_full($log)
+        {
+            $user = optional($log->causer)->first_name 
+                ?? optional($log->causer)->name 
+                ?? 'User';
+
+            $model = class_basename($log->subject_type);
+            $subject = $log->subject;
+
+            $properties = $log->properties ? $log->properties->toArray() : [];
+            $attributes = $properties['attributes'] ?? [];
+            $old = $properties['old'] ?? [];
+
+            $orderNumber = $subject->order_number 
+                ?? ($attributes['order_number'] ?? null);
+
+            $id = $subject->id ?? $log->subject_id;
+
+            // 🎯 Action wording (natural English)
+            if ($log->description === 'created') {
+                $sentence = "<span class='user'>{$user}</span> created a new <b>{$model}</b>";
+            } elseif ($log->description === 'updated') {
+                $sentence = "<span class='user'>{$user}</span> made changes to the <b>{$model}</b>";
+            } elseif ($log->description === 'deleted') {
+                $sentence = "<span class='user'>{$user}</span> removed the <b>{$model}</b>";
+            } else {
+                $sentence = "<span class='user'>{$user}</span> performed <b>{$log->description}</b> on <b>{$model}</b>";
+            }
+
+            // 📦 Entity context
+            if ($orderNumber) {
+                $sentence .= " for order <span class='order'>{$orderNumber}</span>";
+            } else {
+                $sentence .= " (ID: {$id})";
+            }
+
+            // 🔥 Changes (human readable)
+            $changes = [];
+
+            foreach ($attributes as $key => $value) {
+
+                if (is_array($value)) continue;
+
+                $oldValue = $old[$key] ?? null;
+
+                if ($oldValue != $value) {
+
+                    $label = formatActivityKey($key);
+
+                    $newVal = formatActivityValue($key, $value);
+                    $oldVal = $oldValue !== null 
+                        ? formatActivityValue($key, $oldValue) 
+                        : null;
+
+                    if ($oldValue !== null) {
+                        $changes[] = "{$label} was updated from <span class='old'>{$oldVal}</span> to <span class='new'>{$newVal}</span>";
+                    } else {
+                        $changes[] = "{$label} was set to <span class='new'>{$newVal}</span>";
+                    }
+                }
+            }
+
+            // ✨ Add changes nicely
+            if (!empty($changes)) {
+
+                $sentence .= ". ";
+
+                $visible = array_slice($changes, 0, 2);
+
+                $sentence .= implode(', ', $visible);
+
+                if (count($changes) > 2) {
+                    $sentence .= ", along with other updates";
+                }
+            }
+
+            return $sentence;
+        }
+        
+    }
+
+    if (!function_exists('number_format_with_currency')){
+        function number_format_with_currency($amount)
+        {
+            return '$ ' . number_format((float)$amount, 2);
+        }
+    }
+
+    if (!function_exists('orderLogAdvanced')){
+        function orderLogAdvanced($order = null, $stage = null, $step = null, $status = null, $message = null, $extra = [])
+        {
+            try {
+
+                $context = array_merge([
+                    'order_status'   => $order->order_status ?? null,
+                    'payment_status' => $order->payment_status ?? null,
+                ], $extra);
+
+                OrderLog::create([
+                    'order_id'          => $order->id ?? null,
+                    'stage'             => $stage,
+                    'step'              => $step,
+                    'status'            => $status,
+                    'message'           => $message,
+                    'context'           => $context,
+                    'payment_status'    => $context['payment_status'] ?? null,
+                    'event_id'          => $context['event_id'] ?? null,
+                    'payment_intent_id' => $context['payment_intent_id'] ?? null,
+                ]);
+
+            } catch (\Exception $e) {
+                \Log::error('OrderLog failed: ' . $e->getMessage());
+            }
+        }
+    }
+
+    if (!function_exists('apply_report_sorting')) {
+
+        function apply_report_sorting(
+            $query,
+            $request,
+            $tourDateColumn = 'order_tours.tour_date',
+            $bookingDateColumn = 'orders.created_at',
+            $revenueColumn = 'orders.total_amount'
+        ) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | AUTO DETERMINE SORT
+            |--------------------------------------------------------------------------
+            */
+
+            $orderBy = $request->input('order_by');
+
+            if (!$orderBy) {
+
+                if ($request->filled('booking_date')) {
+
+                    $orderBy = 'booking_date_asc';
+
+                } elseif ($request->filled('tour_date')) {
+
+                    $orderBy = 'tour_date_asc';
+
+                } else {
+
+                    $orderBy = 'tour_date_desc';
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | APPLY SORT
+            |--------------------------------------------------------------------------
+            */
+
+            $sorts = [
+                'tour_date_asc'      => [$tourDateColumn, 'asc'],
+                'tour_date_desc'     => [$tourDateColumn, 'desc'],
+
+                'booking_date_asc'   => [$bookingDateColumn, 'asc'],
+                'booking_date_desc'  => [$bookingDateColumn, 'desc'],
+
+                // 'revenue_asc'        => [$revenueColumn, 'asc'],
+                // 'revenue_desc'       => [$revenueColumn, 'desc'],
+            ];
+
+            [$column, $direction] = $sorts[$orderBy]
+                ?? [$tourDateColumn, 'desc'];
+
+            return $query->orderBy($column, $direction);
+        }
+    }
+
+    if (!function_exists('convertTo24HourFormat')) {
+        function convertTo24HourFormat($time)
+        {
+            return date('H:i', strtotime($time));
+        }
+    }
+    if (!function_exists('business_expense_categories')) {
+
+        function business_expense_categories()
+        {
+            return [
+                'marketing'       => 'Marketing',
+                'facebook_ads'    => 'Facebook Ads',
+                'google_ads'      => 'Google Ads',
+                'instagram_ads'   => 'Instagram Ads',
+                'influencer'      => 'Influencer',
+                'commission'      => 'Commission',
+                'salary'          => 'Salary',
+                'software'        => 'Software',
+                'office'          => 'Office',
+                'travel'          => 'Travel',
+                'refund'          => 'Refund',
+                'bank_charges'    => 'Bank Charges',
+                'payment_gateway' => 'Payment Gateway',
+                'miscellaneous'   => 'Miscellaneous',
+                'other'           => 'Other',
+            ];
+        }
+
+    }
+
 ?>

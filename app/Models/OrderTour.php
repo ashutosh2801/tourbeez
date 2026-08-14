@@ -6,22 +6,25 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class OrderTour extends Model
 {
     use HasFactory;
     use LogsActivity;
+    use SoftDeletes;
 
     public $timestamps = false;
     protected $fillable = [
-        'tour_id', 'order_id', 'tour_date', 'tour_time', 'tour_pricing', 'tour_extra', 'tour_fees', 'number_of_guests', 'total_amount'
+        'tour_id', 'order_id', 'tour_date', 'tour_time', 'tour_pricing', 'tour_extra', 'tour_fees', 'discount', 'number_of_guests', 'total_amount'
     ];
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
         ->useLogName('OrderTour')
-        ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
+        ->setDescriptionForEvent(fn(string $eventName) => "OrderTour has been {$eventName}")
         ->logOnly(['*'])
         ->logOnlyDirty()
         ->dontSubmitEmptyLogs();

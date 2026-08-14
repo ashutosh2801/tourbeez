@@ -20,29 +20,82 @@ class Dashboard extends Component
     /**
      * Create a new component instance.
      */
+    // public function __construct($days = 7)
+    // {
+    //     // Default metrics
+    //     $user_count = User::where('user_type', 'Member')->count();
+    //     $tour_count = Tour::count();
+    //     $category_count = Category::count();
+    //     $staff_count = User::whereNotIn('user_type', ['Member', 'Super Admin'])->count();
+
+    //     view()->share(compact('user_count', 'tour_count', 'category_count', 'staff_count'));
+
+    //     // --- Performance Metrics ---
+    //     $this->days = $days;
+
+    //     $startDate = Carbon::now()->subDays($days)->startOfDay();
+    //     $endDate   = Carbon::now()->endOfDay();
+
+    //     // SupplierOrderScope auto-applies for suppliers
+    //     $orders = Order::whereBetween('created_at', [$startDate, $endDate])
+    //                    ->whereNull('deleted_at');
+
+    //     // Cache sums to minimize query load
+    //     $totalAmount   = $orders->sum('total_amount');
+    //     $bookedAmount  = $orders->sum('booked_amount');
+    //     $balanceAmount = $orders->sum('balance_amount');
+    //     $refundAmount  = (clone $orders)->where('order_status', 4)->sum('total_amount');
+
+    //     $this->performance = [
+    //         'number_of_orders' => $orders->count(),
+    //         'value_of_orders'  => $totalAmount,
+    //         'total_paid'       => $totalAmount - $balanceAmount,
+    //         'total_refund'     => $refundAmount,
+    //         'total_discount'   => $bookedAmount > 0 ? ($totalAmount - $bookedAmount) : 0,
+    //         'total_owed'       => $balanceAmount,
+    //     ];
+    // }
 
 
     public function __construct($days = 7)
     {
-
-                // Default metrics
-        $user_count = User::where('user_type', 'Member')->count();
-        $tour_count = Tour::count();
+        // Default metrics
+        $user_count     = User::where('user_type', 'Member')->count();
+        $tour_count     = Tour::count();
         $category_count = Category::count();
-        $staff_count = User::whereNotIn('user_type', ['Member', 'Super Admin'])->count();
+        $staff_count    = User::whereNotIn('user_type', ['Member', 'Super Admin'])->count();
 
         view()->share(compact('user_count', 'tour_count', 'category_count', 'staff_count'));
 
         $this->days = $days;
 
-        $startDate = Carbon::now()->subDays($days)->startOfDay();
-        $endDate   = Carbon::now()->endOfDay();
+        // Base query
+        //whereIn('order_status', [3, 5])->
+        $query = Order::whereIn('order_status', [3,5])->whereHas('customer', function ($q) {
+                        $q->whereNotNull('first_name')
+                          ->where('first_name', '!=', '');
+                    })->with('payments')
+                    ->whereNull('deleted_at');
 
-        // Fetch orders for the selected date range
-        $orders = Order::whereBetween('created_at', [$startDate, $endDate])
-                       ->whereNull('deleted_at')
-                       ->get(['currency', 'total_amount', 'booked_amount', 'balance_amount', 'order_status']);
+        // Apply date filter only if NOT "all"
+        if ($days !== 'all') {
 
+            $startDate = Carbon::today()->subDays($days - 1)->startOfDay();
+            $endDate   = Carbon::now()->endOfDay();
+
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        }
+
+        $orders = $query->get([
+            'id',
+            'order_number',
+            'currency',
+            'total_amount',
+            'booked_amount',
+            'balance_amount',
+            'order_status'
+        ]);
+        
         // Initialize totals
         $totals = [
             'number_of_orders' => 0,
@@ -54,21 +107,28 @@ class Dashboard extends Component
         ];
 
         foreach ($orders as $order) {
-            // Convert all values to USD
+
+
+                                     
+
+            $paid = round($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'));
+
+
+                                     
+                                
+
             $convertedTotal   = currencyConvert($order->total_amount ?? 0, $order->currency, 'USD');
-            $convertedBooked  = currencyConvert($order->booked_amount ?? 0, $order->currency, 'USD');
-            $convertedBalance = currencyConvert($order->balance_amount ?? 0, $order->currency, 'USD');
+            $convertedPaid    = currencyConvert($paid ?? 0, $order->currency, 'USD');
+
+
 
             $totals['number_of_orders']++;
             $totals['value_of_orders']  += $convertedTotal;
-            $totals['total_paid']       += ($convertedTotal - $convertedBalance);
-            $totals['total_owed']       += $convertedBalance;
+            $totals['total_paid']       += $convertedPaid;
+            $totals['total_owed']       += $convertedTotal - $convertedPaid;
             $totals['total_refund']     += ($order->order_status == 4) ? $convertedTotal : 0;
-            $totals['total_discount']   += 0;
-            // $totals['total_discount']   += $convertedBooked > 0 ? ($convertedTotal - $convertedBooked) : 0;
         }
-
-        // Round all results to 2 decimals for clean display
+        
         foreach ($totals as $key => $val) {
             if ($key !== 'number_of_orders') {
                 $totals[$key] = round($val, 2);

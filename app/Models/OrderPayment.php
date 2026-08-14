@@ -2,19 +2,30 @@
 
 namespace App\Models;
 
+use App\Models\Order;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class OrderPayment extends Model
 {
+    use SoftDeletes;
     use HasFactory;
+    use LogsActivity;
+
     protected $fillable = [
         'order_id',
         'payment_intent_id',
         'transaction_id',
         'payment_method',
+        'payment_type',
+        'collection_type',
+        'collection_date',
         'amount',
         'currency',
+        'current_rate',
         'status',
         'action',
         'reason',
@@ -28,4 +39,38 @@ class OrderPayment extends Model
         'refund_reason',
         'refunded_at',
     ];
+
+    protected $casts = [
+        'current_rate' => 'decimal:8',
+    ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (OrderPayment $payment): void {
+            $currentRate = (float) $payment->current_rate;
+
+            if ($currentRate <= 0 && $payment->order_id) {
+                $currentRate = (float) Order::withoutGlobalScopes()
+                    ->whereKey($payment->order_id)
+                    ->value('current_rate');
+            }
+
+            $payment->current_rate = $currentRate > 0
+                ? $currentRate
+                : 1;
+        });
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+        ->useLogName('OrderPayment')
+        ->setDescriptionForEvent(fn(string $eventName) => "OrderPayment has been {$eventName}")
+        ->logOnly(['*'])
+        ->logOnlyDirty()
+        ->dontSubmitEmptyLogs();
+    }
+
+    public function order() { return $this->belongsTo(Order::class); }
+
 }

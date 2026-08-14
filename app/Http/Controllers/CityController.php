@@ -36,21 +36,50 @@ class CityController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+
     public function index(Request $request)
     {
-        $sort_search   = null;
-        $cities        = City::orderBy('id','asc');
-        $state         = State::get();
-        $countries     = Country::where('status',1)->get();
+        $sort_search = $request->search;
 
-        if ($request->has('search')){
-            $sort_search  = $request->search;
-            $cities       = $cities->where('name', 'like', '%'.$sort_search.'%');
+        $paginated = 10;
+        if($request->has('per_page')){
+            $paginated  = $request->per_page;
         }
-        $cities = $cities->paginate(10);
-        return view('admin.attributes.cities.index', compact('cities','state','countries','sort_search'));
 
+        $cities = City::query()
+            ->when($sort_search, function ($q) use ($sort_search, $paginated) {
+                $q->where('name', 'like', '%' . $sort_search . '%');
+            })
+
+            // Cities with image
+            ->when($request->has_image, function ($q) {
+                $q->whereNotNull('upload_id');
+            })
+
+            // Cities having tours
+            ->when($request->has_tour, function ($q) {
+                $q->whereHas('tours');
+            })
+
+            // Has latitude & longitude
+            ->when($request->has_latlong, function ($q) {
+                $q->whereNotNull('latitude')
+                  ->whereNotNull('longitude');
+            })
+            ->orderByRaw('CASE WHEN `order` = 0 THEN 1 ELSE 0 END')
+            ->orderBy('order', 'asc')
+            ->paginate($paginated)
+            ->appends($request->query());
+
+        $states    = State::all();
+        $countries = Country::where('status', 1)->get();
+
+        return view(
+            'admin.attributes.cities.index',
+            compact('cities', 'states', 'countries', 'sort_search')
+        );
     }
+
 
     /**
      * Show the form for creating a new resource.
@@ -82,6 +111,8 @@ class CityController extends Controller
         $city->name        = $request->name;
         $city->state_id    = $request->state_id;
         $city->upload_id   = $request->upload_id;
+        $city->latitude    = $request->latitude;
+        $city->longitude   = $request->longitude;
         if($city->save())
         {
             return redirect()->route('admin.cities.index')->with('error', 'New City has been added successfully');
@@ -136,6 +167,8 @@ class CityController extends Controller
         $city->name        = $request->name;
         $city->state_id    = $request->state_id;
         $city->upload_id   = $request->upload_id;
+        $city->latitude    = $request->latitude;
+        $city->longitude   = $request->longitude;
         if($city->save())
         {
             return redirect()->route('admin.cities.edit', encrypt($city->id))->with('success', translate('City info has been updated successfully'));
@@ -167,5 +200,18 @@ class CityController extends Controller
     {
         $cities = City::where('state_id', $request->state_id)->get();
         return $cities;
+    }
+
+    public function updateOrder(Request $request)
+    {
+        if ($request->orders) {
+            foreach ($request->orders as $cityId => $order) {
+                City::where('id', $cityId)->update([
+                    'order' => (int) $order
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Order updated successfully.');
     }
 }

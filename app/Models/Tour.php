@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Optional;
 use App\Models\Scopes\SupplierScope;
+use App\Models\TourLastMinuteBooking;
 use App\Models\TourReview;
 use App\Models\TourSpecialDeposit;
 use App\Upload;
@@ -27,23 +28,37 @@ class Tour extends Model
 
     protected static function booted()
     {
+        parent::booted();
         static::addGlobalScope(new SupplierScope('user_id'));
+    }
+    public function scopeOnlyRoot($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('parent_id')
+              ->orWhere('parent_id', 0);
+        });
     }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
             ->useLogName('Tour')
-            ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName}")
-            ->logOnly(['*'])
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs();
+            ->setDescriptionForEvent(fn(string $eventName) => "Tour {$eventName}")
+            ->logAll(); // 🔥 important
     }
 
     // ---------------- RELATIONSHIPS ----------------
     public function galleries(): BelongsToMany
     {
-        return $this->belongsToMany(Upload::class)->withPivot('is_main');
+        return $this->belongsToMany(
+                Upload::class,
+                'tour_upload',
+                'tour_id',
+                'upload_id'
+            )
+            ->withPivot('is_main', 'sort_order')
+            ->select('uploads.*')
+            ->orderBy('tour_upload.sort_order', 'asc');
     }
 
     public function getMainImageAttribute()
@@ -63,14 +78,14 @@ class Tour extends Model
     public function addons(): BelongsToMany { return $this->belongsToMany(Addon::class)->withPivot('sort_by')->orderBy('addon_tour.sort_by', 'ASC'); }
     public function addonsAll(): BelongsToMany { return $this->belongsToMany(Addon::class, 'addon_tour', 'tour_id', 'addon_id'); }
     public function pickups(): BelongsToMany { return $this->belongsToMany(Pickup::class); }
-    public function itineraries(): BelongsToMany { return $this->belongsToMany(Itinerary::class)->withPivot('sort_by'); }
+    public function itineraries(): BelongsToMany { return $this->belongsToMany(Itinerary::class)->withPivot('sort_by')->orderBy('itinerary_tour.sort_by', 'ASC'); }
     public function itinerariesAll() { return $this->hasMany(Itinerary::class, 'tour_id'); }
-    public function itineraryAll() { return Itinerary::all(); }
-    public function faqs(): BelongsToMany { return $this->belongsToMany(Faq::class); }
+    public function itineraryAll() { return Itinerary::groupBy('title')->orderBy('title', 'ASC')->get(); }
+    public function faqs(): BelongsToMany { return $this->belongsToMany(Faq::class)->withPivot('sort_by')->orderBy('faq_tour.sort_by', 'ASC'); }
     public function faqAll() { return Faq::all(); }
-    public function inclusions(): BelongsToMany { return $this->belongsToMany(Inclusion::class); }
-    public function optionals(): BelongsToMany { return $this->belongsToMany(Optional::class); }
-    public function exclusions(): BelongsToMany { return $this->belongsToMany(Exclusion::class); }
+    public function inclusions(): BelongsToMany { return $this->belongsToMany(Inclusion::class)->withPivot('sort_by')->orderBy('inclusion_tour.sort_by', 'ASC'); }
+    public function exclusions(): BelongsToMany { return $this->belongsToMany(Exclusion::class)->withPivot('sort_by')->orderBy('exclusion_tour.sort_by', 'ASC'); }
+    public function optionals(): BelongsToMany { return $this->belongsToMany(Optional::class)->withPivot('sort_by')->orderBy('optional_tour.sort_by', 'ASC'); }
     public function features(): BelongsToMany { return $this->belongsToMany(Feature::class); }
     public function taxes_fees(): BelongsToMany { return $this->belongsToMany(TaxesFee::class); }
     public function detail() { return $this->hasOne(TourDetail::class); }
@@ -87,6 +102,9 @@ class Tour extends Model
     public function subTours() { return $this->hasMany(Tour::class, 'parent_id'); }
 
     public function parent() { return $this->belongsTo(Tour::class, 'parent_id'); }
+
+    public function partnerTours() { return $this->hasMany(PartnerTour::class); }
+    public function lastMinuteBookings(){ return $this->hasMany(TourLastMinuteBooking::class); }
 
 
     // ---------------- ACCESSORS ----------------
@@ -154,5 +172,18 @@ class Tour extends Model
         return strtolower(trim(
             $this->schedule->estimated_duration_num . ' ' . ucfirst($this->schedule->estimated_duration_unit)
         ));
+    }
+
+    public function getTaxesFeesResolvedAttribute()
+    {
+        if ($this->taxes_fees->isNotEmpty()) {
+            return $this->taxes_fees;
+        }
+
+        if ($this->parent_id && $this->parent) {
+            return $this->parent->taxes_fees;
+        }
+
+        return collect();
     }
 }

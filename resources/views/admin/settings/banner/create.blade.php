@@ -1,41 +1,51 @@
 <x-admin>
     @section('title', isset($banner) ? 'Edit Banner' : 'Create Banner')
 
-    <div class="card card-primary">
-        <div class="card-header">
-            <h3 class="card-title">{{ isset($banner) ? 'Edit Banner' : 'Create Banner' }}</h3>
+    <div class="card-primary mb-3">
+        <div class="card-header banner-head">
+            <div class="row">
+                <div class="col-md-8 col-6">
+                    <h3 class="card-title">{{ isset($banner) ? 'Edit Banner' : 'Create Banner' }}</h3>
+                </div>
+                <div class="col-md-4 col-6">
+                    <div class="card-tools">
+                        <a href="{{ route('admin.banner.index') }}" class="btn btn-sm btn-back">Back</a>
+                    </div>
+                </div>
+            </div>
+            
         </div>
-        <div class="card-body">
-            <form action="{{ isset($banner) ? route('admin.banners.update', $banner->id) : route('admin.banners.store') }}" 
-                  method="POST" enctype="multipart/form-data">
-                @csrf
-                @if(isset($banner))
-                    @method('POST')
-                @endif
-
+    </div>
+    <div class="card-primary bg-white border rounded-lg-custom banner-main-body">
+        <form action="{{ isset($banner) ? route('admin.banners.update', $banner->id) : route('admin.banners.store') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            @if(isset($banner))
+                @method('POST')
+            @endif
+            <div class="card-body">
                 <div class="row">
                     <div class="col-lg-6 mb-3">
                         <label class="form-label">Location</label>
                         <input type="text" name="location_id" class="form-control"
-                               value="{{ old('location_id', $banner->location_id ?? '') }}">
+                                value="{{ old('location_id', $banner->location_id ?? '') }}">
                     </div>
 
                     <div class="col-lg-6 mb-3">
                         <label class="form-label">Heading</label>
                         <input type="text" name="heading" class="form-control"
-                               value="{{ old('heading', $banner->heading ?? '') }}">
+                                value="{{ old('heading', $banner->heading ?? '') }}">
                     </div>
 
                     <div class="col-lg-12 mb-3">
                         <label class="form-label">Sub Heading</label>
                         <input type="text" name="sub_heading" class="form-control"
-                               value="{{ old('sub_heading', $banner->sub_heading ?? '') }}">
+                                value="{{ old('sub_heading', $banner->sub_heading ?? '') }}">
                     </div>
 
                     {{-- Images --}}
                     
 
-                    <div class="col-lg-12 mb-5">
+                    <div class="col-lg-12 mb-3">
                         <label class="form-label">Banner Images</label>
                         <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image" data-multiple="true">
                             <div class="input-group-prepend">
@@ -52,7 +62,7 @@
 
                     {{-- Videos --}}
                     <div class="col-lg-12">
-                        <div class="form-group mb-5">
+                        <div class="form-group mb-3">
                             <label for="videos" class="form-label">Videos</label>
                             <div id="videosContainer">
                                 @php
@@ -65,7 +75,7 @@
                                             <span class="input-group-text">https://www.youtube.com/watch?v=</span>
                                         </div>
                                         <input type="text" name="videos[]" class="form-control" value="{{ $video }}">
-                                        <button type="button" class="btn btn-sm btn-primary mr-2" onclick="previewVideo('{{ $video }}')">Preview</button>
+                                        <button type="button" class="btn btn-sm btn-primary btn-preview mr-2" onclick="previewVideo('{{ $video }}')">Preview</button>
                                         <button type="button" class="btn btn-sm btn-danger" onclick="removeVideo(this)"><i class="fa fa-minus"></i></button>
                                     </div>
                                 @endforeach
@@ -79,25 +89,26 @@
 
                     {{-- Modal for Video Preview --}}
                     <div class="modal fade" id="videoPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
-                      <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-dialog modal-lg" role="document">
                         <div class="modal-content">
-                          <div class="modal-header">
+                            <div class="modal-header">
                             <h5 class="modal-title">Video Preview</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="stopPreview()">
-                              <span aria-hidden="true">&times;</span>
+                                <span aria-hidden="true">&times;</span>
                             </button>
-                          </div>
-                          <div class="modal-body text-center">
+                            </div>
+                            <div class="modal-body text-center">
                             <iframe id="videoPreviewFrame" width="100%" height="400" frameborder="0" allowfullscreen></iframe>
-                          </div>
+                            </div>
                         </div>
-                      </div>
+                        </div>
                     </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary">{{ isset($banner) ? 'Update' : 'Create' }}</button>
-            </form>
-        </div>
+                </div> 
+            </div>
+            <div class="card-footer">
+                <button type="submit" class="btn btn-success float-right"><i class="fas fa-save"></i> {{ isset($banner) ? 'Update' : 'Create' }}</button>
+            </div>
+        </form>
     </div>
 
     @section('js')
@@ -131,7 +142,7 @@
                     <span class="input-group-text">https://www.youtube.com/watch?v=</span>
                 </div>
                 <input type="text" name="videos[]" class="form-control">
-                <button type="button" class="btn btn-sm btn-primary mr-2" onclick="previewVideo('')">Preview</button>
+                <button type="button" class="btn btn-sm btn-primary btn-preview mr-2" onclick="previewVideo('')">Preview</button>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeVideo(this)"><i class="fa fa-minus"></i></button>
             </div>`;
         document.getElementById('videosContainer').insertAdjacentHTML('beforeend', html);

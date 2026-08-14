@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\OrderCustomer;
 use App\Models\Pickup;
 use App\Models\PickupLocation;
 use Illuminate\Http\Request;
@@ -36,12 +37,14 @@ class PickupController extends Controller
             'PickupLocations.*.location'     => 'required|string|max:255',
             'PickupLocations.*.address'      => 'required|string|max:255',
             'PickupLocations.*.time'         => 'required|string|max:255',
+            'PickupLocations.*.pickup_charge' => 'nullable|numeric|min:0',
         ],
         [
             'name.required'                     => 'Please enter a pickup name',
             'PickupLocations.*.location.required'=> 'Please enter location',
             'PickupLocations.*.address.required' => 'Please enter address',
             'PickupLocations.*.time.required'    => 'Please enter time',
+            'PickupLocations.*.pickup_charge.required' => 'Please enter pickup charge',
         ]);
 
         // Update tour instance
@@ -59,6 +62,7 @@ class PickupController extends Controller
                     $location->address    = $option['address'] ?? null;
                     $location->time       = $option['time'] ?? null;
                     $location->additional = $option['additional_information'] ?? null;
+                    $location->pickup_charge  = $option['pickup_charge'] ?? null;
                     $location->save();
                 }
             }
@@ -99,19 +103,21 @@ class PickupController extends Controller
             'PickupLocations.*.location'     => 'required|string|max:255',
             'PickupLocations.*.address'      => 'required|string|max:255',
             'PickupLocations.*.time'         => 'required|string|max:255',
+            'PickupLocations.*.pickup_charge' => 'nullable|numeric|min:0',
         ],
         [
             'name.required'                      => 'Please enter a pickup name',
             'PickupLocations.*.location.required'=> 'Please enter location',
             'PickupLocations.*.address.required' => 'Please enter address',
             'PickupLocations.*.time.required'    => 'Please enter time',
+            'PickupLocations.*.pickup_charge.required' => 'Please enter pickup charge',
         ]);
 
         $pickup = Pickup::findOrFail(decrypt($id));
 
         $pickup->name           = $request->name;
         $pickup->price          = $request->price;
-        $pickup->pickup_charge  = $request->pickup_charge;
+        // $pickup->pickup_charge  = $request->pickup_charge;
 
         if($pickup->save()) {
 
@@ -133,6 +139,7 @@ class PickupController extends Controller
                             $pickupLocation->address   = $option['address'] ?? null;
                             $pickupLocation->time      = $option['time'] ?? null;
                             $pickupLocation->additional= $option['additional'] ?? null;
+                            $pickupLocation->pickup_charge  = $option['pickup_charge'] ?? null;
                             $pickupLocation->save();
                         }
                     } else {
@@ -142,6 +149,7 @@ class PickupController extends Controller
                         $pickupLocation->address       = $option['address'] ?? null;
                         $pickupLocation->time          = $option['time'] ?? null;
                         $pickupLocation->additional    = $option['additional'] ?? null;
+                        $pickupLocation->pickup_charge  = $option['pickup_charge'] ?? null;
                         $pickupLocation->save();
                     }
                 }
@@ -170,4 +178,24 @@ class PickupController extends Controller
 
         return response()->json(['status' => 'success']);
     }
+
+    public function orderPickupUpdate(Request $request)
+    {
+        $orderCustomer = OrderCustomer::findOrFail($request->customer_id);
+        
+        $orderCustomer->pickup_id =  $request->pickup_type == "existing" ? $request->oc_pickup_id : NULL;
+        $orderCustomer->pickup_name = $request->pickup_type == "custom" ? $request->oc_pickup_name : NULL;
+        $orderCustomer->instructions = $request->oc_instructions;
+        $orderCustomer->save();
+
+        $orderCustomer->order->internal_notes = $request->internal_notes;
+        $orderCustomer->order->send_feedback_email = $request->send_feedback_email;
+        $orderCustomer->order->source         = $request->source ?? "internal";
+
+        $orderCustomer->order->save();        
+
+        return response()->json(['status' => 'success']);
+    }    
+
+    
 }

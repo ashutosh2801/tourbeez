@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Order;
+use App\Observers\OrderObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Order::observe(OrderObserver::class);
         Paginator::useBootstrap();
-        DB::statement("SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'");
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement("SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'");
+        }
     }
 }

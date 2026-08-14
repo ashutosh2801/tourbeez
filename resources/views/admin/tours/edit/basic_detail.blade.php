@@ -1,4 +1,4 @@
-<style>
+`<style>
     .switch {
         position: relative;
         display: inline-block;
@@ -80,7 +80,7 @@
             @csrf
             <div class="card-body">
                 <div class="row">
-                    <div class="col-lg-7">
+                    <div class="col-xl-7">
                         <div class="form-group">
                             <label for="title" class="form-label">Title *</label>
                             <input type="text" name="title" id="title" value="{{ old('title') ? : $data->title }}"
@@ -92,7 +92,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-3">
+                    <div class="col-xl-3">
                         <div class="form-group">
                             <label for="unique_code" class="form-label">Unique code *</label>
                             <input type="text" name="unique_code" id="unique_code" value="{{ old('unique_code') ? old('unique_code') : $data->unique_code }}"
@@ -105,7 +105,7 @@
                         
                     </div>
 
-                    <div class="col-lg-2">
+                    <div class="col-xl-2">
                         <div class="form-group">
                             <label for="order_email" class="form-label d-block no-wrap" style="font-size: 14px;">Email Confirmation</label>
 
@@ -127,7 +127,7 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="col-lg-7">
+                    <div class="col-xl-7">
                         <div class="form-group">
                             <label for="slug" class="form-label">Slug *</label>
                             <input type="text" name="slug" id="slug" value="{{ old('slug') ? : $data->slug }}"
@@ -138,8 +138,19 @@
                             @enderror
                         </div>
                     </div>
+                    <div class="col-xl-5">
+                        <div class="form-group">
+                            <label for="slug" class="form-label">Currency *</label>
+                            <select name="currency" class="form-control mr-2">
+                                @foreach(config('constants.currencies') as $code => $country)
+                                    <option value="{{ $code }}" {{ $code == $data->currency ? 'selected' : '' }}>{{ $code }} - {{ $country }}</option> 
+                                @endforeach
 
-                    <div class="col-lg-12">
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-12">
                         <div class="form-group" id="product_pricing">
                             <label for="category" class="form-label">Product pricing *</label>
                             
@@ -169,30 +180,30 @@
                             value="{{ old("PriceOption.$index.id", $option['id']) }}" class="form-control" />
 
                                 @if($index == 0)
-                                <div class="col-lg-2">
+                                <div class="col-xl-2">
                                     <select name="price_type" id="pricing" class="form-control">
                                         <option @if(old('price_type')=='PER_PERSON' || $data->price_type=="PER_PERSON" || old('price_type')=='') selected @endif value="PER_PERSON">By Person</option>
                                         <option @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") selected @endif value="FIXED">By Fixed</option>
                                     </select>                                                
                                 </div>
                                 @else
-                                <div class="col-lg-2"></div>
+                                <div class="col-xl-2"></div>
                                 @endif
 
-                                <div class="col-lg-2">
+                                <div class="col-xl-2">
                                     <input type="text" placeholder="Adults" name="PriceOption[{{ $index }}][label]" id="PriceOption_name" 
                                     value="{{ old("PriceOption.$index.label", $option['label']) }}" class="form-control" >
                                     @error("PriceOption.$index.label")
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                <div class="col-lg-2">
+                                <div class="col-xl-2">
                                     <div class="input-group">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text" id="basic-addon1">$</span>
+                                            <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
                                         </div>
                                         <input type="text" placeholder="99.50" name="PriceOption[{{ $index }}][price]" id="PriceOption_price" 
-                                        value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control" >
+                                        value="{{ old("PriceOption.$index.price", $option['price']) }}" class="form-control price-option-input" step=any>
                                         
                                         
                                     </div>  
@@ -200,7 +211,7 @@
                                         <div class="text-danger">{{ $message }}</div>
                                     @enderror                                              
                                 </div>
-                                <div class="col-lg-5 ">
+                                <div class="col-xl-5 ">
                                     <div class="input-group quantity_used @if(old('price_type')=='FIXED' || $data->price_type=="FIXED") hidden @endif">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text" id="basic-addon1">Quantity used</span>
@@ -231,66 +242,29 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-xl-6">
                         <div class="form-group">
-                            <label for="title" class="form-label">Advertised price *</label>
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text" id="basic-addon1">$</span>
-                                </div>
-                                <input type="text" class="form-control" placeholder="99.50" name="advertised_price" id="advertised_price" value="{{ old('advertised_price') ?: $data->price }}">
-                            </div>
-                                
-                            @error('advertised_price')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
+                            <label for="offerd_price" class="form-label">Original Price</label>
+                            <!-- <div class="row"> -->
 
-                    </div>
-                    <div class="col-lg-3">
-                        <div class="form-group">
-                            <label for="title" class="form-label">Offer Ends In</label>
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text" id="offer_ends_in">Hours</span>
-                                </div>
-                                <input type="text" class="form-control" placeholder="24" name="offer_ends_in" id="offer_ends_in" value="{{ old('offer_ends_in') ?: $data->offer_ends_in }}">
-                            </div>
-                                
-                            @error('offer_ends_in')
-                                <small class="form-text text-danger">{{ $message }}</small>
-                            @enderror
-                        </div>
-
-                    </div>
-                    
-
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="category" class="form-label">Quantity</label>
-                            <div class="row">
-                                <div class="col-lg-3">
+                                <!-- Coupon Value -->
+                                <!-- <div class="col-lg-6"> -->
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text" id="basic-addon1">Min</span>
+                                            <span class="input-group-text currency-symbol" id="">$</span>
                                         </div>
-                                        <input type="number" placeholder="Min" name="quantity_min" id="quantity_min" value="{{ old('quantity_min') ?? $data->detail?->quantity_min }}" class="form-control" >
-                                    </div>                                                
-                                </div>
-                                <div class="col-lg-4">
-                                    <div class="input-group mb-3">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text" id="basic-addon1">Max</span>
-                                        </div>
-                                        <input type="number" placeholder="Max" name="quantity_max" id="quantity_max" value="{{ old('quantity_max') ?? $data->detail?->quantity_max }}" class="form-control" >
-                                        </div>
+                                        <input type="text" 
+                                               placeholder="Value" 
+                                               name="" 
+                                               id="offerd_price" 
+                                               value="" 
+                                               class="form-control">
                                     </div>
-                                </div>
+                                <!-- </div> -->
+                            <!-- </div> -->
                         </div>
                     </div>
-                    
-
-                    <div class="col-lg-6">
+                    <div class="col-xl-6">
                         <div class="form-group">
                             <label for="coupon_type" class="form-label">Discount Type & Value</label>
                             <div class="row">
@@ -325,33 +299,74 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-6">
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="form-group">
-                            <label for="offerd_price" class="form-label">Offered Price</label>
-                            <div class="row">
 
-                                <!-- Coupon Value -->
+
+                    <div class="col-xl-6">
+                        <div class="form-group">
+                            <label for="title" class="form-label">Advertised price *</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
+                                </div>
+                                <input type="text" class="form-control" placeholder="99.50" name="advertised_price" id="advertised_price" value="{{ old('advertised_price') ?: $data->price }}">
+                            </div>
+                                
+                            @error('advertised_price')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+
+                    </div>
+                    <div class="col-xl-3">
+                        <div class="form-group">
+                            <label for="title" class="form-label">Offer Ends In</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="offer_ends_in">Hours</span>
+                                </div>
+                                <input type="text" class="form-control" placeholder="24" name="offer_ends_in" id="offer_ends_in" value="{{ old('offer_ends_in') ?: $data->offer_ends_in }}">
+                            </div>
+                                
+                            @error('offer_ends_in')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+
+                    </div>
+                    
+
+                    <div class="col-xl-6">
+                        <div class="form-group">
+                            <label for="category" class="form-label">Quantity</label>
+                            <div class="row">
                                 <div class="col-lg-6">
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text" id="">$</span>
+                                            <span class="input-group-text" id="basic-addon1">Min</span>
                                         </div>
-                                        <input type="number" 
-                                               placeholder="Value" 
-                                               name="" 
-                                               id="offerd_price" 
-                                               value="" 
-                                               class="form-control">
+                                        <input type="number" placeholder="Min" name="quantity_min" id="quantity_min" value="{{ old('quantity_min') ?? $data->detail?->quantity_min }}" class="form-control" >
+                                    </div>                                                
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text" id="basic-addon1">Max</span>
+                                        </div>
+                                        <input type="number" placeholder="Max" name="quantity_max" id="quantity_max" value="{{ old('quantity_max') ?? $data->detail?->quantity_max }}" class="form-control" >
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                         </div>
                     </div>
+                    
+
+                    
+                    <div class="col-xl-6">
+                    </div>
+                    
 
                                                     
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="category" class="form-label">Category *</label>
                             <select name="category[]" id="category" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
@@ -365,7 +380,7 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="tour_type" class="form-label">Tour Types *</label>
                             <select name="tour_type[]" id="tour_type" class="form-control aiz-selectpicker"  data-live-search="true" multiple>
@@ -421,7 +436,7 @@
                     </div>
                     */ ?>
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="description" class="form-label">Brief description *</label>
                             <textarea name="description" id="description" rows="3" class="form-control aiz-text-editor">{{ old('description') ?: $data->detail?->description }}</textarea>
@@ -432,7 +447,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="long_description" class="form-label">Long description *</label>
                             <textarea name="long_description" id="long_description" class="form-control aiz-text-editor" >{{ old('long_description') ?: $data->detail?->long_description }}</textarea>
@@ -441,7 +456,7 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="other_description" class="form-label">Other description</label>
                             <textarea name="other_description" id="other_description" class="form-control aiz-text-editor" >{{ old('other_description') ?: $data->detail?->other_description }}</textarea>
@@ -451,22 +466,9 @@
                         </div>
                     </div>
 
-                    <!-- <div class="col-lg-12">
-                        <div class="form-group mb-5">
-                            <label for="videos" class="form-label">Videos</label>
-                            <div class="input-group mb-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text">https://www.youtube.com/watch?v=</span>
-                                </div>
-                                <input type="text" placeholder="" name="videos[]" id="videos" value="{{ old('videos[]') }}" class="form-control mr-2" >
-                                <button type="button" class="btn btn-sm btn-success " onclick="addVideos()"><i class="fa fa-plus"></i></button>
-                            </div>
-                            <div id="videosContainer"></div>
-                        </div>
-                    </div> -->
 
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group mb-5">
                             <label for="videos" class="form-label">Videos</label>
                             <div id="videosContainer">
@@ -500,7 +502,7 @@
                     </div>
 
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group mb-4">
                             <label for="IsPurchasedAsAGift" class="form-label"><input type="checkbox" name="IsPurchasedAsAGift" id="IsPurchasedAsAGift" {{ old('IsPurchasedAsAGift') || $data->detail?->IsPurchasedAsAGift ? 'checked' : '' }} /> Can be purchased as a gift</label>
                             <div class="row {{ old('IsPurchasedAsAGift') || $data->detail?->IsPurchasedAsAGift ?? 'hidden' }}" id="IsPurchasedAsAGift_show">
@@ -536,7 +538,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-12">
+                    <div class="col-xl-12">
                         <div class="form-group">
                             <label for="IsTermsAndConditions" class="form-label"><input type="checkbox" name="IsTerms" id="IsTermsAndConditions" {{ old('IsTerms') || $data->detail?->IsTerms ? 'checked' : '' }} value="1" /> Add product-specific terms and conditions</label>
                             <div id="terms_and_conditions_wra" {{ old('terms_and_conditions') || $data->detail?->terms_and_conditions ?  'class="hidden"' :'' }} style=" overflow: hidden;">
@@ -545,7 +547,7 @@
                         </div>
                     </div> 
 
-                    <div class="col-lg-6">
+                    <div class="col-xl-6">
                         <div class="form-group">
                             <label class="form-label">{{translate('Featured Image')}}</label>
                             <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
@@ -612,6 +614,10 @@
 
 @section('js')
 @parent
+
+<script>
+    window.currencySymbols = @json(config('constants.currency_symbols'));
+</script>
 <script>
 // Get Countries and States
 function get_states_by_country() {
@@ -755,14 +761,14 @@ function addPriceOption() {
     newRow.innerHTML = `
         <div class="col-lg-2"></div>
         <div class="col-lg-2">
-            <input type="text" placeholder="Label" name="PriceOption[${priceOptionCount}][label]" id="PriceOption_${priceOptionCount}_label" class="form-control">
+            <input type="text" placeholder="Label" name="PriceOption[${priceOptionCount}][label]" id="PriceOption_${priceOptionCount}_label" class="form-control" required>
         </div>
         <div class="col-lg-2">
             <div class="input-group">
                 <div class="input-group-prepend">
-                    <span class="input-group-text">$</span>
+                    <span class="input-group-text currency-symbol">$</span>
                 </div>
-                <input type="text" placeholder="Price" name="PriceOption[${priceOptionCount}][price]" id="PriceOption_${priceOptionCount}_price" class="form-control">
+                <input type="text" placeholder="Price" name="PriceOption[${priceOptionCount}][price]" id="PriceOption_${priceOptionCount}_price" class="form-control" required>
             </div>
         </div>
         <div class="col-lg-5">
@@ -781,6 +787,7 @@ function addPriceOption() {
         </div>`;
 
     container.appendChild(newRow);
+    updateCurrencySymbol();
     priceOptionCount++;
 }
 
@@ -831,7 +838,7 @@ function addVideos() {
                 <span class="input-group-text">https://www.youtube.com/watch?v=</span>
             </div>
             <input type="text" name="videos[]" class="form-control">
-            <button type="button" class="btn btn-sm btn-primary mr-2" onclick="previewVideo('')">Preview</button>
+            <button type="button" class="btn btn-sm btn-primary btn-preview mr-2" onclick="previewVideo('')">Preview</button>
             <button type="button" class="btn btn-sm btn-danger" onclick="removeVideo(this)"><i class="fa fa-minus"></i></button>
         </div>`;
     document.getElementById('videosContainer').insertAdjacentHTML('beforeend', html);
@@ -861,34 +868,120 @@ function stopPreview() {
 </script>
 
 <script>
-    function calculateOfferedPrice() {
-        let finalPrice = parseFloat($('#advertised_price').val()) || 0;
-        let couponType = $('#coupon_type').val();
-        let couponValue = parseFloat($('#coupon_value').val()) || 0;
+let isUpdating = false;
 
-        let offeredPrice = finalPrice;
+function getFirstPriceOption() {
+    return document.querySelector('.price-option-input');
+}
 
-        if (couponType === 'percentage') {
-            let pct = couponValue / 100;
+// Advertised → Offered
+function advertisedToOffered() {
+    if (isUpdating) return;
 
-            // avoid divide by zero
-            if (pct >= 1) pct = 0.99;
+    let advertised = parseFloat($('#advertised_price').val()) || 0;
+    let couponType = $('#coupon_type').val();
+    let couponValue = parseFloat($('#coupon_value').val()) || 0;
 
-            offeredPrice = finalPrice / (1 - pct);
-        } 
-        else if (couponType === 'fixed') {
-            offeredPrice = finalPrice + couponValue;
-        }
+    let offered = advertised;
 
-        $('#offerd_price').val(offeredPrice.toFixed(2));
+    if (couponType === 'percentage') {
+        let pct = couponValue / 100;
+        if (pct >= 1) pct = 0.99;
+        offered = advertised / (1 - pct);
+    } else if (couponType === 'fixed') {
+        offered = advertised + couponValue;
     }
 
-    $('#advertised_price, #coupon_type, #coupon_value').on('input change', function () {
-        calculateOfferedPrice();
-    });
+    isUpdating = true;
+    offered = Math.round(offered);
+    advertised = Math.round(advertised);
+    $('#offerd_price').val(offered);
 
-    calculateOfferedPrice();
+    const firstOption = getFirstPriceOption();
+    // if (firstOption) firstOption.value = advertised; //we update if the issue in decimal
+
+    isUpdating = false;
+}
+
+// Offered → Advertised
+function offeredToAdvertised() {
+    if (isUpdating) return;
+
+    let offered = parseFloat($('#offerd_price').val()) || 0;
+    let couponType = $('#coupon_type').val();
+    let couponValue = parseFloat($('#coupon_value').val()) || 0;
+
+    let advertised = offered;
+
+    if (couponType === 'percentage') {
+        let pct = couponValue / 100;
+        if (pct >= 1) pct = 0.99;
+        advertised = offered * (1 - pct);
+    } else if (couponType === 'fixed') {
+        advertised = offered - couponValue;
+    }
+
+    if (advertised < 0) advertised = 0;
+
+    isUpdating = true;
+
+    advertised = Math.round(advertised);
+    offered = Math.round(offered);
+
+    $('#advertised_price').val(advertised);
+
+    const firstOption = getFirstPriceOption();
+    if (firstOption) firstOption.value = advertised;
+
+    isUpdating = false;
+}
+
+// EVENTS
+
+// Advertised is base
+$('#advertised_price').on('input', advertisedToOffered);
+
+// ONLY first price-option-input affects calculation
+document.addEventListener('input', function (e) {
+    const firstOption = getFirstPriceOption();
+    if (!firstOption || e.target !== firstOption || isUpdating) return;
+
+    isUpdating = true;
+    $('#advertised_price').val(firstOption.value);
+    isUpdating = false;
+
+    advertisedToOffered();
+});
+
+// Offered is base
+$('#offerd_price').on('input', offeredToAdvertised);
+
+// Coupon change → Offered is base
+$('#coupon_type, #coupon_value').on('input change', offeredToAdvertised);
+
+// Initial sync
+advertisedToOffered();
 </script>
+
+<script>
+function updateCurrencySymbol() {
+    let currency = $('select[name="currency"]').val();
+    let symbol = currencySymbols[currency] ?? currency;
+
+    $('.currency-symbol').text(symbol);
+}
+
+// On page load
+updateCurrencySymbol();
+
+// On currency change
+$('select[name="currency"]').on('change', function () {
+    updateCurrencySymbol();
+});
+</script>
+
+
+
 
 
 @endsection

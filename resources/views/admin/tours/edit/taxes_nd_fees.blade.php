@@ -38,8 +38,20 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                               <th width="60"><input type="checkbox" class="check_all_tax" name="taxes[]" value="{{ $item->id }}" style="width: 20px;height: 20px;"
                               {{ (is_array($existing_taxes_fees) && in_array($item->id, $existing_taxes_fees)) ? 'checked' : '' }} /></th>
                               <td>
-                                  <a target="_blank" href="{{ route('admin.taxes.edit', encrypt($item->id)) }}" class="text-info">{{ $item->label }}</a>  <br />                             
-                                  {{ ($item->tax_fee_type=='FEE' ? '$' : '') . number_format($item->tax_fee_value,1) . ($item->tax_fee_type=='TAX' ? '%' : '') }}
+                                  <a target="_blank" href="{{ route('admin.taxes.edit', encrypt($item->id)) }}" class="text-info">{{ $item->label }}</a>  <br />  
+
+                                  @if($item->fee_type=='PERCENT')
+                                  {{ number_format($item->tax_fee_value,2) . ' %' }}
+                                   <br>
+
+                                  @else
+
+                                    {{ price_format_with_currency($item->tax_fee_value, 'CAD' ,$data->currency)}}
+
+                                    
+                                  @endif
+ 
+                                  <!-- {{ ($item->tax_fee_type=='FEE' ? '$' : '') . number_format($item->tax_fee_value,1) . ($item->tax_fee_type=='TAX' ? '%' : '') }} -->
                               </td>                                                  
                           </tr>
                       @endforeach

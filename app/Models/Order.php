@@ -6,7 +6,10 @@ use App\Models\OrderCustomer;
 use App\Models\OrderEmailHistory;
 use App\Models\OrderMeta;
 use App\Models\OrderPayment;
+use App\Models\Partner;
 use App\Models\Scopes\SupplierOrderScope;
+use App\Models\StripeWebhookLog;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,6 +20,8 @@ class Order extends Model
 {
     use HasFactory, SoftDeletes;
     use LogsActivity;
+
+    public $timestamps = true;
 
     protected static function booted()
     {
@@ -53,6 +58,7 @@ class Order extends Model
         'balance_amount',
         'booked_amount',
         'currency',
+        'current_rate',
         'order_status',
         'additional_info',
         'email_sent',
@@ -60,6 +66,13 @@ class Order extends Model
         'is_abandon_mail_sent',
         'action_name',
         'adv_deposite',
+        'payment_method_id',
+        'internal_notes',
+        'redzy_order_id',
+        'is_discount',
+        'source',
+        'failure_message',
+        'created_at'
     ];
 
     public function tour_detail($id, $label='all') {
@@ -73,6 +86,11 @@ class Order extends Model
     public function orderTours()
     {
         return $this->hasMany(OrderTour::class);
+    }
+
+    public function paymentDetails()
+    {
+        return $this->hasMany(OrderPaymentDetail::class);
     }
 
     public function orderMetas()
@@ -122,7 +140,7 @@ class Order extends Model
     public function setOrderStatusAttribute($value)
     {
         $map = [
-            'New' => 1,
+            'Abandoned' => 1,
             'On Hold' => 2,
             'Pending supplier' => 3,
             'Pending customer' => 4,
@@ -131,21 +149,20 @@ class Order extends Model
             'Abandoned cart' => 7,
         ];
 
-        // optional fallback if string doesn't match
         $this->attributes['order_status'] = $map[$value] ?? $value;
     }
 
     public function getStatusAttribute()
     {
         return match ($this->order_status) {
-            1 => 'New',
+            1 => 'Abandoned',
             2 => 'On Hold',
             3 => 'Pending supplier',
             4 => 'Pending customer',
             5 => 'Confirmed',
             6 => 'Cancelled',
             7 => 'Abandoned cart',
-            default => 'Abandoned cart',
+            default => 'Not completed',
         };
     }
 
@@ -169,5 +186,63 @@ class Order extends Model
     {
         return $this->hasMany(OrderPayment::class);
     }
+
+    public function actions()
+    {
+        return $this->hasMany(OrderActions::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function latestPayment()
+    {
+        return $this->hasOne(OrderPayment::class)
+                    ->where('collection_type', 'Inside')
+                    ->where('amount', '>=', 0);
+    }
+
+    public function partner()
+    {
+        return $this->belongsTo(Partner::class, 'source', 'slug');
+    }
+
+    public function getPartnerAcronymAttribute()
+    {
+        if (!$this->partner || !$this->partner->name) {
+            return 'Online';
+        }
+
+        $words = explode(' ', $this->partner->name);
+
+        $acronym = '';
+
+        foreach ($words as $word) {
+            $acronym .= strtoupper(substr($word, 0, 1));
+        }
+
+        return $acronym;
+    }
+
+    public function paymentLogs()
+    {
+        return $this->hasMany(StripeWebhookLog::class);
+    }
+
+    public function latestPaymentLog()
+    {
+        return $this->hasOne(StripeWebhookLog::class)->latestOfMany();
+    }
+
+    public function driver()
+    {
+        return $this->belongsToMany(User::class, 'order_drivers', 'order_id', 'driver_id')
+            ->withPivot(['assigned_date', 'pickup_location', 'drop_location', 'driver_amount', 'notes'])
+            ->withTimestamps();
+    }
+
+    
 
 }

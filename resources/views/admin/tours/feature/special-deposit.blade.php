@@ -18,7 +18,9 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                         </div>
                         <div class="col-md-4 col-12">
                             <div class="card-tools">
-                                <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-view-tour" target="_blank">{{translate('View Tour Online')}}</a>
+                                @if(!$data->parent_id)
+                                    <a href="https://tourbeez.com/tour/{{ $data->slug }}" class="btn btn-view-tour" target="_blank">{{translate('View Tour Online')}}</a>
+                                @endif
                                 <a href="{{ route('admin.tour.index') }}" class="btn btn-back">Back</a>
                             </div>
                         </div>
@@ -44,18 +46,31 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                     <a class="nav-link" href="{{ route('admin.tour.edit.taxesfees', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Taxes & Fees')}}</a>
                     <a class="nav-link" href="{{ route('admin.tour.edit.gallery', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Gallery')}}</a>
                     <a class="nav-link" href="{{ route('admin.tour.edit.message.notification', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Message')}}</a>
-                    <a class="nav-link" href="{{ route('admin.tour.edit.booking', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Booking Info')}}</a>                               
+                    <a class="nav-link" href="{{ route('admin.tour.edit.booking', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Booking Info')}}</a>
+                    <a class="nav-link" href="{{ route('admin.tour.edit.partner', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Partner')}}</a>  
+                    <a class="nav-link" href="{{ route('admin.tour.edit.booking', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Booking Info')}}</a>                             
                     <a class="nav-link" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('SEO')}}</a> 
                     <a class="nav-link" href="{{ route('admin.tour.edit.special.deposit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate(' Special Deposit')}}</a>
                     <a class="nav-link" href="{{ route('admin.tour.edit.review', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Review')}}</a>
+                    <a class="nav-link" href="{{ route('admin.tour.edit.parent', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Parent Tour')}}</a>
+                    <a class="nav-link" href="{{ route('admin.tour.edit.schedule-pricing', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Schedule Pricing')}}</a> 
                 </div>
             </div>
             <!-- mobile menu end -->
             <div class="card-primary bg-white border rounded-lg-custom">
                 <div class="card-body p-0">
                     <div class="row">
-                        <div class="col-2 pr-0 desktop-menu">
+                        <div class="col-xl-2 col-lg-3 pr-0 desktop-menu">
                             <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                                @if($data->parent_id)
+                                        <a class="nav-link" href="{{ route('admin.tour.sub-tour.edit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Basic Details')}}</a>
+
+                                        <a class="nav-link" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" ><i class="fas fa-caret-right"></i> {{translate('Extra')}}</a>
+                                        
+                                        <a class="nav-link" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Scheduling')}}</a>
+                                        <a class="nav-link " href="{{ route('admin.tour.edit.parent', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Parent Tour')}}</a>
+                                        <a class="nav-link active" href="{{ route('admin.tour.edit.special.deposit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate(' Special Deposit')}}</a> 
+                                    @else
                                 <a class="nav-link" href="{{ route('admin.tour.edit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Basic Details')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.addone', encrypt($data->id)) }}" ><i class="fas fa-caret-right"></i> {{translate('Extra')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.scheduling', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Scheduling')}}</a>
@@ -69,13 +84,19 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                 <a class="nav-link " href="{{ route('admin.tour.edit.taxesfees', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Taxes & Fees')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.gallery', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Gallery')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.message.notification', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Message')}}</a>
+                                <a class="nav-link" href="{{ route('admin.tour.edit.booking', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Booking Info')}}</a>
+                                <a class="nav-link" href="{{ route('admin.tour.edit.partner', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Partner')}}</a>
                                 <a class="nav-link" href="{{ route('admin.tour.edit.seo', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('SEO')}}</a> 
                                 <a class="nav-link active" href="{{ route('admin.tour.edit.special.deposit', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate(' Special Deposit')}}</a>   
-                                <a class="nav-link" href="{{ route('admin.tour.edit.review', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Review')}}</a>                               
+                                <a class="nav-link" href="{{ route('admin.tour.edit.review', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Review')}}</a>
+                                <a class="nav-link" href="{{ route('admin.tour.edit.parent', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Parent Tour')}}</a>
+                                <a class="nav-link" href="{{ route('admin.tour.edit.schedule-pricing', encrypt($data->id)) }}"><i class="fas fa-caret-right"></i> {{translate('Schedule Pricing')}}</a> 
+
+                                @endif                               
 
                             </div>
                         </div>
-                        <div class="col-md-10 col-12 pl-0">
+                        <div class="col-xl-10 col-lg-9 col-12 pl-0">
                             <div class="tab-content" id="v-pills-tabContent">
                                 <div class="tab-pane fade show active" id="taxes_nd_fees" role="tabpanel" aria-labelledby="v-pills-messages-tab-10">
                                 	<form class="needs-validation" novalidate action="{{ route('admin.tour.special-deposit', $data->id) }}" method="POST" enctype="multipart/form-data">
@@ -98,9 +119,11 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                                             Use special deposit rules
                                                         </label>
                                                     </div>
+                                                    
+
 
                                                     {{-- Deposit Type --}}
-                                                    <div id="deposit_options" class="{{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? '' : 'd-none' }}">
+                                                    <div id="deposit_options" class="{{ old('tour.use_deposit', $specialDeposit?->use_deposit) ? '' : 'd-none' }} mb-3">
                                                         <div class="form-row">
                                                             <div class="col-md-6">
                                                                 <select class="form-control" name="tour[charge]" id="tour_charge">
@@ -108,7 +131,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                                                     <option value="DEPOSIT_PERCENT" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_PERCENT' ? 'selected' : '' }}>Deposit (% of order total amount)</option>
                                                                     <option value="DEPOSIT_FIXED" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED' ? 'selected' : '' }}>Deposit (Fixed amount per person/quantity)</option>
                                                                     <option value="DEPOSIT_FIXED_PER_ORDER" {{ old('tour.charge', $specialDeposit?->charge) == 'DEPOSIT_FIXED_PER_ORDER' ? 'selected' : '' }}>Deposit (Fixed amount per order)</option>
-                                                                    <option value="NONE" {{ old('tour.charge', $specialDeposit?->charge) == 'NONE' ? 'selected' : '' }}>No charge</option>
+                                                                    <option value="NONE" {{ old('tour.charge', $specialDeposit?->charge) == 'NONE' ? 'selected' : '' }}>No charge (Enable Pay Later) </option>
                                                                 </select>
                                                             </div>
                                                             <div class="col-md-3">
@@ -160,6 +183,55 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                                             <span>days before tour date</span>
                                                         </div>
                                                     </div>
+                                                    {{-- Use Discount --}}
+                                                    <div class="form-group form-check">
+                                                        <input type="hidden" name="tour[is_discount]" value="0">
+                                                        <input type="checkbox" class="form-check-input" id="is_discount"
+                                                            name="tour[is_discount]" value="1"
+                                                            {{ old('tour.is_discount', $specialDeposit?->is_discount) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="is_discount">
+                                                            Use Discount
+                                                        </label>
+                                                    </div>
+
+                                                    {{-- Discount Options --}}
+                                                <div id="discount_options" class="{{ old('tour.is_discount', $specialDeposit?->is_discount) ? '' : 'd-none' }}">
+                                                    <div class="form-row mt-2">
+                                                        <div class="col-md-6">
+                                                            <select class="form-control" name="tour[discount_type]" id="discount_type">
+                                                                <option value="PERCENT" 
+                                                                    {{ old('tour.discount_type', $specialDeposit?->discount_type) == 'PERCENT' ? 'selected' : '' }}>
+                                                                    Discount (%)
+                                                                </option>
+                                                                <option value="FIXED" 
+                                                                    {{ old('tour.discount_type', $specialDeposit?->discount_type) == 'FIXED' ? 'selected' : '' }}>
+                                                                    Discount (Fixed Amount)
+                                                                </option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-md-4 input-group">
+                                                            <div class="input-group-prepend">
+                                                                <span class="input-group-text currency-symbol" id="discount_unit">{{ old('tour.discount_type', $specialDeposit?->discount_type) == 'PERCENT' ? '%' : $data->currency }}</span>
+                                                            </div>
+                                                            <input type="number"
+                                                                   name="tour[discount_value]"
+                                                                   id="discount_value"
+                                                                   class="form-control"
+                                                                   placeholder="Enter discount value"
+                                                                   value="{{ old('tour.discount_value', $specialDeposit?->discount_value) }}">
+                                                        </div>
+
+                                                        <div class="col-md-2">
+                                                            <span id="discount_unit">
+                                                                
+                                                            </span>
+                                                        </div>
+                                                        
+
+                                                    </div>
+                                                </div>
+
                                                 </div>
                                             </div>
                                             <div>
@@ -230,7 +302,68 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
                                                         
                                                 </div>
                                             </div>
+                                        <!-- </div> -->
+                                        <div>
+                                          <div class="card-header sub-heading">
+                                            <h1 class="mb-0 h6">Last Minute Booking</h1>
+                                          </div>
+                                          <div class="card-body">
+                                            <div class="row mb-2 font-weight-bold">
+                                                <div class="col-md-2">From Date</div>
+                                                <div class="col-md-2">To Date</div>
+                                                <div class="col-md-2">Last Minute Hours</div>
+                                                <div class="col-md-2">Amount Type</div>
+                                                <div class="col-md-2">Amount</div>
+                                                <div class="col-md-2">Action</div>
+                                            </div>
+                                            <div id="lastMinuteContainer"> 
+                                                @php $lastMinutes = old('last_minute', $lastMinutes ?? []); 
+                                                    if(empty($lastMinutes) || count($lastMinutes) == 0) { 
+                                                        $lastMinutes = [ [ 'id' => '', 'from_date' => '', 'to_date' => '', 'last_minute_hours' => '', 'amount_type' => 'PERCENT', 'amount' => '' ] ]; 
+                                                    } 
+                                                @endphp 
+
+                                                @foreach($lastMinutes as $i => $row) 
+
+                                                <div class="row mb-3 lastMinuteRow" id="lastMinuteRow_{{ $i }}">
+                                                <input type="hidden" name="last_minute[{{ $i }}][id]" value="{{ $row->id ?? '' }}">
+                                                <div class="col-md-2">
+                                                    
+                                                  <input type="date" class="form-control" name="last_minute[{{ $i }}][from_date]" value="{{ $row->from_date ?? '' }}">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    
+
+                                                  <input type="date" class="form-control" name="last_minute[{{ $i }}][to_date]" value="{{ $row->to_date ?? '' }}">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    
+                                                  <input type="number" class="form-control" name="last_minute[{{ $i }}][last_minute_hours]" value="{{ $row->last_minute_hours ?? '' }}">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    
+                                                  <select class="form-control" name="last_minute[{{ $i }}][amount_type]">
+                                                    <option value="PERCENT" {{ ($row->amount_type ?? '') == 'PERCENT' ? 'selected' : '' }}>Percent</option>
+                                                    <option value="FIXED" {{ ($row->amount_type ?? '') == 'FIXED' ? 'selected' : '' }}>Fixed</option>
+                                                  </select>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    
+                                                  <input type="number" step="0.01" class="form-control" name="last_minute[{{ $i }}][amount]" value="{{ $row->amount ?? '' }}">
+                                                </div>
+                                                <div class="col-md-2 d-flex align-items-end">
+                                                  <button type="button" class="btn btn-success mr-2" onclick="addLastMinuteRow()">
+                                                    <i class="fa fa-plus"></i>
+                                                  </button>
+                                                  <button type="button" class="btn btn-danger" onclick="removeLastMinuteRow({{ $i }})">
+                                                    <i class="fa fa-minus"></i>
+                                                  </button>
+                                                </div>
+                                              </div> @endforeach </div>
+                                          </div>
                                         </div>
+
+                                    </div>
 
                                         <div class="card-footer special-deposit-footer" style="display:block">
                                             <div class="row">
@@ -255,6 +388,7 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
     </div>
 </x-admin>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     $(function () {
@@ -329,6 +463,225 @@ $(document).ready(function () {
     toggleDeposit();
 });
 
+$(function () {
+
+    // Toggle discount section
+    $('#is_discount').on('change', function () {
+        $('#discount_options').toggleClass('d-none', !this.checked);
+    });
+
+    // Toggle discount unit symbol
+    function toggleDiscountUnit() {
+        let type = $('#discount_type').val();
+        if (type === 'PERCENT') {
+            $('#discount_unit').text('%');
+        } else {
+            $('#discount_unit').text('{{ $data->currency }}');
+        }
+    }
+
+    $('#discount_type').on('change', toggleDiscountUnit);
+
+    // Run on load
+    toggleDiscountUnit();
+});
+
+let lastMinuteIndex = {{ count($lastMinutes ?? []) }};
+
+function addLastMinuteRow(){
+
+const container = document.getElementById('lastMinuteContainer');
+
+const row = document.createElement('div');
+
+row.classList.add('row','mb-3','lastMinuteRow');
+row.id = 'lastMinuteRow_'+lastMinuteIndex;
+
+row.innerHTML = `
+
+<div class="col-md-2">
+<input type="date" class="form-control"
+name="last_minute[${lastMinuteIndex}][from_date]">
+</div>
+
+<div class="col-md-2">
+<input type="date" class="form-control"
+name="last_minute[${lastMinuteIndex}][to_date]">
+</div>
+
+<div class="col-md-2">
+<input type="number" class="form-control"
+placeholder="Hours"
+name="last_minute[${lastMinuteIndex}][last_minute_hours]">
+</div>
+
+<div class="col-md-2">
+<select class="form-control"
+name="last_minute[${lastMinuteIndex}][amount_type]">
+<option value="PERCENT">Percent</option>
+<option value="FIXED">Fixed</option>
+</select>
+</div>
+
+<div class="col-md-2">
+<input type="number" step="0.01"
+placeholder="Amount"
+class="form-control"
+name="last_minute[${lastMinuteIndex}][amount]">
+</div>
+
+<div class="col-md-2">
+
+<button type="button"
+class="btn btn-success mr-2"
+onclick="addLastMinuteRow()">
+<i class="fa fa-plus"></i>
+</button>
+
+<button type="button"
+class="btn btn-danger"
+onclick="removeLastMinuteRow(${lastMinuteIndex})">
+<i class="fa fa-minus"></i>
+</button>
+
+</div>
+`;
+
+container.appendChild(row);
+
+lastMinuteIndex++;
+}
+
+function removeLastMinuteRow(id){
+
+    const row = document.getElementById('lastMinuteRow_'+id);
+
+    if(row){
+    row.remove();
+    }
+    if($('.lastMinuteRow').length === 0){
+    addLastMinuteRow();
+    }
+
+}
+
+
+</script>
+
+<script>
+    
+    $('form').on('submit', function(e){
+
+        let rows = $('.lastMinuteRow');
+
+        if(rows.length === 0){
+        return true;
+        }
+
+        let ranges = [];
+
+        for(let i=0;i<rows.length;i++){
+
+        let row = rows[i];
+
+        let from = $(row).find('input[name*="[from_date]"]').val();
+        let to = $(row).find('input[name*="[to_date]"]').val();
+        let hours = $(row).find('input[name*="[last_minute_hours]"]').val();
+        let amount = $(row).find('input[name*="[amount]"]').val();
+        let type = $(row).find('select[name*="[amount_type]"]').val();
+
+        if(!from && !to && !hours && !amount){
+        continue;
+        }
+
+        if(!from || !to || !hours || !amount){
+
+        
+        Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'All Last Minute Booking fields must be filled.'
+            });
+
+        e.preventDefault();
+
+        return false;
+
+        }
+
+        if(new Date(from) > new Date(to)){
+
+        
+        Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'From date cannot be greater than To date.'
+            });
+
+        e.preventDefault();
+
+        return false;
+
+        }
+
+        if(hours <= 0){
+
+        
+        Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Last minute hours must be greater than 0.'
+            });
+
+        e.preventDefault();
+
+        return false;
+
+        }
+
+        if(type === 'PERCENT' && amount > 100){
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Percentage',
+                text: 'Percent cannot exceed 100.'
+            });
+
+
+
+
+        e.preventDefault();
+
+        return false;
+
+        }
+
+        let start = new Date(from).getTime();
+        let end = new Date(to).getTime();
+
+        for(let r of ranges){
+
+        if(start <= r.end && end >= r.start){
+
+        Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Date ranges cannot overlap.'
+            });
+
+        e.preventDefault();
+
+        return false;
+
+        }
+
+        }
+
+        ranges.push({start,end});
+
+        }
+
+});
 </script>
 
 

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\City;
 use App\Models\Collection;
 use App\Models\Country;
+use App\Models\Partner;
 use App\Models\Pickup;
 use App\Models\Product;
 use App\Models\State;
@@ -15,6 +16,7 @@ use App\Models\TaxesFee;
 use App\Models\Tour;
 use App\Models\Tourtype;
 use App\Models\User;
+use App\Models\Vehicle;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
@@ -72,6 +74,7 @@ class Sidebar extends Component
         view()->share('CityCount',$CityCount);
 
 
+
         $customerCount = User::where('user_type', 'Member')->orderBy('id','DESC')->count();
 
         view()->share('customerCount',$customerCount);
@@ -80,11 +83,21 @@ class Sidebar extends Component
 
         view()->share('supplierCount',$supplierCount);
 
+        $driverCount = User::where('role', 'Driver')->orderBy('id','DESC')->count();
+
+        view()->share('driverCount',$driverCount);
+
         $excludedUsers = User::where('user_type', '!=', 'Member')
             ->where('role', '!=', 'Supplier')->where('role', '<>', 'Super Admin')
             ->count();
 
+        $partnerCount = Partner::count();
+        view()->share('partnerCount',$partnerCount);
+
         view()->share('excludedUsers', $excludedUsers);
+
+        $vehicleCount = Vehicle::count();
+        view()->share('vehicleCount',$vehicleCount);
 
 
 

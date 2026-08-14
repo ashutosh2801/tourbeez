@@ -5,10 +5,15 @@ namespace App\Models;
 use App\Models\Tour;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TourSchedule extends Model
 {
     use HasFactory;
+    use LogsActivity;
+    use SoftDeletes;
 
     public function repeats() {
         return $this->hasMany(TourScheduleRepeats::class, 'tour_schedule_id');
@@ -16,6 +21,14 @@ class TourSchedule extends Model
 
     public function tour() {
         return $this->belongsTo(Tour::class, 'tour_id');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('TourSchedule')
+            ->setDescriptionForEvent(fn(string $eventName) => "TourSchedule {$eventName}")
+            ->logAll(); // 🔥 important
     }
 
 }

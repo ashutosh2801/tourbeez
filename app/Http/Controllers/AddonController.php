@@ -50,8 +50,10 @@ class AddonController extends Controller
         $request->validate([
             'name'          => 'required|max:255',
             'price'         => 'required|numeric',
+            'selling_price' => 'nullable',
             'description'   => 'required|string',
-            'image'         => 'required|integer'
+            'image'         => 'required|integer',
+            'currency'      => 'required|string',
         ]);
 
 
@@ -67,10 +69,12 @@ class AddonController extends Controller
         Addon::create([
             'name'  => $request->name,
             'price' => $request->price,
+            'selling_price' => $request->selling_price,
             'customer_choice' => $request->customer_choice,
             'description' => $request->description,
             'availability' => $request->availability,
-            'image' => $request->image
+            'image' => $request->image,
+            'currency' => $request->currency
         ]);
 
         // $tourId = $tour->id;
@@ -109,8 +113,10 @@ class AddonController extends Controller
             'id'            => 'required',
             'name'          => 'required|max:255',
             'price'         => 'required|numeric',
+            'selling_price' => 'nullable',
             'description'   => 'required|string',
-            'image'         => 'required|integer'
+            'image'         => 'required|integer',
+            'currency'      => 'required|string'
         ]);
 
         // $image = '';
@@ -124,10 +130,13 @@ class AddonController extends Controller
         $addon = Addon::findOrFail($request->id);
         $addon->name            = $request->name;
         $addon->price           = $request->price;
+        $addon->selling_price   = $request->selling_price;
         $addon->customer_choice = $request->customer_choice;
         $addon->description     = $request->description;
         $addon->availability    = $request->availability;
         $addon->image           = $request->image;
+        $addon->currency        = $request->currency;
+
         if($addon->save()) {
             return redirect()->route('admin.addon.index')->with('success','Addon updated successfully.');
         }

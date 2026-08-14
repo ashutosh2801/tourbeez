@@ -2,14 +2,18 @@
     @section('title','Create Permission')
     <section class="content">
         <!-- Default box -->
-        <div class="d-flex justify-content-center">
-            <div class="col-lg-6">
+        <div class="card card-primary bg-white border rounded-lg-custom">
                 <div class="card card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">Create New Permission</h3>
-                        <div class="card-tools">
-                            <a href="{{ route('admin.permission.index') }}"
-                                class="btn btn-sm btn-dark">Back</a>
+                    <div class="card-header create-supplier-head">
+                        <div class="row">
+                            <div class="col-md-8 col-6">
+                                <h3 class="card-title">Create New Permission</h3>
+                            </div>
+                            <div class="col-md-4 col-6">
+                                <div class="card-tools">
+                                    <a href="{{ route('admin.permission.index') }}" class="btn btn-sm btn-back">Back</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <!-- /.card-header -->
@@ -23,21 +27,21 @@
                                     <div class="form-group">
                                         <label for="name" class="form-label">Permission Name</label>
                                         <input type="text" class="form-control" name="name" id="name"
-                                            required="" value="{{ old('name') }}">
+                                            required="" placeholder="Type Permission Name" value="{{ old('name') }}">
                                             <x-error>name</x-error>
                                         <div class="invalid-feedback">Permission name field is required.</div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-12">
+                                    <div class="float-right">
+                                        <button type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <!-- /.card-body -->
-                        <div class="card-footer float-right">
-                            <button type="submit" id="submit"
-                                class="btn btn-primary float-right">Submit</button>
-                        </div>
                     </form>
                 </div>
-            </div>
         </div>
         <!-- /.card -->
 

@@ -1,101 +1,147 @@
 <x-admin>
-@section('title', 'Manifest')
+@section('title', 'Order Manifest')
 
 {{-- Include Bootstrap Icons --}}
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
-<div class="card">
+<div class="card-primary mb-3">
     <form method="GET" action="{{ route('admin.orders.manifest') }}">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center w-100">
-                <h3 class="card-title mb-0">Session Manifest</h3>
-                <div class="d-flex align-items-center gap-1">
-                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" id="prev-date" style="height: 32px; width: 32px;">
-                        <i class="bi bi-chevron-left"></i>
+        <div class="card-header order-manifest-head">
+            <div class="d-flex justify-content-between align-items-center w-100 mb-manifest">
+                <div class="d-flex column-gap-10">
+                    <button type="button" class="btn btn-sm today-btn" id="today-date">
+                        Today
                     </button>
-
-                    <input type="date" name="date" id="filter-date" class="form-control form-control-sm"
-                           value="{{ request('date', \Carbon\Carbon::today()->toDateString()) }}"
-                           style="height: 32px;" />
-
-                    <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center" id="next-date" style="height: 32px; width: 32px;">
-                        <i class="bi bi-chevron-right"></i>
-                    </button>
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center left-btn" id="prev-date">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <input type="date" name="date" id="filter-date" class="form-control form-control-sm filterDate" value="{{ request('date', \Carbon\Carbon::today()->toDateString()) }}" />
+                        <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center justify-content-center right-btn" id="next-date">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
                 </div>
                 <a href="{{ route('admin.orders.manifest.download', ['date' => request('date')]) }}"
-                   class="btn btn-outline-success btn-sm">
-                   <i class="bi bi-download"></i> Download PDF
+                   class="btn btn-download btn-sm">
+                   <i class="bi bi-download"></i> Download Excel
                 </a>
             </div>
         </div>
     </form>
+</div>
 
-    <div class="card-body">
-        @forelse($sessions as $index => $session)
-            <div class="card mb-2 border">
-                <div class="card-header d-flex justify-content-between align-items-center bg-light"
-                     style="cursor: pointer;"
-                     data-bs-toggle="collapse"
-                     data-bs-target="#session-{{ $index }}"
-                     aria-expanded="false"
-                     aria-controls="session-{{ $index }}">
-                    <strong>{{ $session['slot_time'] }}</strong>
-
-                    <div class="d-flex align-items-center gap-3">
-                        <span>
-                            {{ $session['orders']->count() }} Order{{ $session['orders']->count() > 1 ? 's' : '' }} |
-                            {{ $session['orders']->sum('number_of_guests') }} Participants
-                        </span>
-                        <!-- <i class="bi bi-chevron-down toggle-icon" id="icon-{{ $index }}"></i> -->
+<div class="manifest-body">
+    <div class="card-primary">
+        <div class="card-body p-0">
+            @forelse($sessions as $index => $session)
+                <div class="manifest-card">
+                    <div class="card-header" data-bs-toggle="collapse" data-bs-target="#session-{{ $index }}" aria-expanded="false" aria-controls="session-{{ $index }}">
+                        <i class="bi bi-chevron-right toggle-icon font-bold" id="icon-{{ $index }}"></i>
+                        <strong>{{ $session['slot_time']   }} - {{ $session['tour_title']   }}</strong>
+                        <span>|</span>
+                        <div class="d-flex align-items-center gap-3">
+                            <p>
+                                {{ $session['orders']->count() }} Order{{ $session['orders']->count() > 1 ? 's' : '' }} |
+                                {{ $session['orders']->sum('number_of_guests') }} Participants
+                            </p>
+                            <!-- <i class="bi bi-chevron-down toggle-icon" id="icon-{{ $index }}"></i> -->
+                        </div>
                     </div>
-                    <i class="bi bi-chevron-down toggle-icon font-bold" id="icon-{{ $index }}"></i>
-                </div>
 
-                <div id="session-{{ $index }}" class="collapse">
-                    <div class="card-body">
-                        <table class="table table-bordered table-sm">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-nowrap" style="white-space: nowrap;">Order #</th>
-                                    <th style="white-space: nowrap;">Customer</th>
-                                    <th style="white-space: nowrap;">Phone</th>
-                                    <th style="white-space: nowrap;">Guests</th>
-                                    <th style="white-space: nowrap;">Extras</th>
-                                    <th style="white-space: nowrap;">Balance</th>
-                                    <th style="white-space: nowrap;">Total</th>
-                                    <th style="white-space: nowrap;">Paid </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($session['orders'] as $order)
-                                    <tr>
-                                        <td>
-                                            <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink">
-                                                {{ $order->order_number }}
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}"
-                                               class="alink" target="_blank">
-                                                {{ $order->customer?->name }}
-                                            </a>
-                                        </td>
-                                        <td>{{ $order->customer?->phone }}</td>
-                                        <td>{{ $order->guest_summary }}</td>
-                                        <td>{{ $order->extras_summary }}</td>
-                                        <td>{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
-                                        <td>{{ price_format_with_currency($order->total_amount, $order->currency) }}</td>
-                                        <td>{{ price_format_with_currency($order->paid_amount, $order->currency) }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                    <div id="session-{{ $index }}" class="collapse">
+                        <div class="card-body">
+                            <div class="table-viewport">
+                                <table class="table table-bordered table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Order #</th>
+                                            <th>Customer</th>
+                                            <th>Phone</th>
+                                            <th>Guests</th>
+                                            <th>Extras</th>
+                                            <th>Balance</th>
+                                            <th>Total</th>
+                                            <th>Paid</th>
+                                            <th>Pickup</th>
+                                            <th>Instructions</th>
+                                            <th>Internal Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($session['orders'] as $order)
+                                            <tr>
+                                                <td>
+                                                    <a href="{{ route('admin.orders.edit', encrypt($order->id)) }}" class="alink" target="_blank">
+                                                        {{ $order->order_number }}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}"
+                                                        class="alink" target="_blank">
+                                                        {{ $order->customer?->name }}
+                                                    </a>
+                                                </td>
+
+
+                                                @php
+                                                    $pickName = '';
+                                                    $instruction = '';
+                                                    if($order->customer && $order->customer->pickup_name){
+                                                        $pickName = $order->customer->pickup_name;
+                                                        $instruction = $order->customer->instructions;
+                                                    } elseif($order->customer && $order->customer->pickup_id) {
+                                                        $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
+                                                        $pickName = $pickLocation->location . " - " . $pickLocation->address . " - " . $pickLocation->time;
+                                                        $instruction = $order->customer->instructions;
+                                                    }
+                                                @endphp
+
+                                                @php
+                                                    $total = round($order->total_amount);
+                                                // $paid = round($order->booked_amount) ?? 0; 
+
+                                                    $paid = round($order->payments->where('status', 'succeeded')->sum('amount') - $order->payments->where('status', 'refunded')->sum('amount') + $order->payments->where('status', 'partial_refunded')->sum('amount'));
+
+
+                                                    $hasUncaptured = $order->payments->contains('status', 'uncaptured');
+
+                                                    if ($paid < $total) {
+                                                        if($paid == 0 && $hasUncaptured){
+                                                            $amountClass = 'text-orange';
+                                                        } else{
+                                                            $amountClass = 'text-success'; // red
+                                                        }
+                                                    
+                                                    } else {
+                                                        $amountClass = 'text-success'; // green
+                                                    }
+
+                                                    if ($order->order_status == 6) {
+                                                        $amountClass = 'text-secondary'; // grey
+                                                    } 
+                                                @endphp
+                                                <td>{{ $order->customer?->phone }}</td>
+                                                <td>{{ $order->guest_summary }}</td>
+                                                <td>{{ $order->extras_summary }}</td>
+                                                <td class="{{ $order->balance_amount > 0.01 ? 'text-danger' : 'text-success' }}">{{ price_format_with_currency($order->balance_amount, $order->currency) }}</td>
+                                                <td>{{ price_format_with_currency($total, $order->currency) }}</td>
+                                                <td class="{{ $amountClass}}">{{ price_format_with_currency($paid, $order->currency) }}</td>
+                                                <td class="px-1">{{ $pickName }}</td>
+                                                <td class="px-1">{{ $order->customer?->instructions ?? '-' }}</td>
+                                                <td class="px-1">{{ $order->internal_notes ?? '-' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        @empty
-            <p>No sessions found for this date.</p>
-        @endforelse
+            @empty
+                <p class="m-0 p-3">No sessions found for this date.</p>
+            @endforelse
+        </div>
     </div>
 </div>
 
@@ -103,22 +149,6 @@
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-
-<style>
-    .toggle-icon {
-        transition: transform 0.3s ease;
-        font-size: 1rem;
-    }
-
-    .card-header[aria-expanded="true"] .toggle-icon {
-        transform: rotate(180deg);
-    }
-
-    .card-header:hover {
-        background-color: #f0f4f8;
-    }
-</style>
 
 <script>
     // Auto-expand first accordion
@@ -167,6 +197,20 @@
 
     prevBtn.addEventListener('click', () => changeDate(-1));
     nextBtn.addEventListener('click', () => changeDate(1));
+</script>
+
+<script>
+    const todayBtn = document.getElementById('today-date');
+    todayBtn.addEventListener('click', () => {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+
+        const formatted = `${yyyy}-${mm}-${dd}`;
+        dateInput.value = formatted;
+        dateInput.form.submit();
+    });
 </script>
 
 

@@ -9,7 +9,8 @@ return [
         'Pending customer' => 'Pending customer',
         'Confirmed' => 'Confirmed',
         'Cancelled' => 'Cancelled',
-        'Abandoned cart' => 'Abandoned cart',
+        'Requires capture' => 'Requires capture',
+        'Trip completed' => 'Trip completed',
     ],
 
     'status_with_code' => [
@@ -19,7 +20,8 @@ return [
             4 => 'Pending customer',
             5 => 'Confirmed',
             6 => 'Cancelled',
-            7 => 'Abandoned cart',
+            7 => "Requires capture",
+            8 => "Trip completed",
     ],
     'currencies' => [
         'USD' => 'United States – USD',
@@ -60,5 +62,105 @@ return [
         'TRY' => 'Turkey – TRY',
         'ZAR' => 'South Africa – ZAR',
     ],
+    'currency_symbols' => [
+        'USD' => '$',
+        'AED' => 'د.إ',
+        'AFN' => '؋',
+        'ALL' => 'L',
+        'AMD' => '֏',
+        'ANG' => 'ƒ',
+        'AOA' => 'Kz',
+        'ARS' => '$',
+        'AUD' => 'A$',
+        'BDT' => '৳',
+        'CAD' => 'C$',
+        'CHF' => 'CHF',
+        'CNY' => '¥',
+        'DKK' => 'kr',
+        'EGP' => '£',
+        'EUR' => '€',
+        'GBP' => '£',
+        'HKD' => 'HK$',
+        'IDR' => 'Rp',
+        'ILS' => '₪',
+        'INR' => '₹',
+        'JPY' => '¥',
+        'KRW' => '₩',
+        'MXN' => '$',
+        'MYR' => 'RM',
+        'NOK' => 'kr',
+        'NZD' => 'NZ$',
+        'PKR' => '₨',
+        'PLN' => 'zł',
+        'QAR' => 'ر.ق',
+        'RUB' => '₽',
+        'SAR' => '﷼',
+        'SEK' => 'kr',
+        'SGD' => 'S$',
+        'THB' => '฿',
+        'TRY' => '₺',
+        'ZAR' => 'R',
+    ],
+
+    'stages' => [
+
+        'cart' => [
+            'entry',
+            'validation',
+            'order_created',
+            'calculation_done',
+            'completed',
+        ],
+
+        'customer' => [
+            'start',
+            'saved',
+        ],
+
+        'promo' => [
+            'start',
+            'validated',
+            'applied',
+        ],
+
+        'payment' => [
+            'stripe_init',
+            'pi_detect',
+            'pi_create',
+            'pi_created',
+            'deposit_mode',
+            'success',
+            'failed',
+        ],
+
+        'email' => [
+            'start',
+            'template_loaded',
+            'customer_loaded',
+            'tour_loaded',
+            'summary_built',
+            'mail_sending',
+            'mail_sent',
+            'history_saved',
+        ],
+
+        'mail' => [
+            'start',
+            'sent',
+            'failed',
+        ]
+
+    ],
+
+    // Order flow sequence (VERY IMPORTANT)
+    'flow' => [
+        'cart',
+        'customer',
+        'promo',
+        'payment',
+        'email',
+    ],
+
+
 
 ];

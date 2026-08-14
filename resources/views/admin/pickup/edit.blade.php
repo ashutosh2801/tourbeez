@@ -41,13 +41,14 @@
                                                     'location'   => $item->location,
                                                     'address'    => $item->address,
                                                     'time'       => $item->time,
+                                                    'pickup_charge'       => $item->pickup_charge,
                                                     'additional' => $item->additional,
                                                 ];
                                             })->toArray());
                             
                             $count = count($pickupLocations);
                             if($count == 0){
-                                $pickupLocations = [ ['id' => '', 'location' => '', 'address' => '', 'time' => '', 'additional' => ''] ];
+                                $pickupLocations = [ ['id' => '', 'location' => '', 'address' => '', 'time' => '', 'pickup_charge' => '', 'additional' => ''] ];
                                 $count = 1;
                             }
                             @endphp
@@ -59,7 +60,7 @@
                             <div style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
                                 <div class="form-group">
                                     <div class="row">
-                                        <div class="col-md-5">
+                                        <div class="col-md-4">
                                             <label for="pickup_location">Pickup location </label>
                                             <input type="text" class="form-control" id="pickup_location" name="PickupLocations[{{ $index }}][location]"
                                                 placeholder="Enter pickup location" required value="{{ old("PickupLocations.$index.location", $option['location']) }}">
@@ -67,28 +68,49 @@
                                                 <small class="form-text text-danger">{{ $message }}</small>
                                             @enderror
                                         </div>
-                                        <div class="col-md-5">
+                                        <div class="col-md-4">
                                             <label for="pickup_address">Pickup address</label>
                                             <input type="text"  class="form-control autocomplete" id="pickup_address" name="PickupLocations[{{ $index }}][address]"
                                                 placeholder="Enter pickup address" required value="{{ old("PickupLocations.$index.address", $option['address']) }}">
                                         </div>
                                         <div class="col-md-2">
                                             <label for="pickup_time">Pickup time</label>
-                                            <select class="form-control aiz-selectpicker" data-live-search="true" id="pickup_time" name="PickupLocations[{{ $index }}][time]">
-                                                <option value="">Select one</option>
-                                                @php
-                                                $old_time = old("PickupLocations.$index.time", $option['time'])
-                                                @endphp
-                                                @for ($hour = 0; $hour <= 12; $hour++)
-                                                    @foreach ([0, 15, 30, 45] as $minute)
+                                            <select class="form-control aiz-selectpicker"
+                                                data-live-search="true"
+                                                id="pickup_time"
+                                                name="PickupLocations[{{ $index }}][time]">
+
+                                            <option value="">Select one</option>
+
+                                            @php
+                                                $old_time = old("PickupLocations.$index.time", $option['time'] ?? null);
+                                            @endphp
+
+                                            @for ($hour = 0; $hour < 24; $hour++)
+                                                @for ($minute = 0; $minute < 60; $minute++)
                                                     @php
-                                                        $time = \Carbon\Carbon::createFromTime($hour == 12 ? 12 : $hour, $minute);
+                                                        $time = \Carbon\Carbon::createFromTime($hour, $minute);
                                                         $formatted = $time->format('h:i A');
                                                     @endphp
-                                                    <option {{  (strtolower($old_time)==strtolower($formatted)) ? 'selected' : '' }} value="{{ $formatted }}">{{ $formatted }}</option>
-                                                    @endforeach
+
+                                                    <option value="{{ $formatted }}"
+                                                        {{ strtolower($old_time) === strtolower($formatted) ? 'selected' : '' }}>
+                                                        {{ $formatted }}
+                                                    </option>
                                                 @endfor
+                                            @endfor
+
                                             </select>
+
+                                            @error('pickup_time')
+                                                <small class="form-text text-danger">{{ $message }}</small>
+                                            @enderror
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="pickup_time">Pickup charge</label>
+                                            <input type="text" class="form-control" id="pickup_charge" name="PickupLocations[{{ $index }}][pickup_charge]"
+                                                placeholder="Pickup charge" required value="{{ old("PickupLocations.$index.pickup_charge", $option['pickup_charge']) }}">
+
                                             @error('pickup_time')
                                                 <small class="form-text text-danger">{{ $message }}</small>
                                             @enderror
@@ -188,7 +210,8 @@ function removePickupLocation(id) {
 }
 
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_API_KEY') }}&libraries=places"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key={{ env('GOOGLE_MAPS_API_KEY') }}&libraries=places" async
+  defer></script>
 <script>
     function initAllAutocompletes() {
         const inputs = document.querySelectorAll('.autocomplete');

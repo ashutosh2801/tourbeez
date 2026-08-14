@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ToursExport;
+use App\Imports\ToursImport;
 use App\Models\Addon;
 use App\Models\Category;
 use App\Models\City;
@@ -12,12 +13,14 @@ use App\Models\Feature;
 use App\Models\Inclusion;
 use App\Models\Itinerary;
 use App\Models\Optional;
+use App\Models\PartnerTour;
 use App\Models\Pickup;
 use App\Models\ScheduleDeleteSlot;
 use App\Models\TaxesFee;
 use App\Models\Tour;
 use App\Models\TourDetail;
 use App\Models\TourImage;
+use App\Models\TourLastMinuteBooking;
 use App\Models\TourLocation;
 use App\Models\TourPricing;
 use App\Models\TourSchedule;
@@ -27,14 +30,16 @@ use App\Models\Tourtype;
 use App\Models\User;
 use App\Services\ImageService;
 use App\Traits\TourScheduleHelper;
+use App\Upload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
+use Maatwebsite\Excel\Facades\Excel;
 use Redirect;
 use Str;
 use Validator;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Imports\ToursImport;
 
 class TourController extends Controller
 {
@@ -83,7 +88,9 @@ class TourController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Tour::query();
+        $query = Tour::query()->onlyRoot();
+
+	
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -206,8 +213,112 @@ class TourController extends Controller
             });
         }
 
+        if ($request->filled('last_updated')) {
 
-        $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
+            $today = now()->startOfDay();
+
+            switch ($request->last_updated) {
+
+                case 'today':
+                    $query->whereDate('updated_at', $today);
+                    break;
+
+                case 'last_7':
+                    $query->whereBetween('updated_at', [
+                        $today->copy()->subDays(7),
+                        now()
+                    ]);
+                    break;
+
+                case 'last_15':
+                    $query->whereBetween('updated_at', [
+                        $today->copy()->subDays(15),
+                        now()
+                    ]);
+                    break;
+
+                case 'this_week':
+                    $query->whereBetween('updated_at', [
+                        now()->startOfWeek(),
+                        now()->endOfWeek()
+                    ]);
+                    break;
+
+                case 'upcoming_15':
+                    $query->whereBetween('updated_at', [
+                        $today,
+                        now()->addDays(15)
+                    ]);
+                    break;
+
+                case 'expired':
+                    $query->where('updated_at', '<', $today);
+                    break;
+            }
+        }
+
+        if ($request->filled('has_sub_tour')) {
+
+            if ($request->has_sub_tour === 'yes') {
+
+                // Tours that HAVE at least one sub tour
+                $query->whereHas('subTours');
+
+            } elseif ($request->has_sub_tour === 'no') {
+                
+                // Tours that have NO sub tours
+                $query->whereDoesntHave('subTours');
+
+            }
+        }
+
+
+
+        // $query->orderByRaw('sort_order = 0')->orderBy('sort_order', 'ASC');
+
+        // 👉 APPLY SORTING BEFORE PAGINATION
+
+        if ($request->category || $request->city) {
+
+            $query->leftJoin('category_tour as ct', function ($join) use ($request) {
+                $join->on('tours.id', '=', 'ct.tour_id');
+
+                if ($request->category) {
+                    $join->where('ct.category_id', $request->category);
+                }
+            });
+
+            $query->leftJoin('tour_locations as tl', function ($join) use ($request) {
+                $join->on('tours.id', '=', 'tl.tour_id');
+
+                if ($request->city) {
+                    $join->where('tl.city_id', $request->city);
+                }
+            });
+
+            $query->select('tours.*')->distinct();
+
+            // 🚨 IMPORTANT: CLEAR DEFAULT ORDERING
+            $query->reorder();
+
+            // 🎯 APPLY ONLY NEW ORDER
+            if ($request->category && $request->city) {
+                
+                $query->orderByRaw('COALESCE(ct.sort_order, 9999)')
+                      ->orderByRaw('COALESCE(tl.sort_order, 9999)');
+            } elseif ($request->category) {
+                $query->orderByRaw('COALESCE(ct.sort_order, 9999)');
+            } elseif ($request->city) {
+                $query->orderByRaw('COALESCE(tl.sort_order, 9999)');
+            }
+
+        } else {
+
+            // fallback (only when NO filter)
+            $query->reorder()
+                  ->orderByRaw('sort_order = 0')
+                  ->orderBy('sort_order', 'ASC');
+        }
 
 
         // Set items per page
@@ -285,10 +396,43 @@ class TourController extends Controller
         return view('admin.tours.sub-tour.index', compact(['parentTour','tours', 'categories', 'cities']));
     }
 
+    // public function reorder(Request $request)
+    // {
+    //     foreach ($request->order as $index => $id) {
+    //         Tour::where('id', $id)->update(['sort_order' => $index]);
+    //     }
+
+    //     return response()->json(['success' => true]);
+    // }
+
     public function reorder(Request $request)
     {
-        foreach ($request->order as $index => $id) {
-            Tour::where('id', $id)->update(['sort_order' => $index]);
+        $categoryId = $request->category;
+        $cityId     = $request->city;
+
+        foreach ($request->order as $index => $tourId) {
+
+            // Save in category pivot
+            if ($categoryId) {
+                DB::table('category_tour')
+                    ->where('tour_id', $tourId)
+                    ->where('category_id', $categoryId)
+                    ->update(['sort_order' => $index]);
+            }
+
+            // Save in city table
+            if ($cityId) {
+                DB::table('tour_locations')
+                    ->where('tour_id', $tourId)
+                    ->where('city_id', $cityId)
+                    ->update(['sort_order' => $index]);
+            }
+
+            // fallback (optional)
+            if (!$categoryId && !$cityId) {
+                Tour::where('id', $tourId)
+                    ->update(['sort_order' => $index]);
+            }
         }
 
         return response()->json(['success' => true]);
@@ -305,7 +449,9 @@ class TourController extends Controller
     public function createSubTour($id)
     {
         $data  = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.sub-tour.create', compact('data'));
+
+        $parentTour = $data->load('pricings');
+        return view('admin.tours.sub-tour.create', compact('data', 'parentTour'));
     }
 
     public function editSubTour($id)
@@ -317,9 +463,9 @@ class TourController extends Controller
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedule   = $data->schedule ? $data->schedule :  new TourSchedule();
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        $parentTour = $data->parent->load('pricings');
         // return view('admin.tours.edit.index', compact( 'data', 'detail', 'schedule', 'metaData'));
-
-        return view('admin.tours.sub-tour.edit.index', compact('data', 'detail', 'schedule', 'metaData'));
+        return view('admin.tours.sub-tour.edit.index', compact('data', 'detail', 'schedule', 'metaData', 'parentTour'));
     }
 
 
@@ -383,6 +529,7 @@ class TourController extends Controller
         $tour->price      = $request->advertised_price;
         $tour->price_type = $request->price_type;
         $tour->order_email= $request->order_email;
+        $tour->currency   = $request->currency;
 
         if($tour->save()) {
             
@@ -509,6 +656,7 @@ class TourController extends Controller
         $tour->country    = $request->country;
         $tour->state      = $request->state;
         $tour->city       = $request->city;
+        $tour->currency       = $request->currency;
         $tour->order_email       = $request->order_email;
 
         if($tour->save()) {
@@ -549,7 +697,7 @@ class TourController extends Controller
             $tour_detail->IsTerms               = $request->IsTerms?1:0;
             $tour_detail->terms_and_conditions  = $request->terms_and_conditions;
             $tour_detail->meta_title            = $request->title;
-            $tour_detail->meta_description	    = $request->title;
+            $tour_detail->meta_description      = $request->title;
             $tour_detail->focus_keyword         = $request->title;
             $tour_detail->videos         = $request->videos;
             $tour_detail->save();
@@ -607,6 +755,7 @@ class TourController extends Controller
     public function single(Request $request)
     {
         $data  = Tour::find($request->id);
+
         $str = '';
         $subtotal = 0;
         if($data) {
@@ -717,7 +866,10 @@ $pickupHtml .= '</div>';
                             </td>
                             <td class="text-right" width="200">
                                 <div class="input-group">
-                                    <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
+                                <select name="tour_starttime[]" class="form-control tour-time tour_starttime">
+                                <option value="">Select Session</option>
+                                </select>
+                                    // <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker" data-minute-step="1"> 
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                     </div>                       
@@ -854,7 +1006,7 @@ $pickupHtml .= '</div>';
         $data       = Tour::findOrFail(decrypt($id));
         $detail     = $data->detail ? $data->detail : new TourDetail();
         $schedules   = $data->schedules ? $data->schedules :  new TourSchedule();
-        // dd($schedule);
+        
         return view('admin.tours.feature.scheduling', compact( 'data', 'detail', 'schedules'));
     }
 
@@ -873,29 +1025,30 @@ $pickupHtml .= '</div>';
     public function editItinerary($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.feature.itinerary', compact( 'data'));
+        $itineraries = Itinerary::groupBy('title')->get();
+        return view('admin.tours.feature.itinerary', compact( 'data', 'itineraries'));
     }
 
     public function editFaqs($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.feature.faqs', compact( 'data'));
+        $faqs       = Faq::groupBy('question')->get();
+        return view('admin.tours.feature.faqs', compact( 'data', 'faqs'));
     }
 
     public function editInclusions($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.feature.inclusions', compact( 'data'));
+        $inclusions   = Inclusion::groupBy('name')->get();
+        return view('admin.tours.feature.inclusions', compact( 'data', 'inclusions'));
     }
 
     public function editOptionals($id)
     {
         $data       = Tour::findOrFail(decrypt($id));
-        return view('admin.tours.feature.optionals', compact( 'data'));
+        $optionals   = Optional::groupBy('name')->get();
+        return view('admin.tours.feature.optionals', compact( 'data', 'optionals'));
     }
-
-
-    
 
     public function editExclusions($id)
     {
@@ -921,6 +1074,14 @@ $pickupHtml .= '</div>';
         $data       = Tour::findOrFail(decrypt($id));
         $detail     = $data->detail ? $data->detail : new TourDetail();
         return view('admin.tours.feature.booking', compact( 'data', 'detail'));
+    }
+
+    public function editPartner($id)
+    {
+        $data       = Tour::with('partnerTours')->findOrFail(decrypt($id));
+        
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        return view('admin.tours.feature.partner', compact( 'data', 'detail'));
     }
 
     public function editSeo($id)
@@ -986,6 +1147,15 @@ $pickupHtml .= '</div>';
         $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
         $selectedDate = request()->query('selectedDate', now()->toDateString());
         return view('admin.tours.feature.schedule_calendar', compact( 'data', 'detail', 'metaData', 'selectedDate'));
+    }
+
+    public function schedulePricing($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+        $detail     = $data->detail ? $data->detail : new TourDetail();
+        
+        $metaData   = $data->meta->pluck('meta_value', 'meta_key')->toArray();
+        return view('admin.tours.feature.schedule-pricing', compact( 'data', 'detail', 'metaData'));
     }
 
     public function scheduleCalendarEvent($id)
@@ -1135,7 +1305,7 @@ $pickupHtml .= '</div>';
     public function basic_detail_update(Request $request, $id)
     {
 
-        
+
         $request->validate([
             'title'                 => 'required|max:255',
             'description'           => 'required',
@@ -1187,6 +1357,7 @@ $pickupHtml .= '</div>';
         $tour->offer_ends_in = $request->offer_ends_in;
         $tour->coupon_type = $request->coupon_type;
         $tour->coupon_value = $request->coupon_value;
+        $tour->currency       = $request->currency;
         
         // $tour->country    = $request->country;
         // $tour->state      = $request->state;
@@ -1286,11 +1457,45 @@ $pickupHtml .= '</div>';
         ]);
     }
 
+    public function schedulePricingUpdate(Request $request, $id){
+
+        $request->validate([
+            // 'transport_cost'                => 'required|numeric|min:0',
+            'PriceOption'                   => 'required|array',
+            'PriceOption.*.selling_price'   => 'required|numeric|min:0',
+            'PriceOption.*.extra_included'  => 'nullable|numeric|min:0',
+
+        ]);
+
+         foreach ($request->PriceOption as $option) {
+
+            if (!empty($option['id'])) {
+                $pricing = TourPricing::find($option['id']);
+                if ($pricing && $pricing->tour_id) {
+                    $pricing->selling_price = $option['selling_price'] ?? 0;
+                    $pricing->extra_included = $option['extra_included'] ?? 0;
+
+                    $pricing->save();
+                }
+            }
+        }
+        $pricing->tour->transport_cost = $request->transport_cost;
+        $pricing->tour->report_group = $request->report_group;
+        $pricing->tour->save();
+
+        return redirect()->back()->with([
+            'success' => 'Selling Price Updated successfully',
+            'active_tab' => '#basic_information'
+        ]);
+    }
+
+
     public function addon_update(Request $request, $id) {
         $tour  = Tour::findOrFail($id);
         // Save tour types
         
         // Checked addon IDs
+
         $checkedAddons = $request->input('selected_addons', []); // This is an array of IDs
 
         // All addon pivot data (includes sort_by values keyed by ID)
@@ -1307,6 +1512,12 @@ $pickupHtml .= '</div>';
             $syncData[$addonId] = [
                 'sort_by' => $sortBy,
             ];
+
+            if (isset($addonInputs[$addonId]['selling_price'])) {
+                Addon::where('id', $addonId)->update([
+                    'selling_price' => $addonInputs[$addonId]['selling_price'],
+                ]);
+            }
         }
 
         //echo '<pre>';  print_r($syncData); exit;
@@ -1362,6 +1573,7 @@ $pickupHtml .= '</div>';
         $detail->booking_type    = $request->booking_type;
         $detail->booking_link    = $request->booking_link;
         $detail->other_link      = $request->other_link;
+        $detail->assign_driver   = $request->has('assign_driver');
         if($detail->save() ) {
             return back()->withInput()->with('success','Booking info saved successfully.');
         }
@@ -1369,6 +1581,28 @@ $pickupHtml .= '</div>';
         return back()->withInput()->withErrors($request->all())->with('error','Something went wrong!');
     }
 
+    public function partner_update(Request $request, $id)
+    {
+        // $tour  = Tour::findOrFail($id);
+        // echo '<pre>'; print_r($request->all()); exit;
+                    
+        for ($i = 0; $i < count($request->partner_id); $i++) {
+            PartnerTour::updateOrCreate(
+                [
+                    'partner_id'    => $request->partner_id[$i],
+                    'link'          => $request->link[$i],
+                ],
+                [
+                    'tour_id'       => $request->tour_id,
+                    'partner_id'    => $request->partner_id[$i],
+                    'title'         => $request->title[$i],
+                    'link'          => $request->link[$i],
+                ]
+            );
+        }
+        return back()->withInput()->with('success','Partner link saved successfully.');
+
+    }
 
     public function pickup_update(Request $request, $id) {
         $tour = Tour::findOrFail($id);
@@ -1431,7 +1665,6 @@ $pickupHtml .= '</div>';
     public function schedule_update(Request $request, $id)
     {
     $tour = Tour::findOrFail($id);
-
     // ✅ Validate all schedules
 
     if(!$request->schedules){
@@ -1486,6 +1719,8 @@ $pickupHtml .= '</div>';
         $schedule->session_end_date        = $scheduleData['session_end_date'];
         $schedule->session_end_time        = $scheduleData['session_end_time'];
         $schedule->sesion_all_day          = !empty($scheduleData['sesion_all_day']) ? 1 : 0;
+        $schedule->sesion_time_between     = !empty($scheduleData['sesion_time_between']) ? 1 : 0;
+        $schedule->sesion_instruction      = $scheduleData['sesion_instruction'] ?? null;
         $schedule->repeat_period           = $scheduleData['repeat_period'];
         $schedule->repeat_period_unit      = $scheduleData['repeat_period_unit'] ?? null;
         $schedule->until_date              = $until_date ?? null;
@@ -1545,6 +1780,8 @@ $pickupHtml .= '</div>';
 
         //Save new itinerary
         $itineraryIds = [];
+
+        
         foreach ($request->ItineraryOptions as $option) {
             // $itinerary = Itinerary::where('title', $option['title'])
             // ->where('datetime', $option['datetime'])
@@ -1566,7 +1803,7 @@ $pickupHtml .= '</div>';
 
             $itineraryIds[] = $itinerary->id;
             $pivotData[$itinerary->id] = [
-                'sort_by' => $option['sort_by'] ?? 0
+                'sort_by' => $option['order'] ?? 0
             ];
         }
 
@@ -1605,11 +1842,17 @@ $pickupHtml .= '</div>';
             $faq->save();
 
             $faqIds[] = $faq->id;
+            $pivotData[$faq->id] = [
+                'sort_by' => $option['order'] ?? 0
+            ];
         }
 
         // Sycc faqs
-        if ( !empty($faqIds) ) {
-            $tour->faqs()->sync($faqIds);
+        // if ( !empty($faqIds) ) {
+        //     $tour->faqs()->sync($faqIds);
+        // }
+        if (!empty($pivotData)) {
+            $tour->faqs()->sync($pivotData); 
         }
 
         return redirect()->back()->with('success','FAQs saved successfully.');
@@ -1644,53 +1887,21 @@ $pickupHtml .= '</div>';
             else {
                 $featureIds[] = $feature->id;
             }
+
+            $pivotData[$feature->id] = [
+                'sort_by' => $option['order'] ?? 0
+            ];
         }
 
         // Sycc faqs
-        if ( !empty($featureIds) ) {
-            $tour->inclusions()->sync($featureIds);
+        // if ( !empty($featureIds) ) {
+        //     $tour->inclusions()->sync($featureIds);
+        // }
+        if (!empty($pivotData)) {
+            $tour->inclusions()->sync($pivotData); 
         }
 
         return redirect()->back()->with('success','Inclusions saved successfully.');
-    }
-
-    public function optional_update(Request $request, $id) {
-        $tour  = Tour::findOrFail($id);
-
-        $request->validate([
-            'optionalValue'        => 'required|array',
-            'optionalValue.*.name' => 'required|string|max:255',
-        ],
-        [
-            'optionalValue.*.name.required'=> 'Name is required',
-        ]);
-
-        //Save new Exclusion
-        $featureIds = [];
-        foreach ($request->optionalValue as $option) {
-            //$feature = Inclusion::where('name', $option['name'])->first();
-            $feature = Optional::find( $option['id'] ?? 0 );
-            if (!$feature) {
-                $feature = new Optional();
-                //$feature->tour_id     = $tour->id;
-                $feature->user_id     = auth()->user()->id;
-            }
-            $feature->name      = $option['name'] ?? null;
-            
-            if( $feature->save() ) {
-                $featureIds[] = $feature->id;
-            } 
-            else {
-                $featureIds[] = $feature->id;
-            }
-        }
-
-        // Sycc faqs
-        if ( !empty($featureIds) ) {
-            $tour->optionals()->sync($featureIds);
-        }
-
-        return redirect()->back()->with('success','Optionals saved successfully.');
     }
 
     public function exclusion_update(Request $request, $id) {
@@ -1722,14 +1933,67 @@ $pickupHtml .= '</div>';
             else {
                 $featureIds[] = $feature->id;
             }
+
+            $pivotData[$feature->id] = [
+                'sort_by' => $option['order'] ?? 0
+            ];
         }
 
         // Sycc faqs
-        if ( !empty($featureIds) ) {
-            $tour->exclusions()->sync($featureIds);
+        // if ( !empty($featureIds) ) {
+        //     $tour->exclusions()->sync($featureIds);
+        // }
+        if (!empty($pivotData)) {
+            $tour->exclusions()->sync($pivotData); 
         }
 
         return redirect()->back()->with('success','Exclusions saved successfully.');
+    }
+
+    public function optional_update(Request $request, $id) {
+        $tour  = Tour::findOrFail($id);
+
+        $request->validate([
+            'optionalValue'        => 'required|array',
+            'optionalValue.*.name' => 'required|string|max:255',
+        ],
+        [
+            'optionalValue.*.name.required'=> 'Name is required',
+        ]);
+
+        //Save new Exclusion
+        $featureIds = [];
+        foreach ($request->optionalValue as $option) {
+            //$feature = Inclusion::where('name', $option['name'])->first();
+            $feature = Optional::find( $option['id'] ?? 0 );
+            if (!$feature) {
+                $feature = new Optional();
+                //$feature->tour_id     = $tour->id;
+                $feature->user_id     = auth()->user()->id;
+            }
+            $feature->name      = $option['name'] ?? null;
+            
+            if( $feature->save() ) {
+                $featureIds[] = $feature->id;
+            } 
+            else {
+                $featureIds[] = $feature->id;
+            }
+
+            $pivotData[$feature->id] = [
+                'sort_by' => $option['order'] ?? 0
+            ];
+        }
+
+        // Sycc faqs
+        // if ( !empty($featureIds) ) {
+        //     $tour->optionals()->sync($featureIds);
+        // }
+        if (!empty($pivotData)) {
+            $tour->optionals()->sync($pivotData); 
+        }
+
+        return redirect()->back()->with('success','Optionals saved successfully.');
     }
 
     public function taxfee_update(Request $request, $id) {
@@ -1744,7 +2008,7 @@ $pickupHtml .= '</div>';
         return back()->withInput()->with('error','OOPs! something went wrong!');
     }
 
-    public function gallery_update(Request $request, $id) {
+    public function gallery_update342(Request $request, $id) {
         $tour  = Tour::findOrFail($id);
         // Save tour types
         if ($request->has('gallery') && is_array($request->gallery)) {
@@ -1765,6 +2029,159 @@ $pickupHtml .= '</div>';
 
         return back()->withInput()->with('error','OOPs! something went wrong!');
     }
+
+    public function gallery_update34(Request $request, $id)
+    {
+        $tour = Tour::findOrFail($id);
+
+        $gallery = [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | EXISTING IMAGES
+        |--------------------------------------------------------------------------
+        */
+        $nextOrder = $tour->galleries()->max('sort_order') + 1;
+        if ($request->has('gallery') && is_array($request->gallery)) {
+            $gallery = array_filter($request->gallery, function ($value) {
+                return !empty($value);
+            });
+
+            
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | YOUTUBE VIDEOS (SAVE EXACTLY LIKE YOUR FORMAT)
+        |--------------------------------------------------------------------------
+        */
+        if($request->has('video_urls')){
+
+
+           foreach ($request->video_urls as $url) {
+
+                if (empty($url)) continue;
+
+                // ✅ CLEAN extraction (handles ?si= and all params)
+                preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^?&]+)/', $url, $match);
+
+                $videoId = $match[1] ?? null;
+
+                if (!$videoId) continue;
+
+                // ✅ CREATE PROPER RECORD (exact like your working one)
+                $upload = Upload::create([
+                    'file_original_name' => $url,
+                    'file_name'          => $videoId,
+                    'medium_name'        => "https://img.youtube.com/vi/{$videoId}/maxresdefault.jpg",
+                    'thumb_name'         => "https://img.youtube.com/vi/{$videoId}/mqdefault.jpg",
+                    'type'               => 'youtube',
+                    'user_id'            => auth()->id() ?? 1,
+                ]);
+
+                $gallery[] = $upload->id;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FINAL SYNC (IMAGES + VIDEOS)
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->has('order')) {
+
+            foreach ($request->order as $index => $uploadId) {
+                $tour->galleries()->updateExistingPivot($uploadId, [
+                    'sort_order' => $index
+                ]);
+            }
+        }
+
+        if (!empty($gallery)) {
+            $tour->galleries()->sync($gallery);
+
+        }
+
+        return redirect()->back()->with('success', 'Gallery saved successfully.');
+    }
+
+    public function gallery_update(Request $request, $id)
+{
+    $tour = Tour::findOrFail($id);
+
+    $finalIds = [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 1: EXISTING ORDER FROM FRONTEND
+    |--------------------------------------------------------------------------
+    */
+    if ($request->has('order')) {
+        $finalIds = array_values(array_filter($request->order));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 2: CREATE VIDEO UPLOADS + APPEND IF NOT IN ORDER
+    |--------------------------------------------------------------------------
+    */
+    if ($request->has('video_urls')) {
+
+        foreach ($request->video_urls as $url) {
+
+            if (!$url) continue;
+
+            preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^?&]+)/', $url, $match);
+            $videoId = $match[1] ?? null;
+
+            if (!$videoId) continue;
+
+            $upload = Upload::create([
+                'file_original_name' => $url,
+                'file_name'          => $videoId,
+                'medium_name'        => "https://img.youtube.com/vi/{$videoId}/maxresdefault.jpg",
+                'thumb_name'         => "https://img.youtube.com/vi/{$videoId}/mqdefault.jpg",
+                'type'               => 'youtube',
+                'user_id'            => auth()->id() ?? 1,
+            ]);
+
+            $finalIds[] = $upload->id; // 🔥 FORCE ADD
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 3: CLEAN ARRAY
+    |--------------------------------------------------------------------------
+    */
+    $finalIds = array_values(array_filter($finalIds));
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 4: BUILD SYNC DATA
+    |--------------------------------------------------------------------------
+    */
+    $syncData = [];
+
+    foreach ($finalIds as $index => $uploadId) {
+
+        $syncData[$uploadId] = [
+            'sort_order' => $index,
+            'is_main' => ($request->main_image == $uploadId) ? 1 : 0
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 5: SINGLE SOURCE SYNC
+    |--------------------------------------------------------------------------
+    */
+    $tour->galleries()->sync($syncData);
+
+    return back()->with('success', 'Gallery updated successfully.');
+}
 
     public function notification_update(Request $request, $id) 
     {
@@ -2025,6 +2442,24 @@ $pickupHtml .= '</div>';
         return response()->json(['results' => $results]);
     }
 
+    public function categorySearch(Request $request)
+    {
+        $term = $request->get('term', '');
+        // dd(32432, $term);
+        $results = Category::where('name', 'LIKE', "%{$term}%")
+                    ->orderBy('name')
+                    ->limit(10)
+                    ->get()
+                    ->map(function ($c) {
+                        return [
+                            'id' => $c->id,
+                            'text' => ucwords($c->name),
+                        ];
+                    });
+ 
+        return response()->json(['results' => $results]);
+    }
+
     public function saveCoupon(Request $request)
     {
         $request->validate([
@@ -2056,11 +2491,15 @@ $pickupHtml .= '</div>';
 
     public function specialdeposit($id)
     {
+        
         $data       = Tour::findOrFail(decrypt($id));
 
         $specialDeposit = $data->specialDeposit ?? new \App\Models\TourSpecialDeposit();
+
+        $lastMinutes = $data->lastMinuteBookings ?? [];
+
         
-        return view('admin.tours.feature.special-deposit', compact( 'data', 'specialDeposit'));
+        return view('admin.tours.feature.special-deposit', compact( 'data', 'specialDeposit','lastMinutes'));
     }
 
     public function review($id)
@@ -2069,11 +2508,52 @@ $pickupHtml .= '</div>';
 
 
         $tourReview = $data->review ?? new \App\Models\TourReview();
+        $tourDetail = TourDetail::where('tour_id', $data->id)->first();
 
-        return view('admin.tours.feature.review', compact( 'data', 'tourReview'));
+        return view('admin.tours.feature.review', compact( 'data', 'tourReview', 'tourDetail'));
     }
 
-   
+    public function parentTour($id)
+    {
+        $data       = Tour::findOrFail(decrypt($id));
+
+        // $tours = Tour::whereNull('parent_id')->get();
+
+        $tours = Tour::where(function ($q) {
+            $q->whereNull('parent_id')
+              ->orWhere('parent_id', 0);
+        })->get();
+
+        
+        $parentTour = $data->parent ?? new \App\Models\Tour();
+
+        return view('admin.tours.feature.parent', compact( 'data', 'parentTour', 'tours'));
+    }
+
+
+    public function parentUpdate(Request $request, $id)
+    {
+        $tour = Tour::findOrFail($id);
+        
+        if ($request->has('remove_parent') && $request->remove_parent != 0) {
+            $tour->parent_id = null;
+            $tour->save();
+
+            return back()->with('success', 'Parent tour removed successfully.');
+        }
+
+        $request->validate([
+            'parent_id' => 'required|exists:tours,id'
+        ]);
+
+        $tour->parent_id = $request->parent_id;
+        $tour->save();
+
+        return back()->with('success', 'Parent tour updated successfully.');
+    }
+
+
+       
     public function reviewUpdate(Request $request, $id)
     {
         $tour = Tour::findOrFail($id);
@@ -2096,32 +2576,265 @@ $pickupHtml .= '</div>';
             'review.banners' => 'array|nullable',
             'review.banners.*.heading' => 'nullable|string|max:255',
             'review.banners.*.text' => 'nullable|string',
+
+            // ✅ Tag
+            'review.tag.class' => 'nullable|string|max:50',
+            'review.tag.text' => 'nullable|string|max:255',
+            'review.tag.custom_text' => 'nullable|string|max:255',
+
+            'review.free_cancellation' => 'nullable|boolean',
+            'review.exceptional_deal'  => 'nullable|boolean',
+            'review.lowest_price'      => 'nullable|boolean',
+            'review.kids_discount'     => 'nullable|boolean',
+            'review.full_refund'       => 'nullable|boolean',
         ]);
 
-        $data = $request->review;
+        $data = $request->review ?? [];
+
+        $features = [
+            'free_cancellation' => $data['free_cancellation'] ?? 0,
+            'exceptional_deal'  => $data['exceptional_deal'] ?? 0,
+            'lowest_price'      => $data['lowest_price'] ?? 0,
+            'kids_discount'     => $data['kids_discount'] ?? 0,
+            'full_refund'       => $data['full_refund'] ?? 0,
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Tag Processing (Single Tag Only)
+        |--------------------------------------------------------------------------
+        */
+
+        $tag = null;
+
+        if (!empty($data['tag'])) {
+
+            $tagText = $request->input('review.tag.text');
+
+                $data['tag'] = [
+                    'class' => $request->input('review.tag.class'),
+                    'text'  => $tagText,
+                ];
+
+                if ($tagText === 'Other') {
+                    $data['tag']['custom_text'] = $request->input('review.tag.custom_text');
+                }
+        }
 
         \DB::table('tour_reviews')->updateOrInsert(
             ['tour_id' => $tour->id],
             [
-                'use_review' => $data['use_review'] ?? 0,
+                'use_review'     => $data['use_review'] ?? 0,
                 'review_heading' => $data['review_heading'] ?? null,
-                'review_text' => $data['review_text'] ?? null,
-                'review_rating' => $data['review_rating'] ?? null,
-                'review_count' => $data['review_count'] ?? null,
+                'review_text'    => $data['review_text'] ?? null,
+                'review_rating'  => $data['review_rating'] ?? null,
+                'review_count'   => $data['review_count'] ?? null,
+
                 'recommended' => !empty($data['recommended']) ? json_encode($data['recommended']) : null,
-                'badges' => !empty($data['badges']) ? json_encode($data['badges']) : null,
-                'banners' => !empty($data['banners']) ? json_encode($data['banners']) : null,
+                'badges'      => !empty($data['badges']) ? json_encode($data['badges']) : null,
+                'banners'     => !empty($data['banners']) ? json_encode($data['banners']) : null,
+
+                // ✅ Store single tag as JSON
+                'tag' => !empty($data['tag']) ? json_encode($data['tag']) : null,
+
                 'updated_at' => now(),
                 'created_at' => now(),
             ]
         );
 
+        $tour_detail = TourDetail::where('tour_id', $tour->id)->first();
+
+        $tour_detail->free_cancellation = $features['free_cancellation'];
+        $tour_detail->exceptional_deal  = $features['exceptional_deal'];
+        $tour_detail->lowest_price      = $features['lowest_price'];
+        $tour_detail->kids_discount     = $features['kids_discount'];
+        $tour_detail->full_refund       = $features['full_refund'];
+
+        $tour_detail->save();
+
         return back()->with('success', 'Tour review updated successfully.');
     }
 
 
-
     public function specialDepositUpdate(Request $request, $id)
+    {
+        $tour = Tour::findOrFail($id);
+
+        $validated = $request->validate([
+            'tour.use_deposit'        => 'nullable|boolean',
+            'tour.charge'             => 'nullable|in:FULL,DEPOSIT_PERCENT,DEPOSIT_FIXED,DEPOSIT_FIXED_PER_ORDER,NONE',
+            'tour.deposit_amount'     => 'nullable|numeric|min:0',
+
+            'tour.is_discount'       => 'nullable|boolean',
+            'tour.discount_type'      => 'nullable|in:PERCENT,FIXED',
+            'tour.discount_value'    => 'nullable|numeric|min:0',
+
+            'tour.allow_full_payment' => 'nullable|boolean',
+            'tour.use_minimum_notice' => 'nullable|boolean',
+            'tour.notice_days'        => 'nullable|integer|min:0',
+
+            'price_booking_fee'       => 'nullable|in:0,1',
+            'tour_booking_fee'        => 'nullable|numeric|min:0',
+            'tour_booking_fee_type'   => 'nullable|in:PERCENT,FIXED',
+        ]);
+
+        $data = $request->tour ?? [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Deposit Logic
+        |--------------------------------------------------------------------------
+        */
+
+        $useDeposit = isset($data['use_deposit']) && (int)$data['use_deposit'] === 1;
+
+        if (!$useDeposit) {
+
+            $depositPayload = [
+                'use_deposit'        => 0,
+                'charge'             => null,
+                'deposit_amount'     => null,
+                'allow_full_payment' => null,
+                'use_minimum_notice' => null,
+                'notice_days'        => null,
+            ];
+
+        } else {
+
+            $useMinimumNotice = isset($data['use_minimum_notice']) && (int)$data['use_minimum_notice'] === 1;
+
+            $depositPayload = [
+                'use_deposit'        => 1,
+                'charge'             => $data['charge'] ?? null,
+                'deposit_amount'     => $data['deposit_amount'] ?? null,
+                'allow_full_payment' => $data['allow_full_payment'] ?? 0,
+                'use_minimum_notice' => $useMinimumNotice ? 1 : 0,
+                'notice_days'        => $useMinimumNotice ? ($data['notice_days'] ?? null) : null,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Discount Logic (Independent)
+        |--------------------------------------------------------------------------
+        */
+
+        $useDiscount = isset($data['is_discount']) && (int)$data['is_discount'] === 1;
+
+        if (!$useDiscount) {
+
+            $discountPayload = [
+                'is_discount'    => 0,
+                'discount_type'   => null,
+                'discount_value' => null,
+            ];
+
+        } else {
+
+            $discountPayload = [
+                'is_discount'    => 1,
+                'discount_type'   => $data['discount_type'] ?? null,
+                'discount_value' => $data['discount_value'] ?? null,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Final Payload Merge
+        |--------------------------------------------------------------------------
+        */
+
+        $payload = array_merge(
+            $depositPayload,
+            $discountPayload,
+            [
+                'price_booking_fee'     => $request->price_booking_fee,
+                'tour_booking_fee_type' => ($request->price_booking_fee == 1)
+                                            ? $request->tour_booking_fee_type
+                                            : null,
+                'tour_booking_fee'      => ($request->price_booking_fee == 1)
+                                            ? $request->tour_booking_fee
+                                            : null,
+                'updated_at'            => now(),
+                'created_at'            => now(),
+            ]
+        );
+
+        \DB::table('tour_special_deposits')->updateOrInsert(
+            ['tour_id' => $tour->id],
+            $payload
+        );
+
+        // Checkout reads this rule through two API paths. Invalidate both
+        // cache-key formats so updated discounts apply immediately.
+        Cache::forget('deposit_rule_' . $tour->id);
+        Cache::forget('depositRule_' . $tour->id);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Last Minute Booking Logic
+        |--------------------------------------------------------------------------
+        */
+
+        /*
+    |--------------------------------------------------------------------------
+    | Last Minute Booking Logic
+    |--------------------------------------------------------------------------
+    */
+
+    $ids = [];
+
+    if ($request->has('last_minute')) {
+
+        foreach ($request->last_minute as $row) {
+
+            // Skip empty rows
+            if (
+                empty($row['from_date']) &&
+                empty($row['to_date']) &&
+                empty($row['last_minute_hours']) &&
+                empty($row['amount'])
+            ) {
+                continue;
+            }
+
+            $booking = TourLastMinuteBooking::updateOrCreate(
+                [
+                    'id' => $row['id'] ?? null
+                ],
+                [
+                    'tour_id'           => $tour->id,
+                    'from_date'         => $row['from_date'] ?? null,
+                    'to_date'           => $row['to_date'] ?? null,
+                    'last_minute_hours' => $row['last_minute_hours'] ?? null,
+                    'amount_type'       => $row['amount_type'] ?? null,
+                    'amount'            => $row['amount'] ?? null,
+                ]
+            );
+
+            $ids[] = $booking->id;
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete Removed Rows
+    |--------------------------------------------------------------------------
+    */
+
+    $query = TourLastMinuteBooking::where('tour_id', $tour->id);
+
+    if (!empty($ids)) {
+        $query->whereNotIn('id', $ids);
+    }
+
+    $query->delete();
+
+        return redirect()->back()->with('success', 'Special deposit settings saved successfully.');
+    }
+
+
+    public function specialDepositUpdatesdsd(Request $request, $id)
     {
         $tour  = Tour::findOrFail($id);
 
@@ -2575,16 +3288,94 @@ $pickupHtml .= '</div>';
 
     public function importPrice(Request $request)
     {
+        $request->validate([
+            'file' => 'required|mimes:csv,xlsx,xls',
+            'type' => 'required|in:tour_pricing,addon'
+        ]);
 
+        Excel::import(new ToursImport($request->type), $request->file('file'));
+
+        return back()->with('success', 'Prices updated successfully!');
+    }
+
+    public function updatePrices(Request $request)
+    {
+        try {
             $request->validate([
-                'file' => 'required|mimes:csv,xlsx,xls',
+                'selected_tours'   => 'required|string',
+                // 'selected_tours.*' => 'exists:tours,id',
+                'price_action'     => 'required|in:INCREASE,DECREASE',
+                'price_type'       => 'required|in:PERCENT,FIXED',
+                'price_value'      => 'required|numeric|min:1',
             ]);
 
-            Excel::import(new ToursImport, $request->file('file'));
+            $tourIds = explode(',', $request->selected_tours);
+            $invalidIds = Tour::whereIn('id', $tourIds)->count() != count($tourIds);
 
-            return back()->with('success', 'Tour prices updated successfully!');
+            if ($invalidIds) {
+                return back()->withErrors([
+                    'selected_tours' => 'One or more selected tours are invalid.'
+                ]);
+            }
 
-        return back()->with('success', "$updatedCount tour prices have been updated successfully.");
+            DB::transaction(function () use ($request, $tourIds) {
+
+                $action = $request->price_action;
+                $type   = $request->price_type;
+                $value  = (float) $request->price_value;
+                $updateInfant = $request->boolean('is_infant');
+
+                $calculatePrice = function ($oldPrice) use ($action, $type, $value) {
+                    $oldPrice = (float) $oldPrice;
+
+                    $change = $type === 'PERCENT'
+                        ? ($oldPrice * $value) / 100
+                        : $value;
+
+                    $newPrice = $action === 'INCREASE'
+                        ? $oldPrice + $change
+                        : $oldPrice - $change;
+
+                    return max(0, round($newPrice, 2));
+                };
+
+                Tour::whereIn('id', $tourIds)
+                    ->whereNull('deleted_at')
+                    ->get()
+                    ->each(function ($tour) use ($calculatePrice) {
+                        if ($tour->price !== null) {
+                            $tour->price = $calculatePrice($tour->price);
+                            $tour->save();
+                        }
+                    });
+
+                $pricings = TourPricing::whereIn('tour_id', $tourIds)
+                    ->whereNull('deleted_at');
+
+                if (!$request->boolean('is_infant')) {
+                    $pricings->where(function ($q) {
+                        $q->whereNull('label')
+                        ->orWhereRaw('LOWER(label) NOT LIKE ?', ['%infant%']);
+                    });
+                }
+
+                $pricings->get()->each(function ($pricing) use ($calculatePrice) {
+                    $pricing->price = $calculatePrice($pricing->price);
+
+                    if ($pricing->selling_price !== null) {
+                        $pricing->selling_price = $calculatePrice($pricing->selling_price);
+                    }
+
+                    $pricing->save();
+                });
+            });
+
+            return redirect()->back()->with('success', 'Selected tour prices updated successfully.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+
+            return redirect()->back()
+                ->with('error', collect($e->errors())->flatten()->first());
+        }
     }
 
     public function markReview(Request $request)
@@ -2602,6 +3393,20 @@ $pickupHtml .= '</div>';
         return redirect()->back()->with('success', "{$updated} tour(s) marked as reviewed successfully.");
     }
 
+
+    public function toursList(Request $request)
+    {
+        $search = $request->get('q');
+
+        return Tour::when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                      ->orWhere('unique_code', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('title')
+            ->get(['id', 'title', 'unique_code']);
+    }
 
 
 

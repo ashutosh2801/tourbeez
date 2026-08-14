@@ -451,9 +451,9 @@ class SettingController extends Controller
                     try {
                         //Mail::to($request->user())->send(new MailableClass);
 
-                        Mail::to($email)->queue(new EmailManager($array));
+                        Mail::to($email)->send(new EmailManager($array));
                     } catch (\Exception $e) {
-                        //dd($e);
+                        dd($e);
                     }
             	}
             }
@@ -493,7 +493,9 @@ class SettingController extends Controller
         $array['content'] = "This is a test email.";
 
         try {
-            Mail::to($request->email)->queue(new EmailManager($array));
+            //$mail = Mail::to($request->email)->queue(new EmailManager($array));
+            $mail = Mail::to($request->email)->send(new EmailManager($array));
+            //dd($mail);
         } catch (\Exception $e) {
             dd($e);
         }

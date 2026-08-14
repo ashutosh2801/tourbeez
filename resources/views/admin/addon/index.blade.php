@@ -3,10 +3,10 @@
     <div class="extra-header card card-primary">
         <div class="card-header">
             <div class="row">
-                <div class="col-md-8">
+                <div class="col-md-8 col-6">
                     <h3 class="card-title">Extra</h3>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 col-6">
                     <div class="card-tools">
                         <a href="{{ route('admin.addon.create') }}" class="btn btn-sm btn-success"> + Create New</a>
                     </div>
@@ -24,6 +24,7 @@
                             <th width="150">Name</th>
                             <th>Description</th>
                             <th>Price</th>
+                            <th>Selling Price</th>
                             <th width="80">Price Type</th>
                             <th>Action</th>
                         </tr>
@@ -37,7 +38,8 @@
                                 </td>
                                 <td><a href="{{ route('admin.addon.edit', encrypt($item->id)) }}" class="text-info">{{ $item->name }}</a></td>
                                 <td>{{ $item->description }}</td>
-                                <td>{{ price_format($item->price) }}</td>
+                                <td>{{ price_format_with_currency($item->price, $item->currency) }}</td>
+                                <td>{{ price_format_with_currency($item->selling_price, $item->currency) }}</td>
                                 <td>{{ $item->customer_choice }}</td>
                                 <td width="60">
                                     <!-- <a href="{{ route('admin.addon.edit', encrypt($item->id)) }}"
@@ -51,14 +53,14 @@
                 </table>
             </div>
         </div>
-    </div>
+                                          </div>
     @section('js')
         <script>
             $(function() {
                 $('#categoryTable').DataTable({
                     "paging": true,
                     "searching": true,
-                    "ordering": true,
+                    "ordering": true,          
                     "responsive": true,
                 });
             });

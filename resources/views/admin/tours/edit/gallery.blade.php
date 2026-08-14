@@ -20,25 +20,60 @@
                 <div class="row" id="GalleryContainer">
                     @php $i = 1; @endphp
                     @foreach ($data->galleries as $image)
-                    <div class="col-lg-3">
-                        <div class="form-group">
-                            <label class="form-label">{{ $i++ }} Image</label>
-                            <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
-                                <!-- <div class="input-group-prepend">
-                                    <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
-                                </div>
-                                <div class="form-control file-amount">{{translate('Choose Photo')}}</div> -->
-                                <input type="hidden" name="gallery[]" class="selected-files" value="{{ $image->id }}">
-                            </div>
-                            <div class="file-preview box md"></div>
-                        </div>
-                    </div>    
+                     <div class="col-lg-3 gallery-item" data-id="{{ $image->id }}">
+    <div class="form-group">
+
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            
+            <label class="form-label mb-0">
+                {{ $i++ }} Image
+            </label>
+
+            <input type="radio" name="main_image"
+                value="{{ $image->id }}"
+                {{ $image->pivot->is_main ? 'checked' : '' }}>
+            <!-- <small>Main</small> -->
+        </div>
+
+        <input type="hidden" name="order[]" value="{{ $image->id }}">
+
+        <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
+
+            @if($image->type == 'youtube')
+                <img src="{{ $image->thumb_name }}" class="img-fluid mb-2">
+                
+                <button type="button"
+                    class="btn btn-sm btn-primary mt-1"
+                    onclick="previewVideo('{{ $image->file_name }}', event)">
+                    Preview
+                </button>
+
+            @else
+                <input type="hidden" name="gallery[]" class="selected-files"
+                    value="{{ $image->id }}">
+            @endif
+
+        </div>
+
+        <div class="file-preview box md"></div>
+
+        <button type="button" class="btn btn-sm btn-danger mt-2 remove-item">
+            Remove
+        </button>
+
+    </div>
+</div>  
+
                     @endforeach
                     
                 </div>
 
                 <div class="text-left">
-                    <button type="button" class="btn btn-sm btn-success mr-2" onclick="addGallery()" style="padding: 9px 30px;"><i class="fa fa-plus"></i> Add</button>
+                    <button type="button" class="btn btn-sm btn-success mr-2" onclick="addGallery()" style="padding: 9px 30px;"><i class="fa fa-plus"></i> Add Image</button>
+
+                    <button type="button" class="btn btn-sm btn-primary mr-2" onclick="addVideo()" style="padding: 9px 30px;">
+                    <i class="fa fa-plus"></i> Add Video
+                </button>
                 </div>
 
             </div>
@@ -61,6 +96,7 @@
 
 @section('js')
 @parent
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 let GalleryCount = {{ $i ? $i : 1 }};
 
@@ -94,6 +130,133 @@ function removePriceOption(id) {
         row.remove();
         GalleryCount--;
     }
+}
+
+function addVideo() {
+    const container = document.getElementById('GalleryContainer');
+
+    const newRow = document.createElement('div');
+    newRow.classList.add('col-lg-3');
+
+    newRow.innerHTML = `
+        <div class="form-group">
+            <label class="form-label">Video</label>
+
+            <input type="text" name="video_urls[]" 
+                   class="form-control mb-2 video-input"
+                   placeholder="Paste YouTube link">
+
+            <img src="" class="img-fluid mb-2 video-thumb" style="display:none;">
+
+            <button type="button" class="btn btn-sm btn-primary"
+                onclick="previewVideoFromInput(this)">Preview</button>
+        </div>
+    `;
+
+    container.appendChild(newRow);
+}
+
+function previewVideoFromInput(btn) {
+
+    let parent = btn.closest('.form-group');
+    let input = parent.querySelector('.video-input');
+    let img = parent.querySelector('.video-thumb');
+
+    let videoId = extractYoutubeId(input.value);
+
+    if (!videoId) {
+        alert('Invalid YouTube URL');
+        return;
+    }
+
+    img.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+    img.style.display = 'block';
+
+    console.log(videoId);
+}
+
+// function extractYoutubeId(url) {
+
+//     if (!url) return '';
+
+//     // youtu.be links
+//     let match = url.match(/youtu\.be\/([^?&]+)/);
+//     if (match) {
+//         return match[1];
+//     }
+
+//     // youtube.com/watch?v=
+//     match = url.match(/[?&]v=([^?&]+)/);
+//     if (match) {
+//         return match[1];
+//     }
+
+//     // already a video id
+//     return url;
+// }
+
+function extractYoutubeId(url) {
+    if (!url) return '';
+
+    let match = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^?&]+)/);
+    return match ? match[1] : '';
+}
+const sortable = new Sortable(document.getElementById('GalleryContainer'), {
+    animation: 150,
+    ghostClass: 'bg-light',
+
+    onEnd: function () {
+        updateOrderInputs();
+    }
+});
+
+function updateOrderInputs() {
+    let container = document.getElementById('GalleryContainer');
+    let items = container.querySelectorAll('.gallery-item');
+
+    // remove old inputs
+    document.querySelectorAll('input[name="order[]"]').forEach(e => e.remove());
+
+    items.forEach(item => {
+        let input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'order[]';
+        input.value = item.getAttribute('data-id');
+        container.appendChild(input);
+    });
+}
+
+document.addEventListener('click', function (e) {
+
+    // REMOVE ITEM (IMAGE OR VIDEO)
+    if (e.target.closest('.remove-item')) {
+
+        const item = e.target.closest('.gallery-item') 
+                  || e.target.closest('.col-lg-3');
+
+        if (item) {
+            item.remove();
+            updateOrderInputs();
+        }
+    }
+});
+
+function previewVideo(videoId, event) {
+
+    // stop aizuploader click trigger
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    if (!videoId) {
+        alert('Invalid video');
+        return;
+    }
+
+    // open YouTube video
+    const url = `https://www.youtube.com/watch?v=${videoId}`;
+    window.open(url, '_blank');
 }
 </script>
 @endsection

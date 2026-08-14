@@ -1,0 +1,567 @@
+```blade
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Driver Pickup Manifest</title>
+</head>
+
+<body
+    style="
+        margin:0;
+        padding:0;
+        background-color:#f3f5f8;
+        font-family:Arial, Helvetica, sans-serif;
+        color:#222;
+    "
+>
+
+<table
+    width="100%"
+    cellpadding="0"
+    cellspacing="0"
+    role="presentation"
+>
+    <tr>
+        <td
+            align="center"
+            style="padding:20px 10px;"
+        >
+
+            <table
+                width="100%"
+                cellpadding="0"
+                cellspacing="0"
+                role="presentation"
+                style="
+                    max-width:800px;
+                    background:#ffffff;
+                    border-radius:10px;
+                    overflow:hidden;
+                "
+            >
+
+                {{-- Header --}}
+                <tr>
+                    <td style="
+                        background:#01228c;
+                        color:#ffffff;
+                        text-align:center;
+                        padding:20px;
+                    ">
+
+                        <a
+                            href="https://tourbeez.com"
+                            target="_blank"
+                            style="text-decoration:none;"
+                        >
+                            <img
+                                src="https://tourbeez.com/public/admin/dist/img/logo.jpg"
+                                alt="TourBeez"
+                                width="200"
+                                style="
+                                    width:200px;
+                                    max-width:100%;
+                                    display:inline-block;
+                                    border:0;
+                                    margin-bottom:10px;
+                                "
+                            >
+                        </a>                    
+
+                        <h2 style="margin:6px 0 0;">
+                            Pickup Reminder
+                        </h2>
+
+                        <p style="margin:6px 0 0;">
+                            {{ \Carbon\Carbon::parse($date)->format('F d, Y') }}
+                        </p>
+
+                    </td>
+                </tr>
+
+                {{-- GREETING --}}
+                <tr>
+                    <td style="padding:20px 20px 10px;">
+                        <p style="margin:0 0 10px;">
+                            Hello {{ $driver->name }},
+                        </p>
+
+                        <p style="margin:0;">
+                            Please find your pickup schedule and tour itinerary below.
+                        </p>
+                    </td>
+                </tr>
+
+                {{-- SUMMARY --}}
+                <tr>
+                    <td style="padding:10px 20px">
+                        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#eaf8ee;border-left:5px solid #198754">
+                            <tbody><tr>
+                                <td style="padding:15px">
+                                    <span style="font-size:18px;font-weight:bold;color:#146c43">
+                                        Total Passenger Count: {{ $orders->sum('guest_count') }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody></table>
+                    </td>
+                </tr>
+
+                {{-- PICKUP SCHEDULE --}}
+                <tr>
+                    <td style="padding:0 20px 20px;">
+                        
+                        <h2 style="margin:0 0 12px;color:#01228c;font-size:21px">
+                            Pickup Schedule
+                        </h2>
+
+                        <table
+                            width="100%"
+                            border="1"
+                            cellpadding="8"
+                            cellspacing="0"
+                            role="presentation"
+                            style="
+                                border-collapse:collapse;
+                                border-color:#d1d5db;
+                                font-size:14px;
+                            "
+                        >
+                            <thead
+                                style="background:#198754;color:#ffffff"
+                            >
+                                <tr>
+                                    <th
+                                        align="center"
+                                        style="width:45px;"
+                                    >
+                                        #
+                                    </th>
+
+                                    <th align="left">
+                                        Pickup Location
+                                    </th>
+
+                                    <th
+                                        align="center"
+                                        style="width:110px;"
+                                    >
+                                        Time
+                                    </th>
+
+                                    <th
+                                        align="center"
+                                        style="width:60px;"
+                                    >
+                                        Pax
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach(
+                                    $orders->sortBy('pickup_time')->values()
+                                    as $index => $o
+                                )
+                                    @php
+                                        $formattedPickupTime = '-';
+
+                                        if (!empty($o['pickup_time'])) {
+                                            try {
+                                                $formattedPickupTime =
+                                                    \Carbon\Carbon::parse(
+                                                        $o['pickup_time']
+                                                    )->format('h:i A');
+                                            } catch (\Throwable $e) {
+                                                $formattedPickupTime =
+                                                    $o['pickup_time'];
+                                            }
+                                        }
+                                    @endphp
+
+                                    <tr
+                                        style="
+                                            {{ $index % 2
+                                                ? 'background:#f8fafc;'
+                                                : 'background:#ffffff;'
+                                            }}
+                                        "
+                                    >
+                                        <td align="center">
+                                            {{ $index + 1 }}
+                                        </td>
+
+                                        <td>
+                                            {{ $o['pickup_location'] ?? '-' }}
+                                        </td>
+
+                                        <td align="center">
+                                            <strong>
+                                                {{ $formattedPickupTime }}
+                                            </strong>
+                                        </td>
+
+                                        <td align="center">
+                                            {{ $o['guest_count'] ?? 0 }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+
+                {{-- TOUR ITINERARY --}}
+                @if(!empty($customMessage))
+                    <tr>
+                        <td style="padding:0 20px 20px;">
+                            <h2 style="margin:0 0 8px;color:#01228c;font-size:21px">
+                                Tour Itinerary
+                            </h2>
+
+                            <div
+                                style="
+                                    width:100%;
+                                    overflow-x:auto;
+                                    font-size:14px;
+                                    line-height:1.6;
+                                "
+                            >
+                                {!! $customMessage !!}
+                            </div>
+                        </td>
+                    </tr>
+                @endif
+
+                {{-- PASSENGER DETAILS --}}
+                <tr>
+                    <td style="padding:0 20px 20px;">
+                        <h2 style="margin:0 0 8px;color:#01228c;font-size:21px">
+                            Passenger Details
+                        </h2>
+
+                        @foreach(
+                            $orders->sortBy('pickup_time')->values()
+                            as $index => $o
+                        )
+                            @php
+                                $formattedPickupTime = '';
+
+                                if (!empty($o['pickup_time'])) {
+                                    try {
+                                        $formattedPickupTime =
+                                            \Carbon\Carbon::parse(
+                                                $o['pickup_time']
+                                            )->format('h:i A');
+                                    } catch (\Throwable $e) {
+                                        $formattedPickupTime =
+                                            $o['pickup_time'];
+                                    }
+                                }
+
+                                $vehicleName =
+                                    isset($o['vehicle']) &&
+                                    $o['vehicle']
+                                        ? $o['vehicle']->name
+                                        : null;
+                            @endphp
+
+                            <table
+                                width="100%"
+                                cellpadding="0"
+                                cellspacing="0"
+                                role="presentation"
+                                style="
+                                    margin-bottom:14px;
+                                    border:1px solid #dddddd;
+                                    background:#ffffff;
+                                    border-collapse:collapse;
+                                "
+                            >
+                                <tr>
+                                    <td
+                                        style="
+                                            padding:14px 14px 0 14px;
+                                            border-left:4px solid #01228c;
+                                            font-size:15px;
+                                        "
+                                    >
+                                        <strong>
+                                            @if($formattedPickupTime)
+                                                {{ $formattedPickupTime }} –
+                                            @endif
+
+                                            {{ $o['pickup_location'] ?? '-' }}
+                                        </strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        style="
+                                            padding:14px;
+                                            border-left:4px solid #01228c;
+                                        "
+                                    >
+                                        <p style="margin:8px 0 4px;">
+                                            <strong>
+                                                {{ $o['customer_name'] ?? 'N/A' }}
+                                            </strong>
+                                        </p>
+
+                                        @if(!empty($o['customer_phone']))
+                                            <p style="margin:3px 0;">
+                                                <strong>Phone:</strong>
+                                                {{ $o['customer_phone'] }}
+                                            </p>
+                                        @endif
+
+                                        @if(!empty($o['customer_email']))
+                                            <p style="margin:3px 0;">
+                                                <strong>Email:</strong>
+                                                {{ $o['customer_email'] }}
+                                            </p>
+                                        @endif
+
+                                        <p style="margin:3px 0;">
+                                            <strong>Order:</strong>
+                                            {{ $o['order_number'] ?? '-' }}
+                                        </p>
+
+                                        <p style="margin:3px 0;">
+                                            <strong>Guests:</strong>
+                                            {{ $o['guest_count'] ?? 0 }}
+                                        </p>
+
+                                        @if(!empty($vehicleName))
+                                            <p style="margin:3px 0;">
+                                                <strong>Vehicle:</strong>
+                                                {{ $vehicleName }}
+                                            </p>
+                                        @endif
+
+@if(!empty($o['addons']))
+    <div
+        style="
+            margin-top:10px;
+            padding:10px;
+            background:#f0fdf4;
+            border-left:3px solid #16a34a;
+        "
+    >
+        <strong style="color:#166534;">
+            Purchased Add-ons:
+        </strong>
+
+        <ul
+            style="
+                margin:6px 0 0;
+                padding-left:20px;
+            "
+        >
+            @foreach($o['addons'] as $addon)
+                <li style="margin:3px 0;">
+                    {{ $addon['label'] }}
+
+                    @if(($addon['quantity'] ?? 1) > 1)
+                        × {{ $addon['quantity'] }}
+                    @endif
+                </li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+                                        @if(!empty($o['instruction']))
+                                            <div
+                                                style="
+                                                    margin-top:10px;
+                                                    padding:10px;
+                                                    background:#eff6ff;
+                                                    border-left:3px solid #2563eb;
+                                                "
+                                            >
+                                                <strong>Instruction:</strong>
+
+                                                <div style="margin-top:4px;">
+                                                    {!! nl2br(e($o['instruction'])) !!}
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        @if(!empty($o['internal_notes']))
+                                            <div
+                                                style="
+                                                    margin-top:10px;
+                                                    padding:10px;
+                                                    background:#fff7ed;
+                                                    color:#9a3412;
+                                                    border-left:3px solid #f97316;
+                                                "
+                                            >
+                                                <strong>Internal Notes:</strong>
+
+                                                <div style="margin-top:4px;">
+                                                    {!! nl2br(e($o['internal_notes'])) !!}
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                        @endforeach
+
+                        {{-- ONE SHARED GALLERY QR CODE --}}
+                        @if(!empty($galleryQrUrl) || !empty($galleryUploadUrl))
+                            <table
+                                width="100%"
+                                cellpadding="0"
+                                cellspacing="0"
+                                role="presentation"
+                                style="
+                                    margin-top:20px;
+                                    background:#f8fafc;
+                                    border:1px solid #dbe4f0;
+                                    border-collapse:collapse;
+                                "
+                            >
+                                <tr>
+                                    <td align="center" style="padding:22px;">
+                                        <p
+                                            style="
+                                                margin:0 0 5px;
+                                                color:#01228c;
+                                                font-size:18px;
+                                                font-weight:bold;
+                                            "
+                                        >
+                                            Upload Tour Photos
+                                        </p>
+                                        <p
+                                            style="
+                                                margin:0 0 14px;
+                                                color:#475569;
+                                                font-size:13px;
+                                            "
+                                        >
+                                            Scan the QR code and enter your Order ID to upload photos.
+                                        </p>
+
+                                        @if(!empty($galleryQrUrl))
+                                            @if(!empty($galleryUploadUrl))
+                                                <a
+                                                    href="{{ $galleryUploadUrl }}"
+                                                    target="_blank"
+                                                    style="display:inline-block;text-decoration:none;"
+                                                >
+                                            @endif
+                                                <img
+                                                    src="{{ $galleryQrUrl }}"
+                                                    alt="Tour photo upload QR code"
+                                                    width="190"
+                                                    style="
+                                                        display:block;
+                                                        width:190px;
+                                                        max-width:100%;
+                                                        height:auto;
+                                                        padding:8px;
+                                                        border:1px solid #dddddd;
+                                                        background:#ffffff;
+                                                    "
+                                                >
+                                            @if(!empty($galleryUploadUrl))
+                                                </a>
+                                            @endif
+                                        @elseif(!empty($galleryUploadUrl))
+                                            <a
+                                                href="{{ $galleryUploadUrl }}"
+                                                target="_blank"
+                                                style="
+                                                    display:inline-block;
+                                                    padding:11px 18px;
+                                                    background:#01228c;
+                                                    color:#ffffff;
+                                                    text-decoration:none;
+                                                    border-radius:5px;
+                                                    font-size:14px;
+                                                    font-weight:bold;
+                                                "
+                                            >
+                                                Open Photo Upload Page
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                        @endif
+                    </td>
+                </tr>
+
+                {{-- IMPORTANT NOTE --}}
+                <tr>
+                    <td style="padding:0 20px 20px;">
+                        <table
+                            width="100%"
+                            cellpadding="0"
+                            cellspacing="0"
+                            role="presentation"
+                            style="
+                                background:#fff7ed;
+                                border:1px solid #fed7aa;
+                                border-collapse:collapse;
+                            "
+                        >
+                            <tr>
+                                <td
+                                    style="
+                                        padding:12px;
+                                        color:#9a3412;
+                                        font-size:13px;
+                                        line-height:1.5;
+                                    "
+                                >
+                                    <strong>Important:</strong>
+                                    Please verify all pickup times, locations,
+                                    passenger details and assigned vehicle before
+                                    beginning the tour.
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                {{-- FOOTER --}}
+                <tr>
+                    <td style="
+                        background:#01228c;
+                        color:#ffffff;
+                        text-align:center;
+                        padding:18px;
+                    ">
+
+                        <p style="margin:0 0 4px;">
+                            Best Regards,
+                        </p>
+
+                        <strong>
+                            TourBeez Team
+                        </strong>
+
+                    </td>
+                </tr>
+
+            </table>
+
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>
+```

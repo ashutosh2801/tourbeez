@@ -50,39 +50,58 @@
 
 <x-admin>
     @section('title', 'Edit User & Supplier Info')
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title">Edit User & Supplier Info</h3>
-            <a href="{{ route('admin.user.index') }}" class="btn btn-sm btn-dark">Back</a>
+    <div class="card card-primary bg-white border rounded-lg-custom">
+        <div class="card-header edit-supplier-head">
+            <div class="row">
+                <div class="col-md-8 col-6">
+                    <h3 class="card-title">Edit User & Supplier Info</h3>
+                </div>
+                <div class="col-md-4 col-6">
+                    <div class="card-tools">
+                        <a href="{{ route('admin.supplier.index') }}" class="btn btn-sm btn-back">Back</a>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div class="card-body">
-            <form action="{{ route('admin.user.update', $user) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('admin.user.update', $user) }}" method="POST" enctype="multipart/form-data">
+            <div class="card-body edit-supplier-body">
                 @method('PUT')
                 @csrf
                 <input type="hidden" name="id" value="{{ $user->id }}">
 
                 {{-- ===== USER BASIC INFO ===== --}}
                 <div class="row">
-                    <div class="col-lg-6">
-                        <label>Name*</label>
-                        <input type="text" class="form-control" name="name" required value="{{ $user->name }}">
-                        <x-error>name</x-error>
+                    <div class="col-lg-4">
+                        <label>First Name* </label>
+                        <input type="text" class="form-control" name="first_name" required value="{{ $user->first_name ?? $user->name }}" placeholder="eg: John">
+                        <x-error>first_name</x-error>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
+                        <label>Last Name* </label>
+                        <input type="text" class="form-control" name="last_name" required value="{{ $user->last_name }}" placeholder="eg: Roy">
+                        <x-error>last_name</x-error>
+                    </div>
+
+                    <div class="col-lg-4">
                         <label>Email*</label>
-                        <input type="email" class="form-control" name="email" required value="{{ $user->email }}">
+                        <input type="email" class="form-control" name="email" required value="{{ $user->email }}" placeholder="eg: johnroy@example.com">
                         <x-error>email</x-error>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
+                        <label>Phone*</label>
+                        <input type="text" class="form-control" name="phone" required value="{{ $user->phone }}" placeholder="eg: +1 416-456-1234">
+                        <x-error>phone</x-error>
+                    </div>
+
+                    <div class="col-lg-4">
                         <label>Password</label>
                         <input type="password" class="form-control" name="password">
                         <x-error>password</x-error>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
                         <label>Role*</label>
                         <select name="role" id="role" class="form-control" required>
                             <option value="" disabled>Select role</option>
@@ -96,6 +115,7 @@
                         </select>
                         <x-error>role</x-error>
                     </div>
+                    
                     <div class="col-lg-6 mt-3">
                         <div class="form-group">
                             <label class="form-label d-block mb-2">Email Notification:</label>
@@ -118,14 +138,12 @@
 
                 </div>
 
-
-                <hr>
-
                 {{-- ===== SUPPLIER INFO ===== --}}
                 @php
                     $supplier = $user->supplier ?? null;
                 @endphp
-                @if($user->role == 'Supplier')
+                <div id="supplier-section" style="display:none;">
+                    <hr>
                     <h4 class="mt-4 mb-3">Supplier Information</h4>
                     <div class="row">
                         <div class="col-lg-6">
@@ -142,7 +160,7 @@
                                 <option value="" disabled>Supplier Type</option>
                                     @foreach (['Tour Operator','Transportation', 'Hotel', 'Attraction','Restaurant', 'Other' ] as $type)
                                         @if($role->name != 'Super Admin')
-                                            <option value="{{ $type }}" {{ $type == $supplier->supplier_type ? 'selected' : '' }}>
+                                            <option value="{{ $type }}" {{ $type == $supplier?->supplier_type ? 'selected' : '' }}>
                                                 {{ $type }}
                                             </option>
                                         @endif
@@ -210,17 +228,33 @@
                             <textarea name="certifications" class="form-control">{{ $supplier->certifications ?? '' }}</textarea>
                         </div>
 
-                    
-                        <div class="col-lg-6">
-                            <label>Payment Method</label>
-                            <select name="payment_method" class="form-control">
-                                <option value="">Select Payment Method</option>
-                                <option value="Bank Transfer" {{ $supplier->payment_method == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                                <option value="PayPal" {{ $supplier->payment_method == 'PayPal'? 'selected' : '' }}>PayPal</option>
-                                <option value="Stripe" {{ $supplier->payment_method == 'Stripe'? 'selected' : '' }}>Stripe</option>
-                                <option value="Other" {{ $supplier->payment_method == 'Other'? 'selected' : '' }}>Other</option>
-                            </select>
-                        </div>
+                        
+                       <div class="col-lg-6">
+                        <label>Payment Method</label>
+                        <select name="payment_method" class="form-control">
+                            <option value="">Select Payment Method</option>
+
+                            <option value="Bank Transfer"
+                                {{ old('payment_method', $supplier?->payment_method) == 'Bank Transfer' ? 'selected' : '' }}>
+                                Bank Transfer
+                            </option>
+
+                            <option value="PayPal"
+                                {{ old('payment_method', $supplier?->payment_method) == 'PayPal' ? 'selected' : '' }}>
+                                PayPal
+                            </option>
+
+                            <option value="Stripe"
+                                {{ old('payment_method', $supplier?->payment_method) == 'Stripe' ? 'selected' : '' }}>
+                                Stripe
+                            </option>
+
+                            <option value="Other"
+                                {{ old('payment_method', $supplier?->payment_method) == 'Other' ? 'selected' : '' }}>
+                                Other
+                            </option>
+                        </select>
+                    </div>
 
                         <div class="col-lg-6">
                             <label>Bank Details</label>
@@ -271,11 +305,124 @@
                             <input type="checkbox" name="consent_terms" value="1" {{ !empty($supplier->consent_terms) ? 'checked' : '' }}>
                         </div>
                     </div>
-                @endif
-                <div class="mt-4 text-right">
-                    <button class="btn btn-primary" type="submit">Save</button>
                 </div>
-            </form>
+            
+            @php
+            $driver = $user->driver ?? null;
+        @endphp
+
+        @php
+    $driver = $user->driver ?? null;
+@endphp
+
+        <div id="driver-section" class="col-12 mt-4" style="display:none;">
+            <hr>
+            <h4 class="mb-3">Driver Information</h4>
+
+            <div class="row">
+
+                <div class="col-lg-6">
+                    <label>License Number</label>
+                    <input type="text" name="license_number" class="form-control"
+                        value="{{ old('license_number', $driver->license_number ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>License Expiry</label>
+                    <input type="date" name="license_expiry" class="form-control"
+                        value="{{ old('license_expiry', $driver->license_expiry ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Aadhaar Number</label>
+                    <input type="text" name="aadhaar_number" class="form-control"
+                        value="{{ old('aadhaar_number', $driver->aadhaar_number ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Vehicle Type</label>
+                    <select name="vehicle_type" class="form-control">
+                        <option value="">Select</option>
+                        <option value="Car" {{ old('vehicle_type', $driver->vehicle_type ?? '') == 'Car' ? 'selected' : '' }}>Car</option>
+                        <option value="Tempo" {{ old('vehicle_type', $driver->vehicle_type ?? '') == 'Tempo' ? 'selected' : '' }}>Tempo</option>
+                        <option value="Bus" {{ old('vehicle_type', $driver->vehicle_type ?? '') == 'Bus' ? 'selected' : '' }}>Bus</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Vehicle Number</label>
+                    <input type="text" name="vehicle_number" class="form-control"
+                        value="{{ old('vehicle_number', $driver->vehicle_number ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Vehicle Model</label>
+                    <input type="text" name="vehicle_model" class="form-control"
+                        value="{{ old('vehicle_model', $driver->vehicle_model ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Vehicle Capacity</label>
+                    <input type="number" name="vehicle_capacity" class="form-control"
+                        value="{{ old('vehicle_capacity', $driver->vehicle_capacity ?? '') }}">
+                </div>
+
+                <div class="col-lg-6">
+                    <label>Per Day Rate</label>
+                    <input type="number" name="per_day_rate" class="form-control"
+                        value="{{ old('per_day_rate', $driver->per_day_rate ?? '') }}">
+                </div>
+
+                <div class="col-lg-6 mt-3">
+                    <label class="form-label d-block mb-2">Availability</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="is_available" value="1"
+                            {{ old('is_available', $driver->is_available ?? 1) ? 'checked' : '' }}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="col-lg-6">
+                    <label>City</label>
+                    <input type="text" name="city" class="form-control"
+                        value="{{ old('city', $driver->city ?? '') }}">
+                </div>
+
+                <div class="col-lg-12">
+                    <label>Address</label>
+                    <textarea name="address" class="form-control">{{ old('address', $driver->address ?? '') }}</textarea>
+                </div>
+
+            </div>
         </div>
+        </div>
+
+            <div class="card-footer bg-white justify-flex-end">
+                <button class="btn btn-success m-0" type="submit"><i class="fas fa-save"></i> Save</button>
+            </div>
+        </form>
     </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    const roleSelect = document.getElementById('role');
+    const supplierSection = document.getElementById('supplier-section');
+    const driverSection = document.getElementById('driver-section');
+
+    function toggleSections() {
+        let role = roleSelect.value.toLowerCase();
+
+        supplierSection.style.display = (role === 'supplier') ? 'block' : 'none';
+        driverSection.style.display   = (role === 'driver') ? 'block' : 'none';
+    }
+
+    roleSelect.addEventListener('change', toggleSections);
+
+    // IMPORTANT → run on load (edit case)
+    toggleSections();
+});
+</script>
+
 </x-admin>

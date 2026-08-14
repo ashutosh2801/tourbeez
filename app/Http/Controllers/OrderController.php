@@ -3,44 +3,66 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ManifestExport;
+use App\Imports\OrderImport;
+use App\Imports\OrderMultiSheetImport;
+use App\Imports\OrdersImport;
 use App\Mail\EmailManager;
 use App\Models\Addon;
 use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Models\OrderActions;
 use App\Models\OrderCustomer;
 use App\Models\OrderEmailHistory;
 use App\Models\OrderPayment;
+use App\Models\OrderPaymentDetail;
 use App\Models\OrderTour;
+use App\Models\PickupLocation;
 use App\Models\SmsTemplate;
+use App\Models\StripeWebhookLog;
 use App\Models\Tour;
 use App\Models\TourPricing;
-use App\Models\User;
-use App\Services\TwilioService;
-use App\Notifications\NewOrderNotification;
 use App\Models\TourSpecialDeposit;
+use App\Models\User;
+use App\Notifications\NewOrderNotification;
+use App\Services\OrderPaymentSummaryService;
+use App\Services\CheckoutDiscountService;
+use App\Services\CheckoutTotalService;
+use App\Services\TwilioService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Facades\Excel;
+use Stripe\Cancel;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
 use Stripe\Stripe;
+use Validator;
 
 
 class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Order::with(['customer', 'orderTours.tour'])
+        $query = Order::with(['customer', 'orderTours.tour', 'payments', 'partner', 'latestPaymentLog'])
             ->whereHas('customer', function ($q) {
                 $q->whereNotNull('first_name')
                   ->where('first_name', '!=', ''); // exclude empty strings
             })
-            ->orderBy('created_at', 'DESC');
+            ->addSelect([
+                'latest_payment_at' => OrderPayment::query()
+                    ->selectRaw('MAX(updated_at)')
+                    ->whereColumn('order_payments.order_id', 'orders.id')
+                    ->where('amount', '>', 0)
+                    ->whereNotIn('payment_type', ['DISCOUNT', 'PROMOCODE', 'BOOKINGFEE']),
+            ])
+            ->orderByRaw('COALESCE(latest_payment_at, orders.created_at) DESC')
+            ->orderByDesc('orders.id');
 
         // Search by order number or customer name
         if ($search = $request->input('search')) {
@@ -48,17 +70,52 @@ class OrderController extends Controller
                 $q->where('order_number', 'like', "%{$search}%")
                   ->orWhereHas('customer', function ($q2) use ($search) {
                       $q2->where('first_name', 'like', "%{$search}%")
-                         ->orWhere('last_name', 'like', "%{$search}%");
+                         ->orWhere('last_name', 'like', "%{$search}%")
+                         ->orWhere('email', 'like', "%{$search}%");
                   });
             });
         }
 
-        // Filter by tour product
-        if ($product = $request->input('product')) {
+       if ($source = $request->input('source')) {
+            $query->whereRaw('LOWER(source) = ?', [strtolower($source)]);
+        }
 
-            $query->whereHas('orderTours', function ($q) use ($product) {
-                $q->where('tour_id', $product);
-            });
+        if ($excluded_source = $request->input('excluded_source')) {
+            $excluded_source = array_map('strtolower', $excluded_source);
+
+            $query->whereNotIn(DB::raw('LOWER(source)'), $excluded_source);
+        }
+
+        // Filter by tour product
+        // if ($product = $request->input('product')) {
+        //     $query->whereHas('orderTours', function ($q) use ($product) {
+        //         $q->where('tour_id', $product);
+        //     });
+        // }
+
+        if ($product = $request->input('product')) {
+            $product = array_filter((array)$product);
+            if (!empty($product)) {
+                $query->whereHas('orderTours', function ($q) use ($product) {
+                    $q->whereIn('tour_id', $product);
+                });
+            }
+        }
+
+        if ($excludeProducts = $request->input('exclude_product')) {
+
+            $excludeProducts = array_filter((array)$excludeProducts);
+
+            if (!empty($excludeProducts)) {
+
+                $query->whereDoesntHave('orderTours', function ($q) use ($excludeProducts) {
+
+                    $q->whereIn('tour_id', $excludeProducts);
+
+                });
+
+            }
+
         }
 
         // Filter by payment status
@@ -67,93 +124,173 @@ class OrderController extends Controller
         }
 
         // Filter by order status
-
-
         if ($orderStatus = $request->input('order_status')) {
             $query->where('order_status', $orderStatus);
         }
 
         // Filter by tour start date range
-        if ($start = $request->input('tour_start_date')) {
-            // dd($request->input('tour_start_date'));
-            $query->whereHas('orderTours', function ($q) use ($start) {
-
-                $q->whereDate('tour_date', '=', $start);
-            });
-        }
-
-        
-        if ($filter = $request->input('date_filter')) {
-            $today = Carbon::today();
-
-            switch ($filter) {
-                case 'last_7':
-                    $from = $today->copy()->subDays(6); // today + last 6
-                    break;
-                case 'last_15':
-                    $from = $today->copy()->subDays(14);
-                    break;
-                case 'this_month':
-                    $from = $today->copy()->startOfMonth();
-                    break;
-                case 'last_90':
-                    $from = $today->copy()->subDays(89);
-                    break;
-                case 'last_6_months':
-                    $from = $today->copy()->subMonths(5)->startOfMonth(); // inclusive of current
-                    break;
-                case 'this_year':
-                    $from = $today->copy()->startOfYear();
-                    break;
-                default:
-                    $from = null;
-            }
-
-            if (isset($from)) {
-                $query->whereDate('created_at', '>=', $from);
-            }
-        }
-
-        if ($tourFilter = $request->input('tour_date_filter')) {
-            $today = Carbon::today();
-
-            switch ($tourFilter) {
-                case 'last_7':
-                    $from = $today->copy()->subDays(6);
-                    break;
-                case 'last_15':
-                    $from = $today->copy()->subDays(14);
-                    break;
-                case 'this_month':
-                    $from = $today->copy()->startOfMonth();
-                    break;
-                case 'last_90':
-                    $from = $today->copy()->subDays(89);
-                    break;
-                case 'last_6_months':
-                    $from = $today->copy()->subMonths(5)->startOfMonth();
-                    break;
-                case 'this_year':
-                    $from = $today->copy()->startOfYear();
-                    break;
-                default:
-                    $from = null;
-            }
-
-            if (isset($from)) {
-                $query->whereHas('orderTours', function ($q) use ($from) {
-                    $q->whereDate('tour_date', '>=', $from);
+        if ($tour_start_date = $request->input('tour_start_date')) {
+            $dates = explode(' - ', $tour_start_date);
+            if (count($dates) === 2) {
+                $startDate = Carbon::parse($dates[0])->format('Y-m-d');
+                $endDate = Carbon::parse($dates[1])->format('Y-m-d');
+                $query->whereHas('orderTours', function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('tour_date', [$startDate, $endDate]);
+                });
+            } else {
+                $query->whereHas('orderTours', function ($q) use ($tour_start_date) {
+                    $q->whereDate('tour_date', '=', $tour_start_date);
                 });
             }
         }
 
+        // Filter by tour start date range
+        if ($order_created_date = $request->input('order_created_date')) {
+            $dates = explode(' - ', $order_created_date);
+            if (count($dates) === 2) {
+                $startDate = Carbon::parse($dates[0]);
+                $endDate = Carbon::parse($dates[1])->addDay();
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            } else {
+                $query->whereDate('created_at', '=', $order_created_date);
+            }
+        }
 
 
-        $orders = $query->paginate(10)->appends($request->all()); // preserve filters in pagination
+/*
+        if ($tourFilter = $request->input('tour_date_filter')) {
 
-        $products = Tour::select('id', 'title')->get(); // for filter dropdown
+                $today = Carbon::today();
 
-        return view('admin.order.index', compact('orders', 'products'));
+                if ($tourFilter === 'today') {
+
+                    $query->whereHas('orderTours', function ($q) use ($today) {
+                        $q->whereDate('tour_date', $today->toDateString());
+                    });
+
+                } elseif ($tourFilter === 'yesterday') {
+
+                    $yesterday = Carbon::yesterday();
+
+                    $query->whereHas('orderTours', function ($q) use ($yesterday) {
+                        $q->whereDate('tour_date', $yesterday->toDateString());
+                    });
+
+                } else {
+
+                    switch ($tourFilter) {
+                        case 'last_7':
+                            $from = $today->copy()->subDays(6);
+                            break;
+                        case 'last_15':
+                            $from = $today->copy()->subDays(14);
+                            break;
+                        case 'this_month':
+                            $from = $today->copy()->startOfMonth();
+                            break;
+                        case 'last_90':
+                            $from = $today->copy()->subDays(89);
+                            break;
+                        case 'last_6_months':
+                            $from = $today->copy()->subMonths(5)->startOfMonth();
+                            break;
+                        case 'this_year':
+                            $from = $today->copy()->startOfYear();
+                            break;
+                        default:
+                            $from = null;
+                    }
+
+                    if ($from) {
+                        $startDate = $from->copy()->startOfDay();
+                        $endDate = $today->copy()->endOfDay();
+
+                        $query->whereHas('orderTours', function ($q) use ($startDate, $endDate) {
+                            $q->whereBetween('tour_date', [$startDate, $endDate]);
+                        });
+                    }
+                }
+            }
+
+        if ($filter = $request->input('date_filter')) {
+
+            $today = Carbon::today();
+
+            if ($filter === 'today') {
+
+                $query->whereDate('created_at', $today->toDateString());
+
+            }  elseif ($filter === 'yesterday') {
+
+                    $yesterday = Carbon::yesterday();
+
+                    $query->whereDate('created_at', $yesterday->toDateString());
+
+                }else {
+
+                switch ($filter) {
+                    case 'last_7':
+                        $from = $today->copy()->subDays(6);
+                        break;
+                    case 'last_15':
+                        $from = $today->copy()->subDays(14);
+                        break;
+                    case 'this_month':
+                        $from = $today->copy()->startOfMonth();
+                        break;
+                    case 'last_90':
+                        $from = $today->copy()->subDays(89);
+                        break;
+                    case 'last_6_months':
+                        $from = $today->copy()->subMonths(5)->startOfMonth();
+                        break;
+                    case 'this_year':
+                        $from = $today->copy()->startOfYear();
+                        break;
+                    default:
+                        $from = null;
+                }
+
+                if ($from) {
+                    $startDate = $from->copy()->startOfDay();
+                    $endDate = $today->copy()->endOfDay();
+
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
+                }
+            }
+        }
+*/
+        $totalOrders = (clone $query)->count();
+        $perPage = $request->input('per_page', 10);
+
+                        //die (getFullSql($query));
+
+        $orders = $query->paginate($perPage)->appends($request->all()); // preserve filters in pagination
+        $paymentSummaryService = new OrderPaymentSummaryService();
+        $orders->getCollection()->each(function (Order $order) use ($paymentSummaryService) {
+            $summary = $paymentSummaryService->summarize($order->payments);
+            $grossAmount = round((float) $order->orderTours->sum('total_amount'), 2);
+            $order->canonical_balance = round(max(
+                $grossAmount - $summary['total_credits'],
+                0
+            ), 2);
+            $order->canonical_paid = $summary['paid_amount'];
+            $order->canonical_authorized = $summary['authorized_amount'];
+        });
+
+        $products = Tour::select('id', 'title')->where('status', 1)->get(); 
+
+        $selectedProducts = Tour::whereIn(
+            'id',
+            (array)$request->product
+        )->get(['id','title']);
+
+        $excludedProducts = Tour::whereIn(
+            'id',
+            (array)$request->exclude_product
+        )->get(['id','title']);// for filter dropdown
+
+        return view('admin.order.index', compact('orders', 'products', 'totalOrders', 'selectedProducts', 'excludedProducts'));
     }
 
     public function showPdfFiles()
@@ -187,7 +324,10 @@ class OrderController extends Controller
         // $tours = $products;
 
         $tours = Tour::with('pricings', 'addons', 'taxes_fees', 'pickups', 'location.country', 'location.state', 'location.city')->get();
-        $customers = User::all();
+        $customers = User::where('user_type', 'member')
+                            ->orderBy('first_name', 'asc')
+                            ->orderBy('last_name', 'asc')
+                            ->get();
 
         return view('admin.order.internal-order', compact('tours', 'customers'));
     }
@@ -201,7 +341,7 @@ class OrderController extends Controller
             'customer_id' => $request->customer_id ?: null
         ]);    
 
-        // dd($request->all());
+       
         $validated = $request->validate([
 
             // Existing Customer
@@ -274,8 +414,6 @@ class OrderController extends Controller
         // if ($validated->fails()) {
         //     return redirect()->back()->withErrors($validated)->withInput();
         // }
-
-
 
         $data = $request->all();
         // dd($data);
@@ -358,19 +496,25 @@ class OrderController extends Controller
         }
 
         // dd($tourIds);
+
+        
         DB::beginTransaction();
         try {
             // ===== Create Order =====
             $order = Order::create([
-                'tour_id'       => $firstTourId,
-                'user_id'       => auth()->id() ?? 0,
-                'order_number'  => unique_order(),
-                'currency'      => $request->currency ?? 'USD',
-                'order_status'  => $request->order_status,
-                'payment_status'=> 5,
-                'total_amount'  => 0,
-                'balance_amount'=> 0,
-                'created_by'    => auth()->user()->id,
+                'tour_id'           => $firstTourId,
+                'user_id'           => auth()->id() ?? 0,
+                'order_number'      => unique_order(),
+                'currency'          => $request->currency ?? 'CAD',
+                'order_status'      => $request->order_status,
+                'payment_status'    => 5,
+                'total_amount'      => 0,
+                'balance_amount'    => 0,
+                'additional_info'   => $request->additional_info ?? '',
+                'internal_notes'    => $request->internal_notes ?? '',
+                'created_by'        => auth()->user()->id,
+                'source'            => $request->source ?? "internal",
+                'created_at'        => $request->order_date ? Carbon::parse($request->order_date)->format('Y-m-d') : now()
             ]);
 
             // ===== Customer =====
@@ -397,9 +541,24 @@ class OrderController extends Controller
                     'pickup_id'    => $request->pickup_id ?? '',
                     'pickup_name'  => $request->pickup_name ?? '',
                 ]);
+
+                if($request->has('addToCustomer')){
+                    $userExists = User::where('email', $request->customer_email)->exists();
+                    if(!$userExists){
+                        User::create([
+                            'first_name'   => $firstName,
+                            'last_name'    => $lastName,
+                            'name'         => $firstName . " " . $lastName,
+                            'email'        => $user->email ?? 'N/A',
+                            'phone'        => $user->phone ?? 'N/A',
+                            'user_type'    => 'Member',
+                        ]);
+
+                    }
+                        
+                }
             } else {
                 // Fallback to request inputs
-
                 $user = User::where('email', $request->customer_email)->first();
 
                 $user_id = $user?->id ?? 0;
@@ -407,15 +566,33 @@ class OrderController extends Controller
                 $customer = OrderCustomer::create([
                     'order_id'     => $order->id,
                     'user_id'      => $user_id,
-                    'first_name'   => $request->customer_first_name ?? 'N/A',
-                    'last_name'    => $request->customer_last_name ?? 'N/A',
-                    'email'        => $request->customer_email ?? 'N/A',
-                    'phone'        => $request->full_phone ?? 'N/A',
-                    'instructions' => $request->additional_info ?? '',
-                    'pickup_id'    => $request->pickup_id ?? '',
-                    'pickup_name'  => $request->pickup_name ?? '',
+                    'first_name'   => $request->customer_first_name,
+                    'last_name'    => $request->customer_last_name,
+                    'email'        => $request->customer_email ,
+                    'phone'        => $request->full_phone ?? $request->customer_phone,
+                    'instructions' => $request->additional_info ?? null,
+                    'pickup_id'    => $request->pickup_id ?? null,
+                    'pickup_name'  => $request->pickup_name ?? null,
                 ]);
+                if($request->has('addToCustomer')){
+                    
+                    if(!$user_id){
+                        User::create([
+                            'first_name'   => $request->customer_first_name,
+                            'last_name'    => $request->customer_last_name,
+                            'name'         => $request->customer_first_name . " " . $request->customer_last_name,
+                            'email'        => $request->customer_email ?? 'N/A',
+                            'phone'        => $request->full_phone ?? $request->customer_phone,
+                            'user_type'    => 'Member',
+                        ]);
+
+                    }
+                        
+                }
+
             }
+
+            //echo '<pre>'; print_r( $customer ); echo '</pre>'; exit;
 
             // ===== Loop Through Tours =====
             $totalOrderAmount = 0;
@@ -435,19 +612,53 @@ class OrderController extends Controller
                 $subtotal = 0;
                 $quantity = 0;
 
+                $discounts = []  ;
+
                 // ===== Pricing =====
                 foreach ($tour_pricing_ids as $i => $pricingId) {
                     $qty   = $tour_pricing_qtys[$i] ?? 0;
+
+                    if($qty <1){
+                        continue;
+                    }
                     $price = $tour_pricing_prices[$i] ?? 0;
+                    $actual_price = $price;
+                    $discount = 0;
+
+                    // if($i == 0) {
+                    //     $deposite_rule = $tour->specialDeposit;
+                    //     if($deposite_rule->is_discount === 1 && $deposite_rule->discount_type === 'PERCENT') {
+                    //         $discount = ($price * $deposite_rule->discount_value)/100;
+                    //     }
+                    //     else if($deposite_rule->is_discount === 1 && $deposite_rule->discount_type === 'FIXED') {
+                    //         $discount = $deposite_rule->discount_value;
+                    //     }
+
+                    //     $price = $price - $discount;
+
+                    //     if($discount>0) {
+                    //         $discounts[] = [
+                    //             'tour_id'  => $tour->id,
+                    //             'discount' => $deposite_rule->discount_value ?? 0,
+                    //             'quantity' => $qty ?? 1,
+                    //             'label'    => 'Special Discount',
+                    //             'type'     => $deposite_rule->discount_type,
+                    //             'price'    => ($discount * $qty),
+                    //         ];
+                    //     }
+                    // }
 
                     $tourPricing = TourPricing::find($pricingId);
                     $label = str_ireplace('Group', 'Participants', $tourPricing->label);
                     $pricing[] = [
                         'tour_id'         => $tour->id,
-                        'label'           => $label,
                         'tour_pricing_id' => $pricingId,
-                        'quantity'        => $qty,
+                        'label'           => $label,
+                        'price_type'      => $tour->price_type,
+                        'actual_price'    => $actual_price,
                         'price'           => $price,
+                        'discount'        => $discount,
+                        'quantity'        => $qty,
                         'total_price'     => $tour->price_type == 'FIXED'? $price :  $qty * $price,
                     ];
                     $subtotal += $tour->price_type == 'FIXED'? $price :  $qty * $price;// $qty * $price;
@@ -457,6 +668,9 @@ class OrderController extends Controller
                 // ===== Extras =====
                 foreach ($tour_extra_ids as $i => $extraId) {
                     $qty   = $tour_extra_qtys[$i] ?? 0;
+                    if($qty <1){
+                        continue;
+                    }
                     $price = $tour_extra_prices[$i] ?? 0;
 
                     $extraAddon = Addon::find($extraId);
@@ -488,8 +702,12 @@ class OrderController extends Controller
                 }
 
                 $totalOrderAmount += $subtotal;
-
+                // dd( $request->input('tour_startdate', []));
                 $tourStartDates = $request->input('tour_startdate', []);
+
+                $tourStartDates = array_map(function ($date) {
+                    return Carbon::parse($date)->format('Y-m-d');
+                }, $tourStartDates);
                 $tourStartTimes = $request->input('tour_starttime', []);
 
                 // For the current tour row (index 0 if only one tour)
@@ -500,36 +718,101 @@ class OrderController extends Controller
                 OrderTour::create([
                     'order_id'         => $order->id,
                     'tour_id'          => $tourId,
-                    'tour_date'         => $selectedDate,
-                    'tour_time'         => $selectedTime,
+                    'tour_date'        => $selectedDate,
+                    'tour_time'        => $selectedTime,
                     'tour_pricing'     => json_encode($pricing),
                     'tour_extra'       => json_encode($extras),
                     'tour_fees'        => json_encode($fees),
+                    'discount'         => json_encode($discounts),
                     'number_of_guests' => $quantity,
                     'total_amount'     => $subtotal,
-
-                    'tour_date'         => $selectedDate,
-                    'tour_time'         => $selectedTime,
                 ]);
             }
 
-            // ===== Update Order totals =====
-            $order->total_amount = $totalOrderAmount;
-            $order->balance_amount = $totalOrderAmount;
-            $order->payment_method = $request->payment_type;
-            $order->save();
-            // dd($request->payment_type);
-            if($request->payment_type){
+            $totalPaymentAmount = 0;
+            if ($request->paymentType) {
+                $payments = [];
 
-                if($request->payment_type == 'other'){
-                    $order->balance_amount = 0;
-                    $order->save();
-                } else if($request->payment_type == 'transaction'){
-                    $order->booked_amount = $totalOrderAmount;
-                    $order->balance_amount = 0;
-                    $order->transaction_id = $request->transaction_id;
-                    $order->save();
-                } else {
+                foreach ($request->paymentType as $i => $type) {
+
+                    
+                    //$amount = $request->amount[$i] ?? null;
+
+                    $amount          = $request->amount[$i] ?? 0;
+                    $collection_date = $request->collection_date[$i] ?? null;
+                    $transactionId   = $request->transactionId[$i] ?? null;
+
+                    // Skip empty rows
+                    if (empty($type) && empty($amount) && $amount == 0) {
+                        continue;
+                    }
+
+                    // Add amount to total (only if valid)
+                    if (!empty($amount)) {
+                        $totalPaymentAmount += floatval($amount);
+                    }
+
+                    if($type == "COMMISSION"){
+                        $payments[] = [
+                                'order_id'          => $order->id,
+                                'payment_intent_id' => null,
+                                'transaction_id'    => $transactionId,
+                                'payment_type'      => "EXCLUDED",
+                                'collection_type'   => 'Outside',
+                                'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
+                                'amount'            => $subtotal - $amount,
+                                'currency'          => $order->currency,
+                                'current_rate'      => (float) ($order->current_rate ?: 1),
+                                'status'            => 'succeeded',
+                                'created_at'        => now(),
+                                'updated_at'        => now(),
+                            ];
+                    }
+
+                    $payments[] = [
+                                'order_id'          => $order->id,
+                                'payment_intent_id' => null,
+                                'transaction_id'    => $transactionId,
+                                'payment_type'      => $type,
+                                'collection_type'   => 'Outside',
+                                'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
+                                'amount'            => $amount,
+                                'currency'          => $order->currency,
+                                'current_rate'      => (float) ($order->current_rate ?: 1),
+                                'status'            => 'succeeded',
+                                'created_at'        => now(),
+                                'updated_at'        => now(),
+                            ];
+                }
+                OrderPayment::insert($payments);
+            }
+
+
+            // ===== Update Order totals =====
+            $balanceAmount = $totalOrderAmount - $totalPaymentAmount;
+            // $order->total_amount = $totalOrderAmount;
+            // $order->balance_amount = $balanceAmount;
+            // $order->booked_amount = $totalOrderAmount - $balanceAmount;
+
+
+            $totals = $this->calculateTotals(
+                $totalOrderAmount,
+                $totalPaymentAmount,
+                $request->paymentType ?? [],
+                $request->amount ?? []
+            );
+            
+            $order->total_amount   = $totals['total'];
+            $order->booked_amount  = $totals['paid'];
+            $order->balance_amount = $totals['balance'];
+            $balanceAmount = $totals['balance'];
+            $balanceAmount = $totals['balance'];
+
+            
+            
+            // dd($request->payment_type);
+            if( $order->save() ){
+
                 // ===== Stripe Payment Handling =====
                 try {
                     \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
@@ -543,10 +826,9 @@ class OrderController extends Controller
                             'phone' => $customer->phone,
                         ]);
                     } else {
+                        $name = $customer->first_name.' '.$customer->last_name;
                         $stripeCustomer = \Stripe\Customer::retrieve($order->stripe_customer_id);
                     }
-
-                    //$adv_deposite = $request->adv_deposite ?? 'full'; // or deposit/full
 
                     $metaData = [
                         'bookedDate'    => $order->created_at,
@@ -561,31 +843,33 @@ class OrderController extends Controller
                         'totalAmount'   => $order->total_amount,
                     ];
 
-                    $charge_ccnow = (int)$request->charge_ccnow;
-                    $chargeAmount = (float)$request->charge_ccnow_amount;
-                    //$chargeAmount = $order->total_amount;
+                    $add_ccnow      = (int)$request->add_ccnow;
+                    $charge_ccnow   = (int)$request->charge_ccnow;
+                    $chargeAmount   = (float)$request->charge_ccnow_amount;
+
 
                     if ($chargeAmount > 0) {
+                        $order_actions = [];
                         if ( $charge_ccnow ) {
                             $pi = \Stripe\PaymentIntent::create([
                                 'customer'  => $stripeCustomer->id,
                                 'amount' => intval(round($chargeAmount * 100)),
                                 'currency' => $order->currency,
                                 'automatic_payment_methods' => [
-                                                            'enabled' => true,
-                                                            'allow_redirects' => 'never',  // 🔥 prevents Stripe from requiring return_url
-                                                        ],
-                                'receipt_email' => $customer->email,
+                                    'enabled' => true,
+                                    'allow_redirects' => 'never',  // 🔥 prevents Stripe from requiring return_url
+                                ],
+                                
                                 'capture_method' => 'manual',
                                 'description' => $tour->title,
                                 'statement_descriptor_suffix' => $order->order_number,
                                 'metadata'  => $metaData,
                                 'setup_future_usage'=> 'off_session',
                             ]);
-                            $order->balance_amount  = max($order->total_amount - ($chargeAmount ?? 0), 0); 
+                            $order->balance_amount  = max($balanceAmount - ($chargeAmount ?? 0), 0); 
                             $order->booked_amount   = $chargeAmount;
                             $order->payment_status  = 1; // Paid
-                            
+                            $order->payment_method  = 'card';
                             $order->payment_intent_client_secret = $pi->client_secret;
                             $order->payment_intent_id = $pi->id;
                             $order->payment_method_id = $request->payment_intent_id;
@@ -595,11 +879,82 @@ class OrderController extends Controller
                                 $pi = \Stripe\PaymentIntent::retrieve($pi->id);
                                 $pi->confirm(['payment_method' => $request->payment_intent_id]);
                                 $pi->capture();
+
+                                // $payments = [
+                                //     'order_id'       => $order->id,
+                                //     'payment_type'   => 'CREDITCARD',
+                                //     'transaction_id' => $pi->id,
+                                //     'date'           => now(),
+                                //     'amount'         => $chargeAmount,
+                                //     'collection_type'=> 'Inside',
+                                //     'created_at'     => now(),
+                                //     'updated_at'     => now(),
+                                // ];
+
+                                // OrderPaymentDetail::insert($payments);
+
+                                $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_intent_id);
+
+                                $card = $paymentMethod->card;
+
+                                $brand  = $card->brand;          // visa, mastercard
+                                $last4  = $card->last4;          // 4242
+                                // $expMonth = $card->exp_month;    // 12
+                                // $expYear  = $card->exp_year;     // 2029
+                                // $funding = $card->funding;       // credit/debit/prepaid
+                                // $country = $card->country;       // US, IN
+
+                                OrderPayment::create([
+                                    'order_id'          => $order->id,
+                                    'payment_intent_id' => $pi->id,
+                                    'transaction_id'    => $pi->charges->data[0]->id ?? $pi->id,
+                                    'payment_method'    => 'card',
+                                    'payment_type'      => 'CREDITCARD',
+                                    'collection_type'   => 'Inside',
+                                    'collection_date'   => date('Y-m-d'),
+                                    'card_brand'        => $brand,
+                                    'card_last4'        => $last4,
+                                    'amount'            => $chargeAmount,
+                                    'currency'          => $order->currency,
+                                    'status'            => 'succeeded',
+                                    'action'            => 'manual_charge',
+                                    'response_payload'  => json_encode($pi),
+                                    'created_at'        => now(),
+                                    'updated_at'        => now(),
+                                ]);
+
+                                // ===== Save OrderActions =====
+                                $order_actions = [[
+                                        'order_id'         => $order->id,
+                                        'performed_by'     => Auth::id(),
+                                        'notes'            => "<a href='". route('admin.customers.edit', encrypt($customer->id)) ."'>".$name."</a> made a new order on your booking form",
+                                        'created_at'       => now(),
+                                        'updated_at'       => now()
+                                    ],[
+                                        'order_id'         => $order->id,
+                                        'performed_by'     => Auth::id(),
+                                        'notes'            => "Order created for ".$tour->title." on ".$order->created_at->format('Y-m-d H:i:s'),
+                                        'created_at'       => now(),
+                                        'updated_at'       => now()
+                                    ],[
+                                        'order_id'         => $order->id,
+                                        'performed_by'     => Auth::id(),
+                                        'notes'            => "System attached credit card $last4 ($brand) to this order",
+                                        'created_at'       => now(),
+                                        'updated_at'       => now()
+                                    ],[
+                                        'order_id'         => $order->id,
+                                        'performed_by'     => Auth::id(),
+                                        'notes'            => "System charged credit card $last4 for $chargeAmount " .$order->currency. " Reference number is ".$pi->id,
+                                        'created_at'       => now(),
+                                        'updated_at'       => now()
+                                    ]
+                                ];
                             }
                         }
-                        else {
+                        else if( $add_ccnow ) {
                             // 2️⃣ Attach Payment Method to Customer
-                            \Stripe\PaymentMethod::retrieve($request->payment_intent_id)
+                            $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_intent_id)
                                 ->attach(['customer' => $stripeCustomer->id]);
 
                             // 3️⃣ Set this payment method as default
@@ -609,13 +964,91 @@ class OrderController extends Controller
                                 ]
                             ]);
 
-                            $order->balance_amount  = $order->total_amount; 
-                            $order->booked_amount   = 0;
-                            $order->payment_status  = 0; // Unpaid                        
-                            $order->payment_method_id = $request->payment_intent_id;
+
+                            $card = $paymentMethod->card;
+                            $brand  = $card->brand;          // visa, mastercard
+                            $last4  = $card->last4;          // 4242
+
+                            $order->balance_amount      = $balanceAmount; 
+                            $order->booked_amount       = 0;
+                            $order->payment_status      = 0; // Unpaid                        
+                            $order->payment_method_id   = $request->payment_intent_id;
+                            $order->payment_method      = 'card';
+
+                            // $payments = [
+                            //     'order_id'       => $order->id,
+                            //     'payment_type'   => 'CREDITCARD',
+                            //     'transaction_id' => $request->payment_intent_id,
+                            //     'date'           => now(),
+                            //     'amount'         => 0,
+                            //     'collection_type'=> 'Outside',
+                            //     'created_at'     => now(),
+                            //     'updated_at'     => now(),
+                            // ];
+
+                            // OrderPaymentDetail::insert($payments);
+
+                            OrderPayment::create([
+                                'order_id'          => $order->id,
+                                'payment_intent_id' => $request->payment_intent_id,
+                                'payment_type'      => 'CREDITCARD',
+                                'collection_type'   => 'Inside',
+                                'collection_date'   => date('Y-m-d'),
+                                'amount'            => $chargeAmount,
+                                'currency'          => $order->currency,
+                                'status'            => 'pending',
+                                'created_at'        => now(),
+                                'updated_at'        => now(),
+                            ]);
+
+                            // ===== Save OrderActions =====
+                            $order_actions = [[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => $customer->id,
+                                    'notes'            => "<a href='". route('admin.customers.edit', encrypt($customer->id)) ."'>".$name."</a> made a new order on your booking form",
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ],[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => $customer->id,
+                                    'notes'            => "Order created for ".$tour->title." on ".$order->created_at->format('Y-m-d H:i:s'),
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ],[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => $customer->id,
+                                    'notes'            => "System attached credit card $last4 ($brand) to this order",
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ]
+                            ];
+                        }
+                        else {
+                            $order->balance_amount      = $balanceAmount; 
+                            $order->booked_amount       = 0;
+                            $order->payment_status      = 0; // Unpaid  
+                            
+                            // ===== Save OrderActions =====
+                            $order_actions = [[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => $customer->id,
+                                    'notes'            => "<a href='". route('admin.customers.edit', encrypt($customer->id)) ."'>".$name."</a> made a new order on your booking form",
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ],[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => $customer->id,
+                                    'notes'            => "Order created for ".$tour->title." on ".$order->created_at->format('Y-m-d H:i:s'),
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ]
+                            ];
                         }
 
-                    } else {
+                        OrderActions::insert($order_actions);
+
+
+                    } /*else {
                         $si = \Stripe\SetupIntent::create([
                             'customer'  => $stripeCustomer->id,
                             'automatic_payment_methods' => ['enabled' => true],
@@ -624,7 +1057,7 @@ class OrderController extends Controller
                         ]);
                         $order->payment_intent_client_secret = $si->client_secret;
                         $order->payment_intent_id = $si->id;
-                    }
+                    }*/
 
                     // Booking fee
                     $booking_fee = $request->booking_fee ?? 0;
@@ -650,12 +1083,6 @@ class OrderController extends Controller
                     ], 500);
                 }
             }
-
-
-            }
-
-
-
 
             DB::commit();
 
@@ -686,9 +1113,52 @@ class OrderController extends Controller
     public function edit($id)
     {
         $order = Order::findOrFail( decrypt($id) );
+        $paymentSummary = (new OrderPaymentSummaryService())->summarize(
+            $order->payments
+        );
+        $grossOrderTotal = round((float) $order->orderTours->sum('total_amount'), 2);
+        $netOrderTotal = round(max(
+            $grossOrderTotal
+            - $paymentSummary['special_discount']
+            - $paymentSummary['promo_discount'],
+            0
+        ), 2);
+        $accountingBalance = round(max(
+            $grossOrderTotal - $paymentSummary['total_credits'],
+            0
+        ), 2);
         
         $tours = Tour::orderBy('title', 'ASC')->get();
         // $email_templates = EmailTemplate::get();
+
+
+        $actions = $order->actions()
+            ->orderByDesc('created_at')
+            ->paginate(7, ['*'], 'actions_page');
+        if (request()->ajax()) {
+            return view('admin.partials.order.recent-actions-table', compact('actions'))->render();
+        }
+
+        $emailHistories = $order->emailHistories()
+            ->orderByDesc('created_at')
+            ->paginate(7, ['*'], 'emails_page');
+
+        $paymentIntentIds = $order->payments()
+            ->whereNotNull('payment_intent_id')
+            ->pluck('payment_intent_id');
+        $paymentLogs = StripeWebhookLog::query()
+            ->where(function ($query) use ($order, $paymentIntentIds) {
+                $query->where('order_id', $order->id);
+                if ($paymentIntentIds->isNotEmpty()) {
+                    $query->orWhereIn('payment_intent_id', $paymentIntentIds);
+                }
+            })
+            ->orderByDesc('created_at')
+            ->paginate(7, ['*'], 'payments_page');
+        $paymentLedgerLogs = $order->payments()
+            ->whereNotNull('payment_intent_id')
+            ->orderByDesc('created_at')
+            ->get();
 
         $email_templates = EmailTemplate::whereIn('identifier', [
             'order_detail',
@@ -697,10 +1167,15 @@ class OrderController extends Controller
             'trip_completed',
             'payment_receipt',
             'order_pending',
-            'payment_request'
+            'payment_request',
+            'follow_up',
+            // 'abandoned_reminder',
+            'request_quote',
         ])->get();
         $sms_templates = SmsTemplate::get();
-        return view('admin.order.edit', compact(['order', 'tours', 'email_templates', 'sms_templates']));
+        $customers = User::where('user_type', 'member')->get();
+        $pickupLocations = PickupLocation::get();
+        return view('admin.order.edit', compact(['order', 'paymentSummary', 'grossOrderTotal', 'netOrderTotal', 'accountingBalance', 'tours', 'email_templates', 'sms_templates', 'pickupLocations', 'actions', 'emailHistories', 'paymentLogs', 'paymentLedgerLogs']));
     }
 
     /**
@@ -708,37 +1183,97 @@ class OrderController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $validator = $request->validate([
+        
+        $validator = Validator::make($request->all(), [
             'order_status'   => 'required|max:255',
+
+            'tour_startdate'   => 'required|array',
+            'tour_startdate.*' => 'required|date',
+
+            'tour_starttime'   => 'nullable|array',
+            'tour_starttime.*' => 'nullable|string|max:40',
         ],
         [
             'order_status.required'   => 'Please select order status',
+            'tour_startdate.required'   => 'Please select tour start date',
+            'tour_starttime.required'   => 'Please select tour start time',
         ]);
 
-        //echo '<pre>'; print_r( $_POST ); exit;
+        if( $validator->fails() ){
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
         
         $order = Order::findOrFail( $id );
         $order->order_status    = $request->order_status;
         $order->additional_info = $request->additional_info;
 
-        $tourIds = $request->tour_id; // [19, 21, 90, 11]
-
-
+        $tourIds = $request->tour_id; // [19, 21, 90, 11]       
         
-
-
         $orderId = $id;
         $total   = 0;
         if($orderId && is_array($request->tour_id)) {
             foreach ($tourIds as $index => $tourId) {
-
+                $tour = Tour::findOrFail( $tourId );
+                $totalBeforeTour = $total;
+                $orderTour = OrderTour::where('order_id', $orderId)
+                    ->where('tour_id', $tourId)
+                    ->first();
+                $paymentSummaryBeforeEdit = (new OrderPaymentSummaryService())->summarize(
+                    $order->payments()->get()
+                );
+                $hasSettledPayments = $paymentSummaryBeforeEdit['paid_amount'] > 0;
+                $hasCommittedPayments = $hasSettledPayments
+                    || $paymentSummaryBeforeEdit['authorized_amount'] > 0;
+                $checkoutTotals = new CheckoutTotalService();
+                $discountsLocked = $hasCommittedPayments
+                    || strtolower((string) $order->action_name) === 'reserve';
+                $previousGross = (float) ($orderTour?->total_amount ?? 0);
+                $previousPricing = collect(json_decode($orderTour?->tour_pricing ?: '[]', true))
+                    ->keyBy(fn ($item) => (int) ($item['tour_pricing_id'] ?? 0));
+                $previousExtras = collect(json_decode($orderTour?->tour_extra ?: '[]', true))
+                    ->keyBy(fn ($item) => (int) ($item['tour_extra_id'] ?? 0));
+                $previousFeesForAdjustment = json_decode(
+                    $orderTour?->tour_fees ?: '[]',
+                    true
+                ) ?: [];
+                $previousAdjustmentAmount = $checkoutTotals->adjustmentAmount(
+                    $previousPricing->values()->all(),
+                    $previousExtras->values()->all(),
+                    $previousFeesForAdjustment
+                );
+                // A stale tax/rounding balance must not carry already-paid
+                // lines into the next customer payment request.
+                $previousAdjustmentSettled = $hasSettledPayments && (
+                    (float) $order->balance_amount <= 0.01
+                    || $checkoutTotals->hasMatchingAdjustmentPayment(
+                        $previousAdjustmentAmount,
+                        $order->payments()->get()
+                    )
+                );
+                $savedDiscountRows = json_decode($orderTour?->discount ?: '[]', true) ?: [];
+                // Older admin updates could save one discount row as an object
+                // (or even a scalar) instead of a list. Normalize the snapshot
+                // before reading it so those orders remain editable.
+                if (is_array($savedDiscountRows) && isset($savedDiscountRows['price'])) {
+                    $savedDiscountRows = [$savedDiscountRows];
+                }
+                $savedDiscountRows = is_array($savedDiscountRows)
+                    ? array_values(array_filter($savedDiscountRows, 'is_array'))
+                    : [];
+                $savedSpecialDiscount = collect($savedDiscountRows)->first();
+                $itemAmountDelta = 0.0;
+                $addonAmountDelta = 0.0;
+                $addedSpecialDiscountDelta = 0.0;
+                $updatedFees = null;
+                $specialDiscountTotal = (float) $paymentSummaryBeforeEdit['special_discount'];
+                $promoDiscountTotal = (float) $paymentSummaryBeforeEdit['promo_discount'];
                 $minList = $request['tour_pricing_min_'.$tourId]; // you can send this hidden
                 $qtyList = $request['tour_pricing_qty_'.$tourId];
 
                 $valid = false;
                 
-                foreach ($qtyList as $index => $qty) {
-                    $minRequired = $minList[$index];
+                foreach ($qtyList as $indexQ => $qty) {
+                    $minRequired = $minList[$indexQ];
 
                     // qty must be >= min AND qty must not be zero
                     if ((int)$qty > 0 && (int)$qty >= (int)$minRequired) {
@@ -754,40 +1289,188 @@ class OrderController extends Controller
                     ])->withInput();
                 }
 
-                $startDate = $request->tour_startdate[$index];
-                $startTime = $request->tour_starttime[$index];
+                $startDate = Carbon::parse($request->tour_startdate[$index])->format('Y-m-d');// $request->tour_startdate[$index];
+                // $startTime = $request->tour_starttime[$index];
+
+                $startTimes = $request->input('tour_starttime', []);
+                $startTime  = $startTimes[$index] ?? null;
+                $depositRule = TourSpecialDeposit::where('use_deposit', 1)
+                    ->where('tour_id', $tour->id)
+                    ->first() ?: TourSpecialDeposit::where('type', 'global')->first();
+                $specialDiscountEligible = $depositRule
+                    && (int) $depositRule->is_discount === 1
+                    && $depositRule->charge === 'NONE'
+                    && $order->action_name === 'book'
+                    && Carbon::parse($startDate)->startOfDay()->gte(
+                        Carbon::today()->addDays((int) ($depositRule->notice_days ?? 0))
+                    );
+                // Preserve a discount already committed to the order snapshot,
+                // but never accept a new/stale form discount when the rule or
+                // selected tour date is not eligible.
+                $hasSavedSpecialDiscount = !empty($savedSpecialDiscount)
+                    || $specialDiscountTotal > 0;
+                $specialDiscountAllowed = $specialDiscountEligible
+                    || $hasSavedSpecialDiscount;
+                $effectiveDiscountType = $hasCommittedPayments
+                    ? ($savedSpecialDiscount['type'] ?? $depositRule?->discount_type)
+                    : $depositRule?->discount_type;
+                $effectiveDiscountValue = (float) ($hasCommittedPayments
+                    ? ($savedSpecialDiscount['discount'] ?? $depositRule?->discount_value ?? 0)
+                    : ($depositRule?->discount_value ?? 0));
+
+
+                // dd($startTime);
+                // $tourStartDates = $request->input('tour_startdate', []);
+
+                // $tourStartDates = array_map(function ($date) {
+                //     return Carbon::parse($date)->format('Y-m-d');
+                // }, $tourStartDates);
 
                 //TOUR PRICING
                 $pricingIds = $request->input("tour_pricing_id_{$tourId}", []);
                 $pricingQtys = $request->input("tour_pricing_qty_{$tourId}", []);
                 $pricingPrice = $request->input("tour_pricing_price_{$tourId}", []);
+                $pricingActualPrice = $request->input("tour_pricing_actual_price_{$tourId}", []);
+                $pricingDiscount = $request->input("tour_pricing_discount_{$tourId}", []);
+
+
+
 
                 $pricingDetails = [];
+                $discount = $hasCommittedPayments
+                    ? $savedDiscountRows
+                    : [];
                 $total_amount = 0;
-                $nog = 0; 
+                $nog = 0;
+
+
                 foreach ($pricingIds as $key => $pricingId) {
                     $qty    = isset($pricingQtys[$key]) ? (int)$pricingQtys[$key] : 0;
                     $price  = isset($pricingPrice[$key]) ? (float)$pricingPrice[$key] : 0;
+                    $actualPrice  = isset($pricingActualPrice[$key]) ? (float)$pricingActualPrice[$key] : 0;
+                    $discount_price  = isset($pricingDiscount[$key]) ? (float)$pricingDiscount[$key] : 0;
+                    if (!$discountsLocked && !$specialDiscountAllowed) {
+                        $discount_price = 0;
+                    }
+                    $previousLine = $previousPricing->get((int) $pricingId, []);
+                    $previousQty = (int) ($previousLine['quantity'] ?? 0);
+                    $qtyDelta = $qty - $previousQty;
+                    $tourPricing = TourPricing::findOrFail($pricingId);
+                    $currentUnitPrice = currencyConvertWithoutRound(
+                        (float) $tourPricing->price,
+                        $tour->currency,
+                        $order->currency
+                    );
+                    $currencySnapshot = $checkoutTotals->currencySnapshotLine(
+                        $previousQty,
+                        $qty,
+                        (float) ($previousLine['gross_total_price']
+                            ?? (($previousLine['actual_price'] ?? $actualPrice) * $previousQty)),
+                        (int) ($previousLine['newly_added_quantity'] ?? 0),
+                        (float) ($previousLine['newly_added_price'] ?? $previousLine['actual_price'] ?? 0),
+                        $currentUnitPrice,
+                        $previousAdjustmentSettled
+                    );
+                    $newlyAddedQuantity = $currencySnapshot['new_quantity'];
+                    $actualPrice = $currencySnapshot['average_unit_price'];
+                    $discountableQtyDelta = $tour->price_type == 'PER_PERSON'
+                        ? max($qtyDelta, 0)
+                        : (($qty > 0 ? 1 : 0) - ($previousQty > 0 ? 1 : 0));
+                    $itemAmountDelta += $tour->price_type == 'PER_PERSON'
+                        ? $qtyDelta * $actualPrice
+                        : $discountableQtyDelta * $actualPrice;
+                    $previousLineDiscount = (float) ($previousLine['discount'] ?? 0) * (
+                        $tour->price_type == 'PER_PERSON' ? $previousQty : 1
+                    );
+                    $addedDiscount = 0.0;
+                    // Discounts belong to the original checkout snapshot.
+                    // Quantities added later by an admin are always charged at
+                    // their full price and taxed normally.
+                    if ($discountsLocked) {
+                        $lineUnits = $tour->price_type == 'PER_PERSON' ? max($qty, 1) : 1;
+                        $lineDiscountTotal = round($previousLineDiscount + $addedDiscount, 2);
+                        $discount_price = round($lineDiscountTotal / $lineUnits, 2);
+                        $price = max($actualPrice - $discount_price, 0);
+                    } else {
+                        $lineDiscountTotal = round(
+                            $discount_price * ($tour->price_type == 'PER_PERSON' ? $qty : 1),
+                            2
+                        );
+                    }
 
-                    $total_amount += (intval($qty) * floatval($price));
+                    $lineGrossTotal = $tour->price_type == 'PER_PERSON'
+                        ? $currencySnapshot['gross_total']
+                        : ($qty > 0 ? $currencySnapshot['gross_total'] : 0);
+                    $total_amount += $lineGrossTotal;
                     $nog += $qty;
 
                     // Skip all zero-quantity if needed
                     if ($qty <= 0) continue;
 
-                    $tourPricing = TourPricing::find($pricingId);
                     $label = str_ireplace('Group', 'Participants', $tourPricing->label);
+                    $isDiscountablePricing = (new CheckoutDiscountService())
+                        ->isDiscountablePricingLabel($tourPricing->label);
+                    if (!$isDiscountablePricing) {
+                        $discount_price = 0;
+                        $lineDiscountTotal = 0;
+                        $price = $actualPrice;
+                    }
 
                     $pricingDetails[] = [
                         'tour_id'           => $tourId,
-                        'label'             => $label,
                         'tour_pricing_id'   => $pricingId,
-                        'quantity'          => $qty,
+                        'price_type'        => $tour->price_type,
+                        'label'             => $label,
+                        'actual_price'      => $actualPrice,
                         'price'             => $price,
-                        'total_price'     => $qty * $price,
+                        // 'discount'          => $discount_price * $qty,
+                        'discount'          => $discount_price,
+                        'quantity'          => $qty,
+                        'total_price'       => round($lineGrossTotal - $lineDiscountTotal, 2),
+                        'gross_total_price' => $lineGrossTotal,
+                        'newly_added_quantity' => $newlyAddedQuantity,
+                        'newly_added_price' => $currencySnapshot['new_unit_price'],
+                        'newly_added_rate' => (float) $tourPricing->price > 0
+                            ? round($currentUnitPrice / (float) $tourPricing->price, 8)
+                            : 1,
+                        'is_newly_added'    => $newlyAddedQuantity > 0,
                     ];
+
+
+                   $discountEntryAmount = $isDiscountablePricing && $discountsLocked
+                        ? $addedDiscount
+                        : ($isDiscountablePricing ? $lineDiscountTotal : 0);
+                   if(
+                        $specialDiscountAllowed
+                        && $order->action_name == "book"
+                        && $order->adv_deposite
+                        && $discountEntryAmount > 0
+                    ){
+                    $depositRule = TourSpecialDeposit::where('use_deposit', 1)
+                                    ->where('tour_id', $tour->id)
+                                    ->first();
+                    if(!$depositRule){
+                        $depositRule = TourSpecialDeposit::where('type', 'global')->first();
+                    }
+
+                    if ($depositRule->is_discount && $depositRule->charge === 'NONE') {
+
+                        $discount[] = [
+                            'tour_id'  => $tourId,
+                            'discount' => $effectiveDiscountValue,
+                            'label'    => 'Special Discount',
+                            'type'     => $effectiveDiscountType,
+                            'price'    => round($discountEntryAmount, 2),
+                        ];
+                    }
+                }
+
                     
                 }
+
+
+                
+                // $total += $total_amount - $discount_price;
                 $total += $total_amount;
 
                 //TOUR EXTRA
@@ -800,41 +1483,182 @@ class OrderController extends Controller
                 foreach ($extraIds as $key => $extraId) {
                     $qty    = isset($extraQtys[$key]) ? (int)$extraQtys[$key] : 0;
                     $price  = isset($extraPrice[$key]) ? (float)$extraPrice[$key] : 0;
+                    $previousQty = (int) data_get($previousExtras->get((int) $extraId), 'quantity', 0);
+                    $previousExtra = $previousExtras->get((int) $extraId, []);
+                    $extraAddon = Addon::findOrFail($extraId);
+                    $currentUnitPrice = currencyConvertWithoutRound(
+                        (float) $extraAddon->price,
+                        $extraAddon->currency ?? $tour->currency,
+                        $order->currency
+                    );
+                    $currencySnapshot = $checkoutTotals->currencySnapshotLine(
+                        $previousQty,
+                        $qty,
+                        (float) ($previousExtra['gross_total_price']
+                            ?? $previousExtra['total_price']
+                            ?? ($previousQty * ($previousExtra['price'] ?? 0))),
+                        (int) ($previousExtra['newly_added_quantity'] ?? 0),
+                        (float) ($previousExtra['newly_added_price'] ?? $previousExtra['price'] ?? 0),
+                        $currentUnitPrice,
+                        $previousAdjustmentSettled
+                    );
+                    $newlyAddedQuantity = $currencySnapshot['new_quantity'];
+                    $price = $currencySnapshot['average_unit_price'];
+                    $addonAmountDelta += ($qty - $previousQty) * $price;
 
-                    $total_amount += (intval($qty) * floatval($price));
-                    $nog += $qty;
+                    $total_amount += $currencySnapshot['gross_total'];
+                    // $nog += $qty;
 
                     // Skip all zero-quantity if needed
                     if ($qty <= 0) continue;
-                    $extraAddon = Addon::find($extraId);
-
                     $extraDetails[] = [
                         'tour_id'       => $tourId,
                         'label'         => $extraAddon->name,
                         'tour_extra_id' => $extraId,
                         'quantity'      => $qty,
                         'price'         => $price,
-                        'total_price'   => $qty * $price,
+                        'total_price'   => $currencySnapshot['gross_total'],
+                        'gross_total_price' => $currencySnapshot['gross_total'],
+                        'newly_added_quantity' => $newlyAddedQuantity,
+                        'newly_added_price' => $currencySnapshot['new_unit_price'],
+                        'newly_added_rate' => (float) $extraAddon->price > 0
+                            ? round($currentUnitPrice / (float) $extraAddon->price, 8)
+                            : 1,
+                        'is_newly_added' => $newlyAddedQuantity > 0,
                     ];
 
                 }
+
                 $total += $total_amount;
 
+               
+                // dd($total);
+
+
                 // Update or create based on order_id + tour_id
-                $orderTour = OrderTour::where('order_id', $orderId)
-                                        ->where('tour_id', $tourId)
-                                        ->first();
+                if ($hasCommittedPayments && $orderTour) {
+                    $currentRawSubtotal = round($total - $totalBeforeTour, 2);
+                    $isSingleTourOrder = $order->orderTours()->count() === 1;
+                    $currentDiscountTotal = $isSingleTourOrder
+                        ? round($specialDiscountTotal, 2)
+                        : round(collect($discount)->sum(
+                            fn ($row) => (float) ($row['price'] ?? 0)
+                        ), 2);
+                    if ($isSingleTourOrder && $currentDiscountTotal > 0) {
+                        $discount = [[
+                            'tour_id' => $tourId,
+                            'discount' => $effectiveDiscountValue,
+                            'label' => 'Special Discount',
+                            'type' => $effectiveDiscountType,
+                            'price' => $currentDiscountTotal,
+                        ]];
+                    }
+                    $bookingFeeForTour = $totalBeforeTour <= 0.01
+                        ? (float) $order->booking_fee
+                        : 0.0;
+                    $currentTaxableSubtotal = (new CheckoutTotalService())
+                        ->discountAdjustedTaxableSubtotal(
+                            $currentRawSubtotal,
+                            $currentDiscountTotal,
+                            $isSingleTourOrder ? $promoDiscountTotal : 0,
+                            $bookingFeeForTour
+                        );
+                    $recalculatedTax = 0.0;
+                    $updatedFees = json_decode($orderTour->tour_fees ?: '[]', true) ?: [];
+
+                    foreach ($updatedFees as &$fee) {
+                        $feeType = strtoupper(trim((string) ($fee['type'] ?? '')));
+                        $feeValue = (float) ($fee['value'] ?? 0);
+                        $previousTaxAmount = (float) ($fee['price'] ?? 0);
+                        $previousAddedTaxAmount = (float) ($fee['newly_added_amount'] ?? 0);
+                        $taxAmount = round(max(
+                            (float) (get_tax(
+                                $currentTaxableSubtotal,
+                                $feeType,
+                                $feeValue
+                            ) ?? 0),
+                            0
+                        ), 2);
+
+                        $fee['price'] = $taxAmount;
+                        $fee['newly_added_amount'] = $checkoutTotals->nextAdjustmentTax(
+                            $previousTaxAmount,
+                            $taxAmount,
+                            $previousAddedTaxAmount,
+                            $previousAdjustmentSettled
+                        );
+                        $recalculatedTax += $taxAmount;
+                    }
+                    unset($fee);
+
+                    $total = round(
+                        $totalBeforeTour
+                        + $currentRawSubtotal
+                        + $bookingFeeForTour
+                        + $recalculatedTax,
+                        2
+                    );
+                    if ($specialDiscountTotal > 0) {
+                        OrderPayment::updateOrCreate(
+                            ['order_id' => $order->id, 'payment_type' => 'DISCOUNT'],
+                            [
+                                'order_id' => $order->id,
+                                'payment_type' => 'DISCOUNT',
+                                'transaction_id' => 'Special Discount',
+                                'amount' => round($specialDiscountTotal, 2),
+                                'currency' => $order->currency,
+                                'status' => 'discount',
+                                'collection_type' => 'Inside',
+                                'collection_date' => now()->format('Y-m-d'),
+                            ]
+                        );
+                    }
+                }
 
                 if ($orderTour) {
-                    $orderTour->update([
-                        'tour_date'         => $startDate,
-                        'tour_time'         => $startTime,
+                    if (!$hasCommittedPayments) {
+                        // Use the freshly recalculated rows. This preserves the
+                        // special discount when quantities change and keeps the
+                        // saved order total aligned with the updated snapshot.
+                        foreach ($discount as $currentDiscountRow) {
+                            $discount_price = (float) ($currentDiscountRow['price'] ?? 0);
+                            $total = $total - $discount_price;
+                            // dd($total, $discount_price);
+                        }
+
+                    }
+
+                    $updateData = [
+                        // 'tour_date'         => $startDate,
+                        // 'tour_time'         => $startTime,
                         'tour_pricing'      => json_encode($pricingDetails),
                         'tour_extra'        => json_encode($extraDetails),
-                        'total_amount'      => $total_amount,
+                        'tour_fees'         => is_array($updatedFees)
+                            ? json_encode($updatedFees)
+                            : $orderTour->tour_fees,
+                        'discount'          => json_encode($discount ?? []),
+                        'total_amount'      => $total,
                         'number_of_guests'  => $nog
 
-                    ]);
+                    ];
+
+                    // $orderTour->update([
+                    //     'tour_date'         => $startDate,
+                    //     'tour_time'         => $startTime,
+                    //     'tour_pricing'      => json_encode($pricingDetails),
+                    //     'tour_extra'        => json_encode($extraDetails),
+                    //     'total_amount'      => $total,
+                    //     'number_of_guests'  => $nog
+
+                    // ]);
+
+                    if (!empty($startTime)) {
+                        $updateData['tour_date'] = $startDate;
+                        $updateData['tour_time'] = $startTime;
+                    }
+                    $orderTour->update($updateData);
+
+
                 } else {
                     $order_tours = new OrderTour();
                     $order_tours->order_id          = $orderId;
@@ -844,21 +1668,19 @@ class OrderController extends Controller
                     $order_tours->tour_pricing      = json_encode($pricingDetails);
                     $order_tours->tour_extra        = json_encode($extraDetails);
                     $order_tours->number_of_guests  = $nog;
-                    $order_tours->total_amount      = $total_amount;
+                    $order_tours->total_amount      = $total;
                     $order_tours->save();
+                    $orderTour = $order_tours;
                 }
 
-                $tour = Tour::findOrFail( $tourId );
-                if($tour) {
+                if($tour && !$hasCommittedPayments) {
                     $taxesfees = $tour->taxes_fees;
 
                     $subtotal = 0;
                     if( $taxesfees ) {
                         foreach ($taxesfees as $key => $item) { 
                             $price      = get_tax($total, $item->fee_type, $item->tax_fee_value);
-                            $tax        = $price ?? 0;
-
-                            
+                            $tax        = $price ?? 0;                            
 
                             \Log::info($tax);
                             $subtotal   = $subtotal + $tax; 
@@ -868,23 +1690,441 @@ class OrderController extends Controller
                         $total += $subtotal;
                     }
                 }
+                //  if($orderTour && $orderTour->discount && $discount){
+                //         $orderTour->discount = json_encode($discount);
+                //         $orderTour->save();
+                //     }
+
+                // if($orderTour && $orderTour->discount){
+
+
+                //         $discounts = json_decode($orderTour->discount, true);
+                        
+
+                //         foreach ($discounts as &$discount) {
+
+                //             if (!isset($discount['discount'], $discount['type'])) {
+                //                 continue;
+                //             }
+
+                            
+                //             if ($discount['type'] === 'PERCENT') {
+
+                //                 $discountAmount = round(($total * $discount['discount']) / 100, 2);
+
+                //             } elseif ($discount['type'] === 'FIXED') {
+
+                //                 $discountAmount = round($discount['discount'], 2);
+
+                //             } else {
+                //                 $discountAmount = 0;
+                //             }
+
+                //             // Update price field (final price after discount)
+                //             $discount['price'] = round($discountAmount, 2);
+
+                //             // Reduce item total
+                //             $total -= $discountAmount;
+                //         }
+
+                //         // Save updated discount JSON
+                //         $orderTour->discount = json_encode($discounts);
+                //         $orderTour->save();
+
+                //         //[{"tour_id":23,"discount":"20.00","label":"Discount 20.00%","type":"PERCENT","price":158.88}]
+                //     }
+            }
+            $orderTour->update([                
+                        'total_amount'  => $total
+            ]);
+
+            $totalPaymentAmount = 0;
+            if ($request->paymentType) {
+                $existingPaymentIds = $order->payments
+                    ->whereNotIn('payment_type', ['DISCOUNT', 'PROMOCODE', 'BOOKINGFEE'])
+                    ->pluck('id')
+                    ->toArray();
+                
+                foreach ($request->paymentType as $i => $type) {
+
+                    $paymentId       = $request->paymentId[$i] ?? null;
+                    $amount          = $request->amount[$i] ?? 0;
+                    $refundAmount    = $request->refund_amount[$i] ?? 0;
+                    $status          = $request->status[$i] ?? null;
+                    $collection_date = $request->collection_date[$i] ?? null;
+                    $transactionId   = $request->transactionId[$i] ?? null;
+                    
+                    // Skip empty rows
+                    if (empty($type) && empty($amount) && $amount == 0) {
+                        continue;
+                    }
+
+                    // Add amount to total (only if valid) 
+                    if ($status === 'succeeded') {
+
+                        $netAmount = floatval($amount) - floatval($refundAmount);
+
+                        if ($netAmount > 0) {
+                            $totalPaymentAmount += $netAmount;
+                        }
+                    }
+
+                    if ($paymentId) {
+
+                        // REMOVE the ID from existing IDs list
+                        if (($key = array_search($paymentId, $existingPaymentIds)) !== false) {
+                            unset($existingPaymentIds[$key]);
+                        }
+
+                        // UPDATE existing row
+                        // OrderPayment::where('id', $paymentId)->update([
+                        //     'payment_type'   => $type,
+                        //     'transaction_id' => $request->transactionId[$i] ?? null,
+                        //     'collection_date'=> $request->date[$i] ?? null,
+                        //     'amount'         => $amount,
+                        //     'updated_at'     => now(),
+                        // ]);
+
+                    } else {
+                        // INSERT new row
+
+
+                        
+                        OrderPayment::create([
+                            'order_id'       => $order->id,
+                            'payment_type'   => $type,
+                            'transaction_id' => $transactionId,
+                            'collection_date'=> Carbon::parse($collection_date)->format('Y-m-d'),
+                            'currency'       => $order->currency,
+                            'amount'         => $amount,
+                            'collection_type'=> 'Outside',
+                            'status'         => 'succeeded',
+                            'created_at'     => now(),
+                            'updated_at'     => now(),
+                        ]);
+
+                        if($type == "COMMISSION"){
+
+                            if($order->total_amount - $amount){
+                                OrderPayment::create([
+                                    'order_id'          => $order->id,
+                                    'payment_intent_id' => null,
+                                    'transaction_id'    => $transactionId,
+                                    'payment_type'      => "EXCLUDED",
+                                    'collection_type'   => 'Outside',
+                                    'collection_date'   => Carbon::parse($collection_date)->format('Y-m-d'),
+                                    'amount'            => $order->total_amount - $amount,
+                                    'currency'          => $order->currency,
+                                    'status'            => 'succeeded',
+                                    'created_at'        => now(),
+                                    'updated_at'        => now(),
+                                ]);
+                                }
+
+                            }
+                            
+                    }
+                }  
+                
+                // These are the payments that were NOT included in updated request
+
+                
+                if (!empty($existingPaymentIds)) {
+                    OrderPayment::whereIn('id', $existingPaymentIds)->delete();
+                }
             }
         }
-        $order->total_amount = $total;
-        $order->balance_amount =max($order->total_amount - ($order->booked_amount ?? 0), 0);// $total - $order->total_amount;
-        
-        if( !$order->save() )
-        return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Something went wrong!');
 
-        return redirect()->back()->withErrors($validator)->withInput()->with('success', 'Order has beend updated!');
+        $order->load('payments');
+
+        $totalPaymentAmount = $order->payments
+        ->where('status', 'succeeded')
+        ->sum(function ($payment) {
+            return floatval($payment->amount) - floatval($payment->refund_amount);
+        });
+
+        // if()
+
+        $balanceAmount = max($total - $totalPaymentAmount, 0);
+
+        if($order->payment_status == 3){
+            $balanceAmount = $balanceAmount - $order->payments->where('status', 'uncaptured')->first()?->amount;
+        
+        }
+        // dd($total, $balanceAmount, $totalPaymentAmount, $order->balance_amount, $order->booked_amount );
+        // $order->total_amount    = $total;
+        // $order->balance_amount  = $balanceAmount;
+        // $order->booked_amount  = $totalPaymentAmount;
+
+
+        $totals = $this->calculateTotals(
+            $total,
+            $totalPaymentAmount,
+            $request->paymentType ?? [],
+            $request->amount ?? []
+        );
+        $accountingSummary = (new OrderPaymentSummaryService())->summarize(
+            $order->payments()->get()
+        );
+        if (!$totals['exclude']) {
+            $netOrderAmount = round(max(
+                $total
+                - $accountingSummary['special_discount']
+                - $accountingSummary['promo_discount'],
+                0
+            ), 2);
+            $totals['total'] = $netOrderAmount;
+            $totals['paid'] = $accountingSummary['paid_amount'];
+            $totals['balance'] = round(max(
+                $netOrderAmount - $accountingSummary['paid_amount'],
+                0
+            ), 2);
+        }
+
+        $order->total_amount   = $totals['total'];
+        $order->booked_amount  = $totals['paid'];
+        $order->balance_amount = $totals['balance'];
+        $balanceAmount = $totals['balance'];
+        $balanceAmount = $totals['balance'];
+        $total =         $totals['total'];
+        
+
+        if( $order->save() ) {
+
+            // ===== Stripe Payment Handling =====
+            try {
+                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+                $customer = $order->customer;
+
+                // Check if customer already linked
+                if (!$order->stripe_customer_id) {
+                    $name = $customer->first_name.' '.$customer->last_name;
+                    $stripeCustomer = \Stripe\Customer::create([
+                        'name'  => $name,
+                        'email' => $customer->email,
+                        'phone' => $customer->phone,
+                    ]);
+                } else {
+                    $name = $customer->first_name.' '.$customer->last_name;
+                    $stripeCustomer = \Stripe\Customer::retrieve($order->stripe_customer_id);
+                }
+
+                $add_ccnow      = (int)$request->add_ccnow;
+                $charge_ccnow   = (int)$request->charge_ccnow;
+                $chargeAmount   = (float)$request->charge_ccnow_amount;
+
+                $metaData = [
+                    'bookedDate'    => $order->created_at,
+                    'orderId'       => $order->id,
+                    'orderNumber'   => $order->order_number,
+                    'tourName'      => $tour->title ?? 'Multiple Tours',
+                    'customerId'    => $customer->id,
+                    'customerEmail' => $customer->email,
+                    'customerName'  => $customer->first_name.' '.$customer->last_name,
+                    'planName'      => "TourBeez Plan",
+                    'status'        => 'Pending supplier',
+                    'totalAmount'   => $chargeAmount,
+                ];
+
+                //echo '<pre>'; print_r( $request->payment_intent_id ); echo '</pre>'; exit;
+
+                if ($chargeAmount > 0) {
+                    $order_actions = [];
+                    if ( $charge_ccnow ) {
+                        $pi = \Stripe\PaymentIntent::create([
+                            'customer'  => $stripeCustomer->id,
+                            'amount' => intval(round($chargeAmount * 100)),
+                            'currency' => $order->currency,
+                            'automatic_payment_methods' => [
+                                'enabled' => true,
+                                'allow_redirects' => 'never',  // 🔥 prevents Stripe from requiring return_url
+                            ],
+                            
+                            'capture_method' => 'manual',
+                            'description' => $tour->title,
+                            'statement_descriptor_suffix' => $order->order_number,
+                            'metadata'  => $metaData,
+                            'setup_future_usage'=> 'off_session',
+                        ]);
+                        $order->balance_amount  = max($balanceAmount - ($chargeAmount ?? 0), 0); 
+                        $order->booked_amount   = $order->booked_amount + $chargeAmount;
+                        $order->payment_status  = 1; // Paid
+                        $order->payment_method  = 'card';
+
+                        // ✅ If frontend sent payment_method_id, confirm & capture immediately
+                        if ($request->filled('payment_intent_id')) {
+                            $pi = \Stripe\PaymentIntent::retrieve($pi->id);
+                            $pi->confirm(['payment_method' => $request->payment_intent_id]);
+                            $pi->capture();
+
+                            $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_intent_id);
+
+                            $card = $paymentMethod->card;
+                            $brand  = $card->brand;          // visa, mastercard
+                            $last4  = $card->last4;          // 4242
+
+                            OrderPayment::create([
+                                'order_id'          => $order->id,
+                                'payment_intent_id' => $pi->id,
+                                'transaction_id'    => $pi->charges->data[0]->id ?? $pi->id,
+                                'payment_method'    => 'card',
+                                'payment_type'      => 'CREDITCARD',
+                                'collection_type'   => 'Inside',
+                                'collection_date'   => date('Y-m-d'),
+                                'card_brand'        => $brand,
+                                'card_last4'        => $last4,
+                                'amount'            => $chargeAmount,
+                                'currency'          => $order->currency,
+                                'status'            => 'succeeded',
+                                'action'            => 'manual_charge',
+                                'response_payload'  => json_encode($pi),
+                                'created_at'        => now(),
+                                'updated_at'        => now(),
+                            ]);
+
+                            // ===== Save OrderActions =====
+                            $order_actions = [
+                                [
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => Auth::id(),
+                                    'notes'            => "System attached new credit card $last4 ($brand) to this order",
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ],[
+                                    'order_id'         => $order->id,
+                                    'performed_by'     => Auth::id(),
+                                    'notes'            => "System charged credit card $last4 for $chargeAmount ".$order->currency. " Reference number is ".$pi->id,
+                                    'created_at'       => now(),
+                                    'updated_at'       => now()
+                                ]
+                            ];
+                        }
+                    }
+                    else if( $add_ccnow ) {
+                        // 2️⃣ Attach Payment Method to Customer
+                        $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_intent_id)
+                            ->attach(['customer' => $stripeCustomer->id]);
+
+                        // 3️⃣ Set this payment method as default
+                        \Stripe\Customer::update($stripeCustomer->id, [
+                            'invoice_settings' => [
+                                'default_payment_method' => $request->payment_intent_id,
+                            ]
+                        ]);
+
+
+                        $card = $paymentMethod->card;
+                        $brand  = $card->brand;          // visa, mastercard
+                        $last4  = $card->last4;          // 4242
+
+                        $order->balance_amount      = $balanceAmount; 
+                        $order->booked_amount       = 0;
+                        $order->payment_status      = 0; // Unpaid                        
+                        $order->payment_method_id   = $request->payment_intent_id;
+                        $order->payment_method      = 'card';
+
+                        OrderPayment::create([
+                            'order_id'          => $order->id,
+                            'payment_intent_id' => $request->payment_intent_id,
+                            'payment_type'      => 'CREDITCARD',
+                            'collection_type'   => 'Inside',
+                            'collection_date'   => date('Y-m-d'),
+                            'amount'            => $chargeAmount,
+                            'currency'          => $order->currency,
+                            'status'            => 'pending',
+                            'created_at'        => now(),
+                            'updated_at'        => now(),
+                        ]);
+
+                        // ===== Save OrderActions =====
+                        $order_actions = [
+                            [
+                                'order_id'         => $order->id,
+                                'performed_by'     => Auth::id(),
+                                'notes'            => "System attached new credit card $last4 ($brand) to this order",
+                                'created_at'       => now(),
+                                'updated_at'       => now()
+                            ]
+                        ];
+                    }
+                    else {
+                        $order->balance_amount      = $balanceAmount; 
+                        $order->booked_amount       = 0;
+                        $order->payment_status      = 0; // Unpaid  
+                        
+                        // ===== Save OrderActions =====
+                        $order_actions = [
+                            [
+                                'order_id'         => $order->id,
+                                'performed_by'     => Auth::id(),
+                                'notes'            => "Order updated for ".$tour->title." on ".$order->created_at->format('Y-m-d H:i:s'),
+                                'created_at'       => now(),
+                                'updated_at'       => now()
+                            ]
+                        ];
+                    }
+
+                    $order->save();
+
+                    OrderActions::insert($order_actions);
+
+                }
+
+                // Booking fee
+                $booking_fee = $request->booking_fee ?? 0;
+                if($booking_fee > 0 && get_setting('price_booking_fee')){
+                    $bookingFeeType = get_setting('tour_booking_fee_type');
+                    if($bookingFeeType == 'FIXED'){
+                        $booking_fee = get_setting('tour_booking_fee');
+                    } elseif($bookingFeeType == 'PERCENT') {
+                        $booking_fee = $order->total_amount * get_setting('tour_booking_fee')/100;
+                    }
+                }
+
+                $order->booking_fee = $booking_fee;
+                $order->stripe_customer_id = $stripeCustomer->id;
+                $order->save();
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Stripe Payment Error: '.$e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Payment setup failed: '.$e->getMessage()
+                ], 500);
+            }
+
+            $order_actions = [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => Auth::user()->name. " updated <a href='". route('admin.customers.edit', encrypt($customer->id)) ."'>".$customer->first_name ." ".$customer->last_name."'s</a> order",
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
+            OrderActions::insert($order_actions);
+
+            return redirect()->back()->withErrors($validator)->withInput()->with('success', 'Order has beend updated!');
+        }
+
+        return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Something went wrong!');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Order $order)
+    public function destroy($id)
     {
-        //
+
+        $order = Order::where('id', decrypt($id))->first();
+        // $tour->title .= '-deleted';
+        // $tour->slug .= '-deleted-' . Str::random(6);
+        // $tour->save();
+        if ($order->delete()) {
+            return redirect()->route('admin.orders.index')->with('success', 'Order info has been deleted successfull');
+        } else {
+            return back()->route('admin.orders.index')->with('error', 'Sorry! Something went wrong.');;
+        }
     }
 
     public function bulkDelete(Request $request)
@@ -902,17 +2142,14 @@ class OrderController extends Controller
 
     public function order_mail_send(Request $request)
     {
-
-        $cc_mail   = $request->input('cc_mail');
-        $bcc_mail   = $request->input('bcc_mail');
+        $cc_mail = $request->input('cc_mail');
+        $bcc_mail= $request->input('bcc_mail');
         $email   = $request->input('email');
         $subject = $request->input('subject');
         $header  = $request->input('header');
         $body    = $request->input('body');
         $footer  = $request->input('footer');
         $event   = $request->input('event');
-
-
 
         if (env('MAIL_FROM_ADDRESS')) {
             $array = [
@@ -928,14 +2165,11 @@ class OrderController extends Controller
 
                 // Explicitly use Mailgun mailer
                 $mailer = Mail::mailer('mailgun');
-                // $mailer = Mail::mailer();
 
                 // Send email and capture message inf
-
                 $sentMessage = $mailer->to($email);
                 
-                if( $cc_mail ) {
-                    
+                if( $cc_mail ) {                    
                     $sentMessage->cc(explode(',', $cc_mail));
                 }
                 if( $bcc_mail ) {
@@ -953,8 +2187,6 @@ class OrderController extends Controller
                     }
                 }
 
-
-
                 // Get order_id from request
                 $order_id = $request->input('order_id') ?? optional($request->order)->id;
 
@@ -969,6 +2201,15 @@ class OrderController extends Controller
                     'message_id' => $messageId, // ✅ store for webhook tracking
                 ]);
 
+                $order_actions = [
+                    'order_id'         => $order_id,
+                    'performed_by'     => Auth::id(),
+                    'notes'            => Auth::user()->name." sent order details by email to {$email}",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ];
+                OrderActions::insert($order_actions);
+
                 return response()->json(['status' => 'success', 'message_id' => $messageId]);
             } catch (\Exception $e) {
                 \Log::error('Mail send failed: ' . $e->getMessage());
@@ -979,7 +2220,6 @@ class OrderController extends Controller
 
     public function order_template_details(Request $request)
     {
-
         try{
             $order_id = $request->order_id;
             $order_template_id = $request->order_template_id;
@@ -1014,12 +2254,18 @@ class OrderController extends Controller
 
 
             $pickup_address = '';
+
+
             if( $order->customer->pickup_name ) {
                 $pickup_address = $order->customer->pickup_name;
             }
             else if($order->customer->pickup_id) {
+
+
                 $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
+
+
             if($pickup_address) {
                 $pickup_address = '
                   <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
@@ -1028,169 +2274,482 @@ class OrderController extends Controller
                   </h3>';
                             }
 
+            $paymentSummary = (new OrderPaymentSummaryService())->summarize($order->payments);
+            $grossOrderTotal = round((float) $order->orderTours->sum('total_amount'), 2);
+            $balanceAmountValue = round(max(
+                $grossOrderTotal - (float) $paymentSummary['total_credits'],
+                0
+            ), 2);
+            $rawSubTotal = 0.0;
+            $adjustmentSubTotal = 0.0;
+            $adjustmentTaxTotal = 0.0;
+            $number_of_guests = 0;
+            foreach ($order->orderTours as $summaryOrderTour) {
+                foreach (json_decode($summaryOrderTour->tour_pricing ?: '[]', true) ?: [] as $pricingRow) {
+                    $quantity = (int) ($pricingRow['quantity'] ?? 0);
+                    $actualPrice = (float) ($pricingRow['actual_price'] ?? $pricingRow['price'] ?? 0);
+                    $rawSubTotal += (float) ($pricingRow['gross_total_price']
+                        ?? (($pricingRow['price_type'] ?? 'PER_PERSON') === 'FIXED'
+                            ? ($quantity > 0 ? $actualPrice : 0)
+                            : $quantity * $actualPrice));
+                    $adjustmentSubTotal += max(
+                        (int) ($pricingRow['newly_added_quantity'] ?? 0),
+                        0
+                    ) * max((float) ($pricingRow['newly_added_price'] ?? $actualPrice), 0);
+                }
+                foreach (json_decode($summaryOrderTour->tour_extra ?: '[]', true) ?: [] as $extraRow) {
+                    $rawSubTotal += (float) ($extraRow['total_price']
+                        ?? ((int) ($extraRow['quantity'] ?? 0) * (float) ($extraRow['price'] ?? 0)));
+                    $adjustmentSubTotal += max(
+                        (int) ($extraRow['newly_added_quantity'] ?? 0),
+                        0
+                    ) * max((float) ($extraRow['newly_added_price'] ?? $extraRow['price'] ?? 0), 0);
+                }
+                foreach (json_decode($summaryOrderTour->tour_fees ?: '[]', true) ?: [] as $feeRow) {
+                    $adjustmentTaxTotal += max((float) ($feeRow['newly_added_amount'] ?? 0), 0);
+                }
+            }
+            $rawSubTotal = round($rawSubTotal, 2);
+            $discountAmount = (float) $paymentSummary['special_discount'];
+            $promoAmount = (float) $paymentSummary['promo_discount'];
+            $paidAmount = round(
+                (float) $paymentSummary['paid_amount']
+                    + (float) $paymentSummary['authorized_amount'],
+                2
+            );
+            $bookingFee = (float) ($paymentSummary['booking_fee'] > 0
+                ? $paymentSummary['booking_fee']
+                : ($order->booking_fee ?? $order->bookingFee->value('value') ?? 0));
+            $taxAmount = round(max(
+                $grossOrderTotal - ($rawSubTotal - $discountAmount - $promoAmount + $bookingFee),
+                0
+            ), 2);
+            $adjustmentSubTotal = round($adjustmentSubTotal, 2);
+            $adjustmentTaxTotal = round($adjustmentTaxTotal, 2);
+            $adjustmentTotal = round($adjustmentSubTotal + $adjustmentTaxTotal, 2);
+            $isAdjustmentTemplate = in_array(
+                $email_template->identifier,
+                ['payment_request', 'payment_receipt'],
+                true
+            ) && $adjustmentTotal > 0.01 && (
+                $paymentSummary['paid_amount'] > 0
+                || $paymentSummary['authorized_amount'] > 0
+                || strtolower((string) $order->action_name) === 'reserve'
+            );
+            if ($isAdjustmentTemplate) {
+                $adjustmentPaid = (new CheckoutTotalService())->hasMatchingAdjustmentPayment(
+                    $adjustmentTotal,
+                    $order->payments
+                );
+                $rawSubTotal = $adjustmentSubTotal;
+                $discountAmount = 0.0;
+                $promoAmount = 0.0;
+                $bookingFee = 0.0;
+                $taxAmount = $adjustmentTaxTotal;
+                $grossOrderTotal = $adjustmentTotal;
+                $paidAmount = $adjustmentPaid ? $adjustmentTotal : 0.0;
+                $balanceAmountValue = $adjustmentPaid ? 0.0 : $adjustmentTotal;
+            }
+
             $TOUR_PAYMENT_HISTORY = '
-                    <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px;">
-                        <tbody>
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
-                                    <h3 style="font-size:19px"><strong>Payment History</strong></h3>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-            
-                    <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
-                        <tbody>
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Payment Type</small>
-                                </td>
+            <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:640px; margin-left:0px">
+                <tbody>
+                    <tr>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
+                            <h3 style="font-size:19px; "><strong>Payment Summary</strong></h3>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 30%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Date</small>
-                                </td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Amount</small>
-                                </td>
-                            </tr>
+            <table width="640" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="left" class="table" style="border-width:0 30px 30px; border-color:#fff; border-style:solid; background-color:#fff">
+                <tbody>
 
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">Credit card</td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: left;padding: 5px 0px;" valign="top">' . date('M d, Y', strtotime($order->created_at)) . '</td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; text-align: right;padding: 5px 0px;" valign="top"><strong>' . price_format_with_currency($order->total_amount, $order->currency) . '</strong></td>
-                            </tr>
+                    <tr>
+                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                            <small style="font-size:14px; text-transform:uppercase;">Sub Total</small>
+                        </td>
+                        <td style="text-align:right; border-top:1pt solid #000;">
+                            <strong>' . price_format_with_currency($rawSubTotal, $order->currency) . '</strong>
+                        </td>
+                    </tr>';
 
-                            <tr>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000;">
-                                &nbsp;
-                                </td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000;  border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-                                </td>
-                                <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                    <h3 style="color: #000;font-size:19px"><strong>' . price_format_with_currency($order->total_amount, $order->currency) . '</strong></h3>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>';
+                    if( $discountAmount > 0) {
+                     $TOUR_PAYMENT_HISTORY .= '
+                        <tr style="color:red;">
+                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                            <small style="font-size:14px; text-transform:uppercase;">Special Discount</small>
+                        </td>
+                        <td style="text-align:right; border-top:1pt solid #000;">
+                            <strong>-' . price_format_with_currency($discountAmount, $order->currency) . '</strong>
+                        </td>
+                    </tr>';
+                    }
+
+                    if ($promoAmount > 0) {
+                        $promoLabel = 'Promo Code' . ($paymentSummary['promo_code']
+                            ? ' (' . e($paymentSummary['promo_code']) . ')'
+                            : '');
+                        $TOUR_PAYMENT_HISTORY .= '<tr style="color:red;">
+                            <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                                <small style="font-size:14px; text-transform:uppercase;">' . $promoLabel . '</small>
+                            </td>
+                            <td style="text-align:right; border-top:1pt solid #000;">
+                                <strong>-' . price_format_with_currency($promoAmount, $order->currency) . '</strong>
+                            </td>
+                        </tr>';
+                    }
+
+                    if ($bookingFee > 0) {
+                        $TOUR_PAYMENT_HISTORY .= '<tr>
+                            <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                                <small style="font-size:14px; text-transform:uppercase;">Booking Fee</small>
+                            </td>
+                            <td style="text-align:right; border-top:1pt solid #000;">
+                                <strong>' . price_format_with_currency($bookingFee, $order->currency) . '</strong>
+                            </td>
+                        </tr>';
+                    }
+
+                    $TOUR_PAYMENT_HISTORY .= '<tr>
+                            <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                                <small style="font-size:14px; text-transform:uppercase;">HST / Tax</small>
+                            </td>
+                            <td style="text-align:right; border-top:1pt solid #000;">
+                                <strong>' . price_format_with_currency($taxAmount, $order->currency) . '</strong>
+                            </td>
+                        </tr>';
+
+                   $TOUR_PAYMENT_HISTORY .= '
+                    <tr>
+                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; padding:5px 0;">
+                            <small style="font-size:14px; text-transform:uppercase;">Total</small>
+                        </td>
+                        <td style="text-align:right; border-top:2pt solid #000;">
+                            <h3 style="margin:0; font-size:19px;">
+                                <strong>' . price_format_with_currency($grossOrderTotal, $order->currency) . '</strong>
+                            </h3>
+                        </td>
+                    </tr>
+                    <tr style="color:green;">
+                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                            <small style="font-size:14px; text-transform:uppercase;">Total Paid</small>
+                        </td>
+                        <td style="text-align:right; border-top:1pt solid #000;">
+                            <strong>' . price_format_with_currency($paidAmount, $order->currency) . '</strong>
+                        </td>
+                    </tr>
+                    <tr style="color:' . ($balanceAmountValue > 0.01 ? 'red' : 'green') . ';">
+                        <td style="font-family:\'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #000; padding:5px 0;">
+                            <small style="font-size:14px; text-transform:uppercase;">Balance</small>
+                        </td>
+                        <td style="text-align:right; border-top:1pt solid #000;">
+                            <strong>' . price_format_with_currency($balanceAmountValue, $order->currency) . '</strong>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>';
+
 
 
             $TOUR_ITEM_SUMMARY = '';
+            $paymentDetailsAddedToItemSummary = false;
  
             foreach ($order->orderTours as $order_tour) {
                 $subtotal = 0;
+                $subtotal2 = 0;
+                $adjustmentRows = '';
                 $_tourId = $order_tour->tour_id;
                 $tour_pricing = !empty($order_tour->tour_pricing) ? json_decode($order_tour->tour_pricing, true) : [];
                 $tour_extra = !empty($order_tour->tour_extra) ? json_decode($order_tour->tour_extra, true) : [];
-                $TOUR_ITEM_SUMMARY .= '
-                    <table width="768" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table" style="width:768px;">
-                    <tbody>
-                    <tr>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 0 0 10px; width:768px;">
-                    <h3 style="font-size:19px"><strong>' . $order_tour->tour->title . ' - Item Summary</strong></h3>
-                    </td>
-                    </tr>
-                    </tbody>
-                    </table>
-                     
-                    <table width="768" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
-                    <tbody>
-                    <tr>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">#</small>
-                    </td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
-                    </td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    &nbsp;
-                    </td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
-                    </td>
-                    </tr>';
-                    // Pricing Rows
-                    $i = 1;
-                    foreach ($tour_pricing as $result) {
-                        // $result = getTourPricingDetails($tour_pricing, $pricing->id);
-                        $qty = $result['quantity'] ?? 0;
-                        $price = $result['price'] ?? 0;
-                        //$total = $qty * $price;
-                        $total = $result['total_price'] ?? 0;
-                        if ($qty > 0) {
-                            $subtotal += $total;
-                            $TOUR_ITEM_SUMMARY .= '
-                    <tr>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ucwords($result['label']??"") . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
-                    </tr>';
-                                        }
-                                    }
-                     
-                                    // Extras Rows
-                                    foreach ($tour_extra as $extra) {
-                                        // $result = getTourExtraDetails($tour_extra, $extra->id);
-                                        $qty = $extra['quantity'] ?? 0;
-                                        $price = $extra['price'] ?? 0;
-                                        // $total = $qty * $price;
-                                        $total = $extra['total_price'] ?? 0;
-                                        if ($qty > 0) {
-                                            $subtotal += $total;
-                                            $TOUR_ITEM_SUMMARY .= '
-                    <tr>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label']??"" . ' (Extra)</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
-                    </tr>';
-                                        }
-                                    }
-                     
-                                    // Taxes
-                                    $taxRows = '';
-                                    if ($order_tour->tour->taxes_fees) {
-                                        foreach ($order_tour->tour->taxes_fees as $tax) {
-                                            $taxAmount = get_tax($subtotal, $tax->fee_type, $tax->tax_fee_value);
-                                            $subtotal += $taxAmount;
-                                            $taxRows .= '
-                    <tr>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">' . $tax->label . '</small>
-                    </td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                                                    ' . price_format_with_currency($taxAmount, $order->currency) . '
-                    </td>
-                    </tr>';
-                                        }
-                                    }
-                     
-                                    // Total Row
-                                    $TOUR_ITEM_SUMMARY .= $taxRows . '
-                    <tr>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
-                    <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#000;">Total</small>
-                    </td>
-                    <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
-                    <h3 style="color:#000; margin:0; font-size:19px"><strong>' . price_format_with_currency($subtotal, $order->currency) . '</strong></h3>
-                    </td>
-                    </tr>
-                    </tbody>
-                    </table>';
+                $tour_discount = !empty($order_tour->discount) ? json_decode($order_tour->discount, true) : [];
+                $tour_fees = !empty($order_tour->tour_fees) ? json_decode($order_tour->tour_fees, true) : [];
+                if ($isAdjustmentTemplate) {
+                    $tour_pricing = collect($tour_pricing)
+                        ->filter(fn ($row) => (int) ($row['newly_added_quantity'] ?? 0) > 0)
+                        ->map(function ($row) {
+                            $row['quantity'] = (int) $row['newly_added_quantity'];
+                            $row['actual_price'] = (float) ($row['newly_added_price'] ?? $row['actual_price'] ?? $row['price'] ?? 0);
+                            $row['price'] = $row['actual_price'];
+                            $row['discount'] = 0;
+                            $row['gross_total_price'] = $row['quantity'] * $row['actual_price'];
+                            $row['total_price'] = $row['gross_total_price'];
+                            return $row;
+                        })->values()->all();
+                    $tour_extra = collect($tour_extra)
+                        ->filter(fn ($row) => (int) ($row['newly_added_quantity'] ?? 0) > 0)
+                        ->map(function ($row) {
+                            $row['quantity'] = (int) $row['newly_added_quantity'];
+                            $row['price'] = (float) ($row['newly_added_price'] ?? $row['price'] ?? 0);
+                            $row['gross_total_price'] = $row['quantity'] * $row['price'];
+                            $row['total_price'] = $row['gross_total_price'];
+                            return $row;
+                        })->values()->all();
+                    $tour_fees = collect($tour_fees)
+                        ->filter(fn ($row) => (float) ($row['newly_added_amount'] ?? 0) > 0)
+                        ->map(function ($row) {
+                            $row['price'] = (float) $row['newly_added_amount'];
+                            return $row;
+                        })->values()->all();
+                    $tour_discount = [];
                 }
+                // $totalFixedDiscount = 0;
+                // if($tour_discount){
+                //     foreach ($tour_discount as $discountFixed) {
+                //        $totalFixedDiscount = $discountFixed->price;
+                //     }
+                // }
+
+                // dd($order_tour);
+
+                if($order->tour && $order->sub_tour_id){
+                    $tourTitle = $order->tour->title . "<br>" . $order_tour->tour->title;
+                    $tourTitleFormatted = $order->tour->title . "<br> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;" . $order_tour->tour->title;
+                   
+                } else{
+                    $tourTitle = $order_tour->tour->title;
+                    $tourTitleFormatted = $order_tour->tour->title;
+                }
+                $TOUR_ITEM_SUMMARY .= '
+                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="header_table">
+                    <tbody>
+                    <tr>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; text-align: left; padding: 30px 30px 15px; width:640px;">
+                            <h3 style="font-size:19px"><strong>' . $tourTitle . '</strong></h3>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <table width="100%" bgcolor="#ffffff" cellpadding="0" cellspacing="0" border="0" align="center" class="table" style="border-width:0 30px 30px; border-color: #fff; border-style: solid; background-color:#fff">
+                    <tbody>
+                        <tr>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 10%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">#</small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 50%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Description</small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                &nbsp;
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; width: 20%; border-bottom:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000">Total</small>
+                            </td>
+                        </tr>';
+                
+                // Pricing Rows
+                $i = 1;
+                $subTotalRequired = 0;
+                $rowCount = 0;
+                foreach ($tour_pricing as $result) {
+
+                    // $result = getTourPricingDetails($tour_pricing, $pricing->id);
+                    $qty = $result['quantity'] ?? 0;
+                    $price = $result['price'] ?? 0;
+                    $actual_price = isset($result['actual_price']) ? $result['actual_price'] : $result['price'];
+                    $discount = $result['discount'] ?? 0;
+                    $total = $result['total_price'] ?? 0;
+                    $gt_total = (float) ($result['gross_total_price']
+                        ?? ($result['price_type'] == "FIXED" ? $actual_price : $actual_price * $qty));
+                    if ($qty > 0) {
+                        $rowCount++;
+                        $subtotal += $total;
+                        $subtotal2+= $gt_total;
+                        $price_text = $price ? price_format_with_currency($gt_total, $order->currency) : 'Free';
+                        $TOUR_ITEM_SUMMARY .= '
+                        <tr>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . ucwords($result['label']) . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($actual_price, $order->currency) . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . $price_text . '</td>
+                        </tr>';
+                    }
+                }
+
+                if ($rowCount > 1) {
+                   $subTotalRequired = 1;
+                }
+
+
+
+                // Extras Rows
+                foreach ($tour_extra as $extra) {
+                    // $result = getTourExtraDetails($tour_extra, $extra->id);
+                    $qty = $extra['quantity'] ?? 0;
+                    $price = $extra['price'] ?? 0;
+                    // $total = $qty * $price;
+                    $total = $extra['total_price'] ?? 0;
+                    if ($qty > 0) {
+                        $subTotalRequired = 1;
+
+                        $subtotal += $total;
+                        $subtotal2 += $total;
+                        $TOUR_ITEM_SUMMARY .= '
+                        <tr>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $qty . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . $extra['label'] . ' </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: left;padding: 5px 0px;">' . price_format_with_currency($price, $order->currency) . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align: right;padding: 5px 0px;">' . price_format_with_currency($total, $order->currency) . '</td>
+                        </tr>';
+                    }
+                }
+
+                foreach ($tour_pricing as $result) {
+                    $qty = $result['quantity'] ?? 0;
+                    $number_of_guests += $qty;
+                }
+
+                $tourDiscountAmount = !$paymentDetailsAddedToItemSummary ? $discountAmount : 0;
+                $tourPromoAmount = !$paymentDetailsAddedToItemSummary ? $promoAmount : 0;
+                $promoLabel = 'Promo Code' . ($paymentSummary['promo_code']
+                    ? ' (' . e($paymentSummary['promo_code']) . ')'
+                    : '');
+
+                foreach ([
+                    ['label' => 'Special Discount', 'amount' => $tourDiscountAmount],
+                    ['label' => $promoLabel, 'amount' => $tourPromoAmount],
+                ] as $adjustment) {
+                    if ($adjustment['amount'] > 0) {
+                        $subTotalRequired = 1;
+                        $adjustmentRows .= '
+                        <tr>
+                            <td></td><td></td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align:left; padding:5px 0; color:#f64747;">' . $adjustment['label'] . '</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:1pt solid #ddd; text-align:right; padding:5px 0; color:#f64747;">-' . price_format_with_currency($adjustment['amount'], $order->currency) . '</td>
+                        </tr>';
+                    }
+                }
+
+                if($subTotalRequired){
+                    $TOUR_ITEM_SUMMARY .= '
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
+                                    <strong>Sub Total </strong>
+                                </small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                    ' . price_format_with_currency($subtotal2, $order->currency) . '
+                            </td>
+                        </tr>' . $adjustmentRows;
+                }
+
+                $subtotal2 = max($subtotal2 - $tourDiscountAmount - $tourPromoAmount, 0);
+
+                // Taxes
+                $taxRows = '';
+
+
+                if (!empty($tour_fees)) {
+                    foreach ($tour_fees as $tax) {
+                        $taxAmount = (float) ($tax['price'] ?? 0);
+                        $subtotal += $taxAmount;
+                        $subtotal2 += $taxAmount;
+                        $taxLabel = e($tax['label'] ?? 'Tax');
+                        if (($tax['type'] ?? null) === 'PERCENT' && isset($tax['value'])) {
+                            $taxLabel .= ' (' . (float) $tax['value'] . '%)';
+                        }
+                        $taxRows .= '
+                        <tr>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                                <small style="font-size:11px; font-weight:400; text-transform: uppercase; color:#000;">' . $taxLabel . '</small>
+                            </td>
+                            <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                                ' . price_format_with_currency($taxAmount, $order->currency) . '
+                            </td>
+                        </tr>';
+                    }
+                }
+
+                // $subTotalRequired = 1;
+                // if($subTotalRequired){
+                // $TOUR_ITEM_SUMMARY .= '
+                //     <tr>
+                //         <td>&nbsp;</td>
+                //         <td>&nbsp;</td>
+                //         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                //             <small style="font-size:11px; font-weight:400; text-transform: uppercase;">
+                //                 <strong>Sub Total </strong>
+                //             </small>
+                //         </td>
+                //         <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                //                 ' . price_format_with_currency($subtotal2, $order->currency) . '
+                //         </td>
+                //     </tr>';
+                // }
+
+                // Total Row
+                $TOUR_ITEM_SUMMARY .= $taxRows . '
+
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <h3 style="color:#000; margin:0; font-size:15px"><strong>Total</strong></h3>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                            <h3 style="color:#000; margin:0; font-size:15px"><strong>' . price_format_with_currency($subtotal2, $order->currency) . '</strong></h3>
+                        </td>
+                    </tr>';
+
+                
+                
+                // $paid = $order->total_amount - $order->balance_amount;
+
+                $paid = $paidAmount;
+                if (!$paymentDetailsAddedToItemSummary && $paid > 0) {
+                    // paid amount
+                    $TOUR_ITEM_SUMMARY .= '
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>Total Paid</strong></h3>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                            <h3 style="color:green; margin:0; font-size:15px"><strong>' . price_format_with_currency($paid, $order->currency) . '</strong></h3>
+                        </td>
+                    </tr>'; 
+                }  
+                $balance_amount = $balanceAmountValue;
+                if (!$paymentDetailsAddedToItemSummary) {
+                    $balanceColor = $balance_amount > 0.01 ? 'red' : 'green';
+                    // balance amount
+                    $TOUR_ITEM_SUMMARY .= '
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: left;padding: 5px 0px;">
+                            <h3 style="color:' . $balanceColor . '; margin:0; font-size:15px"><strong>Balance</strong></h3>
+                        </td>
+                        <td style="font-family: \'Lato\', Helvetica, Arial, sans-serif; border-top:2pt solid #000; text-align: right;padding: 5px 0px;">
+                            <h3 style="color:' . $balanceColor . '; margin:0; font-size:15px"><strong>' . price_format_with_currency($balance_amount, $order->currency)  . '</strong></h3>
+                        </td>
+                    </tr>'; 
+                }  
+                $paymentDetailsAddedToItemSummary = true;
+                
+                $TOUR_ITEM_SUMMARY .=  '</tbody>
+                </table>';
+            }
             
             $pickup_address = '';
+
+
             if( $order->customer->pickup_name ) {
                 $pickup_address = $order->customer->pickup_name;
             }
             else if($order->customer->pickup_id) {
                 $pickup_address = $order->customer?->pickup?->location . ' ( '.$order->customer?->pickup?->address.' )';
             }
+
+
             // if($pickup_address) {
             //     $pickup_address = '
             //       <small style="font-size:10px; font-weight:400; text-transform: uppercase; color:#fff;">Pick up</small>
@@ -1198,15 +2757,30 @@ class OrderController extends Controller
             //         <strong>' . $pickup_address . '</strong>
             //       </h3>';
             //                 }
+            
 
-            $to_address = $tour->location->destination ?? '';
-            $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
-            $order_paid = $order->total_amount - $order->balance_amount;
+            if($order->tour && $order->sub_tour_id){
+                $to_address = $order->tour->location->destination ?? '';
+                $to_address.= $order->tour->location->address ? ' ('.$order->tour->location->address.')' : '';
+
+                $tourLocationAddress = $order->tour->location->address;
+            }else{
+                
+                $to_address = $tour->location->destination ?? '';
+                $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
+                $tourLocationAddress = $tour->location->address;
+
+            }
+            
+            $order_paid = $order->total_amount - $balance_amount;
 
             $token = encrypt($order->id);
 
             $timestamp = round(microtime(true) * 1000);
             $checkoutUrl = "https://tourbeez.com/checkout/{$timestamp}?token={$token}";
+            if ($email_template->identifier === 'payment_request') {
+                $checkoutUrl .= '&payment_request=1';
+            }
 
             $replacements = [
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
@@ -1215,11 +2789,12 @@ class OrderController extends Controller
 
 
 
-                "[[TOUR_TITLE]]"            => $tour->title ?? '',
+                "[[TOUR_TITLE]]"            => $tourTitleFormatted,
+                "[[PARENT_TOUR_TITLE]]"     => ($order->sub_tour_id) ? $order->tour->title : '',
                 "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
-                // "[[TOUR_MAP]]"              => $tour->location->address ?? '',
+                "[[TOUR_MAP_FORMATTED]]"    => $tourLocationAddress ? str_replace(',', ',<br>', $tourLocationAddress) : '',
                 "[[TOUR_MAP]]"              => $pickup_address,
-                "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
+                "[[TOUR_ADDRESS]]"          => $tourLocationAddress ?? '',
                 "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
                 "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
                 "[[TOUR_TERMS_CONDITIONS]]"  => $tour->terms_and_conditions,
@@ -1235,15 +2810,19 @@ class OrderController extends Controller
                 "[[YEAR]]"                  => date('Y'),
 
                 "[[ORDER_NUMBER]]"          => $order->order_number ?? '',
-                "[[ORDER_STATUS]]"          => $order->status,
+                "[[ORDER_STATUS]]"          => str_contains($order->status, 'Pending') ? "Pending" :  $order->status,
                 "[[ORDER_TOUR_DATE]]"       => date('l, F j, Y', strtotime($orderTour->tour_date)),
                 "[[ORDER_TOUR_TIME]]"       => $orderTour->tour_time,
-                "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
-                "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
-                "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
+                "[[ORDER_TOTAL]]"           => price_format_with_currency($grossOrderTotal, $order->currency),
+                // "[[ORDER_BALANCE]]"         => ($order->payment_status === 3) ? price_format_with_currency($order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'), $order->currency) : price_format_with_currency($order->balance_amount, $order->currency),
+                "[[ORDER_BALANCE]]"         => price_format_with_currency($balance_amount, $order->currency),
+                // "[[ORDER_BALANCE_COLOR]]"   => (abs($order->payment_status === 3? $order->balance_amount + $order->payments->where('status', 'uncaptured')->sum('amount'): $order->balance_amount) < 0.01) ? '008000' : 'f64747',
+                "[[ORDER_BALANCE_COLOR]]"   => ($balance_amount < 0.01) ? '008000' : 'f64747',
+                "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($bookingFee, $order->currency),
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
-                "[[YEAR]]"                 => date('Y'),
-                "[[ORDER_LINK]]"           => $checkoutUrl,
+                "[[YEAR]]"                  => date('Y'),
+                "[[ORDER_LINK]]"            => $checkoutUrl,
+                "[[NUMBER_OF_GUESTS]]"      => $number_of_guests,
             ];
  
             $finalMessage = strtr($template, $replacements);
@@ -1270,7 +2849,7 @@ class OrderController extends Controller
                         ),
                         'title' => $tour->title,
                         'description' => $finalsubject,
-                        'location' => $tour->location->address,
+                        'location' => $tourLocationAddress,
                     ],
                 ]);
             } else {
@@ -1330,6 +2909,20 @@ class OrderController extends Controller
             $logo = uploaded_asset($system_logo);
 
 
+            if($order->tour && $order->sub_tour_id){
+                $to_address = $order->tour->location->destination ?? '';
+                $to_address.= $order->tour->location->address ? ' ('.$order->tour->location->address.')' : '';
+
+                $tourLocationAddress = $order->tour->location->address;
+            }else{
+                
+                $to_address = $tour->location->destination ?? '';
+                $to_address.= $tour->location->address ? ' ('.$tour->location->address.')' : '';
+                $tourLocationAddress = $tour->location->address;
+
+            }
+
+
             $replacements = [
                 "[[CUSTOMER_NAME]]"         => $customer->name ?? '',
                 "[[CUSTOMER_EMAIL]]"        => $customer->email ?? '',
@@ -1339,8 +2932,8 @@ class OrderController extends Controller
 
                 "[[TOUR_TITLE]]"            => $tour->title ?? '',
                 "[[TOUR_SKU]]"              => $tour->unique_code ?? '',
-                "[[TOUR_MAP]]"              => $tour->location->address ?? '',
-                "[[TOUR_ADDRESS]]"          => $tour->location->address ?? '',
+                "[[TOUR_MAP]]"              => $tourLocationAddress ?? '',
+                "[[TOUR_ADDRESS]]"          => $tourLocationAddress ?? '',
                 // "[[TOUR_PAYMENT_HISTORY]]"  => $TOUR_PAYMENT_HISTORY,
                 // "[[TOUR_ITEM_SUMMARY]]"     => $TOUR_ITEM_SUMMARY,
                 "[[TOUR_TERMS_CONDITIONS]]"  => $tour->terms_and_conditions,
@@ -1361,6 +2954,7 @@ class OrderController extends Controller
                 "[[ORDER_TOUR_TIME]]"       => date('H:i A', strtotime($order->created_at)),
                 "[[ORDER_TOTAL]]"           => price_format_with_currency($order->total_amount, $order->currency) ?? '',
                 "[[ORDER_BALANCE]]"         => price_format_with_currency($order->balance_amount, $order->currency) ?? '',
+                "[[ORDER_BALANCE_COLOR]]"   => $order->balance_amount > 0.01 ? 'f64747' : '008000',
                 "[[ORDER_BOOKING_FEE]]"     => price_format_with_currency($order->booking_fee, $order->currency) ?? '',
                 "[[ORDER_CREATED_DATE]]"    => date('M d, Y', strtotime($order->created_at)) ?? '',
             ];
@@ -1431,27 +3025,52 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail($id);
         $order->order_status = $request->status;
+
+        $order_actions = [
+            [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => Auth::user()->name . " Updated the status to $request->status in this order",
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ]
+        ];
+        OrderActions::insert($order_actions);
         
-        if($request->status == 'Confirmed' ){
+        if($request->status == 'Confirmed234' ){
+
+            $order->payment_status == 1;
+            $order->save();
 
             // dd($order->order_status, $request->status, $order->payment_status);
-            if($order->payment_status == 3){
+            if($order->payment_status == 3) {
 
-                // $confirmPayment = self::confirmPayment($order->id, $order->adv_deposite, $order->booked_amount);
+                $confirmPayment = self::confirmPayment($order->id, $order->adv_deposite, $order->booked_amount);
 
-                // $confirmPayment = $confirmPayment->getData();
+                $confirmPayment = $confirmPayment->getData();
                 
-                // if($confirmPayment->status === 'succeeded'){
+                if($confirmPayment->status === 'succeeded'){
                     
                     $order->payment_status == 1;
                     $order->save();
+                    $order_actions = [
+                        [
+                            'order_id'         => $order->id,
+                            'performed_by'     => Auth::id(),
+                            'notes'            => "Payment $order->booked_amount is captured",
+                            'created_at'       => now(),
+                            'updated_at'       => now()
+                        ]
+                    ];
+                    OrderActions::insert($order_actions);
+
                     return response()->json(['success' => true, 'message' => 'Order confirmed']);
 
-                // } else{
-                //     return response()->json(['success' => false, 'message' => $confirmPayment->message]);
-                // }
-            } elseif($order->payment_status == 5) {
-                
+                } else{
+                    return response()->json(['success' => false, 'message' => $confirmPayment->message]);
+                }
+            } 
+            elseif($order->payment_status == 5) {
                 return response()->json(['success' => true, 'message' => 'Please enter payment details before confirming the order']);
             }
             elseif($order->payment_status == 7) {
@@ -1467,8 +3086,7 @@ class OrderController extends Controller
             
             
         }
-
-        else if ($request->status == 'Cancelled') {
+        else if ($request->status == 'Cancelled234324') {
 
             // Only cancel if payment not captured yet
             if ($order->payment_status == 3) { // 3 = authorized only
@@ -1498,6 +3116,17 @@ class OrderController extends Controller
                     $order->booked_amount = 0;
                     $order->save();
 
+                    $order_actions = [
+                        [
+                            'order_id'         => $order->id,
+                            'performed_by'     => Auth::id(),
+                            'notes'            => "Uncaptured Payment is Cancelled",
+                            'created_at'       => now(),
+                            'updated_at'       => now()
+                        ]
+                    ];
+                    OrderActions::insert($order_actions);
+
                     return response()->json([
                         'success' => true,
                         'message' => 'Payment authorization cancelled successfully.'
@@ -1517,7 +3146,6 @@ class OrderController extends Controller
                 'message' => 'Nothing to cancel. Payment already processed or no authorization present.'
             ]);
         }
-        
 
         $order->save();
         return response()->json(['success' => true, 'message' => 'Order status updated']);
@@ -1525,156 +3153,199 @@ class OrderController extends Controller
 
     public function manifest(Request $request)
     {
-        $date = $request->input('date') ?? Carbon::today()->toDateString();
 
-        // Preload pricing labels indexed by ID
-        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+        $date = $request->input('date') ?? \Carbon\Carbon::today()->toDateString();
 
-        // Create 48 half-hour slots
-        $timeSlots = collect();
-        $start = Carbon::createFromTime(0, 0);
-        for ($i = 0; $i < 48; $i++) {
-            $slotStart = $start->copy()->addMinutes($i * 30);
-            $slotEnd = $slotStart->copy()->addMinutes(30);
-            $timeSlots->push([
-                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
-                'start' => $slotStart->format('H:i:s'),
-                'end' => $slotEnd->format('H:i:s'),
-            ]);
-        }
+        $pricingLabels = \App\Models\TourPricing::pluck('label', 'id')->toArray();
 
-        $sessions = collect();
+        $orders = \App\Models\Order::with(['customer', 'orderTours.tour', 'payments'])
+            ->where('order_status', 5)
+            ->get();
 
-        foreach ($timeSlots as $slot) {
-            $orders = Order::with(['customer', 'orderTours'])
-                ->whereDate('created_at', $date)
-                ->whereTime('created_at', '>=', $slot['start'])
-                ->whereTime('created_at', '<', $slot['end'])
-                ->get()
-                ->map(function ($order) use ($pricingLabels) {
-                    $guests = collect();
-                    $extras = collect();
+        $sessions = [];
 
-                    foreach ($order->orderTours as $ot) {
-                        // Parse guest pricing
-                        $pricingItems = json_decode($ot->tour_pricing, true);
-                        if (is_array($pricingItems)) {
-                            foreach ($pricingItems as $p) {
-                                $qty = $p['quantity'] ?? 0;
-                                $pricingId = $p['tour_pricing_id'] ?? null;
-                                $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+        foreach ($orders as $order) {
 
-                                if ($qty && $label) {
-                                    $guests->push("{$qty} {$label}");
-                                }
-                            }
-                        }
+            foreach ($order->orderTours as $ot) {
 
-                        // Parse extras
-                        $extraItems = json_decode($ot->tour_extra, true);
-                        if (is_array($extraItems)) {
-                            foreach ($extraItems as $e) {
-                                $qty = $e['quantity'] ?? 0;
-                                $label = $e['label'] ?? null;
-                                if ($qty && $label) {
-                                    $extras->push("{$qty} {$label}");
-                                }
-                            }
+                // ✅ filter by date
+                if ($ot->tour_date != $date) {
+                    continue;
+                }
+
+                $slotTime = trim($ot->tour_time);
+                $tourTitle = $ot->tour?->title ?? 'N/A';
+
+                if (!$slotTime) {
+                    continue;
+                }
+
+                // ✅ KEY = time + tour (IMPORTANT)
+                $key = $slotTime . '||' . $tourTitle;
+
+                if (!isset($sessions[$key])) {
+                    $sessions[$key] = [
+                        'slot_time' => $slotTime,
+                        'tour_title' => $tourTitle,
+                        'orders' => collect(),
+                        'total_guests' => 0,
+                    ];
+                }
+
+                $guests = collect();
+                $extras = collect();
+                $guestCount = 0;
+
+                // ✅ guests from THIS orderTour
+                $pricingItems = json_decode($ot->tour_pricing, true);
+
+                if (is_array($pricingItems)) {
+                    foreach ($pricingItems as $p) {
+                        $qty = (int) ($p['quantity'] ?? 0);
+                        $pricingId = $p['tour_pricing_id'] ?? null;
+                        $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                        if ($qty && $label) {
+                            $guests->push("{$qty} {$label}");
+                            $guestCount += $qty;
                         }
                     }
+                }
 
-                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
-                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
-                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+                // ✅ extras
+                $extraItems = json_decode($ot->tour_extra, true);
 
-                    return $order;
-                });
+                if (is_array($extraItems)) {
+                    foreach ($extraItems as $e) {
+                        $qty = $e['quantity'] ?? 0;
+                        $label = $e['label'] ?? null;
 
-            if ($orders->isNotEmpty()) {
-                $sessions->push([
-                    'slot_time' => $slot['label'],
-                    'orders' => $orders,
-                ]);
+                        if ($qty && $label) {
+                            $extras->push("{$qty} {$label}");
+                        }
+                    }
+                }
+
+                // attach summaries (per order)
+                $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+
+                // ✅ avoid duplicate order
+                if (!$sessions[$key]['orders']->contains('id', $order->id)) {
+                    $sessions[$key]['orders']->push($order);
+                }
+
+                // ✅ correct guest count per session
+                $sessions[$key]['total_guests'] += $guestCount;
             }
         }
 
-        return view('admin.order.manifest', compact('sessions', 'date'));
+        // ✅ SORT by time
+        uasort($sessions, function ($a, $b) {
+            return strtotime($a['slot_time']) <=> strtotime($b['slot_time']);
+        });
+
+        return view('admin.order.manifest', [
+            'sessions' => collect($sessions)->values(), // important for blade
+            'date' => $date
+        ]);
     }
 
     public function downloadManifest(Request $request)
     {
-        $date = $request->input('date') ?? Carbon::today()->toDateString();
+        $date = $request->input('date') ?? \Carbon\Carbon::today()->toDateString();
 
-        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
-        $timeSlots = collect();
-        $start = Carbon::createFromTime(0, 0);
-        for ($i = 0; $i < 48; $i++) {
-            $slotStart = $start->copy()->addMinutes($i * 30);
-            $slotEnd = $slotStart->copy()->addMinutes(30);
-            $timeSlots->push([
-                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
-                'start' => $slotStart->format('H:i:s'),
-                'end' => $slotEnd->format('H:i:s'),
-            ]);
-        }
+        $pricingLabels = \App\Models\TourPricing::pluck('label', 'id')->toArray();
 
-        $sessions = collect();
+        $orders = \App\Models\Order::with(['customer', 'orderTours.tour'])
+            ->where('order_status', 5)
+            ->get();
 
-        foreach ($timeSlots as $slot) {
-            $orders = Order::with(['customer', 'orderTours'])
-                ->whereDate('created_at', $date)
-                ->whereTime('created_at', '>=', $slot['start'])
-                ->whereTime('created_at', '<', $slot['end'])
-                ->get()
-                ->map(function ($order) use ($pricingLabels) {
-                    $guests = collect();
-                    $extras = collect();
-                    $guestCount = 0;
+        $sessions = [];
 
-                    foreach ($order->orderTours as $ot) {
-                        $pricingItems = json_decode($ot->tour_pricing, true);
-                        if (is_array($pricingItems)) {
-                            foreach ($pricingItems as $p) {
-                                $qty = $p['quantity'] ?? 0;
-                                $pricingId = $p['tour_pricing_id'] ?? null;
-                                $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+        foreach ($orders as $order) {
 
-                                if ($qty && $label) {
-                                    $guests->push("{$qty} {$label}");
-                                    $guestCount += $qty;
-                                }
-                            }
-                        }
+            foreach ($order->orderTours as $ot) {
 
-                        $extraItems = json_decode($ot->tour_extra, true);
-                        if (is_array($extraItems)) {
-                            foreach ($extraItems as $e) {
-                                $qty = $e['quantity'] ?? 0;
-                                $label = $e['label'] ?? null;
-                                if ($qty && $label) {
-                                    $extras->push("{$qty} {$label}");
-                                }
-                            }
+                // ✅ filter by date
+                if ($ot->tour_date != $date) {
+                    continue;
+                }
+
+                $slotTime = trim($ot->tour_time);
+                $tourTitle = $ot->tour?->title ?? 'N/A';
+
+                if (!$slotTime) {
+                    continue;
+                }
+
+                // ✅ KEY = time + tour (IMPORTANT FIX)
+                $key = $slotTime . '||' . $tourTitle;
+
+                if (!isset($sessions[$key])) {
+                    $sessions[$key] = [
+                        'slot_time' => $slotTime,
+                        'tour_title' => $tourTitle,
+                        'orders' => collect(),
+                    ];
+                }
+
+                $guests = collect();
+                $extras = collect();
+                $guestCount = 0;
+
+                // Guests
+                $pricingItems = json_decode($ot->tour_pricing, true);
+
+                if (is_array($pricingItems)) {
+                    foreach ($pricingItems as $p) {
+                        $qty = (int) ($p['quantity'] ?? 0);
+                        $pricingId = $p['tour_pricing_id'] ?? null;
+                        $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                        if ($qty && $label) {
+                            $guests->push("{$qty} {$label}");
+                            $guestCount += $qty;
                         }
                     }
+                }
 
-                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
-                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
-                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
-                    $order->guest_count = $guestCount;
+                // Extras
+                $extraItems = json_decode($ot->tour_extra, true);
 
-                    return $order;
-                });
+                if (is_array($extraItems)) {
+                    foreach ($extraItems as $e) {
+                        $qty = $e['quantity'] ?? 0;
+                        $label = $e['label'] ?? null;
 
-            if ($orders->isNotEmpty()) {
-                $sessions->push([
-                    'slot_time' => $slot['label'],
-                    'orders' => $orders,
-                ]);
+                        if ($qty && $label) {
+                            $extras->push("{$qty} {$label}");
+                        }
+                    }
+                }
+
+                // attach summaries
+                $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+                $order->guest_count = $guestCount;
+
+                // avoid duplicate order
+                if (!$sessions[$key]['orders']->contains('id', $order->id)) {
+                    $sessions[$key]['orders']->push($order);
+                }
             }
         }
 
-        return Excel::download(new ManifestExport($sessions, $date), "Manifest_{$date}.xlsx");
+        // ✅ SORT by time
+        uasort($sessions, function ($a, $b) {
+            return strtotime($a['slot_time']) <=> strtotime($b['slot_time']);
+        });
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\ManifestExport(collect($sessions)->values(), $date),
+            "Manifest_{$date}.xlsx"
+        );
     }
 
     protected function sendOrderStatusEmail($order)
@@ -1753,6 +3424,10 @@ class OrderController extends Controller
             if(str_contains( $order->payment_method_id, 'pm_')){
                 $paymentMethodId = $order->payment_method_id;
 
+            }elseif(str_contains( $order->payment_intent_id, 'pm_')){
+
+                $paymentMethodId   = $order->payment_intent_id;
+
             } else {
 
                 if (!$customerId || !$intentId) {
@@ -1760,11 +3435,14 @@ class OrderController extends Controller
                 }
 
                 // Retrieve previous PaymentIntent
+
                 $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+
+               
                 $paymentMethodId = $paymentIntent->payment_method;
             }          
 
-
+            
             if (!$paymentMethodId) {
                 throw new \Exception("No payment method found on previous PaymentIntent.");
             }
@@ -1793,11 +3471,20 @@ class OrderController extends Controller
 
             $customer = User::find($order->user_id);
             if (!$customer) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Customer not found.'
-                ], 404);    
+
+                $customer = $order->customer;
+                if(!$customer){
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Customer not found.'
+                    ], 404);
+                }
+                    
             }
+
+            // $chargeAmount = 6883.1740398;
+            $chargeAmount = round($chargeAmount, 2);
+            $stripeAmount = (int) round($chargeAmount * 100);
 
             $metaData = [
                 'bookedDate'    => $order->created_at,
@@ -1817,7 +3504,7 @@ class OrderController extends Controller
             // Create a new PaymentIntent for off-session charge
             $newIntent = \Stripe\PaymentIntent::create([
                 'customer'             => $customerId,
-                'amount'               => intval($chargeAmount * 100),
+                'amount'               => $stripeAmount,
                 'currency'             => $order->currency ?? 'eur',
                 'payment_method'       => $paymentMethodId,
                 // 'payment_method_types' => ['card', 'link'], // card and link allowed
@@ -1836,7 +3523,14 @@ class OrderController extends Controller
 
 
             $order->booked_amount += $chargeAmount;
-            $order->balance_amount = max($order->total_amount - $order->booked_amount, 0);
+
+            $balanceAmount = max($order->total_amount - $order->booked_amount, 0);
+
+            if($order->payment_status == 3 && $balanceAmount != 0){
+                $balanceAmount = $balanceAmount - $order->payments->where('status', 'uncaptured')->first()?->amount;
+            
+            }
+            $order->balance_amount = round($balanceAmount, 2);
             $order->save();
 
             // Save payment record
@@ -1845,6 +3539,9 @@ class OrderController extends Controller
                 'payment_intent_id' => $newIntent->id,
                 'transaction_id'    => $newIntent->charges->data[0]->id ?? $newIntent->id,
                 'payment_method'    => 'card',
+                'payment_type'      => 'CREDITCARD',
+                'collection_type'   => 'Inside',
+                'collection_date'   => now(),
                 'card_brand'        => $brand,
                 'card_last4'        => $last4,
                 'amount'            => $chargeAmount,
@@ -1853,6 +3550,15 @@ class OrderController extends Controller
                 'action'            => 'manual_charge',
                 'response_payload'  => json_encode($newIntent),
             ]);
+
+            $order_actions = [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => Auth::user()->name ." charged {$order->currency} {$chargeAmount} on credit card XXXXXXXXXXXX{$last4}. Reference number is {$newIntent->id}",
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
+            OrderActions::insert($order_actions);
 
             DB::commit();
 
@@ -1905,6 +3611,10 @@ class OrderController extends Controller
         $remainingRefundable = $payment->amount - $alreadyRefunded;
 
         if ($remainingRefundable <= 0) {
+             $payment->update([
+                'status' => 'refunded',
+            ]);
+
             return response()->json(['success' => false, 'message' => 'This payment has already been fully refunded.']);
         }
 
@@ -1936,10 +3646,32 @@ class OrderController extends Controller
                 'refund_reason' => $request->reason,
             ]);
 
-            // Update order amounts
-            $order->booked_amount -= $request->amount;
-            $order->balance_amount = max($order->total_amount - $order->booked_amount, 0);
-            $order->save();
+            // Save payment record
+            OrderPayment::create([
+                'order_id'          => $order->id,
+                'payment_intent_id' => $refund->id,
+                'transaction_id'    => $refund->id,
+                'payment_method'    => 'card',
+                'payment_type'      => 'REFUND',
+                'collection_type'   => 'Inside',
+                'collection_date'   => now(),
+                'amount'            => $request->amount,
+                'currency'          => $order->currency,
+                'status'            => 'refunded',
+                'action'            => 'manual_charge',
+                'response_payload'  => json_encode($refund),
+            ]);
+
+            $order_actions = [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => "Refund of payment (STRIPE: {$refund->id}) has been processed by ".Auth::user()->name.". Refund amount is : {$order->currency} {$request->amount} ",
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
+            OrderActions::insert($order_actions);
+
+            $this->reconcilePaymentLedger($order);
 
             return response()->json([
                 'success' => true,
@@ -1949,11 +3681,12 @@ class OrderController extends Controller
             ]);
 
         } catch (\Stripe\Exception\ApiErrorException $e) {
+
             return response()->json(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
-    public function tourManifest(Request $request)
+    public function tourManifestmain(Request $request)
     {
         $date = $request->input('date') ?? Carbon::today()->toDateString();
 
@@ -1977,9 +3710,13 @@ class OrderController extends Controller
 
         foreach ($timeSlots as $slot) {
             $orders = Order::with(['customer', 'orderTours.tour']) // ensure tour is loaded
-                ->whereDate('created_at', $date)
-                ->whereTime('created_at', '>=', $slot['start'])
-                ->whereTime('created_at', '<', $slot['end'])
+                ->where('order_status', 5)
+
+                ->whereHas('orderTours', function ($q) use ($date, $slot) {
+                    $q->whereDate('tour_date', $date)
+                      ->whereTime('tour_date', '>=', $slot['start'])
+                      ->whereTime('tour_date', '<', $slot['end']);
+                })
                 ->get();
 
             foreach ($orders as $order) {
@@ -2030,99 +3767,358 @@ class OrderController extends Controller
         return view('admin.order.tour-manifest', compact('sessions', 'date'));
     }
 
-    public function downloadTourManifest(Request $request)
+    public function tourManifest(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        // Preload pricing labels indexed by ID
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+
+        $sessions = [];
+
+        $orders = Order::with(['customer', 'orderTours.tour'])
+            ->where('order_status', 5)
+            ->whereHas('orderTours', function ($q) use ($date) {
+                $q->whereDate('tour_date', $date);
+            })
+            ->get();
+
+        foreach ($orders as $order) {
+
+            foreach ($order->orderTours as $ot) {
+
+                if ($ot->tour_date != $date) {
+                    continue;
+                }
+
+                $tourTitle = $ot->tour->title ?? 'Unknown Tour';
+                $slotTime  = $ot->tour_time ?? 'Unknown Time';
+
+                $key = "{$slotTime} || {$tourTitle}";
+
+                // Parse guest pricing
+                $guests = collect();
+                $extras = collect();
+
+                $pricingItems = json_decode($ot->tour_pricing, true);
+
+
+                $guestCount = 0;
+                if (is_array($pricingItems)) {
+                    foreach ($pricingItems as $p) {
+
+                        $qty = $p['quantity'] ?? 0;
+                        $pricingId = $p['tour_pricing_id'] ?? null;
+
+                        $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+                        $guestCount += (int) ($p['quantity'] ?? 0);
+                        if ($qty && $label) {
+                            $guests->push("{$qty} {$label}");
+                        }
+                    }
+                }
+
+                // Parse extras
+                $extraItems = json_decode($ot->tour_extra, true);
+
+                if (is_array($extraItems)) {
+                    foreach ($extraItems as $e) {
+
+                        $qty = $e['quantity'] ?? 0;
+                        $label = $e['label'] ?? null;
+
+                        if ($qty && $label) {
+                            $extras->push("{$qty} {$label}");
+                        }
+                    }
+                }
+
+                $order->guest_summary  = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                $order->paid_amount    = $order->total_amount - ($order->balance_amount ?? 0);
+
+                // Initialize session
+                if (!isset($sessions[$key])) {
+                    $sessions[$key] = [
+                        'slot_time' => $slotTime,
+                        'tour_title' => $tourTitle,
+                        'orders' => [],
+                        'total_guests' => 0
+                    ];
+                }
+
+                // Add order
+                $sessions[$key]['orders'][] = $order;
+
+                // Add guest count
+                $sessions[$key]['total_guests'] += $guestCount;
+            }
+        }
+
+        // Sort sessions by time
+        uasort($sessions, function ($a, $b) {
+
+            try {
+                $timeA = \Carbon\Carbon::createFromFormat('g:i A', trim($a['slot_time']));
+                $timeB = \Carbon\Carbon::createFromFormat('g:i A', trim($b['slot_time']));
+            } catch (\Exception $e) {
+                return 0; // fallback, avoid crash
+            }
+
+            return $timeA->timestamp <=> $timeB->timestamp;
+        });
+
+        // dd($sessions);
+
+        return view('admin.order.tour-manifest', compact('sessions', 'date'));
+    }
+
+    public function downloadTourManifestMain(Request $request)
     {
         $date = $request->input('date') ?? Carbon::today()->toDateString();
 
         // Preload pricing labels
         $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
 
-        // Load all orders for the date with their tours
-        $orders = Order::with(['customer', 'orderTours.tour'])
-            ->whereDate('created_at', $date)
-            ->get();
-
-        // Build as a plain array (NOT a Collection)
         $sessions = [];
 
+        $orders = Order::with(['customer', 'orderTours.tour'])
+            ->where('order_status', 5)
+            ->whereHas('orderTours', function ($q) use ($date) {
+                $q->whereDate('tour_date', $date);
+            })
+            ->get();
+
         foreach ($orders as $order) {
-            // ---- enrich order once (guest/extras/paid) ----
-            $guests = collect();
-            $extras = collect();
-            $guestCount = 0;
 
             foreach ($order->orderTours as $ot) {
-                // pricing
+
+                if ($ot->tour_date != $date) {
+                    continue;
+                }
+
+                $tourTitle = optional($ot->tour)->title ?? 'Unknown Tour';
+                $slotTime  = $ot->tour_time ?? 'Unknown Time';
+
+                $key = "{$slotTime} || {$tourTitle}";
+
+                // Parse guest pricing
+                $guests = collect();
+                $extras = collect();
+
                 $pricingItems = json_decode($ot->tour_pricing, true);
+
                 if (is_array($pricingItems)) {
                     foreach ($pricingItems as $p) {
+
                         $qty = (int) ($p['quantity'] ?? 0);
                         $pricingId = $p['tour_pricing_id'] ?? null;
+
                         $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
                         if ($qty && $label) {
                             $guests->push("{$qty} {$label}");
-                            $guestCount += $qty;
                         }
                     }
                 }
-                // extras
+
+                // Parse extras
                 $extraItems = json_decode($ot->tour_extra, true);
+
                 if (is_array($extraItems)) {
                     foreach ($extraItems as $e) {
+
                         $qty = (int) ($e['quantity'] ?? 0);
                         $label = $e['label'] ?? null;
+
                         if ($qty && $label) {
                             $extras->push("{$qty} {$label}");
                         }
                     }
                 }
-            }
 
-            $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
-            $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
-            $order->paid_amount    = $order->total_amount - ($order->balance_amount ?? 0);
-            $order->guest_count    = $guestCount;
+                $order->guest_summary  = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                $order->paid_amount    = $order->total_amount - ($order->balance_amount ?? 0);
 
-            // ---- group per tour + half-hour slot ----
-            foreach ($order->orderTours as $ot) {
-                $tourTitle = optional($ot->tour)->title ?? 'Unknown Tour';
-
-                // slot from created_at (change to your scheduled time if you have one)
-                $createdAt = $order->created_at instanceof \Carbon\Carbon
-                    ? $order->created_at
-                    : \Carbon\Carbon::parse($order->created_at);
-
-                $slotStart = $createdAt->copy()->second(0);
-                $slotStart->minute($slotStart->minute >= 30 ? 30 : 0);
-                $slotEnd   = $slotStart->copy()->addMinutes(30);
-
-                $slotLabel = $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A');
-                $key       = "{$slotLabel} {$tourTitle}";
-
+                // Initialize session
                 if (!isset($sessions[$key])) {
                     $sessions[$key] = [
-                        'slot_time' => $key,   // "Tour A 08:00 - 08:30"
-                        'orders'    => [],     // we’ll index by order id to avoid duplicates
+                        'title' => $tourTitle,
+                        'slot_time' => $slotTime,
+                        'orders' => []
                     ];
                 }
 
-                // Avoid duplicate same order under same tour+slot
-
-                $sessions[$key]['slot_time'] = $slotLabel;
-                $sessions[$key]['title'] = $tourTitle;
-
+                // Prevent duplicate order
                 $sessions[$key]['orders'][$order->id] = $order;
             }
         }
-        // dd($sessions);
-        // Reindex inner orders numerically for the view/export
-        foreach ($sessions as &$bucket) {
-            $bucket['orders'] = array_values($bucket['orders']);
-        }
-        unset($bucket);
 
-        // If your ManifestExport expects a collection, wrap with collect($sessions)
-        return Excel::download(new ManifestExport($sessions, $date, 'tour'), "Manifest_{$date}.xlsx");
+        // Reindex orders
+        foreach ($sessions as &$session) {
+            $session['orders'] = array_values($session['orders']);
+        }
+        unset($session);
+
+        // Sort by time
+        uasort($sessions, function ($a, $b) {
+
+            try {
+                $timeA = \Carbon\Carbon::createFromFormat('g:i A', trim($a['slot_time']));
+                $timeB = \Carbon\Carbon::createFromFormat('g:i A', trim($b['slot_time']));
+            } catch (\Exception $e) {
+                return 0; // fallback, avoid crash
+            }
+
+            return $timeA->timestamp <=> $timeB->timestamp;
+        });
+
+        return Excel::download(
+            new ManifestExport($sessions, $date, 'tour'),
+            "Manifest_{$date}.xlsx"
+        );
+    }
+
+    public function downloadTourManifest(Request $request)
+    {
+        $date = $request->input('date') ?? \Carbon\Carbon::today()->toDateString();
+
+        $rows = [];
+
+        $orders = Order::with(['customer', 'orderTours.tour.categories'])
+            ->where('order_status', 5)
+            ->get();
+
+        foreach ($orders as $order) {
+
+            $customer = $order->customer;
+
+            if (!$customer) continue;
+
+            foreach ($order->orderTours as $ot) {
+
+                if ($ot->tour_date != $date) continue;
+
+                $serviceType = optional($ot->tour->category)->name ?? 'Tour';
+
+                $serviceType = $ot->tour && $ot->tour->categories->isNotEmpty()
+                                ? $ot->tour->categories->pluck('name')->implode(', ')
+                                : 'Tour';
+                
+                $pickupDate = \Carbon\Carbon::parse($ot->tour_date)->format('m/d/Y');
+                $pickupTime = $ot->tour_time;
+
+                $breakdown = $this->getPassengerBreakdown($ot);
+
+                $passengerCount = $breakdown['total'];
+                $infantCount    = $breakdown['infants'];
+                $childCount     = $breakdown['children'];
+
+                $rows[] = [
+                    // passenger
+                    $customer->first_name,
+                    $customer->last_name,
+                    $customer->phone,
+                    $customer->email,
+
+                    // booked by
+                    $customer->first_name,
+                    $customer->last_name,
+
+                    // pickup
+                    $pickupDate,
+                    $pickupTime,
+                    $customer->pickup_name ?? '',
+                    '', '', '', '',
+
+                    optional($ot->tour)->title,
+
+                    // dropoff
+                    $pickupDate,
+                    '5:30 PM',
+                    '',
+                    '',
+                    $customer->pickup_name ?? '',
+                    '', '', '', '', '',
+
+                    // service
+                    $serviceType,
+                    '',
+                    'Confirmed',
+
+                    // payment
+                    "TourBeez",
+
+                    // airline (empty)
+                    '', '', '', '',
+                    '', '', '', '',
+
+                    // counts
+                    $passengerCount - $infantCount - $childCount,
+                    0, // luggage
+                    $infantCount,
+                    $childCount,
+                    0, // booster
+
+                    // notes
+                    '',
+                    $customer->instructions ?? '',
+                    '',
+                    '',
+                    '',
+
+                    // billing
+                    '',
+                    '',
+                    '',
+                    '',
+
+                    // reference
+                    $order->order_number,
+
+                    // amount
+                    $order->total_amount
+                ];
+            }
+        }
+        // dd($rows);
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\ManifestExport($rows, $date, 'tour'),
+            "Manifest_{$date}.xlsx"
+        );
+    }
+
+    private function getPassengerBreakdown($ot)
+    {
+        $adults = 0;
+        $children = 0;
+        $infants = 0;
+
+        $pricingItems = json_decode($ot->tour_pricing, true);
+
+        if (is_array($pricingItems)) {
+            foreach ($pricingItems as $p) {
+
+                $label = strtolower($p['label'] ?? '');
+                $qty   = (int) ($p['quantity'] ?? 0);
+
+                if (str_contains($label, 'adult')) {
+                    $adults += $qty;
+                } elseif (str_contains($label, 'child')) {
+                    $children += $qty;
+                } elseif (str_contains($label, 'infant')) {
+                    $infants += $qty;
+                }
+            }
+        }
+
+        return [
+            'adults' => $adults,
+            'children' => $children,
+            'infants' => $infants,
+            'total' => $adults + $children + $infants
+        ];
     }
 
     public function getPaymentDetails($orderId)
@@ -2158,7 +4154,7 @@ class OrderController extends Controller
 
     public function addStripePayment(Request $request, Order $order)
     {
-        // dd(2332, $request, $order, $order->payments());
+        
         try {
             \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
@@ -2228,143 +4224,82 @@ class OrderController extends Controller
         }
     }
 
-    public function confirmPayment343543543($orderId, $action_name = 'full', $amount)
-    {
-        DB::beginTransaction();
+    public function captureInitialPayment(Request $request, $orderId)
+     {
 
-        try {
-            $order = Order::findOrFail($orderId);
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+        $order = Order::findOrFail($orderId);
 
-            $capturedIntent = null;
-            $action_name = $order->adv_deposite ?: $action_name;
-            $customerId = $order->stripe_customer_id;
-            $intentId = $order->payment_intent_id;
-            $paymentMethodId = null;
+        $uncaptureAmount = $request->amount;
 
-            // Retrieve PaymentMethod from existing intents
-            if ($intentId && Str::startsWith($intentId, 'seti_')) {
-                $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
-                $paymentMethodId = $setupIntent->payment_method;
-            } elseif ($intentId && Str::startsWith($intentId, 'pi_')) {
-                $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
-                $paymentMethodId = $paymentIntent->payment_method;
-            }
-
-            if (!$paymentMethodId || !$customerId) {
-                throw new \Exception("No valid payment method or customer found for this order.");
-            }
-
-            // Ensure PaymentMethod is attached to customer
-            $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentMethodId);
-            if ($paymentMethod->customer !== $customerId) {
-                $paymentMethod->attach(['customer' => $customerId]);
-            }
-
-            // Get card details
-            $cardDetails = $paymentMethod->card ?? null;
-            $cardLast4 = $cardDetails->last4 ?? null;
-            $cardBrand = $cardDetails->brand ?? null;
-
-            // Determine amount to charge
-            $chargeAmount = $action_name === 'deposit'
-                ? (float) $amount
-                : (float) $order->balance_amount;
-
-            if ($chargeAmount <= 0) {
-                throw new \Exception("Invalid charge amount.");
-            }
-
-            // ✅ Create new PaymentIntent with only `card` as method type
-            // "link" caused your previous error — we’ll use just 'card' for safe capture
-            $paymentIntent = \Stripe\PaymentIntent::create([
-                'customer'             => $customerId,
-                'amount'               => (int) ($chargeAmount * 100),
-                'currency'             => $order->currency ?? 'usd',
-                'payment_method'      => $paymentMethodId,
-                'payment_method_types'=> ['card', 'link'],
-                'setup_future_usage' => 'off_session',
-                
-                'confirm'              => true,
-                'description'          => 'Charge for Order #' . $order->order_number,
-                'metadata'             => [
-                    'order_id' => $order->id,
-                    'action'   => $action_name,
-                ],
-            ]);
-
-            $capturedIntent = $paymentIntent;
-
-            // Update order status and amounts
-            // $order->booked_amount += $chargeAmount;
-            // $order->balance_amount = max(0, $order->total_amount - $order->booked_amount);
-
-            if ($order->balance_amount <= 0) {
-                $order->payment_status = 1; // Fully paid
-            }
-
-            $order->payment_intent_id = $paymentIntent->id;
-            $order->transaction_id = $paymentIntent->charges->data[0]->id ?? $paymentIntent->id;
+        $confirmPayment = self::confirmPayment($order->id, $order->adv_deposite, $uncaptureAmount);
+        $confirmPayment = $confirmPayment->getData();
+          
+        if($confirmPayment->status === 'succeeded'){
+            
             $order->payment_status = 1;
             $order->save();
+            $order_actions = [
+                [
+                    'order_id'         => $order->id,
+                    'performed_by'     => Auth::id(),
+                    'notes'            => "Capture of payment has been processed by ".Auth::user()->name.". Capture amount is : {$order->currency} {$uncaptureAmount} ",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ]
+            ];
+            OrderActions::insert($order_actions);
 
-            // ✅ Save payment record
-            OrderPayment::create([
-                'order_id'          => $order->id,
-                'payment_intent_id' => $paymentIntent->id,
-                'transaction_id'    => $paymentIntent->charges->data[0]->id ?? $paymentIntent->id,
-                'payment_method'    => 'card',
-                'card_brand'        => $cardBrand,
-                'card_last4'        => $cardLast4,
-                'amount'            => $chargeAmount,
-                'currency'          => $order->currency,
-                'status'            => 'succeeded',
-                'action'            => $action_name,
-                'response_payload'  => json_encode($paymentIntent),
-            ]);
+            return response()->json(['success' => true, 'message' => 'Payment is captured']);
 
-            DB::commit();
-
-            return response()->json([
-                'success' => ($capturedIntent->status === 'succeeded'),
-                'status' => $capturedIntent->status,
-                'message' => $order->balance_amount > 0
-                    ? 'Partial payment captured successfully.'
-                    : 'Full payment captured successfully.',
-                'data' => [
-                    'payment_intent' => $capturedIntent,
-                    'card' => [
-                        'brand' => $cardBrand,
-                        'last4' => $cardLast4,
-                    ],
-                ],
-            ]);
-
-        } catch (\Stripe\Exception\CardException $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'status' => 'fail',
-                'message' => $e->getError()->message ?? 'Card was declined.',
-            ], 400);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Payment capture failed', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'status' => 'fail',
-                'message' => $e->getMessage(),
-            ], 500);
+        } else if($confirmPayment->status === 'already_capture'){
+            $order->payment_status = 1;
+            $order->save();
+            
         }
+        return response()->json(['success' => false, 'message' => $confirmPayment->message]);
     }
 
-    public function confirmPayment($orderId, $action_name = 'full', $amount)
+    public function cancelInitialPayment($orderId)
+    {
+        $order = Order::findOrFail($orderId);
+
+        $cancel = self::cancelUncapturedAmount($order->id);
+
+        $response = $cancel->getData();
+
+        if ($response->success) {
+
+            // Update to payment_status = 0 (payment cancelled)
+            $order->payment_status = 7;
+            $order->booked_amount = 0;
+            $order->save();
+
+            $order_actions = [
+                [
+                    'order_id'         => $order->id,
+                    'performed_by'     => Auth::id(),
+                    'notes'            => "Uncaptured Payment is Cancelled",
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ]
+            ];
+            OrderActions::insert($order_actions);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment authorization cancelled successfully.'
+            ]);
+
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => $response->message
+            ]);
+        }
+
+    } 
+
+    public function confirmPayment($orderId, $action_name, $amount)
     {
         DB::beginTransaction();
 
@@ -2375,100 +4310,104 @@ class OrderController extends Controller
 
             $intentId = $order->payment_intent_id;
             $customerId = $order->stripe_customer_id;
-            $paymentMethodId = null;
 
             if (!$intentId) {
                 throw new \Exception("No payment intent found for this order.");
             }
 
-            // Retrieve existing payment intent
-            $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+            // Retrieve payment intent
+            $paymentIntent = \Stripe\PaymentIntent::retrieve([
+                'id' => $intentId
+            ]);
 
             // ----------------------------------------------------
             // CASE 1: Already captured
             // ----------------------------------------------------
             if ($paymentIntent->status === 'succeeded') {
+
+                $orderPayment = OrderPayment::where('payment_intent_id', $paymentIntent->id)->first();
+                $orderPayment->status = 'succeeded';
+                $orderPayment->save();
+                $this->reconcilePaymentLedger($order);
+                DB::commit();
+
+
+
                 return response()->json([
+                    'status'  => 'already_capture',
                     'success' => false,
-                    'message' => "This payment has already been captured."
+                    'message' => 'This payment has already been captured.'
                 ], 400);
             }
 
             // ----------------------------------------------------
-            // CASE 2: Intent exists but not captured (requires_capture)
+            // CAPTURE PAYMENT
             // ----------------------------------------------------
-            if ($paymentIntent->status === 'requires_capture') {
-
-                // stripe expects integer cents
-                $captureAmount = (int) ($amount * 100);
-
-                // call capture on the retrieved instance (NOT statically)
-                $captured = $paymentIntent->capture([
-                    'amount_to_capture' => $captureAmount
-                ]);
-
-                // Save record
-                OrderPayment::create([
-                    'order_id' => $order->id,
-                    'payment_intent_id' => $captured->id,
-                    'transaction_id' => $captured->charges->data[0]->id ?? null,
-                    'amount' => $amount,
-                    'currency' => $captured->currency ?? $order->currency,
-                    'status' => 'succeeded',
-                    'action' => $action_name,
-                    'response_payload' => json_encode($captured)
-                ]);
-
-                // Update order values
-                // $order->booked_amount += $amount;
-                // $order->balance_amount = max(0, $order->total_amount - $order->booked_amount);
-                $order->payment_status = $order->balance_amount <= 0 ? 1 : 0;
-                $order->save();
-
-                DB::commit();
-
-                return response()->json([
-                    'success' => true,
-                    'status' => 'succeeded',
-                    'message' => "Payment captured successfully.",
-                    'data' => $captured
-                ]);
-            }
-
-            // ----------------------------------------------------
-            // CASE 3: Intent is setup-intent (seti_xxx) or invalid → create new PI
-            // ----------------------------------------------------
-            if (Str::startsWith($intentId, 'seti_')) {
-                $setupIntent = \Stripe\SetupIntent::retrieve($intentId);
-                $paymentMethodId = $setupIntent->payment_method;
-            } else {
-                $paymentMethodId = $paymentIntent->payment_method;
-            }
-
-            if (!$paymentMethodId) {
-                throw new \Exception("No payment method found for this customer.");
-            }
-
-            // Create NEW payment intent because no valid uncaptured PI exists
-            $newIntent = \Stripe\PaymentIntent::create([
-                'amount'               => (int) ($amount * 100),
-                'currency'             => $order->currency,
-                'customer'             => $customerId,
-                'payment_method'       => $paymentMethodId,
-                'off_session'          => true,
-                'confirm'              => true,
-                'description'          => "Charge for Order #{$order->id}",
+            $captureAmount = (int) round($amount * 100);
+            
+            $capturedIntent = $paymentIntent->capture([
+                'amount_to_capture' => $captureAmount,
             ]);
 
-            $order->payment_intent_id = $newIntent->id;
-            $order->save();
+            // ----------------------------------------------------
+            // CARD DETAILS (FIXED & RELIABLE)
+            // ----------------------------------------------------
+            $transactionId = $capturedIntent->latest_charge ?? null;
+            $cardBrand = null;
+            $cardLast4 = null;
+
+            if ($transactionId) {
+                $charge = \Stripe\Charge::retrieve([
+                    'id' => $transactionId,
+                    'expand' => ['payment_method_details.card']
+                ]);
+
+                if (
+                    isset($charge->payment_method_details) &&
+                    isset($charge->payment_method_details->card)
+                ) {
+                    $cardBrand = $charge->payment_method_details->card->brand ?? null;
+                    $cardLast4 = $charge->payment_method_details->card->last4 ?? null;
+                }
+            }
+
+            
+
+            OrderPayment::updateOrCreate(
+            // ✅ Unique condition
+            [
+                'payment_intent_id' => $capturedIntent->id,
+            ],
+            // ✅ Data to update or insert
+            [
+                'order_id'         => $order->id,
+                'transaction_id'   => $transactionId,
+                'payment_method'   => 'card',                
+                'collection_type'  => 'Inside',
+                'collection_date'  => now()->toDateString(),
+                'card_brand'       => $cardBrand,
+                'card_last4'       => $cardLast4,
+                'amount'           => $amount,
+                'currency'         => $capturedIntent->currency ?? $order->currency,
+                'status'           => 'succeeded',
+                'action'           => $action_name,
+                'response_payload' => json_encode($capturedIntent),
+                'updated_at'       => now(),
+            ]
+        );
+
+            // ----------------------------------------------------
+            // UPDATE ORDER STATUS
+            // ----------------------------------------------------
+            $this->reconcilePaymentLedger($order);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => "Payment captured.",
-                'data'    => $newIntent
+                'status'  => 'succeeded',
+                'message' => 'Payment captured successfully.',
+                'data'    => $capturedIntent,
             ]);
 
         } catch (\Exception $e) {
@@ -2476,6 +4415,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => false,
+                'status'  => 'failed',
                 'message' => $e->getMessage()
             ], 400);
         }
@@ -2544,6 +4484,461 @@ class OrderController extends Controller
         }
     }
 
+    public function cancelUncapturedAmount($orderId)
+    {
+        DB::beginTransaction();
+
+        try {
+            $order = Order::findOrFail($orderId);
+
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            $intentId = $order->payment_intent_id;
+
+            if (!$intentId) {
+                throw new \Exception("No payment intent found for this order.");
+            }
+
+            // Retrieve payment intent
+            $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
+
+            // Only cancel if still authorized (requires_capture)
+            if ($paymentIntent->status !== 'requires_capture') {
+                throw new \Exception("This payment intent cannot be canceled because it is already captured or canceled.");
+            }
+
+            // Correct method → you MUST call cancel() on the object, not statically
+            $canceledIntent = $paymentIntent->cancel();
+
+            // Update order
+            $order->payment_status = 0; // mark payment cancelled
+
+            $order->balance_amount = $order->total_amount;
+            $order->save();
+
+
+
+
+            $orderPayment = OrderPayment::where('payment_intent_id', $paymentIntent->id)->first();
+            $orderPayment->status = 'capture_canceled';
+            $orderPayment->save();
+
+
+            // Log the cancellation
+            // OrderPayment::create([
+            //     'order_id'          => $order->id,
+            //     'payment_intent_id' => $intentId,
+            //     'transaction_id'    => $intentId,
+            //     'payment_method'    => 'card',
+            //     'status'            => 'canceled',
+            //     'amount'            => 0,
+            //     'currency'          => $order->currency,
+            //     'action'            => 'cancel_uncaptured',
+            //     'response_payload'  => json_encode($canceledIntent),
+            // ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Uncaptured amount cancelled successfully.',
+                'status'  => $canceledIntent->status,
+                'data'    => $canceledIntent,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function refundMultiple(Request $request, Order $order)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.5'
+        ]);
+
+        $refundTarget = $request->amount;
+        $remaining = $refundTarget;
+
+
+        if ($refundTarget > $order->booked_amount) {
+            return response()->json([
+                'success' => false,
+                'message' => "Refund amount cannot exceed the booked amount ({$order->booked_amount})."
+            ], 400);
+        }
+
+        // Prevent negative booked amount updates
+        if (($order->booked_amount - $refundTarget) < 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Refund exceeds available refundable amount."
+            ], 400);
+        }
+
+
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        $payments = $order->payments()
+            ->where('payment_type', '!=', 'REFUND')
+            ->whereIn('status', ['succeeded', 'partial_refunded'])
+            ->orderBy('id')
+            ->get();
+
+        foreach ($payments as $payment) {
+
+            if ($remaining <= 0) break;
+
+            $alreadyRefunded = $payment->refund_amount ?? 0;
+            $remainingRefundable = $payment->amount - $alreadyRefunded;
+
+            if ($remainingRefundable <= 0) continue;
+
+            $refundNow = min($remaining, $remainingRefundable);
+
+            $refund = \Stripe\Refund::create([
+                'payment_intent' => $payment->payment_intent_id,
+                'amount' => (float)($refundNow * 100)
+            ]);
+            
+            $payment->update([
+                'refund_amount' => $alreadyRefunded + $refundNow,
+                'refunded_at'   => now(),
+                'refund_id'     => $refund->id,
+                'status'        => ($alreadyRefunded + $refundNow) >= $payment->amount ? 'refunded' : 'partial_refunded'
+            ]);
+
+            $remaining -= $refundNow;
+        }
+
+        OrderPayment::create([
+            'order_id'          => $order->id,
+            'payment_intent_id' => $refund->id,
+            'transaction_id'    => $refund->id,
+            'payment_method'    => 'card',
+            'payment_type'      => 'REFUND',
+            'collection_type'   => 'Inside',
+            'collection_date'   => now(),
+            'amount'            => $refundTarget,
+            'currency'          => $order->currency,
+            'status'            => 'refunded',
+            'action'            => 'manual_charge',
+            'response_payload'  => json_encode($refund),
+        ]);
+
+        $order_actions = [
+            'order_id'         => $order->id,
+            'performed_by'     => Auth::id(),
+            'notes'            => "Refund of payment (STRIPE: {$refund->id}) has been processed by ".Auth::user()->name.". Refund amount is : {$order->currency} {$refundTarget}",
+            'created_at'       => now(),
+            'updated_at'       => now()
+        ];
+        OrderActions::insert($order_actions);
+        
+        $this->reconcilePaymentLedger($order);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Refunded $refundTarget successfully."
+        ]);
+    }
+
+    private function reconcilePaymentLedger(Order $order): void
+    {
+        $summary = (new OrderPaymentSummaryService())->summarize(
+            $order->payments()->get()
+        );
+        $grossAmount = round((float) $order->orderTours()->sum('total_amount'), 2);
+        $balance = round(max($grossAmount - $summary['total_credits'], 0), 2);
+
+        $order->update([
+            'booked_amount' => $summary['paid_amount'],
+            'balance_amount' => $balance,
+            'payment_status' => $summary['authorized_amount'] > 0
+                ? 3
+                : ($balance <= 0.01 ? 1 : 0),
+        ]);
+    }
+
+    public function removeCard(Order $order)
+    {
+        try {
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+
+            $paymentIntentId = $order->payment_intent_id;
+
+            if (!$paymentIntentId) {
+                return response()->json(['message' => 'No card found'], 400);
+            }
+
+            // CASE 1: Stored as PaymentMethod directly (pm_xxx)
+            if (str_starts_with($paymentIntentId, 'pm_')) {
+                $paymentMethod = \Stripe\PaymentMethod::retrieve($paymentIntentId);
+                $paymentMethod->detach();
+            }
+
+            // CASE 2: Stored as PaymentIntent (pi_xxx)
+            if (str_starts_with($paymentIntentId, 'pi_')) {
+                $intent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
+
+                if ($intent->payment_method) {
+                    $paymentMethod = \Stripe\PaymentMethod::retrieve($intent->payment_method);
+                    $paymentMethod->detach();
+                }
+            }
+
+            // Clean DB references
+            $order->update([
+                'payment_intent_id' => null,
+                'payment_method_id' => null
+            ]);
+
+            // if ($order->latestPayment) {
+            //     $order->latestPayment->update([
+            //         'card_last4' => null,
+            //         'card_brand' => null,
+            //     ]);
+            // }
+            $order_actions = [
+                    'order_id'         => $order->id,
+                    'performed_by'     => Auth::id(),
+                    'notes'            => "Credit card removed successfully has been processed by " . Auth::user()->name,
+                    'created_at'       => now(),
+                    'updated_at'       => now()
+                ];
+            OrderActions::insert($order_actions);
+
+            return response()->json([
+                'message' => 'Credit card removed successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function addCard(Request $request, Order $order)
+    {
+        $request->validate([
+            'payment_method'      => 'required|string',
+            'charge_ccnow'        => 'nullable|boolean',
+            'charge_ccnow_amount' => 'nullable|numeric|min:0.01'
+        ]);
+
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+        $shouldCharge = $request->boolean('charge_ccnow') 
+                        && $request->filled('charge_ccnow_amount');
+
+        // Ensure Stripe customer exists
+        if (
+            empty($order->stripe_customer_id) ||
+            !str_starts_with($order->stripe_customer_id, 'cus_')
+        ) {
+            $customer = \Stripe\Customer::create([
+                'name'  => $order->customer?->name,
+                'email' => $order->customer?->email,
+            ]);
+
+            $order->update([
+                'stripe_customer_id' => $customer->id
+            ]);
+        }
+
+        // Retrieve PaymentMethod
+        $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_method);
+
+        // Attach card to customer
+        $paymentMethod->attach([
+            'customer' => $order->stripe_customer_id
+        ]);
+
+        // Set as default card
+        \Stripe\Customer::update($order->stripe_customer_id, [
+            'invoice_settings' => [
+                'default_payment_method' => $paymentMethod->id
+            ]
+        ]);
+
+        // Store minimal info for UI (your original logic)
+        $order->update([
+            'payment_intent_id' => $paymentMethod->id
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | CHARGE LOGIC (NEW PART)
+        |--------------------------------------------------------------------------
+        */
+
+        if ($shouldCharge) {
+
+            $chargeAmount = (float) $request->charge_ccnow_amount;
+
+            if ($chargeAmount > $order->balance_amount) {
+                return response()->json([
+                    'message' => 'Charge exceeds remaining balance.'
+                ], 400);
+            }
+
+            $intent = \Stripe\PaymentIntent::create([
+                'customer'       => $order->stripe_customer_id,
+                'amount'         => intval($chargeAmount * 100),
+                'currency'       => $order->currency ?? 'eur',
+                'payment_method' => $paymentMethod->id,
+                
+                'off_session'    => true,
+                'confirm'        => true,
+                'description'    => "#{$order->order_number}",
+            ]);
+
+            // Update order financials
+            $order->booked_amount += $chargeAmount;
+            $order->balance_amount = max(
+                $order->total_amount - $order->booked_amount,
+                0
+            );
+
+            $order->save();
+
+            $order->payments()->create([
+                'payment_type'   => 'CREDITCARD',
+                'transaction_id' => $intent->id,
+                'payment_intent_id' => $intent->id,
+                'card_last4'     => $paymentMethod->card->last4,
+                'card_brand'     => $paymentMethod->card->brand,
+                'amount'         => $chargeAmount,
+                'currency'       => $order->currency,
+                'collection_type'=> 'Inside',
+                'status'         =>  'succeeded'
+            ]);
+
+            $note = "Credit card added and charged {$chargeAmount} {$order->currency} by " . Auth::user()->name;
+
+        } else {
+
+            // Only card added (your original behaviour)
+            $order->payments()->create([
+                'payment_type'   => 'CREDITCARD',
+                'transaction_id' => $paymentMethod->id,
+                'card_last4'     => $paymentMethod->card->last4,
+                'card_brand'     => $paymentMethod->card->brand,
+                'amount'         => 0,
+                'currency'       => $order->currency,
+                'collection_type'=> 'Inside'
+            ]);
+
+            $note = "Credit card added successfully has been processed by " . Auth::user()->name;
+        }
+
+        OrderActions::insert([
+            'order_id'     => $order->id,
+            'performed_by' => Auth::id(),
+            'notes'        => $note,
+            'created_at'   => now(),
+            'updated_at'   => now()
+        ]);
+
+        return response()->json([
+            'message' => $shouldCharge 
+                ? 'Card added and charged successfully.'
+                : 'Card added successfully to this customer'
+        ]);
+    }
+
+    public function importOrders(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+
+            $import = new OrdersImport();
+            // dd( $request->file('file'));
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+            // $summary = $import->getSummary();
+
+            // dd(323432);
+
+
+            return back()->with('import_summary', []);
+
+        } catch (\Throwable $e) {
+
+            \Log::error('Multi sheet import crashed', [
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Import failed unexpectedly.');
+        }
+    }
+
+    public function sampleExcel()
+    {
+        $data = [
+            [
+                'Date',
+                'Check-in',
+                'Order Number',
+                'Customer Full Name',
+                'Customer Phone',
+                'Product name',
+                'Quantities',
+                'Quantities Label',
+                'Quantities Price',
+                'Extras',
+                'Extras Label',
+                'Extras Price',
+                'Order Balance',
+                'Order Total Amount',
+                'Order Total Paid',
+                'Pick-up Time',
+                'Pick-up Location',
+                'Order Status',
+            ],
+            // Optional sample row (remove if you want header only)
+            [
+                '2025-02-01',
+                '2025-02-10',
+                'ORD12345',
+                'John Doe',
+                '9876543210',
+                'Desert Safari',
+                '2',
+                'Adults',
+                '100',
+                '3',
+                'Boat Cruise Ride - Adult',
+                '50',
+                '50',
+                '500',
+                '450',
+                '10:00 AM',
+                'Dubai Mall',
+                'Confirmed',
+            ]
+        ];
+
+        return Excel::download(
+            new class($data) implements FromArray {
+                public function __construct(private array $data) {}
+                public function array(): array { 
+                    return $this->data; 
+                }
+            },
+            'order_import_sample.xlsx'
+        );
+    }
+
     public function cancelUncapturedAmount234($orderId)
     {
         DB::beginTransaction();
@@ -2606,139 +5001,351 @@ class OrderController extends Controller
         }
     }
 
-
-    public function cancelUncapturedAmount($orderId)
+    public function addCard2342(Request $request, Order $order)
     {
-        DB::beginTransaction();
 
-        try {
-            $order = Order::findOrFail($orderId);
+        $request->validate([
+            'payment_method' => 'required|string'
+        ]);
 
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
-            $intentId = $order->payment_intent_id;
-
-            if (!$intentId) {
-                throw new \Exception("No payment intent found for this order.");
-            }
-
-            // Retrieve payment intent
-            $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
-
-            // Only cancel if still authorized (requires_capture)
-            if ($paymentIntent->status !== 'requires_capture') {
-                throw new \Exception("This payment intent cannot be canceled because it is already captured or canceled.");
-            }
-
-            // Correct method → you MUST call cancel() on the object, not statically
-            $canceledIntent = $paymentIntent->cancel();
-
-            // Update order
-            $order->payment_status = 0; // mark payment cancelled
-
-            $order->balance_amount = $order->total_amount;
-            $order->save();
-
-            // Log the cancellation
-            OrderPayment::create([
-                'order_id'          => $order->id,
-                'payment_intent_id' => $intentId,
-                'transaction_id'    => $intentId,
-                'payment_method'    => 'card',
-                'status'            => 'canceled',
-                'amount'            => 0,
-                'currency'          => $order->currency,
-                'action'            => 'cancel_uncaptured',
-                'response_payload'  => json_encode($canceledIntent),
+        // Ensure Stripe customer exists
+        if (
+            empty($order->stripe_customer_id) ||
+            !str_starts_with($order->stripe_customer_id, 'cus_')
+        ) {
+            $customer = \Stripe\Customer::create([
+                'name'  => $order->customer?->name,
+                'email' => $order->customer?->email,
             ]);
 
-            DB::commit();
+            $order->update([
+                'stripe_customer_id' => $customer->id
+            ]);
+        }
+
+        // Retrieve PaymentMethod
+        $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_method);
+
+        // Attach card to SAME customer (FIXED)
+        $paymentMethod->attach([
+            'customer' => $order->stripe_customer_id
+        ]);
+
+        // Set as default card
+        \Stripe\Customer::update($order->stripe_customer_id, [
+            'invoice_settings' => [
+                'default_payment_method' => $paymentMethod->id
+            ]
+        ]);
+
+        // Store minimal info for UI
+        $order->update([
+            'payment_intent_id' => $paymentMethod->id
+        ]);
+
+        $order->payments()->create([
+            'payment_type'   => 'CREDITCARD',
+            'transaction_id' => $paymentMethod->id,
+            'card_last4'     => $paymentMethod->card->last4,
+            'card_brand'     => $paymentMethod->card->brand,
+            'amount'         => 0,
+            'currency'       => $order->currency,
+            'collection_type'=> 'Inside'
+        ]);
+        $order_actions = [
+                'order_id'         => $order->id,
+                'performed_by'     => Auth::id(),
+                'notes'            => "Credit card added successfully has been processed by " . Auth::user()->name,
+                'created_at'       => now(),
+                'updated_at'       => now()
+            ];
+        OrderActions::insert($order_actions);
+
+        return response()->json([
+            'message' => 'Card added successfully to this customer'
+        ]);
+    }
+
+    public function manifest23423(Request $request)
+    {
+
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        // Preload pricing labels indexed by ID
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+
+        // Create 48 half-hour slots
+        $timeSlots = collect();
+        $start = Carbon::createFromTime(0, 0);
+        for ($i = 0; $i < 48; $i++) {
+            $slotStart = $start->copy()->addMinutes($i * 30);
+            $slotEnd = $slotStart->copy()->addMinutes(30);
+            $timeSlots->push([
+                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                'start' => $slotStart->format('H:i:s'),
+                'end' => $slotEnd->format('H:i:s'),
+            ]);
+        }
+
+        $sessions = collect();
+
+        foreach ($timeSlots as $slot) {
+            $orders = Order::with(['customer', 'orderTours'])
+                ->whereDate('created_at', $date)
+                ->whereTime('created_at', '>=', $slot['start'])
+                ->whereTime('created_at', '<', $slot['end'])
+                ->get()
+                ->map(function ($order) use ($pricingLabels) {
+                    $guests = collect();
+                    $extras = collect();
+
+                    foreach ($order->orderTours as $ot) {
+                        // Parse guest pricing
+                        $pricingItems = json_decode($ot->tour_pricing, true);
+                        if (is_array($pricingItems)) {
+                            foreach ($pricingItems as $p) {
+                                $qty = $p['quantity'] ?? 0;
+                                $pricingId = $p['tour_pricing_id'] ?? null;
+                                $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                                if ($qty && $label) {
+                                    $guests->push("{$qty} {$label}");
+                                }
+                            }
+                        }
+
+                        // Parse extras
+                        $extraItems = json_decode($ot->tour_extra, true);
+                        if (is_array($extraItems)) {
+                            foreach ($extraItems as $e) {
+                                $qty = $e['quantity'] ?? 0;
+                                $label = $e['label'] ?? null;
+                                if ($qty && $label) {
+                                    $extras->push("{$qty} {$label}");
+                                }
+                            }
+                        }
+                    }
+
+                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+
+                    return $order;
+                });
+
+            if ($orders->isNotEmpty()) {
+                $sessions->push([
+                    'slot_time' => $slot['label'],
+                    'orders' => $orders,
+                ]);
+            }
+        }
+
+        return view('admin.order.manifest', compact('sessions', 'date'));
+    }
+    
+    public function downloadManifest323423(Request $request)
+    {
+        $date = $request->input('date') ?? Carbon::today()->toDateString();
+
+        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
+        $timeSlots = collect();
+        $start = Carbon::createFromTime(0, 0);
+        for ($i = 0; $i < 48; $i++) {
+            $slotStart = $start->copy()->addMinutes($i * 30);
+            $slotEnd = $slotStart->copy()->addMinutes(30);
+            $timeSlots->push([
+                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                'start' => $slotStart->format('H:i:s'),
+                'end' => $slotEnd->format('H:i:s'),
+            ]);
+        }
+
+        $sessions = collect();
+
+        foreach ($timeSlots as $slot) {
+            $orders = Order::with(['customer', 'orderTours'])
+                ->where('order_status', 5)
+                ->whereDate('created_at', $date)
+                ->whereTime('created_at', '>=', $slot['start'])
+                ->whereTime('created_at', '<', $slot['end'])
+                ->get()
+                ->map(function ($order) use ($pricingLabels) {
+                    $guests = collect();
+                    $extras = collect();
+                    $guestCount = 0;
+
+                    foreach ($order->orderTours as $ot) {
+                        $pricingItems = json_decode($ot->tour_pricing, true);
+                        if (is_array($pricingItems)) {
+                            foreach ($pricingItems as $p) {
+                                $qty = $p['quantity'] ?? 0;
+                                $pricingId = $p['tour_pricing_id'] ?? null;
+                                $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
+
+                                if ($qty && $label) {
+                                    $guests->push("{$qty} {$label}");
+                                    $guestCount += $qty;
+                                }
+                            }
+                        }
+
+                        $extraItems = json_decode($ot->tour_extra, true);
+                        if (is_array($extraItems)) {
+                            foreach ($extraItems as $e) {
+                                $qty = $e['quantity'] ?? 0;
+                                $label = $e['label'] ?? null;
+                                if ($qty && $label) {
+                                    $extras->push("{$qty} {$label}");
+                                }
+                            }
+                        }
+                    }
+
+                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
+                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
+                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
+                    $order->guest_count = $guestCount;
+
+                    return $order;
+                });
+
+            if ($orders->isNotEmpty()) {
+                $sessions->push([
+                    'slot_time' => $slot['label'],
+                    'orders' => $orders,
+                ]);
+            }
+        }
+
+        return Excel::download(new ManifestExport($sessions, $date), "Manifest_{$date}.xlsx");
+    }
+    public function removeOrderTour(Request $request)
+    {
+        $orderId = $request->order_id;
+        $tourId  = $request->order_tour_id;
+
+        // Validate input
+        if (!$orderId || !$tourId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid request data.'
+            ], 422);
+        }
+
+        $order = Order::find($orderId);
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.'
+            ], 404);
+        }
+
+        // Lock rows to prevent race condition
+        $orderTours = OrderTour::where('order_id', $orderId)
+            ->lockForUpdate()
+            ->get();
+
+        if ($orderTours->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tours found for this order.'
+            ], 404);
+        }
+
+        // 🚨 Prevent deleting last tour
+        if ($orderTours->count() <= 1) {
+            return response()->json([
+                'success' => true,
+                'message' => 'At least one tour is required in the order.'
+            ], 200);
+        }
+
+        $orderTour = $orderTours->firstWhere('id', $tourId);
+
+        if (!$orderTour) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order tour not found.'
+            ], 404);
+        }
+
+        // Use transaction for safety
+        \DB::beginTransaction();
+
+        try {
+            // Deduct amount
+            $order->total_amount -= $orderTour->total_amount;
+            $order->balance_amount = max(
+                $order->total_amount - ($order->booked_amount ?? 0),
+                0
+            );
+
+            // Delete
+            $orderTour->delete();
+            $order->save();
+
+            // Log
+            OrderActions::create([
+                'order_id'     => $order->id,
+                'performed_by' => Auth::id(),
+                'notes'        => Auth::user()->name . " removed a tour from order #" . $order->order_number,
+            ]);
+
+            \DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Uncaptured amount cancelled successfully.',
-                'status'  => $canceledIntent->status,
-                'data'    => $canceledIntent,
-            ]);
+                'message' => 'Tour removed from order successfully.'
+            ], 200);
 
         } catch (\Exception $e) {
-            DB::rollBack();
+
+            \DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => 'Something went wrong. Please try again.'
             ], 500);
         }
     }
 
-
-    public function refundMultiple(Request $request, Order $order)
+    private function calculateTotals(
+        float $totalOrderAmount,
+        float $totalPaymentAmount,
+        array $paymentTypes,
+        array $amounts
+    ): array
     {
-        $request->validate([
-            'amount' => 'required|numeric|min:0.5'
-        ]);
-
-        $refundTarget = $request->amount;
-        $remaining = $refundTarget;
-
-
-        if ($refundTarget > $order->booked_amount) {
-            return response()->json([
-                'success' => false,
-                'message' => "Refund amount cannot exceed the booked amount ({$order->booked_amount})."
-            ], 400);
-        }
-
-        // Prevent negative booked amount updates
-        if (($order->booked_amount - $refundTarget) < 0) {
-            return response()->json([
-                'success' => false,
-                'message' => "Refund exceeds available refundable amount."
-            ], 400);
-        }
-
-
-        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-
-        $payments = $order->payments()->orderBy('id')->get();
-
-        foreach ($payments as $payment) {
-
-            if ($remaining <= 0) break;
-
-            $alreadyRefunded = $payment->refund_amount ?? 0;
-            $remainingRefundable = $payment->amount - $alreadyRefunded;
-
-            if ($remainingRefundable <= 0) continue;
-
-            $refundNow = min($remaining, $remainingRefundable);
-
-            $refund = \Stripe\Refund::create([
-                'payment_intent' => $payment->payment_intent_id,
-                'amount' => (float)($refundNow * 100)
-            ]);
-            
-            $payment->update([
-                'refund_amount' => $alreadyRefunded + $refundNow,
-                'refunded_at' => now(),
-                'refund_id' => $refund->id,
-                'status' => ($alreadyRefunded + $refundNow) >= $payment->amount ?
-                            'refunded' : 'partial_refunded'
-            ]);
-
-            $remaining -= $refundNow;
+        $excludeAmount = 0;
+        
+        foreach ($paymentTypes as $index => $type) {
+            if ($type === 'EXCLUDEDPAYMENT') {
+                
+                $excludeAmount += (float)($amounts[$index] ?? 0);
+            }
         }
         
-        // Update order totals
-        $order->booked_amount -= $refundTarget;
-        $order->balance_amount = max($order->total_amount - $order->booked_amount, 0);
-        $order->save();
+        if ($excludeAmount > 0) {
 
-        return response()->json([
-            'success' => true,
-            'message' => "Refunded $refundTarget successfully."
-        ]);
+
+            return [
+                'total'   => $excludeAmount,
+                'paid'    => $excludeAmount,
+                'balance' => 0,
+                'exclude' => true,
+            ];
+        }
+
+        return [
+            'total'   => $totalOrderAmount,
+            'paid'    => $totalPaymentAmount,
+            'balance' => max($totalOrderAmount - $totalPaymentAmount, 0),
+            'exclude' => false,
+        ];
     }
-
-    
-
 }
