@@ -14,8 +14,7 @@ class VoucherController extends Controller
     // Show the index page
     public function index()
     {
-        // Fetch latest vouchers, 10 per page
-        $vouchers = Voucher::latest()->paginate(10);
+        $vouchers = Voucher::latest()->get();
 
         // If you need agents for the search dropdown
         $agents = []; // or whatever your agent model is

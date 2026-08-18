@@ -329,7 +329,7 @@ class OrderController extends Controller
                             ->orderBy('last_name', 'asc')
                             ->get();
 
-        return view('admin.order.internal-order', compact('tours', 'customers'));
+        return view('admin.order.create', compact('tours', 'customers'));
     }
 
     /**

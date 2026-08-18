@@ -4,6 +4,11 @@
     <style>
         .alink{color: #27bcf1; }
         .alink:hover{text-decoration: underline;}
+        .admin-table-search{margin:0 0 18px;padding:20px;border:1px solid #e5e7eb;border-radius:8px;background:linear-gradient(180deg,#f8fafc 0%,#fff 100%)}
+        .admin-table-search h5{margin:0 0 3px;color:#172033;font-size:17px;font-weight:700}.admin-table-search p{margin:0 0 14px;color:#6b7280;font-size:13px}.admin-table-search label{display:block;margin:0 0 6px;color:#374151;font-size:12px;font-weight:600}
+        .admin-table-search-wrap{position:relative}.admin-table-search-wrap>i{position:absolute;top:50%;left:13px;color:#9ca3af;transform:translateY(-50%)}.admin-table-search-wrap .form-control{height:40px;padding-left:37px;border-color:#d7dce3;border-radius:7px;font-size:13px}
+        .admin-table-search-submit{min-width:120px;height:40px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #4f46e5;border-radius:7px;background:#4f46e5;color:#fff;font-size:13px;font-weight:600}
+        .admin-table-action{width:34px;height:34px;display:inline-flex!important;align-items:center;justify-content:center;padding:0!important;vertical-align:middle}.admin-table-actions form{vertical-align:middle}
     </style>
     @endsection
 
@@ -24,64 +29,50 @@
             </div>
         </div>
     </div>
-    <div class="p-3 border-bottom">
-        <form method="GET" action="{{ route('admin.category.index') }}">
-            <div class="row">
-
-                <div class="col-md-3">
-                    <input type="text"
-                           name="search"
-                           value="{{ request('search') }}"
-                           class="form-control"
-                           placeholder="Search category name...">
-                </div>
-
-                <div class="col-md-3">
-                    <select name="has_tours" class="form-control">
-                        <option value="">-- Filter By Tours --</option>
-                        <option value="1" {{ request('has_tours') == '1' ? 'selected' : '' }}>
-                            Has Tours
-                        </option>
-                        <option value="0" {{ request('has_tours') == '0' ? 'selected' : '' }}>
-                            No Tours
-                        </option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                <select name="per_page" class="form-control">
-                    @foreach (['All',10, 25, 50, 100] as $number)
-                        <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                            {{ $number }} per page
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary">
-                        Filter
-                    </button>
-
-                    <a href="{{ route('admin.category.index') }}"
-                       class="btn btn-secondary">
-                        Reset
-                    </a>
-                </div>
-
-            </div>
-        </form>
-    </div>
     <div class="card-primary bg-white border rounded-lg-custom category-main-body">
         <div class="card-body p-0">
+            <div class="p-3 pb-0">
+                <form method="GET" action="{{ route('admin.category.index') }}" class="admin-table-search">
+                    <h5><i class="fas fa-search mr-2 text-primary"></i>Find categories</h5>
+                    <p>Search categories, filter them by attached tours, and choose rows per page.</p>
+                    <div class="row">
+                        <div class="col-lg-6 mb-3 mb-lg-0">
+                            <label for="categorySearch">Category search</label>
+                            <div class="admin-table-search-wrap">
+                                <i class="fas fa-search"></i>
+                                <input type="search" id="categorySearch" name="search" value="{{ request('search') }}" class="form-control" placeholder="Category name" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="col-lg-3 mb-3 mb-lg-0">
+                            <label for="categoryTours">Find by tours</label>
+                            <select id="categoryTours" name="has_tours" class="form-control" style="height:40px">
+                                <option value="">All categories</option>
+                                <option value="1" {{ request('has_tours') === '1' ? 'selected' : '' }}>Has Tours</option>
+                                <option value="0" {{ request('has_tours') === '0' ? 'selected' : '' }}>No Tours</option>
+                            </select>
+                        </div>
+                        <div class="col-lg-3">
+                            <label for="categoryPerPage">Per page</label>
+                            <select id="categoryPerPage" name="per_page" class="form-control" style="height:40px">
+                                @foreach ([10, 20, 25, 50, 100] as $number)
+                                    <option value="{{ $number }}" {{ (int) request('per_page', 20) === $number ? 'selected' : '' }}>{{ $number }} per page</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-right mt-3">
+                        <a href="{{ route('admin.category.index') }}" class="btn btn-secondary mr-2">Reset</a>
+                        <button type="submit" class="admin-table-search-submit"><i class="fas fa-search"></i> Apply filters</button>
+                    </div>
+                </form>
+            </div>
             <div class="table-viewport">
                 <table class="table table-striped" id="categoryTable">
                     <thead>
                         <tr>
                             <th>Name</th>
                             <th>Tours</th>
-                            <th>Action</th>
-                            <th></th>
-                            <th></th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -118,27 +109,23 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td width="60">
+                                <td class="text-center text-nowrap admin-table-actions">
                                     @can('edit_category')
                                     <a href="{{ route('admin.category.edit', encrypt($cat->id)) }}"
-                                        class="btn btn-sm btn-edit"> <i class="far fa-edit"></i> </a>
+                                        class="btn btn-sm btn-edit admin-table-action"> <i class="far fa-edit"></i> </a>
                                     @endcan
-                                </td>
-                                <td width="60">
                                     <button 
-                                        class="btn btn-sm btn-warning clone-btn"
+                                        class="btn btn-sm btn-warning clone-btn admin-table-action"
                                         data-id="{{ encrypt($cat->id) }}">
                                         <i class="fas fa-copy"></i>
                                     </button>
-                                </td>
-                                <td width="60">
                                     @can('destroy_category')
                                     <form action="{{ route('admin.category.destroy', encrypt($cat->id)) }}" 
                                           method="POST" 
                                           class="delete-form d-inline">
                                         @method('DELETE')
                                         @csrf
-                                        <button type="button" class="btn btn-sm btn-danger delete-btn">
+                                        <button type="button" class="btn btn-sm btn-danger delete-btn admin-table-action">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </form>
@@ -151,7 +138,7 @@
                 <form id="cloneForm" method="POST" style="display:none;">
                     @csrf
                 </form>
-                <div class="mt-3 p-3">
+                <div class="p-3">
                     {{ $data->links() }}
                 </div>
             </div>
@@ -162,6 +149,7 @@
 
         <script>
         document.addEventListener('DOMContentLoaded', function () {
+            $('#categoryTable').DataTable({paging:false,ordering:true,responsive:true,info:false,searching:false,dom:'rt'});
 
             document.querySelectorAll('.clone-btn').forEach(button => {
 

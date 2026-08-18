@@ -384,6 +384,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::resource('contacts', ContactController::class)->only(['index', 'show', 'destroy']);
 
+    Route::post('/promos/{promo}/copy', [PromoController::class, 'copy'])
+        ->name('promos.copy');
     Route::resource('promos', PromoController::class);
     Route::resource('vouchers', VoucherController::class);
     Route::post('/apply-promo', [PromoController::class, 'apply'])->name('promo.apply');

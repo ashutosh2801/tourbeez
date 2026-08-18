@@ -21,14 +21,16 @@
 
         <div class="card-primary bg-white border rounded-lg-custom">
             <div class="card-body p-0">
-                <table class="table aiz-table mb-0">
+                <div class="p-3 pb-0">@include('admin.partials.table-search', ['tableId' => 'partnerTable', 'title' => 'partners', 'placeholder' => 'Name or slug', 'action' => route('admin.partners.index'), 'inputName' => 'search', 'value' => $search])</div>
+                <div class="table-responsive">
+                <table class="table table-striped mb-0" id="partnerTable">
                     <thead>
                         <tr>
                             <th>#</th>
                             <th>Logo</th>
                             <th>Name</th>
                             <th>Slug</th>
-                            <th class="text-right">Options</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -44,13 +46,13 @@
                                 </td>
                                 <td>{{ $partner->name }}</td>
                                 <td>{{ $partner->slug }}</td>
-                                <td class="text-right">
+                                <td class="text-center text-nowrap admin-table-actions">
                                     <a href="{{ route('admin.partners.edit',$partner->id) }}"
-                                       class="btn btn-circle btn-sm text-black text-lg">
+                                       class="btn btn-sm btn-edit admin-table-action">
                                         <i class="las la-edit"></i>
                                     </a>
                                     <button type="button"
-                                            class="btn btn-soft-danger btn-icon btn-circle btn-sm delete-partner"
+                                            class="btn btn-danger btn-sm delete-partner admin-table-action"
                                             data-id="{{ $partner->id }}">
                                         <i class="las la-trash"></i>
                                     </button>
@@ -59,8 +61,8 @@
                         @endforeach
                     </tbody>
                 </table>
-
-                <div class="aiz-pagination">
+                </div>
+                <div class="p-3">
                     {{ $partners->links() }}
                 </div>
             </div>
@@ -132,6 +134,9 @@
 @section('js')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+$(function () {
+    const table = $('#partnerTable').DataTable({paging:false,ordering:true,responsive:true,info:false,dom:'rt'});
+});
 $(document).on('click', '.delete-partner', function () {
 
     let partnerId = $(this).data('id');

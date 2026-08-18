@@ -1,6 +1,8 @@
 /*
+
 Don't modify this file.
 use custom-style.css
+
 */
 
 :root {
@@ -4361,7 +4363,7 @@ input[type="number"] {
     font-size: 0.875rem;
     height: calc(1.3125rem + 1.2rem + 2px);
     border: 1px solid #aeb0b4;
-    color: #898b92;
+    color: #000000;
 }
 .form-control-sm {
     height: calc(1.5rem + 0.8rem + 2px);
@@ -10576,6 +10578,10 @@ table.dataTable {
     font-weight: bold;
 }
 
+.order-list-body .active-filters {
+    padding: 12px 25px;
+}
+
 @media (max-width: 767px) {
 
     .order-list-body .btn-options .card-tools {
@@ -11959,6 +11965,20 @@ table.dataTable {
 
     .tour-search-filter .filter-sidebar{
         width: 100%;
+    }
+
+    .comparison-body .tour-main-head .card-tools,
+    .dashboard-body .tour-main-head .card-tools {
+        float: left;
+        margin-top: 10px;
+    }
+
+}
+
+@media (max-width: 1500px) and (min-width: 1024px) {
+
+    .tour-search-filter .filter-body{
+        height: 400px;
     }
 
 }

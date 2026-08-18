@@ -17,7 +17,7 @@ class PartnerController extends Controller
 
         $partners = Partner::when($search, function ($q) use ($search) {
             $q->where('name', 'like', "%$search%");
-        })->latest()->paginate(15);
+        })->latest()->paginate(20)->withQueryString();
 
         return view('admin.partners.index', compact('partners', 'search'));
     }

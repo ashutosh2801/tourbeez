@@ -16,6 +16,7 @@
     </div>
     <div class="card-primary bg-white border rounded-lg-custom">
         <div class="card-body p-0">
+            <div class="p-3 pb-0">@include('admin.partials.table-search', ['tableId' => 'pickupTable', 'title' => 'pickups', 'placeholder' => 'Name, location or address'])</div>
             <div class="table-viewport">
                 <table class="table table-striped" id="pickupTable">
                     <thead>
@@ -25,7 +26,7 @@
                             <th width="150">Total locations</th>
                             <!-- <th width="120">Used by</th> -->
                             <!-- <th>Price</th> -->
-                            <th>Action</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -41,9 +42,8 @@
                                 <td>{{ count($item->locations) }}</td>
                                 <!-- <td>{{ count($item->locations) }}</td>
                                 <td>{{ price_format_with_currency($item->pickup_charge) }}</td> -->
-                                <td width="60">
-                                    <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.pickup.destroy', encrypt($item->id)) }}"> <i class="fas fa-trash-alt"></i>
-                                    {{translate('Delete')}}</a>
+                                <td width="60" class="text-center admin-table-actions">
+                                    <a class="btn btn-sm btn-danger confirm-delete admin-table-action" title="Delete pickup" data-href="{{ route('admin.pickup.destroy', encrypt($item->id)) }}"> <i class="fas fa-trash-alt"></i></a>
                                 </td>                            
                             </tr>
                         @endforeach
@@ -74,11 +74,14 @@
 <script>
     $(function() {
         $('#pickupTable').DataTable({
-            "paging": true,
+            "paging": false,
             "searching": true,
             "ordering": true,
             "responsive": true,
+            "info": false,
+            "dom": "rt"
         });
+        $('[data-table-search="pickupTable"]').on('input', 'input', function(){ $('#pickupTable').DataTable().search(this.value).draw(); }).on('submit', function(e){ e.preventDefault(); });
     });
 </script>
 @endsection

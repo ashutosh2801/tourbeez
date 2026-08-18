@@ -7,6 +7,7 @@ use App\Models\Promo;
 use App\Models\Tour;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PromoController extends Controller
 {
@@ -153,6 +154,32 @@ class PromoController extends Controller
         Promo::findOrFail($id)->delete();
         return redirect()->route('admin.promos.index')
                          ->with('success', 'Promo deleted successfully.');
+    }
+
+    /** Duplicate a promo as a new table row. */
+    public function copy(Promo $promo)
+    {
+        $copy = DB::transaction(function () use ($promo) {
+            $copy = $promo->replicate();
+            $baseCode = $promo->code . '-COPY';
+            $code = $baseCode;
+            $suffix = 2;
+
+            while (Promo::where('code', $code)->exists()) {
+                $code = $baseCode . '-' . $suffix;
+                $suffix++;
+            }
+
+            $copy->code = $code;
+            $copy->used_count = 0;
+            $copy->save();
+
+            return $copy;
+        });
+
+        return redirect()
+            ->route('admin.promos.index')
+            ->with('success', "Promo copied successfully as {$copy->code}.");
     }
 
     /**

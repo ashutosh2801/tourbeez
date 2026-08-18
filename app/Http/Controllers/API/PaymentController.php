@@ -302,7 +302,12 @@ class PaymentController extends Controller
         $stripeAmount = $result === 'succeeded'
             ? ($intent->amount_received ?? $intent->amount ?? 0)
             : ($intent->amount ?? 0);
-        $amount = number_format(((float) $stripeAmount) / 100, 2, '.', '');
+        $amount = number_format(
+            $this->fromStripeAmount((float) $stripeAmount, $currency),
+            $this->isZeroDecimalCurrency($currency) ? 0 : 2,
+            '.',
+            ''
+        );
 
         $notes = match ($result) {
             'authorized' => "{$customerName} paid {$currency} {$amount} for order {$order->order_number} (payment authorized)",
@@ -405,7 +410,10 @@ class PaymentController extends Controller
                 $order->payments()->get()
             );
             $grossAmount = round((float) $order->orderTours()->sum('total_amount'), 2);
-            $payableAmount = round(max($grossAmount - $paymentSummary['total_credits'], 0), 2);
+            $payableAmount = $this->normalizeCurrencyAmount(
+                max($grossAmount - $paymentSummary['total_credits'], 0),
+                (string) $order->currency
+            );
             if ($payableAmount <= 0.01) {
                 return response()->json([
                     'error' => 'Order is already fully paid',
@@ -599,9 +607,9 @@ class PaymentController extends Controller
                             'transaction_id'    => $paymentIntent->latest_charge ?? null,
                             'payment_type'      => strtoupper($paymentMethod->type),
                             'payment_method'    => $paymentMethod->type,
-                            'amount'            => round(
-                                ((float) ($paymentIntent->amount_received ?: $paymentIntent->amount)) / 100,
-                                2
+                            'amount'            => $this->fromStripeAmount(
+                                (float) ($paymentIntent->amount_received ?: $paymentIntent->amount),
+                                (string) ($paymentIntent->currency ?: $booking->currency)
                             ),
                             'currency'          => strtoupper((string) ($paymentIntent->currency ?: $booking->currency)),
                             'card_brand'        => $paymentMethod->card->brand ?? null,
@@ -621,7 +629,10 @@ class PaymentController extends Controller
                         $booking->payments()->get()
                     );
                     $grossAmount = round((float) $booking->orderTours()->sum('total_amount'), 2);
-                    $balance_amount = round(max($grossAmount - $summary['total_credits'], 0), 2);
+                    $balance_amount = $this->normalizeCurrencyAmount(
+                        max($grossAmount - $summary['total_credits'], 0),
+                        (string) $booking->currency
+                    );
                     $booked_amount = $summary['paid_amount'];
                     $payment_status = $paymentIntent->status === 'requires_capture'
                         ? 3
@@ -781,10 +792,10 @@ class PaymentController extends Controller
                     // Stripe has confirmed the payment, but the webhook/ledger
                     // write may still be completing. Use the verified intent for
                     // the success-screen figures in the meantime.
-                    $currentPaymentAmount = round(max(
-                        ((float) ($paymentIntent->amount_received ?: $paymentIntent->amount)) / 100,
-                        0
-                    ), 2);
+                    $currentPaymentAmount = max($this->fromStripeAmount(
+                        (float) ($paymentIntent->amount_received ?: $paymentIntent->amount),
+                        (string) ($paymentIntent->currency ?: $booking->currency)
+                    ), 0);
                 }
             }
             $previouslyPaid = round(max(
@@ -815,7 +826,10 @@ class PaymentController extends Controller
                 2
             );
             $grossAmount = round((float) $booking->orderTours()->sum('total_amount'), 2);
-            $balanceAmount = round(max($grossAmount - $totalPaid, 0), 2);
+            $balanceAmount = $this->normalizeCurrencyAmount(
+                max($grossAmount - $totalPaid, 0),
+                (string) $booking->currency
+            );
             $paymentHistory = $booking->payments()
                 ->orderBy('collection_date')
                 ->orderBy('created_at')
@@ -2046,7 +2060,10 @@ class PaymentController extends Controller
             $order->payments()->get()
         );
         $grossAmount = round((float) $order->orderTours()->sum('total_amount'), 2);
-        $balance = round(max($grossAmount - $summary['total_credits'], 0), 2);
+        $balance = $this->normalizeCurrencyAmount(
+            max($grossAmount - $summary['total_credits'], 0),
+            (string) $order->currency
+        );
 
         $order->update([
             'booked_amount' => $summary['paid_amount'],
@@ -2073,11 +2090,18 @@ class PaymentController extends Controller
             return;
         }
 
-        $refundedAmount = round(((float) ($charge->amount_refunded ?? 0)) / 100, 2);
+        $stripeCurrency = (string) ($charge->currency ?? $order->currency);
+        $refundedAmount = $this->fromStripeAmount(
+            (float) ($charge->amount_refunded ?? 0),
+            $stripeCurrency
+        );
         $refundedAmount = min($refundedAmount, (float) $payment->amount);
         $refund = collect($charge->refunds->data ?? [])->last();
         $refundId = $refund->id ?? null;
-        $refundAmount = round(((float) ($refund->amount ?? 0)) / 100, 2);
+        $refundAmount = $this->fromStripeAmount(
+            (float) ($refund->amount ?? 0),
+            (string) ($refund->currency ?? $stripeCurrency)
+        );
 
         $payment->update([
             'refund_id' => $refundId ?? $payment->refund_id,
@@ -2145,15 +2169,34 @@ class PaymentController extends Controller
 
     private function stripeAmount(float $amount, string $currency): int
     {
+        return $this->isZeroDecimalCurrency($currency)
+            ? (int) round($amount)
+            : (int) round($amount * 100);
+    }
+
+    private function fromStripeAmount(float $amount, string $currency): float
+    {
+        return $this->isZeroDecimalCurrency($currency)
+            ? round($amount, 0)
+            : round($amount / 100, 2);
+    }
+
+    private function normalizeCurrencyAmount(float $amount, string $currency): float
+    {
+        return $this->isZeroDecimalCurrency($currency)
+            ? round($amount, 0)
+            : round($amount, 2);
+    }
+
+    private function isZeroDecimalCurrency(string $currency): bool
+    {
         $zeroDecimalCurrencies = [
             'bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf',
             'krw', 'mga', 'pyg', 'rwf', 'ugx',
             'vnd', 'vuv', 'xaf', 'xof', 'xpf',
         ];
 
-        return in_array(strtolower($currency), $zeroDecimalCurrencies, true)
-            ? (int) round($amount)
-            : (int) round($amount * 100);
+        return in_array(strtolower($currency), $zeroDecimalCurrencies, true);
     }
     
 }

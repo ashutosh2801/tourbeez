@@ -16,6 +16,7 @@
     </div>
     <div class="card-primary bg-white border rounded-lg-custom tour-type-body">
         <div class="card-body p-0">
+            <div class="p-3 pb-0">@include('admin.partials.table-search', ['tableId' => 'categoryTable', 'title' => 'tour types', 'placeholder' => 'Name, slug or description'])</div>
             <div class="table-viewport">
                 <table class="table table-striped" id="categoryTable">
                     <thead>
@@ -23,8 +24,7 @@
                             <th>Name</th>
                             <th>Slug</th>
                             <th>Description</th>
-                            <th>Action</th>
-                            <th></th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -33,14 +33,13 @@
                                 <td>{{ $cat->name }}</td>
                                 <td>{{ $cat->slug }}</td>
                                 <td>{{ $cat->description }}</td>
-                                <td width="60"><a href="{{ route('admin.tour_type.edit', encrypt($cat->id)) }}"
-                                        class="btn btn-sm btn-edit"><i class="far fa-edit"></i> </a></td>
-                                <td  width="60">
+                                <td class="text-center admin-table-actions"><a href="{{ route('admin.tour_type.edit', encrypt($cat->id)) }}"
+                                        class="btn btn-sm btn-edit admin-table-action"><i class="far fa-edit"></i> </a>
                                     <form action="{{ route('admin.tour_type.destroy', encrypt($cat->id)) }}" method="POST"
-                                        onsubmit="return confirm('Are sure want to delete?')">
+                                        class="d-inline" onsubmit="return confirm('Are sure want to delete?')">
                                         @method('DELETE')
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-danger confirm-delete"><i class="fas fa-trash-alt"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-danger confirm-delete admin-table-action"><i class="fas fa-trash-alt"></i></button>
                                     </form>
                                 </td>
                             </tr>
@@ -54,11 +53,14 @@
         <script>
             $(function() {
                 $('#categoryTable').DataTable({
-                    "paging": true,
+                    "paging": false,
                     "searching": true,
                     "ordering": true,
                     "responsive": true,
+                    "info": false,
+                    "dom": "rt"
                 });
+                $('[data-table-search="categoryTable"]').on('input', 'input', function(){ $('#categoryTable').DataTable().search(this.value).draw(); }).on('submit', function(e){ e.preventDefault(); });
             });
         </script>
     @endsection
