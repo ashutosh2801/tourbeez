@@ -22,142 +22,578 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
+    private function isLimoRoyalServicesTour($title): bool
+    {
+        $normalized = strtolower(trim((string) ($title ?? '')));
+        $normalized = preg_replace('/[^a-z0-9]+/', ' ', $normalized);
+        $normalized = trim($normalized);
 
-public function overview(Request $request)
-{
-    $excludedStatuses = [1, 2, 6, 7];
-    $excludedPaymentSources = excluded_payment_sources();
-    $adult = 0;
-    $child = 0;
-    $infant = 0;
-    $other = 0; 
+        return $normalized === 'limo royal services';
+    }
 
-    /*
-    |--------------------------------------------------------------------------
-    | DATE FILTER
-    |--------------------------------------------------------------------------
-    */
-    /*
-    |--------------------------------------------------------------------------
-    | BASE QUERY
-    |--------------------------------------------------------------------------
-    */
-    $orderQuery = DB::table('orders')
+    public function overview(Request $request)
+    {
+        $excludedStatuses = [1, 2, 6, 7];
+        $excludedPaymentSources = excluded_payment_sources();
+        $adult = 0;
+        $child = 0;
+        $infant = 0;
+        $other = 0; 
+
+        /*
+        |--------------------------------------------------------------------------
+        | DATE FILTER
+        |--------------------------------------------------------------------------
+        */
+        /*
+        |--------------------------------------------------------------------------
+        | BASE QUERY
+        |--------------------------------------------------------------------------
+        */
+        $orderQuery = DB::table('orders')
+            
+            ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
+            ->whereNull('orders.deleted_at')
+            ->whereNotIn('orders.order_status', $excludedStatuses);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CHECK IF ANY FILTER IS APPLIED
+        |--------------------------------------------------------------------------
+        */
+
+            $selectedProducts = Tour::whereIn(
+                'id',
+                (array)$request->product
+            )->get(['id','title']);
+
+            $excludedProducts = Tour::whereIn(
+                'id',
+                (array)$request->exclude_product
+            )->get(['id','title']);
+        $hasFilter = $request->filled('booking_date')
+            || $request->filled('tour_date')
+            || $request->filled('product')
+            || $request->filled('order_status')
+            || $request->filled('payment_status')
+            || $request->filled('partner')
+            || $request->filled('action_type')
+            || $request->filled('exclude_product');
+
+        if (!$hasFilter) {
+            return view('admin.reports.overview', [
+                    'performance' => [
+                        'total_orders' => 0,
+                        'gross_sales' => 0,
+                        'payment_received' => 0,
+                        'pending_amount' => 0,
+                        'refund' => 0,
+                        'net_sales' => 0,
+                        'adult'            => $adult,
+                        'child'            => $child,
+                        'infant'           => $infant,
+                        'other'            => $other,
+                    ],
+                    'partners' => Partner::get(),
+                    'selectedProducts' => $selectedProducts,
+                    'excludedProducts' => $excludedProducts
+                ]);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BOOKING DATE FILTER (DEFAULT = LAST 7 DAYS)
+        |--------------------------------------------------------------------------
+        */
+        if ($request->filled('booking_date')) {
+
+            try {
+                [$start, $end] = explode(' - ', $request->booking_date);
+
+                $orderQuery->whereBetween('orders.created_at', [
+                    Carbon::parse($start)->startOfDay(),
+                    Carbon::parse($end)->endOfDay(),
+                ]);
+
+            } catch (\Exception $e) {
+                // fail silently
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOUR DATE FILTER
+        |--------------------------------------------------------------------------
+        */
+        if ($request->filled('tour_date')) {
+
+            try {
+                [$start, $end] = explode(' - ', $request->tour_date);
+
+                $orderQuery->whereBetween('order_tours.tour_date', [
+                    $start,
+                    $end,
+                ]);
+
+            } catch (\Exception $e) {
+                // fail silently
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | OTHER FILTERS
+        |--------------------------------------------------------------------------
+        */
+        // if ($request->filled('product')) {
+        //     $orderQuery->where('order_tours.tour_id', $request->product);
+        // }
+
+        if ($products = $request->input('product')) {
+
+                $products = array_filter((array)$products);
+
+                if (!empty($products)) {
+
+                    $orderQuery->whereIn('orders.id', function ($q) use ($products) {
+
+                        $q->select('order_id')
+                        ->from('order_tours')
+                        ->whereNull('deleted_at')
+                        ->whereIn('tour_id', $products);
+
+                    });
+
+                }
+            }
+
+            if ($excludeProducts = $request->input('exclude_product')) {
+
+            $excludeProducts = array_filter((array)$excludeProducts);
+
+            if (!empty($excludeProducts)) {
+
+                $orderQuery->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+                    $q->select('order_id')
+                    ->from('order_tours')
+                    ->whereNull('deleted_at')
+                    ->whereIn('tour_id', $excludeProducts);
+
+                });
+
+            }
+        }
+
+        if ($request->filled('order_status')) {
+            $orderQuery->where('orders.order_status', $request->order_status);
+        }
+
+        if ($request->filled('payment_status')) {
+            $orderQuery->where('orders.payment_status', $request->payment_status);
+        }
+
+        if ($request->filled('partner')) {
+            $orderQuery->where('orders.source', $request->partner);
+        }
+
+        if ($request->action_type === 'pay_now') {
+            $orderQuery->where('orders.action_name', 'book');
+        } elseif ($request->action_type === 'pay_later') {
+            $orderQuery->where(function ($q) {
+                $q->where('orders.action_name', '!=', 'book')
+                ->orWhereNull('orders.action_name');
+            });
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET ORDERS
+        |--------------------------------------------------------------------------
+        */
+        $orders = $orderQuery
+            ->select('orders.id', 'orders.currency', 'orders.source')
+            ->distinct()
+            ->get();
+
+        $orderIds = $orders->pluck('id');
+
+        /*
+        |--------------------------------------------------------------------------
+        | FETCH RELATED DATA (ONLY FILTERED IDS)
+        |--------------------------------------------------------------------------
+        */
+        $orderTours = DB::table('order_tours')
+            ->leftJoin('tours', 'tours.id', '=', 'order_tours.tour_id')
+            ->whereIn('order_tours.order_id', $orderIds)
+            ->whereNull('order_tours.deleted_at')
+            ->select('order_tours.*', 'tours.title as tour_title')
+            ->get()
+            ->groupBy('order_id');
+
+        $payments = DB::table('order_payments')
+            ->whereIn('order_id', $orderIds)
+            ->whereNull('deleted_at')
+            ->get()
+            ->groupBy('order_id');
+
+        /*
+        |--------------------------------------------------------------------------
+        | CALCULATIONS
+        |--------------------------------------------------------------------------
+        */
+        $gross = 0;
+        $totalPaidAll = 0;
+        $totalBalanceAll = 0;
+        $refund = 0;
+        $excludedPaymentTotal = 0;
+
+        foreach ($orders as $order) {
+
+            $isExcludedFromPayment = in_array(
+                strtolower($order->source),
+                array_map('strtolower', $excludedPaymentSources)
+            );
+            $orderPayments = $payments[$order->id] ?? collect();
+
+            $tours = $orderTours[$order->id] ?? collect();
+            $isLimoRoyalServices = $tours->contains(
+                fn ($tour) => $this->isLimoRoyalServicesTour($tour->tour_title ?? null)
+            );
+
+            $excludedPayments = $orderPayments
+                ->where('status', 'succeeded')
+                ->where('payment_type', 'EXCLUDED')
+                ->sum('amount');
+
+            $excludedCommissionPayment = 0;
+
+            if ($isExcludedFromPayment) {
+
+                $excludedCommissionPayment = $excludedPayments;
+
+                if ($isLimoRoyalServices) {
+                    $excludedCommissionPayment = 0;
+                }
+
+            }
+
+            // } else {
+
+            $finalTotal = 0;
+
+            foreach ($tours as $tour) {
+
+                $productValue = 0;
+                $extraValue = 0;
+                $discountAmount = 0;
+                $subtotal = 0;
+
+                $pricing = json_decode($tour->tour_pricing, true) ?? [];
+                $extras  = json_decode($tour->tour_extra, true) ?? [];
+                $discounts = json_decode($tour->discount, true) ?? [];
+
+                foreach ($pricing as $p) {
+                    $qty = (int) ($p['quantity'] ?? 0);
+                    $label = strtolower($p['label'] ?? '');
+                    $priceType = $p['price_type'] ?? '';
+                    $price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+                    // FIXED pricing is treated as adult tickets and should not be counted again below
+                    if ($priceType === 'FIXED') {
+                        $adult += $qty;
+                        if ($qty > 0) {
+                            $productValue += (float) ($p['gross_total_price'] ?? ($price * $qty));
+                        }
+                        continue;
+                    }
+
+                    if ($qty > 0) {
+                        $productValue += (float) ($p['gross_total_price'] ?? ($price * $qty));
+                    }
+
+                    if (str_contains($label, 'adult')) {
+                        $adult += $qty;
+                    } elseif (str_contains($label, 'child')) {
+                        $child += $qty;
+                    } elseif (str_contains($label, 'infant')) {
+                        $infant += $qty;
+                    } else {
+                        $other += $qty;
+                    }
+                }
+
+                $subtotal += $productValue;
+
+                // Extras
+                foreach ($extras as $e) {
+                    $qty = $e['quantity'] ?? 0;
+                    $price = $e['price'] ?? 0;
+
+                    if ($qty > 0) {
+                        $extraValue += ($e['total_price'] ?? ($qty * $price));
+                    }
+                }
+
+                $subtotal += $extraValue;
+
+                // Discount
+                foreach ($discounts as $d) {
+                    $discountAmount += $d['price'] ?? 0;
+                }
+
+                $subtotal -= $discountAmount;
+
+                // Tax
+                if (!empty($tour->tour_fees)) {
+                    $taxes = is_string($tour->tour_fees)
+                        ? json_decode($tour->tour_fees, true)
+                        : $tour->tour_fees;
+                    if($taxes){
+                        foreach ($taxes as $tax) {
+                            $taxAmount = get_tax($subtotal, $tax['type'], 13);
+                            $subtotal += $taxAmount;
+                        }
+                    }
+                    
+                }
+
+                $finalTotal += $subtotal;
+            }
+
+            $customerTotal = $finalTotal;
+            $excludedBalance = 0;
+
+            if ($isExcludedFromPayment) {
+
+                $totalPaymentAmount = $orderPayments
+                    ->where('status', 'succeeded')
+                    ->sum('amount')
+                    - $excludedCommissionPayment;
+
+                $customerTotal = $finalTotal - $excludedCommissionPayment;
+
+                if ($isLimoRoyalServices) {
+                    $excludedBalance = 0;
+                } elseif (round($totalPaymentAmount, 2) < round($customerTotal, 2)) {
+                    $excludedBalance = $customerTotal - $totalPaymentAmount;
+                    $customerTotal = $totalPaymentAmount;
+                }
+            }
+
+            // Limo Royal Services reports only the commission as revenue; its
+            // EXCLUDED bookkeeping credit must not appear in Gross Sales.
+            if ($isLimoRoyalServices) {
+                $customerTotal = $finalTotal - $excludedPayments;
+                $excludedBalance = 0;
+            }
+
+            $totalPaid = $orderPayments
+                ->where('status', 'succeeded')
+                ->sum('amount')
+                - $orderPayments->where('status', 'refunded')->sum('amount');
+
+            $promoPayment = $orderPayments
+                ->where('collection_type', 'Outside')
+                ->where('payment_type', 'PROMO_CODE')
+                ->sum('amount');
+
+            // EXCLUDED entries are bookkeeping credits, not customer payments.
+            $paid = $totalPaid - $promoPayment - $excludedPayments;
+
+            if ($isLimoRoyalServices) {
+                $balance = 0;
+            } else {
+                $balance = $customerTotal - $paid;
+
+                // For regular partners, customerTotal still contains the
+                // EXCLUDED credit, so remove it from Pending Balance as well.
+                // Excluded-payment partners already remove it above.
+                if (!$isExcludedFromPayment) {
+                    $balance -= $excludedPayments;
+                }
+            }
+
+            // For excluded-payment partners and Limo Royal Services the amount
+            // is already removed from customerTotal above.
+            if (!$isExcludedFromPayment && !$isLimoRoyalServices) {
+                $excludedPaymentTotal += currencyConvertWithoutRound($excludedPayments, $order->currency, 'CAD');
+            }
+
+            // Refund
+            $refundAmount = $orderPayments->sum('refund_amount');
+        // }
+
+            // Convert to CAD
+
+
+            $gross += currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD');
+            $totalPaidAll += currencyConvertWithoutRound($paid, $order->currency, 'CAD');
+            // $totalBalanceAll += currencyConvertWithoutRound($balance, $order->currency, 'CAD');
+            $totalBalanceAll += ($customerTotal == 0)? 0 : currencyConvertWithoutRound(
+                                    $balance + $excludedBalance - $isExcludedFromPayment,
+                                    $order->currency,
+                                    'CAD'
+                                );
+            $refund += currencyConvertWithoutRound($refundAmount, $order->currency, 'CAD');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FINAL OUTPUT
+        |--------------------------------------------------------------------------
+        */
+
+        //echo $excludedCommissionPayment . '-----'; exit;
+
+        $netSales = $gross - $refund - $excludedPaymentTotal;
+
+        $performance = [
+            'total_orders'     => $orders->count(),
+            'gross_sales'      => round($gross, 2),
+            'payment_received' => round($totalPaidAll, 2),
+            'pending_amount'   => round($totalBalanceAll, 2),
+            'refund'           => round($refund, 2),
+            'net_sales'        => round($netSales, 2),
+            'adult'            => $adult,
+            'child'            => $child,
+            'infant'           => $infant,
+            'other'            => $other,
+
+        ];
+
+        $partners = Partner::get();
+
         
-        ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
-        ->whereNull('orders.deleted_at')
-        ->whereNotIn('orders.order_status', $excludedStatuses);
 
+        return view('admin.reports.overview', compact('performance', 'partners', 'selectedProducts','excludedProducts' ));
+    }
 
-    /*
+    public function revenue(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | DATE FILTER (DEFAULT TODAY)
+        |--------------------------------------------------------------------------
+        */
+
+        $excludedStatuses = [1, 2, 6, 7];
+        $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
+        /*
     |--------------------------------------------------------------------------
     | CHECK IF ANY FILTER IS APPLIED
     |--------------------------------------------------------------------------
-    */
+        */
+        $hasFilter = $request->filled('booking_date')
+            || $request->filled('tour_date')
+            || $request->filled('product')
+            || $request->filled('order_status')
+            || $request->filled('payment_status')
+            || $request->filled('partner')
+            || $request->filled('action_type')
+            || $request->filled('exclude_product');
 
+        /*
+        |--------------------------------------------------------------------------
+        | DEFAULT BOOKING DATE (LAST 7 DAYS)
+        |--------------------------------------------------------------------------
+        */
         $selectedProducts = Tour::whereIn(
-            'id',
-            (array)$request->product
-        )->get(['id','title']);
+                'id',
+                (array)$request->product
+            )->get(['id','title']);
 
-        $excludedProducts = Tour::whereIn(
-            'id',
-            (array)$request->exclude_product
-        )->get(['id','title']);
-    $hasFilter = $request->filled('booking_date')
-        || $request->filled('tour_date')
-        || $request->filled('product')
-        || $request->filled('order_status')
-        || $request->filled('payment_status')
-        || $request->filled('partner')
-        || $request->filled('action_type')
-        || $request->filled('exclude_product');
+            $excludedProducts = Tour::whereIn(
+                'id',
+                (array)$request->exclude_product
+            )->get(['id','title']);
+        if (!$hasFilter) {
 
-     if (!$hasFilter) {
-        return view('admin.reports.overview', [
-                'performance' => [
-                    'total_orders' => 0,
-                    'gross_sales' => 0,
-                    'payment_received' => 0,
-                    'pending_amount' => 0,
-                    'refund' => 0,
-                    'net_sales' => 0,
-                    'adult'            => $adult,
-                    'child'            => $child,
-                    'infant'           => $infant,
-                    'other'            => $other,
-                ],
-                'partners' => Partner::get(),
-                'selectedProducts' => $selectedProducts,
-                'excludedProducts' => $excludedProducts
+            // if (!$hasFilter) {
+            $orders = new LengthAwarePaginator([], 0, 8);
+            $customers = new LengthAwarePaginator([], 0, 8);
+            $partners = Partner::get();
+
+                return view('admin.reports.revenue', compact('orders', 'customers', 'partners', 'selectedProducts', 'excludedProducts'));
+            // }
+            $request->merge([
+                'booking_date' => now()->subDays(7)->format('Y-m-d') . ' - ' . now()->format('Y-m-d')
             ]);
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | BOOKING DATE FILTER (DEFAULT = LAST 7 DAYS)
-    |--------------------------------------------------------------------------
-    */
-    if ($request->filled('booking_date')) {
-
-        try {
-            [$start, $end] = explode(' - ', $request->booking_date);
-
-            $orderQuery->whereBetween('orders.created_at', [
-                Carbon::parse($start)->startOfDay(),
-                Carbon::parse($end)->endOfDay(),
-            ]);
-
-        } catch (\Exception $e) {
-            // fail silently
         }
 
-    }
+        /*
+        |--------------------------------------------------------------------------
+        | PARSE BOOKING DATE
+        |--------------------------------------------------------------------------
+        */
+        $startDate = null;
+        $endDate = null;
 
+        if ($request->filled('booking_date')) {
+            try {
+                [$start, $end] = explode(' - ', $request->booking_date);
 
-    /*
-    |--------------------------------------------------------------------------
-    | TOUR DATE FILTER
-    |--------------------------------------------------------------------------
-    */
-    if ($request->filled('tour_date')) {
-
-        try {
-            [$start, $end] = explode(' - ', $request->tour_date);
-
-            $orderQuery->whereBetween('order_tours.tour_date', [
-                $start,
-                $end,
-            ]);
-
-        } catch (\Exception $e) {
-            // fail silently
+                $startDate = Carbon::parse($start)->startOfDay();
+                $endDate   = Carbon::parse($end)->endOfDay();
+            } catch (\Exception $e) {}
         }
-    }
+
+        /*
+        |--------------------------------------------------------------------------
+        | BASE QUERY
+        |--------------------------------------------------------------------------
+        */
+
+        
+            
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | OTHER FILTERS
-    |--------------------------------------------------------------------------
-    */
-    // if ($request->filled('product')) {
-    //     $orderQuery->where('order_tours.tour_id', $request->product);
-    // }
+        $query = DB::table('orders')
+            ->leftJoin('order_tours', function ($join) {
+                $join->on('orders.id', '=', 'order_tours.order_id')
+                    ->whereNull('order_tours.deleted_at');
+            })
+            ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
+            ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
+            ->whereNull('orders.deleted_at')
+            ->whereNotIn('orders.order_status', $excludedStatuses);
 
-      if ($products = $request->input('product')) {
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FILTERS
+        |--------------------------------------------------------------------------
+        */
+
+        // ✅ Order Status
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('orders.created_at', [$startDate, $endDate]);
+        }
+
+        // if ($product = $request->input('product')) {
+        //     $query->where('order_tours.tour_id', $product);
+        // }
+        if ($products = $request->input('product')) {
 
             $products = array_filter((array)$products);
 
             if (!empty($products)) {
 
-                $orderQuery->whereIn('orders.id', function ($q) use ($products) {
+                $query->whereIn('orders.id', function ($q) use ($products) {
 
                     $q->select('order_id')
-                      ->from('order_tours')
-                      ->whereNull('deleted_at')
-                      ->whereIn('tour_id', $products);
+                    ->from('order_tours')
+                    ->whereNull('deleted_at')
+                    ->whereIn('tour_id', $products);
 
                 });
 
@@ -170,136 +606,352 @@ public function overview(Request $request)
 
         if (!empty($excludeProducts)) {
 
-            $orderQuery->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+            $query->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
 
                 $q->select('order_id')
-                  ->from('order_tours')
-                  ->whereNull('deleted_at')
-                  ->whereIn('tour_id', $excludeProducts);
+                ->from('order_tours')
+                ->whereNull('deleted_at')
+                ->whereIn('tour_id', $excludeProducts);
 
             });
 
         }
     }
 
-    if ($request->filled('order_status')) {
-        $orderQuery->where('orders.order_status', $request->order_status);
-    }
-
-    if ($request->filled('payment_status')) {
-        $orderQuery->where('orders.payment_status', $request->payment_status);
-    }
-
-    if ($request->filled('partner')) {
-        $orderQuery->where('orders.source', $request->partner);
-    }
-
-    if ($request->action_type === 'pay_now') {
-        $orderQuery->where('orders.action_name', 'book');
-    } elseif ($request->action_type === 'pay_later') {
-        $orderQuery->where(function ($q) {
-            $q->where('orders.action_name', '!=', 'book')
-              ->orWhereNull('orders.action_name');
-        });
-    }
-
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET ORDERS
-    |--------------------------------------------------------------------------
-    */
-    $orders = $orderQuery
-        ->select('orders.id', 'orders.currency', 'orders.source')
-        ->distinct()
-        ->get();
-
-    $orderIds = $orders->pluck('id');
-
-    /*
-    |--------------------------------------------------------------------------
-    | FETCH RELATED DATA (ONLY FILTERED IDS)
-    |--------------------------------------------------------------------------
-    */
-    $orderTours = DB::table('order_tours')
-        ->whereIn('order_id', $orderIds)
-        ->whereNull('deleted_at')
-        ->get()
-        ->groupBy('order_id');
-
-    $payments = DB::table('order_payments')
-        ->whereIn('order_id', $orderIds)
-        ->whereNull('deleted_at')
-        ->get()
-        ->groupBy('order_id');
-
-    /*
-    |--------------------------------------------------------------------------
-    | CALCULATIONS
-    |--------------------------------------------------------------------------
-    */
-    $gross = 0;
-    $totalPaidAll = 0;
-    $totalBalanceAll = 0;
-    $refund = 0;
-
-    foreach ($orders as $order) {
-
-        $isExcludedFromPayment = in_array(
-            strtolower($order->source),
-            array_map('strtolower', $excludedPaymentSources)
-        );
-        $orderPayments = $payments[$order->id] ?? collect();
-
-        $excludedCommissionPayment = 0;
-
-         if ($isExcludedFromPayment) {
-
-
-            $excludedCommissionPayment = $orderPayments
-                    ->where('payment_type', 'EXCLUDED')
-                    ->sum('amount');
-
-            // $finalTotal = 0;
-            // $paid = 0;
-            // $balance = 0;
-            // $refundAmount = 0;
-
+        if ($request->filled('order_status')) {
+            $query->where('orders.order_status', $request->order_status);
+        }
+        if ($request->filled('partner')) {
+            $query->where('orders.source', $request->partner);
         }
 
-        // } else {
+        // ✅ Payment Status
+        if ($request->filled('payment_status')) {
+            $query->where('orders.payment_status', $request->payment_status);
+        }
 
-        $tours = $orderTours[$order->id] ?? collect();
+
+        // ✅ Pay Type
+        if ($request->action_type === 'pay_now') {
+            $query->where('orders.action_name', 'book');
+        } elseif ($request->action_type === 'pay_later') {
+            $query->where(function ($q) {
+                $q->where('orders.action_name', '!=', 'book')
+                ->orWhereNull('orders.action_name');
+            });
+        }
+
+        // ✅ Tour Date Filter (IMPORTANT FIX)
+        if ($request->filled('tour_date')) {
+            try {
+                [$start, $end] = explode(' - ', $request->tour_date);
+
+                $query->whereBetween('order_tours.tour_date', [$start, $end]);
+            } catch (\Exception $e) {}
+        }
+
         
+        // dd( $request->tour_start_date, Carbon::parse($request->tour_start_date)->startOfDay());
 
-        $finalTotal = 0;
+        /*
+        |--------------------------------------------------------------------------
+        | FETCH DATA (PAGINATED)
+        |--------------------------------------------------------------------------
+        */
 
-        foreach ($tours as $tour) {
+        apply_report_sorting($query, $request); 
+        $orders = $query
+            ->select(
+                'orders.id',
+                'orders.order_number',
+                'orders.order_status',
+                'orders.payment_status',
+                'orders.source',
+                'orders.created_by',
+                DB::raw('DATE(orders.created_at) as booking_date'),
+                'order_tours.tour_date as fulfilment_date',
+                'order_tours.tour_id',
 
+                // ✅ REQUIRED FOR CALCULATION
+                'order_tours.tour_pricing',
+                'order_tours.tour_extra',
+                'order_tours.discount',
+                'order_tours.deleted_at',
+
+                'order_tours.tour_fees',
+
+                'order_customers.first_name as customer_first_name',
+                'order_customers.last_name as customer_last_name',
+
+                'orders.total_amount',
+                'orders.balance_amount',
+                'orders.currency',
+
+                'orders.booking_fee',
+
+                'order_tours.number_of_guests as pax',
+
+                'order_customers.promo_code',
+                'order_customers.instructions',
+
+                'orders.payment_method',
+                'tours.title as product_name'
+            )
+            // ->orderByDesc('order_tours.tour_date')
+            ->paginate(20)
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | CATEGORY MAP
+        |--------------------------------------------------------------------------
+        */
+        $categoryMap = DB::table('category_tour')
+            ->leftJoin('categories', 'categories.id', '=', 'category_tour.category_id')
+            ->select('category_tour.tour_id', DB::raw('GROUP_CONCAT(categories.name) as categories'))
+            ->groupBy('category_tour.tour_id')
+            ->pluck('categories', 'tour_id');
+
+
+        $orderIds = $orders->pluck('id');
+
+        $payments = DB::table('order_payments')
+            ->whereIn('order_id', $orderIds)
+            ->whereNull('deleted_at')
+            ->get()
+            ->groupBy('order_id');
+
+        /*
+        |--------------------------------------------------------------------------
+        | FINAL FORMAT + CURRENCY CONVERSION (CAD)
+        |--------------------------------------------------------------------------
+        */
+        $orders->getCollection()->transform(function ($order) use ($payments, $categoryMap, $excludedPaymentSources) {
+
+            $isExcludedFromPayment = in_array(
+                strtolower($order->source),
+                $excludedPaymentSources
+            );
+
+            // $finalTotal = 0;
+            // $totalTax = 0;
+            // $productValue = 0;
+            // $extraValue = 0;
+
+            
+            
+            // $subtotal2 = 0;
+
+            $finalTotal = 0;
+            $totalTax = 0;
             $productValue = 0;
             $extraValue = 0;
             $discountAmount = 0;
-            $subtotal = 0;
+            $paid = 0;
+            $balance = 0;
+            $subtotal2 = 0;
+            $pricing = json_decode($order->tour_pricing, true) ?? [];
+            $extras  = json_decode($order->tour_extra, true) ?? [];
+            $discounts = json_decode($order->discount, true) ?? [];
 
-            $pricing = json_decode($tour->tour_pricing, true) ?? [];
-            $extras  = json_decode($tour->tour_extra, true) ?? [];
-            $discounts = json_decode($tour->discount, true) ?? [];
+            // if (!$isExcludedFromPayment) {
+                
 
-            // Pricing
-            // foreach ($pricing as $p) {
-            //     $qty = $p['quantity'] ?? 0;
-            //     $price = $p['actual_price'] ?? $p['price'] ?? 0;
+                // ✅ Pricing
+                foreach ($pricing as $p) {
+                    $qty = $p['quantity'] ?? 0;
+                    $actual_price = $p['actual_price'] ?? $p['price'] ?? 0;
 
-            //     if ($qty > 0) {
-            //         $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-            //             ? $price
-            //             : $price * $qty;
-            //     }
+                    if ($qty > 0) {
+                        $productValue += (float) ($p['gross_total_price']
+                            ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
+                                ? $actual_price
+                                : $actual_price * $qty));
+                    }
+                }
+
+                $subtotal2 +=$productValue;
+
+                // ✅ Extras
+                foreach ($extras as $e) {
+                    $qty = $e['quantity'] ?? 0;
+                    $price = $e['price'] ?? 0;
+
+                    if ($qty > 0) {
+                        $extraValue += ($e['total_price'] ?? ($qty * $price));
+                    }
+                }
+
+                $subtotal2 +=$extraValue;
+
+                // ✅ Discount
+                $discountAmount = 0;
+                if (!empty($discounts)) {
+                    foreach ($discounts as $d) {
+                        $discountAmount = $d['price'] ?? 0;
+                    }
+                }
+
+                $subtotal2 -= $discountAmount;
+                // ✅ Taxes (if JSON)
+
+                // dd($order->taxes_fees);
+                if (!empty($order->tour_fees)) {
+                    $taxes = is_string($order->tour_fees)
+                        ? json_decode($order->tour_fees, true)
+                        : $order->tour_fees;
+                    
+                    foreach ($taxes as $tax) {
+                        $taxAmount = get_tax($subtotal2, $tax['type'], 13);
+                        $subtotal2 += $taxAmount;
+                        $totalTax += $taxAmount;
+                    }
+                }
+
+                $finalTotal = $subtotal2;
+
+
+
+                // ✅ Excluded payment handling (same as invoice report)
+    $customerTotal = $finalTotal;
+    $excludedBalance = 0;
+    $hideSuplierExcludeExtraCost = false;
+
+    $orderPayments = $payments[$order->id] ?? collect();
+    $excludedCommissionPayment = 0;
+
+    if ($isExcludedFromPayment) {
+
+        $excludedCommissionPayment = $orderPayments
+            ->where('payment_type', 'EXCLUDED')
+            ->sum('amount');
+
+        $totalPaymentAmount = $orderPayments
+            ->where('status', 'succeeded')
+            ->sum('amount')
+            - $excludedCommissionPayment;
+
+        $customerTotal = $finalTotal - $excludedCommissionPayment;
+
+        if (round($totalPaymentAmount, 2) < round($customerTotal, 2)) {
+            $excludedBalance = $customerTotal - $totalPaymentAmount;
+            $customerTotal = $totalPaymentAmount;
+            $hideSuplierExcludeExtraCost = true;
+        }
+    }
+    // ✅ Payments
+    $totalPaid = $orderPayments
+        ->where('status', 'succeeded')
+        ->sum('amount')
+        - $orderPayments->where('status', 'refunded')->sum('amount');
+
+    $promoPayment = $orderPayments
+        ->where('collection_type', 'Outside')
+        ->where('payment_type', 'PROMO_CODE')
+        ->sum('amount');
+
+    $paid = $totalPaid - $promoPayment;
+
+    if ($isExcludedFromPayment) {
+        $paid -= $excludedCommissionPayment;
+    }
+
+    $balance = $customerTotal - $paid;
+                // dd($check,$taxes, $taxAmount, $finalTotal, $subtotal2, $discountAmount, $extraValue, $productValue);
+
+                // ✅ Payments
+                // $orderPayments = $payments[$order->id] ?? collect();
+
+                // $totalPaid = $orderPayments->where('status', 'succeeded')->sum('amount')
+                //     - $orderPayments->where('status', 'refunded')->sum('amount');
+
+                // $promoPayment = $orderPayments
+                //     ->where('collection_type', 'Outside')
+                //     ->where('payment_type', 'PROMO_CODE')
+                //     ->sum('amount');
+
+                // $paid = $totalPaid - $promoPayment;
+
+                // $balance = $finalTotal - $paid;
+                // ✅ Payments
+                // $totalPaid = $orderPayments
+                //     ->where('status', 'succeeded')
+                //     ->sum('amount')
+                //     - $orderPayments->where('status', 'refunded')->sum('amount');
+
+                // $promoPayment = $orderPayments
+                //     ->where('collection_type', 'Outside')
+                //     ->where('payment_type', 'PROMO_CODE')
+                //     ->sum('amount');
+
+                // $paid = $totalPaid - $promoPayment;
+
+                // if ($isExcludedFromPayment) {
+                //     $paid -= $excludedCommissionPayment;
+                // }
+
+                // $balance = $customerTotal - $paid;
+
             // }
 
+            // ✅ Excluded payment handling (same as invoice report)
+            $customerTotal = $finalTotal;
+            $excludedBalance = 0;
+            $hideSuplierExcludeExtraCost = false;
 
-            
+            $orderPayments = $payments[$order->id] ?? collect();
+            $excludedCommissionPayment = 0;
+
+            if ($isExcludedFromPayment) {
+
+                $excludedCommissionPayment = $orderPayments
+                    ->where('payment_type', 'EXCLUDED')
+                    ->sum('amount');
+
+                $totalPaymentAmount = $orderPayments
+                    ->where('status', 'succeeded')
+                    ->sum('amount')
+                    - $excludedCommissionPayment;
+
+                $customerTotal = $finalTotal - $excludedCommissionPayment;
+
+                if (round($totalPaymentAmount, 2) < round($customerTotal, 2)) {
+                    $excludedBalance = $customerTotal - $totalPaymentAmount;
+                    $customerTotal = $totalPaymentAmount;
+                    $hideSuplierExcludeExtraCost = true;
+                }
+            }
+
+            // ✅ Convert to CAD
+            $order->total_amount_converted = round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2);
+            $order->paid_amount_converted = round(currencyConvertWithoutRound($paid, $order->currency, 'CAD'), 2);
+            $order->balance_converted = round(currencyConvertWithoutRound($balance, $order->currency, 'CAD'), 2);
+            $order->tax_converted = round(currencyConvertWithoutRound($totalTax, $order->currency, 'CAD'), 2);
+            $order->product_value_converted = round(currencyConvertWithoutRound($productValue, $order->currency, 'CAD'), 2);
+            $order->extra_value_converted = round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2);
+            $order->discount_value_converted = round(currencyConvertWithoutRound($discountAmount, $order->currency, 'CAD'), 2);
+
+        
+            $order->net_sales_converted = round(
+                $order->total_amount_converted - $order->tax_converted,
+                2
+            );
+
+            $order->all_paid = $order->balance_converted <= 0 ? 'Yes' : 'No';
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CATEGORY
+            |--------------------------------------------------------------------------
+            */
+            $order->category = $categoryMap[$order->tour_id] ?? '-';
+
+            $adult = 0;
+            $child = 0;
+            $infant = 0;
+            $other = 0;
 
             foreach ($pricing as $p) {
                 $qty = (int) ($p['quantity'] ?? 0);
@@ -310,16 +962,6 @@ public function overview(Request $request)
                 if ($priceType === 'FIXED') {
                     $adult += $qty;
                     continue;
-                }
-
-                // $qty = $p['quantity'] ?? 0;
-                $price = $p['actual_price'] ?? $p['price'] ?? 0;
-
-                if ($qty > 0) {
-                    $productValue += (float) ($p['gross_total_price']
-                        ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                            ? $price
-                            : $price * $qty));
                 }
 
                 if (str_contains($label, 'adult')) {
@@ -333,163 +975,161 @@ public function overview(Request $request)
                 }
             }
 
-            $subtotal += $productValue;
+            // attach to order
+            $order->adult = $adult;
+            $order->child = $child;
+            $order->infant = $infant;
+            $order->other = $other;
 
-            // Extras
-            foreach ($extras as $e) {
-                $qty = $e['quantity'] ?? 0;
-                $price = $e['price'] ?? 0;
+            return $order;
+        });
 
-                if ($qty > 0) {
-                    $extraValue += ($e['total_price'] ?? ($qty * $price));
-                }
-            }
 
-            $subtotal += $extraValue;
+        /*
+    |--------------------------------------------------------------------------
+    | CUSTOMER REPORT QUERY
+    |--------------------------------------------------------------------------
+    */
+    $customers = DB::table('orders')
+        ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
+        ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
+        ->whereNull('orders.deleted_at')
+        ->whereNotIn('orders.order_status', $excludedStatuses)->groupBy('orders.id');
 
-            // Discount
-            foreach ($discounts as $d) {
-                $discountAmount += $d['price'] ?? 0;
-            }
-
-            $subtotal -= $discountAmount;
-
-            // Tax
-            if (!empty($tour->tour_fees)) {
-                $taxes = is_string($tour->tour_fees)
-                    ? json_decode($tour->tour_fees, true)
-                    : $tour->tour_fees;
-                if($taxes){
-                    foreach ($taxes as $tax) {
-                        $taxAmount = get_tax($subtotal, $tax['type'], 13);
-                        $subtotal += $taxAmount;
-                    }
-                }
-                
-            }
-
-            $finalTotal += $subtotal;
+    if ($startDate && $endDate) {
+        $customers->whereBetween('orders.created_at', [$startDate, $endDate]);
+    }
+    // SAME FILTERS (IMPORTANT)
+    if ($request->filled('payment_status')) {
+        $customers->where('orders.payment_status', $request->payment_status);
+    }
+    if ($request->filled('order_status')) {
+            $customers->where('orders.order_status', $request->order_status);
         }
 
-        // $finalTotal = $finalTotal - $excludedCommissionPayment;
 
-        // // Payments
-        // $totalPaid = $orderPayments->where('status', 'succeeded')->sum('amount')
-        //     - $orderPayments->where('status', 'refunded')->sum('amount');
-        // $totalPaid = $totalPaid - $excludedCommissionPayment;
 
-        // $promoPayment = $orderPayments
-        //     ->where('collection_type', 'Outside')
-        //     ->where('payment_type', 'PROMO_CODE')
-        //     ->sum('amount');
+    if ($products = $request->input('product')) {
 
-        // $paid = $totalPaid - $promoPayment;
+            $products = array_filter((array)$products);
 
-        // $balance = $finalTotal - $paid;
+            if (!empty($products)) {
 
-        $customerTotal = $finalTotal;
-        $excludedBalance = 0;
+                $customers->whereIn('orders.id', function ($q) use ($products) {
 
-        if ($isExcludedFromPayment) {
+                    $q->select('order_id')
+                    ->from('order_tours')
+                    ->whereNull('deleted_at')
+                    ->whereIn('tour_id', $products);
 
-            $totalPaymentAmount = $orderPayments
-                ->where('status', 'succeeded')
-                ->sum('amount')
-                - $excludedCommissionPayment;
+                });
 
-            $customerTotal = $finalTotal - $excludedCommissionPayment;
-
-            if (round($totalPaymentAmount, 2) < round($customerTotal, 2)) {
-                $excludedBalance = $customerTotal - $totalPaymentAmount;
-                $customerTotal = $totalPaymentAmount;
             }
         }
 
-        $totalPaid = $orderPayments
-            ->where('status', 'succeeded')
-            ->sum('amount')
-            - $orderPayments->where('status', 'refunded')->sum('amount');
+        if ($excludeProducts = $request->input('exclude_product')) {
 
-        $promoPayment = $orderPayments
-            ->where('collection_type', 'Outside')
-            ->where('payment_type', 'PROMO_CODE')
-            ->sum('amount');
+        $excludeProducts = array_filter((array)$excludeProducts);
 
-        $paid = $totalPaid - $promoPayment;
+        if (!empty($excludeProducts)) {
 
-        if ($isExcludedFromPayment) {
-            $paid -= $excludedCommissionPayment;
+            $customers->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+
+                $q->select('order_id')
+                ->from('order_tours')
+                ->whereNull('deleted_at')
+                ->whereIn('tour_id', $excludeProducts);
+
+            });
+
         }
-
-        $balance = $customerTotal - $paid;
-
-        // Refund
-        $refundAmount = $orderPayments->sum('refund_amount');
-    // }
-
-        // Convert to CAD
-
-
-        $gross += currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD');
-        $totalPaidAll += currencyConvertWithoutRound($paid, $order->currency, 'CAD');
-        // $totalBalanceAll += currencyConvertWithoutRound($balance, $order->currency, 'CAD');
-        $totalBalanceAll += ($customerTotal == 0)? 0 : currencyConvertWithoutRound(
-                                $balance + $excludedBalance - $isExcludedFromPayment,
-                                $order->currency,
-                                'CAD'
-                            );
-        $refund += currencyConvertWithoutRound($refundAmount, $order->currency, 'CAD');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | FINAL OUTPUT
-    |--------------------------------------------------------------------------
-    */
-    $performance = [
-        'total_orders'     => $orders->count(),
-        'gross_sales'      => round($gross, 2),
-        'payment_received' => round($totalPaidAll, 2),
-        'pending_amount'   => round($totalBalanceAll, 2),
-        'refund'           => round($refund, 2),
-        'net_sales'        => round($gross - $refund, 2),
-        'adult'            => $adult,
-        'child'            => $child,
-        'infant'           => $infant,
-        'other'            => $other,
+    if ($request->action_type === 'pay_now') {
+        $customers->where('orders.action_name', 'book');
+    } elseif ($request->action_type === 'pay_later') {
+        $customers->where(function ($q) {
+            $q->where('orders.action_name', '!=', 'book')
+            ->orWhereNull('orders.action_name');
+        });
+    }
 
-    ];
+    if ($request->filled('partner')) {
+            $customers->where('orders.source', $request->partner);
+        }
+    if ($request->filled('tour_date')) {
+        try {
+            [$start, $end] = explode(' - ', $request->tour_date);
 
-    $partners = Partner::get();
+            $customers->whereBetween('order_tours.tour_date', [$start, $end]);
+        } catch (\Exception $e) {}
+    }
+    apply_report_sorting($customers, $request); 
+    $customers = $customers->select(
+            'orders.order_number',
+            DB::raw('DATE(orders.created_at) as booking_date'),
+            'order_tours.tour_date as fulfilment_date',
 
-    
+            'order_customers.id',
+            'order_customers.first_name',
+            'order_customers.last_name',
+            'order_customers.email',
+            'order_customers.phone',
+            'order_customers.instructions',
 
-    return view('admin.reports.overview', compact('performance', 'partners', 'selectedProducts','excludedProducts' ));
-}
-    
+            'order_customers.promo_code'
+        )
+        // ->orderByDesc('orders.id')
+        ->paginate(20, ['*'], 'customer_page') // IMPORTANT (separate pagination)
+        ->withQueryString();
 
+        $partners = Partner::get();
+        
 
-// use Illuminate\Http\Request;
-//
+        return view('admin.reports.revenue', compact('orders', 'customers', 'partners', 'selectedProducts', 'excludedProducts'));
+    }
 
+    public function invoice(Request $request)
+    {
+        
+        $data = $this->getInvoiceData($request, true);
 
+        $selectedProducts = Tour::whereIn(
+                'id',
+                (array)$request->product
+            )->get(['id','title']);
 
-public function revenue(Request $request)
-{
-    /*
-    |--------------------------------------------------------------------------
-    | DATE FILTER (DEFAULT TODAY)
-    |--------------------------------------------------------------------------
-    */
+            $excludedProducts = Tour::whereIn(
+                'id',
+                (array)$request->exclude_product
+            )->get(['id','title']);
 
-    $excludedStatuses = [1, 2, 6, 7];
-    $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
-    /*
-|--------------------------------------------------------------------------
-| CHECK IF ANY FILTER IS APPLIED
-|--------------------------------------------------------------------------
-    */
-    $hasFilter = $request->filled('booking_date')
+        return view('admin.reports.invoice', [
+            'rows' => $data['rows'],
+            'orders' => $data['pagination'],
+            'partners' => Partner::get(),
+            'selectedProducts' => $selectedProducts,
+            'excludedProducts' => $excludedProducts
+        ]);
+    }
+
+    public function invoiceExport(Request $request)
+    {
+        ini_set('memory_limit', '1024M');
+        $data = $this->getInvoiceData($request);
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\InvoiceExport($data),
+            'invoice-report' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+
+    public function getInvoiceData($request, $paginate = false)
+    {
+        $excludedStatuses = [1, 2, 6, 7];
+        $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
+
+        $hasFilter = $request->filled('booking_date')
         || $request->filled('tour_date')
         || $request->filled('product')
         || $request->filled('order_status')
@@ -498,977 +1138,220 @@ public function revenue(Request $request)
         || $request->filled('action_type')
         || $request->filled('exclude_product');
 
-    /*
-    |--------------------------------------------------------------------------
-    | DEFAULT BOOKING DATE (LAST 7 DAYS)
-    |--------------------------------------------------------------------------
-    */
-    $selectedProducts = Tour::whereIn(
-            'id',
-            (array)$request->product
-        )->get(['id','title']);
+        if (!$hasFilter) {
+            return $paginate
+                ? [
+                    'rows' => [],
+                    'pagination' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20)
+                ]
+                : [];
+        }
 
-        $excludedProducts = Tour::whereIn(
-            'id',
-            (array)$request->exclude_product
-        )->get(['id','title']);
-    if (!$hasFilter) {
+        $query = DB::table('orders')
+            ->leftJoin('order_tours', function ($join) {
+                $join->on('orders.id', '=', 'order_tours.order_id')
+                    ->whereNull('order_tours.deleted_at');
+            })
+            ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
+            ->leftJoin('order_payments', 'orders.id', '=', 'order_payments.order_id')
+            ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
+            ->whereNull('orders.deleted_at')
+            ->whereNotIn('orders.order_status', $excludedStatuses)
+            ->groupBy('orders.id');
 
-        // if (!$hasFilter) {
-        $orders = new LengthAwarePaginator([], 0, 8);
-        $customers = new LengthAwarePaginator([], 0, 8);
-        $partners = Partner::get();
+        // Filters
 
-            return view('admin.reports.revenue', compact('orders', 'customers', 'partners', 'selectedProducts', 'excludedProducts'));
+        $startDate = null;
+        $endDate = null;
+
+        if ($request->filled('booking_date')) {
+            try {
+                [$start, $end] = explode(' - ', $request->booking_date);
+
+                $startDate = Carbon::parse($start)->startOfDay();
+                $endDate   = Carbon::parse($end)->endOfDay();
+                if ($startDate && $endDate) {
+                    $query->whereBetween('orders.created_at', [$startDate, $endDate]);
+                }
+            } catch (\Exception $e) {}
+
+        }
+
+        if ($request->filled('order_status')) {
+            $query->where('orders.order_status', $request->order_status);
+        }
+
+        if ($request->filled('payment_status')) {
+            $query->where('orders.payment_status', $request->payment_status);
+        }
+
+        if ($request->filled('partner')) {
+            $query->where('orders.source', $request->partner);
+        }
+
+        if ($request->action_type === 'pay_now') {
+            $query->where('orders.action_name', 'book');
+        } elseif ($request->action_type === 'pay_later') {
+            $query->where(function ($q) {
+                $q->where('orders.action_name', '!=', 'book')
+                ->orWhereNull('orders.action_name');
+            });
+        }
+
+        // if ($product = $request->input('product')) {
+        //     $query->where('order_tours.tour_id', $product);
         // }
-        $request->merge([
-            'booking_date' => now()->subDays(7)->format('Y-m-d') . ' - ' . now()->format('Y-m-d')
-        ]);
-    }
 
-    /*
-    |--------------------------------------------------------------------------
-    | PARSE BOOKING DATE
-    |--------------------------------------------------------------------------
-    */
-    $startDate = null;
-    $endDate = null;
+        // if ($product = $request->input('product')) {
+        //         $product = array_filter((array)$product);
+        //         if (!empty($product)) {
+        //             $query->whereHas('orderTours', function ($q) use ($product) {
+        //                 $q->whereIn('tour_id', $product);
+        //             });
+        //         }
+        //     }
 
-    if ($request->filled('booking_date')) {
-        try {
-            [$start, $end] = explode(' - ', $request->booking_date);
+        if ($products = $request->input('product')) {
 
-            $startDate = Carbon::parse($start)->startOfDay();
-            $endDate   = Carbon::parse($end)->endOfDay();
-        } catch (\Exception $e) {}
-    }
+            $products = array_filter((array)$products);
 
-    /*
-    |--------------------------------------------------------------------------
-    | BASE QUERY
-    |--------------------------------------------------------------------------
-    */
+            if (!empty($products)) {
 
-    
-        
+                $query->whereIn('orders.id', function ($q) use ($products) {
 
+                    $q->select('order_id')
+                    ->from('order_tours')
+                    ->whereNull('deleted_at')
+                    ->whereIn('tour_id', $products);
 
-    $query = DB::table('orders')
-         ->leftJoin('order_tours', function ($join) {
-            $join->on('orders.id', '=', 'order_tours.order_id')
-                 ->whereNull('order_tours.deleted_at');
-        })
-        ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
-        ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
-        ->whereNull('orders.deleted_at')
-        ->whereNotIn('orders.order_status', $excludedStatuses);
+                });
 
+            }
+        }
 
+        if ($excludeProducts = $request->input('exclude_product')) {
 
-    /*
-    |--------------------------------------------------------------------------
-    | FILTERS
-    |--------------------------------------------------------------------------
-    */
+        $excludeProducts = array_filter((array)$excludeProducts);
 
-    // ✅ Order Status
+        if (!empty($excludeProducts)) {
 
-    if ($startDate && $endDate) {
-        $query->whereBetween('orders.created_at', [$startDate, $endDate]);
-    }
-
-    // if ($product = $request->input('product')) {
-    //     $query->where('order_tours.tour_id', $product);
-    // }
-      if ($products = $request->input('product')) {
-
-        $products = array_filter((array)$products);
-
-        if (!empty($products)) {
-
-            $query->whereIn('orders.id', function ($q) use ($products) {
+            $query->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
 
                 $q->select('order_id')
-                  ->from('order_tours')
-                  ->whereNull('deleted_at')
-                  ->whereIn('tour_id', $products);
+                ->from('order_tours')
+                ->whereNull('deleted_at')
+                ->whereIn('tour_id', $excludeProducts);
 
             });
 
         }
     }
 
-    if ($excludeProducts = $request->input('exclude_product')) {
+            // if ($excludeProducts = $request->input('exclude_product')) {
 
-    $excludeProducts = array_filter((array)$excludeProducts);
+            //     $excludeProducts = array_filter((array)$excludeProducts);
 
-    if (!empty($excludeProducts)) {
+            //     if (!empty($excludeProducts)) {
 
-        $query->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
+            //         $query->whereDoesntHave('orderTours', function ($q) use ($excludeProducts) {
 
-            $q->select('order_id')
-              ->from('order_tours')
-              ->whereNull('deleted_at')
-              ->whereIn('tour_id', $excludeProducts);
+            //             $q->whereIn('tour_id', $excludeProducts);
 
-        });
+            //         });
 
-    }
-}
+            //     }
 
-    if ($request->filled('order_status')) {
-        $query->where('orders.order_status', $request->order_status);
-    }
-    if ($request->filled('partner')) {
-        $query->where('orders.source', $request->partner);
-    }
-
-    // ✅ Payment Status
-    if ($request->filled('payment_status')) {
-        $query->where('orders.payment_status', $request->payment_status);
-    }
+            // }
 
 
-    // ✅ Pay Type
-    if ($request->action_type === 'pay_now') {
-        $query->where('orders.action_name', 'book');
-    } elseif ($request->action_type === 'pay_later') {
-        $query->where(function ($q) {
-            $q->where('orders.action_name', '!=', 'book')
-              ->orWhereNull('orders.action_name');
-        });
-    }
 
-    // ✅ Tour Date Filter (IMPORTANT FIX)
-    if ($request->filled('tour_date')) {
-        try {
-            [$start, $end] = explode(' - ', $request->tour_date);
+        // if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
+        //     $query->whereBetween('order_tours.tour_date', [
+        //         $request->tour_start_date,
+        //         $request->tour_end_dates,
+        //     ]);
+        // }
 
-            $query->whereBetween('order_tours.tour_date', [$start, $end]);
-        } catch (\Exception $e) {}
-    }
+        if ($request->filled('tour_date')) {
 
-    
-    // dd( $request->tour_start_date, Carbon::parse($request->tour_start_date)->startOfDay());
+            try {
+                [$start, $end] = explode(' - ', $request->tour_date);
 
-    /*
-    |--------------------------------------------------------------------------
-    | FETCH DATA (PAGINATED)
-    |--------------------------------------------------------------------------
-    */
+                $query->whereBetween('order_tours.tour_date', [
+                    $start,
+                    $end,
+                ]);
 
-    apply_report_sorting($query, $request); 
-    $orders = $query
-        ->select(
+            } catch (\Exception $e) {
+                // fail silently
+            }
+        }
+        apply_report_sorting($query, $request); 
+
+        $query->select(
             'orders.id',
             'orders.order_number',
-            'orders.order_status',
             'orders.payment_status',
+            'orders.created_at',
+            'orders.currency',
+            'orders.booking_fee',
             'orders.source',
-            'orders.created_by',
-            DB::raw('DATE(orders.created_at) as booking_date'),
-            'order_tours.tour_date as fulfilment_date',
-            'order_tours.tour_id',
 
-            // ✅ REQUIRED FOR CALCULATION
+            'order_tours.tour_date',
             'order_tours.tour_pricing',
             'order_tours.tour_extra',
             'order_tours.discount',
-            'order_tours.deleted_at',
-
             'order_tours.tour_fees',
 
-            'order_customers.first_name as customer_first_name',
-            'order_customers.last_name as customer_last_name',
+            'order_customers.first_name',
+            'order_customers.last_name',
 
-            'orders.total_amount',
-            'orders.balance_amount',
-            'orders.currency',
-
-            'orders.booking_fee',
-
-            'order_tours.number_of_guests as pax',
-
-            'order_customers.promo_code',
-            'order_customers.instructions',
-
-            'orders.payment_method',
-             'tours.title as product_name'
-        )
-        // ->orderByDesc('order_tours.tour_date')
-        ->paginate(20)
-        ->withQueryString();
-
-    /*
-    |--------------------------------------------------------------------------
-    | CATEGORY MAP
-    |--------------------------------------------------------------------------
-    */
-    $categoryMap = DB::table('category_tour')
-        ->leftJoin('categories', 'categories.id', '=', 'category_tour.category_id')
-        ->select('category_tour.tour_id', DB::raw('GROUP_CONCAT(categories.name) as categories'))
-        ->groupBy('category_tour.tour_id')
-        ->pluck('categories', 'tour_id');
-
-
-    $orderIds = $orders->pluck('id');
-
-    $payments = DB::table('order_payments')
-        ->whereIn('order_id', $orderIds)
-        ->whereNull('deleted_at')
-        ->get()
-        ->groupBy('order_id');
-
-    /*
-    |--------------------------------------------------------------------------
-    | FINAL FORMAT + CURRENCY CONVERSION (CAD)
-    |--------------------------------------------------------------------------
-    */
-    $orders->getCollection()->transform(function ($order) use ($payments, $categoryMap, $excludedPaymentSources) {
-
-        $isExcludedFromPayment = in_array(
-            strtolower($order->source),
-            $excludedPaymentSources
+            'tours.title as product_name'
         );
-
-        // $finalTotal = 0;
-        // $totalTax = 0;
-        // $productValue = 0;
-        // $extraValue = 0;
-
-        
-        
-        // $subtotal2 = 0;
-
-        $finalTotal = 0;
-        $totalTax = 0;
-        $productValue = 0;
-        $extraValue = 0;
-        $discountAmount = 0;
-        $paid = 0;
-        $balance = 0;
-        $subtotal2 = 0;
-        $pricing = json_decode($order->tour_pricing, true) ?? [];
-        $extras  = json_decode($order->tour_extra, true) ?? [];
-        $discounts = json_decode($order->discount, true) ?? [];
-
-        // if (!$isExcludedFromPayment) {
-            
-
-            // ✅ Pricing
-            foreach ($pricing as $p) {
-                $qty = $p['quantity'] ?? 0;
-                $actual_price = $p['actual_price'] ?? $p['price'] ?? 0;
-
-                if ($qty > 0) {
-                    $productValue += (float) ($p['gross_total_price']
-                        ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                            ? $actual_price
-                            : $actual_price * $qty));
-                }
-            }
-
-            $subtotal2 +=$productValue;
-
-            // ✅ Extras
-            foreach ($extras as $e) {
-                $qty = $e['quantity'] ?? 0;
-                $price = $e['price'] ?? 0;
-
-                if ($qty > 0) {
-                    $extraValue += ($e['total_price'] ?? ($qty * $price));
-                }
-            }
-
-            $subtotal2 +=$extraValue;
-
-            // ✅ Discount
-            $discountAmount = 0;
-            if (!empty($discounts)) {
-                foreach ($discounts as $d) {
-                    $discountAmount = $d['price'] ?? 0;
-                }
-            }
-
-            $subtotal2 -= $discountAmount;
-            // ✅ Taxes (if JSON)
-
-            // dd($order->taxes_fees);
-            if (!empty($order->tour_fees)) {
-                $taxes = is_string($order->tour_fees)
-                    ? json_decode($order->tour_fees, true)
-                    : $order->tour_fees;
-                
-                foreach ($taxes as $tax) {
-                    $taxAmount = get_tax($subtotal2, $tax['type'], 13);
-                    $subtotal2 += $taxAmount;
-                    $totalTax += $taxAmount;
-                }
-            }
-
-            $finalTotal = $subtotal2;
-
-
-
-            // ✅ Excluded payment handling (same as invoice report)
-$customerTotal = $finalTotal;
-$excludedBalance = 0;
-$hideSuplierExcludeExtraCost = false;
-
-$orderPayments = $payments[$order->id] ?? collect();
-$excludedCommissionPayment = 0;
-
-if ($isExcludedFromPayment) {
-
-    $excludedCommissionPayment = $orderPayments
-        ->where('payment_type', 'EXCLUDED')
-        ->sum('amount');
-
-    $totalPaymentAmount = $orderPayments
-        ->where('status', 'succeeded')
-        ->sum('amount')
-        - $excludedCommissionPayment;
-
-    $customerTotal = $finalTotal - $excludedCommissionPayment;
-
-    if (round($totalPaymentAmount, 2) < round($customerTotal, 2)) {
-        $excludedBalance = $customerTotal - $totalPaymentAmount;
-        $customerTotal = $totalPaymentAmount;
-        $hideSuplierExcludeExtraCost = true;
-    }
-}
-// ✅ Payments
-$totalPaid = $orderPayments
-    ->where('status', 'succeeded')
-    ->sum('amount')
-    - $orderPayments->where('status', 'refunded')->sum('amount');
-
-$promoPayment = $orderPayments
-    ->where('collection_type', 'Outside')
-    ->where('payment_type', 'PROMO_CODE')
-    ->sum('amount');
-
-$paid = $totalPaid - $promoPayment;
-
-if ($isExcludedFromPayment) {
-    $paid -= $excludedCommissionPayment;
-}
-
-$balance = $customerTotal - $paid;
-            // dd($check,$taxes, $taxAmount, $finalTotal, $subtotal2, $discountAmount, $extraValue, $productValue);
-
-            // ✅ Payments
-            // $orderPayments = $payments[$order->id] ?? collect();
-
-            // $totalPaid = $orderPayments->where('status', 'succeeded')->sum('amount')
-            //     - $orderPayments->where('status', 'refunded')->sum('amount');
-
-            // $promoPayment = $orderPayments
-            //     ->where('collection_type', 'Outside')
-            //     ->where('payment_type', 'PROMO_CODE')
-            //     ->sum('amount');
-
-            // $paid = $totalPaid - $promoPayment;
-
-            // $balance = $finalTotal - $paid;
-            // ✅ Payments
-            // $totalPaid = $orderPayments
-            //     ->where('status', 'succeeded')
-            //     ->sum('amount')
-            //     - $orderPayments->where('status', 'refunded')->sum('amount');
-
-            // $promoPayment = $orderPayments
-            //     ->where('collection_type', 'Outside')
-            //     ->where('payment_type', 'PROMO_CODE')
-            //     ->sum('amount');
-
-            // $paid = $totalPaid - $promoPayment;
-
-            // if ($isExcludedFromPayment) {
-            //     $paid -= $excludedCommissionPayment;
-            // }
-
-            // $balance = $customerTotal - $paid;
-
-        // }
-
-        // ✅ Excluded payment handling (same as invoice report)
-        $customerTotal = $finalTotal;
-        $excludedBalance = 0;
-        $hideSuplierExcludeExtraCost = false;
-
-        $orderPayments = $payments[$order->id] ?? collect();
-        $excludedCommissionPayment = 0;
-
-        if ($isExcludedFromPayment) {
-
-            $excludedCommissionPayment = $orderPayments
-                ->where('payment_type', 'EXCLUDED')
-                ->sum('amount');
-
-            $totalPaymentAmount = $orderPayments
-                ->where('status', 'succeeded')
-                ->sum('amount')
-                - $excludedCommissionPayment;
-
-            $customerTotal = $finalTotal - $excludedCommissionPayment;
-
-            if (round($totalPaymentAmount, 2) < round($customerTotal, 2)) {
-                $excludedBalance = $customerTotal - $totalPaymentAmount;
-                $customerTotal = $totalPaymentAmount;
-                $hideSuplierExcludeExtraCost = true;
-            }
-        }
-
-        // ✅ Convert to CAD
-        $order->total_amount_converted = round(currencyConvertWithoutRound($customerTotal, $order->currency, 'CAD'), 2);
-        $order->paid_amount_converted = round(currencyConvertWithoutRound($paid, $order->currency, 'CAD'), 2);
-        $order->balance_converted = round(currencyConvertWithoutRound($balance, $order->currency, 'CAD'), 2);
-        $order->tax_converted = round(currencyConvertWithoutRound($totalTax, $order->currency, 'CAD'), 2);
-        $order->product_value_converted = round(currencyConvertWithoutRound($productValue, $order->currency, 'CAD'), 2);
-        $order->extra_value_converted = round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2);
-        $order->discount_value_converted = round(currencyConvertWithoutRound($discountAmount, $order->currency, 'CAD'), 2);
-
-    
-        $order->net_sales_converted = round(
-            $order->total_amount_converted - $order->tax_converted,
-            2
-        );
-
-        $order->all_paid = $order->balance_converted <= 0 ? 'Yes' : 'No';
-
-
 
         /*
         |--------------------------------------------------------------------------
-        | CATEGORY
+        | PAGINATION SWITCH
         |--------------------------------------------------------------------------
         */
-        $order->category = $categoryMap[$order->tour_id] ?? '-';
 
-        $adult = 0;
-        $child = 0;
-        $infant = 0;
-        $other = 0;
 
-        foreach ($pricing as $p) {
-            $qty = (int) ($p['quantity'] ?? 0);
-            $label = strtolower($p['label'] ?? '');
-            $priceType = $p['price_type'] ?? '';
+        $orders = $paginate
+            ? $query->paginate(20)->withQueryString()
+            : $query->get();
 
-            // ✅ FIXED → treat as Adults
-            if ($priceType === 'FIXED') {
-                $adult += $qty;
-                continue;
-            }
+        $orderCollection = $paginate ? $orders->getCollection() : $orders;
 
-            if (str_contains($label, 'adult')) {
-                $adult += $qty;
-            } elseif (str_contains($label, 'child')) {
-                $child += $qty;
-            } elseif (str_contains($label, 'infant')) {
-                $infant += $qty;
-            } else {
-                $other += $qty;
-            }
-        }
+        $orderIds = $orderCollection->pluck('id');
+        // $orderIds = collect($orders)->pluck('id');
 
-        // attach to order
-        $order->adult = $adult;
-        $order->child = $child;
-        $order->infant = $infant;
-        $order->other = $other;
+        $payments = DB::table('order_payments')
+            ->whereIn('order_id', $orderIds)
+            ->whereNull('deleted_at')
+            ->get()
+            ->groupBy('order_id');
 
-        return $order;
-    });
-
-
-    /*
-|--------------------------------------------------------------------------
-| CUSTOMER REPORT QUERY
-|--------------------------------------------------------------------------
-*/
-$customers = DB::table('orders')
-    ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
-    ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
-    ->whereNull('orders.deleted_at')
-    ->whereNotIn('orders.order_status', $excludedStatuses)->groupBy('orders.id');
-
-if ($startDate && $endDate) {
-    $customers->whereBetween('orders.created_at', [$startDate, $endDate]);
-}
-// SAME FILTERS (IMPORTANT)
-if ($request->filled('payment_status')) {
-    $customers->where('orders.payment_status', $request->payment_status);
-}
- if ($request->filled('order_status')) {
-        $customers->where('orders.order_status', $request->order_status);
-    }
-
-
-
-if ($products = $request->input('product')) {
-
-        $products = array_filter((array)$products);
-
-        if (!empty($products)) {
-
-            $customers->whereIn('orders.id', function ($q) use ($products) {
-
-                $q->select('order_id')
-                  ->from('order_tours')
-                  ->whereNull('deleted_at')
-                  ->whereIn('tour_id', $products);
-
-            });
-
-        }
-    }
-
-    if ($excludeProducts = $request->input('exclude_product')) {
-
-    $excludeProducts = array_filter((array)$excludeProducts);
-
-    if (!empty($excludeProducts)) {
-
-        $customers->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
-
-            $q->select('order_id')
-              ->from('order_tours')
-              ->whereNull('deleted_at')
-              ->whereIn('tour_id', $excludeProducts);
-
-        });
-
-    }
-}
-
-if ($request->action_type === 'pay_now') {
-    $customers->where('orders.action_name', 'book');
-} elseif ($request->action_type === 'pay_later') {
-    $customers->where(function ($q) {
-        $q->where('orders.action_name', '!=', 'book')
-          ->orWhereNull('orders.action_name');
-    });
-}
-
-if ($request->filled('partner')) {
-        $customers->where('orders.source', $request->partner);
-    }
- if ($request->filled('tour_date')) {
-    try {
-        [$start, $end] = explode(' - ', $request->tour_date);
-
-        $customers->whereBetween('order_tours.tour_date', [$start, $end]);
-    } catch (\Exception $e) {}
-}
-apply_report_sorting($customers, $request); 
-$customers = $customers->select(
-        'orders.order_number',
-        DB::raw('DATE(orders.created_at) as booking_date'),
-        'order_tours.tour_date as fulfilment_date',
-
-        'order_customers.id',
-        'order_customers.first_name',
-        'order_customers.last_name',
-        'order_customers.email',
-        'order_customers.phone',
-        'order_customers.instructions',
-
-        'order_customers.promo_code'
-    )
-    // ->orderByDesc('orders.id')
-    ->paginate(20, ['*'], 'customer_page') // IMPORTANT (separate pagination)
-    ->withQueryString();
-
-    $partners = Partner::get();
-    
-
-    return view('admin.reports.revenue', compact('orders', 'customers', 'partners', 'selectedProducts', 'excludedProducts'));
-}
-
-public function invoice(Request $request)
-{
-    
-    $data = $this->getInvoiceData($request, true);
-
-    $selectedProducts = Tour::whereIn(
-            'id',
-            (array)$request->product
-        )->get(['id','title']);
-
-        $excludedProducts = Tour::whereIn(
-            'id',
-            (array)$request->exclude_product
-        )->get(['id','title']);
-
-    return view('admin.reports.invoice', [
-        'rows' => $data['rows'],
-        'orders' => $data['pagination'],
-        'partners' => Partner::get(),
-        'selectedProducts' => $selectedProducts,
-        'excludedProducts' => $excludedProducts
-    ]);
-}
-
-public function invoiceExport(Request $request)
-{
-    ini_set('memory_limit', '1024M');
-    $data = $this->getInvoiceData($request);
-
-    return \Maatwebsite\Excel\Facades\Excel::download(
-        new \App\Exports\InvoiceExport($data),
-        'invoice-report' . now()->format('Ymd_His') . '.xlsx'
-    );
-}
-
-
-public function getInvoiceData($request, $paginate = false)
-{
-    $excludedStatuses = [1, 2, 6, 7];
-    $excludedPaymentSources = array_map('strtolower', excluded_payment_sources());
-
-    $hasFilter = $request->filled('booking_date')
-    || $request->filled('tour_date')
-    || $request->filled('product')
-    || $request->filled('order_status')
-    || $request->filled('payment_status')
-    || $request->filled('partner')
-    || $request->filled('action_type')
-    || $request->filled('exclude_product');
-
-    if (!$hasFilter) {
-        return $paginate
-            ? [
-                'rows' => [],
-                'pagination' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20)
-            ]
-            : [];
-    }
-
-    $query = DB::table('orders')
-         ->leftJoin('order_tours', function ($join) {
-            $join->on('orders.id', '=', 'order_tours.order_id')
-                 ->whereNull('order_tours.deleted_at');
-        })
-        ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
-        ->leftJoin('order_payments', 'orders.id', '=', 'order_payments.order_id')
-        ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
-        ->whereNull('orders.deleted_at')
-        ->whereNotIn('orders.order_status', $excludedStatuses)
-        ->groupBy('orders.id');
-
-    // Filters
-
-    $startDate = null;
-    $endDate = null;
-
-    if ($request->filled('booking_date')) {
-        try {
-            [$start, $end] = explode(' - ', $request->booking_date);
-
-            $startDate = Carbon::parse($start)->startOfDay();
-            $endDate   = Carbon::parse($end)->endOfDay();
-            if ($startDate && $endDate) {
-                $query->whereBetween('orders.created_at', [$startDate, $endDate]);
-            }
-        } catch (\Exception $e) {}
-
-    }
-
-    if ($request->filled('order_status')) {
-        $query->where('orders.order_status', $request->order_status);
-    }
-
-    if ($request->filled('payment_status')) {
-        $query->where('orders.payment_status', $request->payment_status);
-    }
-
-    if ($request->filled('partner')) {
-        $query->where('orders.source', $request->partner);
-    }
-
-    if ($request->action_type === 'pay_now') {
-        $query->where('orders.action_name', 'book');
-    } elseif ($request->action_type === 'pay_later') {
-        $query->where(function ($q) {
-            $q->where('orders.action_name', '!=', 'book')
-              ->orWhereNull('orders.action_name');
-        });
-    }
-
-    // if ($product = $request->input('product')) {
-    //     $query->where('order_tours.tour_id', $product);
-    // }
-
-    // if ($product = $request->input('product')) {
-    //         $product = array_filter((array)$product);
-    //         if (!empty($product)) {
-    //             $query->whereHas('orderTours', function ($q) use ($product) {
-    //                 $q->whereIn('tour_id', $product);
-    //             });
-    //         }
-    //     }
-
-    if ($products = $request->input('product')) {
-
-        $products = array_filter((array)$products);
-
-        if (!empty($products)) {
-
-            $query->whereIn('orders.id', function ($q) use ($products) {
-
-                $q->select('order_id')
-                  ->from('order_tours')
-                  ->whereNull('deleted_at')
-                  ->whereIn('tour_id', $products);
-
-            });
-
-        }
-    }
-
-    if ($excludeProducts = $request->input('exclude_product')) {
-
-    $excludeProducts = array_filter((array)$excludeProducts);
-
-    if (!empty($excludeProducts)) {
-
-        $query->whereNotIn('orders.id', function ($q) use ($excludeProducts) {
-
-            $q->select('order_id')
-              ->from('order_tours')
-              ->whereNull('deleted_at')
-              ->whereIn('tour_id', $excludeProducts);
-
-        });
-
-    }
-}
-
-        // if ($excludeProducts = $request->input('exclude_product')) {
-
-        //     $excludeProducts = array_filter((array)$excludeProducts);
-
-        //     if (!empty($excludeProducts)) {
-
-        //         $query->whereDoesntHave('orderTours', function ($q) use ($excludeProducts) {
-
-        //             $q->whereIn('tour_id', $excludeProducts);
-
-        //         });
-
-        //     }
-
-        // }
-
-
-
-    // if ($request->filled('tour_start_date') && $request->filled('tour_end_date')) {
-    //     $query->whereBetween('order_tours.tour_date', [
-    //         $request->tour_start_date,
-    //         $request->tour_end_dates,
-    //     ]);
-    // }
-
-    if ($request->filled('tour_date')) {
-
-        try {
-            [$start, $end] = explode(' - ', $request->tour_date);
-
-            $query->whereBetween('order_tours.tour_date', [
-                $start,
-                $end,
-            ]);
-
-        } catch (\Exception $e) {
-            // fail silently
-        }
-    }
-    apply_report_sorting($query, $request); 
-
-    $query->select(
-        'orders.id',
-        'orders.order_number',
-        'orders.payment_status',
-        'orders.created_at',
-        'orders.currency',
-        'orders.booking_fee',
-        'orders.source',
-
-        'order_tours.tour_date',
-        'order_tours.tour_pricing',
-        'order_tours.tour_extra',
-        'order_tours.discount',
-        'order_tours.tour_fees',
-
-        'order_customers.first_name',
-        'order_customers.last_name',
-
-        'tours.title as product_name'
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | PAGINATION SWITCH
-    |--------------------------------------------------------------------------
-    */
-
-
-    $orders = $paginate
-        ? $query->paginate(20)->withQueryString()
-        : $query->get();
-
-    $orderCollection = $paginate ? $orders->getCollection() : $orders;
-
-    $orderIds = $orderCollection->pluck('id');
-    // $orderIds = collect($orders)->pluck('id');
-
-    $payments = DB::table('order_payments')
-        ->whereIn('order_id', $orderIds)
-        ->whereNull('deleted_at')
-        ->get()
-        ->groupBy('order_id');
-
-    
-
-    /*
-    |--------------------------------------------------------------------------
-    | TRANSFORM
-    |--------------------------------------------------------------------------
-    */
-    $collection = $paginate ? $orders->getCollection() : $orders;
-
-    $rows = [];
-    $index = $paginate
-        ? ($orders->currentPage() - 1) * $orders->perPage() + 1
-        : 1;
-
-    foreach ($collection as $order) {
-
-        $isExcludedFromPayment = in_array(
-            strtolower($order->source ?? ''),
-            $excludedPaymentSources
-        );
-
-        $productValue = 0;
-        $extraValue = 0;
-        $taxValue = 0;
-        $discountAmount = 0;
-        $subtotal = 0;
-        $totalPaid = 0;
-        $finalTotal = 0;
-
-        $pricing = json_decode($order->tour_pricing, true) ?? [];
-        $extras  = json_decode($order->tour_extra, true) ?? [];
-        $discounts = json_decode($order->discount, true) ?? [];
-
-
-        // foreach ($pricing as $p) {
-        //     $qty = $p['quantity'] ?? 0;
-        //     $price = $p['actual_price'] ?? $p['price'] ?? 0;
-
-        //     if ($qty > 0) {
-        //         $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
-        //             ? $price
-        //             : $price * $qty;
-        //     }
-        // }
-        $adult = 0;
-        $child = 0;
-        $infant = 0;
-        $other = 0;
-        // if (!$isExcludedFromPayment) {
         
 
-            foreach ($pricing as $p) {
-                $qty = (int) ($p['quantity'] ?? 0);
-                $label = strtolower($p['label'] ?? '');
-                $priceType = $p['price_type'] ?? '';
+        /*
+        |--------------------------------------------------------------------------
+        | TRANSFORM
+        |--------------------------------------------------------------------------
+        */
+        $collection = $paginate ? $orders->getCollection() : $orders;
 
-                // FIXED → treat as Adults
-                if ($priceType === 'FIXED') {
-                    $adult += $qty;
-                    
-                } else{
-                    if (str_contains($label, 'adult')) {
-                    $adult += $qty;
-                    } elseif (str_contains($label, 'child')) {
-                        $child += $qty;
-                    } elseif (str_contains($label, 'infant')) {
-                        $infant += $qty;
-                    } else {
-                        $other += $qty;
-                    }
-                }
+        $rows = [];
+        $index = $paginate
+            ? ($orders->currentPage() - 1) * $orders->perPage() + 1
+            : 1;
 
-                
-                $price = $p['actual_price'] ?? $p['price'] ?? 0;
+        foreach ($collection as $order) {
 
-                if ($qty > 0) {
-                    $productValue += (float) ($p['gross_total_price']
-                        ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
-                            ? $price
-                            : $price * $qty));
-                }
-            }
+            $isExcludedFromPayment = in_array(
+                strtolower($order->source ?? ''),
+                $excludedPaymentSources
+            );
 
-            $subtotal += $productValue;
-
-            foreach ($extras as $e) {
-                $qty = $e['quantity'] ?? 0;
-                $price = $e['price'] ?? 0;
-
-                if ($qty > 0) {
-                    $extraValue += ($e['total_price'] ?? ($qty * $price));
-                }
-            }
-
-            $subtotal += $extraValue;
-
-            foreach ($discounts as $d) {
-                $discountAmount += $d['price'] ?? 0;
-            }
-
-            $subtotal -= $discountAmount;
-
-            if (!empty($order->tour_fees)) {
-                $taxes = is_string($order->tour_fees)
-                    ? json_decode($order->tour_fees, true)
-                    : $order->tour_fees;
-
-                foreach ($taxes as $tax) {
-                    $taxAmount = get_tax($subtotal, $tax['type'], 13);
-                    $subtotal += $taxAmount;
-                    $taxValue += $taxAmount;
-                }
-            }
-
-            $finalTotal = $subtotal;
-
-
-
-            $orderPayments = $payments[$order->id] ?? collect();
-
-
-            // total successful payments
-            $totalPaid = $orderPayments
-                ->where('status', 'succeeded')
-                ->sum('amount');
-            $refunded = $orderPayments
-                ->where('status', 'refunded')
-                ->sum('amount');
-
-            // remove promo payments (if applicable)
-            $promoPayment = $orderPayments
-                ->where('collection_type', 'Outside')
-                ->where('payment_type', 'PROMO_CODE')
-                ->sum('amount');
-
-            
-            $totalPaid = $totalPaid - $refunded;
-        // }
-        if ($isExcludedFromPayment) {
             $productValue = 0;
             $extraValue = 0;
             $taxValue = 0;
@@ -1477,73 +1360,190 @@ public function getInvoiceData($request, $paginate = false)
             $totalPaid = 0;
             $finalTotal = 0;
 
+            $pricing = json_decode($order->tour_pricing, true) ?? [];
+            $extras  = json_decode($order->tour_extra, true) ?? [];
+            $discounts = json_decode($order->discount, true) ?? [];
+
+
+            // foreach ($pricing as $p) {
+            //     $qty = $p['quantity'] ?? 0;
+            //     $price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+            //     if ($qty > 0) {
+            //         $productValue += (isset($p['price_type']) && $p['price_type'] == 'FIXED')
+            //             ? $price
+            //             : $price * $qty;
+            //     }
+            // }
+            $adult = 0;
+            $child = 0;
+            $infant = 0;
+            $other = 0;
+            // if (!$isExcludedFromPayment) {
+            
+
+                foreach ($pricing as $p) {
+                    $qty = (int) ($p['quantity'] ?? 0);
+                    $label = strtolower($p['label'] ?? '');
+                    $priceType = $p['price_type'] ?? '';
+
+                    // FIXED → treat as Adults
+                    if ($priceType === 'FIXED') {
+                        $adult += $qty;
+                        
+                    } else{
+                        if (str_contains($label, 'adult')) {
+                        $adult += $qty;
+                        } elseif (str_contains($label, 'child')) {
+                            $child += $qty;
+                        } elseif (str_contains($label, 'infant')) {
+                            $infant += $qty;
+                        } else {
+                            $other += $qty;
+                        }
+                    }
+
+                    
+                    $price = $p['actual_price'] ?? $p['price'] ?? 0;
+
+                    if ($qty > 0) {
+                        $productValue += (float) ($p['gross_total_price']
+                            ?? ((isset($p['price_type']) && $p['price_type'] == 'FIXED')
+                                ? $price
+                                : $price * $qty));
+                    }
+                }
+
+                $subtotal += $productValue;
+
+                foreach ($extras as $e) {
+                    $qty = $e['quantity'] ?? 0;
+                    $price = $e['price'] ?? 0;
+
+                    if ($qty > 0) {
+                        $extraValue += ($e['total_price'] ?? ($qty * $price));
+                    }
+                }
+
+                $subtotal += $extraValue;
+
+                foreach ($discounts as $d) {
+                    $discountAmount += $d['price'] ?? 0;
+                }
+
+                $subtotal -= $discountAmount;
+
+                if (!empty($order->tour_fees)) {
+                    $taxes = is_string($order->tour_fees)
+                        ? json_decode($order->tour_fees, true)
+                        : $order->tour_fees;
+
+                    foreach ($taxes as $tax) {
+                        $taxAmount = get_tax($subtotal, $tax['type'], 13);
+                        $subtotal += $taxAmount;
+                        $taxValue += $taxAmount;
+                    }
+                }
+
+                $finalTotal = $subtotal;
+
+
+
+                $orderPayments = $payments[$order->id] ?? collect();
+
+
+                // total successful payments
+                $totalPaid = $orderPayments
+                    ->where('status', 'succeeded')
+                    ->sum('amount');
+                $refunded = $orderPayments
+                    ->where('status', 'refunded')
+                    ->sum('amount');
+
+                // remove promo payments (if applicable)
+                $promoPayment = $orderPayments
+                    ->where('collection_type', 'Outside')
+                    ->where('payment_type', 'PROMO_CODE')
+                    ->sum('amount');
+
+                
+                $totalPaid = $totalPaid - $refunded;
+            // }
+            if ($isExcludedFromPayment) {
+                $productValue = 0;
+                $extraValue = 0;
+                $taxValue = 0;
+                $discountAmount = 0;
+                $subtotal = 0;
+                $totalPaid = 0;
+                $finalTotal = 0;
+
+            }
+
+            $rows[] = [
+                'id' => $order->id,
+                'no' => $index++,
+                'order_number' => $order->order_number,
+                'customer_name' => $order->first_name . ' ' . $order->last_name,
+                'order_date' => $order->created_at,
+                'fulfilment_date' => $order->tour_date,
+
+                'product_price' => round(currencyConvertWithoutRound($productValue, $order->currency, 'CAD'), 2),
+                'extra_amount' => round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2),
+                'tax_amount' => round(currencyConvertWithoutRound($taxValue, $order->currency, 'CAD'), 2),
+                'booking_fee' => round(currencyConvertWithoutRound($order->booking_fee ?? 0, $order->currency, 'CAD'), 2),
+                'customer_total' => round(currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD'), 2),
+                'total_paid' => round(currencyConvertWithoutRound($totalPaid, $order->currency, 'CAD'), 2),
+                
+                // 'paid' => config('constants.payment_status')[$order->payment_status] ?? '-',
+
+                'product_name' => $order->product_name,
+                'adult' => $adult,
+                'child' => $child,
+                'infant' => $infant,
+                'other' => $other,
+                'source' => $order->source ?? null,
+            ];
         }
 
-        $rows[] = [
-            'id' => $order->id,
-            'no' => $index++,
-            'order_number' => $order->order_number,
-            'customer_name' => $order->first_name . ' ' . $order->last_name,
-            'order_date' => $order->created_at,
-            'fulfilment_date' => $order->tour_date,
-
-            'product_price' => round(currencyConvertWithoutRound($productValue, $order->currency, 'CAD'), 2),
-            'extra_amount' => round(currencyConvertWithoutRound($extraValue, $order->currency, 'CAD'), 2),
-            'tax_amount' => round(currencyConvertWithoutRound($taxValue, $order->currency, 'CAD'), 2),
-            'booking_fee' => round(currencyConvertWithoutRound($order->booking_fee ?? 0, $order->currency, 'CAD'), 2),
-            'customer_total' => round(currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD'), 2),
-            'total_paid' => round(currencyConvertWithoutRound($totalPaid, $order->currency, 'CAD'), 2),
-            
-            // 'paid' => config('constants.payment_status')[$order->payment_status] ?? '-',
-
-            'product_name' => $order->product_name,
-            'adult' => $adult,
-            'child' => $child,
-            'infant' => $infant,
-            'other' => $other,
-            'source' => $order->source ?? null,
-        ];
+        /*
+        |--------------------------------------------------------------------------
+        | RETURN FORMAT
+        |--------------------------------------------------------------------------
+        */
+        return $paginate
+            ? ['rows' => $rows, 'pagination' => $orders]
+            : $rows;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | RETURN FORMAT
-    |--------------------------------------------------------------------------
-    */
-    return $paginate
-        ? ['rows' => $rows, 'pagination' => $orders]
-        : $rows;
-}
+    public function invoiceWithDetails(Request $request)
+    {
+        $data = $this->getInvoiceWithDetailsData($request, true);
 
 
-public function invoiceWithDetails(Request $request)
-{
-    $data = $this->getInvoiceWithDetailsData($request, true);
+        $selectedProducts = Tour::whereIn(
+                'id',
+                (array)$request->product
+            )->get(['id','title']);
 
-
-    $selectedProducts = Tour::whereIn(
-            'id',
-            (array)$request->product
-        )->get(['id','title']);
-
-        $excludedProducts = Tour::whereIn(
-            'id',
-            (array)$request->exclude_product
-        )->get(['id','title']);
-    
-    return view('admin.reports.invoice_details', [
-        'rows' => $data['rows'],
-        'orders' => $data['pagination'],
-        'partners' => Partner::get(),
-        'selectedProducts' => $selectedProducts,
-        'excludedProducts' => $excludedProducts,
-        'addonKeys' => collect($data['rows'][0] ?? [])
-        ->keys()
-        ->filter(fn($key) => str_contains($key, '_desc'))
-        ->map(fn($key) => str_replace('_desc', '', $key))
-        ->values()
-    ]);
-}
+            $excludedProducts = Tour::whereIn(
+                'id',
+                (array)$request->exclude_product
+            )->get(['id','title']);
+        
+        return view('admin.reports.invoice_details', [
+            'rows' => $data['rows'],
+            'orders' => $data['pagination'],
+            'partners' => Partner::get(),
+            'selectedProducts' => $selectedProducts,
+            'excludedProducts' => $excludedProducts,
+            'addonKeys' => collect($data['rows'][0] ?? [])
+            ->keys()
+            ->filter(fn($key) => str_contains($key, '_desc'))
+            ->map(fn($key) => str_replace('_desc', '', $key))
+            ->values()
+        ]);
+    }
 
     public function invoiceWithDetailsExport(Request $request)
     {
@@ -1555,7 +1555,6 @@ public function invoiceWithDetails(Request $request)
             'invoice-details' . now()->format('Ymd_His') . '.xlsx'
         );
     }
-
 
     public function getInvoiceWithDetailsData($request, $paginate = false)
     {
@@ -2335,34 +2334,23 @@ public function invoiceWithDetails(Request $request)
             : ['rows' => $rows, 'totals' => $totals];
     }
 
+    public function exportRevenue(Request $request)
+    {
+        ini_set('memory_limit', '1024M');
+        return Excel::download(
+            new RevenueExport($request),
+            'revenue_report_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
 
-
-public function exportRevenue(Request $request)
-{
-    ini_set('memory_limit', '1024M');
-    return Excel::download(
-        new RevenueExport($request),
-        'revenue_report_' . now()->format('Ymd_His') . '.xlsx'
-    );
-}
-
-public function exportCustomer(Request $request)
-{
-    ini_set('memory_limit', '1024M');
-    return Excel::download(
-        new CustomerExport($request),
-        'customer_report_' . now()->format('Ymd_His') . '.xlsx'
-    );
-}
-
-//     public function schedulePricingReport(Request $request)
-// {
-//     $rows = $this->getSchedulePricingReportData($request);
-
-//     $partners = Partner::get();
-
-//     return view('admin.reports.schedule-pricing', compact('rows', 'partners'));
-// }
+    public function exportCustomer(Request $request)
+    {
+        ini_set('memory_limit', '1024M');
+        return Excel::download(
+            new CustomerExport($request),
+            'customer_report_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
 
     public function schedulePricingReport(Request $request)
     {
@@ -2532,6 +2520,7 @@ public function exportCustomer(Request $request)
 
         return $data;
     }
+
     public function schedulePricingExport(Request $request)
     {
         ini_set('memory_limit', '1024M');
@@ -2542,8 +2531,6 @@ public function exportCustomer(Request $request)
 
     public function reportPriceSchedule32432(Request $request)
     {
-        
-
         $paginated = $request->filled('pagination');
         $data = $this->getInvoiceWithDetailsData($request, $paginated);
         $selectedProducts = Tour::whereIn(
@@ -2613,10 +2600,10 @@ public function exportCustomer(Request $request)
                 ->values(),
         ]);
     }
+
     public function exportPriceSchedule(Request $request)
     {
         // 🔥 SAME FILTER LOGIC
-
         ini_set('memory_limit', '1024M');
         $data = $this->getInvoiceWithDetailsData($request, false);
 
@@ -2633,157 +2620,158 @@ public function exportCustomer(Request $request)
             'price_schedule_' . now()->format('Ymd_His') . '.xlsx'
         );
     }
+
     public function transformInvoiceRow($order, $payments = [])
-{
-    $productValue = 0;
-    $extraValue = 0;
-    $taxValue = 0;
-    $discountAmount = 0;
-    $subtotal = 0;
+    {
+        $productValue = 0;
+        $extraValue = 0;
+        $taxValue = 0;
+        $discountAmount = 0;
+        $subtotal = 0;
 
-    $pricing = json_decode($order->tour_pricing, true) ?? [];
-    $extras  = json_decode($order->tour_extra, true) ?? [];
-    $discounts = json_decode($order->discount, true) ?? [];
+        $pricing = json_decode($order->tour_pricing, true) ?? [];
+        $extras  = json_decode($order->tour_extra, true) ?? [];
+        $discounts = json_decode($order->discount, true) ?? [];
 
-    $adult = $child = $infant = $other = $senior = 0;
+        $adult = $child = $infant = $other = $senior = 0;
 
-    /*
-    |--------------------------------------------------------------------------
-    | 🔥 PRICING
-    |--------------------------------------------------------------------------
-    */
-    foreach ($pricing as $p) {
+        /*
+        |--------------------------------------------------------------------------
+        | 🔥 PRICING
+        |--------------------------------------------------------------------------
+        */
+        foreach ($pricing as $p) {
 
-        $qty = (int) ($p['quantity'] ?? 0);
-        $label = strtolower($p['label'] ?? '');
-        $price = $p['actual_price'] ?? $p['price'] ?? 0;
+            $qty = (int) ($p['quantity'] ?? 0);
+            $label = strtolower($p['label'] ?? '');
+            $price = $p['actual_price'] ?? $p['price'] ?? 0;
 
-        if (str_contains($label, 'adult')) $adult += $qty;
-        elseif (str_contains($label, 'child')) $child += $qty;
-        elseif (str_contains($label, 'infant')) $infant += $qty;
-        elseif (str_contains($label, 'senior')) $senior += $qty;
-        else $other += $qty;
+            if (str_contains($label, 'adult')) $adult += $qty;
+            elseif (str_contains($label, 'child')) $child += $qty;
+            elseif (str_contains($label, 'infant')) $infant += $qty;
+            elseif (str_contains($label, 'senior')) $senior += $qty;
+            else $other += $qty;
 
-        if ($qty > 0) {
-            $productValue += (float) ($p['gross_total_price'] ?? ($price * $qty));
+            if ($qty > 0) {
+                $productValue += (float) ($p['gross_total_price'] ?? ($price * $qty));
+            }
         }
-    }
 
-    $subtotal += $productValue;
+        $subtotal += $productValue;
 
-    /*
-    |--------------------------------------------------------------------------
-    | 🔥 EXTRAS
-    |--------------------------------------------------------------------------
-    */
-    foreach ($extras as $e) {
-        $extraValue += $e['total_price'] ?? (($e['quantity'] ?? 0) * ($e['price'] ?? 0));
-    }
-
-    $subtotal += $extraValue;
-
-    /*
-    |--------------------------------------------------------------------------
-    | 🔥 DISCOUNT
-    |--------------------------------------------------------------------------
-    */
-    foreach ($discounts as $d) {
-        $discountAmount += $d['price'] ?? 0;
-    }
-
-    $subtotal -= $discountAmount;
-
-    /*
-    |--------------------------------------------------------------------------
-    | 🔥 TAX
-    |--------------------------------------------------------------------------
-    */
-    if (!empty($order->tour_fees)) {
-
-        $taxes = is_string($order->tour_fees)
-            ? json_decode($order->tour_fees, true)
-            : $order->tour_fees;
-
-        foreach ($taxes as $tax) {
-            $taxAmount = get_tax($subtotal, $tax['type'], 13);
-            $subtotal += $taxAmount;
-            $taxValue += $taxAmount;
+        /*
+        |--------------------------------------------------------------------------
+        | 🔥 EXTRAS
+        |--------------------------------------------------------------------------
+        */
+        foreach ($extras as $e) {
+            $extraValue += $e['total_price'] ?? (($e['quantity'] ?? 0) * ($e['price'] ?? 0));
         }
+
+        $subtotal += $extraValue;
+
+        /*
+        |--------------------------------------------------------------------------
+        | 🔥 DISCOUNT
+        |--------------------------------------------------------------------------
+        */
+        foreach ($discounts as $d) {
+            $discountAmount += $d['price'] ?? 0;
+        }
+
+        $subtotal -= $discountAmount;
+
+        /*
+        |--------------------------------------------------------------------------
+        | 🔥 TAX
+        |--------------------------------------------------------------------------
+        */
+        if (!empty($order->tour_fees)) {
+
+            $taxes = is_string($order->tour_fees)
+                ? json_decode($order->tour_fees, true)
+                : $order->tour_fees;
+
+            foreach ($taxes as $tax) {
+                $taxAmount = get_tax($subtotal, $tax['type'], 13);
+                $subtotal += $taxAmount;
+                $taxValue += $taxAmount;
+            }
+        }
+
+        $finalTotal = $subtotal;
+
+        /*
+        |--------------------------------------------------------------------------
+        | 🔥 PAYMENTS
+        |--------------------------------------------------------------------------
+        */
+        $orderPayments = collect($payments);
+
+        $totalPaid = $orderPayments
+            ->where('status', 'succeeded')
+            ->sum('amount');
+
+        $refunded = $orderPayments
+            ->where('status', 'refunded')
+            ->sum('amount');
+
+        $totalPaid = $totalPaid - $refunded;
+
+        /*
+        |--------------------------------------------------------------------------
+        | 🔥 CONVERT TO CAD (NO ROUND FIRST)
+        |--------------------------------------------------------------------------
+        */
+        $productCAD = currencyConvertWithoutRound($productValue, $order->currency, 'CAD');
+        $extraCAD   = currencyConvertWithoutRound($extraValue, $order->currency, 'CAD');
+        $taxCAD     = currencyConvertWithoutRound($taxValue, $order->currency, 'CAD');
+        $discountCAD= currencyConvertWithoutRound($discountAmount, $order->currency, 'CAD');
+        $totalCAD   = currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD');
+        $paidCAD    = currencyConvertWithoutRound($totalPaid, $order->currency, 'CAD');
+
+        /*
+        |--------------------------------------------------------------------------
+        | 🔥 RETURN (EXPORT SAFE STRUCTURE)
+        |--------------------------------------------------------------------------
+        */
+        return [
+
+            'order_number' => $order->order_number,
+            'customer_name' => $order->first_name . ' ' . $order->last_name,
+            'order_date' => $order->created_at,
+            'fulfilment_date' => $order->tour_date,
+
+            // 🔥 PASSENGERS
+            'adult' => $adult,
+            'child' => $child,
+            'infant' => $infant,
+            'other' => $other,
+            'senior' => $senior,
+
+            // 🔥 REVENUE SIDE
+            'product_price' => round($productCAD, 2),
+            'extra_amount' => round($extraCAD, 2),
+            'tax_amount' => round($taxCAD, 2),
+            'discount_amount' => round($discountCAD, 2),
+            'customer_total' => round($totalCAD, 2),
+
+            // 🔥 PAYMENT
+            'total_paid' => round($paidCAD, 2),
+            'balance_amount' => round($totalCAD - $paidCAD, 2),
+
+            // 🔥 COST SIDE (MANDATORY FOR EXPORT)
+            'tour_selling_price' => round($productCAD, 2),
+            'tour_selling_tax' => round($taxCAD, 2),
+            'tour_selling_total' => round($productCAD + $taxCAD, 2),
+
+            // 🔥 EXTRA COST (SAFE DEFAULT)
+            'transport_cost' => 0,
+
+            // 🔥 PRODUCT
+            'product_name' => $order->product_name,
+        ];
     }
-
-    $finalTotal = $subtotal;
-
-    /*
-    |--------------------------------------------------------------------------
-    | 🔥 PAYMENTS
-    |--------------------------------------------------------------------------
-    */
-    $orderPayments = collect($payments);
-
-    $totalPaid = $orderPayments
-        ->where('status', 'succeeded')
-        ->sum('amount');
-
-    $refunded = $orderPayments
-        ->where('status', 'refunded')
-        ->sum('amount');
-
-    $totalPaid = $totalPaid - $refunded;
-
-    /*
-    |--------------------------------------------------------------------------
-    | 🔥 CONVERT TO CAD (NO ROUND FIRST)
-    |--------------------------------------------------------------------------
-    */
-    $productCAD = currencyConvertWithoutRound($productValue, $order->currency, 'CAD');
-    $extraCAD   = currencyConvertWithoutRound($extraValue, $order->currency, 'CAD');
-    $taxCAD     = currencyConvertWithoutRound($taxValue, $order->currency, 'CAD');
-    $discountCAD= currencyConvertWithoutRound($discountAmount, $order->currency, 'CAD');
-    $totalCAD   = currencyConvertWithoutRound($finalTotal, $order->currency, 'CAD');
-    $paidCAD    = currencyConvertWithoutRound($totalPaid, $order->currency, 'CAD');
-
-    /*
-    |--------------------------------------------------------------------------
-    | 🔥 RETURN (EXPORT SAFE STRUCTURE)
-    |--------------------------------------------------------------------------
-    */
-    return [
-
-        'order_number' => $order->order_number,
-        'customer_name' => $order->first_name . ' ' . $order->last_name,
-        'order_date' => $order->created_at,
-        'fulfilment_date' => $order->tour_date,
-
-        // 🔥 PASSENGERS
-        'adult' => $adult,
-        'child' => $child,
-        'infant' => $infant,
-        'other' => $other,
-        'senior' => $senior,
-
-        // 🔥 REVENUE SIDE
-        'product_price' => round($productCAD, 2),
-        'extra_amount' => round($extraCAD, 2),
-        'tax_amount' => round($taxCAD, 2),
-        'discount_amount' => round($discountCAD, 2),
-        'customer_total' => round($totalCAD, 2),
-
-        // 🔥 PAYMENT
-        'total_paid' => round($paidCAD, 2),
-        'balance_amount' => round($totalCAD - $paidCAD, 2),
-
-        // 🔥 COST SIDE (MANDATORY FOR EXPORT)
-        'tour_selling_price' => round($productCAD, 2),
-        'tour_selling_tax' => round($taxCAD, 2),
-        'tour_selling_total' => round($productCAD + $taxCAD, 2),
-
-        // 🔥 EXTRA COST (SAFE DEFAULT)
-        'transport_cost' => 0,
-
-        // 🔥 PRODUCT
-        'product_name' => $order->product_name,
-    ];
-}
 
     private function getBusinessExpenses(Request $request)
     {
@@ -2869,106 +2857,104 @@ public function exportCustomer(Request $request)
     }
 
     private function calculateReportTotals(
-    bool $isExcludedFromPayment,
-    Collection $payments,
-    float $productPrice,
-    float $extraValue,
-    float $taxAmount,
-    float $discountAmount,
-    float $bookedAmount,
-    float $costBase,
-    float $costTotal,
-    float $sellingPriceBase,
-    float $baseExtraIncludedBase,
-    float $baseExtraExcludedBase,
-    float $sellingTax,
-    float $sellingTotal,
-    float $transportCost
-): array {
+        bool $isExcludedFromPayment,
+        Collection $payments,
+        float $productPrice,
+        float $extraValue,
+        float $taxAmount,
+        float $discountAmount,
+        float $bookedAmount,
+        float $costBase,
+        float $costTotal,
+        float $sellingPriceBase,
+        float $baseExtraIncludedBase,
+        float $baseExtraExcludedBase,
+        float $sellingTax,
+        float $sellingTotal,
+        float $transportCost
+    ): array {
 
-    $grossTotal = ($productPrice + $extraValue + $taxAmount) - $discountAmount;
+        $grossTotal = ($productPrice + $extraValue + $taxAmount) - $discountAmount;
 
-    $excludedCommissionPayment = $payments
-        ->where('payment_type', 'EXCLUDED')
-        ->sum('amount');
+        $excludedCommissionPayment = $payments
+            ->where('payment_type', 'EXCLUDED')
+            ->sum('amount');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Customer / Balance
-    |--------------------------------------------------------------------------
-    |
-    | Modify ONLY this section whenever business rules change.
-    |
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Customer / Balance
+        |--------------------------------------------------------------------------
+        |
+        | Modify ONLY this section whenever business rules change.
+        |
+        */
 
-    if ($isExcludedFromPayment) {
+        if ($isExcludedFromPayment) {
 
-        // Current implementation.
-        // Change these rules whenever required.
+            // Current implementation.
+            // Change these rules whenever required.
 
-        $customerTotal = $grossTotal - $excludedCommissionPayment;
+            $customerTotal = $grossTotal - $excludedCommissionPayment;
 
-        $excludeTotal = $grossTotal;
+            $excludeTotal = $grossTotal;
 
-        $balanceAmount = ($customerTotal + $excludedCommissionPayment) - $bookedAmount;
+            $balanceAmount = ($customerTotal + $excludedCommissionPayment) - $bookedAmount;
 
-        $paymentStatus = '-';
+            $paymentStatus = '-';
 
-    } else {
-
-        $customerTotal = $grossTotal;
-
-        $excludeTotal = 0;
-
-        $balanceAmount = $customerTotal - $bookedAmount;
-
-        if ((int) round($bookedAmount * 100) === 0) {
-            $paymentStatus = 'No';
-        } elseif ((int) round($bookedAmount * 100) === (int) round($customerTotal * 100)) {
-            $paymentStatus = 'Yes';
-        } elseif ((int) round($bookedAmount * 100) < (int) round($customerTotal * 100)) {
-            $paymentStatus = 'Partial Paid';
         } else {
-            $paymentStatus = 'Over Paid';
+
+            $customerTotal = $grossTotal;
+
+            $excludeTotal = 0;
+
+            $balanceAmount = $customerTotal - $bookedAmount;
+
+            if ((int) round($bookedAmount * 100) === 0) {
+                $paymentStatus = 'No';
+            } elseif ((int) round($bookedAmount * 100) === (int) round($customerTotal * 100)) {
+                $paymentStatus = 'Yes';
+            } elseif ((int) round($bookedAmount * 100) < (int) round($customerTotal * 100)) {
+                $paymentStatus = 'Partial Paid';
+            } else {
+                $paymentStatus = 'Over Paid';
+            }
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Display Rules
+        |--------------------------------------------------------------------------
+        */
+
+        $hideTourCost = $isExcludedFromPayment;
+
+        $hideExtraSelling = $isExcludedFromPayment && $extraValue == 0;
+
+        return [
+
+            // Payment
+            'customer_total' => $customerTotal,
+            'exclude_total' => $excludeTotal,
+            'excluded_commission_payment' => $excludedCommissionPayment,
+            'balance_amount' => $balanceAmount,
+            'payment_status' => $paymentStatus,
+
+            // Tour Cost
+            'tour_cost_price' => $hideTourCost ? 0 : round($costBase, 2),
+            'tour_cost_tax' => $hideTourCost ? 0 : round($costTotal - $costBase, 2),
+            'tour_cost_total' => $hideTourCost ? 0 : round($costTotal, 2),
+
+            // Selling
+            'tour_selling_price' => $hideTourCost ? 0 : round($sellingPriceBase, 2),
+            'tour_extra_included_price' => $hideTourCost ? 0 : round($baseExtraIncludedBase, 2),
+            'tour_extra_excluded_price' => $hideExtraSelling ? 0 : round($baseExtraExcludedBase, 2),
+            'tour_selling_tax' => $hideExtraSelling ? 0 : round($sellingTax, 2),
+            'tour_selling_total' => $hideExtraSelling ? 0 : round($sellingTotal, 2),
+
+            'transport_cost' => $hideTourCost ? 0 : round($transportCost, 2),
+
+            'profit' => round($sellingTotal - $costTotal, 2),
+        ];
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Display Rules
-    |--------------------------------------------------------------------------
-    */
-
-    $hideTourCost = $isExcludedFromPayment;
-
-    $hideExtraSelling = $isExcludedFromPayment && $extraValue == 0;
-
-    return [
-
-        // Payment
-        'customer_total' => $customerTotal,
-        'exclude_total' => $excludeTotal,
-        'excluded_commission_payment' => $excludedCommissionPayment,
-        'balance_amount' => $balanceAmount,
-        'payment_status' => $paymentStatus,
-
-        // Tour Cost
-        'tour_cost_price' => $hideTourCost ? 0 : round($costBase, 2),
-        'tour_cost_tax' => $hideTourCost ? 0 : round($costTotal - $costBase, 2),
-        'tour_cost_total' => $hideTourCost ? 0 : round($costTotal, 2),
-
-        // Selling
-        'tour_selling_price' => $hideTourCost ? 0 : round($sellingPriceBase, 2),
-        'tour_extra_included_price' => $hideTourCost ? 0 : round($baseExtraIncludedBase, 2),
-        'tour_extra_excluded_price' => $hideExtraSelling ? 0 : round($baseExtraExcludedBase, 2),
-        'tour_selling_tax' => $hideExtraSelling ? 0 : round($sellingTax, 2),
-        'tour_selling_total' => $hideExtraSelling ? 0 : round($sellingTotal, 2),
-
-        'transport_cost' => $hideTourCost ? 0 : round($transportCost, 2),
-
-        'profit' => round($sellingTotal - $costTotal, 2),
-    ];
 }
-
-
-    }

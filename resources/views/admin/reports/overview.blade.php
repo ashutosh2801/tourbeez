@@ -5,6 +5,41 @@
     body.sidebar-open {
         overflow: hidden;
     }
+    .report-filter-panel { padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: linear-gradient(180deg, #f8fafc 0%, #fff 100%); }
+    .report-filter-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .report-filter-heading h5 { margin: 0 0 3px; color: #172033; font-size: 17px; font-weight: 700; }
+    .report-filter-heading p { margin: 0; color: #6b7280; font-size: 13px; }
+    .report-filter-heading-actions { display: flex; align-items: center; gap: 9px; }
+    .report-filter-count { padding: 5px 10px; border-radius: 999px; background: #e0e7ff; color: #3730a3; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .report-filter-toggle { height: 36px; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid #c7d2fe; border-radius: 7px; background: #fff; color: #4338ca; font-size: 13px; font-weight: 600; }
+    .report-filter-toggle .fa-chevron-down { font-size: 10px; transition: transform .2s ease; }
+    .report-filter-panel.is-expanded .report-filter-toggle .fa-chevron-down { transform: rotate(180deg); }
+    .report-filter-panel .filter-body { display: none; padding: 18px 0 0; }
+    .report-filter-panel.is-expanded .filter-body { display: block; }
+    .report-filter-panel .filter-body > .row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 0; }
+    .report-filter-panel .filter-body > .row > .col-12 { width: auto; max-width: none; padding: 0; }
+    .report-filter-panel .filter-body > .row > .col-12:last-child { grid-column: 1 / -1; }
+    .report-filter-panel .form-group { margin-bottom: 0; }
+    .report-filter-panel .filter-label { display: block; margin: 0 0 6px; color: #374151; font-size: 12px; font-weight: 600; }
+    .report-filter-panel .form-control { min-height: 40px; border-color: #d7dce3; border-radius: 7px; background: #fff; font-size: 13px; }
+    .report-filter-panel #productFilter + .select2-container,
+    .report-filter-panel #excludeProductFilter + .select2-container { width: 100% !important; }
+    .report-filter-panel #productFilter + .select2-container .select2-selection,
+    .report-filter-panel #excludeProductFilter + .select2-container .select2-selection { width: 100%; }
+    .report-filter-panel .filter-body .alert { grid-column: 1 / -1; margin: 0; }
+    .report-filter-panel .filter-footer { display: none; justify-content: flex-end; gap: 10px; margin-top: 18px; padding: 16px 0 0; border-top: 1px solid #e5e7eb; }
+    .report-filter-panel.is-expanded .filter-footer { display: flex; }
+    .report-filter-panel .filter-footer .btn { min-width: 120px; height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 7px; font-size: 13px; font-weight: 600; }
+    .report-filter-panel .report-filter-apply { border-color: #4f46e5; background: #4f46e5; color: #fff; }
+    @media(max-width: 991.98px) { .report-filter-panel .filter-body > .row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media(max-width: 575.98px) {
+        .report-filter-panel { padding: 16px; }
+        .report-filter-heading { display: block; }
+        .report-filter-heading-actions { margin-top: 10px; justify-content: space-between; }
+        .report-filter-panel .filter-body > .row { grid-template-columns: 1fr; }
+        .report-filter-panel .filter-footer { flex-direction: column-reverse; }
+        .report-filter-panel .filter-footer .btn { width: 100%; }
+    }
     /* FULL FIX FOR SELECT2 HEIGHT */
    .tour-search-filter .select2-container--default .select2-selection--multiple {
         min-height: calc(1.3125rem + 1.2rem + 2px) !important;
@@ -111,46 +146,42 @@
     <div class="card-primary mb-3">
         <div class="card-header tour-main-head">
             <div class="row">
-                <div class="col-md-8 col-7">
+                <div class="col-12">
                     <h3 class="card-title text-white">Reports Overview</h3>
-                </div>
-                <div class="col-md-4 col-5">
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-secondary" id="toggleFilter">
-                            <i class="fas fa-filter"></i> Filters
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     {{-- FILTER --}}
-    <div class="tour-search-filter">
-        <div id="filterSidebar" class="filter-sidebar">
-            <div class="filter-header">
-                <h5><i class="fas fa-filter"></i> Filters</h5>
-                <button type="button" id="closeFilter">
-                    <i class="fas fa-times"></i>
-                </button>
+    @php
+        $overviewFilterKeys = ['booking_date', 'tour_date', 'product', 'order_status', 'payment_status', 'partner', 'action_type', 'exclude_product'];
+        $activeOverviewFilterCount = collect($overviewFilterKeys)->filter(function ($key) {
+            $value = request($key);
+            return is_array($value) ? count(array_filter($value)) > 0 : request()->filled($key);
+        })->count();
+    @endphp
+    <div class="tour-search-filter mb-3">
+        <div id="filterPanel" class="report-filter-panel {{ $activeOverviewFilterCount ? 'is-expanded' : '' }}">
+            <div class="report-filter-heading">
+                <div>
+                    <h5><i class="fas fa-sliders-h mr-2 text-primary"></i>Filter report</h5>
+                    <p>Narrow the overview by dates, tours, status, pay type, or source.</p>
+                </div>
+                <div class="report-filter-heading-actions">
+                    @if($activeOverviewFilterCount)
+                        <span class="report-filter-count">{{ $activeOverviewFilterCount }} active {{ Str::plural('filter', $activeOverviewFilterCount) }}</span>
+                    @endif
+                    <button type="button" class="report-filter-toggle" id="toggleFilter" aria-expanded="{{ $activeOverviewFilterCount ? 'true' : 'false' }}">
+                        <i class="fas fa-filter"></i> Filters <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
             </div>
             <form method="GET">
                 <div class="filter-body">
                     <div class="row">
 
                         {{-- BOOKING DATE --}}
-                        @php
-                            $hasFilter = request()->hasAny([
-                                'booking_date',
-                                'tour_date',
-                                'product',
-                                'order_status',
-                                'payment_status',
-                                'partner',
-                                'action_type',
-                                'exclude_product'
-                            ]);
-                        @endphp
                         <div class="col-12 position-relative">
                             <div class="form-group">
                                 <label class="filter-label">Order Date</label>
@@ -314,7 +345,7 @@
                         </div> -->
 
                         <div class="col-12">
-                            @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
+                            @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type','exclude_product']))
                                 <div class="alert alert-info">
                                     Please apply filters to view report data.
                                 </div>
@@ -324,16 +355,15 @@
                     </div>
                 </div>
                 <div class="filter-footer">
-                    <button id="applyBtn" class="btn btn-search">
-                        <i class="fas fa-search"></i> Search
-                    </button>
-                    <a href="{{ route('admin.report.overview') }}" class="btn btn-clear">
-                        <i class="fas fa-times"></i> Clear Search
+                    <a href="{{ route('admin.report.overview') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo-alt"></i> Reset filters
                     </a>
+                    <button id="applyBtn" class="btn report-filter-apply">
+                        <i class="fas fa-search"></i> Apply filters
+                    </button>
                 </div>
             </form>
         </div>
-        <div id="filterOverlay"></div>
     </div>
 
     <div class="active-filters mb-3">
@@ -548,32 +578,10 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    $('#toggleFilter').click(function () {
-
-        $('#filterSidebar').addClass('show');
-
-        $('#filterOverlay').addClass('show');
-
-        $('body').addClass('sidebar-open');
-
-        $(this)
-            .removeClass('btn-secondary')
-            .addClass('btn-danger')
-            .html('<i class="fas fa-times"></i> Filters');
-    });
-
-    $('#closeFilter,#filterOverlay').click(function () {
-
-        $('#filterSidebar').removeClass('show');
-
-        $('#filterOverlay').removeClass('show');
-
-        $('body').removeClass('sidebar-open');
-
-        $('#toggleFilter')
-            .removeClass('btn-danger')
-            .addClass('btn-secondary')
-            .html('<i class="fas fa-filter"></i> Filters');
+    $('#toggleFilter').on('click', function () {
+        const panel = document.getElementById('filterPanel');
+        const expanded = panel.classList.toggle('is-expanded');
+        this.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     });
 </script>
 
@@ -610,7 +618,7 @@
            function initTourSelect(selector, isMultiple, placeholderText) {
             $(selector).select2({
                 placeholder: placeholderText,
-                dropdownParent: $('#filterSidebar'),
+                dropdownParent: $('#filterPanel'),
                 minimumInputLength: 4,
                 multiple: isMultiple,
                 ajax: {

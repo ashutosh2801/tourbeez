@@ -17,7 +17,7 @@
 
     <!-- Required meta tags -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="app-url" content="{{ env('APP_URL') }}/admin/">
+    <meta name="app-url" content="{{ rtrim(request()->root(), '/') }}/admin">
     <meta name="file-base-url" content="{{ env('APP_BASE_URL') }}">
 
     <!-- Google Font: Source Sans Pro -->
@@ -144,7 +144,7 @@
     @yield('css')
 
     <script>
-        var APP_URL = '{{ env('APP_URL') }}';
+        var APP_URL = @json(rtrim(request()->root(), '/'));
         var TB = TB || {};
     </script>
 </head>

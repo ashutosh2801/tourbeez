@@ -258,6 +258,38 @@
     font-weight: 700;
 }
 
+/* Price Schedule filter */
+.price-filter-card { padding:20px; border-color:#e5e7eb!important; border-radius:10px; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+.price-filter-header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:14px; }
+.price-filter-header h5 { margin:0 0 3px; color:#172033; font-size:16px; font-weight:700; }
+.price-filter-header p { margin:0; color:#6b7280; font-size:12px; }
+.price-filter-header-actions { display:flex; align-items:center; gap:9px; }
+.price-filter-count { padding:5px 10px; border-radius:999px; background:#eef2ff; color:#4338ca; font-size:12px; font-weight:600; white-space:nowrap; }
+.price-filter-toggle { height:36px; display:inline-flex; align-items:center; gap:7px; padding:0 12px; border:1px solid #c7d2fe; border-radius:7px; background:#fff; color:#4338ca; font-size:13px; font-weight:600; }
+.price-filter-toggle:hover { background:#eef2ff; }
+.price-filter-toggle .fa-chevron-down { font-size:10px; transition:transform .2s ease; }
+.price-filter-card.is-expanded .price-filter-toggle .fa-chevron-down { transform:rotate(180deg); }
+.price-filter-content { display:none; padding-top:18px; border-top:1px solid #eef0f3; }
+.price-filter-card.is-expanded .price-filter-content { display:block; }
+.price-filter-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+.price-filter-grid > div { width:auto; max-width:none; min-width:0; padding:0; }
+.price-filter-card .form-group { margin-bottom:0; }
+.price-filter-card .filter-label { display:block; margin-bottom:6px; color:#374151; font-size:12px; font-weight:600; }
+.price-filter-card .form-control { min-height:42px; border-color:#d7dce3; border-radius:7px; background:#fff; font-size:13px; }
+.price-filter-card .select2-container { width:100%!important; }
+.price-filter-card .select2-container--default .select2-selection--multiple { min-height:42px!important; margin-bottom:0!important; padding:4px 8px!important; border-color:#d7dce3!important; border-radius:7px!important; }
+.price-filter-actions { grid-column:1/-1; display:flex; justify-content:flex-end; gap:10px; padding-top:16px!important; border-top:1px solid #eef0f3; }
+.price-filter-actions .btn { min-width:120px; height:40px; display:inline-flex; align-items:center; justify-content:center; gap:7px; border-radius:7px; font-size:13px; font-weight:600; }
+@media(max-width:991.98px) { .price-filter-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:575.98px) {
+    .price-filter-card { padding:15px; }
+    .price-filter-header { display:block; }
+    .price-filter-header-actions { margin-top:10px; justify-content:space-between; }
+    .price-filter-grid { grid-template-columns:1fr; }
+    .price-filter-actions { display:grid; grid-template-columns:1fr 1fr; }
+    .price-filter-actions .btn { min-width:0; width:100%; }
+}
+
 </style>
 
 <div class="card-primary mb-3">
@@ -267,24 +299,34 @@
 </div>
 
 {{-- FILTERS --}}
-<div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
+<div class="card card-primary bg-white border report-filter-box price-filter-card">
         <form method="GET">
+            @php
+                $activePriceFilterCount = collect([
+                    'booking_date', 'tour_date', 'product', 'order_status',
+                    'partner', 'action_type', 'exclude_product', 'order_by'
+                ])->filter(function ($key) {
+                    $value = request($key);
+                    return is_array($value) ? count(array_filter($value)) > 0 : request()->filled($key);
+                })->count();
+            @endphp
+            <div class="price-filter-header">
+                <div>
+                    <h5><i class="fas fa-filter mr-2 text-primary"></i>Filter Price Schedule</h5>
+                    <p>Narrow the report by date, product, status or source.</p>
+                </div>
+                <div class="price-filter-header-actions">
+                    <span class="price-filter-count">{{ $activePriceFilterCount }} active</span>
+                    <button type="button" class="price-filter-toggle" id="priceFilterToggle" aria-expanded="false" aria-controls="priceFilterContent">
+                        <i class="fas fa-filter"></i><span>Show Filters</span><i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
 
-            <div class="row">
+            <div class="price-filter-content" id="priceFilterContent">
+              <div class="price-filter-grid">
 
                 {{-- BOOKING DATE --}}
-                @php
-                    $hasFilter = request()->hasAny([
-                        'booking_date',
-                        'tour_date',
-                        'product',
-                        'order_status',
-                        'payment_status',
-                        'partner',
-                        'action_type',
-                        'exclude_product'
-                    ]);
-                @endphp
                 <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <div class="form-group">
                         <label class="filter-label">Order Date</label>
@@ -476,13 +518,16 @@
 
 
                 {{-- BUTTONS --}}
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="d-flex column-gap-10">
-                        <button class="btn btn-apply flex-fill">Apply</button>
-                        <a href="{{ route('admin.report.price_schedule') }}" class="btn btn-secondary flex-fill">Reset</a>
-                    </div>
+                <div class="price-filter-actions">
+                    <a href="{{ route('admin.report.price_schedule') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo-alt"></i> Reset
+                    </a>
+                    <button class="btn btn-apply" type="submit">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
                 </div>
 
+              </div>
             </div>
         </form>
     </div>
@@ -1055,6 +1100,15 @@
 
 <script>
   let today = moment();
+
+        $('#priceFilterToggle').on('click', function () {
+            const $card = $('.price-filter-card');
+            const expanded = !$card.hasClass('is-expanded');
+
+            $card.toggleClass('is-expanded', expanded);
+            $(this).attr('aria-expanded', expanded ? 'true' : 'false');
+            $(this).find('span').text(expanded ? 'Hide Filters' : 'Show Filters');
+        });
             
 
         // ✅ Select2 (optimized)

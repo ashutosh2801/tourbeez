@@ -23,6 +23,9 @@
             'admin.smtp_settings', 'admin.email_settings', 'admin.email-templates.*',
             'admin.languages.*', 'admin.currencies.*', 'admin.taxes.*', 'admin.banner.*'
         );
+        $activityMenuActive = Route::is(
+            'admin.activity.logs', 'admin.activity.descriptive', 'admin.activity.orderLog'
+        );
     @endphp
 
     <ul class="nav nav-pills nav-sidebar flex-column aiz-side-nav-list" data-toggle="aiz-side-menu" data-widget="treeview" role="menu" data-accordion="false">
@@ -217,15 +220,15 @@
         @endcan 
 
         @can('show_manifest')
-        <li class="nav-item">
-            <a href="javascript:void(0);" class="nav-link">
+        <li class="nav-item {{ $manifestMenuActive ? 'menu-open mm-active' : '' }}">
+            <a href="javascript:void(0);" class="nav-link {{ $manifestMenuActive ? 'active' : '' }}" aria-expanded="{{ $manifestMenuActive ? 'true' : 'false' }}">
                 <i class="nav-icon fas fa-briefcase"></i>
                 <p>{{ translate('Manifest') }}
                     <span class="aiz-side-nav-arrow right"></span>
                 </p>
                 
             </a>
-            <ul class="aiz-side-nav-list level-2">
+            <ul class="aiz-side-nav-list level-2 {{ $manifestMenuActive ? 'mm-collapse mm-show' : '' }}">
                 <li class="nav-item">
                     <a href="{{ route('admin.orders.manifest') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.orders.manifest*') ? 'active' : '' }}">
@@ -260,15 +263,15 @@
         @endcan
 
         @can('show_reports') 
-        <li class="nav-item">
-            <a href="javascript:void(0);" class="nav-link">
+        <li class="nav-item {{ $reportsMenuActive ? 'menu-open mm-active' : '' }}">
+            <a href="javascript:void(0);" class="nav-link {{ $reportsMenuActive ? 'active' : '' }}" aria-expanded="{{ $reportsMenuActive ? 'true' : 'false' }}">
                 <i class="nav-icon fas fa-chart-bar"></i>
                 <p>{{ translate('Reports') }}
                     <span class="aiz-side-nav-arrow right"></span>
                 </p>
                 
             </a>
-            <ul class="aiz-side-nav-list level-2">
+            <ul class="aiz-side-nav-list level-2 {{ $reportsMenuActive ? 'mm-collapse mm-show' : '' }}">
                 <li class="nav-item">
                     <a href="{{ route('admin.report.overview') }}"
                         class="aiz-side-nav-link nav-link {{ Route::is('admin.report.overview*') ? 'active' : '' }}">
@@ -529,15 +532,15 @@
         
 
         @can('activity_logs') 
-            <li class="nav-item">
-                <a href="javascript:void(0);" class="nav-link">
+            <li class="nav-item {{ $activityMenuActive ? 'menu-open mm-active' : '' }}">
+                <a href="javascript:void(0);" class="nav-link {{ $activityMenuActive ? 'active' : '' }}" aria-expanded="{{ $activityMenuActive ? 'true' : 'false' }}">
                     <i class="nav-icon fas fa-history"></i>
                     <p>
                         {{ translate('Activity') }}
                         <span class="aiz-side-nav-arrow right"></span>
                     </p>
                 </a>
-                <ul class="aiz-side-nav-list level-2">
+                <ul class="aiz-side-nav-list level-2 {{ $activityMenuActive ? 'mm-collapse mm-show' : '' }}">
                     <li class="nav-item">
                         <a href="{{ route('admin.activity.logs') }}" class="aiz-side-nav-link nav-link {{ Route::is('admin.activity.logs') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-list-ul"></i>

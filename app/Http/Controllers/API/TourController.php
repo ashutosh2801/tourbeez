@@ -2044,359 +2044,349 @@ class TourController extends Controller
         return $str;
     }
 
+    public function single(Request $request)
+    {
+
+        $data  = Tour::find($request->id);
+        $str = '';
+        $subtotal = 0;
+        $orderCurrency = $request->order_currency ?? 'USD';
 
 
-public function single(Request $request)
-{
+        if($data) {
 
-    $data  = Tour::find($request->id);
-    $str = '';
-    $subtotal = 0;
-    $orderCurrency = $request->order_currency ?? 'USD';
+            $_tourId = $data->id;
 
+            // ================================
+            // ADD YOUR NEW DATE LOGIC HERE
+            // ================================
+            $schedules = $data->schedules ?? [];
 
-    if($data) {
+            $tour_start_date = $this->getNextAvailableDate($data->id, $schedules);
+            $tour_start_date = is_array($tour_start_date) ? ($tour_start_date['date'] ?? '') : $tour_start_date;
 
-        $_tourId = $data->id;
-
-        // ================================
-        // ADD YOUR NEW DATE LOGIC HERE
-        // ================================
-        $schedules = $data->schedules ?? [];
-
-        $tour_start_date = $this->getNextAvailableDate($data->id, $schedules);
-        $tour_start_date = is_array($tour_start_date) ? ($tour_start_date['date'] ?? '') : $tour_start_date;
-
-        $disabled_dates  = $this->getDisabledTourDates($data->id, $schedules);
-        $disabled_dates_json = json_encode($disabled_dates);
+            $disabled_dates  = $this->getDisabledTourDates($data->id, $schedules);
+            $disabled_dates_json = json_encode($disabled_dates);
 
 
-        // ================================
-        // YOUR ORIGINAL PICKUP LOGIC
-        // ================================
-        $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
-        <h4 style="font-size:16px; font-weight:600"></h4>';
+            // ================================
+            // YOUR ORIGINAL PICKUP LOGIC
+            // ================================
+            $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
+            <h4 style="font-size:16px; font-weight:600"></h4>';
 
 
-        // CASE 1: NO PICKUP
-        if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'No Pickup') {
+            // CASE 1: NO PICKUP
+            if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'No Pickup') {
 
-            $pickupHtml .= '
-                <p>No Pickup Available</p>
+                $pickupHtml .= '
+                    <p>No Pickup Available</p>
 
-                <input type="hidden" name="pickup_id" value="0">
-                <input type="hidden" name="pickup_name" value="">
-            ';
-        }
+                    <input type="hidden" name="pickup_id" value="0">
+                    <input type="hidden" name="pickup_name" value="">
+                ';
+            }
 
+            // CASE 2: PICKUP (text input + comment)
+            else if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'Pickup') {
 
+                $comment = \DB::table('pickup_tour')
+                                ->where('tour_id', $data->id)
+                                ->where('pickup_id', $data->pickups[0]?->id)
+                                ->value('comment');
 
-        // CASE 2: PICKUP (text input + comment)
-        else if(!empty($data->pickups) && isset($data->pickups[0]) && $data->pickups[0]?->name === 'Pickup') {
+                $commentText = $comment ?? "Enter the pickup location";
 
-            $comment = \DB::table('pickup_tour')
-                            ->where('tour_id', $data->id)
-                            ->where('pickup_id', $data->pickups[0]?->id)
-                            ->value('comment');
+                $pickupHtml .= '
+                    <label>Pickup Location</label>
+                    <input required type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
+                    <small style="color:#777; display:block; margin-top:5px;">'.$commentText.'</small>
+                    <input type="hidden" name="pickup_id" value="0">
+                ';
 
-            $commentText = $comment ?? "Enter the pickup location";
+                if($data->id === 2135 || $data->id === 2133) {
+                    $pickupHtml .= '<div style="margin-top:10px; font-weight:600;">Drop-off Location</div>
+                        <input required type="text" name="drop_off_name" class="form-control" placeholder="Enter drop-off location">
+                    ';
+                }
+            }
 
-            $pickupHtml .= '
-                <label>Pickup Location</label>
-                <input required type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
+            // CASE 3: MULTIPLE LOCATIONS (dropdown + other option)
+            else if (!empty($data->pickups) && isset($data->pickups[0])) {
 
-                <small style="color:#777; display:block; margin-top:5px;">'.$commentText.'</small>
+                $locations = $data->pickups[0]?->locations ?? [];
 
-                <input type="hidden" name="pickup_id" value="0">
-            ';
-        }
+                $pickupHtml .= '
+                    <label>Select Pickup Point</label>
+                    <select required name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
+                        <option value="">Select Pickup Point</option>';
 
-
-
-        // CASE 3: MULTIPLE LOCATIONS (dropdown + other option)
-        else if (!empty($data->pickups) && isset($data->pickups[0])) {
-
-            $locations = $data->pickups[0]?->locations ?? [];
-
-            $pickupHtml .= '
-                <label>Select Pickup Point</label>
-                <select required name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
-                    <option value="">Select Pickup Point</option>';
-
-                    foreach($locations as $loc) {
-                        $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
-                    }
-
-                    $pickupHtml .= '<option value="other">Other</option>';
-
-            $pickupHtml .= '
-                </select>
-
-                <div id="pickup-other-box" style="display:none; margin-top:10px">
-                    <label>Enter Pickup Location</label>
-                    <input required type="text" name="pickup_name" class="form-control" placeholder="Enter location manually" value=" ">
-                </div>
-            ';
-        }
-
-        $pickupHtml .= '</div>';
-
-        // ================================
-        // RENDER HTML START
-        // ================================
-        $row_id = 'row_'.$request->tourCount;
-
-        $str = '<div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
-                <input type="hidden" name="tour_id[]" value="'.$data->id.'" />  
-                <input type="hidden" class="disabled-dates" value=\''.$disabled_dates_json.'\'>
-                <table class="table">
-                    <tr>
-                        <td width="600"><h3 class="text-lg">' .  $data->title . '</h3></td>
-                        <td class="text-right" width="200">
-                            <div class="input-group">
-                                <input type="text" 
-                                    class="aiz-date-range form-control tour_startdate_field"
-                                    id="tour_startdate"
-                                    name="tour_startdate[]"
-                                    placeholder="Select Date" 
-                                    data-format="ddd MMM DD, YYYY"
-                                    data-single="true" 
-                                    data-show-dropdown="true" 
-                                    value="'.date('D M d, Y',strtotime($tour_start_date)).'">
-
-                                <div class="input-group-append">
-                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                </div>
-                            </div>
-                            <div>
-                                <input type="text" class="tour_startdate_display border-0" readonly>
-                            </div>
-                        </td>
-
-                        <td class="text-right" width="200">
-                            <div class="input-group">
-                                <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker tour_starttime" data-minute-step="1"> 
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><i class="fas fa-clock"></i></span>
-                                </div>                       
-                            </div>
-                        </td>
-
-                        <td class="text-right">
-                            <button type="button" class="btn btn-sm btn-danger" onclick="removeTour(\''.$row_id.'\')">-</button>
-                            <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
-                        </td>
-                    </tr>
-                </table>
-
-                <table class="table" style="background:#ebebeb">
-                    <tr>
-                        <td style="width:200px" width="200">
-                            <table class="table">
-                                <tr>
-                                    <td colspan="2">
-                                        <h4 style="font-size:16px; font-weight:600">Quantities</h4>
-                                    </td>
-                                    <input type="hidden" name="tour_pricing_type" value="'.$data->price_type.'" /> 
-                                </tr>';
-
-                                if($data->pricings) {
-
-                                    $maxQuantity = $data->detail->quantity_max;
-
-                                    $i=0; $j=0;
-                                    foreach($data->pricings as $pricing) {
-                                        $num = ($i == 0) ? 1 : 0;
-                                        if($i == 0) {
-
-                                            $convertedPricingPrice = currencyConvert($pricing->price, $data->currency, $orderCurrency);
-                                            $subtotal += ($num * $convertedPricingPrice);
-                                        } else{
-                                            $convertedPricingPrice = currencyConvert($pricing->price, $data->currency, $orderCurrency);
-                                            // $subtotal += ($num * $convertedPricingPrice);
-                                        }
-
-                                        $minQuantity = 0;
-                                        // if($j === 0) {
-                                        //     $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min; 
-                                        //     $j++;
-                                        // }
-                                        // $i++;
-
-                                        $isOptional = isOptionalPricing($pricing->label);
-
-                                        if ($isOptional) {
-                                            $minQuantity = 0;
-                                        } else {
-                                            $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min;
-                                        }
-                                        $i++;
-
-                                        $str .= '<tr>
-                                            <td width="60">
-                                                <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
-                                                <div class="order-quantity-control">
-                                                    <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" class="form-control text-center order-quantity-input" min="0" step="1" data-min="'.$minQuantity.'" max="'.$maxQuantity.'" data-optional="'.($isOptional ? 1 : 0).'">
-                                                    <span class="order-quantity-buttons">
-                                                        <button type="button" class="order-quantity-step order-quantity-up" aria-label="Increase quantity">&#9650;</button>
-                                                        <button type="button" class="order-quantity-step order-quantity-down" aria-label="Decrease quantity">&#9660;</button>
-                                                    </span>
-                                                </div>
-                                                <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$convertedPricingPrice.'" /> 
-                                                <input type="hidden" name="tour_pricing_type_'.$_tourId.'[]" value="'.$data->price_type.'" /> 
-                                                <input type="hidden" name="tour_pricing_min_'.$_tourId.'[]" value="'.$pricing->quantity_used.'">
-                                                
-                                            </td>
-                                            <td>'.$pricing->label.' ('. price_format_with_currency($pricing->price, $data->currency, $orderCurrency) .')</td>
-                                        </tr>';
-                                    }
-
-                                        
-                                }
-                                
-
-                            $str .= '</table>
-                        </td>
-
-                        <td style="width:200px">
-                            <table class="table">
-                                <tr>
-                                    <td colspan="2">
-                                        <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
-                                    </td>
-                                </tr>';
-
-                                if ($data->addons) {
-                                    foreach($data->addons as $extra) {
-                                        // $price = $extra->price;
-                                        $price = currencyConvert($extra->price, $extra->currency, $orderCurrency);                                        
-                                        $str.= '<tr>
-                                            <td width="60">
-                                                <input type="hidden" name="tour_extra_id_'.$_tourId.'[]" value="'. $extra->id .'" />  
-                                                <div class="order-quantity-control">
-                                                    <input type="number" name="tour_extra_qty_'.$_tourId.'[]" value="0" min="0" step="1" class="form-control text-center order-quantity-input">
-                                                    <span class="order-quantity-buttons">
-                                                        <button type="button" class="order-quantity-step order-quantity-up" aria-label="Increase quantity">&#9650;</button>
-                                                        <button type="button" class="order-quantity-step order-quantity-down" aria-label="Decrease quantity">&#9660;</button>
-                                                    </span>
-                                                </div>
-                                                <input type="hidden" name="tour_extra_price_'.$_tourId.'[]" value="'.$price.'" /> 
-                                            </td>
-                                            <td>'.$extra->name.' ('.price_format_with_currency($extra->price, $extra->currency, $orderCurrency).')</td>
-                                        </tr>';
-                                    }
-                                }
-                                
-                            $str .= '</table>
-                        </td>
-                    </tr>
-                </table>
-                
-                <table class="table">';
-
-                $str .= $pickupHtml;
-
-                $str .= '
-
-                <tr>
-                    <th>Sub Total</th>
-                    <th class="text-right withouttax-box">'. price_format_with_currency($subtotal, $data->currency, $orderCurrency) .'</th>
-                </tr>';
-
-                if ($data->taxes_fees) {
-                    foreach ($data->taxes_fees as $item) {
-
-                        // Step 1: Work completely in ORDER currency
-
-                        if ($item->fee_type === 'FIXED_PER_ORDER') {
-
-                            // Fixed fees are stored in tour currency
-                            $tax_fee_value = currencyConvert(
-                                $item->tax_fee_value,
-                                'USD',
-                                $orderCurrency
-                            );
-
-                        } else {
-
-                            // Percent stays same (percentage doesn't change by currency)
-                            $tax_fee_value = $item->tax_fee_value;
+                        foreach($locations as $loc) {
+                            $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
                         }
 
-                        // Step 2: Calculate tax (subtotal must already be in order currency!)
-                        $tax = get_tax($subtotal, $item->fee_type, $tax_fee_value) ?? 0;
+                        $pickupHtml .= '<option value="other">Other</option>';
 
-                        // Step 3: Add directly (NO more conversion)
-                        $subtotal += $tax;
+                $pickupHtml .= '
+                    </select>
 
-                        $str .= '<tr class="tax-row" 
-                                data-type="'.$item->fee_type.'" 
-                                data-value="'.$tax_fee_value.'">
-                                <td>'.$item->label.' ('. taxes_format($item->fee_type, $tax_fee_value) .')</td>
-                                <td class="text-right tax-amount">'. price_format($tax) .'</td>
-                            </tr>';
-                    }
-                }
+                    <div id="pickup-other-box" style="display:none; margin-top:10px">
+                        <label>Enter Pickup Location</label>
+                        <input required type="text" name="pickup_name" class="form-control" placeholder="Enter location manually" value=" ">
+                    </div>
+                ';
+            }
 
+            $pickupHtml .= '</div>';
 
+            // ================================
+            // RENDER HTML START
+            // ================================
+            $row_id = 'row_'.$request->tourCount;
 
+            $str = '<div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
+                    <input type="hidden" name="tour_id[]" value="'.$data->id.'" />  
+                    <input type="hidden" class="disabled-dates" value=\''.$disabled_dates_json.'\'>
+                    <table class="table">
+                        <tr>
+                            <td width="600"><h3 class="text-lg">' .  $data->title . '</h3></td>
+                            <td class="text-right" width="250">
+                                <div class="input-group">
+                                    <input type="text" 
+                                        class="aiz-date-range form-control tour_startdate_field"
+                                        id="tour_startdate"
+                                        name="tour_startdate[]"
+                                        placeholder="Select Date" 
+                                        data-format="ddd MMM DD, YYYY"
+                                        data-single="true" 
+                                        data-show-dropdown="true" 
+                                        value="'.date('D M d, Y',strtotime($tour_start_date)).'">
 
-                $str .= '
+                                    <div class="input-group-append">
+                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <input type="hidden" class="tour_startdate_display border-0" readonly>
+                                </div>
+                            </td>
+
+                            <td class="text-right" width="200">
+                                <div class="input-group">
+                                    <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime" value="" class="form-control aiz-time-picker tour_starttime" data-minute-step="1"> 
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                                    </div>                       
+                                </div>
+                            </td>
+
+                            <td class="text-right">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeTour(\''.$row_id.'\')">-</button>
+                                <button type="button" onClick="addTour()" class="btn btn-sm btn-info">+</button>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <table class="table" style="background:#ebebeb">
+                        <tr>
+                            <td style="width:200px" width="200">
+                                <table class="table">
+                                    <tr>
+                                        <td colspan="2">
+                                            <h4 style="font-size:16px; font-weight:600">Quantities</h4>
+                                        </td>
+                                        <input type="hidden" name="tour_pricing_type" value="'.$data->price_type.'" /> 
+                                    </tr>';
+
+                                    if($data->pricings) {
+
+                                        $maxQuantity = $data->detail->quantity_max;
+
+                                        $i=0; $j=0;
+                                        foreach($data->pricings as $pricing) {
+                                            $num = ($i == 0) ? 1 : 0;
+                                            if($i == 0) {
+
+                                                $convertedPricingPrice = currencyConvert($pricing->price, $data->currency, $orderCurrency);
+                                                $subtotal += ($num * $convertedPricingPrice);
+                                            } else{
+                                                $convertedPricingPrice = currencyConvert($pricing->price, $data->currency, $orderCurrency);
+                                                // $subtotal += ($num * $convertedPricingPrice);
+                                            }
+
+                                            $minQuantity = 0;
+                                            // if($j === 0) {
+                                            //     $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min; 
+                                            //     $j++;
+                                            // }
+                                            // $i++;
+
+                                            $isOptional = isOptionalPricing($pricing->label);
+
+                                            if ($isOptional) {
+                                                $minQuantity = 0;
+                                            } else {
+                                                $minQuantity = $pricing->quantity_used ?? $data->detail->quantity_min;
+                                            }
+                                            $i++;
+
+                                            $str .= '<tr>
+                                                <td width="60">
+                                                    <input type="hidden" name="tour_pricing_id_'.$_tourId.'[]" value="'.$pricing->id.'" />
+                                                    <div class="order-quantity-control">
+                                                        <input type="number" name="tour_pricing_qty_'.$_tourId.'[]" value="'.$num.'" class="form-control text-center order-quantity-input" min="0" step="1" data-min="'.$minQuantity.'" max="'.$maxQuantity.'" data-optional="'.($isOptional ? 1 : 0).'">
+                                                        <span class="order-quantity-buttons">
+                                                            <button type="button" class="order-quantity-step order-quantity-up" aria-label="Increase quantity">&#9650;</button>
+                                                            <button type="button" class="order-quantity-step order-quantity-down" aria-label="Decrease quantity">&#9660;</button>
+                                                        </span>
+                                                    </div>
+                                                    <input type="hidden" name="tour_pricing_price_'.$_tourId.'[]" value="'.$convertedPricingPrice.'" /> 
+                                                    <input type="hidden" name="tour_pricing_type_'.$_tourId.'[]" value="'.$data->price_type.'" /> 
+                                                    <input type="hidden" name="tour_pricing_min_'.$_tourId.'[]" value="'.$pricing->quantity_used.'">
+                                                    
+                                                </td>
+                                                <td>'.$pricing->label.' ('. price_format_with_currency($pricing->price, $data->currency, $orderCurrency) .')</td>
+                                            </tr>';
+                                        }
+
+                                            
+                                    }
+                                    
+
+                                $str .= '</table>
+                            </td>
+
+                            <td style="width:200px">
+                                <table class="table">
+                                    <tr>
+                                        <td colspan="2">
+                                            <h4 style="font-size:16px; font-weight:600">Optional extras</h4>
+                                        </td>
+                                    </tr>';
+
+                                    if ($data->addons) {
+                                        foreach($data->addons as $extra) {
+                                            // $price = $extra->price;
+                                            $price = currencyConvert($extra->price, $extra->currency, $orderCurrency);                                        
+                                            $str.= '<tr>
+                                                <td width="60">
+                                                    <input type="hidden" name="tour_extra_id_'.$_tourId.'[]" value="'. $extra->id .'" />  
+                                                    <div class="order-quantity-control">
+                                                        <input type="number" name="tour_extra_qty_'.$_tourId.'[]" value="0" min="0" step="1" class="form-control text-center order-quantity-input">
+                                                        <span class="order-quantity-buttons">
+                                                            <button type="button" class="order-quantity-step order-quantity-up" aria-label="Increase quantity">&#9650;</button>
+                                                            <button type="button" class="order-quantity-step order-quantity-down" aria-label="Decrease quantity">&#9660;</button>
+                                                        </span>
+                                                    </div>
+                                                    <input type="hidden" name="tour_extra_price_'.$_tourId.'[]" value="'.$price.'" /> 
+                                                </td>
+                                                <td>'.$extra->name.' ('.price_format_with_currency($extra->price, $extra->currency, $orderCurrency).')</td>
+                                            </tr>';
+                                        }
+                                    }
+                                    
+                                $str .= '</table>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <table class="table">';
+
+                    $str .= $pickupHtml;
+
+                    $str .= '
+
                     <tr>
-                        <th>Total</th>
-                        
-                        <th class="text-right subtotal-box">'. price_format($subtotal) .'</th>
-                    </tr>
-                </table>
-                </div>';
+                        <th>Sub Total</th>
+                        <th class="text-right withouttax-box">'. price_format_with_currency($subtotal, $data->currency, $orderCurrency) .'</th>
+                    </tr>';
+
+                    if ($data->taxes_fees) {
+                        foreach ($data->taxes_fees as $item) {
+
+                            // Step 1: Work completely in ORDER currency
+
+                            if ($item->fee_type === 'FIXED_PER_ORDER') {
+
+                                // Fixed fees are stored in tour currency
+                                $tax_fee_value = currencyConvert(
+                                    $item->tax_fee_value,
+                                    'USD',
+                                    $orderCurrency
+                                );
+
+                            } else {
+
+                                // Percent stays same (percentage doesn't change by currency)
+                                $tax_fee_value = $item->tax_fee_value;
+                            }
+
+                            // Step 2: Calculate tax (subtotal must already be in order currency!)
+                            $tax = get_tax($subtotal, $item->fee_type, $tax_fee_value) ?? 0;
+
+                            // Step 3: Add directly (NO more conversion)
+                            $subtotal += $tax;
+
+                            $str .= '<tr class="tax-row" 
+                                    data-type="'.$item->fee_type.'" 
+                                    data-value="'.$tax_fee_value.'">
+                                    <td>'.$item->label.' ('. taxes_format($item->fee_type, $tax_fee_value) .')</td>
+                                    <td class="text-right tax-amount">'. price_format($tax) .'</td>
+                                </tr>';
+                        }
+                    }
+
+
+
+
+                    $str .= '
+                        <tr>
+                            <th>Total</th>
+                            
+                            <th class="text-right subtotal-box">'. price_format($subtotal) .'</th>
+                        </tr>
+                    </table>
+                    </div>';
+        }
+
+        return $str;
     }
 
-    return $str;
-}
+    public function singleCalendar(Request $request)
+    {
+        $tour = Tour::find($request->id);
 
+        $orderTour = OrderTour::query()
+            ->where('order_id', $request->order_id)
+            ->where('tour_id', $request->id)
+            ->when(
+                $request->filled('order_tour_id'),
+                fn ($query) => $query->whereKey($request->order_tour_id)
+            )
+            ->first();
 
-public function singleCalendar(Request $request)
-{
-    $tour = Tour::find($request->id);
+        if (!$tour || !$orderTour) {
+            return response()->json(['error' => 'Not found'], 404);
+        }
 
-    $orderTour = OrderTour::query()
-        ->where('order_id', $request->order_id)
-        ->where('tour_id', $request->id)
-        ->when(
-            $request->filled('order_tour_id'),
-            fn ($query) => $query->whereKey($request->order_tour_id)
-        )
-        ->first();
+        $schedules = $tour->schedules ?? [];
 
-    if (!$tour || !$orderTour) {
-        return response()->json(['error' => 'Not found'], 404);
+        // Get next available date
+        $tour_start_date = $this->getNextAvailableDate($tour->id, $schedules);
+        $tour_start_date = is_array($tour_start_date) 
+            ? ($tour_start_date['date'] ?? '') 
+            : $tour_start_date;
+
+        // Disabled dates
+        $disabled_dates  = $this->getDisabledTourDates($tour->id, $schedules);
+
+        return response()->json([
+            'tour_date' => $orderTour->tour_date,
+            'tour_time' => $orderTour->tour_time,
+            'tour_id' => $tour->id,
+            'start_date' => $tour_start_date,
+            'disabled_dates' => $disabled_dates,
+        ]);
     }
-
-    $schedules = $tour->schedules ?? [];
-
-    // Get next available date
-    $tour_start_date = $this->getNextAvailableDate($tour->id, $schedules);
-    $tour_start_date = is_array($tour_start_date) 
-        ? ($tour_start_date['date'] ?? '') 
-        : $tour_start_date;
-
-    // Disabled dates
-    $disabled_dates  = $this->getDisabledTourDates($tour->id, $schedules);
-
-    return response()->json([
-        'tour_date' => $orderTour->tour_date,
-        'tour_time' => $orderTour->tour_time,
-        'tour_id' => $tour->id,
-        'start_date' => $tour_start_date,
-        'disabled_dates' => $disabled_dates,
-    ]);
-}
-
-
-
-
-
-
-
 
 }

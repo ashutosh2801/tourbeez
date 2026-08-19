@@ -140,6 +140,134 @@
 .select2-container--default .select2-selection--multiple .select2-selection__choice{
     background-color: #a3a3a3 !important;
 }
+
+/* Revenue filter */
+.revenue-filter-card {
+    padding: 20px;
+    border-color: #e5e7eb !important;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+}
+.revenue-filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #eef0f3;
+}
+.revenue-filter-header h5 {
+    margin: 0 0 3px;
+    color: #172033;
+    font-size: 16px;
+    font-weight: 700;
+}
+.revenue-filter-header p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 12px;
+}
+.revenue-filter-count {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.revenue-filter-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+.revenue-filter-toggle {
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 12px;
+    border: 1px solid #c7d2fe;
+    border-radius: 7px;
+    background: #fff;
+    color: #4338ca;
+    font-size: 13px;
+    font-weight: 600;
+}
+.revenue-filter-toggle:hover { background: #eef2ff; }
+.revenue-filter-toggle .fa-chevron-down {
+    font-size: 10px;
+    transition: transform .2s ease;
+}
+.revenue-filter-card.is-expanded .revenue-filter-toggle .fa-chevron-down {
+    transform: rotate(180deg);
+}
+.revenue-filter-content { display: none; }
+.revenue-filter-card.is-expanded .revenue-filter-content { display: block; }
+.revenue-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+.revenue-filter-grid > div {
+    width: auto;
+    max-width: none;
+    padding: 0;
+    min-width: 0;
+}
+.revenue-filter-card .form-group { margin-bottom: 0; }
+.revenue-filter-card .filter-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #374151;
+    font-size: 12px;
+    font-weight: 600;
+}
+.revenue-filter-card .form-control {
+    min-height: 42px;
+    border-color: #d7dce3;
+    border-radius: 7px;
+    background: #fff;
+    font-size: 13px;
+}
+.revenue-filter-card .select2-container--default .select2-selection--multiple {
+    min-height: 42px !important;
+    margin-bottom: 0 !important;
+    padding: 4px 8px !important;
+    border-color: #d7dce3 !important;
+    border-radius: 7px !important;
+}
+.revenue-filter-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 16px !important;
+    border-top: 1px solid #eef0f3;
+}
+.revenue-filter-actions .btn {
+    min-width: 120px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+}
+@media (max-width: 991.98px) {
+    .revenue-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 575.98px) {
+    .revenue-filter-card { padding: 15px; }
+    .revenue-filter-header { display: block; }
+    .revenue-filter-header-actions { margin-top: 10px; justify-content: space-between; }
+    .revenue-filter-grid { grid-template-columns: 1fr; }
+    .revenue-filter-actions { display: grid; grid-template-columns: 1fr 1fr; }
+    .revenue-filter-actions .btn { min-width: 0; width: 100%; }
+}
 </style>
 
 
@@ -150,24 +278,36 @@
     </div>
 
     {{-- FILTER --}}
-    <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
+    <div class="card card-primary bg-white border report-filter-box revenue-filter-card">
         <form method="GET">
+            @php
+                    $activeFilterCount = collect([
+                        'booking_date', 'tour_date', 'product', 'order_status',
+                        'partner', 'action_type', 'exclude_product', 'order_by'
+                    ])->filter(function ($key) {
+                        $value = request($key);
+                        return is_array($value) ? count(array_filter($value)) > 0 : request()->filled($key);
+                    })->count();
+            @endphp
+            <div class="revenue-filter-header">
+                <div>
+                    <h5><i class="fas fa-filter mr-2 text-primary"></i>Filter Revenue</h5>
+                    <p>Narrow the report by date, product, status or source.</p>
+                </div>
+                <div class="revenue-filter-header-actions">
+                    <span class="revenue-filter-count">{{ $activeFilterCount }} active</span>
+                    <button type="button" class="revenue-filter-toggle" id="revenueFilterToggle" aria-expanded="false" aria-controls="revenueFilterContent">
+                        <i class="fas fa-filter"></i>
+                        <span>Show Filters</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
 
-            <div class="row">
+            <div class="revenue-filter-content" id="revenueFilterContent">
+              <div class="revenue-filter-grid">
 
                 {{-- BOOKING DATE --}}
-                @php
-                    $hasFilter = request()->hasAny([
-                        'booking_date',
-                        'tour_date',
-                        'product',
-                        'order_status',
-                        'payment_status',
-                        'partner',
-                        'action_type',
-                        'exclude_product'
-                    ]);
-                @endphp
                 <div class="col-xl-3 col-md-3 col-12 position-relative">
                     <div class="form-group">
                         <label class="filter-label">Order Date</label>
@@ -245,20 +385,24 @@
 
                 {{-- PRODUCTS --}}
                 <div class="col-md-3 col-6">
-                    <label class="filter-label">Products</label>
-                    <select id="productFilter" name="product[]" class="form-control" multiple>
-                        @foreach($selectedProducts as $sp)
-                            <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
-                        @endforeach
-                    </select>
+                    <div class="form-group">
+                        <label class="filter-label">Products</label>
+                        <select id="productFilter" name="product[]" class="form-control" multiple>
+                            @foreach($selectedProducts as $sp)
+                                <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
                 <div class="col-md-3 col-6">
-                    <label class="filter-label">Excluded Products</label>
-                    <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
-                        @foreach($excludedProducts as $ep)
-                            <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
-                        @endforeach
-                    </select>
+                    <div class="form-group">
+                        <label class="filter-label">Excluded Products</label>
+                        <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
+                            @foreach($excludedProducts as $ep)
+                                <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
 
@@ -359,13 +503,16 @@
 
 
                 {{-- BUTTONS --}}
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="d-flex column-gap-10">
-                        <button class="btn btn-apply flex-fill">Apply</button>
-                        <a href="{{ route('admin.report.revenue') }}" class="btn btn-secondary flex-fill">Reset</a>
-                    </div>
+                <div class="revenue-filter-actions">
+                    <a href="{{ route('admin.report.revenue') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo-alt"></i> Reset
+                    </a>
+                    <button class="btn btn-apply" type="submit">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
                 </div>
 
+              </div>
             </div>
         </form>
     </div>
@@ -832,6 +979,15 @@
 
     <script>
     $(document).ready(function () {
+        $('#revenueFilterToggle').on('click', function () {
+            const $card = $('.revenue-filter-card');
+            const expanded = !$card.hasClass('is-expanded');
+
+            $card.toggleClass('is-expanded', expanded);
+            $(this).attr('aria-expanded', expanded ? 'true' : 'false');
+            $(this).find('span').text(expanded ? 'Hide Filters' : 'Show Filters');
+        });
+
         // ✅ Select2 (optimized)
               function initTourSelect(selector, isMultiple, placeholderText) {
             $(selector).select2({

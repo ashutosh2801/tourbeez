@@ -47,6 +47,10 @@ use Validator;
 
 class OrderController extends Controller
 {
+    /**
+     * Summary of index
+     * @param Request $request
+     */
     public function index(Request $request)
     {
         $query = Order::with(['customer', 'orderTours.tour', 'payments', 'partner', 'latestPaymentLog'])
@@ -453,12 +457,6 @@ class OrderController extends Controller
             ])->withInput();
         }
 
-        // $pickupId   = $request->pickup_id ?? [];
-        // $pickupName = $request->pickup_name ?? [];
-
-        // $pickupId = is_array($pickupId) ? $pickupId : [];
-        // $pickupName = is_array($pickupName) ? $pickupName : [];
-
         // --------------------------------------------
         // 1) Check once if any selected tour has "No Pickup"
         // --------------------------------------------
@@ -496,7 +494,6 @@ class OrderController extends Controller
         }
 
         // dd($tourIds);
-
         
         DB::beginTransaction();
         try {
@@ -540,6 +537,7 @@ class OrderController extends Controller
                     'instructions' => $request->additional_info ?? '',
                     'pickup_id'    => $request->pickup_id ?? '',
                     'pickup_name'  => $request->pickup_name ?? '',
+                    'drop_off_name'=> $request->drop_off_name ?? '',
                 ]);
 
                 if($request->has('addToCustomer')){
@@ -573,8 +571,9 @@ class OrderController extends Controller
                     'instructions' => $request->additional_info ?? null,
                     'pickup_id'    => $request->pickup_id ?? null,
                     'pickup_name'  => $request->pickup_name ?? null,
+                    'drop_off_name'=> $request->drop_off_name ?? null,
                 ]);
-                if($request->has('addToCustomer')){
+                if($request->has('addToCustomer')) {
                     
                     if(!$user_id){
                         User::create([
@@ -585,14 +584,9 @@ class OrderController extends Controller
                             'phone'        => $request->full_phone ?? $request->customer_phone,
                             'user_type'    => 'Member',
                         ]);
-
-                    }
-                        
+                    }                      
                 }
-
             }
-
-            //echo '<pre>'; print_r( $customer ); echo '</pre>'; exit;
 
             // ===== Loop Through Tours =====
             $totalOrderAmount = 0;
@@ -624,29 +618,6 @@ class OrderController extends Controller
                     $price = $tour_pricing_prices[$i] ?? 0;
                     $actual_price = $price;
                     $discount = 0;
-
-                    // if($i == 0) {
-                    //     $deposite_rule = $tour->specialDeposit;
-                    //     if($deposite_rule->is_discount === 1 && $deposite_rule->discount_type === 'PERCENT') {
-                    //         $discount = ($price * $deposite_rule->discount_value)/100;
-                    //     }
-                    //     else if($deposite_rule->is_discount === 1 && $deposite_rule->discount_type === 'FIXED') {
-                    //         $discount = $deposite_rule->discount_value;
-                    //     }
-
-                    //     $price = $price - $discount;
-
-                    //     if($discount>0) {
-                    //         $discounts[] = [
-                    //             'tour_id'  => $tour->id,
-                    //             'discount' => $deposite_rule->discount_value ?? 0,
-                    //             'quantity' => $qty ?? 1,
-                    //             'label'    => 'Special Discount',
-                    //             'type'     => $deposite_rule->discount_type,
-                    //             'price'    => ($discount * $qty),
-                    //         ];
-                    //     }
-                    // }
 
                     $tourPricing = TourPricing::find($pricingId);
                     $label = str_ireplace('Group', 'Participants', $tourPricing->label);
@@ -790,10 +761,6 @@ class OrderController extends Controller
 
             // ===== Update Order totals =====
             $balanceAmount = $totalOrderAmount - $totalPaymentAmount;
-            // $order->total_amount = $totalOrderAmount;
-            // $order->balance_amount = $balanceAmount;
-            // $order->booked_amount = $totalOrderAmount - $balanceAmount;
-
 
             $totals = $this->calculateTotals(
                 $totalOrderAmount,
@@ -853,7 +820,7 @@ class OrderController extends Controller
                         if ( $charge_ccnow ) {
                             $pi = \Stripe\PaymentIntent::create([
                                 'customer'  => $stripeCustomer->id,
-                                'amount' => intval(round($chargeAmount * 100)),
+                                'amount' => $this->stripeAmount($chargeAmount, $order->currency ?? 'CAD'),
                                 'currency' => $order->currency,
                                 'automatic_payment_methods' => [
                                     'enabled' => true,
@@ -880,29 +847,11 @@ class OrderController extends Controller
                                 $pi->confirm(['payment_method' => $request->payment_intent_id]);
                                 $pi->capture();
 
-                                // $payments = [
-                                //     'order_id'       => $order->id,
-                                //     'payment_type'   => 'CREDITCARD',
-                                //     'transaction_id' => $pi->id,
-                                //     'date'           => now(),
-                                //     'amount'         => $chargeAmount,
-                                //     'collection_type'=> 'Inside',
-                                //     'created_at'     => now(),
-                                //     'updated_at'     => now(),
-                                // ];
-
-                                // OrderPaymentDetail::insert($payments);
-
                                 $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_intent_id);
 
                                 $card = $paymentMethod->card;
-
                                 $brand  = $card->brand;          // visa, mastercard
                                 $last4  = $card->last4;          // 4242
-                                // $expMonth = $card->exp_month;    // 12
-                                // $expYear  = $card->exp_year;     // 2029
-                                // $funding = $card->funding;       // credit/debit/prepaid
-                                // $country = $card->country;       // US, IN
 
                                 OrderPayment::create([
                                     'order_id'          => $order->id,
@@ -975,19 +924,6 @@ class OrderController extends Controller
                             $order->payment_method_id   = $request->payment_intent_id;
                             $order->payment_method      = 'card';
 
-                            // $payments = [
-                            //     'order_id'       => $order->id,
-                            //     'payment_type'   => 'CREDITCARD',
-                            //     'transaction_id' => $request->payment_intent_id,
-                            //     'date'           => now(),
-                            //     'amount'         => 0,
-                            //     'collection_type'=> 'Outside',
-                            //     'created_at'     => now(),
-                            //     'updated_at'     => now(),
-                            // ];
-
-                            // OrderPaymentDetail::insert($payments);
-
                             OrderPayment::create([
                                 'order_id'          => $order->id,
                                 'payment_intent_id' => $request->payment_intent_id,
@@ -1047,17 +983,7 @@ class OrderController extends Controller
 
                         OrderActions::insert($order_actions);
 
-
-                    } /*else {
-                        $si = \Stripe\SetupIntent::create([
-                            'customer'  => $stripeCustomer->id,
-                            'automatic_payment_methods' => ['enabled' => true],
-                            'usage'     => 'off_session',
-                            'metadata'  => $metaData
-                        ]);
-                        $order->payment_intent_client_secret = $si->client_secret;
-                        $order->payment_intent_id = $si->id;
-                    }*/
+                    }
 
                     // Booking fee
                     $booking_fee = $request->booking_fee ?? 0;
@@ -1934,7 +1860,7 @@ class OrderController extends Controller
                     if ( $charge_ccnow ) {
                         $pi = \Stripe\PaymentIntent::create([
                             'customer'  => $stripeCustomer->id,
-                            'amount' => intval(round($chargeAmount * 100)),
+                            'amount' => $this->stripeAmount($chargeAmount, $order->currency ?? 'CAD'),
                             'currency' => $order->currency,
                             'automatic_payment_methods' => [
                                 'enabled' => true,
@@ -2115,7 +2041,6 @@ class OrderController extends Controller
      */
     public function destroy($id)
     {
-
         $order = Order::where('id', decrypt($id))->first();
         // $tour->title .= '-deleted';
         // $tour->slug .= '-deleted-' . Str::random(6);
@@ -3483,8 +3408,8 @@ class OrderController extends Controller
             }
 
             // $chargeAmount = 6883.1740398;
-            $chargeAmount = round($chargeAmount, 2);
-            $stripeAmount = (int) round($chargeAmount * 100);
+            $chargeAmount = $this->normalizeCurrencyAmount($chargeAmount, $order->currency ?? 'CAD');
+            $stripeAmount = $this->stripeAmount($chargeAmount, $order->currency ?? 'CAD');
 
             $metaData = [
                 'bookedDate'    => $order->created_at,
@@ -3627,7 +3552,10 @@ class OrderController extends Controller
 
             $refund = \Stripe\Refund::create([
                 'payment_intent' => $payment->payment_intent_id,
-                'amount' => (int) ($request->amount * 100), // cents
+                'amount' => $this->stripeAmount(
+                    (float) $request->amount,
+                    $payment->currency ?? $order->currency ?? 'CAD'
+                ),
                 'reason' => $request->reason ?: null,
             ]);
 
@@ -4177,7 +4105,7 @@ class OrderController extends Controller
             ];
 
             $paymentIntent = \Stripe\PaymentIntent::create([
-                'amount'            => (int) ($order->balance_amount * 100),
+                'amount'            => $this->stripeAmount((float) $order->balance_amount, $order->currency ?? 'CAD'),
                 'currency'          => strtoupper($order->currency ?? 'usd'),
                 'customer'          => $order->stripe_customer_id,
                 'payment_method'    => $request->payment_method_id,
@@ -4343,7 +4271,7 @@ class OrderController extends Controller
             // ----------------------------------------------------
             // CAPTURE PAYMENT
             // ----------------------------------------------------
-            $captureAmount = (int) round($amount * 100);
+            $captureAmount = $this->stripeAmount((float) $amount, $order->currency ?? 'CAD');
             
             $capturedIntent = $paymentIntent->capture([
                 'amount_to_capture' => $captureAmount,
@@ -4460,7 +4388,10 @@ class OrderController extends Controller
                 'payment_intent_id' => $confirmed->id,
                 'transaction_id'    => $confirmed->charges->data[0]->id ?? $confirmed->id,
                 'payment_method'    => 'card',
-                'amount'            => ($confirmed->amount / 100),
+                'amount'            => $this->fromStripeAmount(
+                    (float) $confirmed->amount,
+                    $confirmed->currency ?? $order->currency ?? 'CAD'
+                ),
                 'currency'          => $confirmed->currency,
                 'status'            => $confirmed->status,
                 'action'            => 'initial_charge',
@@ -4602,7 +4533,10 @@ class OrderController extends Controller
 
             $refund = \Stripe\Refund::create([
                 'payment_intent' => $payment->payment_intent_id,
-                'amount' => (float)($refundNow * 100)
+                'amount' => $this->stripeAmount(
+                    (float) $refundNow,
+                    $payment->currency ?? $order->currency ?? 'CAD'
+                )
             ]);
             
             $payment->update([
@@ -4662,6 +4596,38 @@ class OrderController extends Controller
                 ? 3
                 : ($balance <= 0.01 ? 1 : 0),
         ]);
+    }
+
+    private function stripeAmount(float $amount, string $currency): int
+    {
+        return $this->isZeroDecimalCurrency($currency)
+            ? (int) round($amount)
+            : (int) round($amount * 100);
+    }
+
+    private function fromStripeAmount(float $amount, string $currency): float
+    {
+        return $this->isZeroDecimalCurrency($currency)
+            ? round($amount, 0)
+            : round($amount / 100, 2);
+    }
+
+    private function normalizeCurrencyAmount(float $amount, string $currency): float
+    {
+        return $this->isZeroDecimalCurrency($currency)
+            ? round($amount, 0)
+            : round($amount, 2);
+    }
+
+    private function isZeroDecimalCurrency(string $currency): bool
+    {
+        $zeroDecimalCurrencies = [
+            'bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf',
+            'krw', 'mga', 'pyg', 'rwf', 'ugx',
+            'vnd', 'vuv', 'xaf', 'xof', 'xpf',
+        ];
+
+        return in_array(strtolower($currency), $zeroDecimalCurrencies, true);
     }
 
     public function removeCard(Order $order)
@@ -4790,7 +4756,7 @@ class OrderController extends Controller
 
             $intent = \Stripe\PaymentIntent::create([
                 'customer'       => $order->stripe_customer_id,
-                'amount'         => intval($chargeAmount * 100),
+                'amount'         => $this->stripeAmount($chargeAmount, $order->currency ?? 'CAD'),
                 'currency'       => $order->currency ?? 'eur',
                 'payment_method' => $paymentMethod->id,
                 
@@ -4939,290 +4905,6 @@ class OrderController extends Controller
         );
     }
 
-    public function cancelUncapturedAmount234($orderId)
-    {
-        DB::beginTransaction();
-
-        try {
-            $order = Order::findOrFail($orderId);
-
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-
-            $intentId = $order->payment_intent_id;
-
-            if (!$intentId) {
-                throw new \Exception("No payment intent found for this order.");
-            }
-
-            // Retrieve payment intent
-            $paymentIntent = \Stripe\PaymentIntent::retrieve($intentId);
-
-            // Stripe can only cancel if still in requires_capture state
-            if ($paymentIntent->status !== 'requires_capture') {
-                throw new \Exception("This payment intent cannot be canceled because it is already captured or canceled.");
-            }
-
-            // Cancel / void the uncaptured amount
-            $canceledIntent = \Stripe\PaymentIntent::cancel($intentId);
-
-            // Update order status
-            $order->payment_status = 0; // or any status meaning "capture canceled"
-            $order->save();
-
-            // Log the cancellation
-            OrderPayment::create([
-                'order_id'          => $order->id,
-                'payment_intent_id' => $intentId,
-                'transaction_id'    => $intentId,
-                'payment_method'    => 'card',
-                'status'            => 'canceled',
-                'amount'            => 0,
-                'currency'          => $order->currency,
-                'action'            => 'cancel_uncaptured',
-                'response_payload'  => json_encode($canceledIntent),
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Uncaptured amount canceled successfully.',
-                'status' => $canceledIntent->status,
-                'data' => $canceledIntent
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function addCard2342(Request $request, Order $order)
-    {
-
-        $request->validate([
-            'payment_method' => 'required|string'
-        ]);
-
-        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-
-        // Ensure Stripe customer exists
-        if (
-            empty($order->stripe_customer_id) ||
-            !str_starts_with($order->stripe_customer_id, 'cus_')
-        ) {
-            $customer = \Stripe\Customer::create([
-                'name'  => $order->customer?->name,
-                'email' => $order->customer?->email,
-            ]);
-
-            $order->update([
-                'stripe_customer_id' => $customer->id
-            ]);
-        }
-
-        // Retrieve PaymentMethod
-        $paymentMethod = \Stripe\PaymentMethod::retrieve($request->payment_method);
-
-        // Attach card to SAME customer (FIXED)
-        $paymentMethod->attach([
-            'customer' => $order->stripe_customer_id
-        ]);
-
-        // Set as default card
-        \Stripe\Customer::update($order->stripe_customer_id, [
-            'invoice_settings' => [
-                'default_payment_method' => $paymentMethod->id
-            ]
-        ]);
-
-        // Store minimal info for UI
-        $order->update([
-            'payment_intent_id' => $paymentMethod->id
-        ]);
-
-        $order->payments()->create([
-            'payment_type'   => 'CREDITCARD',
-            'transaction_id' => $paymentMethod->id,
-            'card_last4'     => $paymentMethod->card->last4,
-            'card_brand'     => $paymentMethod->card->brand,
-            'amount'         => 0,
-            'currency'       => $order->currency,
-            'collection_type'=> 'Inside'
-        ]);
-        $order_actions = [
-                'order_id'         => $order->id,
-                'performed_by'     => Auth::id(),
-                'notes'            => "Credit card added successfully has been processed by " . Auth::user()->name,
-                'created_at'       => now(),
-                'updated_at'       => now()
-            ];
-        OrderActions::insert($order_actions);
-
-        return response()->json([
-            'message' => 'Card added successfully to this customer'
-        ]);
-    }
-
-    public function manifest23423(Request $request)
-    {
-
-        $date = $request->input('date') ?? Carbon::today()->toDateString();
-
-        // Preload pricing labels indexed by ID
-        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
-
-        // Create 48 half-hour slots
-        $timeSlots = collect();
-        $start = Carbon::createFromTime(0, 0);
-        for ($i = 0; $i < 48; $i++) {
-            $slotStart = $start->copy()->addMinutes($i * 30);
-            $slotEnd = $slotStart->copy()->addMinutes(30);
-            $timeSlots->push([
-                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
-                'start' => $slotStart->format('H:i:s'),
-                'end' => $slotEnd->format('H:i:s'),
-            ]);
-        }
-
-        $sessions = collect();
-
-        foreach ($timeSlots as $slot) {
-            $orders = Order::with(['customer', 'orderTours'])
-                ->whereDate('created_at', $date)
-                ->whereTime('created_at', '>=', $slot['start'])
-                ->whereTime('created_at', '<', $slot['end'])
-                ->get()
-                ->map(function ($order) use ($pricingLabels) {
-                    $guests = collect();
-                    $extras = collect();
-
-                    foreach ($order->orderTours as $ot) {
-                        // Parse guest pricing
-                        $pricingItems = json_decode($ot->tour_pricing, true);
-                        if (is_array($pricingItems)) {
-                            foreach ($pricingItems as $p) {
-                                $qty = $p['quantity'] ?? 0;
-                                $pricingId = $p['tour_pricing_id'] ?? null;
-                                $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
-
-                                if ($qty && $label) {
-                                    $guests->push("{$qty} {$label}");
-                                }
-                            }
-                        }
-
-                        // Parse extras
-                        $extraItems = json_decode($ot->tour_extra, true);
-                        if (is_array($extraItems)) {
-                            foreach ($extraItems as $e) {
-                                $qty = $e['quantity'] ?? 0;
-                                $label = $e['label'] ?? null;
-                                if ($qty && $label) {
-                                    $extras->push("{$qty} {$label}");
-                                }
-                            }
-                        }
-                    }
-
-                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
-                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
-                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
-
-                    return $order;
-                });
-
-            if ($orders->isNotEmpty()) {
-                $sessions->push([
-                    'slot_time' => $slot['label'],
-                    'orders' => $orders,
-                ]);
-            }
-        }
-
-        return view('admin.order.manifest', compact('sessions', 'date'));
-    }
-    
-    public function downloadManifest323423(Request $request)
-    {
-        $date = $request->input('date') ?? Carbon::today()->toDateString();
-
-        $pricingLabels = TourPricing::pluck('label', 'id')->toArray();
-        $timeSlots = collect();
-        $start = Carbon::createFromTime(0, 0);
-        for ($i = 0; $i < 48; $i++) {
-            $slotStart = $start->copy()->addMinutes($i * 30);
-            $slotEnd = $slotStart->copy()->addMinutes(30);
-            $timeSlots->push([
-                'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
-                'start' => $slotStart->format('H:i:s'),
-                'end' => $slotEnd->format('H:i:s'),
-            ]);
-        }
-
-        $sessions = collect();
-
-        foreach ($timeSlots as $slot) {
-            $orders = Order::with(['customer', 'orderTours'])
-                ->where('order_status', 5)
-                ->whereDate('created_at', $date)
-                ->whereTime('created_at', '>=', $slot['start'])
-                ->whereTime('created_at', '<', $slot['end'])
-                ->get()
-                ->map(function ($order) use ($pricingLabels) {
-                    $guests = collect();
-                    $extras = collect();
-                    $guestCount = 0;
-
-                    foreach ($order->orderTours as $ot) {
-                        $pricingItems = json_decode($ot->tour_pricing, true);
-                        if (is_array($pricingItems)) {
-                            foreach ($pricingItems as $p) {
-                                $qty = $p['quantity'] ?? 0;
-                                $pricingId = $p['tour_pricing_id'] ?? null;
-                                $label = $pricingLabels[$pricingId] ?? ($p['label'] ?? null);
-
-                                if ($qty && $label) {
-                                    $guests->push("{$qty} {$label}");
-                                    $guestCount += $qty;
-                                }
-                            }
-                        }
-
-                        $extraItems = json_decode($ot->tour_extra, true);
-                        if (is_array($extraItems)) {
-                            foreach ($extraItems as $e) {
-                                $qty = $e['quantity'] ?? 0;
-                                $label = $e['label'] ?? null;
-                                if ($qty && $label) {
-                                    $extras->push("{$qty} {$label}");
-                                }
-                            }
-                        }
-                    }
-
-                    $order->guest_summary = $guests->isNotEmpty() ? $guests->implode(', ') : '-';
-                    $order->extras_summary = $extras->isNotEmpty() ? $extras->implode(', ') : '-';
-                    $order->paid_amount = $order->total_amount - ($order->balance_amount ?? 0);
-                    $order->guest_count = $guestCount;
-
-                    return $order;
-                });
-
-            if ($orders->isNotEmpty()) {
-                $sessions->push([
-                    'slot_time' => $slot['label'],
-                    'orders' => $orders,
-                ]);
-            }
-        }
-
-        return Excel::download(new ManifestExport($sessions, $date), "Manifest_{$date}.xlsx");
-    }
     public function removeOrderTour(Request $request)
     {
         $orderId = $request->order_id;
@@ -5315,11 +4997,11 @@ class OrderController extends Controller
     }
 
     private function calculateTotals(
-        float $totalOrderAmount,
-        float $totalPaymentAmount,
-        array $paymentTypes,
-        array $amounts
-    ): array
+            float $totalOrderAmount,
+            float $totalPaymentAmount,
+            array $paymentTypes,
+            array $amounts
+        ): array
     {
         $excludeAmount = 0;
         

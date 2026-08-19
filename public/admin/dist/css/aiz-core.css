@@ -11909,9 +11909,8 @@ table.dataTable {
 
 .tour-search-filter .filter-body{
     flex:1;
-    overflow-y: scroll;
     padding: 20px;
-    height: 490px;
+    height: auto;
 }
 
 .tour-search-filter .filter-footer{
