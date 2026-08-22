@@ -1432,6 +1432,9 @@ class ManifestController extends Controller
             $startOfWeek->toDateString(),
             $endOfWeek->toDateString()
         ])
+        ->whereHas('order', function ($q) {
+            $q->where('order_status', '!=', 6);
+        })
         ->when($selectedVehicle, function ($q) use ($selectedVehicle) {
             $q->where('vehicle_id', $selectedVehicle);
         })

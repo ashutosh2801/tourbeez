@@ -38,6 +38,9 @@ class VehicleExport implements FromCollection, WithColumnWidths
             $startOfWeek->toDateString(),
             $endOfWeek->toDateString()
         ])
+        ->whereHas('order', function ($q) {
+            $q->where('order_status', '!=', 6);
+        })
         ->when($this->vehicleId, function ($q) {
             $q->where('vehicle_id', $this->vehicleId);
         })

@@ -1008,13 +1008,16 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                     <table class="table m-0">
                                         @php
                                             $pickName = '';
+                                            $dropOffName = '';
                                             $instruction = '';
                                             if($order->customer && $order->customer->pickup_name){
                                                 $pickName = $order->customer->pickup_name;
+                                                $dropOffName = $order->customer->drop_off_location;
                                                 $instruction = $order->customer->instructions;
                                             } elseif($order->customer && $order->customer->pickup_id) {
                                                 $pickLocation = \App\Models\PickupLocation::find($order->customer->pickup_id);
                                                 $pickName = $pickLocation?->location . " - " . $pickLocation?->address . " - " . $pickLocation?->time;
+                                                $dropOffName = $order->customer->drop_off_location;
                                                 $instruction = $order->customer->instructions;
                                             }
                                         @endphp
@@ -1022,7 +1025,11 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                             <td><b>Pickup Location</b></td>
                                             <td class="text-right">{{ $pickName }}</td>
                                         </tr>
-                                        
+                                        @if($dropOffName)
+                                        <tr>
+                                            <td><b>Drop Off Location</b></td>
+                                            <td class="text-right">{{ $dropOffName }}</td>
+                                        </tr>
 
                                         <tr>
                                             <td><b>Intructions</b></td>
@@ -2001,6 +2008,11 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                         <div class="col-lg-12 mb-2" id="pickup_name_block">
                             <label>Pickup Name</label>
                             <textarea name="oc_pickup_name" class="form-control">{{ $order->customer->pickup_name }}</textarea>
+                        </div>
+
+                        <div class="col-lg-12 mb-2" id="pickup_name_block">
+                            <label>Drop-off Name</label>
+                            <textarea name="oc_dropoff_name" class="form-control">{{ $order->customer->dropoff_name }}</textarea>
                         </div>
 
                         <!-- Instructions -->
