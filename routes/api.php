@@ -58,8 +58,10 @@ Route::middleware(['api.key'])->group(function () {
     Route::get('/cart', [OrderController::class, 'cart']);
     Route::get('/checkout', [OrderController::class, 'checkout']);
     Route::get('/order/checkout/{orderID}',[OrderController::class,'getOrderDetailByOrderID']);
-    Route::get('/orders/{id}',[OrderController::class,'index']);
-    Route::get('/order/{id}',[OrderController::class,'view']);
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/orders/{id}',[OrderController::class,'index']);
+        Route::get('/order/{id}',[OrderController::class,'view']);
+    });
     Route::post('/tour-sessions', [OrderController::class, 'getSessionTimes']);
 
     Route::get('/wishlist', [WishlistController::class, 'index']);
@@ -70,8 +72,8 @@ Route::middleware(['api.key'])->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/forgot', [AuthController::class, 'forgot']);
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::put('/password/update/{id}', [AuthController::class, 'password_update']);
+    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+    Route::put('/password/update/{id}', [AuthController::class, 'password_update'])->middleware('auth:sanctum');
 
     Route::post('/verify-payment', [PaymentController::class, 'verifyPayment']);
     Route::post('/create-payment-intent', [PaymentController::class, 'createOrUpdate']);
@@ -89,4 +91,3 @@ Route::middleware(['api.key'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/profile/update/{id}', [AuthController::class, 'update']);
 });
-

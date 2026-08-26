@@ -747,7 +747,6 @@ class TourController extends Controller
         ]);
     }
 
-
     /**
      * Fetch a deposit rule by tour id.
      */
@@ -830,12 +829,9 @@ class TourController extends Controller
         ]);
     }
 
-
-
     /** 
      * Search home page tour  
      */
-
     public function search(Request $request) 
     {
         $search = $request->input('q', '');
@@ -1035,114 +1031,6 @@ class TourController extends Controller
         ]);
     }
 
-    public function search32432(Request $request) 
-    {
-        
-        $search = $request->input('q', '');
-
-        $date = $request->input('date', '');
-
-        // Build cache key
-        $cacheKey = 'search_tours_' . md5($search . '_' . $date);
-
-        // $cities = City::where('status', 'active')
-        //     ->when($search, function ($query, $search) {
-        //         $query->where(function ($q) use ($search) {
-        //             $q->where('name', 'LIKE', '' . $search . '%');
-        //         });
-        //     })
-        //     ->orderBy('name', 'asc')
-        //     ->limit(2)
-        //     ->get();
-
-        $cities = DB::table('tour_locations as tl')
-                    ->join('tours as t', 't.id', '=', 'tl.tour_id')
-                    ->join('cities as c', 'c.id', '=', 'tl.city_id')
-                    ->join('states as s', 's.id', '=', 'c.state_id')
-                    ->join('countries as cc', 'cc.id', '=', 's.country_id')
-                    ->join('uploads as u', 'u.id', '=', 'c.upload_id')
-                    ->select('c.id', 'c.name', 's.name as state_name', 'cc.name as country_name', 'u.file_name as image')
-                    ->groupBy('c.id', 'c.name')
-                    ->orderBy('name', 'asc')
-                    ->where('c.upload_id', '>=', 1)
-                    ->whereExists(function ($query) {
-                        $query->select(DB::raw(1))
-                            ->from('tour_schedules as ts')
-                            ->whereColumn('ts.tour_id', 't.id')
-                            ->where('ts.until_date', '>=', DB::raw('CURDATE()'));
-                    })
-                    ->when($search, function ($query, $search) {
-                        $query->where(function ($q) use ($search) {
-                            $q->where('c.name', 'LIKE', $search . '%')
-                              ->orWhere('s.name', 'LIKE', $search . '%')
-                              ->orWhere('cc.name', 'LIKE', $search . '%');
-                        });
-                    })
-                    ->limit(2)
-                    ->get();
-            
-        $categories = Category::orderBy('name', 'asc')
-            ->when($search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'LIKE', '' . $search . '%');
-                });
-            })
-        ->limit(3)
-        ->get();    
-        
-        $total_cities       = $cities->count();
-        $total_categories   = $categories->count();
-        $total_tours        = 8 - ($total_cities + $total_categories);
-
-        // $total_tours        = 8 - ($total_cities);
-        $tours = Cache::remember($cacheKey, now()->addMinutes(20), function () use ($search, $total_tours) {
-            //return 
-            return Tour::with(['location' => function ($query) {
-                    $query->select('id', 'tour_id', 'address');
-                }])
-                ->select('id', 'title', 'slug', 'unique_code', 'price')
-                ->when($search, function ($query, $search) {
-                    $query->where(function ($q) use ($search) {
-                        $q->where('title', 'LIKE', '%' . $search . '%');
-                    });
-                })
-                ->where('status', 1)
-                ->orderBy('title', 'asc')
-                ->limit($total_tours)
-                ->get();
-
-        });
-
-        $data = [];
-        if($total_cities>0) {
-            foreach($cities as $city) {
-                $data[] = ['icon'=>'city', 'title' => $this->highlightMatch($city->name, $search), 'slug' => '/things-to-do-in-'.Str::slug($city->name).'/'.$city->id.'-c1', 'address' => ucfirst($city->state_name).', '.ucfirst($city->country_name)];
-            }
-        }
-        if($total_categories>0) {
-            foreach($categories as $category) {
-                $data[] = ['icon'=>'category', 'title' => $this->highlightMatch($category->name, $search), 'slug' => '/things-to-do-in-'.$category->slug.'/'.$category->id.'-c3', 'address' => ''];
-            }
-        }
-        if($tours->count()>0) {
-            foreach($tours as $tour) {
-                $image_id = $tour->main_image->id ?? 0;
-                $image  = uploaded_asset($image_id, 'thumb');
-                $data[] = ['icon'=>$image, 'title' => $this->highlightMatch($tour->title, $search), 'slug' => '/tour/'.$tour->slug, 'address' => $tour->location?->address];
-            }
-        }
-        
-        if (!$data) {
-            return response()->json(['status' => false, 'data' => [], 'message' => 'No records found!']);
-        }
-
-        // Return the transformed data along with pagination info
-        return response()->json([
-            'status'  => true,
-            'data'    => $data,
-        ]);
-    }
-
     public function highlightMatch($string, $keyword) {
         $string = ucfirst($string);
         return preg_replace("/(" . preg_quote($keyword, '/') . ")/i", '<mark>$1</mark>', $string);
@@ -1244,8 +1132,6 @@ class TourController extends Controller
 
     private function getNextAvailableDate($tourId, $schedules = null)
     {
-
-
         $today = Carbon::today();
 
         if ($schedules === null) {
@@ -1397,8 +1283,6 @@ class TourController extends Controller
         return false;
     }
 
-
-
     private function getSlotsForDate($schedule, $date, $durationMinutes = 30, $minimumNoticePeriod = 0)
     {
         $slots = [];
@@ -1420,7 +1304,6 @@ class TourController extends Controller
 
         return $slots;
     }
-
 
     private function minutesFromUnit(?int $num, ?string $unit): int
     {
@@ -1448,8 +1331,6 @@ class TourController extends Controller
      * @param  $date      Carbon (Y-m-d for the “selected” day)
      * @param  $repeatsByDay  array<string, Collection<TourScheduleRepeats>>  // optional prefetch
      */
-
-
     private function getDisabledTourDates(int $tourId, $schedules = null): array
     {
         if ($schedules === null) {
@@ -1556,7 +1437,6 @@ class TourController extends Controller
         ];
     }
 
-
     private function calculateDisabledDates($schedule, Carbon $today, $repeats, $storeDeletedSlots): array
     {
         $start = Carbon::parse($schedule->session_start_date)->max($today);
@@ -1578,7 +1458,6 @@ class TourController extends Controller
        
         return $disabled;
     }
-
 
     private function isDateAvailable($schedule, $date, array $repeatsByDay = [], $storeDeletedSlots = []): bool
     {
@@ -1707,9 +1586,6 @@ class TourController extends Controller
 
         return false;
     }
-
-
-
 
     public function getSubTour($parentId, $date)
     {
@@ -1907,143 +1783,6 @@ class TourController extends Controller
         return response()->json($response);
     }
 
-
-    public function single32(Request $request)
-    {
-
-        $data = Tour::with(['pickups', 'pickups.locations', 'pricings', 'addons', 'taxes_fees'])
-                    ->find($request->id);
-
-        
-
-        if (!$data) return '';
-
-        $_tourId = $data->id;
-        $subtotal = 0;
-
-        // ----------------------------------------------------------
-        // ★ ADDED: GET START DATE + DISABLED DATES FROM API LOGIC
-        // ----------------------------------------------------------
-        $schedules = $data->schedules ?? collect();
-
-        $tour_start_date = $this->getNextAvailableDate($data->id, $schedules);
-        $disabled_dates  = $this->getDisabledTourDates($data->id, $schedules);
-
-        // fallback if null
-        if (!$tour_start_date) {
-            $tour_start_date = now()->format('Y-m-d');
-        }
-
-        // ----------------------------------------------------------
-        // BUILD PICKUP HTML (unchanged)
-        // ----------------------------------------------------------
-        $pickupHtml = '<div class="p-3" style="background:#f7f7f7; border:1px solid #ddd; margin-bottom:10px">
-            <h4 style="font-size:16px; font-weight:600">Pickup Options</h4>';
-
-        if (!empty($data->pickups) && $data->pickups[0]?->name === 'No Pickup') {
-            $pickupHtml .= '
-                <p>No Pickup Available</p>
-                <input type="hidden" name="pickup_id" value="0">
-                <input type="hidden" name="pickup_name" value="">
-            ';
-        }
-        elseif (!empty($data->pickups) && $data->pickups[0]?->name === 'Pickup') {
-
-            $comment = \DB::table('pickup_tour')
-                            ->where('tour_id', $data->id)
-                            ->where('pickup_id', $data->pickups[0]?->id)
-                            ->value('comment');
-
-            $pickupHtml .= '
-                <label>Pickup Location</label>
-                <input type="text" name="pickup_name" class="form-control" placeholder="Enter pickup location">
-                <small style="color:#777; display:block; margin-top:5px;">'.($comment ?? "Enter the pickup location").'</small>
-                <input type="hidden" name="pickup_id" value="0">
-            ';
-        }
-        else {
-            $locations = $data->pickups[0]?->locations ?? [];
-
-            $pickupHtml .= '
-                <label>Select Pickup Point</label>
-                <select name="pickup_id" class="form-control pickup-dropdown" data-target="pickup-other-box">
-                    <option value="">Select Pickup Point</option>';
-
-            foreach ($locations as $loc) {
-                $pickupHtml .= '<option value="'.$loc->id.'">'.$loc->location.'</option>';
-            }
-
-            $pickupHtml .= '
-                    <option value="other">Other</option>
-                </select>
-
-                <div id="pickup-other-box" style="display:none; margin-top:10px">
-                    <label>Enter Pickup Location</label>
-                    <input type="text" name="pickup_name" class="form-control" placeholder="Enter location manually" value=" ">
-                </div>';
-        }
-
-        $pickupHtml .= '</div>';
-
-        // ----------------------------------------------------------
-        // MAIN HTML OUTPUT
-        // ----------------------------------------------------------
-        $row_id = 'row_'.$request->tourCount;
-
-        $str = '<div id="'.$row_id.'" style="border:1px solid #e1a604; margin-bottom:10px">
-                    <input type="hidden" name="tour_id[]" value="'.$data->id.'" />  
-
-                    <table class="table">
-                        <tr>
-                            <td width="600"><h3 class="text-lg">'.$data->title.'</h3></td>
-
-                            <!-- ★ ADDED tour_start_date -->
-                            <td class="text-right" width="200">
-                                <div class="input-group">
-                                    <input 
-                                        type="text" 
-                                        class="aiz-date-range form-control tour-start-date" 
-                                        id="tour_startdate_'.$request->tourCount.'" 
-                                        name="tour_startdate[]" 
-                                        placeholder="Select Date" 
-                                        data-single="true" 
-                                        data-show-dropdown="true"
-                                        data-tour-id="'.$data->id.'" 
-                                        data-count="'.$request->tourCount.'"
-                                        data-disabled-dates="'.htmlspecialchars(json_encode($disabled_dates)).'"
-                                        value="'.$tour_start_date.'">
-
-                                    <div class="input-group-append">
-                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                    </div>
-                                </div>
-                            </td>
-
-                            <td class="text-right" width="200">
-                                <div class="input-group">
-                                    <input type="text" placeholder="Time" name="tour_starttime[]" id="tour_starttime_'.$request->tourCount.'" class="form-control aiz-time-picker">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><i class="fas fa-clock"></i></span>
-                                    </div>                       
-                                </div>
-                            </td>
-
-                            <td class="text-right">
-                                <button type="button" class="btn btn-sm btn-danger" onclick="removeTour(\''.$row_id.'\')">-</button>
-                                <button type="button" onclick="addTour()" class="btn btn-sm btn-info">+</button>
-                            </td>
-                        </tr>
-                    </table>
-
-                    <table class="table">'.$pickupHtml.'</table>
-
-                    <!-- Pricing + Addons + Tax (unchanged) -->
-                    ... REMAINING SAME ...
-                </div>';
-
-        return $str;
-    }
-
     public function single(Request $request)
     {
 
@@ -2160,7 +1899,7 @@ class TourController extends Controller
                                         data-format="ddd MMM DD, YYYY"
                                         data-single="true" 
                                         data-show-dropdown="true" 
-                                        value="'.date('D M d, Y',strtotime($tour_start_date)).'">
+                                        value="'.(!empty($tour_start_date) ? date('D M d, Y', strtotime($tour_start_date)) : '').'">
 
                                     <div class="input-group-append">
                                         <span class="input-group-text"><i class="fas fa-calendar"></i></span>

@@ -25,7 +25,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Order::observe(OrderObserver::class);
         Paginator::useBootstrap();
-        if (DB::connection()->getDriverName() === 'mysql') {
+        // The session mode is a production MySQL setting. Avoid opening the
+        // configured local database while booting tests, artisan config
+        // commands, or environments that intentionally use SQLite.
+        if (app()->environment('production') && DB::connection()->getDriverName() === 'mysql') {
             DB::statement("SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'");
         }
     }

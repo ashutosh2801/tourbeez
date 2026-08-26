@@ -34,6 +34,19 @@ use Stripe\Exception\SignatureVerificationException;
 
 class PaymentController extends Controller
 {
+    private function canAccessOrder(Request $request, Order $order): bool
+    {
+        $user = $request->user();
+
+        if ($user && (int) $order->user_id === (int) $user->id) {
+            return true;
+        }
+
+        $sessionId = $request->input('session_id');
+        return filled($sessionId)
+            && hash_equals((string) $order->session_id, (string) $sessionId);
+    }
+
     public function handleWebhook(Request $request)
     {
         Log::info('handleWebhook');
@@ -369,6 +382,9 @@ class PaymentController extends Controller
                 if (!$order) {
                     return response()->json(['error' => 'Invalid order ID'], 404);
                 }
+                if (!$this->canAccessOrder($request, $order)) {
+                    return response()->json(['error' => 'Unauthorized order access'], 403);
+                }
 
                 $params = [
                     'automatic_payment_methods' => ['enabled' => true],
@@ -405,6 +421,9 @@ class PaymentController extends Controller
                 return response()->json([
                     'error' => 'Invalid order ID'
                 ], 404);
+            }
+            if (!$this->canAccessOrder($request, $order)) {
+                return response()->json(['error' => 'Unauthorized order access'], 403);
             }
             $paymentSummary = (new OrderPaymentSummaryService())->summarize(
                 $order->payments()->get()
@@ -992,6 +1011,11 @@ class PaymentController extends Controller
     {
         Log::info('saveCard');
 
+        $request->validate([
+            'order_id' => ['required', 'integer', 'exists:orders,id'],
+            'payment_method_id' => ['required', 'string'],
+        ]);
+
         orderLogAdvanced($request->order_id, 'payment', 'save_card_start', 'info', 'Saving card from frontend', [
             'order_id' => $request->order_id,
             'payment_method_id' => $request->payment_method_id
@@ -1000,6 +1024,10 @@ class PaymentController extends Controller
         Stripe::setApiKey(env('STRIPE_SECRET'));
 
         $order_id = $request->order_id;
+        $order = Order::find($order_id);
+        if (!$order || !$this->canAccessOrder($request, $order)) {
+            return response()->json(['status' => false, 'message' => 'Unauthorized order access'], 403);
+        }
 
         $paymentMethod = \Stripe\PaymentMethod::retrieve(
             $request->payment_method_id
@@ -1021,7 +1049,6 @@ class PaymentController extends Controller
         }
         
 
-        $order = Order::find($order_id);
         $payment = OrderPayment::where('order_id', $order_id)
             ->whereNotIn('payment_type', ['PROMOCODE', 'DISCOUNT', 'BOOKINGFEE'])
             ->when(

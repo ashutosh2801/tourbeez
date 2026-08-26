@@ -701,12 +701,11 @@
                                 <td>
                                     @php
                                         $created = \Carbon\Carbon::parse($order->created_at);
+                                        //$updated = \Carbon\Carbon::parse($order->updated_at);
                                     @endphp
 
                                     {{ $created->format('M d, Y') }} <br>
-                                    {{ $created->format('h:i A') }}
-                                    <!-- {{ optional($order->created_at)->format('M d, Y') }} <br>
-                                    {{ optional($order->created_at)->format('h:i A') }} -->
+                                    {{ $created->format('h:i A') }} 
                                 </td>
                                 <td style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100px;">
                                     {{ source_list($order->source) }}

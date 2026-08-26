@@ -34,7 +34,6 @@ class VoucherController extends Controller
     // Store voucher
     public function store324(Request $request)
     {
-        dd($request->all());
         $data = $request->validate([
             'Voucher.createMode' => 'required|in:REZDY,MANUAL',
             'Voucher.codesList' => 'required_if:Voucher.createMode,MANUAL',

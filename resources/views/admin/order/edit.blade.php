@@ -618,7 +618,7 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                                             data-format="ddd MMM DD, YYYY"
                                                                             data-show-dropdown="true"
                                                                             data-saved-date="{{ $order_tour->tour_date }}"
-                                                                            value="{{ date('D M d, Y', strtotime($order_tour->tour_date)) }}">
+                                                                            value="{{ $order_tour->tour_date ? date('D M d, Y', strtotime($order_tour->tour_date)) : '' }}">
                                                                         <div class="input-group-append">
                                                                             <span class="input-group-text"><i class="fas fa-calendar"></i></span>
                                                                         </div>
@@ -1027,10 +1027,10 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                         </tr>
                                         @if($dropOffName)
                                         <tr>
-                                            <td><b>Drop Off Location</b></td>
+                                            <td><b>Drop-Off Location</b></td>
                                             <td class="text-right">{{ $dropOffName }}</td>
                                         </tr>
-
+                                        @endif
                                         <tr>
                                             <td><b>Intructions</b></td>
                                             <td class="text-right">{{ $instruction }}</td>
@@ -1050,6 +1050,7 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                             <td><b>Feedback Email</b></td>
                                             <td class="text-right">{{ $order->send_feedback_email == 1 ? "Enabled" : "Disabled" }}</td>
                                         </tr>
+                                        
                                     </table>
                                 </div>
                             </div>
@@ -2006,15 +2007,15 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
 
                         <!-- Custom Pickup -->
                         <div class="col-lg-12 mb-2" id="pickup_name_block">
-                            <label>Pickup Name</label>
+                            <label>Pickup Location</label>
                             <textarea name="oc_pickup_name" class="form-control">{{ $order->customer->pickup_name }}</textarea>
                         </div>
-
+                        @if($dropOffName)
                         <div class="col-lg-12 mb-2" id="pickup_name_block">
-                            <label>Drop-off Name</label>
-                            <textarea name="oc_dropoff_name" class="form-control">{{ $order->customer->dropoff_name }}</textarea>
+                            <label>Drop-off Location</label>
+                            <textarea name="oc_dropoff_name" class="form-control">{{ $order->customer->drop_off_location }}</textarea>
                         </div>
-
+                        @endif
                         <!-- Instructions -->
                         <div class="col-lg-12 mb-2">
                             <label>Instructions</label>
@@ -3734,7 +3735,7 @@ function refreshCalendarAndSession(tourId, count, order_id, orderTourId) {
             const savedDate = $row.data("saved-tour-date") || $dateInput.data("saved-date");
             const savedTime = $row.data("saved-tour-time")
                 || $row.find(".tour_starttime").first().data("saved-time");
-            const selectedDate = savedDate || res.tour_date;
+            const selectedDate = savedDate || res.tour_date || res.start_date || moment().format('YYYY-MM-DD');
             const selectedTime = savedTime || res.tour_time;
 
             // ✅ destroy old picker

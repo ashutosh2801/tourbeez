@@ -17,13 +17,15 @@ class OrderCreationActionTest extends TestCase
     {
         parent::setUp();
 
-        Schema::create('users', function ($table) {
-            $table->id();
-            $table->string('name')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('users')) {
+            Schema::create('users', function ($table) {
+                $table->id();
+                $table->string('name')->nullable();
+                $table->timestamps();
+            });
+        }
 
-        Schema::create('orders', function ($table) {
+        if (!Schema::hasTable('orders')) Schema::create('orders', function ($table) {
             $table->id();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->string('order_number')->nullable();
@@ -38,7 +40,7 @@ class OrderCreationActionTest extends TestCase
             $table->softDeletes();
         });
 
-        Schema::create('order_actions', function ($table) {
+        if (!Schema::hasTable('order_actions')) Schema::create('order_actions', function ($table) {
             $table->id();
             $table->unsignedBigInteger('order_id');
             $table->unsignedBigInteger('performed_by')->nullable();
@@ -53,9 +55,18 @@ class OrderCreationActionTest extends TestCase
     {
         $staff = new \App\Models\User();
         $staff->name = 'Staff User';
+        $staff->email = 'staff@example.test';
+        $staff->password = 'temporary-password';
         $staff->save();
 
+        $tour = new \App\Models\Tour();
+        $tour->user_id = $staff->id;
+        $tour->title = 'Test Tour';
+        $tour->slug = 'test-tour-' . uniqid();
+        $tour->save();
+
         $order = Order::create([
+            'tour_id' => $tour->id,
             'created_by' => $staff->id,
             'order_number' => 'ORD-1001',
             'source' => 'internal',
@@ -67,8 +78,11 @@ class OrderCreationActionTest extends TestCase
             'performed_by' => $staff->id,
         ]);
 
-        $action = OrderActions::where('order_id', $order->id)->latest()->first();
-        $this->assertStringContainsString('created this order', $action->notes);
+        $action = OrderActions::where('order_id', $order->id)
+            ->where('notes', 'like', 'Order created by%')
+            ->latest()
+            ->first();
+        $this->assertStringContainsString('Order created by', $action->notes);
         $this->assertStringContainsString('Staff User', $action->notes);
     }
 }

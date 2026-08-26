@@ -41,6 +41,7 @@ class OrderController extends Controller
      */
     public function index(Request $request, $id = 0)
     {
+        abort_unless((int) $request->user()->id === (int) $id, 403);
         if( !$id || $id == 0 ) {
             return response()->json([
                 'message'    => 'User not found!',
@@ -49,15 +50,7 @@ class OrderController extends Controller
             ]);
         }
 
-        $session_id = $request->input('session_id');
-
-        $query = Order::where(function ($q) use ($id, $session_id) {
-                $q->where('user_id', $id);
-
-                if($session_id) {
-                    $q->orWhere('session_id', $session_id);
-                }
-            })
+        $query = Order::where('user_id', $id)
             ->orderBy('created_at', 'DESC');
 
         //dd($query->toSql());
@@ -105,16 +98,17 @@ class OrderController extends Controller
 
         //try {
 
-            $cacheKey = 'booking_order_' . $id;
+            $userId = (int) $request->user()->id;
+            $cacheKey = 'booking_order_' . $userId . '_' . $id;
 
             // Try retrieving from cache or load and store it
-            $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($id) {
+            $booking = Cache::remember($cacheKey, now()->addMinutes(10), function () use ($id, $userId) {
                 return Order::with([
                     'tour',
                     'tour.location',
                     'tour.detail',
                     'customer'
-                ])->findOrFail($id);
+                ])->where('user_id', $userId)->findOrFail($id);
             });
 
             // if ($booking && $booking->order_status !== 1) {
@@ -2176,9 +2170,29 @@ class OrderController extends Controller
     public function getSessionTimes(Request $request)
     {
         Log::info('getSessionTimes');
-        $carbonDate = Carbon::parse($request->date);
+        try {
+            $carbonDate = Carbon::parse($request->date);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'A valid session date is required.',
+                'data' => [],
+            ], 422);
+        }
 
-        $date = $request->date;
+        // A NULL/empty tour date can be rendered by the browser as 31-Dec-1969
+        // (Unix epoch). Use the next usable booking date instead of querying
+        // schedules with that invalid date.
+        if ($carbonDate->year <= 1970) {
+            $fallbackDate = TourSchedule::where('tour_id', $request->tour_id)
+                ->whereDate('until_date', '>=', Carbon::today())
+                ->orderBy('session_start_date')
+                ->value('session_start_date');
+
+            $carbonDate = Carbon::parse($fallbackDate ?: Carbon::today());
+        }
+
+        $date = $carbonDate->toDateString();
 
         $dayName = $carbonDate->format('l');
         $slots = [];

@@ -159,10 +159,11 @@ class AuthController extends Controller
 
     public function update(Request $request, $id)
     {
-        $user = User::findorFail($id);
+        abort_unless((int) $request->user()->id === (int) $id, 403);
+        $user = $request->user();
         
         $name = $request->input('first_name') ?? $user->first_name;
-        $name.= ' '.$request->input('last_name') ?? $user->last_name;
+        $name .= ' ' . ($request->input('last_name') ?? $user->last_name);
 
         $user->update([
             'first_name'=> $request->input('first_name') ?? $user->first_name,
@@ -179,7 +180,8 @@ class AuthController extends Controller
 
     public function password_update(Request $request, $id)
     {
-        $user = User::findorFail($id);
+        abort_unless((int) $request->user()->id === (int) $id, 403);
+        $user = $request->user();
         
         $rules = [
             'password' => [

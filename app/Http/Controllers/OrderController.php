@@ -65,7 +65,7 @@ class OrderController extends Controller
                     ->where('amount', '>', 0)
                     ->whereNotIn('payment_type', ['DISCOUNT', 'PROMOCODE', 'BOOKINGFEE']),
             ])
-            ->orderByRaw('COALESCE(latest_payment_at, orders.created_at) DESC')
+            ->orderByRaw('COALESCE(orders.updated_at) DESC')
             ->orderByDesc('orders.id');
 
         // Search by order number or customer name

@@ -593,7 +593,7 @@ function loadTourDetails(tourId, count) {
                     ? serverDate
                     : moment().format("YYYY-MM-DD");
 
-                $dateInput.val(initialDate);
+                $dateInput.val(moment(initialDate).format("ddd MMM DD, YYYY"));
 
                 $dateInput.off('apply.daterangepicker').on('apply.daterangepicker', function(ev, picker) {
                     const selectedDate = picker.startDate.format("ddd MMM DD, YYYY");

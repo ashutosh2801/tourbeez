@@ -28,6 +28,7 @@ class OrderCustomer extends Model
         'instructions',
         'pickup_id',
         'pickup_name',
+        'drop_off_location',
         'promo_code',
     ];
 

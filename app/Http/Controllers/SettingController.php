@@ -453,7 +453,8 @@ class SettingController extends Controller
 
                         Mail::to($email)->send(new EmailManager($array));
                     } catch (\Exception $e) {
-                        dd($e);
+                        report($e);
+                        return back()->with('error', translate('Newsletter could not be sent.'));
                     }
             	}
             }
@@ -497,7 +498,8 @@ class SettingController extends Controller
             $mail = Mail::to($request->email)->send(new EmailManager($array));
             //dd($mail);
         } catch (\Exception $e) {
-            dd($e);
+            report($e);
+            return back()->with('error', translate('Test email could not be sent.'));
         }
 
         //flash(translate('An email has been sent.'))->success();

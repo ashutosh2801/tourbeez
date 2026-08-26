@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 
@@ -40,7 +41,13 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-        ])->assignRole('user');
+        ]);
+
+        // Some installations do not seed the optional Spatie role table.
+        // Registration must still work in that case.
+        if (Role::where('name', 'user')->where('guard_name', 'web')->exists()) {
+            $user->assignRole('user');
+        }
 
         event(new Registered($user));
 

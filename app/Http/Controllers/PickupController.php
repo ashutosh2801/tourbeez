@@ -183,15 +183,15 @@ class PickupController extends Controller
     {
         $orderCustomer = OrderCustomer::findOrFail($request->customer_id);
         
-        $orderCustomer->pickup_id =  $request->pickup_type == "existing" ? $request->oc_pickup_id : NULL;
-        $orderCustomer->pickup_name = $request->pickup_type == "custom" ? $request->oc_pickup_name : NULL;
-        $orderCustomer->instructions = $request->oc_instructions;
+        $orderCustomer->pickup_id           =  $request->pickup_type == "existing" ? $request->oc_pickup_id : NULL;
+        $orderCustomer->pickup_name         = $request->pickup_type == "custom" ? $request->oc_pickup_name : NULL;
+        $orderCustomer->drop_off_location   = $request->pickup_type == "custom" ? $request->oc_dropoff_name : NULL;
+        $orderCustomer->instructions        = $request->oc_instructions;
         $orderCustomer->save();
 
-        $orderCustomer->order->internal_notes = $request->internal_notes;
-        $orderCustomer->order->send_feedback_email = $request->send_feedback_email;
-        $orderCustomer->order->source         = $request->source ?? "internal";
-
+        $orderCustomer->order->internal_notes       = $request->internal_notes;
+        $orderCustomer->order->send_feedback_email  = $request->send_feedback_email;
+        $orderCustomer->order->source               = $request->source ?? "internal";
         $orderCustomer->order->save();        
 
         return response()->json(['status' => 'success']);
