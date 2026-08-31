@@ -3,6 +3,70 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
+    
+    .manifest-grid {
+        font-size: 16px;
+    }
+
+    .manifest-grid th {
+        font-size: 14px;
+        font-weight: 600;
+        padding: 10px 8px;
+        background: #f1f5f9;
+    }
+
+    .manifest-grid td {
+        font-size: 14px;
+        padding: 10px 8px;
+        vertical-align: middle;
+    }
+
+    .manifest-grid td strong {
+        font-size: 14px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .manifest-grid td p {
+        margin: 0;
+    }
+
+    .manifest-grid small {
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .manifest-cell.has-orders:hover {
+        background-color: #eef6ff;
+        transition: 0.2s;
+    }
+
+    .total-pax {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+
+    .assigned-pax {
+        font-size: 15px;
+        font-weight: 700;
+        color: #16a34a;
+    }
+
+    .manifest-grid td, .manifest-grid th {
+        vertical-align: middle;
+        min-width: 150px !important;
+        word-wrap: break-word;
+        white-space: normal;
+    }
+
+    .manifest-cell.has-orders:hover {
+        background-color: #f0f7ff;
+    }
+
+    .select2-container {
+        width: 100% !important;
+    }
 .table-scroll-wrapper {
     max-width: 800px;
     height: 420px;
@@ -16,20 +80,13 @@
     cursor: grabbing;
 }
 
-table {
+.manifest-grid.table {
     min-width: 1000px;
     user-select: none;
     margin-bottom: 0;
 }
 
-th,
-td {
-    min-width: 150px !important;
-    white-space: nowrap;
-    vertical-align: middle;
-}
-
-thead th {
+.manifest-grid thead th {
     position: sticky;
     top: 0;
     z-index: 3;
@@ -37,8 +94,8 @@ thead th {
     color: #fff;
 }
 
-th:first-child,
-td:first-child {
+.manifest-grid th:first-child,
+.manifest-grid td:first-child {
     position: sticky;
     left: 0;
     z-index: 2;
@@ -48,7 +105,7 @@ td:first-child {
     background: #f1f5f9;
 }
 
-thead th:first-child {
+.manifest-grid thead th:first-child {
     z-index: 4;
 }
 
@@ -108,38 +165,52 @@ thead th:first-child {
     color: #16a34a;
 }
 
-.manifest-grid td, .manifest-grid th {
-    vertical-align: middle;
-}
-
 .select2-container {
     width: 100% !important;
 }
 
-.select2-selection__choice {
-    background: #607D8B !important;
-    color: white !important;
-    border: none !important;
-}
+    .select2-selection__choice {
+        background: #607D8B !important;
+        color: white !important;
+        border: none !important;
+    }
 
-.select2-selection__choice__remove {
-    color: white !important;
-    margin-right: 6px;
-}
+    .select2-selection__choice__remove {
+        color: white !important;
+        margin-right: 6px;
+    }
 
-.select2-container--default .select2-selection--multiple  {
-    min-height: calc(1.3125rem + 1.2rem + 2px);
-    padding: 0.6rem 1rem;
-    margin-bottom: 15px;
-}
+    .select2-container--default .select2-selection--multiple  {
+        min-height: calc(1.3125rem + 1.2rem + 2px);
+        padding: 0.6rem 1rem;
+        margin-bottom: 15px;
+    }
 
-.manifest-grid th,
-.manifest-grid td {
-    word-wrap: break-word;
-    white-space: normal;
-    vertical-align: middle;
-}
+    .manifest-grid {
+        table-layout: fixed;
+        width: 100%;
+    }
 
+    .manifest-grid th,
+    .manifest-grid td {
+        word-wrap: break-word;
+        white-space: normal;
+        vertical-align: top;
+    }
+
+    /* Tours column (~60% of previous width) */
+    .manifest-grid th:first-child,
+    .manifest-grid td:first-child {
+        width: 220px;
+        min-width: 220px;
+        max-width: 220px;
+    }
+
+    /* All remaining columns equal width */
+    .manifest-grid th:not(:first-child),
+    .manifest-grid td:not(:first-child) {
+        width: calc((100% - 120px) / 7);
+    }
 
 .toggle-orders {
     transition: transform 0.3s ease;

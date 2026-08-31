@@ -7,8 +7,8 @@
             <h3 class="card-title">Vehicles</h3>
 
             <div class="card-tools">
-                <a href="{{ route('admin.vehicles.create') }}" class="btn btn-primary btn-sm">
-                    Add Vehicle
+                <a href="{{ route('admin.vehicles.create') }}" class="btn btn-sm btn-success">
+                    + Add Vehicle
                 </a>
             </div>
         </div>

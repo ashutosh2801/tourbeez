@@ -1,15 +1,22 @@
 <x-admin>
     @section('title', 'Create Business Expense')
 
-    <div class="card">
-        <div class="card-header d-flex justify-content-between">
-            <h3 class="card-title">Create Business Expense</h3>
-
-            <a href="{{ route('admin.business-expenses.index') }}"
-               class="btn btn-dark btn-sm">
-                Back
-            </a>
+    <div class="card-primary mb-3">
+        <div class="card-header edit-cat-header">
+            <div class="row">
+                <div class="col-md-8 col-6">
+                    <h3 class="card-title">Create Business Expense</h3>
+                </div>
+                <div class="col-md-4 col-6">
+                    <div class="card-tools">
+                        <a href="{{ route('admin.business-expenses.index') }}" class="btn btn-sm btn-back">Back</a>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <div class="card card-primary bg-white border rounded-lg-custom">
 
         <div class="card-body">
 

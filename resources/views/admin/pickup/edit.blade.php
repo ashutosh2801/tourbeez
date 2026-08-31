@@ -1,22 +1,39 @@
 <x-admin>
     @section('title','Update Pickup')
     <div class="row justify-content-center">
-        <div class="col-md-9">
-            <div class="card">
-                <div class="card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">Update Pickup </h3>
-                        <div class="card-tools">
-                            <a href="{{ route('admin.pickups.index') }}" class="btn btn-info btn-sm">Back</a>
+        <div class="col-md-12">
+            <div class="card-primary mb-3">
+                <div class="card-header create-pickup-head">
+                    <div class="row">
+                        <div class="col-md-8 col-6">
+                            <h3 class="card-title">Update Pickup</h3>
+                        </div>
+                        <div class="col-md-4 col-6">
+                            <div class="card-tools">
+                                <a href="{{ route('admin.pickups.index') }}" class="btn btn-sm btn-back">Back</a>
+                            </div>
                         </div>
                     </div>
-                    @if ($errors->any())
-                        <div class="alert alert-danger">
-                            <ul class="list-unstyled">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
+                </div>
+            </div>
+            <div class="card-primary bg-white border rounded-lg-custom create-pickup-body">
+                @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="list-unstyled">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+                <form class="needs-validation" novalidate action="{{ route('admin.pickups.update', encrypt($data->id)) }}" method="POST" enctype="multipart/form-data">
+                    @method('PUT')
+                    @csrf
+                    <div class="card-body">
+                        <div class="form-group mb-10">
+                            <label for="name">Pickup name</label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                placeholder="Enter pickup name" required value="{{ old('name') ?? $data->name }}">
                         </div>
                     @endif
                     <form class="needs-validation" novalidate action="{{ route('admin.pickups.update', encrypt($data->id)) }}" 
@@ -54,8 +71,8 @@
                             @endphp
                             @foreach ($pickupLocations as $index => $option)
 
-                            <input type="hidden" name="PickupLocations[{{ $index }}][id]" id="PickupLocations_id" 
-                            value="{{ old("PickupLocations.$index.id", $option['id'] ?? '') }}" class="form-control" />
+                        <input type="hidden" name="PickupLocations[{{ $index }}][id]" id="PickupLocations_id" 
+                        value="{{ old("PickupLocations.$index.id", $option['id'] ?? '') }}" class="form-control" />
 
                             <div style="background:#f5f5f5; border:1px solid #ccc; margin-bottom:10px; padding: 10px;">
                                 <div class="form-group">
@@ -111,36 +128,36 @@
                                             <input type="text" class="form-control" id="pickup_charge" name="PickupLocations[{{ $index }}][pickup_charge]"
                                                 placeholder="Pickup charge" required value="{{ old("PickupLocations.$index.pickup_charge", $option['pickup_charge']) }}">
 
-                                            @error('pickup_time')
-                                                <small class="form-text text-danger">{{ $message }}</small>
-                                            @enderror
-                                        </div>
+                                        @error('pickup_time')
+                                            <small class="form-text text-danger">{{ $message }}</small>
+                                        @enderror
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label for="additional_information">Additional information</label>
-                                    <textarea type="text" class="form-control" rows="3" id="additional_information" name="PickupLocations[{{ $index }}][additional]"
-                                        placeholder="Enter additional information">{{ old("PickupLocations.$index.additional", $option['additional']) }}</textarea>
-                                </div>
-                                @error('additional_information')
-                                    <small class="form-text text-danger">{{ $message }}</small>
-                                @enderror
-                            </div>                                
-                            @endforeach 
+                            </div>
+                            <div class="form-group">
+                                <label for="additional_information">Additional information</label>
+                                <textarea type="text" class="form-control" rows="3" id="additional_information" name="PickupLocations[{{ $index }}][additional]"
+                                    placeholder="Enter additional information">{{ old("PickupLocations.$index.additional", $option['additional']) }}</textarea>
+                            </div>
+                            @error('additional_information')
+                                <small class="form-text text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>                                
+                        @endforeach
+                    </div>
 
-                            
-                            
-                        </div>
-
-                        <div class="text-right form-group">
-                                <button type="button" onclick="addPickupLocation()" class="btn border-t-indigo-100 btn-outline">Add pickup location</button>
+                    </div>
+                    <div class="card-footer">
+                        <div class="row">
+                            <div class="col-md-6 col-12">
+                                <button type="button" onclick="addPickupLocation()" class="btn add-btn-pickup"> + Add pickup location</button>
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <button type="submit" class="btn btn-success float-right"> <i class="fas fa-save"></i> Save pickup location</button>
                             </div>
                         </div>
-                        <div class="card-footer">
-                            <button type="submit" class="btn btn-primary float-right">Save pickup location</button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

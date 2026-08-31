@@ -26,49 +26,61 @@
 
 <!-- FILTER -->
 <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
-<form method="GET">
-<div class="row">
+    <form method="GET" class="p-3">
+        <div class="row">
 
-    <div class="col-md-2">
-        <input type="text" name="order_id" placeholder="Order ID"
-            value="{{ request('order_id') }}" class="form-control">
-    </div>
+            <div class="col-md-4 col-12">
+                <div class="form-group">
+                    <input type="text" name="order_id" placeholder="Order ID" value="{{ request('order_id') }}" class="form-control">
+                </div>
+            </div>
 
-    <div class="col-md-2">
-        <input type="text" name="stage" placeholder="Stage"
-            value="{{ request('stage') }}" class="form-control">
-    </div>
+            <div class="col-md-4 col-12">
+                <div class="form-group">
+                    <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control">
+                </div>
+            </div>
 
-    <div class="col-md-2">
-        <select name="status" class="form-control">
-            <option value="">Status</option>
-            <option value="success" {{ request('status')=='success'?'selected':'' }}>Success</option>
-            <option value="failed" {{ request('status')=='failed'?'selected':'' }}>Failed</option>
-            <option value="error" {{ request('status')=='error'?'selected':'' }}>Error</option>
-        </select>
-    </div>
+            <div class="col-md-4 col-12">
+                <div class="form-group">
+                    <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control">
+                </div>
+            </div>
 
-    <div class="col-md-2">
-        <input type="text" name="search" placeholder="Search"
-            value="{{ request('search') }}" class="form-control">
-    </div>
+            <div class="col-md-3 col-12">
+                <div class="form-group">
+                    <input type="text" name="search" placeholder="Search" value="{{ request('search') }}" class="form-control">
+                </div>
+            </div>
 
-    <div class="col-md-2">
-        <input type="date" name="start_date"
-            value="{{ request('start_date') }}" class="form-control">
-    </div>
+            <div class="col-md-3 col-12">
+                <div class="form-group">
+                    <input type="text" name="stage" placeholder="Stage" value="{{ request('stage') }}" class="form-control">
+                </div>
+            </div>
 
-    <div class="col-md-2">
-        <input type="date" name="end_date"
-            value="{{ request('end_date') }}" class="form-control">
-    </div>
+            <div class="col-md-3 col-12">
+                <div class="form-group">
+                    <select name="status" class="form-control">
+                        <option value="">Status</option>
+                        <option value="success" {{ request('status')=='success'?'selected':'' }}>Success</option>
+                        <option value="failed" {{ request('status')=='failed'?'selected':'' }}>Failed</option>
+                        <option value="error" {{ request('status')=='error'?'selected':'' }}>Error</option>
+                    </select>
+                </div>
+            </div>
 
-    <div class="col-md-2 mt-2">
-        <button class="btn btn-primary w-100">Apply</button>
-    </div>
+            <div class="col-md-3 col-12">
+                <div class="form-group">
+                    <div class="d-flex column-gap-10">
+                        <button class="btn btn-apply flex-fill mt-0">Apply</button>
+                        <a href="{{ url()->current() }}" class="btn btn-secondary flex-fill mt-0" style="height: fit-content;">Reset</a>
+                    </div>
+                </div>
+            </div>
 
-</div>
-</form>
+        </div>
+    </form>
 </div>
 <!-- EXPECTED FLOW -->
 <div class="card mb-3">

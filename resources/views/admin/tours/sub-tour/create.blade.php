@@ -81,15 +81,13 @@
                             <div class="col-xl-7">
                                 <div class="form-group">
                                     <label for="title" class="form-label">Title *</label>
-                                    <input type="text" name="title" id="title" value="{{ old('title') }}"
-                                        class="form-control" >
-                                        
+                                    <input type="text" name="title" id="title" value="{{ old('title') }}" class="form-control">  
                                     @error('title')
                                         <small class="form-text text-danger">{{ $message }}</small>
                                     @enderror
                                 </div>
                             </div>
-                            <div class="col-xl-3">
+                            <div class="col-xl-5">
                                 <div class="form-group">
                                     <label for="unique_code" class="form-label">Unique code *</label>
                                     <input type="text" name="unique_code" id="unique_code" value="{{ old('unique_code') ? old('unique_code') : unique_code() }}"
@@ -100,21 +98,19 @@
                                     @enderror
                                 </div>
                             </div>
-                            <div class="col-lg-5">
-                                <!-- <div class="col-xl-5"> -->
-                                    <div class="form-group">
-                                        <label for="slug" class="form-label">Currency *</label>
-                                        <select name="currency" class="form-control mr-2" readonly>
-                                            @foreach(config('constants.currencies') as $code => $country)
-                                                <option value="{{ $code }}" {{ $code == $data->currency ? 'selected' : '' }}>{{ $code }} - {{ $country }}</option> 
-                                            @endforeach
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label for="slug" class="form-label">Currency *</label>
+                                    <select name="currency" class="form-control" readonly>
+                                        @foreach(config('constants.currencies') as $code => $country)
+                                            <option value="{{ $code }}" {{ $code == $data->currency ? 'selected' : '' }}>{{ $code }} - {{ $country }}</option> 
+                                        @endforeach
 
-                                        </select>
-                                    </div>
-                                <!-- </div> -->
+                                    </select>
+                                </div>
                             </div>
                             
-                            <div class="col-xl-12">
+                            <div class="col-xl-12 pro-pricing">
                                 <div class="form-group" id="product_pricing">
                                     <label for="category" class="form-label">Product pricing *</label>
                                     
@@ -129,29 +125,33 @@
                                     
                                     <div class="row mb-3" id="priceOptionRow_{{ $index }}">
                                         @if($index == 0)
-                                        <div class="col-lg-2">
-                                            <select name="price_type" id="pricing" class="form-control">
-                                                <option @if(old('price_type')=='PER_PERSON' || old('price_type')=='') echo 'selected'; @endif value="PER_PERSON">By Person</option>
-                                                <option @if(old('price_type')=='FIXED') echo 'selected'; @endif value="FIXED">By Fixed</option>
-                                            </select>                                                
+                                        <div class="col-lg-3">
+                                            <div class="input-group">
+                                                <select name="price_type" id="pricing" class="form-control">
+                                                    <option @if(old('price_type')=='PER_PERSON' || old('price_type')=='') echo 'selected'; @endif value="PER_PERSON">By Person</option>
+                                                    <option @if(old('price_type')=='FIXED') echo 'selected'; @endif value="FIXED">By Fixed</option>
+                                                </select>
+                                            </div>                                            
                                         </div>
                                         @else
-                                        <div class="col-lg-2"></div>
+                                        <div class="col-lg-3"></div>
                                         @endif
-                                        <div class="col-lg-2">
-                                            <select name="PriceOption[{{ $index }}][label]"
-                                                    class="form-control price-label-select">
-                                                <option value="">Select label</option>
+                                        <div class="col-lg-3">
+                                            <div class="input-group">
+                                                <select name="PriceOption[{{ $index }}][label]"
+                                                        class="form-control price-label-select">
+                                                    <option value="">Select label</option>
 
-                                                @foreach ($parentPriceLabels as $label)
-                                                    <option value="{{ $label }}"
-                                                        {{ old("PriceOption.$index.label") == $label ? 'selected' : '' }}>
-                                                        {{ $label }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                                    @foreach ($parentPriceLabels as $label)
+                                                        <option value="{{ $label }}"
+                                                            {{ old("PriceOption.$index.label") == $label ? 'selected' : '' }}>
+                                                            {{ $label }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div> 
                                         </div>
-                                        <div class="col-lg-2">
+                                        <div class="col-lg-3">
                                             <div class="input-group">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text currency-symbol" id="basic-addon1">$</span>
@@ -164,7 +164,7 @@
                                                 <div class="text-danger">{{ $message }}</div>
                                             @enderror                                              
                                         </div>
-                                        <div class="col-lg-5">
+                                        <div class="col-lg-3">
                                             <div class="input-group quantity_used">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text" id="basic-addon1">Quantity used</span>
@@ -174,7 +174,7 @@
                                                         <option value="{{ $i }}" {{ old("PriceOption.$index.qty_used", $option['qty_used']) == $i ? 'selected' : '' }}>{{ $i }}</option>
                                                     @endfor
                                                 </select>
-                                                <button type="button" class="btn btn-sm btn-success mr-2" onclick="addPriceOption()"><i class="fa fa-plus"></i></button>
+                                                <button type="button" class="btn btn-sm btn-success" onclick="addPriceOption()"><i class="fa fa-plus"></i></button>
                                                 @if($index > 0)
                                                 <button type="button" class="btn btn-sm btn-danger" onclick="removePriceOption({{ $index }})"><i class="fa fa-minus"></i></button>
                                                 @endif
@@ -213,7 +213,7 @@
                                 <div class="form-group">
                                     <label for="category" class="form-label">Quantity</label>
                                     <div class="row">
-                                        <div class="col-lg-2">
+                                        <div class="col-lg-3">
                                             <div class="input-group mb-3">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text" id="basic-addon1">Min</span>
@@ -221,7 +221,7 @@
                                                 <input type="number" placeholder="Min" name="quantity_min" id="quantity_min" value="{{ old('quantity_min') }}" class="form-control" >
                                             </div>                                                
                                         </div>
-                                        <div class="col-lg-2">
+                                        <div class="col-lg-3">
                                             <div class="input-group mb-3">
                                                 <div class="input-group-prepend">
                                                     <span class="input-group-text" id="basic-addon1">Max</span>
@@ -295,7 +295,7 @@
                             </div> -->
 
 
-                            <div class="col-xl-6">
+                            <div class="col-xl-12">
                                 <div class="form-group">
                                     <label class="form-label">{{translate('Featured Image')}}</label>
                                     <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">

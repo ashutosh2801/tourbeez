@@ -53,7 +53,7 @@
                 </table>
             </div>
         </div>
-                                          </div>
+    </div>
     @section('js')
         <script>
             $(function() {

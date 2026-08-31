@@ -3,15 +3,14 @@
 
 <div class="row">
     <div class="col-lg-12">
-        <div class="card-primary mb-3">
+        <div class="card-primary mb-3 partners-header">
             <div class="card-header">
                 <div class="row">
                     <div class="col-md-8 col-6">
                         <h3 class="card-title">All Partners</h3>
                     </div>
                     <div class="col-md-4 col-6 text-right">
-                        <button type="button" class="btn btn-sm btn-success"
-                                data-toggle="modal" data-target="#addModal">
+                        <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#addModal">
                             + Add New
                         </button>
                     </div>
@@ -21,45 +20,46 @@
 
         <div class="card-primary bg-white border rounded-lg-custom">
             <div class="card-body p-0">
-                <table class="table aiz-table mb-0">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Logo</th>
-                            <th>Name</th>
-                            <th>Slug</th>
-                            <th class="text-right">Options</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($partners as $key => $partner)
+                <div class="table-responsive">
+                    <table class="table aiz-table mb-0">
+                        <thead>
                             <tr>
-                                <td>{{ $key+1 }}</td>
-                                <td>
-                                    @if($partner->upload_id)
-                                        <img src="{{ uploaded_asset($partner->upload_id) }}" height="45">
-                                    @elseif($partner->logo_url)
-                                        <img src="{{ $partner->logo_url }}" height="45">
-                                    @endif
-                                </td>
-                                <td>{{ $partner->name }}</td>
-                                <td>{{ $partner->slug }}</td>
-                                <td class="text-right">
-                                    <a href="{{ route('admin.partners.edit',$partner->id) }}"
-                                       class="btn btn-circle btn-sm text-black text-lg">
-                                        <i class="las la-edit"></i>
-                                    </a>
-                                    <button type="button"
-                                            class="btn btn-soft-danger btn-icon btn-circle btn-sm delete-partner"
-                                            data-id="{{ $partner->id }}">
-                                        <i class="las la-trash"></i>
-                                    </button>
-                                </td>
+                                <th>#</th>
+                                <th>Logo</th>
+                                <th>Name</th>
+                                <th>Slug</th>
+                                <th class="text-right">Options</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-
+                        </thead>
+                        <tbody>
+                            @foreach($partners as $key => $partner)
+                                <tr>
+                                    <td>{{ $key+1 }}</td>
+                                    <td>
+                                        @if($partner->upload_id)
+                                            <img src="{{ uploaded_asset($partner->upload_id) }}" height="45">
+                                        @elseif($partner->logo_url)
+                                            <img src="{{ $partner->logo_url }}" height="45">
+                                        @endif
+                                    </td>
+                                    <td>{{ $partner->name }}</td>
+                                    <td>{{ $partner->slug }}</td>
+                                    <td class="text-right">
+                                        <a href="{{ route('admin.partners.edit',$partner->id) }}"
+                                        class="btn btn-circle btn-sm text-black text-lg">
+                                            <i class="las la-edit"></i>
+                                        </a>
+                                        <button type="button"
+                                                class="btn btn-soft-danger btn-icon btn-circle btn-sm delete-partner"
+                                                data-id="{{ $partner->id }}">
+                                            <i class="las la-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
                 <div class="aiz-pagination">
                     {{ $partners->links() }}
                 </div>
@@ -67,13 +67,22 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="addModal">
+<div class="modal fade add-modal" id="addModal">
     <div class="modal-dialog">
         <div class="modal-content">
 
             <div class="card-primary">
                 <div class="card-header">
-                    <h6 class="m-0">Add New Partner</h6>
+                    <div class="row">
+                        <div class="col-md-8 col-9">
+                            <h6 class="m-0">Add New Partner</h6>
+                        </div>
+                        <div class="col-md-4 col-3">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card-body">
@@ -115,9 +124,8 @@
                         </div>
 
                         <div class="text-right">
-                            <button type="submit"
-                                    class="btn btn-success">
-                                Save
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Save
                             </button>
                         </div>
 

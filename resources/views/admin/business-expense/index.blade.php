@@ -96,8 +96,8 @@
                     <div class="col-md-2">
                         <label>&nbsp;</label>
 
-                        <div>
-                            <button class="btn btn-primary">
+                        <div class="d-flex column-gap-10">
+                            <button class="btn btn-search flex-fill">
                                 Search
                             </button>
 

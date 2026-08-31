@@ -6,7 +6,7 @@
         @csrf
 
         <div class="card card-primary bg-white border rounded-lg-custom">
-            <div class="card-header customer-edit-head">
+            <div class="card-header vehicle-head">
                 <div class="row">
                     <div class="col-md-8 col-6">
                         <h3 class="card-title">Create Vehicle</h3>
@@ -23,18 +23,16 @@
             </div>
         </div>
 
-        <div class="card card-primary bg-white border rounded-lg-custom customer-edit-body">
-
+        <div class="card-primary bg-white border rounded-lg-custom customer-edit-body">
             <div class="card-header">
                 <h3 class="card-title">Vehicle Details</h3>
             </div>
 
             <div class="card-body">
-
                 <div class="row">
-
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
                         <div class="form-group">
+                            
                             <label>Vehicle Code <span class="text-danger">*</span></label>
                             <input
                                 type="text"
@@ -47,7 +45,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
                         <div class="form-group">
                             <label>Vehicle Name <span class="text-danger">*</span></label>
                             <input
@@ -61,7 +59,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-4">
                         <div class="form-group">
                             <label>No. of Seats</label>
                             <input
@@ -74,22 +72,16 @@
                             <x-error>no_of_seats</x-error>
                         </div>
                     </div>
-
                 </div>
-
             </div>
 
-        </div>
-
-        <div class="card-footer bg-white border rounded-lg-custom">
-            <div class="float-right">
-                <button class="btn btn-success">
+            <div class="card-footer">
+                <button class="btn btn-success float-right">
                     <i class="fas fa-save"></i>
                     Save
                 </button>
             </div>
         </div>
-
     </form>
 
 </x-admin>

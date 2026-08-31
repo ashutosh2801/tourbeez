@@ -136,23 +136,28 @@ tr.drag-over-bottom {border-bottom: 3px solid blue;}
 
                                                     <div class="card-body">
                                                         <div class="form-group">
-                                                            <label>
-                                                                Parent Tour <span class="required">*</span>
-                                                            </label>
+                                                            <div class="row">
+                                                                <div class="col-sm-12">
+                                                                    <label>
+                                                                        Parent Tour <span class="required">*</span>
+                                                                    </label>
+                                                                </div>
+                                                                <div class="col-sm-12">
+                                                                    <select name="parent_id"
+                                                                            class="form-control aiz-selectpicker border"
+                                                                            data-live-search="true">
+                                                                        <option value="">Select tour...</option>
 
-                                                            <select name="parent_id"
-                                                                    class="form-control col-6 aiz-selectpicker border"
-                                                                    data-live-search="true">
-                                                                <option value="">Select tour...</option>
-
-                                                                @foreach($tours as $tour)
-                                                                    <option value="{{ $tour->id }}"
-                                                                        {{ $data->parent_id == $tour->id ? 'selected' : '' }}>
-                                                                        {{ $tour->parent ? $tour->parent->title.' → ' : '' }}
-                                                                        {{ $tour->title }} ({{ $tour->unique_code }})
-                                                                    </option>
-                                                                @endforeach
-                                                            </select>
+                                                                        @foreach($tours as $tour)
+                                                                            <option value="{{ $tour->id }}"
+                                                                                {{ $data->parent_id == $tour->id ? 'selected' : '' }}>
+                                                                                {{ $tour->parent ? $tour->parent->title.' → ' : '' }}
+                                                                                {{ $tour->title }} ({{ $tour->unique_code }})
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
 

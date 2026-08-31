@@ -1,68 +1,71 @@
 <x-admin>
-    @section('title','Tour-wise Overview
+    @section('title','Tour Wise Overview
 ')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
-        /* ✅ Keep container scoped */
-        .dashboard-wrapper .container {
-            max-width: 1400px;
-            margin: auto;
-        }
+    body.sidebar-open {
+        overflow: hidden;
+    }
+    /* ✅ Keep container scoped */
+    .dashboard-wrapper .container {
+        max-width: 1400px;
+        margin: auto;
+    }
 
-        /* ✅ Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+    /* ✅ Header */
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+    }
 
-        /* 🔥 RIGHT SIDE ALIGNMENT */
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-left: auto; /* 🔥 pushes everything to right */
-        }
+    /* 🔥 RIGHT SIDE ALIGNMENT */
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: auto; /* 🔥 pushes everything to right */
+    }
 
-        /* Optional: control width */
-        .header-actions input {
-            width: 220px;
-        }
+    /* Optional: control width */
+    .header-actions input {
+        width: 220px;
+    }
 
-        /* ✅ Panels */
-        .dashboard-wrapper .card,
-        .dashboard-wrapper .panel {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 1px 6px rgba(0,0,0,.1);
-        }
+    /* ✅ Panels */
+    .dashboard-wrapper .card,
+    .dashboard-wrapper .panel {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 1px 6px rgba(0,0,0,.1);
+    }
 
-        /* ✅ Table */
-        .dashboard-wrapper table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+    /* ✅ Table */
+    .dashboard-wrapper table {
+        width: 100%;
+        border-collapse: collapse;
+    }
 
-        .dashboard-wrapper th,
-        .dashboard-wrapper td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
+    .dashboard-wrapper th,
+    .dashboard-wrapper td {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
 
-        .dashboard-wrapper .text-right {
-            text-align: right;
-        }
+    .dashboard-wrapper .text-right {
+        text-align: right;
+    }
 
-        /* ✅ Responsive */
-        @media(max-width:900px){
-            .dashboard-wrapper .cards,
-            .dashboard-wrapper .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
+    /* ✅ Responsive */
+    @media(max-width:900px){
+        .dashboard-wrapper .cards,
+        .dashboard-wrapper .dashboard-grid {
+            grid-template-columns: 1fr;
         }
-                /* FULL FIX FOR SELECT2 HEIGHT */
+    }
+    /* FULL FIX FOR SELECT2 HEIGHT */
     .select2-container .select2-selection--single {
         height: 42px !important;
         border: 1px solid #aeb0b4 !important;
@@ -74,8 +77,9 @@
     /* TEXT FIX */
     .select2-container--default .select2-selection--single .select2-selection__rendered {
         line-height: normal !important;
-        padding-left: 10px !important;
-        color: #495057 !important;
+        padding-left: 7px !important;
+        color: #898b92 !important;
+        font-size: 14px;
     }
 
     /* PLACEHOLDER COLOR */
@@ -208,11 +212,6 @@
             Please apply filters to view report data.weww
         </div>
     @endif -->
-    
-
-    <div id="noFilterAlert"><div class="alert alert-info">
-            Please apply filters to view report data.
-        </div></div>
     
     <div class="dashboard-wrapper">
             <div class="cards">
@@ -357,6 +356,7 @@ async function fetchDashboard() {
 
     const data = await res.json();
     renderDashboard(data);
+    
 }
 
 function renderDashboard(data) {
@@ -515,6 +515,7 @@ function renderDashboard(data) {
         }
     }
 );
+closeFilterSidebar();
 
 trendChart.render();
 
@@ -531,6 +532,10 @@ const colors = [
     '#14B8A6',
     '#F97316',
     '#94A3B8'
+
+
+
+    
 ];
 
 tours.forEach((t,index)=>{
@@ -738,21 +743,24 @@ document.getElementById('toggleFilter').onclick = function () {
     $(document).ready(function () {
         // ✅ Select2 (optimized)
         $('#productFilter').select2({
+            dropdownParent: $('#filterSidebar'),
             placeholder: 'Select Tour',
+            width: '100%',
             minimumInputLength: 3,
             ajax: {
                 url: '{{ route("admin.tours.tours-list") }}',
                 dataType: 'json',
-                delay: 0,
-                cache: true,
-                data: function (params) {
-                    return { q: params.term };
-                },
-                processResults: function (data) {
+                delay: 300,
+                data: function(params) {
                     return {
-                        results: data.map(tour => ({
-                            id: tour.id,
-                            text: `${tour.title} (${tour.unique_code ?? 'N/A'})`
+                        q: params.term
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data.map(item => ({
+                            id: item.id,
+                            text: item.title
                         }))
                     };
                 }

@@ -31,12 +31,9 @@
     .highlight {
         animation: fadeHighlight 2s ease;
     }
-
     .text-orange {
         color: #fd7e14;
     }
-
-
     @keyframes fadeHighlight {
         0%   { background-color: #e1a10b; }
         100% { background-color: transparent; }
@@ -50,7 +47,6 @@
         border-radius: 0.25rem;
         font-size: 21px;
     }
-
     /* Payment dropdown styling */
     .dropdown-menu.dropdown-value.payment-details-breakdown--container {
         min-width: 250px;
@@ -59,14 +55,12 @@
         background-color: #ffffff;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-
     .payment-details-breakdown--item {
         display: flex;
         justify-content: space-between;
         padding: 0.25rem 0;
         font-size: 0.95rem;
     }
-
     /* Order status dropdown */
     .dropdown-menu.dropdown-value {
         min-width: 220px;
@@ -92,11 +86,9 @@
         cursor: pointer;
         width: 100%;
     }
-
     .dropdown-menu.dropdown-value li:hover {
         background-color: #f1f1f1;
     }
-
     .dropdown-menu.dropdown-value i.fa-circle {
         font-size: 10px;
         margin-right: 6px;
@@ -109,21 +101,20 @@
         display: inline-block;
     }
     .order-status label, .order-status .btn-group, .order-balance label, .order-balance .btn-group {
-        display: block; text-align: center
+        display: block; 
+        text-align: center
     }
     .order-status label, .order-balance label {
         margin: 0
     }
     /* Balance dropdown always green */
     .payment-status .btn.dropdown-toggle {
-    border-color: #28a745 !important;
-    color: #28a745 !important;
+        border-color: #28a745 !important;
+        color: #28a745 !important;
     }
     .payment-status .btn.dropdown-toggle:hover {
-    background-color: rgba(40,167,69,0.1);
+        background-color: rgba(40,167,69,0.1);
     }
-
-
     /* Due (red) */
     .payment-status.due .btn.dropdown-toggle {
         border-color: #dc3545 !important;
@@ -132,7 +123,6 @@
     .payment-status.due .btn.dropdown-toggle:hover {
         background-color: rgba(220,53,69,0.1);
     }
-
     /* Order‐status color map */
     .status-NEW           { --status-color: #6c757d; } /* gray */
     .status-ON_HOLD       { --status-color: #ffc107; } /* yellow */
@@ -141,21 +131,48 @@
     .status-CONFIRMED     { --status-color: #28a745; } /* green */
     .status-CANCELLED     { --status-color: #dc3545; } /* red */
     .status-ABANDONED_CART{ --status-color: #343a40; } /* dark */
-
     /* Apply the variable to the button */
     .order-status .btn.dropdown-toggle {
-    border-width: 2px;
-    border-style: solid;
-    border-color: var(--status-color);
-    color: var(--status-color);
-    background-color: #fff;
+        border-width: 2px;
+        border-style: solid;
+        border-color: var(--status-color);
+        color: var(--status-color);
+        background-color: #fff;
     }
     .order-status .btn.dropdown-toggle:hover {
-    background-color: rgba(0,0,0,0.03);
+        background-color: rgba(0,0,0,0.03);
     }
-    .modal-wide {
-        max-width: 70% !important;
-        margin: 10px auto !important;   /* center horizontally */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+    .switch input { 
+        display:none; 
+    }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+        top: 0; left: 0; right: 0; bottom: 0;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px; width: 18px;
+        left: 3px; bottom: 3px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .slider {
+        background-color: #28a745;
+    }
+    input:checked + .slider:before {
+        transform: translateX(26px);
     }
 
     /* Browser-independent increment/decrement controls for order quantities. */
@@ -366,7 +383,6 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                         </li>
 
                                     @endif
-                                    
 
                                     <!-- Divider -->
                                     <li role="separator" class="divider"></li>
@@ -476,7 +492,19 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                             <i class="fas fa-angle-right"></i> Customer Details
                         </button>
 
-                        
+                        <div id="collapseOne" class="collapse show">
+                            <div class="card-body">
+                                <ul class="flex flex-row">
+                                    <li>
+                                        <a href="{{ route('admin.customers.show', encrypt($order->customer?->id)) }}" class="alink" target="_blank">
+                                            <i class="fas fa-user-tie"></i> {{ $order->customer?->name }}
+                                        </a>
+                                    </li>
+                                    <li><i class="fas fa-envelope"></i> {{ $order->customer?->email }}</li>
+                                    <li>
+                                        <i class="fas fa-phone-square-alt"></i>
+                                        <span>{{ $order->customer?->phone }}</span>
+                                    </li>
 
 
                     </div>
@@ -508,7 +536,6 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                             </ul>
                         </div>
                     </div>
-                </div>
 
                     <div class="card tour-details">
                         <div class="card-header bg-secondary py-0" id="headingTwo">
@@ -1162,7 +1189,7 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                         @endphp
                                                                                  
                                         <div class="table-responsive">
-                                            <table class="table  " style="border: 1px solid #dee2e6;">
+                                            <table class="table paymentRow " style="border: 1px solid #dee2e6;">
                                                 <tbody>
                                                     @foreach ($order->payments->sortByDesc(fn ($payment) => sprintf('%s-%010d', $payment->created_at?->format('Y-m-d H:i:s.u'), $payment->id)) as $payment) 
                                                         <input type="hidden" name="paymentId[]" value="{{ $payment->id }}" />
@@ -1199,10 +1226,10 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                                                         @switch($payment->status)
 
                                                             @case('uncaptured')
-                                                                <button class="btn-sm btn-primary capture-btn" data-uncapture-amount="{{ $payment->amount }}" data-order-id="{{ $order->id }}" type="button">
+                                                                <button class="btn btn-sm btn-primary capture-btn" data-uncapture-amount="{{ $payment->amount }}" data-order-id="{{ $order->id }}" type="button">
                                                                     Capture 
                                                                </button>
-                                                                <button class="btn-sm btn-danger cancel-btn" data-order-id="{{ $order->id }}" type="button">
+                                                                <button class="btn btn-sm btn-danger cancel-btn" data-order-id="{{ $order->id }}" type="button">
                                                                     Cancel
                                                                 </button>
                                                             @break
@@ -1321,9 +1348,6 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                         </div>
                         
                     </div> 
-
-
-                    
 
                     <?php /*
                     <div class="card payment-details">
@@ -1487,50 +1511,52 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                         </div>
                         <div id="collapseEmailHistory" class="collapse show" aria-labelledby="headingEmailHistory">
                             <div class="card-body">
-                                <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>To</th>
-                                            <th>From</th>
-                                            <th>Subject</th>
-                                            <th>Status</th>
-                                            <th>Content</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if(!empty($emailHistories) && is_iterable($emailHistories))
-                                            @foreach($emailHistories as $email)
-                                                <tr>
-                                                    <td>{{ $email->created_at }}</td>
-                                                    <td>{{ $email->to_email }}</td>
-                                                    <td>{{ $email->from_email }}</td>
-                                                    <td>{{ $email->subject }}</td>
-                                                    <td>{{ ucwords($email->status) }}</td>
-                                                    <td>
-                                                        <button type="button" class="btn btn-sm btn-primary view-email-btn">
-                                                            View
-                                                        </button>
-
-                                                        <textarea class="d-none email-body">
-                                                            {!! $email->body !!}
-                                                        </textarea>
-
-                                                        <input type="hidden" class="email-to" value="{{ $email->to_email }}">
-                                                        <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
-                                                        <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
-                                                        <input type="hidden" class="email-subject" value="{{ $email->subject }}">
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        @else
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
                                             <tr>
-                                                <td colspan="5">No email history found</td>
+                                                <th>Date</th>
+                                                <th>To</th>
+                                                <th>From</th>
+                                                <th>Subject</th>
+                                                <th>Status</th>
+                                                <th>Content</th>
                                             </tr>
-                                        @endif
-                                    </tbody>
-                                </table>
-                                {{ $emailHistories->links() }}
+                                        </thead>
+                                        <tbody>
+                                            @if(!empty($emailHistories) && is_iterable($emailHistories))
+                                                @foreach($emailHistories as $email)
+                                                    <tr>
+                                                        <td>{{ $email->created_at }}</td>
+                                                        <td>{{ $email->to_email }}</td>
+                                                        <td>{{ $email->from_email }}</td>
+                                                        <td>{{ $email->subject }}</td>
+                                                        <td>{{ ucwords($email->status) }}</td>
+                                                        <td>
+                                                            <button type="button" class="btn btn-sm btn-primary view-email-btn">
+                                                                View
+                                                            </button>
+
+                                                            <textarea class="d-none email-body">
+                                                                {!! $email->body !!}
+                                                            </textarea>
+
+                                                            <input type="hidden" class="email-to" value="{{ $email->to_email }}">
+                                                            <input type="hidden" class="email-cc" value="{{ $email->cc_mail }}">
+                                                            <input type="hidden" class="email-bcc" value="{{ $email->bcc_mail }}">
+                                                            <input type="hidden" class="email-subject" value="{{ $email->subject }}">
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5">No email history found</td>
+                                                </tr>
+                                            @endif
+                                        </tbody>
+                                    </table>
+                                    {{ $emailHistories->links() }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1868,20 +1894,24 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
 
             <div class="modal-body">
 
-                <div class="mb-2">
-                    <strong>To:</strong> <span id="preview_to"></span>
+                <div class="preview-detail">
+                    <strong>To</strong> 
+                    <span id="preview_to"></span>
                 </div>
 
-                <div class="mb-2">
-                    <strong>CC:</strong> <span id="preview_cc"></span>
+                <div class="preview-detail">
+                    <strong>CC</strong> 
+                    <span id="preview_cc"></span>
                 </div>
 
-                <div class="mb-2">
-                    <strong>BCC:</strong> <span id="preview_bcc"></span>
+                <div class="preview-detail">
+                    <strong>BCC</strong> 
+                    <span id="preview_bcc"></span>
                 </div>
 
-                <div class="mb-2">
-                    <strong>Subject:</strong> <span id="preview_subject"></span>
+                <div class="preview-detail">
+                    <strong>Subject</strong> 
+                    <span id="preview_subject"></span>
                 </div>
 
                 <hr>
@@ -2052,24 +2082,27 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
     </div>
 </div>
 
-
 <div class="modal fade" id="editCustomerModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
 
             <form id="customerForm">
                 @csrf
-
                 <input type="hidden" name="customer_id" value="{{ $order->customer?->id }}">
-
                 <div class="modal-header">
                     <h5 class="modal-title">Edit Customer</h5>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
 
                 <div class="modal-body">
-
                     <div class="row">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label>First Name *</label>
+                                <input type="text" name="first_name" id="oc_first_name" class="form-control">
+                                <small class="text-danger d-none" id="error_first_name"></small>
+                            </div>
+                        </div>
 
                         <div class="col-lg-6">
                             <label>First Name *</label>
@@ -2096,25 +2129,26 @@ $needsCustomerPayment = $customerPayableBalance > 0.01;
                             <small class="text-danger d-none" id="error_phone"></small>
                         </div>
 
+                        <div class="col-lg-12">
+                            <div class="form-group">
+                                <label>Phone *</label>
+                                <input id="oc_phone_intel" type="tel" class="form-control">
+                                <input type="hidden" name="phone" id="oc_phone">
+                                <small class="text-danger d-none" id="error_phone"></small>
+                            </div>
+                        </div>
                     </div>
-
                     <div id="customer_error" class="text-danger"></div>
-
                 </div>
 
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save mr-2"></i> Save</button>
                 </div>
-
             </form>
 
         </div>
     </div>
 </div>
-
-
-
-
 
 <!-- GLOBAL REUSABLE LOADER -->
 <div id="globalLoader" 
@@ -4736,7 +4770,7 @@ $('#editCustomerModal').on('shown.bs.modal', function (e) {
     /* INIT ONLY ONCE */
     if (!iti) {
         iti = window.intlTelInput(phoneInput, {
-            initialCountry: "auto",
+            initialCountry: "ca",
             separateDialCode: true,
             nationalMode: false,
             dropdownContainer: document.body,

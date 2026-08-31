@@ -5,39 +5,35 @@
 
 <style>
 
-    body.sidebar-open {
-        overflow: hidden;
-    }
+.card h3{font-size:16px;margin-bottom:15px}
 
-    .card h3{font-size:16px;margin-bottom:15px}
+.diff{
+    margin-top:10px;
+    font-size:14px
+}
+.green{color:#28a745}
+.red{color:#dc3545}
 
-    .diff{
-        margin-top:10px;
-        font-size:14px
-    }
-    .green{color:#28a745}
-    .red{color:#dc3545}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:8px;border-bottom:1px solid #eee;text-align:center}
 
-    .table{width:100%;border-collapse:collapse}
-    .table th,.table td{padding:8px;border-bottom:1px solid #eee;text-align:center}
+.badge-green{color:#28a745;font-weight:bold}
+.badge-red{color:#dc3545;font-weight:bold}
 
-    .badge-green{color:#28a745;font-weight:bold}
-    .badge-red{color:#dc3545;font-weight:bold}
-
-    .insights div{
-        padding:10px;
-        border-radius:8px;
-        margin-bottom:10px;
-        font-size:14px
-    }
-    .insight-green{background:#eaf7ef}
-    .insight-purple{background:#f3ecff}
-    .insight-blue{background:#eef5ff}
-    .insight-orange{background:#fff4ea}
-    .insight-red{background:#fdeeee}
-    .select2-container .select2-selection--single {
+.insights div{
+    padding:10px;
+    border-radius:8px;
+    margin-bottom:10px;
+    font-size:14px
+}
+.insight-green{background:#eaf7ef}
+.insight-purple{background:#f3ecff}
+.insight-blue{background:#eef5ff}
+.insight-orange{background:#fff4ea}
+.insight-red{background:#fdeeee}
+ .select2-container .select2-selection--single {
         height: 42px !important;
-        border: 1px solid #aeb0b4 !important;
+        border: 1px solid #ced4da !important;
         border-radius: 0.375rem !important;
         display: flex !important;
         align-items: center !important;
@@ -71,80 +67,67 @@
     .select2-container {
         width: 100% !important;
     }
-    .comparison-search-panel{padding:20px!important;border:1px solid #e5e7eb!important;border-radius:10px!important;background:linear-gradient(180deg,#f8fafc,#fff)!important;}
-    .comparison-search-heading{margin-bottom:16px}.comparison-search-heading h5{margin:0 0 3px;color:#172033;font-size:17px;font-weight:700}.comparison-search-heading p{margin:0;color:#6b7280;font-size:13px}
-    .comparison-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:end}.comparison-filter-field{min-width:0}.comparison-filter-field label{display:block;margin:0 0 6px;color:#374151;font-size:12px;font-weight:600}.comparison-filter-field .form-control{height:42px;border-color:#d7dce3;border-radius:7px}.comparison-filter-apply{width:100%;height:42px;border:0;border-radius:7px;background:#4f46e5;color:#fff;font-size:13px;font-weight:600}
-    .comparison-active-filters{grid-column:1/-1}.comparison-filter-actions{display:flex;gap:10px}.comparison-filter-reset{height:42px;display:inline-flex;align-items:center;justify-content:center;padding:0 14px;border:1px solid #d1d5db;border-radius:7px;background:#fff;color:#4b5563;font-size:13px;font-weight:600}
-    @media(max-width:991px){.comparison-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:575px){.comparison-filter-grid{grid-template-columns:1fr}.comparison-filter-actions{display:grid;grid-template-columns:1fr 1fr}}
 </style>
 
 <div class="comparison-body">
-    <div class="card card-primary mb-3 top-search-bar comparison-search-panel">
-        <div class="comparison-search-heading"><h5><i class="fas fa-balance-scale mr-2 text-primary"></i>Compare order performance</h5><p>Choose two order dates and optionally narrow the comparison.</p></div>
-        <div class="comparison-filter-grid">
-
-            <div class="comparison-filter-field">
-                <label for="date1">First order date</label>
-                <input type="text" id="date1" class="form-control" placeholder="Order Date 1" autocomplete="off" required>
+    <div class="card card-primary bg-white border rounded-lg-custom mb-3 top-search-bar">
+        <div class="row">
+            <div class="col-sm-12">
+                <b class="text-sm">Compare performance between two selected dates</b>
+            </div>
+            <div class="col-sm-3">
+                <input type="date" id="date1" class="form-control" required>
+            </div>
+            <div class="col-sm-3">
+                <input type="date" id="date2" class="form-control" required>
+            </div>
+            <!-- <div class="col-sm-2">
+                <select id="productFilter" class="form-control">
+                    <option value="">All Products</option>
+                </select>
+            </div> -->
+            <div class="col-md-3">
+            <!-- <label>Product</label> -->
+            <select id="productFilter" name="product" class="form-control">
+                @if(request('product') && request('product_text'))
+                    <option value="{{ request('product') }}" selected>
+                        {{ request('product_text') }}
+                    </option>
+                @endif
+            </select>
         </div>
-    </div>
-
-        <div class="comparison-filter-field">
-                <label for="date2">Second order date</label>
-                <input type="text" id="date2" class="form-control" placeholder="Order Date 2" autocomplete="off" required>
+         <!-- ORDER STATUS -->
+        <div class="col-md-2">
+            <!-- <label>Order Status</label> -->
+            <select name="order_status" id="order_status" class="form-control">
+                <option value="">All</option>
+                <option value="3">Pending supplier</option>
+                <option value="4">Pending customer</option>
+                <option value="5">Confirmed</option>
+            </select>
         </div>
 
-            <div class="comparison-filter-field">
-                    <label for="productFilter">Product</label>
-                    <select id="productFilter" name="product" class="form-control">
-                        @if(request('product') && request('product_text'))
-                            <option value="{{ request('product') }}" selected>
-                                {{ request('product_text') }}
-                            </option>
-                        @endif
-                    </select>
-                    <input type="hidden" id="product_text" value="{{ request('product_text') }}">
+        <!-- PAY TYPE -->
+        <div class="col-md-2 mt-2">
+            <!-- <label>Pay Type</label> -->
+            <select name="action_type" id="action_type" class="form-control">
+                <option value="">All</option>
+                <option value="pay_now">Pay Now</option>
+                <option value="pay_later">Pay Later</option>
+            </select>
+        </div>
+            <div class="col-sm-2 mt-2">
+                <select id="partner" class="form-control">
+                    <option value="">All Channels</option>
+                    @foreach($partners as $p)
+                        <option value="{{ $p->name }}">{{ $p->name }}</option>
+                    @endforeach
+                </select>
             </div>
-
-            <div class="comparison-filter-field">
-                    <label for="order_status">Order status</label>
-                    <select name="order_status" id="order_status" class="form-control">
-                        <option value="">All</option>
-                        <option value="3">Pending supplier</option>
-                        <option value="4">Pending customer</option>
-                        <option value="5">Confirmed</option>
-                    </select>
-            </div>
-
-            <div class="comparison-filter-field">
-                    <label for="action_type">Pay type</label>
-                    <select name="action_type" id="action_type" class="form-control">
-                        <option value="">All</option>
-                        <option value="pay_now">Pay Now</option>
-                        <option value="pay_later">Pay Later</option>
-                    </select>
-            </div>
-
-            <div class="comparison-filter-field">
-                    <label for="partner">Channel</label>
-                    <select id="partner" class="form-control">
-                        <option value="">All Channels</option>
-                        @foreach($partners as $p)
-                            <option value="{{ $p->name }}">{{ $p->name }}</option>
-                        @endforeach
-                    </select>
-            </div>
-
-            <div class="comparison-filter-field comparison-filter-actions">
-                <a href="{{ route('admin.report.comparison') }}" class="comparison-filter-reset">Reset</a>
-                <button id="applyBtn" class="comparison-filter-apply"><i class="fas fa-search mr-1"></i> Compare</button>
-            </div>
-
-            <div class="comparison-active-filters">
-                <div id="activeFilters" class="mb-2"></div>
+            <div class="col-sm-2 mt-2">
+                <button id="applyBtn" class="btn btn-search">Apply</button>
             </div>
         </div>
-        <div id="filterOverlay"></div>
     </div>
 
    <!--  @if(!request()->hasAny(['booking_date','tour_date','product','order_status','payment_status','partner','action_type']))
@@ -156,7 +139,12 @@
 
     <div id="noFilterAlert"></div>
     <!-- <div id="activeFilters" class="mb-3"></div> -->
-    
+
+    <!-- 🔥 FILTER ALERT -->
+<div id="filterAlert" class="mb-2"></div>
+
+<!-- 🔥 ACTIVE FILTER TAGS -->
+<div id="activeFilters" class="mb-3"></div>
 
     <div class="stats-cards">
 
@@ -178,12 +166,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label labelDate1">Date 1</div>
+                    <div class="metric-label">Yesterday</div>
                     <div class="metric-value" id="rev1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label labelDate2">Date 2</div>
+                    <div class="metric-label">Today</div>
                     <div class="metric-value green" id="rev2"></div>
                 </div>
 
@@ -211,12 +199,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label labelDate1">Date 1</div>
+                    <div class="metric-label">Yesterday</div>
                     <div class="metric-value" id="pass1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label labelDate2">Date 2</div>
+                    <div class="metric-label">Today</div>
                     <div class="metric-value green" id="pass2"></div>
                 </div>
 
@@ -244,12 +232,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label labelDate1">Date 1</div>
+                    <div class="metric-label">Yesterday</div>
                     <div class="metric-value" id="book1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label labelDate2">Date 2</div>
+                    <div class="metric-label">Today</div>
                     <div class="metric-value green" id="book2"></div>
                 </div>
 
@@ -277,12 +265,12 @@
             <div class="metric-row">
 
                 <div>
-                    <div class="metric-label labelDate1">Date 1</div>
+                    <div class="metric-label">Yesterday</div>
                     <div class="metric-value" id="avg1"></div>
                 </div>
 
                 <div>
-                    <div class="metric-label labelDate2">Date 2</div>
+                    <div class="metric-label">Today</div>
                     <div class="metric-value red" id="avg2"></div>
                 </div>
 
@@ -312,16 +300,13 @@
 
         <div class="panel">
             <h4>Product-wise Comparison</h4>
-            <div class="table-responsive productComparison">
+            <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
                             <th>Product</th>
-                            <!-- <th>Yesterday</th> -->
-                            <th class="metric-label labelDate1">Date 1</th>
-                           
-                            <th class="metric-label labelDate2">Date 2</th>
-
+                            <th>Yesterday</th>
+                            <th>Today</th>
                             <th>Change</th>
                         </tr>
                     </thead>
@@ -343,59 +328,27 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-    $('#toggleFilter').click(function () {
-
-        $('#filterSidebar').addClass('show');
-
-        $('#filterOverlay').addClass('show');
-
-        $('body').addClass('sidebar-open');
-
-        $(this)
-            .removeClass('btn-secondary')
-            .addClass('btn-danger')
-            .html('<i class="fas fa-times"></i> Filters');
-    });
-
-    $('#closeFilter,#filterOverlay').click(function () {
-
-        $('#filterSidebar').removeClass('show');
-
-        $('#filterOverlay').removeClass('show');
-
-        $('body').removeClass('sidebar-open');
-
-        $('#toggleFilter')
-            .removeClass('btn-danger')
-            .addClass('btn-secondary')
-            .html('<i class="fas fa-filter"></i> Filters');
-    });
-</script>
-<script>
 let revChart, passChart;
-const statusMap = {
-        3: 'Pending supplier',
-        4: 'Pending customer',
-        5: 'Confirmed'
-    };
-
 
 function render(data) {
 
     const d1 = data.date1;
     const d2 = data.date2;
 
-    set('rev1', d1.revenue);
-    set('rev2', d2.revenue);
+    if (!d1 || !d2) return;
 
-    set('pass1', d1.passengers);
-    set('pass2', d2.passengers);
+    // 🔥 METRICS
+    setMoney('rev1', d1.revenue);
+    setMoney('rev2', d2.revenue);
 
-    set('book1', d1.bookings);
-    set('book2', d2.bookings);
+    setNumber('pass1', d1.passengers);
+    setNumber('pass2', d2.passengers);
 
-    set('avg1', d1.avg);
-    set('avg2', d2.avg);
+    setNumber('book1', d1.bookings);
+    setNumber('book2', d2.bookings);
+
+    setMoney('avg1', d1.avg);
+    setMoney('avg2', d2.avg);
 
     // 🔥 DIFF
     diff('revDiff', d1.revenue, d2.revenue);
@@ -409,94 +362,32 @@ function render(data) {
 
     const date1Label = formatDate(document.getElementById('date1').value) || 'Date 1';
     const date2Label = formatDate(document.getElementById('date2').value) || 'Date 2';
-    // document.getElementById('labelDate1').innerText = date1Label;
-    // document.getElementById('labelDate2').innerText = date2Label;
 
-    document.querySelectorAll('.labelDate1').forEach(el => {
-        el.innerText = date1Label;
-    });
-
-    document.querySelectorAll('.labelDate2').forEach(el => {
-        el.innerText = date2Label;
-    });
-
-revChart = new ApexCharts(
-document.querySelector("#revChart"),
-{
-    chart:{
-        type:'bar',
-        height:350,
-        toolbar:{show:false}
-    },
-
-    series:[{
-        name:'Revenue',
-        data:[d1.revenue,d2.revenue]
-    }],
-
-    legend: {
-        show: false
-    },
-
-    plotOptions:{
-        bar:{
-            distributed:true,
-            borderRadius:8,
-            columnWidth:'50%'
+    // 🔥 REVENUE CHART
+    revChart = new ApexCharts(document.querySelector("#revChart"), {
+        chart: { type: 'bar', height: 350 },
+        series: [{
+            name: 'Revenue',
+            data: [d1.revenue, d2.revenue]
+        }],
+        xaxis: {
+            categories: [date1Label, date2Label]
         }
-    },
+    });
+    revChart.render();
 
-    colors:['#94a3b8','#22c55e'],
-
-    dataLabels:{
-        enabled:true
-    },
-
-    xaxis:{
-        categories:[date1Label,date2Label]
-    }
-});
-
-revChart.render();
-
-passChart = new ApexCharts(
-document.querySelector("#passChart"),
-{
-    chart:{
-        type:'bar',
-        height:350,
-        toolbar:{show:false}
-    },
-
-    series:[{
-        name:'Passengers',
-        data:[d1.passengers,d2.passengers]
-    }],
-
-    legend: {
-        show: false
-    },
-
-    plotOptions:{
-        bar:{
-            distributed:true,
-            borderRadius:8,
-            columnWidth:'50%'
+    // 🔥 PASSENGER CHART
+    passChart = new ApexCharts(document.querySelector("#passChart"), {
+        chart: { type: 'bar', height: 350 },
+        series: [{
+            name: 'Passengers',
+            data: [d1.passengers, d2.passengers]
+        }],
+        xaxis: {
+            categories: [date1Label, date2Label]
         }
-    },
-
-    colors:['#94a3b8','#3b82f6'],
-
-    dataLabels:{
-        enabled:true
-    },
-
-    xaxis:{
-        categories:[date1Label,date2Label]
-    }
-});
-
-passChart.render();
+    });
+    passChart.render();
 
     // ============================================================
     // 🔥 PRODUCT TABLE (FIXED — THIS WAS MISSING)
@@ -573,7 +464,6 @@ document.getElementById('applyBtn').onclick = function () {
     const date1 = document.getElementById('date1').value;
     const date2 = document.getElementById('date2').value;
     const product = document.getElementById('productFilter').value;
-    const productText = document.getElementById('product_text').value;
     const partner = document.getElementById('partner').value;
     const order_status  = document.getElementById('order_status').value;
     const action_type   = document.getElementById('action_type').value;
@@ -589,7 +479,6 @@ document.getElementById('applyBtn').onclick = function () {
     params.set('date2', date2);
 
     if (product) params.set('product', product);
-    if (product && productText) params.set('product_text', productText);
     if (partner) params.set('partner', partner);
     if (order_status) params.set('order_status', order_status);
     if (action_type) params.set('action_type', action_type);
@@ -597,18 +486,6 @@ document.getElementById('applyBtn').onclick = function () {
     // ✅ FULL RELOAD
     window.location.href = `{{ route('admin.report.comparison') }}?${params.toString()}`;
 };
-
-function set(id, value) {
-    const el = document.getElementById(id);
-
-    if (!el) return;
-
-    if (typeof value === 'number') {
-        el.innerHTML = value.toLocaleString();
-    } else {
-        el.innerHTML = value ?? 0;
-    }
-}
 
 
 /*
@@ -622,15 +499,8 @@ async function fetchData() {
 
     if (!params.toString()) return;
 
-    console.log('Params:', params.toString());
-
     const res = await fetch(`{{ route('admin.report.comparison.data') }}?${params}`);
-
-    console.log('Response Status:', res.status);
-
     const data = await res.json();
-
-    console.log('API Data:', data);
 
     render(data);
 }
@@ -686,7 +556,6 @@ function renderFilters() {
         date1: params.get('date1'),
         date2: params.get('date2'),
         product: params.get('product'),
-        product_text: params.get('product_text'),
         partner: params.get('partner'),
         order_status: params.get('order_status'),
         action_type: params.get('action_type'),
@@ -703,7 +572,6 @@ function renderFilters() {
         return;
     }
 
-
     alertBox.innerHTML = '';
 
     let html = '<div class="d-flex flex-wrap gap-2">';
@@ -712,16 +580,16 @@ function renderFilters() {
     html += badge('Date 2', formatDate(filters.date2), 'date2');
 
     if (filters.product && filters.product !== 'null') {
-        html += badge('Product', filters.product_text || filters.product, 'product');
+        html += badge('Product', filters.product, 'product');
     }
 
     if (filters.partner && filters.partner !== 'null') {
         html += badge('Channel', filters.partner, 'partner');
     }
     if (filters.order_status && filters.order_status !== 'null') {
-        html += badge('Status', statusMap[filters.order_status], 'order_status');
+        html += badge('Status', filters.order_status, 'order_status');
     }
-
+    
     if (filters.action_type && filters.action_type !== 'null') {
         html += badge('Pay', filters.action_type, 'action_type');
     }
@@ -771,6 +639,14 @@ function showAlert(msg) {
         `<div class="alert alert-warning">${msg}</div>`;
 }
 
+function setMoney(id,val){
+    document.getElementById(id).innerHTML = '$' + Number(val).toLocaleString();
+}
+
+function setNumber(id,val){
+    document.getElementById(id).innerHTML = Number(val).toLocaleString();
+}
+
 function formatDate(dateStr){
     if(!dateStr) return '';
     const d = new Date(dateStr);
@@ -813,21 +689,8 @@ window.onload = function () {
 
         
     $(document).ready(function () {
-
-        $('#date1, #date2').daterangepicker({
-            singleDatePicker: true,
-            autoUpdateInput: false,
-            locale: {
-                format: 'YYYY-MM-DD'
-            }
-        });
-
-        $('#date1, #date2').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD'));
-        });
         // ✅ Select2 (optimized)
         $('#productFilter').select2({
-            dropdownParent: $('#filterSidebar'),
             placeholder: 'Select Tour',
             minimumInputLength: 3,
             ajax: {

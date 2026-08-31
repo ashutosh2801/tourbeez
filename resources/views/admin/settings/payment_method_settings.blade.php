@@ -167,7 +167,7 @@
                             <label for="notice_days">Charge full amount if booking</label>
                             <input type="number" name="tour[notice_days]" id="notice_days"
                                     class="form-control d-inline-block w-auto"
-                                    value="{{ old('tour.notice_days', $specialDeposit?->notice_days) }}">
+                                    value="{{ old('tour.notice_days', $specialDeposit?->notice_days) }}" style="max-width: 70px;">
                             <span>days before tour date</span>
                         </div>
                         </div>

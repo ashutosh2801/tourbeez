@@ -43,17 +43,14 @@
                             <div class="col-md-12">
                                 <label for="price">Currency</label>
                             </div>
-                            <div class="col-md-6 price-input">
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                    </div>
-                                    <select name="currency" class="form-control mr-2">
-                                        @foreach(config('constants.currencies') as $code => $country)
-                                            <option value="{{ $code }}" >{{ $code }} - {{ $country }}</option> 
-                                        @endforeach
-
-                                    </select>
+                            <div class="col-md-12 price-input">
+                                <div class="input-group-prepend">
                                 </div>
+                                <select name="currency" class="form-control">
+                                    @foreach(config('constants.currencies') as $code => $country)
+                                        <option value="{{ $code }}" >{{ $code }} - {{ $country }}</option> 
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="col-md-6">
                                 <select class="form-control" name="customer_choice" id="customer_choice">
@@ -132,16 +129,18 @@
                                 <small class="form-text text-danger">{{ $message }}</small>
                             @enderror
                         </div> -->
-                        <div class="form-group" style="max-width:400px">
-                            <label class="form-label">{{translate('Image')}}</label>
-                            <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
-                                <div class="input-group-prepend">
-                                    <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
+                        <div class="form-group row">
+                            <div class="col-md-12">
+                                <label class="form-label">{{translate('Image')}}</label>
+                                <div class="input-group input-group-sm" data-toggle="aizuploader" data-type="image">
+                                    <div class="input-group-prepend">
+                                        <div class="input-group-text bg-soft-secondary font-weight-medium">{{translate('Browse')}}</div>
+                                    </div>
+                                    <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
+                                    <input type="hidden" name="image" class="selected-files" >
                                 </div>
-                                <div class="form-control file-amount">{{translate('Choose Photo')}}</div>
-                                <input type="hidden" name="image" class="selected-files" >
+                                <div class="file-preview box"></div>
                             </div>
-                            <div class="file-preview box"></div>
                         </div>
                         
                     </div>

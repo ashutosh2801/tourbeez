@@ -5,500 +5,504 @@
 
 <style>
 
-            /* FULL FIX FOR SELECT2 HEIGHT */
-   .search-options .select2-container--default .select2-selection--multiple {
+    .search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        margin-right: 0;
+        margin-left: 0;
+        margin-bottom: 5px;
+        margin-top: 0;
+        background-color: #a3a3a3;
+    }
+
+    .search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+        font-size: 13px;
+    }
+
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        margin: 0 0 5px 1px;
+        font-size: 13px;
+    }
+
+    .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+        background-color: #5897fb;
+        color: white;
+    }
+
+    .selection .select2-selection .select2-selection--multiple {
         min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-        padding: 0.4rem 1rem !important;
+        padding: 0.6rem 1rem !important;
         margin-bottom: 15px !important;
     }
 
-.select2-container--default .select2-selection--multiple {
-    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-        padding: 0.6rem 1rem !important;
-        margin-bottom: 15px !important;
-}
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        margin: 0;
+        line-height: 1.7;
+        color: #FFF;
+    }
 
-.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice {
-    margin-right: 0;
-    margin-left: 0;
-    margin-bottom: 5px;
-    margin-top: 0;
-    background-color: #a3a3a3;
-}
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+        color: #333;
+        background: #607D8B;
+    }
 
-.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
-    font-size: 13px;
-}
+    .select2-container--default .select2-selection--multiple .select2-selection__choice{
+        background-color: #a3a3a3 !important;
+    }
 
-.search-options .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-    color: #FFF;
-    margin-left: 0;
-}
+    .search-options .select2-container--default .select2-selection--multiple {
+        border: 1px solid #ced4da !important;
+    }
 
-.search-options .select2-container--default .select2-search--inline .select2-search__field {
-    font-size: 14px;
-}
+    .search-options .select2-container--default .select2-search--inline .select2-search__field {
+        font-size: 14px;
+        margin: 0;
+        border: 0;
+    }
 
-.select2-container--default .select2-selection--multiple .select2-selection__choice {
-    margin: 0 0 5px 1px;
-    font-size: 13px;
-}
-
-.select2-container--default .select2-search--inline .select2-search__field {
-    background: transparent;
-    border: none;
-    outline: 0;
-    box-shadow: none;
-    -webkit-appearance: textfield;
-    margin: 0;
-}
-
-.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
-    background-color: #5897fb;
-    color: white;
-}
-
-.selection .select2-selection .select2-selection--multiple {
-    min-height: calc(1.3125rem + 1.2rem + 2px) !important;
-    padding: 0.6rem 1rem !important;
-    margin-bottom: 15px !important;
-}
-
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-    margin: 0;
-    line-height: 1.7;
-    color: #FFF;
-}
-
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-    color: #333;
-    background: #607D8B;
-}
-
-.select2-container--default .select2-selection--multiple .select2-selection__choice{
-    background-color: #a3a3a3 !important;
-}
     /* ================= TABLE ================= */
+    .table {
+        font-size: 14px;
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
 
-.table {
-    font-size: 14px;
-    margin-bottom: 0;
-    border-collapse: separate;
-    border-spacing: 0;
-}
+    .table tbody tr:hover {
+        background: #f5f9ff;
+    }
 
-.table th,
-.table td {
-    padding: 6px 10px;
-    white-space: nowrap;
-    vertical-align: middle;
-    font-size: 14px;
-}
+    .table-wrapper {
+        width: 100%;
+        overflow: auto;
+        position: relative;
+        cursor: grab;
+        max-height: 75vh; /* Required for sticky header */
+    }
 
-.table tbody tr:hover {
-    background: #f5f9ff;
-}
+    .table-wrapper.active {
+        cursor: grabbing;
+    }
 
-.table-wrapper {
-    width: 100%;
-    overflow: auto;
-    position: relative;
-    cursor: grab;
-    max-height: 75vh; /* Required for sticky header */
-}
+    /* ================= STICKY HEADER ================= */
 
-.table-wrapper.active {
-    cursor: grabbing;
-}
+    .table thead th {
+        font-size: 12px;
+        font-weight: 600;
+    }
 
-/* ================= STICKY HEADER ================= */
+    /* ================= FROZEN FIRST 4 COLUMNS ================= */
 
-.table thead th {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: #212529 !important;
-    color: #fff;
-    font-weight: 600;
-}
+    /* # */
+    .table th:nth-child(1),
+    .table td:nth-child(1) {
+        position: sticky;
+        left: 0;
+        width: 20px;
+        min-width: 20px;
+        max-width: 20px;
+        background: #f1f5f9;
+        z-index: 20;
+    }
 
-/* ================= FROZEN FIRST 4 COLUMNS ================= */
+    .table th, .table td {
+        white-space: nowrap;
+    }
 
-/* # */
-.table th:nth-child(1),
-.table td:nth-child(1) {
-    position: sticky;
-    left: 0;
-    width: 20px;
-    min-width: 20px;
-    max-width: 20px;
-    background: #f1f5f9;
-    z-index: 20;
-}
+    /* Order */
+    .table th:nth-child(2),
+    .table td:nth-child(2) {
+        position: sticky;
+        left: 20px;
+        width: 130px;
+        min-width: 130px;
+        max-width: 130px;
+        background: #f1f5f9;
+        z-index: 20;
+    }
 
-/* Order */
-.table th:nth-child(2),
-.table td:nth-child(2) {
-    position: sticky;
-    left: 20px;
-    width: 130px;
-    min-width: 130px;
-    max-width: 130px;
-    background: #f1f5f9;
-    z-index: 20;
-}
+    /* Customer */
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        position: sticky;
+        left: 150px;
+        width: 150px;
+        min-width: 150px;
+        max-width: 150px;
+        background: #f1f5f9;
+        z-index: 20;
+    }
 
-/* Customer */
-.table th:nth-child(3),
-.table td:nth-child(3) {
-    position: sticky;
-    left: 150px;
-    width: 150px;
-    min-width: 150px;
-    max-width: 150px;
-    background: #f1f5f9;
-    z-index: 20;
-}
+    /* Product */
+    .table th:nth-child(4),
+    .table td:nth-child(4) {
+        position: sticky;
+        left: 300px;
+        width: 180px;
+        min-width: 180px;
+        max-width: 180px;
+        background: #f1f5f9;
+        z-index: 20;
+    }
 
-/* Product */
-.table th:nth-child(4),
-.table td:nth-child(4) {
-    position: sticky;
-    left: 300px;
-    width: 180px;
-    min-width: 180px;
-    max-width: 180px;
-    background: #f1f5f9;
-    z-index: 20;
-}
+    /* Header over frozen columns */
+    .table thead th:nth-child(-n+4) {
+        z-index: 110;
+    }
 
-/* Header over frozen columns */
-.table thead th:nth-child(-n+4) {
-    z-index: 110;
-}
+    /* Shadow */
+    .table th:nth-child(-n+4),
+    .table td:nth-child(-n+4) {
+        box-shadow: 1px 0 0 #dee2e6;
+    }
 
-/* Shadow */
-.table th:nth-child(-n+4),
-.table td:nth-child(-n+4) {
-    box-shadow: 1px 0 0 #dee2e6;
-}
+    /* ================= PRODUCT NAME ================= */
 
-/* ================= PRODUCT NAME ================= */
+    .product-name {
+        white-space: normal !important;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        max-width: 220px;
+        line-height: 1.4;
+    }
 
-.product-name {
-    white-space: normal !important;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-    max-width: 220px;
-    line-height: 1.4;
-}
+    /* ================= FOOTER ================= */
 
-/* ================= FOOTER ================= */
+    .table tfoot td {
+        font-weight: 600;
+    }
 
-.table tfoot td {
-    font-weight: 600;
-}
+    /* Freeze label */
+    .table tfoot .summary-label {
+        position: sticky;
+        left: 0;
+        z-index: 120;
+        background: inherit;
+    }
 
-/* Freeze label */
-.table tfoot .summary-label {
-    position: sticky;
-    left: 0;
-    z-index: 120;
-    background: inherit;
-}
+    /* Freeze amount column */
+    /*.table tfoot .summary-value {
+        position: sticky;
+        left: 480px; 
+        z-index: 120;
+        background: inherit;
+    }
+    */
+    .table tfoot td:nth-child(2){ position: sticky; left: 480px; /* 20 + 130 + 150 + 180 */ z-index: 120; background: inherit; }
 
-/* Freeze amount column */
-/*.table tfoot .summary-value {
-    position: sticky;
-    left: 480px; 
-    z-index: 120;
-    background: inherit;
-}
-*/
-.table tfoot td:nth-child(2){ position: sticky; left: 480px; /* 20 + 130 + 150 + 180 */ z-index: 120; background: inherit; }
+    /* Footer colors */
 
-/* Footer colors */
+    .summary-expense td {
+        background: #fff8e1;
+    }
 
-.summary-expense td {
-    background: #fff8e1;
-}
+    .summary-total td {
+        background: #ffeeba;
+    }
 
-.summary-total td {
-    background: #ffeeba;
-}
+    .summary-net td {
+        background: #e8f4fd;
+    }
 
-.summary-net td {
-    background: #e8f4fd;
-}
+    .summary-profit td {
+        background: #d4edda;
+    }
 
-.summary-profit td {
-    background: #d4edda;
-}
+    .table-footer{
+        background:#d4edda;
+    }
 
-.table-footer{
-    background:#d4edda;
-}
+    /* ================= PAGINATION ================= */
 
-/* ================= PAGINATION ================= */
+    .pagination {
+        justify-content: center;
+    }
 
-.pagination {
-    justify-content: center;
-}
+    .col-total {
+        background: #d4edda !important;
+        color: #155724;
+        font-weight: 600;
+    }
 
-.col-total {
-    background: #d4edda !important;
-    color: #155724;
-    font-weight: 600;
-}
+    /* Dark Green */
+    .col-profit {
+        background: #198754 !important;
+        color: #fff !important;
+        font-weight: 700;
+    }
 
-/* Dark Green */
-.col-profit {
-    background: #198754 !important;
-    color: #fff !important;
-    font-weight: 700;
-}
+    .filter-panel {
+        display: none;
+        animation: fadeSlide 0.3s ease-in-out;
+    }
+
+    @keyframes fadeSlide {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
 </style>
 
 <div class="card-primary mb-3">
     <div class="card-header reports-head">
-        <h3 class="card-title">Price Schedule Filters</h3>
+        <div class="row">
+            <div class="col-md-8 col-12">
+                <h3 class="card-title text-white">Price Schedule</h3>
+            </div>
+            <div class="col-md-4 col-12">
+                <div class="card-tools">
+                    <button type="button" class="btn btn-secondary" id="toggleFilter">
+                        <i class="fas fa-filter"></i> Filters
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 {{-- FILTERS --}}
-<div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
+<div class="filter-panel" id="filterPanel">
+    <div class="card card-primary bg-white border rounded-lg-custom report-filter-box">
         <form method="GET">
+            <div class="card-header">
+                <div class="search-options">
+                    <div class="row">
 
-            <div class="row">
+                        {{-- BOOKING DATE --}}
+                        @php
+                            $hasFilter = request()->hasAny([
+                                'booking_date',
+                                'tour_date',
+                                'product',
+                                'order_status',
+                                'payment_status',
+                                'partner',
+                                'action_type',
+                                'exclude_product'
+                            ]);
+                        @endphp
+                        <div class="col-xl-3 col-md-3 col-12 position-relative">
+                            <div class="form-group">
+                                <label class="filter-label">Order Date</label>
+                                <input 
+                                    type="text" 
+                                    name="booking_date"
+                                    
+                                    class="form-control aiz-date-range"
+                                    data-advanced-range="true"
+                                    data-separator=" - "
+                                    data-show-dropdown="true"
+                                    placeholder="Select date range"
+                                    autocomplete="off"
+                                    value="{{ request('booking_date') }}"
+                                >
+                                @if(request('booking_date'))
+                                    <span class="clear-btn" onclick="clearBooking()">✕</span>
+                                @endif
+                            </div>
+                        </div>
 
-                {{-- BOOKING DATE --}}
-                @php
-                    $hasFilter = request()->hasAny([
-                        'booking_date',
-                        'tour_date',
-                        'product',
-                        'order_status',
-                        'payment_status',
-                        'partner',
-                        'action_type',
-                        'exclude_product'
-                    ]);
-                @endphp
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <div class="form-group">
-                        <label class="filter-label">Order Date</label>
-                        <input 
-                            type="text" 
-                            name="booking_date"
+                        {{-- TOUR DATE --}}
+                        <div class="col-xl-3 col-md-3 col-12 position-relative">
+                            <div class="form-group">
+                                <label class="filter-label">Tour Date</label>
+                                <input 
+                                    type="text" 
+                                    name="tour_date"
+                                    class="form-control aiz-date-range"
+                                    data-advanced-range="true"
+                                    data-separator=" - "
+                                    data-show-dropdown="true"
+                                    placeholder="Select date range"
+                                    autocomplete="off"
+                                    value="{{ request('tour_date') }}"
+                                >
+                                @if(request('tour_date'))
+                                    <span class="clear-btn" onclick="clearTour()">✕</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
+                            <label class="filter-label">Booking Date</label>
+
+                                <input type="text" id="booking_range" class="form-control"
+                                    placeholder="Select date range" autocomplete="off">
+
                             
-                            class="form-control aiz-date-range"
-                            data-advanced-range="true"
-                            data-separator=" - "
-                            data-show-dropdown="true"
-                            placeholder="Select date range"
-                            autocomplete="off"
-                            value="{{ request('booking_date') }}"
-                        >
-                        @if(request('booking_date'))
-                            <span class="clear-btn" onclick="clearBooking()">✕</span>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- TOUR DATE --}}
-                <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <div class="form-group">
-                        <label class="filter-label">Tour Date</label>
-                        <input 
-                            type="text" 
-                            name="tour_date"
-                            class="form-control aiz-date-range"
-                            data-advanced-range="true"
-                            data-separator=" - "
-                            data-show-dropdown="true"
-                            placeholder="Select date range"
-                            autocomplete="off"
-                            value="{{ request('tour_date') }}"
-                        >
-                        @if(request('tour_date'))
-                            <span class="clear-btn" onclick="clearTour()">✕</span>
-                        @endif
-                    </div>
-                </div>
-
-                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Booking Date</label>
-
-                        <input type="text" id="booking_range" class="form-control"
-                            placeholder="Select date range" autocomplete="off">
-
-                    
-                        <span class="clear-btn" onclick="clearBooking()">✕</span>
-                    
-
-                    <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
-                    <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
-                </div> -->
-
-                {{-- TOUR DATE --}}
-                <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">     Date</label>
-
-                        <input type="text" id="tour_range" class="form-control"
-                            placeholder="Select date range" autocomplete="off">
-
-                   
-                        <span class="clear-btn" onclick="clearTour()">✕</span>
-                   
-
-                    <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
-                    <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
-                    </div> -->
-                    <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
-                    <label class="filter-label">Products</label>
-                    <select id="productFilter" name="product" class="form-control"></select>
-                </div>  -->
-
-                {{-- PRODUCTS --}}
-                <div class="col-md-3 col-6">
-                    <label class="filter-label">Products</label>
-                    <select id="productFilter" name="product[]" class="form-control" multiple>
-                        @foreach($selectedProducts as $sp)
-                            <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3 col-6">
-                    <label class="filter-label">Excluded Products</label>
-                    <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
-                        @foreach($excludedProducts as $ep)
-                            <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-
-                {{-- ORDER STATUS --}}
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="form-group">
-                        <label class="filter-label">Order Status</label>
-                        <select name="order_status" class="form-control">
-                            <option value="">All</option>
-                            @php
-                            $status_with_code = [
-                                        
-                                        3 => 'Pending supplier',
-                                        4 => 'Pending customer',
-                                        5 => 'Confirmed',
-                                        
-                                ];
-                            @endphp
-                            @foreach($status_with_code as $key => $val)
-                                <option value="{{ $key }}"
-                                    {{ request('order_status') == $key ? 'selected' : '' }}>
-                                    {{ $val }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                {{-- PAY TYPE --}}
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="form-group">
-                        <label class="filter-label">Pay Type</label>
-                        <select name="action_type" class="form-control">
-                            <option value="">All</option>
-                            <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
-                            <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
-                        </select>
-                    </div>
-                </div>
-
-                {{-- SOURCE --}}
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="form-group">
-                        <label class="filter-label">Source</label>
-                        <select name="partner" class="form-control">
-                            <option value="">All</option>
+                                <span class="clear-btn" onclick="clearBooking()">✕</span>
                             
-                            
-                            @foreach($partners as $partner)
-                                <option value="{{ ucfirst($partner->slug) }}"
-                                    {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
-                                    {{ $partner->name }}
-                                </option>
-                            @endforeach
-                            <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
-                            <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="form-group">
-                            <label class="filter-label">Sort By</label>
-                            <select name="order_by" id="order_by" class="form-control">
-                                <option value="">Sort By</option>
 
-                                <option value="tour_date_desc"
-                                    {{ request('order_by') == 'tour_date_desc' ? 'selected' : '' }}>
-                                    Tour Date (Newest First)
-                                </option>
+                            <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
+                            <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
+                        </div> -->
 
-                                <option value="tour_date_asc"
-                                    {{ request('order_by') == 'tour_date_asc' ? 'selected' : '' }}>
-                                    Tour Date (Oldest First)
-                                </option>
+                        {{-- TOUR DATE --}}
+                        <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
+                            <label class="filter-label">     Date</label>
 
-                                <option value="booking_date_desc"
-                                    {{ request('order_by') == 'booking_date_desc' ? 'selected' : '' }}>
-                                    Booking Date (Newest First)
-                                </option>
+                                <input type="text" id="tour_range" class="form-control"
+                                    placeholder="Select date range" autocomplete="off">
 
-                                <option value="booking_date_asc"
-                                    {{ request('order_by') == 'booking_date_asc' ? 'selected' : '' }}>
-                                    Booking Date (Oldest First)
-                                </option>
+                        
+                                <span class="clear-btn" onclick="clearTour()">✕</span>
+                        
 
-                                <!-- <option value="revenue_desc"
-                                    {{ request('order_by') == 'revenue_desc' ? 'selected' : '' }}>
-                                    Revenue (High → Low)
-                                </option>
+                            <input type="hidden" name="tour_start_date" id="tour_start_date" value="{{ request('tour_start_date') }}">
+                            <input type="hidden" name="tour_end_date" id="tour_end_date" value="{{ request('tour_end_date') }}">
+                            </div> -->
+                            <!-- <div class="col-xl-3 col-md-3 col-12 position-relative">
+                            <label class="filter-label">Products</label>
+                            <select id="productFilter" name="product" class="form-control"></select>
+                        </div>  -->
 
-                                <option value="revenue_asc"
-                                    {{ request('order_by') == 'revenue_asc' ? 'selected' : '' }}>
-                                    Revenue (Low → High)
-                                </option> -->
+                        {{-- PRODUCTS --}}
+                        <div class="col-md-3 col-6">
+                            <label class="filter-label">Products</label>
+                            <select id="productFilter" name="product[]" class="form-control" multiple>
+                                @foreach($selectedProducts as $sp)
+                                    <option value="{{ $sp->id }}" selected>{{ $sp->title }}</option>
+                                @endforeach
                             </select>
                         </div>
-                    </div>
 
+                        <div class="col-md-3 col-6">
+                            <label class="filter-label">Excluded Products</label>
+                            <select id="excludeProductFilter" name="exclude_product[]" class="form-control" multiple>
+                                @foreach($excludedProducts as $ep)
+                                    <option value="{{ $ep->id }}" selected>{{ $ep->title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                {{-- BUTTONS --}}
-                <div class="col-xl-3 col-md-3 col-12">
-                    <div class="d-flex column-gap-10">
-                        <button class="btn btn-apply flex-fill">Apply</button>
-                        <a href="{{ route('admin.report.price_schedule') }}" class="btn btn-secondary flex-fill">Reset</a>
+                        {{-- ORDER STATUS --}}
+                        <div class="col-xl-3 col-md-3 col-12">
+                            <div class="form-group">
+                                <label class="filter-label">Order Status</label>
+                                <select name="order_status" class="form-control">
+                                    <option value="">All</option>
+                                    @php
+                                    $status_with_code = [
+                                                
+                                                3 => 'Pending supplier',
+                                                4 => 'Pending customer',
+                                                5 => 'Confirmed',
+                                                
+                                        ];
+                                    @endphp
+                                    @foreach($status_with_code as $key => $val)
+                                        <option value="{{ $key }}"
+                                            {{ request('order_status') == $key ? 'selected' : '' }}>
+                                            {{ $val }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        {{-- PAY TYPE --}}
+                        <div class="col-xl-2 col-md-3 col-12">
+                            <div class="form-group">
+                                <label class="filter-label">Pay Type</label>
+                                <select name="action_type" class="form-control">
+                                    <option value="">All</option>
+                                    <option value="pay_now" {{ request('action_type')=='pay_now'?'selected':'' }}>Pay Now</option>
+                                    <option value="pay_later" {{ request('action_type')=='pay_later'?'selected':'' }}>Pay Later</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {{-- SOURCE --}}
+                        <div class="col-xl-2 col-md-3 col-12">
+                            <div class="form-group">
+                                <label class="filter-label">Source</label>
+                                <select name="partner" class="form-control">
+                                    <option value="">All</option>
+                                    
+                                    
+                                    @foreach($partners as $partner)
+                                        <option value="{{ ucfirst($partner->slug) }}"
+                                            {{ request('partner') == ucfirst($partner->slug) ? 'selected' : '' }}>
+                                            {{ $partner->name }}
+                                        </option>
+                                    @endforeach
+                                    <option value="Tourbeez" {{ request('partner') == 'Tourbeez' ? 'selected' : '' }}>Tourbeez</option>
+                                    <option value="Internal" {{ request('partner') == 'Internal' ? 'selected' : '' }}>Internal</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-2 col-md-3 col-12">
+                            <div class="form-group">
+                                <label class="filter-label">Sort By</label>
+                                <select name="order_by" id="order_by" class="form-control">
+                                    <option value="">Sort By</option>
+
+                                    <option value="tour_date_desc"
+                                        {{ request('order_by') == 'tour_date_desc' ? 'selected' : '' }}>
+                                        Tour Date (Newest First)
+                                    </option>
+
+                                    <option value="tour_date_asc"
+                                        {{ request('order_by') == 'tour_date_asc' ? 'selected' : '' }}>
+                                        Tour Date (Oldest First)
+                                    </option>
+
+                                    <option value="booking_date_desc"
+                                        {{ request('order_by') == 'booking_date_desc' ? 'selected' : '' }}>
+                                        Booking Date (Newest First)
+                                    </option>
+
+                                    <option value="booking_date_asc"
+                                        {{ request('order_by') == 'booking_date_asc' ? 'selected' : '' }}>
+                                        Booking Date (Oldest First)
+                                    </option>
+
+                                    <!-- <option value="revenue_desc"
+                                        {{ request('order_by') == 'revenue_desc' ? 'selected' : '' }}>
+                                        Revenue (High → Low)
+                                    </option>
+
+                                    <option value="revenue_asc"
+                                        {{ request('order_by') == 'revenue_asc' ? 'selected' : '' }}>
+                                        Revenue (Low → High)
+                                    </option> -->
+                                </select>
+                            </div>
+                        </div>
+
+                        {{-- BUTTONS --}}
+                        <div class="col-xl-3 col-md-3 col-12">
+                            <div class="d-flex column-gap-10">
+                                <button class="btn btn-apply flex-fill">Apply</button>
+                                <a href="{{ route('admin.report.price_schedule') }}" class="btn btn-secondary flex-fill">Reset</a>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            @if(!request()->filled('booking_date') && !request()->filled('tour_date'))
+                                <div class="alert alert-info mb-0">
+                                    Please apply at least one date filter (Booking Date or Tour Date) to view the report.
+                                </div>
+                            @endif
+                        </div>
+
                     </div>
                 </div>
-
             </div>
         </form>
     </div>
-@if(!request()->filled('booking_date') && !request()->filled('tour_date'))
-    <div class="alert alert-info">
-        Please apply at least one date filter (Booking Date or Tour Date) to view the report.
-    </div>
-@endif
-<div class="active-filters mb-3">
+</div>
+
+    <div class="active-filters mb-3">
         @if(request()->hasAny([
             'booking_date','tour_date','product',
             'order_status','action_type','partner', 'exclude_product'
         ]))
-
-
-
             <div class="d-flex flex-wrap gap-2">
 
                 {{-- BOOKING DATE --}}
@@ -566,7 +570,7 @@
             </div>
         @endif
     </div>
-{{-- TABLE --}}
+    {{-- TABLE --}}
 
     <div class="card card-primary bg-white border rounded-lg-custom report-table">
 
@@ -672,12 +676,12 @@
           <table class="table table-bordered" style=" margin: 15px 20px;">
 
                 <thead>
-    <tr>
-        <th>#</th>
-        <th>Order</th>
-        <!-- <th>Order Date</th> -->
-        <th>Customer</th>
-        <th class="product-name">Product</th>
+                    <tr>
+                        <th>#</th>
+                        <th>Order</th>
+                        <!-- <th>Order Date</th> -->
+                        <th>Customer</th>
+                        <th class="product-name">Product</th>
 
         <th >Product Price</th>
         <th>Extra Amount</th>
@@ -689,21 +693,19 @@
         <!-- <th>Excluded Total</th> -->
         <th>Order Balance</th>
 
-        <!-- <th>Transport Cost - Tax</th> -->
-        <th>Supplier Price</th>
-        <th>Extra Included</th>
-        <th>Extra Excluded</th>
-        <th>Supplier Tax</th>
-        <!-- <th>Other Fee</th> -->
-        <th class="col-total">Supplier Total</th>
-        <th class="col-profit">Profit</th>
-        <!-- <th></th> -->
-        <th>Addons</th>
+                        <!-- <th>Transport Cost - Tax</th> -->
+                        <th>Supplier Price</th>
+                        <th>Extra Included</th>
+                        <th>Extra Excluded</th>
+                        <th>Supplier Tax</th>
+                        <!-- <th>Other Fee</th> -->
+                        <th class="col-total">Supplier Total</th>
+                        <th class="col-profit">Profit</th>
+                        <!-- <th></th> -->
+                        <th>Addons</th>
 
-    </tr>
-
-
-</thead>
+                    </tr>
+                </thead>
 
                 <tbody>
 
@@ -1052,6 +1054,28 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    let filterOpen = false;
+
+    $('#toggleFilter').on('click', function () {
+        $('#filterPanel').slideToggle(250);
+
+        filterOpen = !filterOpen;
+
+        if (filterOpen) {
+            $(this)
+                .removeClass('btn-secondary')
+                .addClass('btn-danger')
+                .html('<i class="fas fa-times"></i> Hide Filters');
+        } else {
+            $(this)
+                .removeClass('btn-danger')
+                .addClass('btn-secondary')
+                .html('<i class="fas fa-filter"></i> Filters');
+        }
+    });
+</script>
 
 <script>
   let today = moment();

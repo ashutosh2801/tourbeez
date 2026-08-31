@@ -1,3 +1,6 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <nav class="mt-2">
 
     @php
@@ -256,7 +259,7 @@
                     </a>
                 </li>
             </ul>
-            </li>
+        </li>
         @endcan
 
         @can('show_reports') 

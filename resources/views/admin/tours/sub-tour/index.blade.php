@@ -158,12 +158,12 @@
             </div>
         </div>
 
-        <div class="card-body p-0">
+        <div class="card-body p-0 tour-table">
             <div class="table-viewport">
                 <table class="table table-striped" id="tourTable">
                     <thead>
                         <tr>
-                            <th><input style="width:15px; height:15px;" type="checkbox" id="checkAll" /></th>
+                            <th><input style="width: 20px; height: 20px;" type="checkbox" id="checkAll" /></th>
                             <th >{{ translate('Order') }}</th>
                             <th >{{ translate('Image') }}</th>
                             <th>{{ translate('Title') }}</th>
@@ -176,34 +176,34 @@
                     <tbody id="sortable-tours">
                         @foreach ($tours as $tour)
                             <tr data-id="{{ $tour->id }}">
-                                <td><input style="width:15px; height:15px;" type="checkbox" name="ids[]" value="{{ $tour->id }}"></td>
-
+                                <td><input style="width: 20px; height: 20px;" type="checkbox" name="ids[]" value="{{ $tour->id }}"></td>
                                 <td>
                                     <input type="hidden" name="tour_ids[]" value="{{ $tour->id }}">
-                                    <input style="width:35px; height:35px;" type="text" name="sort_order[{{ $tour->id }}]" value="{{ $tour->sort_order }}">
+                                    <input style="width: 35px; height: 35px;" class="form-control check-box" type="text" name="sort_order[{{ $tour->id }}]" value="{{ $tour->sort_order }}">
                                 </td>
-
-
                                 <td>{!! main_image_html($tour->main_image?->id) !!}</td>
                                 <td>
+                                    <div class="activated-btn mb-2">
+                                        {!! tour_status($tour->status) !!}
+                                    </div>
                                     @can('edit_tour')     
-                                    <a target="_blank" class="text-info text-hover" href="{{ $tour->parent_id ? route('admin.tour.sub-tour.edit', encrypt($tour->id)) : route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
+                                    <a target="_blank" class="tour-heading" href="{{ $tour->parent_id ? route('admin.tour.sub-tour.edit', encrypt($tour->id)) : route('admin.tour.edit', encrypt($tour->id)) }}">{{ $tour->title }}</a>
                                     @else
                                     {{ $tour->title }}
                                     @endcan
 
-                                    <div class="text-sm">{!! tour_status($tour->status) !!} | {{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} </div>
-                                    <div class="text-sm text-gray-500"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
+                                    <div class="text-sm mt-2">{{ ($tour->location?->city?->name) }} | {{ ($tour->detail?->booking_type?? 'Other') }} </div>
+                                    <div class="text-sm text-gray-500 mt-2"><i style="font-size:11px">By: {{ $tour->user->name }} </i></div>
                                 </td>    
-                                <td>{{ price_format_with_currency($tour->price, $tour->currency) }}</td>
+                                <td><b>{{ price_format_with_currency($tour->price, $tour->currency) }}</b></td>
                                 <td>{{ $tour->unique_code }}</td>
                                 <td>{{ $tour->category_names ?: 'No categories' }}</td>
-                                <td>
+                                <td class="action-td">
                                     @can('clone_tour')   
-                                    <a class="btn btn-sm btn-success confirm-clone" data-href="{{ route('admin.tour.clone', encrypt($tour->id)) }}">Clone</a>
+                                    <a class="btn btn-sm btn-success confirm-clone" data-href="{{ route('admin.tour.clone', encrypt($tour->id)) }}"><i class="fas fa-clone"></i></a>
                                     @endcan
                                     @can('delete_tour')  
-                                    <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.tour.destroy', encrypt($tour->id)) }}">{{translate('Delete')}}</a>
+                                    <a class="btn btn-sm btn-danger confirm-delete" data-href="{{ route('admin.tour.destroy', encrypt($tour->id)) }}"><i class="fas fa-trash-alt"></i></a>
                                     @endcan
                                 </td>
                             </tr>
@@ -220,7 +220,7 @@
 @section('modal')
 <!-- clone modal -->
 <div id="clone-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title h6">{{ translate('Clone Confirmation') }}</h4>
@@ -237,7 +237,7 @@
 
 <!-- delete Modal -->
 <div id="delete-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title h6">{{ translate('Delete Confirmation') }}</h4>
@@ -252,7 +252,6 @@
     </div>
 </div>
 
-<!-- Tour Coupon Modal -->
 <!-- Tour Coupon Modal -->
 <div id="tour-coupon-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
@@ -299,7 +298,7 @@
         </div>
     </div>
 </div>
-<!-- Enable/Disable Tour Modal -->
+
 <!-- Enable/Disable Tour Modal -->
 <div id="enable-disable-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered">
@@ -322,22 +321,18 @@
                 <input type="hidden" name="bulk_status" id="bulk_status">
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
-                    <button type="submit" class="btn btn-success" onclick="$('#bulk_status').val(1)">{{ translate('Enable') }}</button>
-                    <button type="submit" class="btn btn-danger" onclick="$('#bulk_status').val(2)">{{ translate('Disable') }}</button>
+                    <div>
+                        <button type="submit" class="btn btn-success" onclick="$('#bulk_status').val(1)">{{ translate('Enable') }}</button>
+                        <button type="submit" class="btn btn-danger" onclick="$('#bulk_status').val(2)">{{ translate('Disable') }}</button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-
-
-
-
-
-
-
 <!-- /.modal -->
 
 @endsection

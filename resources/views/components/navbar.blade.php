@@ -48,15 +48,30 @@
     <div class="collapse navbar-collapse" id="navbarCollapse">
         <ul class="navbar-nav ml-auto" id="mainNavbarActions">
 
-        <li>
-            <form method="GET" action="{{ route('admin.orders.index') }}">
-                <div class="search-options" style="display:flex;width: 407px;    margin-top: 5px;">
-                    <input type="text" name="search" class="form-control" placeholder="Order # / Customer First/Last name/Email" value="{{ request('search') }}" style="margin-bottom:0">
-                    <button type="submit" class="btn btn-warning" style="width: 132px;
-margin-left: 5px;"> <i class="fas fa-search"></i> Search</button>
-                </div>
-            </form>
-        </li>
+            <li class="nav-item navbar-search">
+                <form method="GET" action="{{ route('admin.orders.index') }}" class="search-form">
+                    <div class="search-wrapper">
+                        <button type="button" class="btn nav-search" aria-label="Open search">
+                            <i class="fas fa-search fa-lg"></i>
+                        </button>
+
+                        <div class="search-content">
+                            <input
+                                type="text"
+                                name="search"
+                                class="form-control search-input"
+                                placeholder="Order # / Customer First / Last Name / Email"
+                                value="{{ request('search') }}"
+                            >
+
+                            <button type="submit" class="btn btn-search search-submit">
+                                <i class="fas fa-search"></i>
+                                <span>Search</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </li>
 
             {{-- Notifications Dropdown --}}
             @php
@@ -202,49 +217,50 @@ margin-left: 5px;"> <i class="fas fa-search"></i> Search</button>
 
 <!-- Live Currency Conversion Modal -->
 <div class="modal fade" id="currencyModal" tabindex="-1" aria-labelledby="currencyModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form id="currencyForm">
-        <div class="modal-header">
-          <h5 class="modal-title" id="currencyModalLabel">Convert to USD</h5>
-          <button type="button" data-dismiss="modal" class="btn btn-close" aria-label="Close">
-            <i class="fas fa-times"></i>
-          </button>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="currencyForm">
+                <div class="modal-header">
+                    <h4 class="modal-title h6" id="currencyModalLabel">Convert to USD</h4>
+                    <button type="button" data-dismiss="modal" class="btn btn-close" aria-label="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="currency" class="form-label">Select Currency</label>
+                        <select class="form-control " id="currency" name="from" required>
+
+                            @foreach(config('constants.currencies') as $sign => $country)
+                                <option value="{{ $sign }}">{{ $sign . '-' . $country}}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Enter Price</label>
+                        <input type="number" step="0.01" class="form-control" id="amount" name="amount" placeholder="Enter amount" required>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="form-label">Converted (USD)</label>
+                        <input type="text" id="convertedUsd" class="form-control" readonly placeholder="0.00">
+                    </div>
+
+                    <div class="mt-2 text-end">
+                        <button type="button" id="copyUsdBtn" class="btn btn-outline-success btn-sm">
+                            Copy USD Value
+                        </button>
+                    </div>
+                </div>
+
+                <!-- <div class="modal-footer">
+                <button type="button" id="closeCurrencyModalBottom" class="btn btn-secondary">Close</button>
+                </div> -->
+            </form>
         </div>
-
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="currency" class="form-label">Select Currency</label>
-            <select class="form-control " id="currency" name="from" required>
-
-                @foreach(config('constants.currencies') as $sign => $country)
-                  <option value="{{ $sign }}">{{ $sign . '-' . $country}}</option>
-                @endforeach
-            </select>
-          </div>
-
-          <div class="mb-3">
-            <label for="amount" class="form-label">Enter Price</label>
-            <input type="number" step="0.01" class="form-control" id="amount" name="amount" placeholder="Enter amount" required>
-          </div>
-
-          <div class="mt-3">
-            <label class="form-label">Converted (USD)</label>
-            <input type="text" id="convertedUsd" class="form-control" readonly placeholder="0.00">
-          </div>
-          <div class="mt-2 text-end">
-            <button type="button" id="copyUsdBtn" class="btn btn-outline-success btn-sm">
-                Copy USD Value
-            </button>
-        </div>
-        </div>
-
-        <!-- <div class="modal-footer">
-          <button type="button" id="closeCurrencyModalBottom" class="btn btn-secondary">Close</button>
-        </div> -->
-      </form>
     </div>
-  </div>
 </div>
 
 

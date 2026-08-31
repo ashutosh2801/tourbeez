@@ -24,54 +24,58 @@
             </div>
         </div>
     </div>
-    <div class="p-3 border-bottom">
-        <form method="GET" action="{{ route('admin.category.index') }}">
-            <div class="row">
+    
+    <div class="bg-white border rounded-lg-custom category-main-body">
+        <div class="card-header">
+            <form method="GET" action="{{ route('admin.category.index') }}">
+                <div class="row">
 
-                <div class="col-md-3">
-                    <input type="text"
-                           name="search"
-                           value="{{ request('search') }}"
-                           class="form-control"
-                           placeholder="Search category name...">
+                    <div class="col-md-3">
+                        <input type="text"
+                            name="search"
+                            value="{{ request('search') }}"
+                            class="form-control"
+                            placeholder="Search category name...">
+                    </div>
+
+                    <div class="col-md-3">
+                        <select name="has_tours" class="form-control">
+                            <option value="">-- Filter By Tours --</option>
+                            <option value="1" {{ request('has_tours') == '1' ? 'selected' : '' }}>
+                                Has Tours
+                            </option>
+                            <option value="0" {{ request('has_tours') == '0' ? 'selected' : '' }}>
+                                No Tours
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <select name="per_page" class="form-control">
+                            @foreach (['All',10, 25, 50, 100] as $number)
+                                <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
+                                    {{ $number }} per page
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="d-flex column-gap-10">
+                            <button type="submit" class="btn btn-filter flex-fill">
+                                Filter
+                            </button>
+
+                            <a href="{{ route('admin.category.index') }}"
+                            class="btn btn-secondary flex-fill">
+                                Reset
+                            </a>
+                        </div>
+                    </div>
+
                 </div>
-
-                <div class="col-md-3">
-                    <select name="has_tours" class="form-control">
-                        <option value="">-- Filter By Tours --</option>
-                        <option value="1" {{ request('has_tours') == '1' ? 'selected' : '' }}>
-                            Has Tours
-                        </option>
-                        <option value="0" {{ request('has_tours') == '0' ? 'selected' : '' }}>
-                            No Tours
-                        </option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                <select name="per_page" class="form-control">
-                    @foreach (['All',10, 25, 50, 100] as $number)
-                        <option value="{{ $number }}" {{ request('per_page', 10) == $number ? 'selected' : '' }}>
-                            {{ $number }} per page
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-                <div class="col-md-3">
-                    <button type="submit" class="btn btn-primary">
-                        Filter
-                    </button>
-
-                    <a href="{{ route('admin.category.index') }}"
-                       class="btn btn-secondary">
-                        Reset
-                    </a>
-                </div>
-
-            </div>
-        </form>
-    </div>
-    <div class="card-primary bg-white border rounded-lg-custom category-main-body">
+            </form>
+        </div>
         <div class="card-body p-0">
             <div class="table-viewport">
                 <table class="table table-striped" id="categoryTable">
@@ -126,7 +130,7 @@
                                 </td>
                                 <td width="60">
                                     <button 
-                                        class="btn btn-sm btn-warning clone-btn"
+                                        class="btn btn-sm btn-success confirm-clone"
                                         data-id="{{ encrypt($cat->id) }}">
                                         <i class="fas fa-copy"></i>
                                     </button>
@@ -151,7 +155,7 @@
                 <form id="cloneForm" method="POST" style="display:none;">
                     @csrf
                 </form>
-                <div class="mt-3 p-3">
+                <div class="card-footer">
                     {{ $data->links() }}
                 </div>
             </div>

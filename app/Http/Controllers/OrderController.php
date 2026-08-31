@@ -118,6 +118,22 @@ class OrderController extends Controller
 
         }
 
+        if ($excludeProducts = $request->input('exclude_product')) {
+
+            $excludeProducts = array_filter((array)$excludeProducts);
+
+            if (!empty($excludeProducts)) {
+
+                $query->whereDoesntHave('orderTours', function ($q) use ($excludeProducts) {
+
+                    $q->whereIn('tour_id', $excludeProducts);
+
+                });
+
+            }
+
+        }
+
         // Filter by payment status
         if ($paymentStatus = $request->input('payment_status')) {
             $query->where('payment_status', $paymentStatus);

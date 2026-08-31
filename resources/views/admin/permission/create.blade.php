@@ -2,14 +2,14 @@
     @section('title','Create Permission')
     <section class="content">
         <!-- Default box -->
-        <div class="card card-primary bg-white border rounded-lg-custom">
-                <div class="card card-primary">
+        <div class="card card-primary bg-white border rounded-lg-custom mb-0">
+                <div class="card card-primary mb-0">
                     <div class="card-header create-supplier-head">
                         <div class="row">
-                            <div class="col-md-8 col-6">
+                            <div class="col-md-8 col-9">
                                 <h3 class="card-title">Create New Permission</h3>
                             </div>
-                            <div class="col-md-4 col-6">
+                            <div class="col-md-4 col-3">
                                 <div class="card-tools">
                                     <a href="{{ route('admin.permission.index') }}" class="btn btn-sm btn-back">Back</a>
                                 </div>
@@ -21,7 +21,7 @@
                     <form action="{{ route('admin.permission.store') }}" method="POST"
                         class="needs-validation" novalidate="">
                         @csrf
-                        <div class="card-body">
+                        <div class="card-body create-role-body">
                             <div class="row">
                                 <div class="col-lg-12">
                                     <div class="form-group">
@@ -32,7 +32,7 @@
                                         <div class="invalid-feedback">Permission name field is required.</div>
                                     </div>
                                 </div>
-                                <div class="col-lg-12">
+                                <div class="card-footer">
                                     <div class="float-right">
                                         <button type="submit" id="submit" class="btn btn-success"><i class="fas fa-save"></i> Save</button>
                                     </div>

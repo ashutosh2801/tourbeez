@@ -201,7 +201,7 @@
                                     <input type="checkbox" name="addToCustomer" id="addToCustomer" />
                                     <label for="addToCustomer">Add to Customer</label>
                                 </div>
-                                <div class="form-row">
+                                <div class="form-row"> 
                                     <div class="form-group col-lg-3 col-md-6">
                                         <label for="customer_first_name">First Name *</label>
                                         <input type="text" name="customer_first_name" id="customer_first_name"
@@ -221,15 +221,10 @@
                                         <input type="email" name="customer_email" id="customer_email"
                                             class="form-control" >
                                         <small class="text-danger d-none" id="error_email">Enter a valid email</small>
-                                    </div>
-
-                                    
+                                    </div>                                    
 
                                     <div class="form-group col-lg-3 col-md-6">
                                         <label for="customer_phone">Phone (with country code) *</label>
-
-
-
                                         <input 
                                             id="customer_phone"
                                             name="customer_phone"
@@ -237,21 +232,12 @@
                                             class="form-control"
                                             
                                         />
-
                                         <!-- Hidden field that stores full E.164 number -->
-                                        
-
                                         <small class="text-danger d-none" id="error_phone">Invalid phone number</small>
                                         <input type="hidden" name="full_phone" id="full_phone">
                                     </div>
-
-
-
-
                                 </div>
                             </div>
-
-
                         </div>
                     </div>
                 </div>
@@ -433,7 +419,6 @@
                                 </div>
 
                                 <div id="paymentWrapper"></div>
-
 
                             </div>
 

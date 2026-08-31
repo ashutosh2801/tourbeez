@@ -53,7 +53,7 @@
 
                             <div class="row mb-4">
                                 <label for="minimum_notice_num_{{ $index }}" class="form-label col-lg-2">Minimum notice *</label>
-                                <div class="col-lg-3">
+                                <div class="col-lg-5">
                                     <input type="text" name="schedules[{{ $index }}][minimum_notice_num]" id="minimum_notice_num_{{ $index }}" 
                                     value="{{ old("schedules.$index.minimum_notice_num", $schedule?->minimum_notice_num) }}"
                                         class="form-control " placeholder="Before session start time">
@@ -65,7 +65,7 @@
                                         @enderror
                                     @endif
                                 </div>
-                                <div class="col-lg-3">
+                                <div class="col-lg-5">
                                     <select class="form-control minimum_notice_unit" name="schedules[{{ $index }}][minimum_notice_unit]" id="minimum_notice_unit_{{ $index }}">
                                         <option {{ old("schedules.$index.minimum_notice_unit", $schedule?->minimum_notice_unit) === 'MINUTES' ? 'selected' : '' }} value="MINUTES">Minutes</option>
                                         <option {{ old("schedules.$index.minimum_notice_unit", $schedule?->minimum_notice_unit) === 'HOURS' ? 'selected' : '' }} value="HOURS">Hours</option>
@@ -83,7 +83,7 @@
 
                             <div class="row mb-4">
                                 <label for="estimated_duration_num_{{ $index }}" class="form-label col-lg-2">Estimated duration *</label>
-                                <div class="col-lg-3">
+                                <div class="col-lg-5">
                                     <input type="text" name="schedules[{{ $index }}][estimated_duration_num]" id="estimated_duration_num_{{ $index }}" 
                                     value="{{ old("schedules.$index.estimated_duration_num", $schedule?->estimated_duration_num) }}"
                                         class="form-control " placeholder="Session time">
@@ -95,7 +95,7 @@
                                         @enderror
                                     @endif
                                 </div>
-                                <div class="col-lg-3">
+                                <div class="col-lg-5">
                                     <select class="form-control estimated_duration_unit" name="schedules[{{ $index }}][estimated_duration_unit]" id="estimated_duration_unit_{{ $index }}">
                                         <option {{ old("schedules.$index.estimated_duration_unit", $schedule?->estimated_duration_unit) === 'MINUTES' ? 'selected' : '' }} value="MINUTES">Minutes</option>
                                         <option {{ old("schedules.$index.estimated_duration_unit", $schedule?->estimated_duration_unit) === 'HOURS' ? 'selected' : '' }} value="HOURS">Hours</option>
@@ -114,7 +114,7 @@
                             <div class="mb-4">
                                 <div class="row">
                                     <label for="session_start_date_{{ $index }}" class="form-label col-lg-2">Next available session *</label>
-                                    <div class="col-lg-4">
+                                    <div class="col-lg-5">
                                         <div class="input-group">
                                             <div class="input-group-prepend" >
                                                 <span class="input-group-text" id="basic-addon-from" style="width:70px;">Form</span>
@@ -134,7 +134,7 @@
                                             @enderror
                                         @endif
                                     </div>
-                                    <div class="col-lg-3 not-all-date">
+                                    <div class="col-lg-5 not-all-date">
                                         <div class="input-group">
                                             <input type="text" placeholder="Time" name="schedules[{{ $index }}][session_start_time]" id="session_start_time_{{ $index }}" 
                                             value="{{ old("schedules.$index.session_start_time", $schedule?->session_start_time) }}" class="form-control aiz-time-picker"> 
@@ -153,7 +153,7 @@
                                 </div>
                                 <div class="row mb-4">
                                     <label for="session_end_date_{{ $index }}" class="form-label col-lg-2"></label>
-                                    <div class="col-lg-4">
+                                    <div class="col-lg-5">
                                         <div class="input-group">
                                             <div class="input-group-prepend">
                                                 <span class="input-group-text" id="basic-addon-from"  style="width:70px;">To</span>
@@ -172,7 +172,7 @@
                                             @enderror
                                         @endif
                                     </div>
-                                    <div class="col-lg-3 not-all-date">
+                                    <div class="col-lg-5 not-all-date">
                                         <div class="input-group">
                                             <input type="text" placeholder="Time" name="schedules[{{ $index }}][session_end_time]" id="session_end_time_{{ $index }}" 
                                             value="{{ old("schedules.$index.session_end_time", $schedule?->session_end_time) }}" class="form-control aiz-time-picker"> 
@@ -377,10 +377,10 @@
 
                 <div class="row mb-4">
                     <label class="form-label col-lg-2">Minimum notice *</label>
-                    <div class="col-lg-3">
+                    <div class="col-lg-5">
                         <input type="text" name="schedules[__INDEX__][minimum_notice_num]" id="minimum_notice_num___INDEX__" class="form-control" placeholder="Before session start time">
                     </div>
-                    <div class="col-lg-3">
+                    <div class="col-lg-5">
                         <select class="form-control minimum_notice_unit" name="schedules[__INDEX__][minimum_notice_unit]" id="minimum_notice_unit___INDEX__">
                             <option value="MINUTES">Minutes</option>
                             <option value="HOURS">Hours</option>
@@ -390,10 +390,10 @@
 
                 <div class="row mb-4">
                     <label class="form-label col-lg-2">Estimated duration *</label>
-                    <div class="col-lg-3">
+                    <div class="col-lg-5">
                         <input type="text" name="schedules[__INDEX__][estimated_duration_num]" id="estimated_duration_num___INDEX__" class="form-control" placeholder="Session time">
                     </div>
-                    <div class="col-lg-3">
+                    <div class="col-lg-5">
                         <select class="form-control estimated_duration_unit" name="schedules[__INDEX__][estimated_duration_unit]" id="estimated_duration_unit___INDEX__">
                             <option value="MINUTES">Minutes</option>
                             <option value="HOURS">Hours</option>
@@ -402,10 +402,10 @@
                     </div>
                 </div>
 
-                <div class="mb-4">
+                <div>
                     <div class="row">
                         <label class="form-label col-lg-2">Next available session *</label>
-                        <div class="col-lg-4">
+                        <div class="col-lg-5">
                             <div class="input-group">
                                 <div class="input-group-prepend" >
                                     <span class="input-group-text" style="width:70px;">Form</span>
@@ -416,7 +416,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 not-all-date">
+                        <div class="col-lg-5 not-all-date">
                             <div class="input-group">
                                 <input type="text" name="schedules[__INDEX__][session_start_time]" id="session_start_time___INDEX__" class="form-control aiz-time-picker" placeholder="Time">
                                 <div class="input-group-prepend">
@@ -427,7 +427,7 @@
                     </div>
                     <div class="row mb-4">
                         <label class="form-label col-lg-2"></label>
-                        <div class="col-lg-4">
+                        <div class="col-lg-5">
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text" style="width:70px;">To</span>
@@ -438,7 +438,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 not-all-date">
+                        <div class="col-lg-5 not-all-date">
                             <div class="input-group">
                                 <input type="text" name="schedules[__INDEX__][session_end_time]" id="session_end_time___INDEX__" class="form-control aiz-time-picker" placeholder="Time">
                                 <div class="input-group-prepend">
@@ -468,7 +468,7 @@
 
                 <div class="row mb-5">
                     <label class="form-label col-lg-2">Repeat *</label>
-                    <div class="col-lg-3">
+                    <div class="col-lg-10">
                         <select class="form-control repeat_period" name="schedules[__INDEX__][repeat_period]" id="repeat_period___INDEX__">
                             <option value="NONE">Do not repeat</option>
                             <option value="MINUTELY">Repeat minute-by-minute</option>

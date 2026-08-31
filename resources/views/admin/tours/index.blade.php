@@ -592,7 +592,7 @@ gap:10px;
 @section('modal')
 <!-- clone modal -->
 <div id="clone-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title h6">{{ translate('Clone Confirmation') }}</h4>
@@ -609,7 +609,7 @@ gap:10px;
 
 <!-- delete Modal -->
 <div id="delete-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-dialog modal-md modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title h6">{{ translate('Delete Confirmation') }}</h4>
@@ -633,7 +633,7 @@ gap:10px;
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
             </div>
 
-            <div class="form-group">
+            <div class="form-group m-0">
                 <label class="ml-3 mt-2">{{ translate('Selected Tours') }}</label>
                 <div id="selected_tour_list" class="border p-2 rounded bg-light">
                     <!-- dynamic list will appear here -->
@@ -693,9 +693,13 @@ gap:10px;
                 <input type="hidden" name="bulk_status" id="bulk_status">
 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
-                    <button type="submit" class="btn btn-success" onclick="$('#bulk_status').val(1)">{{ translate('Enable') }}</button>
-                    <button type="submit" class="btn btn-danger" onclick="$('#bulk_status').val(2)">{{ translate('Disable') }}</button>
+                    <div>
+                        <button type="submit" class="btn btn-success" onclick="$('#bulk_status').val(1)">{{ translate('Enable') }}</button>
+                        <button type="submit" class="btn btn-danger" onclick="$('#bulk_status').val(2)">{{ translate('Disable') }}</button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -731,11 +735,15 @@ gap:10px;
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-success" id="downloadSample">
-                        <i class="fas fa-file-excel"></i> Download Sample Excel
-                    </button>
-                    <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
-                    <button type="submit" class="btn btn-success">{{ translate('Import') }}</button>
+                    <div class="m-0">
+                        <button type="submit" class="btn btn-ExpoImpo"> <i class="fas fa-file-import"></i>  {{ translate('Import') }}</button>
+                        <button type="button" class="btn btn-success" id="downloadSample">
+                            <i class="fas fa-file-excel"></i> Download Sample Excel
+                        </button>
+                    </div>
+                    <div class="m-0">
+                        <button type="button" class="btn btn-light" data-dismiss="modal">{{ translate('Cancel') }}</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -768,6 +776,7 @@ gap:10px;
     </div>
   </div>
 </div>
+
 
 <div id="tourMenuModal" class="tour-modal">
     <div class="tour-modal-content">
@@ -883,46 +892,50 @@ $(function() {
 $(document).ready(function () {
     $('#city-select').select2({
         placeholder: 'Select a city',
+        width: '100%',
+        minimumInputLength: 2,
+
         ajax: {
             url: '{{ route("admin.city.search") }}',
             dataType: 'json',
             delay: 300,
-            width: '250px',
-            dropdownAutoWidth: true,
-            dropdownParent: $('#city-select').parent(),
-            data: function (params) {
-                return { term: params.term };
+            data: function(params){
+                return {
+                    term: params.term
+                };
             },
-            processResults: function (data) {
+            processResults: function(data){
                 return {
                     results: data.results
                 };
-            },
-            cache: true
-        },
-        minimumInputLength: 2,
+            }
+        }
     });
 
     $('#category-select').select2({
         placeholder: 'Select a category',
+        width: '100%',
+        minimumInputLength: 2,
+        allowClear: true,
+
         ajax: {
             url: '{{ route("admin.category.search") }}',
             dataType: 'json',
             delay: 300,
-            width: '250px',
-            dropdownAutoWidth: true,
-            dropdownParent: $('#category-select').parent(),
+            cache: true,
+
             data: function (params) {
-                return { term: params.term };
+                return {
+                    term: params.term
+                };
             },
+
             processResults: function (data) {
                 return {
                     results: data.results
                 };
-            },
-            cache: true
-        },
-        minimumInputLength: 2,
+            }
+        }
     });
 
 });

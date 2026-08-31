@@ -7,10 +7,10 @@
             <div class="card-primary mb-3">
                 <div class="card-header create-category-header">
                     <div class="row">
-                        <div class="col-md-8 col-6">
+                        <div class="col-md-8 col-8">
                             <h3 class="card-title">Create Category</h3>
                         </div>
-                        <div class="col-md-4 col-6 text-right">
+                        <div class="col-md-4 col-4 text-right">
                             <a href="{{ route('admin.category.index') }}" 
                                class="btn btn-back btn-sm">Back</a>
                         </div>
@@ -18,110 +18,116 @@
                 </div>
             </div>
 
-            <div class="card-primary bg-white border rounded-lg-custom">
+            <div class="card-primary bg-white border rounded-lg-custom create-category-body">
 
                 <form action="{{ route('admin.category.store') }}" method="POST">
                     @csrf
 
                     <div class="card-body">
+                        <div class="row">
+                            {{-- Name --}}
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label>Name</label>
+                                    <input type="text"
+                                        name="name"
+                                        id="name"
+                                        class="form-control"
+                                        placeholder="Enter category name"
+                                        value="{{ old('name') }}"
+                                        required>
+                                </div>
+                                <x-error>name</x-error>
+                            </div>
+                            
+                            {{-- Slug --}}
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label>Slug</label>
+                                    <input type="text"
+                                        name="slug"
+                                        id="slug"
+                                        class="form-control"
+                                        placeholder="category-slug"
+                                        value="{{ old('slug') }}"
+                                        required>
+                                </div>
+                                <x-error>slug</x-error>
+                            </div>
 
-                        {{-- Name --}}
-                        <div class="form-group">
-                            <label>Name</label>
-                            <input type="text"
-                                   name="name"
-                                   id="name"
-                                   class="form-control"
-                                   placeholder="Enter category name"
-                                   value="{{ old('name') }}"
-                                   required>
+                            {{-- Description --}}
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label>Description</label>
+                                    <textarea name="description"
+                                            id="description"
+                                            rows="4"
+                                            class="form-control aiz-text-editor">{{ old('description') }}</textarea>
+                                    <small class="form-text text-right">
+                                        Max 240 characters
+                                    </small>
+                                </div>
+                                <x-error>description</x-error>
+                            </div>
+
+                            {{-- Meta Title --}}
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label>Meta Title</label>
+                                    <input type="text"
+                                        name="meta_title"
+                                        class="form-control"
+                                        placeholder="Enter meta title"
+                                        value="{{ old('meta_title') }}">
+                                </div>
+                                <x-error>meta_title</x-error>
+                            </div>
+
+                            {{-- Meta Description --}}
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label>Meta Description</label>
+                                    <textarea name="meta_description"
+                                            class="form-control"
+                                            required>{{ old('meta_description') }}</textarea>
+                                </div>
+                                <x-error>meta_description</x-error>
+                            </div>
+
+                            {{-- Meta Keywords --}}
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label>Meta Keywords</label>
+                                    <input type="text"
+                                        name="meta_keywords"
+                                        class="form-control"
+                                        placeholder="keyword1, keyword2, keyword3"
+                                        value="{{ old('meta_keywords') }}">
+                                </div>
+                                <x-error>meta_keywords</x-error>
+                            </div>
+
+                            {{-- Canonical URL --}}
+                            @php
+                                $canonical_url = old('canonical_url') 
+                                    ? old('canonical_url') 
+                                    : env('APP_URL').'/category/';
+                            @endphp
+
+                            <div class="col-lg-12">
+                                <div class="form-group">
+                                    <label>Canonical URL</label>
+                                    <input type="text"
+                                        name="canonical_url"
+                                        id="canonical_url"
+                                        class="form-control"
+                                        value="{{ $canonical_url }}"
+                                        required>
+                                </div>
+                                <x-error>canonical_url</x-error>
+                            </div>
+
                         </div>
-                        <x-error>name</x-error>
-
-
-                        {{-- Slug --}}
-                        <div class="form-group">
-                            <label>Slug</label>
-                            <input type="text"
-                                   name="slug"
-                                   id="slug"
-                                   class="form-control"
-                                   placeholder="category-slug"
-                                   value="{{ old('slug') }}"
-                                   required>
-                        </div>
-                        <x-error>slug</x-error>
-                        {{-- Description --}}
-                        <div class="form-group">
-                            <label>Description</label>
-                            <textarea name="description"
-                                      id="description"
-                                      rows="4"
-                                      class="form-control aiz-text-editor">{{ old('description') }}</textarea>
-                            <small class="form-text text-right">
-                                Max 240 characters
-                            </small>
-                        </div>
-                        <x-error>description</x-error>
-
-
-                        
-
-                        {{-- Meta Title --}}
-                        <div class="form-group">
-                            <label>Meta Title</label>
-                            <input type="text"
-                                   name="meta_title"
-                                   class="form-control"
-                                   placeholder="Enter meta title"
-                                   value="{{ old('meta_title') }}">
-                        </div>
-                        <x-error>meta_title</x-error>
-
-
-                        
-
-
-                        {{-- Meta Description --}}
-                        <div class="form-group">
-                            <label>Meta Description</label>
-                            <textarea name="meta_description"
-                                      class="form-control"
-                                      required>{{ old('meta_description') }}</textarea>
-                        </div>
-                        <x-error>meta_description</x-error>
-
-                        {{-- Meta Keywords --}}
-                        <div class="form-group">
-                            <label>Meta Keywords</label>
-                            <input type="text"
-                                   name="meta_keywords"
-                                   class="form-control"
-                                   placeholder="keyword1, keyword2, keyword3"
-                                   value="{{ old('meta_keywords') }}">
-                        </div>
-                        <x-error>meta_keywords</x-error>
-
-                        {{-- Canonical URL --}}
-                        @php
-                            $canonical_url = old('canonical_url') 
-                                ? old('canonical_url') 
-                                : env('APP_URL').'/category/';
-                        @endphp
-
-                        <div class="form-group">
-                            <label>Canonical URL</label>
-                            <input type="text"
-                                   name="canonical_url"
-                                   id="canonical_url"
-                                   class="form-control"
-                                   value="{{ $canonical_url }}"
-                                   required>
-                        </div>
-                        <x-error>canonical_url</x-error>
-
-                        
-
                     </div>
 
                     <div class="card-footer">
