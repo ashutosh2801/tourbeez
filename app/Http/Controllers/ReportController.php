@@ -994,7 +994,8 @@ class ReportController extends Controller
         ->leftJoin('order_tours', 'orders.id', '=', 'order_tours.order_id')
         ->leftJoin('order_customers', 'orders.id', '=', 'order_customers.order_id')
         ->whereNull('orders.deleted_at')
-        ->whereNotIn('orders.order_status', $excludedStatuses)->groupBy('orders.id');
+        ->whereNotIn('orders.order_status', $excludedStatuses)
+        ->distinct();
 
     if ($startDate && $endDate) {
         $customers->whereBetween('orders.created_at', [$startDate, $endDate]);
@@ -1157,7 +1158,7 @@ class ReportController extends Controller
             ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
             ->whereNull('orders.deleted_at')
             ->whereNotIn('orders.order_status', $excludedStatuses)
-            ->groupBy('orders.id');
+            ->distinct();
 
         // Filters
 
@@ -1665,9 +1666,18 @@ class ReportController extends Controller
                 ->leftJoin('tours', 'order_tours.tour_id', '=', 'tours.id')
                 ->whereNull('orders.deleted_at')
                 ->whereNotIn('orders.order_status', $excludedStatuses)
-                ->leftJoin('tour_pricings as tp', 'tp.tour_id', '=', 'tours.id')
-                ->whereNull('tp.deleted_at')
-                ->groupBy('orders.id');
+                // A tour can have multiple pricing rows. Joining that table
+                // here multiplies each order row, which previously led to an
+                // invalid GROUP BY orders.id query under MySQL's
+                // ONLY_FULL_GROUP_BY mode. The report loads pricing rows
+                // separately below, so only check that an active price exists.
+                ->whereExists(function ($pricingQuery) {
+                    $pricingQuery->select(DB::raw(1))
+                        ->from('tour_pricings as tp')
+                        ->whereColumn('tp.tour_id', 'tours.id')
+                        ->whereNull('tp.deleted_at');
+                })
+                ->distinct();
 
             if ($request->filled('booking_date')) {
                 try {
@@ -2619,6 +2629,115 @@ class ReportController extends Controller
             new OrderPriceScheduleExport($request), // 🔥 pass request instead of full data
             'price_schedule_' . now()->format('Ymd_His') . '.xlsx'
         );
+    }
+
+    /**
+     * Daily profit and loss report. This is intentionally isolated from the
+     * existing report endpoints and only consumes their calculated detail rows.
+     */
+    public function pnl(Request $request)
+    {
+        return view('admin.reports.pnl', [
+            'rows' => $this->getPnlRows($request),
+            'products' => Tour::orderBy('title')->get(['id', 'title']),
+        ]);
+    }
+
+    public function exportPnl(Request $request)
+    {
+        return Excel::download(
+            new \App\Exports\PnlExport($this->getPnlRows($request)),
+            'pnl_report_' . now()->format('Ymd_His') . '.xlsx'
+        );
+    }
+
+    private function getPnlRows(Request $request): array
+    {
+        $bookingStart = $request->input('booking_start_date');
+        $bookingEnd = $request->input('booking_end_date');
+        $travelStart = $request->input('travel_start_date');
+        $travelEnd = $request->input('travel_end_date');
+
+        // Only complete ranges are meaningful; ignore half-filled date pairs.
+        if (!($bookingStart && $bookingEnd)) {
+            $bookingStart = $bookingEnd = null;
+        }
+        if (!($travelStart && $travelEnd)) {
+            $travelStart = $travelEnd = null;
+        }
+
+        // The existing detail report accepts its date ranges in this format.
+        $detailRequest = clone $request;
+        if ($bookingStart && $bookingEnd) {
+            $detailRequest->merge(['booking_date' => $bookingStart . ' - ' . $bookingEnd]);
+        }
+        if ($travelStart && $travelEnd) {
+            $detailRequest->merge(['tour_date' => $travelStart . ' - ' . $travelEnd]);
+        }
+
+        $hasOrderFilter = $bookingStart && $bookingEnd;
+        $hasTravelFilter = $travelStart && $travelEnd;
+        if (!$hasOrderFilter && !$hasTravelFilter) {
+            return [];
+        }
+
+        $details = $this->getInvoiceWithDetailsData($detailRequest, false);
+        $detailRows = collect($details['rows'] ?? []);
+        if ($detailRows->isEmpty()) {
+            return [];
+        }
+
+        $adCategories = [
+            'marketing', 'facebook_ads', 'google_ads', 'instagram_ads', 'influencer',
+        ];
+        $travelDates = $detailRows->pluck('fulfilment_date')
+            ->filter()
+            ->map(fn ($date) => Carbon::parse($date)->toDateString())
+            ->sort()
+            ->values();
+        $adExpenses = collect();
+
+        if ($travelDates->isNotEmpty()) {
+            $adExpenses = BusinessExpense::query()
+                ->whereIn('category', $adCategories)
+                ->whereBetween('expense_date', [
+                    Carbon::parse($travelDates->first())->startOfDay(),
+                    Carbon::parse($travelDates->last())->endOfDay(),
+                ])
+                ->selectRaw('DATE(expense_date) as expense_day, SUM(amount) as amount')
+                ->groupBy(DB::raw('DATE(expense_date)'))
+                ->pluck('amount', 'expense_day');
+        }
+
+        return $detailRows
+            ->groupBy(fn ($row) => (string) ($row['fulfilment_date'] ?? ''))
+            ->map(function ($dayRows, $travelDate) use ($adExpenses) {
+                $revenueWithHst = $dayRows->sum('customer_total');
+                $hst = $dayRows->sum('tax_amount');
+                $revenueWithoutHst = $revenueWithHst - $hst;
+                $commissionStripeRevenue = $revenueWithHst * 0.945;
+                $supplierWithHst = $dayRows->sum('tour_cost_total');
+                $supplierWithoutHst = $dayRows->sum('tour_cost_price');
+                $transport = $dayRows->sum('transport_cost');
+                $totalDirectCost = $supplierWithHst + $transport;
+                $gross = $commissionStripeRevenue - $totalDirectCost;
+                $adExpensesForDay = (float) ($adExpenses[$travelDate] ?? 0);
+
+                return [
+                    'travel_date' => $travelDate ?: null,
+                    'revenue_without_hst' => round($revenueWithoutHst, 2),
+                    'commission_stripe_revenue' => round($commissionStripeRevenue, 2),
+                    'supplier_cost_without_hst' => round($supplierWithoutHst, 2),
+                    'transport_cost' => round($transport, 2),
+                    'total_direct_cost' => round($totalDirectCost, 2),
+                    'gross_profit_loss' => round($gross, 2),
+                    'ad_expenses' => round($adExpensesForDay, 2),
+                    'net_profit_loss' => round($gross - $adExpensesForDay, 2),
+                ];
+            })
+            ->sortKeys()
+            ->values()
+            ->all();
     }
 
     public function transformInvoiceRow($order, $payments = [])

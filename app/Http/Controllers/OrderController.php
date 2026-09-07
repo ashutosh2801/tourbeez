@@ -65,7 +65,10 @@ class OrderController extends Controller
                     ->where('amount', '>', 0)
                     ->whereNotIn('payment_type', ['DISCOUNT', 'PROMOCODE', 'BOOKINGFEE']),
             ])
-            ->orderByRaw('COALESCE(orders.updated_at) DESC')
+            // The admin list should reflect when the order was created.
+            // Sorting by updated_at made older orders jump to the top after
+            // payments or other edits were saved.
+            ->orderByDesc('orders.created_at')
             ->orderByDesc('orders.id');
 
         // Search by order number or customer name

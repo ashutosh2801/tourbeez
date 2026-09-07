@@ -413,6 +413,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('report/price_schedule', [ReportController::class, 'reportPriceSchedule'])->name('report.price_schedule');
     Route::get('/reports/price-schedule/export', [ReportController::class, 'exportPriceSchedule'])
     ->name('report.price_schedule.export');    
+    Route::get('report/pnl', [ReportController::class, 'pnl'])->name('report.pnl');
+    Route::get('reports/pnl/export', [ReportController::class, 'exportPnl'])->name('report.pnl.export');
 
 
     Route::get('/driver-manifest', [ManifestController::class, 'driverManifest'])->name('driver.manifest');

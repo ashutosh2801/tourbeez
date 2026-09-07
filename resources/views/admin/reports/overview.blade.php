@@ -459,18 +459,6 @@
             <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
                 <div class="info-stats4">
                     <div class="info-icon">
-                        <i class="fa fa-dollar-sign"></i>
-                    </div>
-                    <div class="sale-num">
-                        <h3>$ {{ number_format($performance['gross_sales'], 2) }}</h3>
-                        <div class="stat-title">Gross Sales</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-                <div class="info-stats4">
-                    <div class="info-icon">
                         <i class="fa fa-undo"></i>
                     </div>
                     <div class="sale-num">

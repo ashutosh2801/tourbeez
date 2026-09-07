@@ -11973,11 +11973,3 @@ table.dataTable {
     }
 
 }
-
-@media (max-width: 1500px) and (min-width: 1024px) {
-
-    .tour-search-filter .filter-body{
-        height: 400px;
-    }
-
-}

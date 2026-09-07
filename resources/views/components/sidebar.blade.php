@@ -316,6 +316,13 @@
                         <p>{{ translate('Invoice') }}</p>
                     </a>
                 </li>
+                <li class="aiz-side-nav-list">
+                    <a href="{{ route('admin.report.pnl') }}"
+                        class="aiz-side-nav-link nav-link {{ Route::is('admin.report.pnl*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <p>{{ translate('PNL') }}</p>
+                    </a>
+                </li>
 
 
                 
