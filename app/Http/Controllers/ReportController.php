@@ -1452,6 +1452,15 @@ class ReportController extends Controller
 
                 $orderPayments = $payments[$order->id] ?? collect();
 
+                // Promo codes are stored as discount ledger credits and are
+                // not included in the order_tours.discount JSON snapshot.
+                $promoDiscountPayment = $orderPayments
+                    ->where('status', 'discount')
+                    ->where('payment_type', 'PROMOCODE')
+                    ->sum('amount');
+
+                $finalTotal = max($finalTotal - $promoDiscountPayment, 0);
+
 
                 // total successful payments
                 $totalPaid = $orderPayments
@@ -2031,6 +2040,13 @@ class ReportController extends Controller
                 ->where('payment_type', 'EXCLUDED')
                 ->sum('amount');
 
+            // Promo codes are stored as ledger credits, not in the
+            // order_tours.discount snapshot. Include them in Customer Total.
+            $promoDiscountPayment = $payments
+                ->where('status', 'discount')
+                ->where('payment_type', 'PROMOCODE')
+                ->sum('amount');
+
             $totalRefundAmount = $payments
                 ->where('status', 'refunded')
                 ->sum('amount');
@@ -2056,7 +2072,10 @@ class ReportController extends Controller
 
 
                 $excludeTotal =  ($product_price + $extraValue + $tax_amount) - $discount_amount;
-                $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount - $excludedCommissionPayment;
+                $customerTotal = ($product_price + $extraValue + $tax_amount)
+                    - $discount_amount
+                    - $promoDiscountPayment
+                    - $excludedCommissionPayment;
 
                 // dd($totalPaymentAmount, $customerTotal, $extraValue);
 
@@ -2082,7 +2101,9 @@ class ReportController extends Controller
 
             } else {
 
-                $customerTotal = ($product_price + $extraValue + $tax_amount) - $discount_amount;
+                $customerTotal = ($product_price + $extraValue + $tax_amount)
+                    - $discount_amount
+                    - $promoDiscountPayment;
             }
             /*
             |--------------------------------------------------------------------------
@@ -2818,7 +2839,7 @@ class ReportController extends Controller
             }
         }
 
-        $finalTotal = $subtotal;
+                $finalTotal = $subtotal;
 
         /*
         |--------------------------------------------------------------------------
