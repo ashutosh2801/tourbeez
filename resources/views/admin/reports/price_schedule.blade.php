@@ -728,7 +728,6 @@
         <th>Extra Amount</th>
         <th>Tax Amount</th>
         <th>Discount</th>
-        <th>Excluded</th>
         <th>Excluded Balance</th>
         <th class="col-total">Customer Total</th>
         <!-- <th>Excluded Total</th> -->
